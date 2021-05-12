@@ -2,6 +2,7 @@
 (require racket/private/check
          racket/private/config
          racket/private/place-local
+         racket/private/link-path
          ffi/unsafe/atomic
          "parameter.rkt"
          "shadow-directory.rkt"
@@ -257,7 +258,7 @@
                                             (or (string? (car p))
                                                 (eq? 'root (car p))
                                                 (eq? 'static-root (car p)))
-                                            (path-string? (cadr p))
+                                            (encoded-link-path? (cadr p))
                                             (or (null? (cddr p))
                                                 (regexp? (caddr p)))))
                                      v))
@@ -269,7 +270,7 @@
                             (when (or (null? (cddr p))
                                       (regexp-match? (caddr p) (version)))
                               (let ([dir (simplify-path
-                                          (path->complete-path (cadr p) dir))])
+                                          (path->complete-path (decode-link-path (cadr p)) dir))])
                                 (cond
                                   [(eq? (car p) 'static-root)
                                    ;; multi-collection, constant content:

@@ -143,7 +143,9 @@ For information on how byte strings encode paths, see
 @secref["unixpathrep"] and @secref["windowspathrep"].}
 
 
-@defproc[(string->path-element [str string?]) path?]{
+@defproc[(string->path-element [str string?]
+                               [false-on-non-element? any/c #f])
+         (or/c (and/c path? path-element?) #f)]{
 
 Like @racket[string->path], except that @racket[str] corresponds to a
 single relative element in a path, and it is encoded as necessary to
@@ -154,26 +156,33 @@ paths.
 If @racket[str] does not correspond to any @tech{path element}
 (e.g., it is an absolute path, or it can be split), or if it
 corresponds to an up-directory or same-directory indicator on
-@|AllUnix|, then @exnraise[exn:fail:contract].
+@|AllUnix|, then either @racket[#f] is returned or @exnraise[exn:fail:contract].
+A @racket[#f] is returned only when @racket[false-on-non-element?]
+is true.
 
 Like @racket[path->string], information can be lost from
-@racket[str] in the locale-specific conversion to a path.}
+@racket[str] in the locale-specific conversion to a path.
+
+@history[#:changed "8.1.0.6" @elem{Added the @racket[false-on-non-element?] argument.}]}
 
 
 @defproc[(bytes->path-element [bstr bytes?]
-                              [type (or/c 'unix 'windows) (system-path-convention-type)]) 
-         path-for-some-system?]{
+                              [type (or/c 'unix 'windows) (system-path-convention-type)]
+                              [false-on-non-element? any/c #f])
+         (or/c path-element? #f)]{
 
 Like @racket[bytes->path], except that @racket[bstr] corresponds to a
-single relative element in a path. In terms of conversions and
-restrictions on @racket[bstr], @racket[bytes->path-element] is like
-@racket[string->path-element].
+single relative element in a path. In terms of conversions,
+restrictions on @racket[bstr], and the treatment of @racket[false-on-non-element?],
+@racket[bytes->path-element] is like @racket[string->path-element].
 
 The @racket[bytes->path-element] procedure is generally the best
 choice for reconstructing a path based on another path (where the
 other path is deconstructed with @racket[split-path] and
 @racket[path-element->bytes]) when ASCII-level manipulation of
-@tech{path elements} is necessary.}
+@tech{path elements} is necessary.
+
+@history[#:changed "8.1.0.6" @elem{Added the @racket[false-on-non-element?] argument.}]}
 
 
 @defproc[(path-element->string [path path-element?]) string?]{

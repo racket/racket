@@ -264,12 +264,12 @@ void scheme_init_file(Scheme_Startup_Env *env)
   scheme_addto_prim_instance("bytes->path-element", 
 			     scheme_make_immed_prim(bytes_to_path_element, 
                                                     "bytes->path-element", 
-                                                    1, 2), 
+                                                    1, 3), 
 			     env);
   scheme_addto_prim_instance("string->path-element", 
 			     scheme_make_immed_prim(string_to_path_element, 
                                                     "string->path-element", 
-                                                    1, 1), 
+                                                    1, 2), 
 			     env);
 
   scheme_addto_prim_instance("file-exists?", 
@@ -843,27 +843,36 @@ static Scheme_Object *bytes_to_path(int argc, Scheme_Object **argv)
   return s;
 }
 
-static Scheme_Object *do_bytes_to_path_element(const char *name, Scheme_Object *s, int argc, Scheme_Object **argv)
+static Scheme_Object *do_bytes_to_path_element(const char *name, Scheme_Object *s, int argc, Scheme_Object **argv,
+                                               int has_kind, int false_on_error)
 {
   Scheme_Object *p;
   intptr_t i, len;
   int kind;
+  int bad_string = 0;
 
   if (!SCHEME_BYTE_STRINGP(s))
     scheme_wrong_contract(name, "bytes?", 0, argc, argv);
-  kind = extract_path_kind(name, 1, argc, argv);
+  if (has_kind)
+    kind = extract_path_kind(name, 1, argc, argv);
+  else
+    kind = SCHEME_PLATFORM_PATH_KIND;
 
   len = SCHEME_BYTE_STRLEN_VAL(s);
   for (i = 0; i < len; i++) {
-    if (IS_A_PRIM_SEP(kind, SCHEME_BYTE_STR_VAL(s)[i])) {
+    if (SCHEME_BYTE_STR_VAL(s)[i] == 0) {
+      bad_string = 1;
+      break;
+    } else if (IS_A_PRIM_SEP(kind, SCHEME_BYTE_STR_VAL(s)[i])) {
       break;
     }
   }
 
   if (i >= len) {
-    if (len == 0)
+    if (len == 0) {
+      bad_string = 1;
       p = NULL;
-    else
+    } else
       p = make_protected_sized_offset_path(1, SCHEME_BYTE_STR_VAL(s),
                                            0, len,
                                            SCHEME_MUTABLEP(s), 0,
@@ -871,21 +880,28 @@ static Scheme_Object *do_bytes_to_path_element(const char *name, Scheme_Object *
   } else
     p = NULL;
   
-  if (!p || !is_path_element(p))
-    scheme_contract_error(name,
-                          "cannot be converted to a path element",
-                          "path", 1, argv[0],
-                          "explanation", 0, (len 
-                                             ? "path can be split, is not relative, or names a special element"
-                                             : "path element cannot be empty"),
-                          NULL);
+  if (!p || !is_path_element(p)) {
+    if (!bad_string && false_on_error)
+      return scheme_false;
+    if (bad_string)
+      raise_null_error(name, argv[0], "");
+    else
+      scheme_contract_error(name,
+                            "cannot be converted to a path element",
+                            "path", 1, argv[0],
+                            "explanation", 0, (len 
+                                               ? "path can be split, is not relative, or names a special element"
+                                               : "path element cannot be empty"),
+                            NULL);
+  }
 
   return p;
 }
 
 static Scheme_Object *bytes_to_path_element(int argc, Scheme_Object **argv)
 {
-  return do_bytes_to_path_element("bytes->path-element", argv[0], argc, argv);
+  return do_bytes_to_path_element("bytes->path-element", argv[0], argc, argv,
+                                  1, (argc > 2) ? SCHEME_TRUEP(argv[2]) : 0);
 }
 
 static Scheme_Object *string_to_path_element(int argc, Scheme_Object **argv)
@@ -897,7 +913,8 @@ static Scheme_Object *string_to_path_element(int argc, Scheme_Object **argv)
 
   b = scheme_char_string_to_byte_string_locale(argv[0]);
   
-  return do_bytes_to_path_element("string->path-element", b, argc, argv);
+  return do_bytes_to_path_element("string->path-element", b, argc, argv,
+                                  0, (argc > 1) ? SCHEME_TRUEP(argv[1]) : 0);
 }
 
 /**********************************************************************/

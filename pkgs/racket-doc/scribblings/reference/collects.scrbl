@@ -144,17 +144,24 @@ initialized to the result of @racket[find-library-collection-links].
 A @tech{collection links file} is @racket[read] with default reader
 parameter settings to obtain a list. Every element of the list must be
 a link specification with one of the forms @racket[(list _string
-_path)], @racket[(list _string _path _regexp)], @racket[(list 'root
-_path)], @racket[(list 'root _path _regexp)], @racket[(list 'static-root
-_path)], @racket[(list 'static-root _path _regexp)]. A @racket[_string] names a
-top-level @tech{collection}, in which case @racket[_path] is a path
+_encoded-path)], @racket[(list _string _encoded-path _regexp)], @racket[(list 'root
+_encoded-path)], @racket[(list 'root _encoded-path _regexp)], @racket[(list 'static-root
+_encoded-path)], @racket[(list 'static-root _encoded-path _regexp)].
+A @racket[_string] names a
+top-level @tech{collection}, in which case @racket[_encoded-path] describes a path
 that can be used as the collection's path (directly, as opposed to a
-subdirectory of @racket[_path] named by @racket[_string]). A
+subdirectory of @racket[_encoded-path] named by @racket[_string]). A
 @racket['root] entry, in contrast, acts like an path in
 @racket[(current-library-collection-paths)].  A
 @racket['static-root] entry is like a @racket['root] entry, but
 where the immediate content of the directory is assumed not to change unless the
-@tech{collection links file} changes. If @racket[_path] is a
+@tech{collection links file} changes.
+Each @racket[_encoded-path] is either a string, a
+byte string that is converted to a path with @racket[bytes->path],
+or a list of relative path-element byte strings, @racket['up], and @racket['same]
+indicators that are combined with @racket[build-path] with the byte
+strings converted with @racket[bytes->path-element].
+If @racket[_encoded-path] describes a
 relative path, it is relative to the directory containing the
 @tech{collection links file}. If @racket[_regexp] is specified in a
 link, then the link is used only if @racket[(regexp-match?  _regexp
@@ -168,6 +175,9 @@ since the paths are tried in order to locate a file or sub-collection.
 The @exec{raco link} command-link tool can display, install, and
 remove links in a @tech{collection links file}. See @secref[#:doc
 raco-doc "link"] in @other-manual[raco-doc] for more information.
+
+@history[#:changed "8.1.0.6" @elem{Changed @racket[_encoded-path] to
+                                   allow bytes strings and lists.}]
 
 @; ----------------------------------------
 

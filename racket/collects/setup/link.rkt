@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/file
          racket/path
+         racket/private/link-path
          setup/dirs
          setup/collection-name)
 
@@ -72,8 +73,8 @@
                                    (eq? 'static-root (car e)))
                                (content-error "entry's first element is not a string, 'root, or 'static-root: " e))
                            #:when 
-                           (or (path-string? (cadr e))
-                               (content-error "entry's second element is not a path string: " e))
+                           (or (encoded-link-path? (cadr e))
+                               (content-error "entry's second element is not a path encoding: " e))
                            #:when
                            (or (null? (cddr e))
                                (regexp? (caddr e))
@@ -125,8 +126,7 @@
                                    (let-values ([(base name dir?) (split-path dp)])
                                      (path-element->string name)))))]
               [rx version-regexp]
-              [d (and dp (path->string dp))]
-              [sd (and d (simplify d))])
+              [sd (and dp (simplify dp))])
          (unless remove?
            (unless (directory-exists? sd)
              (error 'links
@@ -134,8 +134,8 @@
                     sd)))
          (if remove?
              (filter (lambda (e) 
-                       (or (and d
-                                (not (equal? (simplify (cadr e)) 
+                       (or (and dp
+                                (not (equal? (simplify (decode-link-path (cadr e)))
                                              sd)))
                            (and name
                                 (not (equal? (car e) name)))
@@ -148,7 +148,7 @@
                      table)
              (let ([l (hash-ref mapped a-name null)]
                    [e (list* a-name 
-                             d
+                             (encode-link-path dp)
                              (if rx (list rx) null))])
                (if (member (cdr e) l)
                    table
@@ -184,7 +184,7 @@
                   ""
                   "collection: ")
               (car e)
-              (path->string (simplify (cadr e)))
+              (path->string (simplify (decode-link-path (cadr e))))
               (if (null? (cddr e))
                   ""
                   (format "  version: ~s"
@@ -200,7 +200,7 @@
                                 (eq? 'static-root (car e)))
 		     #:when (or (null? (cddr e))
 				(regexp-match? (caddr e) (version))))
-            (simplify (cadr e)))
+            (simplify (decode-link-path (cadr e))))
           ;; Return list of collections mapped for this version:
           (let ([ht (make-hash)])
             (for ([e (in-list new-table)])
@@ -208,7 +208,7 @@
                          (or (null? (cddr e))
                              (regexp-match? (caddr e) (version))))
                 (hash-set! ht (if with-path?
-                                  (cons (car e) (simplify (cadr e)))
+                                  (cons (car e) (simplify (decode-link-path (cadr e))))
                                   (car e))
                            #t)))
             (hash-keys ht)))))

@@ -30691,58 +30691,70 @@
            (raise-argument-error 'path->bytes "path-for-some-system?" p_0))
          (bytes-copy (path-bytes p_0)))))))
 (define 1/string->path-element
-  (|#%name|
-   string->path-element
-   (lambda (s_0)
-     (begin
-       (begin
-         (if (string? s_0)
-           (void)
-           (raise-argument-error 'string->path-element "string?" s_0))
-         (check-path-string 'string->path-element s_0)
-         (do-bytes->path-element
-          (string->path-bytes s_0)
-          (system-path-convention-type)
-          'string->path-element
-          s_0))))))
+  (let ((string->path-element_0
+         (|#%name|
+          string->path-element
+          (lambda (s4_0 false-on-non-element?3_0)
+            (begin
+              (begin
+                (if (string? s4_0)
+                  (void)
+                  (raise-argument-error 'string->path-element "string?" s4_0))
+                (check-path-string 'string->path-element s4_0)
+                (do-bytes->path-element
+                 (string->path-bytes s4_0)
+                 (system-path-convention-type)
+                 'string->path-element
+                 s4_0
+                 false-on-non-element?3_0)))))))
+    (|#%name|
+     string->path-element
+     (case-lambda
+      ((s_0) (begin (string->path-element_0 s_0 #f)))
+      ((s_0 false-on-non-element?3_0)
+       (string->path-element_0 s_0 false-on-non-element?3_0))))))
 (define 1/bytes->path-element
   (let ((bytes->path-element_0
          (|#%name|
           bytes->path-element
-          (lambda (bstr4_0 convention3_0)
+          (lambda (bstr7_0 convention5_0 false-on-non-element?6_0)
             (begin
               (let ((convention_0
-                     (if (eq? convention3_0 unsafe-undefined)
+                     (if (eq? convention5_0 unsafe-undefined)
                        (system-path-convention-type)
-                       convention3_0)))
+                       convention5_0)))
                 (begin
-                  (if (bytes? bstr4_0)
+                  (if (bytes? bstr7_0)
                     (void)
                     (raise-argument-error
                      'bytes->path-element
                      "bytes?"
-                     bstr4_0))
+                     bstr7_0))
                   (check-convention 'bytes->path-element convention_0)
-                  (check-path-bytes 'bytes->path-element bstr4_0)
+                  (check-path-bytes 'bytes->path-element bstr7_0)
                   (do-bytes->path-element
-                   bstr4_0
+                   bstr7_0
                    convention_0
                    'bytes->path-element
-                   bstr4_0))))))))
+                   bstr7_0
+                   false-on-non-element?6_0))))))))
     (|#%name|
      bytes->path-element
      (case-lambda
-      ((bstr_0) (begin (bytes->path-element_0 bstr_0 unsafe-undefined)))
-      ((bstr_0 convention3_0) (bytes->path-element_0 bstr_0 convention3_0))))))
+      ((bstr_0) (begin (bytes->path-element_0 bstr_0 unsafe-undefined #f)))
+      ((bstr_0 convention_0 false-on-non-element?6_0)
+       (bytes->path-element_0 bstr_0 convention_0 false-on-non-element?6_0))
+      ((bstr_0 convention5_0)
+       (bytes->path-element_0 bstr_0 convention5_0 #f))))))
 (define path-element-clean.1
   (|#%name|
    path-element-clean
-   (lambda (try-quick?5_0 p7_0)
+   (lambda (try-quick?8_0 p10_0)
      (begin
-       (if (1/path? p7_0)
-         (let ((bstr_0 (path-bytes p7_0)))
-           (let ((convention_0 (path-convention p7_0)))
-             (if (let ((or-part_0 (not try-quick?5_0)))
+       (if (1/path? p10_0)
+         (let ((bstr_0 (path-bytes p10_0)))
+           (let ((convention_0 (path-convention p10_0)))
+             (if (let ((or-part_0 (not try-quick?8_0)))
                    (if or-part_0
                      or-part_0
                      (let ((or-part_1 (not (eq? convention_0 'unix))))
@@ -30825,7 +30837,7 @@
                             (args
                              (raise-binding-result-arity-error 4 args)))))))))
                (call-with-values
-                (lambda () (1/split-path p7_0))
+                (lambda () (1/split-path p10_0))
                 (case-lambda
                  ((base_0 name_0 dir?_0)
                   (if (symbol? base_0) (if (1/path? name_0) name_0 #f) #f))
@@ -30834,7 +30846,7 @@
          #f)))))
 (define path-element? (lambda (p_0) (if (path-element-clean.1 #t p_0) #t #f)))
 (define do-bytes->path-element
-  (lambda (bstr_0 convention_0 who_0 orig-arg_0)
+  (lambda (bstr_0 convention_0 who_0 orig-arg_0 false-on-non-element?_0)
     (let ((bad-element_0
            (|#%name|
             bad-element
@@ -30846,7 +30858,8 @@
                  "path"
                  orig-arg_0
                  "explanation"
-                 "path can be split, is not relative, or names a special element"))))))
+                 (unquoted-printing-string
+                  "path can be split, is not relative, or names a special element")))))))
       (begin
         (if (eq? 'windows convention_0)
           (if (call-with-values
@@ -30887,7 +30900,9 @@
                    (bytes->immutable-bytes bstr_0)
                    convention_0)
                   convention_0)))
-            (begin (if (path-element? p_0) (void) (bad-element_0)) p_0)))))))
+            (if (path-element? p_0)
+              p_0
+              (if false-on-non-element?_0 #f (bad-element_0)))))))))
 (define 1/path-element->string
   (|#%name|
    path-element->string

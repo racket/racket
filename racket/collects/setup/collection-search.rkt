@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/list
-         racket/string)
+         racket/string
+         racket/private/link-path)
 
 (provide collection-search
          normalized-lib-module-path?)
@@ -50,11 +51,11 @@
                                         (or (= (length e) 2)
                                             (and (= (length e) 3)
                                                  (regexp? (caddr e))))
-                                        (path-string? (cadr e))
+                                        (encoded-link-path? (cadr e))
                                         (or (null? (cddr e))
                                             (regexp-match? (caddr e) (version)))))
         (let ([a (car e)]
-              [p (path->complete-path (cadr e) links-dir)])
+              [p (path->complete-path (decode-link-path (cadr e)) links-dir)])
           (cond
            [(or (eq? 'root a)
                 (eq? 'static-root a))

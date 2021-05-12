@@ -912,7 +912,8 @@
          
          [bytes->path-element (if use-fs?
                                   bytes->path-element
-                                  (lambda (s) (bytes->path-element s kind)))])
+                                  (lambda (s [other-kind #f] [non-element-false? #f])
+                                    (bytes->path-element s kind non-element-false?)))])
     (test #t relative-path? (bytes->path #"./~"))
     (test (bytes->path #"~") bytes->path-element #"~")
     (test #"~" path-element->bytes (bytes->path #"~"))
@@ -929,6 +930,10 @@
     (err/rt-test (bytes->path-element #"x/y"))
     (err/rt-test (bytes->path-element #"/x"))
     (err/rt-test (bytes->path-element #"/"))
+    (err/rt-test (bytes->path-element #"_\0_"))
+    (test #f bytes->path-element #"x/y" (system-path-convention-type) #t)
+    (test #f bytes->path-element #"/" (system-path-convention-type) #t)
+    (err/rt-test (bytes->path-element #"_\0_" (system-path-convention-type) #t))
     (unless use-fs?
       (test (bytes->path #"~") simplify-path (bytes->path #"~") use-fs?)
       (test (bytes->path #"~/") simplify-path (bytes->path #"~/") use-fs?)
@@ -1015,6 +1020,13 @@
 
 (err/rt-test (bytes->path-element #""))
 (err/rt-test (string->path-element ""))
+(err/rt-test (string->path-element "a\0b"))
+
+(err/rt-test (bytes->path-element #"" (system-path-convention-type) #t))
+(err/rt-test (string->path-element "" (system-path-convention-type) #t))
+(err/rt-test (string->path-element "a\0b" #t))
+
+(test #f string->path-element "a/b" #t)
 
 (test #"\\\\?\\REL\\\\a/b" path->bytes (bytes->path-element #"a/b" 'windows))
 

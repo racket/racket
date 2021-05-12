@@ -77,19 +77,22 @@
   (check who path? #:contract "path-for-some-system?" p)
   (bytes-copy (path-bytes p)))
 
-(define/who (string->path-element s)
+(define/who (string->path-element s [false-on-non-element? #f])
   (check who string? s)
   (check-path-string who s)
   (do-bytes->path-element (string->path-bytes s)
                           (system-path-convention-type)
                           who
-                          s))
+                          s
+                          false-on-non-element?))
 
-(define/who (bytes->path-element bstr [convention (system-path-convention-type)])
+(define/who (bytes->path-element bstr
+                                 [convention (system-path-convention-type)]
+                                 [false-on-non-element? #f])
   (check who bytes? bstr)
   (check-convention who convention)
   (check-path-bytes who bstr)
-  (do-bytes->path-element bstr convention who bstr))
+  (do-bytes->path-element bstr convention who bstr false-on-non-element?))
 
 (define (path-element-clean p #:try-quick? [try-quick? #f])
   (cond
@@ -118,12 +121,13 @@
 (define (path-element? p)
   (and (path-element-clean p #:try-quick? #t) #t))
 
-(define (do-bytes->path-element bstr convention who orig-arg)
+(define (do-bytes->path-element bstr convention who orig-arg false-on-non-element?)
   (define (bad-element)
     (raise-arguments-error who
                            "cannot be converted to a path element"
                            "path" orig-arg
-                           "explanation" "path can be split, is not relative, or names a special element"))
+                           "explanation" (unquoted-printing-string
+                                          "path can be split, is not relative, or names a special element")))
   (when (eq? 'windows convention)
     ;; Make sure we don't call `protect-path-element` on a
     ;; byte string that contains a "\":
@@ -133,9 +137,10 @@
   (define len (bytes-length bstr))
   (define p (path (protect-path-element (bytes->immutable-bytes bstr) convention)
                   convention))
-  (unless (path-element? p)
-    (bad-element))
-  p)
+  (cond
+    [(path-element? p) p]
+    [false-on-non-element? #f]
+    [else (bad-element)]))
 
 (define/who (path-element->string p)
   (define clean-p (path-element-clean p))
