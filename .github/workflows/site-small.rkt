@@ -1,5 +1,5 @@
 #lang distro-build/config
-(require racket/format racket/runtime-path racket/string)
+(require racket/format racket/runtime-path racket/string racket/date)
 
 (define-runtime-path here ".")
 
@@ -9,10 +9,14 @@
   (case (current-mode)
     [("release") "release-build"]
     [else "build"]))
+
+(define (stamp)
+  (substring (or (getenv "GITHUB_SHA") "0000000000000") 0 10))
+
 (define (dest-dir-name)
   (case (current-mode)
     [("release") "ci-release"]
-    [else (~a (current-stamp))]))
+    [else (~a (stamp))]))
 
 (define server-base-url (~a "https://ci-snapshot.racket-lang.org/" (dest-dir-name) "/"))
 
@@ -42,9 +46,13 @@
    (machine #:name (~a name " | {3} Tarball")
             #:tgz? #t)))
 
+(define (dist-base minimal?)
+  (format (if minimal? "racket-minimal-~a" "racket-~a") (stamp)))
+
 (define (cs-machine #:name name #:pkgs [pkgs distro-content])
   (machine
-   #:dist-suffix (if (null? pkgs) "min" "")
+   #:dist-base (dist-base (null? pkgs))
+   #:dist-suffix ""
    #:j 2
    #:log-file (convert-log-name name)
    #:name name
@@ -60,7 +68,8 @@
    #:repo source-dir
    #:pull? #f
    ;; this is just usual configuration (mirrored for cs-machine)
-   #:dist-suffix (if (null? pkgs) "min-bc" "bc")
+   #:dist-base (dist-base (null? pkgs))
+   #:dist-suffix ""
    #:j 2
    #:log-file (convert-log-name name)
    #:name name
@@ -75,8 +84,8 @@
  #:dist-base-url server-base-url
  #:site-dest (build-path (or (getenv "DISTRO_BUILD_SITE_DEST") "/tmp/racket-snapshots/") (dest-dir-name))
  #:plt-web-style? #t
- #:site-title (format "Snapshot: ~a" (current-stamp))
- #:build-stamp (substring (or (getenv "GITHUB_SHA") "0000000000000") 0 10)
+ #:site-title (format "Snapshot: ~a ~a" (stamp) (parameterize ([date-display-format 'iso-8601]) (date->string (current-date))))
+ #:build-stamp (stamp)
  #:fail-on-client-failures #f
  (sequential
   (bc-machine #:name "Racket BC (Ubuntu 18.04, x86_64)")
