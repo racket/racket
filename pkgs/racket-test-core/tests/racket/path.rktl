@@ -1026,7 +1026,10 @@
 (err/rt-test (string->path-element "" (system-path-convention-type) #t))
 (err/rt-test (string->path-element "a\0b" #t))
 
-(test #f string->path-element "a/b" #t)
+(test (bytes->path #"\\\\?\\REL\\\\a/b") bytes->path-element #"a/b" 'windows #t)
+(if (eq? 'windows (system-path-convention-type))
+    (test (bytes->path #"\\\\?\\REL\\\\a/b") string->path-element "a/b" #t)
+    (test #f string->path-element "a/b" #t))
 
 (test #"\\\\?\\REL\\\\a/b" path->bytes (bytes->path-element #"a/b" 'windows))
 
