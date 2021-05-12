@@ -2,6 +2,9 @@ name: LLVM Static Analysis
 
 on: push
 
+permissions:
+  security-events: write
+
 jobs:
 
 #
