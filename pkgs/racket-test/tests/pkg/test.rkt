@@ -67,7 +67,8 @@
 
 (module+ test
   (module config info
-    (define timeout 3000))
+    (define timeout 3000)
+    (define lock-name "pkg-test"))
   (go))
 
 (module+ main
