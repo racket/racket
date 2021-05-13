@@ -57,6 +57,8 @@
    #:pkgs pkgs
    #:timeout (* 60 60 (if (null? pkgs) 1/2 2)) ;; 2 hours for the full build
    #:variant 'cs
+   #:dist-vm-suffix "cs"
+   #:dist-aliases '((#f #f ""))
    (machine/sh+tgz #:name name)))
 
 (define (bc-machine #:name name #:pkgs [pkgs distro-content])
@@ -72,6 +74,7 @@
    #:pkgs pkgs
    #:timeout (* 60 60 (if (null? pkgs) 1/2 2)) ;; 2 hours for the full build
    #:variant 'bc
+   #:dist-vm-suffix "bc"
    (machine/sh+tgz #:name name)))
 
 ;; The overall configuration:
