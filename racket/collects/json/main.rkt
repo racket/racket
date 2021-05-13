@@ -466,17 +466,16 @@
       [else (bad-input)]))
   ;;
   (define (bad-input [prefix #""] #:eof? [eof? #f])
-    (define bstr (make-bytes (sub1 (error-print-width))))
-    (define bytes-read (peek-bytes-avail! bstr 0 #f i))
-    (if (or (and (eof-object? bytes-read) (equal? prefix #""))
+    (define bstr (peek-bytes (sub1 (error-print-width)) 0 i))
+    (if (or (and (eof-object? bstr) (equal? prefix #""))
             eof?)
         (err (string-append "unexpected end-of-file"
                             (if (equal? prefix #"")
                                 ""
                                 (format "after ~e" prefix))))
-        (err (format "bad input starting ~e" (bytes-append prefix (if (number? bytes-read)
-                                                                      (subbytes bstr 0 bytes-read)
-                                                                      #""))))))
+        (err (format "bad input starting ~e" (bytes-append prefix (if (eof-object? bstr)
+                                                                      #""
+                                                                      bstr))))))
   ;;
   (read-json #t))
 

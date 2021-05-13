@@ -199,12 +199,6 @@
         (string->jsexpr @T{ falsetto }) =error> "string->jsexpr:"
         (string->jsexpr @T{ nullity }) =error> "string->jsexpr:"
         (string->jsexpr @T{ nulliparous }) =error> "string->jsexpr:"
-        (let ()
-          (define-values (in out) (make-pipe))
-          (display "started" out)
-          (flush-output out)
-          (read-json in))
-        =error> #rx"read-json: bad input starting #\"started\""
         ))
 
 (test do (pred-tests)
