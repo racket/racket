@@ -29,7 +29,8 @@
   #:property prop:equal+hash
   (list
    (lambda (p1 p2 eql?)
-     (eql? (path-bytes p1) (path-bytes p2)))
+     (and (eql? (path-bytes p1) (path-bytes p2))
+          (eq? (path-convention p1) (path-convention p2))))
    (lambda (p hc)
      (hc (path-bytes p)))
    (lambda (p hc)

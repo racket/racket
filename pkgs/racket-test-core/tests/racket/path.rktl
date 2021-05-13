@@ -12,6 +12,10 @@
 (test #t path<? (bytes->path #"a") (bytes->path #"aa"))
 (test #f path<? (bytes->path #"aa") (bytes->path #"a"))
 
+(test #f equal? (bytes->path #"a" 'unix) (bytes->path #"a" 'windows))
+(test #t equal? (bytes->path #"a" 'unix) (bytes->path #"a" 'unix))
+(test #t equal? (bytes->path #"a" 'windows) (bytes->path #"a" 'windows))
+
 (define (test-basic-extension path-replace-extension
                               path-add-extension)
   (test (string->path "x.zo") path-replace-extension "x.rkt" ".zo")
@@ -1026,7 +1030,7 @@
 (err/rt-test (string->path-element "" (system-path-convention-type) #t))
 (err/rt-test (string->path-element "a\0b" #t))
 
-(test (bytes->path #"\\\\?\\REL\\\\a/b") bytes->path-element #"a/b" 'windows #t)
+(test (bytes->path #"\\\\?\\REL\\\\a/b" 'windows) bytes->path-element #"a/b" 'windows #t)
 (if (eq? 'windows (system-path-convention-type))
     (test (bytes->path #"\\\\?\\REL\\\\a/b") string->path-element "a/b" #t)
     (test #f string->path-element "a/b" #t))

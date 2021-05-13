@@ -17136,7 +17136,7 @@
        (bytes->string/locale_0 in-bstr_0 err-char_0 start6_0 unsafe-undefined))
       ((in-bstr_0 err-char5_0)
        (bytes->string/locale_0 in-bstr_0 err-char5_0 0 unsafe-undefined))))))
-(define finish_2714
+(define finish_2294
   (make-struct-type-install-properties
    '(path)
    2
@@ -17148,8 +17148,11 @@
      prop:equal+hash
      (list
       (lambda (p1_0 p2_0 eql?_0)
-        (let ((app_0 (path-bytes p1_0)))
-          (|#%app| eql?_0 app_0 (path-bytes p2_0))))
+        (if (let ((app_0 (path-bytes p1_0)))
+              (|#%app| eql?_0 app_0 (path-bytes p2_0)))
+          (let ((app_0 (path-convention p1_0)))
+            (eq? app_0 (path-convention p2_0)))
+          #f))
       (lambda (p_0 hc_0) (|#%app| hc_0 (path-bytes p_0)))
       (lambda (p_0 hc_0) (|#%app| hc_0 (path-bytes p_0)))))
     (cons
@@ -17182,7 +17185,7 @@
    #f
    2
    0))
-(define effect_2995 (finish_2714 struct:path))
+(define effect_2995 (finish_2294 struct:path))
 (define path1.1
   (|#%name|
    path
@@ -34395,11 +34398,11 @@
                 'subprocess
                 "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                 stderr_0))
-             (let ((lr1323 unsafe-undefined)
+             (let ((lr1324 unsafe-undefined)
                    (group_0 unsafe-undefined)
                    (command_0 unsafe-undefined)
                    (exact/args_0 unsafe-undefined))
-               (set! lr1323
+               (set! lr1324
                  (call-with-values
                   (lambda ()
                     (if (path-string? group/command_0)
@@ -34454,9 +34457,9 @@
                    ((group_1 command_1 exact/args_1)
                     (vector group_1 command_1 exact/args_1))
                    (args (raise-binding-result-arity-error 3 args)))))
-               (set! group_0 (unsafe-vector*-ref lr1323 0))
-               (set! command_0 (unsafe-vector*-ref lr1323 1))
-               (set! exact/args_0 (unsafe-vector*-ref lr1323 2))
+               (set! group_0 (unsafe-vector*-ref lr1324 0))
+               (set! command_0 (unsafe-vector*-ref lr1324 1))
+               (set! exact/args_0 (unsafe-vector*-ref lr1324 2))
                (call-with-values
                 (lambda ()
                   (if (if (pair? exact/args_0)
