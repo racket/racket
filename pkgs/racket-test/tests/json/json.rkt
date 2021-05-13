@@ -2,8 +2,8 @@
 
 ;; Mathias, added test for contracts on read-json
 
-(require json racket/string tests/eli-tester)
-(require racket/port)
+(require json racket/string tests/eli-tester
+         racket/port racket/contract)
 
 (define T string-append)
 
@@ -199,8 +199,330 @@
         (string->jsexpr @T{ falsetto }) =error> "string->jsexpr:"
         (string->jsexpr @T{ nullity }) =error> "string->jsexpr:"
         (string->jsexpr @T{ nulliparous }) =error> "string->jsexpr:"
+
+
+        ;; test cases to see if the trailing eof is consumed -- the rule
+        ;; used to formulate these test cases is that an eof should be
+        ;; consumed if and only if
+        ;;  - eof is the entire thing in the stream (and thus it is returned), or
+        ;;  - the eof triggered an error (ie the json object isn't complete)
+        (let ([p (port-with-particulars (list #"1" eof #"a"))])
+          (list (read-json p)
+                (flush-data p)))
+        => (list 1 (list eof 97))
+
+        (let ([p (port-with-particulars (list eof #"a"))])
+          (list (read-json p)
+                (flush-data p)))
+        =>
+        (list eof (list 97))
+
+        (let ([p (port-with-particulars (list eof eof #"a"))])
+          (list (read-json p)
+                (flush-data p)))
+        =>
+        (list eof (list eof 97))
+
+        (let ([p (port-with-particulars (list eof eof #"a"))])
+          (list (read-json p)
+                (read-json p)
+                (flush-data p)))
+        =>
+        (list eof eof (list 97))
+
+        (let ([p (port-with-particulars (list #"\"1\"" eof eof #"a"))])
+          (list (read-json p)
+                (flush-data p)))
+        => (list "1" (list eof eof 97))
+
+        (let ([p (port-with-particulars (list #"\"1" eof eof #"a"))])
+          (list (read-json/swallow-error p)
+                (flush-data p)))
+        => (list 'exn (list eof 97))
+
+        (let ([p (port-with-particulars (list #"[1, 2]" eof eof #"a"))])
+          (list (read-json p)
+                (flush-data p)))
+        => (list (list 1 2) (list eof eof 97))
+
+        (let ([p (port-with-particulars (list #"[1, 2" eof eof #"a"))])
+          (list (read-json/swallow-error p)
+                (flush-data p)))
+        => (list 'exn (list eof 97))
+
+        (let ([p (port-with-particulars (list #"[1," eof eof #"a"))])
+          (list (read-json/swallow-error p)
+                (flush-data p)))
+        => (list 'exn (list eof 97))
+
+        (let ([p (port-with-particulars (list #"{ \"x\":  11 }" eof eof #"a"))])
+          (list (read-json p)
+                (flush-data p)))
+        => (list (hasheq 'x 11) (list eof eof 97))
+
+        (let ([p (port-with-particulars (list #"{ \"x\":  11 " eof eof #"a"))])
+          (list (read-json/swallow-error p)
+                (flush-data p)))
+        => (list 'exn (list eof 97))
+
+        (let ([p (port-with-particulars (list #"{ \"x\" " eof eof #"a"))])
+          (list (read-json/swallow-error p)
+                (flush-data p)))
+        => (list 'exn (list eof 97))
+
+        (let ([p (port-with-particulars (list #"{ \"x\" : " eof eof #"a"))])
+          (list (read-json/swallow-error p)
+                (flush-data p)))
+        => (list 'exn (list eof 97))
+
+        (let ([p (port-with-particulars (list #"{  " eof eof #"a"))])
+          (list (read-json/swallow-error p)
+                (flush-data p)))
+        => (list 'exn (list eof 97))
+
+        (let ([p (port-with-particulars (list #"{" eof eof #"a"))])
+          (list (read-json/swallow-error p)
+                (flush-data p)))
+        => (list 'exn (list eof 97))
+
+        (let ([p (port-with-particulars (list #"true" eof eof #"a"))])
+          (list (read-json p)
+                (flush-data p)))
+        => (list #t (list eof eof 97))
+
+        (let ([p (port-with-particulars (list #"false" eof eof #"a"))])
+          (list (read-json p)
+                (flush-data p)))
+        => (list #f (list eof eof 97))
+
+        (let ([p (port-with-particulars (list #"null" eof eof #"a"))])
+          (list (read-json p)
+                (flush-data p)))
+        => (list 'null (list eof eof 97))
+
+        ;; tests to make sure read-json doesn't hang when the
+        ;; input is already enough to be sure we're doomed
+        (read-json (port-with-particulars #"started"))
+        =error> #rx"read-json: bad input starting #\"started\""
+
+        (read-json (port-with-particulars #"try"))
+        =error> #rx"read-json: bad input starting #\"try\""
+
+        (read-json (port-with-particulars #"falz"))
+        =error> #rx"read-json: bad input starting #\"falz\""
+
+        (read-json (port-with-particulars #"noll"))
+        =error> #rx"read-json: bad input starting #\"noll\""
+
         ))
 
-(test do (pred-tests)
+(module port-with-particulars racket/base
+  (require tests/eli-tester racket/contract)
+  (provide
+   (contract-out
+    [port-with-particulars
+     ;; produces a port that produces the data in `data`
+     ;; taking special care to return exactly the given `eof`s.
+     ;; When we run out of data, the port just blocks forever.
+     ;; NB: this port doesn't work if accessed from multiple threads
+     (-> (flat-rec-contract data (or/c (cons/c data data) '() bytes? eof-object?))
+         (and/c input-port?
+                port-with-particulars?))]
+    [flush-data
+     ;; get the remaining data in the port in a convenient form for test cases
+     (-> port-with-particulars? (listof (or/c byte? eof-object?)))]))
+
+  (struct port-with-particulars (port get-remaining-data)
+    #:property prop:input-port 0
+    #:constructor-name make-port-with-particulars
+    #:name make-port-with-particulars)
+
+  (define (flush-data p)
+    ((port-with-particulars-get-remaining-data p)))
+
+  (define (port-with-particulars data)
+
+    (define this data)
+    (define next #f)
+
+    (define (get-next #:peek? [peek? #f])
+      (let loop ()
+        (cond
+          [(and (not this) (not next))
+           #f]
+          [(pair? this)
+           (cond
+             [(or (eof-object? (car this))
+                  (byte? (car this)))
+              (define ans (car this))
+              (set! this (cdr this))
+              ans]
+             [(or (not (car this)) (null? (car this)))
+              (set! this (cdr this))
+              (loop)]
+             [else
+              (set! next (cons (cdr this) next))
+              (set! this (car this))
+              (loop)])]
+          [(or (eof-object? this) (byte? this))
+           (begin0 this
+                   (set! this next)
+                   (set! next #f))]
+          [(or (null? this) (not this))
+           (set! this next)
+           (set! next #f)
+           (loop)]
+          [(bytes? this)
+           (set! this (bytes->list this))
+           (loop)]
+          [else (error 'next "internal error ~s" this)])))
+
+    (define (read-in bts)
+      (define byte (get-next))
+      (cond
+        [(not byte) never-evt]
+        [(eof-object? byte) byte]
+        [else
+         (bytes-set! bts 0 byte)
+         1]))
+
+    (define (peek bts i evt)
+      (define hit-eof? #f)
+      (define hit-end-of-data? #f)
+      (define skipped
+        (let loop ([i i])
+          (cond
+            [(zero? i) '()]
+            [else
+             (define n (get-next))
+             (cond
+               [(not n)
+                (set! hit-end-of-data? #t)
+                '()]
+               [(eof-object? n)
+                (set! hit-eof? #t)
+                (cons eof '())]
+               [else (cons n (loop (- i 1)))])])))
+      (cond
+        [hit-end-of-data?
+         (set! next (cons this next))
+         (set! this skipped)
+         never-evt]
+        [hit-eof?
+         (set! next (cons this next))
+         (set! this skipped)
+         eof]
+        [else
+         (let loop ([bytes-peeked 0]
+                    [to-restore '()])
+           (cond
+             [(< bytes-peeked (bytes-length bts))
+              (define peeked (get-next))
+              (cond
+                [(not peeked)
+                 ;; skipped, (reverse to-restore), this, next is the
+                 ;; right order to restore, but since we ran out of data,
+                 ;; both this and next are #f right now.
+                 (set! this (list skipped (reverse to-restore)))
+                 (set! next #f)
+                 (if (= bytes-peeked 0)
+                     never-evt
+                     bytes-peeked)]
+                [(eof-object? peeked)
+                 ;; skipped, (reverse to-restore), peeked, this, next
+                 ;; is the right order, just use `this` to put them back
+                 (set! this (list skipped (reverse to-restore) peeked this))
+                 (if (= bytes-peeked 0)
+                     eof
+                     bytes-peeked)]
+                [else
+                 (bytes-set! bts bytes-peeked peeked)
+                 (loop (+ bytes-peeked 1) (cons peeked to-restore))])]
+             [else
+              ;; skipped, (reverse to-restore), this, next
+              ;; is the right order, just use `this` to put them back
+              (set! this (list skipped (reverse to-restore) this))
+              bytes-peeked]))]))
+
+    (define (get-remaining-data)
+      (let loop ()
+        (define next (get-next))
+        (cond
+          [(not next) '()]
+          [else (cons next (loop))])))
+
+    (make-port-with-particulars
+     (make-input-port
+      (format "port-with-particulars: ~s" data)
+      read-in
+      peek
+      void)
+     get-remaining-data)))
+
+
+(require 'port-with-particulars)
+(define (port-with-particulars-tests)
+  (test (port->bytes (port-with-particulars (cons #"abc" eof))) => #"abc"
+        (port->bytes (port-with-particulars (cons (cons #"a" #"bc") eof))) => #"abc"
+        (port->bytes (port-with-particulars (cons (list #"a" #"" #"b" #"")
+                                                  (list #"c" #"" eof))))
+        => #"abc"
+        (port->bytes (port-with-particulars (cons #"a" (cons #"bc" eof)))) => #"abc"
+        (let ([p (port-with-particulars (list #"abc" eof #"def" eof))])
+          (list (port->bytes p)
+                (port->bytes p)))
+        => (list #"abc" #"def")
+        (let ([p (port-with-particulars (cons #"a" (cons #"bc" eof)))])
+          (read-byte p)
+          (flush-data p))
+        =>
+        (cons 98 (cons 99 (cons eof '())))
+
+        (let ([p (port-with-particulars (list eof eof))])
+          (list (peek-char p)
+                (flush-data p)))
+        =>
+        (list eof (list eof eof))
+
+        (let ([p (port-with-particulars (list #"abc" eof #"def"))])
+          (define p2 (peeking-input-port p))
+          (list (read-char p2)
+                (read-char p2)
+                (read-char p2)
+                (read-char p2)
+                (read-char p2)
+                (flush-data p)))
+        =>
+        (list #\a #\b #\c eof eof
+              (list 97 98 99 eof 100 101 102))
+
+        (let ([p (port-with-particulars (list (cons #"a" #"b") (cons #"c" eof) #"def"))])
+          (define p2 (peeking-input-port p))
+          (list (read-char p2)
+                (read-char p2)
+                (read-char p2)
+                (read-char p2)
+                (read-char p2)
+                (flush-data p)))
+        =>
+        (list #\a #\b #\c eof eof
+              (list 97 98 99 eof 100 101 102))
+
+        (let ([p (port-with-particulars (list (cons #"a" #"b") (cons #"c" eof) #"def"))])
+          (define b (make-bytes 5))
+          (peek-bytes-avail! b 0 #f p)
+          b)
+        =>
+        #"abc\0\0"))
+
+(define (read-json/swallow-error p)
+  (with-handlers ([(λ (x) (and (exn:fail:read? x)
+                               (regexp-match #rx"^[^\n]*read-json:" (exn-message x))))
+                   (λ (x) 'exn)])
+    (read-json p)
+    (error 'read-json/swallow-error "did not raise an error")))
+
+(test do (port-with-particulars-tests)
+      do (pred-tests)
       do (print-tests)
       do (parse-tests))

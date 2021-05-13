@@ -307,13 +307,18 @@
                           (reverse l)]
            [(eqv? ch #\,) (read-byte i)
                           (loop (cons (read-one) l))]
-           [else (err "error while parsing a json ~a" what)]))]))
+           [else
+            (read-byte i) ;; consume the eof
+            (err "error while parsing a json ~a" what)]))]))
   ;;
   (define (read-hash)
     (define (read-pair)
       (define k (read-json))
       (unless (string? k) (err "non-string value used for json object key"))
       (define ch (skip-whitespace))
+      (when (eof-object? ch)
+        (read-byte i) ;; consume the eof
+        (err "unexpected end-of-file while parsing a json object pair"))
       (unless (char=? #\: ch)
         (err "error while parsing a json object pair"))
       (read-byte i)
@@ -447,6 +452,7 @@
     (define ch (skip-whitespace))
     (cond
       [(eof-object? ch)
+       (read-byte i) ;; consume the eof
        (if top?
            eof
            (bad-input))]
@@ -466,16 +472,17 @@
       [else (bad-input)]))
   ;;
   (define (bad-input [prefix #""] #:eof? [eof? #f])
-    (define bstr (peek-bytes (sub1 (error-print-width)) 0 i))
-    (if (or (and (eof-object? bstr) (equal? prefix #""))
+    (define bstr (make-bytes (sub1 (error-print-width))))
+    (define bytes-read (peek-bytes-avail!* bstr 0 #f i))
+    (if (or (and (eof-object? bytes-read) (equal? prefix #""))
             eof?)
         (err (string-append "unexpected end-of-file"
                             (if (equal? prefix #"")
                                 ""
                                 (format "after ~e" prefix))))
-        (err (format "bad input starting ~e" (bytes-append prefix (if (eof-object? bstr)
-                                                                      #""
-                                                                      bstr))))))
+        (err (format "bad input starting ~e" (bytes-append prefix (if (number? bytes-read)
+                                                                      (subbytes bstr 0 bytes-read)
+                                                                      #""))))))
   ;;
   (read-json #t))
 
