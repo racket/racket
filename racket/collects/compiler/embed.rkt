@@ -1321,7 +1321,9 @@
                                                            (let ([p (cond
                                                                      [(bytes? p) (bytes->path p)]
                                                                      [(so-spec? p)
-								      (define path (so-find p))
+								      (define path (so-find p
+                                                                                            (cross-system-type 'so-suffix)
+                                                                                            (get-cross-lib-search-dirs)))
 								      (cond
 									[(and path embedded-dlls-box)
 									 (set-box! embedded-dlls-box (cons path (unbox embedded-dlls-box)))

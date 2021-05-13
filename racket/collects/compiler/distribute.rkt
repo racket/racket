@@ -446,10 +446,9 @@
                                                 (loop (cdr exts) (inc-counter counter))])
                                     (values (if src
                                                 (cons (transform-entry
-                                                       (path->bytes 
-                                                        (relative->binary-relative (car sub-dirs) 
-                                                                                   (car types)
-                                                                                   (build-path relative-exts-dir sub dest)))
+                                                       (relative->binary-relative (car sub-dirs) 
+                                                                                  (car types)
+                                                                                  (build-path relative-exts-dir sub dest))
                                                        (car exts))
                                                       rest-exts)
                                                 (cons (car exts)
@@ -495,7 +494,7 @@
                                  name))
                              ;; transform-entry
                              (lambda (new-path ext)
-                               (list new-path (cadr ext)))
+                               (list (path->cross-bytes new-path) (cadr ext)))
                              0 add1 ; <- counter
                              orig-binaries binaries types sub-dirs 
                              exts-dir relative-exts-dir
@@ -619,7 +618,7 @@
                                            (set! exploded (cdr exploded)))))
                                    ;; transform-entry
                                    (lambda (new-path ext)
-                                     (cons (car ext) (list new-path)))
+                                     (cons (car ext) (list (path->cross-bytes new-path))))
                                    "rt" values ; <- counter
                                    orig-binaries binaries types sub-dirs 
                                    exts-dir relative-exts-dir
@@ -635,6 +634,28 @@
     (if (string? s)
 	(string->path s)
 	s))
+
+  (define (path->cross-bytes p)
+    (define cross-convention
+      ;; it would be nice to have `cross-system-path-convention`:
+      (case (cross-system-type)
+        [(windows) 'windows]
+        [else 'unix]))
+    (cond
+      [(eq? cross-convention (system-path-convention-type)) (path->bytes p)]
+      [else
+       (let loop ([p p] [accum '()])
+         (define-values (base name dir?) (split-path p))
+         (define new-accum (cons (if (path? name)
+                                     (bytes->path-element (path-element->bytes name)
+                                                          cross-convention)
+                                     name)
+                                 accum))
+         (cond
+           [(eq? base 'relative) (path->bytes (apply build-path/convention-type
+                                                     cross-convention
+                                                     new-accum))]
+           [else (loop base new-accum)]))]))
 
   (define (get-binary-type b)
     ;; Since this is called first, we also check that the executable

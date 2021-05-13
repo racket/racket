@@ -25,13 +25,15 @@
           (build-path base name)
           name))))
 
-(define (so-find p)
+(define (so-find p
+                 [so-suffix (system-type 'so-suffix)]
+                 [lib-search-dirs (get-lib-search-dirs)])
   (let ([verss (cons 'no-suffix
                      (if (= (length p) 3)
                          (let ([s (caddr p)])
                            (if (list? s) s (list s)))
                          '(#f)))]
-        [suffix-before-version? (not (equal? (system-type 'so-suffix)
+        [suffix-before-version? (not (equal? so-suffix
                                              #".dylib"))])
     (ormap (lambda (dir)
              (ormap (lambda (vers)
@@ -40,16 +42,16 @@
                                    (path-extra-suffix (cadr p)
                                                       (if (string? vers)
                                                           (if suffix-before-version?
-                                                              (bytes-append (system-type 'so-suffix)
+                                                              (bytes-append so-suffix
                                                                             #"."
                                                                             (string->bytes/utf-8 vers))
                                                               (bytes-append #"."
                                                                             (string->bytes/utf-8 vers)
-                                                                            (system-type 'so-suffix)))
-                                                          (system-type 'so-suffix))))])
+                                                                            so-suffix))
+                                                          so-suffix)))])
                         (let ([p (build-path dir f)])
                           (and (or (file-exists? p)
                                    (directory-exists? p))
                                p))))
                     verss))
-           (get-lib-search-dirs))))
+           lib-search-dirs)))
