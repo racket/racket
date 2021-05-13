@@ -24,7 +24,8 @@ written.
                                                       procedure?
                                                       evt?
                                                       #f))
-                                 input-port?)]
+                                 input-port?
+                                 #f)]
                           [close (-> any)]
                           [get-progress-evt (or/c (-> evt?) #f) #f]
                           [commit (or/c (exact-positive-integer? evt? evt? . -> . any)
@@ -198,14 +199,19 @@ The arguments implement the port as follows:
     The skip count provided to @racket[peek] is a number of bytes (or
     @elemref["special"]{specials}) that must remain present in the
     port---in addition to the peek results---when the peek results are
-    reported. If a progress event is supplied, then the peek is
+    reported. If the skip count requests reading data that is past an eof,
+    it should not, and instead produce @racket[eof] (until the eof is
+    consumed).
+
+    If a progress event is supplied, then the peek is
     effectively canceled when another process reads data before the
     given number can be skipped. If a progress event is not supplied
     and data is read, then the peek must effectively restart with the
     original skip count.
 
     The system does not check that multiple peeks return consistent
-    results, or that peeking and reading produce consistent results.
+    results, or that peeking and reading produce consistent results,
+    although they must.
 
     If @racket[peek] is @racket[#f], then peeking for the port is
     implemented automatically in terms of reads, but with several
