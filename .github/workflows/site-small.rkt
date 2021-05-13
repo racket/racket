@@ -47,36 +47,32 @@
             #:tgz? #t)))
 
 (define (dist-base minimal?)
-  (format (if minimal? "racket-minimal-~a" "racket-~a") (stamp)))
+  (if minimal? "racket-minimal" "racket"))
 
 (define (cs-machine #:name name #:pkgs [pkgs distro-content])
-  (machine
+  (sequential
    #:dist-base (dist-base (null? pkgs))
-   #:dist-suffix ""
    #:j 2
    #:log-file (convert-log-name name)
-   #:name name
    #:pkgs pkgs
    #:timeout (* 60 60 (if (null? pkgs) 1/2 2)) ;; 2 hours for the full build
    #:variant 'cs
-   #:versionless? #t))
+   (machine/sh+tgz #:name name)))
 
 (define (bc-machine #:name name #:pkgs [pkgs distro-content])
-  (machine
+  (sequential
    ;; these three lines are because it's the non-default build
    #:dir "bc-build"
    #:repo source-dir
    #:pull? #f
    ;; this is just usual configuration (mirrored for cs-machine)
    #:dist-base (dist-base (null? pkgs))
-   #:dist-suffix ""
    #:j 2
    #:log-file (convert-log-name name)
-   #:name name
    #:pkgs pkgs
    #:timeout (* 60 60 (if (null? pkgs) 1/2 2)) ;; 2 hours for the full build
    #:variant 'bc
-   #:versionless? #t))
+   (machine/sh+tgz #:name name)))
 
 ;; The overall configuration:
 (sequential
@@ -87,6 +83,8 @@
  #:site-title (format "Snapshot: ~a ~a" (stamp) (parameterize ([date-display-format 'iso-8601]) (date->string (current-date))))
  #:build-stamp (stamp)
  #:fail-on-client-failures #f
+ #:dist-base-version (stamp)
+ #:dist-suffix ""
  (sequential
   (bc-machine #:name "Racket BC (Ubuntu 18.04, x86_64)")
   (bc-machine #:name "Minimal Racket BC (Ubuntu 18.04, x86_64)" #:pkgs null))
