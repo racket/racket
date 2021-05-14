@@ -17,16 +17,19 @@
          osx-old-openssl?)
 
 (define (osx-old-openssl?)
-  (and (eq? 'macosx (system-type))
+  (and (or (eq? 'macosx (system-type))
+           (eq? 'darwin (system-type 'os*)))
        (not (eq? 'ppc (system-type 'arch))) ; Mac OS 10.5 is too old for this to work?
        (or (not ssl-available?)
            (not (memq 'tls12 (supported-client-protocols))))))
 
 (define cf-lib
-  (and (eq? 'macosx (system-type))
+  (and (or (eq? 'macosx (system-type))
+           (eq? 'darwin (system-type 'os*)))
        (ffi-lib "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")))
 (define net-lib
-  (and (eq? 'macosx (system-type))
+  (and (or (eq? 'macosx (system-type))
+           (eq? 'darwin (system-type 'os*)))
        (ffi-lib
         "/System/Library/Frameworks/CFNetwork.framework/CFNetwork"
         #:fail (lambda ()

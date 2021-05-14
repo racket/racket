@@ -1511,9 +1511,7 @@
                              (let ([m (assq 'original-exe? aux)])
                                (or (not m)
                                    (not (cdr m))))))
-  (define long-cmdline? (or (eq? (cross-system-type) 'windows)
-                            (eq? (cross-system-type) 'macosx)
-                            unix-starter?))
+  (define long-cmdline? #t)
   (define relative? (let ([m (assq 'relative? aux)])
                       (and m (cdr m))))
   (define collects-path-bytes (collects-path->bytes 
@@ -1762,15 +1760,18 @@
 				new-rsrcs))
 			  (update-resources dest-exe pe new+dll-rsrcs)
                           (values 0 decl-len init-len (+ init-len cmdline-len))]
-                         [(and (eq? (cross-system-type) 'macosx)
-                               (not unix-starter?))
+                         [(memq (cross-system-type 'os*) '(macosx darwin))
                           ;; For Mach-O, we know how to add a proper segment
+                          (remove-signature dest-exe) ; may be needed in 'darwin mode
                           (define s (open-output-bytes))
                           (define decl-len (write-module s))
                           (let* ([s (get-output-bytes s)]
                                  [cl (let ([o (open-output-bytes)])
                                        ;; position is relative to __PLTSCHEME:
-                                       (write-cmdline (make-full-cmdline 0 decl-len (bytes-length s)) o)
+                                       (let ([cmdline (make-full-cmdline 0 decl-len (bytes-length s))])
+                                         (cond
+                                           [unix-starter? (display (make-starter-cmdline cmdline) o)]
+                                           [else (write-cmdline cmdline o)]))
                                        (get-output-bytes o))])
                             (let ([start (add-plt-segment 
                                           dest-exe 
@@ -1783,28 +1784,25 @@
                                         (+ start (bytes-length s))
                                         (+ start (bytes-length s) (bytes-length cl))))))]
                          [else
-                          ;; Unix starter: Maybe ELF, in which case we 
+                          ;; Unix starter or direct embedding: Maybe ELF, in which case we 
                           ;; can add a proper section
                           (define-values (s e dl p)
-                            (if unix-starter?
-                                (add-racket-section 
-                                 orig-exe 
-                                 dest-exe
-                                 (if launcher? #".rackcmdl" #".rackprog")
-                                 (lambda (start)
-                                   (let ([s (open-output-bytes)])
-                                     (define decl-len (write-module s))
-                                     (let ([p (file-position s)])
-                                       (display (make-starter-cmdline
-                                                 (make-full-cmdline start 
-                                                                    (+ start decl-len)
-                                                                    (+ start p)))
-                                                s)
-                                       (values (get-output-bytes s) decl-len p)))))
-                                (values #f #f #f #f)))
+                            (add-racket-section 
+                             orig-exe 
+                             dest-exe
+                             #".rackprog"
+                             (lambda (start)
+                               (let ([s (open-output-bytes)])
+                                 (define decl-len (write-module s))
+                                 (let ([p (file-position s)])
+				   (let ([cmdline (make-full-cmdline 0 decl-len p)])
+				     (cond
+				      [unix-starter? (display (make-starter-cmdline cmdline) s)]
+				      [else (write-cmdline cmdline s)]))
+                                   (values (get-output-bytes s) decl-len p))))))
                           (if (and s e)
-                             ;; ELF succeeded:
-                             (values s (+ s dl) (+ s p) e)
+                             ;; ELF succeeded, so make values relative to start:
+                             (values 0 dl p (- e s))
                              ;; Otherwise, just add to the end of the file:
                              (let ([start (file-size dest-exe)])
                                (define decl-end
@@ -1849,11 +1847,11 @@
                                                      "exeuctable type"
                                                      #"bINARy tYPe:"))))]
                          [cmdline (if cmdline-end
-					  #f
-					  (make-starter-cmdline full-cmdline))]
+                                      #f
+                                      (make-starter-cmdline full-cmdline))]
                          [out (open-output-file dest-exe #:exists 'update)])
                      (let ([old-cmdline-end cmdline-end]
-			       [cmdline-end (or cmdline-end (+ end (bytes-length cmdline)))]
+                           [cmdline-end (or cmdline-end (+ end (bytes-length cmdline)))]
                            [write-num (lambda (n)
                                         (write-bytes (integer->integer-bytes n 4 #t #f) out))])
                        (dynamic-wind
@@ -1879,10 +1877,10 @@
                           (write-num (length full-cmdline))
                           (write-num (if mred? 1 0))
                           (flush-output out)
-			      (unless old-cmdline-end
-				(file-position out end)
-				(write-bytes cmdline out)
-				(flush-output out)))
+                          (unless old-cmdline-end
+                            (file-position out end)
+                            (write-bytes cmdline out)
+                            (flush-output out)))
                         (lambda ()
                           (close-output-port out)))))]
                   [else
@@ -1936,7 +1934,7 @@
                                    (assq 'subsystem aux))])
                        (when m
                          (set-subsystem dest-exe (cdr m)))))]))))
-          (when (eq? (cross-system-type) 'macosx)
+          (when (memq (cross-system-type 'os*) '(macosx darwin))
             (add-ad-hoc-signature dest-exe))
           (done-writable dest-exe old-perms))))))
 

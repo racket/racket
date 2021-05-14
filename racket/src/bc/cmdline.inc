@@ -42,7 +42,6 @@ static int is_number_arg(const char *s)
   return 1;
 }
 
-#if defined(OS_X) || defined(DOS_FILE_SYSTEM)
 char *add_to_str(const char *addr, long amt)
 {
   long addr_v;
@@ -51,23 +50,19 @@ char *add_to_str(const char *addr, long amt)
   sprintf(buf, "%ld", addr_v);
   return strdup(buf);
 }
-#endif
 
-static char *make_embedded_load(const char *file, const char *start, const char *end)
+static char *make_embedded_load(const self_exe_t self_exe, const char *file, const char *start, const char *end)
 {
   char *s;
   int slen, elen, flen;
 
-#if defined(OS_X) || defined(DOS_FILE_SYSTEM)
   if (file == NULL) {
     long fileoff;
-    fileoff = get_segment_offset();
+    fileoff = get_segment_offset(self_exe);
     start = add_to_str(start, fileoff);
     end = add_to_str(end, fileoff);
+    file = SELF_PATH_TO_BYTES(self_exe);
   }
-#endif
-
-  if (!file) file = "";
 
   slen = strlen(start);
   elen = strlen(end);
@@ -730,6 +725,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
   Scheme_Object *syslog_level = NULL, *stderr_level = NULL, *stdout_level = NULL;
   FinishArgs *fa;
   FinishArgsAtoms *fa_a;
+  self_exe_t self_exe;
 
   scheme_set_default_locale();
 
@@ -740,8 +736,10 @@ static int run_from_cmd_line(int argc, char *_argv[],
 #ifdef NEED_CONSOLE_PRINTF
   console_printf = scheme_get_console_printf();
 #endif
-  
-  extract_built_in_arguments(&prog, &sprog, &argc, &argv);
+
+  self_exe = get_self_path(prog);
+
+  extract_built_in_arguments(self_exe, &prog, &sprog, &argc, &argv);
 
 #ifndef DONT_PARSE_COMMAND_LINE
   evals_and_loads = (char **)malloc(sizeof(char *) * argc);
@@ -1024,12 +1022,12 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  }
 	  argv++;
 	  --argc;
-	  se = make_embedded_load(embedding_file, argv[0], argv[1]);
+	  se = make_embedded_load(self_exe, embedding_file, argv[0], argv[1]);
 	  evals_and_loads[num_enl] = se;
 	  argv++;
 	  --argc;
 	  eval_kind[num_enl++] = mzcmd_EMBEDDED_REG;
-	  se = make_embedded_load(embedding_file, argv[0], argv[1]);
+	  se = make_embedded_load(self_exe, embedding_file, argv[0], argv[1]);
 	  evals_and_loads[num_enl] = se;
 	  argv++;
 	  --argc;

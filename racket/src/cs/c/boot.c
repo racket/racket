@@ -192,9 +192,10 @@ void racket_boot(racket_boot_arguments_t *ba)
     l = Scons(Sbytevector(ba->cs_compiled_subdir ? "true" : "false"), l);
     sprintf(segment_offset_s, "%ld", ba->segment_offset);
     l = Scons(Sbytevector(segment_offset_s), l);
+    l = Scons(Sbytevector(ba->k_file ? (char *)ba->k_file : (char *)ba->exec_file), l);
     l = Scons(Sbytevector(ba->config_dir ? (char *)ba->config_dir : "etc"), l);
     l = Scons(parse_coldirs(ba->collects_dir ? (char *)ba->collects_dir : ""), l);
-    l = Scons(Sbytevector(ba->run_file ? (char *)ba->run_file : (char *)ba->exec_file ), l);
+    l = Scons(Sbytevector(ba->run_file ? (char *)ba->run_file : (char *)ba->exec_file), l);
     l = Scons(Sbytevector((char *)ba->exec_file), l);
     l = Scons(Sbytevector(ba->exit_after ? "false" : "true"), l);
 

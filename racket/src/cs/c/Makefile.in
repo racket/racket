@@ -212,12 +212,12 @@ racket.boot: racket.so
 EMBED_DEPS = $(srcdir)/embed-boot.rkt
 
 racketcs@NOT_OSX@@NOT_MINGW@: raw_racketcs petite-v.boot scheme-v.boot racket-v.boot $(EMBED_DEPS)
-	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @ELF_COMP@ --target $(TARGET_MACH) @BOOT_COMPRESS_COMP@ raw_racketcs racketcs petite-v.boot scheme-v.boot racket-v.boot
+	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt --target $(TARGET_MACH) @BOOT_COMPRESS_COMP@ raw_racketcs racketcs petite-v.boot scheme-v.boot racket-v.boot
 	@POST_LINKER@ racketcs
 	$(RESTORE_SIGNATURE) racketcs
 
 gracketcs@NOT_OSX@@NOT_MINGW@: raw_gracketcs petite-v.boot scheme-v.boot racket-v.boot $(EMBED_DEPS)
-	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @ELF_COMP@ --target $(TARGET_MACH) @BOOT_COMPRESS_COMP@ raw_gracketcs gracketcs petite-v.boot scheme-v.boot racket-v.boot
+	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt --target $(TARGET_MACH) @BOOT_COMPRESS_COMP@ raw_gracketcs gracketcs petite-v.boot scheme-v.boot racket-v.boot
 	@POST_LINKER@ gracketcs
 	$(RESTORE_SIGNATURE) gracketcs
 
@@ -433,7 +433,7 @@ DEF_C_DIRS = $(DEF_COLLECTS_DIR) $(DEF_CONFIG_DIR)
 
 MAIN_DEPS = $(srcdir)/main.c $(srcdir)/boot.h cs_config.h \
             $(srcdir)/../../start/config.inc \
-            $(srcdir)/../../start/unix_self.inc
+            $(srcdir)/../../start/self_exe.inc
 
 main.o: $(MAIN_DEPS)
 	$(CC) $(CFLAGS) $(DEF_C_DIRS) -c -o main.o $(srcdir)/main.c
@@ -444,7 +444,7 @@ grmain.o: $(srcdir)/grmain.c $(MAIN_DEPS) $(srcdir)/../../start/gui_filter.inc
 boot.o: $(srcdir)/boot.c $(srcdir)/../../rktio/rktio.inc $(srcdir)/boot.h
 	$(CC) $(CFLAGS) -c -o boot.o $(srcdir)/boot.c
 
-starter@NOT_MINGW@: $(srcdir)/../../start/ustart.c $(srcdir)/../../start/unix_self.inc
+starter@NOT_MINGW@: $(srcdir)/../../start/ustart.c $(srcdir)/../../start/self_exe.inc
 	$(CC) $(CFLAGS) -o starter $(srcdir)/../../start/ustart.c
 
 

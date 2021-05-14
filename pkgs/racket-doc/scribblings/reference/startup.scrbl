@@ -195,7 +195,9 @@ flags:
         @nonterm{m} and from @nonterm{m} to @nonterm{p}. (On Mac OS,
         @nonterm{n}, @nonterm{m}, and @nonterm{p} are relative to a
         @tt{__PLTSCHEME} segment in the executable. On Windows,
-        they are relative to a resource of type 257 and ID 1.) The first range
+        they are relative to a resource of type 257 and ID 1. On Unix
+        using ELF, they are relative to the @tt{.rackprog} segment
+        in the executable.) The first range
         is loaded in every new @tech{place}, and any modules declared
         in that range are considered predefined in the sense of
         @racket[module-predefined?]. This option is normally embedded
@@ -203,7 +205,7 @@ flags:
 
   @item{@FlagFirst{Y} @nonterm{file} @nonterm{n} @nonterm{m} @nonterm{p} :
         Like @Flag{k} @nonterm{n} @nonterm{m} @nonterm{p}, but reading
-        from @nonterm{file} (without any adjustment on Mac OS or Windows
+        from @nonterm{file} (without any adjustment
         for a segment or resource offset).}
 
   @item{@FlagFirst{m} or @DFlagFirst{main} : Evaluates a call to

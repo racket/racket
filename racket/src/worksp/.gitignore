@@ -42,3 +42,6 @@ cstartup.exe
 /liblz4.dll
 /liblz4.lib
 /liblz4.exp
+/liblz4mt.dll
+/liblz4mt.lib
+/liblz4mt.exp

@@ -479,12 +479,12 @@ TO DO:
 
 (define ssl-default-verify-sources
   (make-parameter
-   (case (system-type)
+   (case (system-type 'os*)
      [(windows)
       ;; On Windows, x509-root-sources produces paths like "/usr/local/ssl/certs", which
       ;; aren't useful. So just skip them.
       '((win32-store "ROOT"))]
-     [(macosx)
+     [(macosx darwin)
       '((macosx-keychain "/System/Library/Keychains/SystemRootCertificates.keychain"))]
      [else
       (x509-root-sources)])))

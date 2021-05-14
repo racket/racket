@@ -16,8 +16,8 @@
 ;; security export -k /System/Library/Keychains/... -t certs -f pemseq -o foo.pem
 
 (define libcf
-  (case (system-type)
-    [(macosx) (ffi-lib "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")]
+  (case (system-type 'os*)
+    [(macosx darwin) (ffi-lib "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")]
     [else #f]))
 
 (define-ffi-definer define-cf libcf
@@ -47,8 +47,8 @@
 ;; ----
 
 (define libsec
-  (case (system-type)
-    [(macosx) (ffi-lib "/System/Library/Frameworks/Security.framework/Security")]
+  (case (system-type 'os*)
+    [(macosx darwin) (ffi-lib "/System/Library/Frameworks/Security.framework/Security")]
     [else #f]))
 (define-ffi-definer define-sec libsec
   #:default-make-fail make-not-available)

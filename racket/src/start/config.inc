@@ -1,5 +1,36 @@
 /* This code fragment embeds strings in an executable that can be
-   updated with various Racket exe-manipulation tools. */
+   updated with various Racket exe-manipulation tools. 
+
+   Used by CS's "main.c" and BC's "cmdline.inc".
+
+   Functions that are "exported":
+
+      self_exe_t get_self_path(char *argv0);
+      void extract_built_in_arguments(const self_exe_t self_exe, 
+                                      char **_prog, char **_sprog,
+                                      int *_argc, char ***_argv);
+      char *SELF_PATH_TO_BYTES(self_exe_t)
+
+      char *extract_coldir();
+      char *extract_configdir();
+
+      long get_segment_offset(self_exe_t self); // added to `-k` arguments
+
+    Windows:
+      self_exe_t is wchar_t
+      wchar_t *extract_dlldir();
+      long find_resource_offset(const wchar_t *path, int id, long delta);
+      char *string_to_utf8(wchar_t *p);
+
+    Mac OS:
+      long find_mach_o_segment(const char *name, long *_len);
+
+    Unix:
+      int find_elf_section_offset(const char *filename,
+                                  const char *name,
+                                  int *_start, int *_end);
+
+*/
 
 #pragma GCC diagnostic ignored "-Wwrite-strings"
 
@@ -99,15 +130,19 @@ static int _configdir_offset = 17; /* Skip permanent tag */
 # define XFORM_OK_PLUS +
 #endif
 
-#ifdef OS_X
-# include <mach-o/getsect.h>
-# include <mach-o/dyld.h>
-# include <fcntl.h>
-#endif
-
 #ifdef DOS_FILE_SYSTEM
 # include <windows.h>
+#else
+# include <errno.h>
+# include <fcntl.h>
+# include <sys/types.h>
+# include <sys/uio.h>
+# include <unistd.h>
+#endif
 
+#include "self_exe.inc"
+
+#ifdef DOS_FILE_SYSTEM
 #ifndef DLL_RELATIVE_PATH
 # define DLL_RELATIVE_PATH L"lib"
 #endif
@@ -127,40 +162,13 @@ END_XFORM_SKIP;
 #endif
 
 #ifdef OS_X
-static long get_segment_offset()
+static long get_segment_offset(const char *me)
 {
-# if defined(__x86_64__) || defined(__arm64__)
-  const struct segment_command_64 *seg;
-# else
-  const struct segment_command *seg;
-#endif
-  seg = getsegbyname("__PLTSCHEME");
-  if (seg)
-    return seg->fileoff;
-  else
-    return 0;
+  return find_mach_o_segment("__PLTSCHEME", NULL);
 }
 #endif
 
 #ifdef DOS_FILE_SYSTEM
-wchar_t *get_self_executable_path() XFORM_SKIP_PROC
-{
-  wchar_t *path;
-  DWORD r, sz = 1024;
-
-  while (1) {
-    path = (wchar_t *)malloc(sz * sizeof(wchar_t));
-    r = GetModuleFileNameW(NULL, path, sz);
-    if ((r == sz)
-        && (GetLastError() == ERROR_INSUFFICIENT_BUFFER)) {
-      free(path);
-      sz = 2 * sz;
-    } else
-      break;
-  }
-
-  return path;
-}
 
 static DWORD find_by_id(HANDLE fd, DWORD rsrcs, DWORD pos, int id, long delta) XFORM_SKIP_PROC
 {
@@ -185,7 +193,7 @@ static DWORD find_by_id(HANDLE fd, DWORD rsrcs, DWORD pos, int id, long delta) X
   return 0;
 }
 
-static long find_resource_offset(wchar_t *path, int id, long delta) XFORM_SKIP_PROC
+static long find_resource_offset(const wchar_t *path, int id, long delta) XFORM_SKIP_PROC
 {
   /* Find the resource of type `id` */
   HANDLE fd;
@@ -258,14 +266,45 @@ static long find_resource_offset(wchar_t *path, int id, long delta) XFORM_SKIP_P
   }
 }
 
-static long get_segment_offset() XFORM_SKIP_PROC
+static long get_segment_offset(const wchar_t *me) XFORM_SKIP_PROC
 {
-  return find_resource_offset(get_self_executable_path(), 257, 0);
+  return find_resource_offset(me, 257, 0);
+}
+
+static char *string_to_utf8(wchar_t *p) XFORM_SKIP_PROC
+{
+  char *r;
+  int len;
+
+  len = WideCharToMultiByte(CP_UTF8, 0, p, -1, NULL, 0, NULL, NULL);
+  r = malloc(len);
+  len = WideCharToMultiByte(CP_UTF8, 0, p, -1, r, len, NULL, NULL);
+
+  return r;
+}
+
+# define SELF_PATH_TO_BYTES(s) string_to_utf8(s)
+
+#else
+
+# define SELF_PATH_TO_BYTES(s) s
+
+#endif
+
+#if !defined(OS_X) && !defined(DOS_FILE_SYSTEM)
+
+static long get_segment_offset(const char *me) XFORM_SKIP_PROC
+{
+  int start = 0, end = 0;
+
+  (void)find_elf_section_offset(me, ".rackprog", &start, &end);
+  
+  return start;
 }
 
 #endif
 
-static void extract_built_in_arguments(char **_prog, char **_sprog, int *_argc, char ***_argv)
+static void extract_built_in_arguments(const self_exe_t self_exe, char **_prog, char **_sprog, int *_argc, char ***_argv)
 {
   GC_CAN_IGNORE char *prog = *_prog;
   GC_CAN_IGNORE char *sprog = *_sprog;
@@ -321,9 +360,8 @@ static void extract_built_in_arguments(char **_prog, char **_sprog, int *_argc, 
 	 the cmdline string is. It might be relative to the
 	 executable. */
       HANDLE fd;
-      wchar_t *path;
+      wchar_t *path = self_exe;
 
-      path = get_self_executable_path();
       fd = CreateFileW(path, GENERIC_READ,
 		       FILE_SHARE_READ | FILE_SHARE_WRITE,
 		       NULL,
@@ -337,7 +375,7 @@ static void extract_built_in_arguments(char **_prog, char **_sprog, int *_argc, 
 	DWORD got;
 	start = *(long *)&scheme_cmdline_exe_hack[4];
 	len = *(long *)&scheme_cmdline_exe_hack[8];
-	start += get_segment_offset();
+	start += get_segment_offset(self_exe);
 	p = (unsigned char *)malloc(len);
 	SetFilePointer(fd, start, 0, FILE_BEGIN);
 	ReadFile(fd, p, len, &got, NULL);
@@ -386,14 +424,12 @@ static void extract_built_in_arguments(char **_prog, char **_sprog, int *_argc, 
 		+ 4);
 	}
       }
-      free(path);
     }
-#endif
-#if defined(OS_X)
+#else
     if (scheme_cmdline_exe_hack[0] == '?') {
-      long fileoff, cmdoff, cmdlen;
+      long fileoff, cmdoff, cmdlen, need, got;
       int fd;
-      fileoff = get_segment_offset();
+      fileoff = get_segment_offset(self_exe);
 
       p = (unsigned char *)scheme_cmdline_exe_hack + 4;
       cmdoff = (p[0]
@@ -405,14 +441,22 @@ static void extract_built_in_arguments(char **_prog, char **_sprog, int *_argc, 
                 + (((long)p[6]) << 16)
                 + (((long)p[7]) << 24));
       p = malloc(cmdlen);
-      
-      fd = open(_dyld_get_image_name(0), O_RDONLY);
+
+      fd = open(self_exe, O_RDONLY);
       lseek(fd, fileoff + cmdoff, 0);
-      read(fd, p, cmdlen);
+
+      for (need = cmdlen; need > 0; need -= got) {
+	got = read(fd, p + (cmdlen - need), need);
+	if (got == -1) {
+	  got = 0;
+	  if (errno != EINTR)
+	    break;
+	}
+      }
       close(fd);
     }
 #endif
-     
+
     if (!p)
       p = (unsigned char *)scheme_cmdline_exe_hack + 1;
 
@@ -465,7 +509,3 @@ static char *extract_configdir()
 {
   return scheme_configdir XFORM_OK_PLUS _configdir_offset;
 }
-
-#if !defined(OS_X) && !defined(DOS_FILE_SYSTEM)
-# define NO_GET_SEGMENT_OFFSET
-#endif

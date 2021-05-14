@@ -30,6 +30,7 @@ typedef struct racket_boot_arguments_t {
   const char *collects_dir;   /* can be NULL or "" to disable collection path */
   const char *config_dir; /* use NULL or "etc" if you don't care */
   /* wchar_t * */void *dll_dir; /* can be NULL for default */
+  const char *k_file;     /* for -k; can be NULL for the same as `exec_file` */
 
   /* How to initialize `use-compiled-file-paths`: */
   int cs_compiled_subdir; /* true => subdirectory of "compiled" */

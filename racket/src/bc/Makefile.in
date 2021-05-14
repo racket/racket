@@ -304,7 +304,7 @@ DEF_C_DIRS = $(DEF_COLLECTS_DIR) $(DEF_CONFIG_DIR)
 MAIN_HEADER_DEPS = $(srcdir)/include/scheme.h $(srcdir)/include/schthread.h $(srcdir)/sconfig.h \
                    $(srcdir)/src/stypes.h $(srcdir)/cmdline.inc $(srcdir)/../start/parse_cmdl.inc \
                    $(srcdir)/../start/cmdl_to_argv.inc \
-	           $(srcdir)/../start/config.inc $(srcdir)/../start/delayed.inc \
+	           $(srcdir)/../start/config.inc $(srcdir)/../start/self_exe.inc $(srcdir)/../start/delayed.inc \
 	           $(srcdir)/../start/embedded_dll.inc
 
 MAIN_INCLUDES = -I$(builddir) -I$(srcdir)/include -I$(srcdir)/../version
@@ -499,6 +499,7 @@ unix-install-cgc:
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@"
 	cd ..; cp bc/mzdyn.o "$(DESTDIR)$(libpltdir)/mzdyn.o"
 	@RUN_RACKET_CGC@ $(SETUP_BOOT_COLLECTS_PATH) "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@@EXE_SUFFIX@" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
+	$(RESTORE_SIGNATURE) "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@"
 
 unix-install-libs-cgc:
 	cd ..; $(ICP_LIB) bc/libmzgc.@LIBSFX@ "$(DESTDIR)$(libdir)/libmzgc.@LIBSFX@"
@@ -520,6 +521,7 @@ unix-install-3m:
 	$(MAKE) unix-@INSTALL_LIBS_ENABLE@-libs-3m
 	cd ..; $(ICP) bc/mzdyn3m.o "$(DESTDIR)$(libpltdir)/mzdyn3m.o"
 	@RUN_RACKET_MMM@ $(SETUP_BOOT_COLLECTS_PATH) "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@@EXE_SUFFIX@" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
+	$(RESTORE_SIGNATURE) "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@"
 
 unix-install-libs-3m:
 	cd ..; $(ICP_LIB) bc/libracket3m.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket3m.@LIBSFX@"
@@ -604,6 +606,7 @@ osx-install-cgc:
 	$(MAKE) unix-install-cgc
 	mkdir -p $(DESTDIR)$(MZFWDIR)/Versions/$(FWVERSION)
 	cp $(MZFW) $(DESTDIR)$(MZFWDIR)/Versions/$(FWVERSION)/
+	$(STRIP_SIGNATURE) $(DESTDIR)"$(bindir)/racket@CGC_INSTALLED@"
 	/usr/bin/install_name_tool -change "@executable_path/Racket.framework/Versions/$(FWVERSION)/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)/Racket" $(DESTDIR)"$(bindir)/racket@CGC_INSTALLED@"
 	$(RESTORE_SIGNATURE) $(DESTDIR)"$(bindir)/racket@CGC_INSTALLED@"
 
@@ -615,6 +618,7 @@ osx-install-3m:
 	$(MAKE) unix-install-3m
 	mkdir -p $(DESTDIR)"$(MZFWDIR)/Versions/$(FWVERSION)_3m"
 	cp $(MZFWMMM) $(DESTDIR)$(MZFWDIR)/Versions/$(FWVERSION)_3m/
+	$(STRIP_SIGNATURE) $(DESTDIR)"$(bindir)/racket@MMM_INSTALLED@"
 	/usr/bin/install_name_tool -change "@executable_path/Racket.framework/Versions/$(FWVERSION)_3m/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)_3m/Racket" $(DESTDIR)"$(bindir)/racket@MMM_INSTALLED@"
 	$(RESTORE_SIGNATURE) $(DESTDIR)"$(bindir)/racket@MMM_INSTALLED@"
 

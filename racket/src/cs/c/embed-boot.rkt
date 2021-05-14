@@ -6,7 +6,6 @@
          compiler/private/elf
          "adjust-compress.rkt")
 
-(define expect-elf? #f)
 (define alt-dests '())
 (define target #f)
 
@@ -14,8 +13,6 @@
  #:once-each
  [("--compress") "Leave compiled code files as compressed"
   (enable-compress!)]
- [("--expect-elf") "Record offset from ELF section"
-  (set! expect-elf? #t)]
  [("--target") machine "Select target machine"
   (set! target machine)]
  #:multi
@@ -57,7 +54,10 @@
          "x86_64-darwin" "i386-darwin" "aarch64-darwin"
          "x86_64-macosx" "i386-macosx" "aarch64-macosx")
         ;; Mach-O
-        (copy-file use-src-file dest-file #t)
+        (when (file-exists? dest-file)
+          ;; explicit delete to avoid signature unhappiness
+          (delete-file dest-file))
+        (copy-file use-src-file dest-file)
         (remove-signature dest-file)
         (add-plt-segment dest-file data #:name #"__RKTBOOT")
         ;; Find segment at run time:
@@ -86,12 +86,8 @@
           [start-pos
            ;; Success as ELF
            (file-or-directory-permissions dest-file (file-or-directory-permissions use-src-file 'bits))
-           (cond
-             [expect-elf?
-              ;; Find ".rackboot" at run time:
-              0]
-             [else
-              start-pos])]
+           ;; Find ".rackboot" at run time:
+           0]
           [else
            ;; Not ELF; just append to the end
            (copy-file use-src-file dest-file #t)
@@ -102,8 +98,6 @@
             (lambda (o)
               (file-position o pos)
               (write-bytes data o)))
-           (when expect-elf?
-             (error 'embed-boot "expected ELF"))
            pos])]))
 
    (define (write-offsets dest-file)

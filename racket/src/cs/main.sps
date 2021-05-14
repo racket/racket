@@ -86,13 +86,13 @@
      (#%newline (#%current-error-port))
      (exit 1))
 
-   (define builtin-argc 10)
+   (define builtin-argc 11)
    (seq
     (unless (>= (length the-command-line-arguments) builtin-argc)
       (startup-error (string-append
 		      "expected `embedded-interactive-mode?`,"
                       " `exec-file`, `run-file`, `collects`, and `etc` paths"
-		      " plus `segment-offset`, `cs-compiled-subdir?`, `is-gui?`,"
+		      " plus `k-file`, `segment-offset`, `cs-compiled-subdir?`, `is-gui?`,"
 		      " `wm-is-gracket-or-x11-arg-count`, and `gracket-guid-or-x11-args`"
 		      " to start")))
     (set-exec-file! (->path (list-ref the-command-line-arguments/maybe-bytes 1)))
@@ -110,11 +110,14 @@
                         (map ->path (cdr s))))])))
    (define init-config-dir (->path (or (getenv-bytes "PLTCONFIGDIR")
                                        (list-ref the-command-line-arguments/maybe-bytes 4))))
-   (define segment-offset (#%string->number (list-ref the-command-line-arguments 5)))
-   (define cs-compiled-subdir? (string=? "true" (list-ref the-command-line-arguments 6)))
-   (define gracket? (string=? "true" (list-ref the-command-line-arguments 7)))
-   (define wm-is-gracket-or-x11-arg-count (string->number (list-ref the-command-line-arguments 8)))
-   (define gracket-guid-or-x11-args (list-ref the-command-line-arguments 9))
+   (define k-executable-path (let ([s (list-ref the-command-line-arguments/maybe-bytes 5)])
+                               (and (not (or (equal? s "") (equal? s '#vu8())))
+                                    s)))
+   (define segment-offset (#%string->number (list-ref the-command-line-arguments 6)))
+   (define cs-compiled-subdir? (string=? "true" (list-ref the-command-line-arguments 7)))
+   (define gracket? (string=? "true" (list-ref the-command-line-arguments 8)))
+   (define wm-is-gracket-or-x11-arg-count (string->number (list-ref the-command-line-arguments 9)))
+   (define gracket-guid-or-x11-args (list-ref the-command-line-arguments 10))
 
    (seq
     (when (eq? 'windows (system-type))
@@ -415,10 +418,11 @@
                           (let ([n (#%string->number s)])
                             (unless (exact-integer? n)
                               (startup-error "bad ~a: ~a" what s))
-                            (#%number->string (+ n segment-offset))))]
+                            (#%number->string (+ n (if f 0 segment-offset)))))]
                        [n (add-segment-offset n "starting offset")]
                        [m (add-segment-offset m "first ending offset")]
-                       [p (add-segment-offset p "second ending offset")])
+                       [p (add-segment-offset p "second ending offset")]
+                       [f (or f k-executable-path)])
                   (set! loads
                         (cons
                          (lambda ()

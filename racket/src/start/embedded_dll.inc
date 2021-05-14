@@ -20,7 +20,7 @@ static HANDLE open_self()
   wchar_t *path;
   HANDLE fd;
   
-  path = get_self_executable_path();
+  path = get_self_path(NULL);
 
   fd = CreateFileW(path, GENERIC_READ,
 		   FILE_SHARE_READ | FILE_SHARE_WRITE,
@@ -38,7 +38,7 @@ static void parse_embedded_dlls()
 {
   long rsrc_pos;
 
-  rsrc_pos = find_resource_offset(get_self_executable_path(), 258, 0);
+  rsrc_pos = find_resource_offset(get_self_path(NULL), 258, 0);
   if (rsrc_pos) {
     HANDLE fd = open_self();
     

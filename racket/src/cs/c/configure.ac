@@ -140,7 +140,6 @@ NOT_MINGW=""
 CONFIGURE_RACKET_SO_COMPILE=""
 COMPRESS_COMP=""
 BOOT_COMPRESS_COMP=""
-ELF_COMP=""
 POST_LINKER="echo"
 
 FRAMEWORK_INSTALL_DIR='$(libpltdir)'
@@ -218,7 +217,6 @@ case "$host_os" in
     LIBS="$LIBS -lsocket -lnsl -lintl"
     use_flag_pthread="no"
     use_flag_posix_pthread="yes"
-    enable_strip=no
     ;;
   aix*)
     ;;
@@ -229,8 +227,6 @@ case "$host_os" in
     LIBS="${LIBS} -lm -lpthread"
     LINK_DYNAMIC="-rdynamic"
     add_iconv_lib="-liconv"
-    CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
-    ELF_COMP="--expect-elf"
     ;;
   openbsd*)
     MACH_OS=ob
@@ -240,8 +236,6 @@ case "$host_os" in
     LINK_DYNAMIC="-Wl,--export-dynamic"
     add_iconv_lib="-liconv"
     LDFLAGS="${LDFLAGS} -Wl,-zwxneeded"
-    CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
-    ELF_COMP="--expect-elf"
     ;;
   bitrig*)
     LINK_DYNAMIC="-Wl,--export-dynamic"
@@ -254,8 +248,6 @@ case "$host_os" in
     LIBS="${LIBS} -lm -lpthread"
     LINK_DYNAMIC="-rdynamic"
     add_iconv_lib="/usr/lib/i18n/libiconv_std.a"
-    CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
-    ELF_COMP="--expect-elf"
     POST_LINKER="paxctl +m"
     ;;
   irix*)
@@ -269,9 +261,7 @@ case "$host_os" in
         LIBS="${LIBS} -lrt"
         ;;
     esac
-    CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
     LINK_DYNAMIC="-rdynamic"
-    ELF_COMP="--expect-elf"
     ;;
   osf1*)
     ;;
@@ -819,7 +809,6 @@ AC_SUBST(LZ4_LIB_UNPACK)
 AC_SUBST(CONFIGURE_RACKET_SO_COMPILE)
 AC_SUBST(COMPRESS_COMP)
 AC_SUBST(BOOT_COMPRESS_COMP)
-AC_SUBST(ELF_COMP)
 AC_SUBST(MAKE_BUILD_SCHEME)
 AC_SUBST(SCHEME_CONFIG_ARGS)
 AC_SUBST(SCHEME_CROSS_CONFIG_ARGS)

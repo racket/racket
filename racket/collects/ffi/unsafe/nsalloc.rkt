@@ -7,9 +7,10 @@
                       call-with-autorelease))
 
 ;; Make sure Foundation is loaded:
-(when (eq? 'macosx (system-type))
-  (void (ffi-lib "/System/Library/Frameworks/Foundation.framework/Foundation"
-                 #:fail (lambda () #f))))
+(case (system-type 'os*)
+  [(macosx darwin)
+   (void (ffi-lib "/System/Library/Frameworks/Foundation.framework/Foundation"
+                  #:fail (lambda () #f)))])
 
 (import-class NSAutoreleasePool)
 
