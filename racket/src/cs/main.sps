@@ -474,7 +474,8 @@
              [("-S" "--search")
               (let-values ([(collects-path rest-args) (next-arg "path" arg within-arg args)])
                 (check-path-arg collects-path "collects path" collects-path within-arg)
-                (set! rev-collects-post-extra (cons (->path (find-original-bytes collects-path)) rev-collects-post-extra))
+                (let ([path (path->complete-path (->path (find-original-bytes collects-path)))])
+                  (set! rev-collects-post-extra (cons path rev-collects-post-extra)))
                 (loop rest-args))]
              [("-G" "--config")
               (let-values ([(config-path rest-args) (next-arg "config path" arg within-arg args)])
