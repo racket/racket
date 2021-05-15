@@ -48,4 +48,4 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWSSecretKey }}
       run: |
         ls -l ${{ runner.temp }}/site-dest/
-        raco s3-sync --acl public-read --web --redirect-links ${{ runner.temp }}/site-dest/ s3://ci-snapshot.racket-lang.org/
+        raco s3-sync --acl public-read --web --redirects-links ${{ runner.temp }}/site-dest/ s3://ci-snapshot.racket-lang.org/
