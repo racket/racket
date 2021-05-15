@@ -345,7 +345,19 @@
     (or (cond
          [(not try-config?) #f]
          [(module-declared? (add-submod p 'config) #t)
-          (dynamic-require (add-submod p 'config) '#%info-lookup)]
+          (define submod (add-submod p 'config))
+          (dynamic-require submod
+                           '#%info-lookup
+                           (lambda ()
+                             (error test-exe-name
+                                    (format
+                                     (string-append
+                                      "cannot extract information from a `config` submodule;\n"
+                                      " the submodule should use the `info` module language\n"
+                                      "  submodule: ~.s\n"
+                                      "  current directory: ~a")
+                                     (normalize-module-path submod)
+                                     (current-directory)))))]
          [else #f])
         (lambda (what get-default) (get-default))))
   (dynamic-require-elsewhere
