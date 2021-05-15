@@ -989,8 +989,8 @@ equivalent prefix as discussed in @secref["parse-number"]. If these
 numbers are followed by a @litchar{.} intended to be read as a C-style
 infix dot, then a delimiter must precede the @litchar{.}.
 
-Finally, after reading any datum @racket[_x], the reader will seek
-through whitespace, BOM characters, and comments and look for zero or more sequences of a
+Finally, after reading any datum @racket[_x], the reader will consume 
+whitespace, BOM characters, and comments to look for zero or more sequences of a
 @litchar{.} followed by another datum @racket[_y]. It will then group
 @racket[_x] and @racket[_y] together in a @racket[#%dot] form so that
 @racket[_x.y] reads equal to @racket[(#%dot _x _y)].
