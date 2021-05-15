@@ -511,6 +511,27 @@
 (err/rt-test (deserialize (serialize (new s:bad% [foo 10]))) exn:fail:object?)
 
 ;; ----------------------------------------
+;; Class contracts & serialization
+
+(define class+contract+serialize-foo<%>
+  (interface ()
+    [foo-method (->m any/c)]))
+(define-serializable-class* class+contract+serialize-foo% object% (class+contract+serialize-foo<%>)
+  (inspect #f)
+  (init-field [v #hasheq()])
+  (define/public (foo-method)
+    'result)
+  (super-new))
+
+(let ()
+  (define inst
+    (new class+contract+serialize-foo%))
+
+  (test #t is-a? inst class+contract+serialize-foo%)
+  (test #t is-a? (deserialize (serialize inst)) class+contract+serialize-foo%)
+  (test 'result values (send (deserialize (serialize inst)) foo-method)))
+
+;; ----------------------------------------
 
 ;; Custom deserialize:
 (module my-own-deserialize racket/base

@@ -2808,7 +2808,7 @@ last few projections.
                                            (send o internalize args)
                                            o))
                                        (lambda (args)
-                                         (let ([o (object-make)])
+                                         (let ([o (make-object-uninitialized c `(class ,name))])
                                            ((class-fixup c) o args)
                                            o)))
                                    (if (interface-extension? i externalizable<%>)
@@ -3547,6 +3547,9 @@ An example
     (define neg-blame (cadddr info))
     (contract ctc meth pos-blame neg-blame m #f)))
 
+(define (make-object-uninitialized class blame)
+  (do-make-object blame class 'uninit 'uninit))
+
 (define (do-make-object blame class by-pos-args named-args)
   (cond
     [(impersonator-prop:has-wrapped-class-neg-party? class)
@@ -3585,8 +3588,9 @@ An example
   ;; Generate correct class by concretizing methods w/interface ctcs
   (define concrete-class (fetch-concrete-class class blame))
   (define o ((class-make-object concrete-class)))
-  (continue-make-object o concrete-class by-pos-args named-args #t 
-                        wrapped-blame wrapped-neg-party init-proj-pairs)
+  (unless (eq? by-pos-args 'uninit)
+    (continue-make-object o concrete-class by-pos-args named-args #t
+                          wrapped-blame wrapped-neg-party init-proj-pairs))
   o)
 
 (define (get-field-alist obj)
