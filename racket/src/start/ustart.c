@@ -308,7 +308,7 @@ int main(int argc, char **argv)
   {
     int expected_length = end - prog_end;
     if (expected_length != read(fd, data, expected_length)) {
-      printf("read failed to read all %i bytes from file %s\n", expected_length, embedding_me);
+      printf("read failed to read all %i bytes from file %s at offset %d\n", expected_length, embedding_me, prog_end);
       abort();
     }
   }

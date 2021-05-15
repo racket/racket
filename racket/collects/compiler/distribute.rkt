@@ -338,6 +338,11 @@
 
   (define (patch-stub-exe-paths b exe shared-lib-dir)
     ;; Adjust paths to executable and DLL that is embedded in the executable
+    (define rx:rackprog #rx#"^[.]rackprog\0")
+    (define section-offset+size (get-racket-section-offset+size b rx:rackprog))
+    (define section-offset (if section-offset+size
+			       (car section-offset+size)
+			       0))
     (let-values ([(config-pos all-start start end prog-len dll-len rest)
 		  (with-input-from-file b
 		    (lambda ()
@@ -351,7 +356,7 @@
 			(read-one-int i) ; start of program
 			(let ([start (read-one-int i)] ; start of data
 			      [end (read-one-int i)]) ; end of data
-			  (file-position i start)
+			  (file-position i (+ start section-offset))
 			  (let ([prog-len (next-bytes-length i)]
 				[dll-len (next-bytes-length i)])
 			    (values (+ (cdar m) 1) ; position after "cOnFiG:[" tag
@@ -375,7 +380,7 @@
                 (file-position o (+ config-pos 12)) ; update the end of the program data
                 (write-one-int (- end delta) o)
                 (flush-output o)
-                (file-position o start)
+                (file-position o (+ start section-offset))
                 (write-bytes exe-bytes o)
                 (write-bytes #"\0" o)
                 (write-bytes shared-lib-bytes o)
@@ -385,7 +390,7 @@
           ;; May need to fix the size of the ELF section:
           (adjust-racket-section-size
            b
-           #rx#"^[.]rack(?:cmdl|prog)\0"
+           rx:rackprog
            (- (- end all-start) delta))))))
 
   (define (copy-and-patch-binaries copy? magic

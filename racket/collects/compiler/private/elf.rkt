@@ -1,6 +1,7 @@
 #lang racket/base
 
 (provide add-racket-section
+         get-racket-section-offset+size
          adjust-racket-section-size
          get-rpath
          set-rpath)
@@ -503,6 +504,24 @@
 
             ;; Any final writes:
             (finish out adjust adjust*))))))))
+
+(define (get-racket-section-offset+size src-file name-regexp)
+  (call-with-input-file*
+   src-file
+   (lambda (in)
+     (read-elf
+      in
+      (lambda () #f)
+      (lambda (elf sections programs str-section strs)
+        (and elf
+             (for/or ([s (in-list sections)]
+                      [i (in-naturals)])
+               (and (regexp-match? name-regexp
+                                   strs
+                                   (min (section-name-offset s)
+                                        (bytes-length strs)))
+                    (cons (section-offset s)
+                          (section-size s))))))))))
 
 (define (adjust-racket-section-size src-file name-regexp new-size)
   (define fixup
