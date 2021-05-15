@@ -4,8 +4,9 @@
 #if defined(OS_X) && defined(__POWERPC__)
 # include <sys/param.h>
 # include <sys/sysctl.h>
-#elif defined(__linux__) || defined(__QNX__) || defined(OS_X) || defined(__FreeBSD__) || defined(__OpenBSD__)
+#elif defined(__linux__) || defined(__QNX__) || defined(OS_X) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(sun)
 # include <unistd.h>
+# define USE_SYSCONF_NPROCESSORS_ONLN
 #elif defined(RKTIO_SYSTEM_WINDOWS)
 # include <windows.h>
 #endif
@@ -19,7 +20,7 @@ void rktio_init_cpu(rktio_t *rktio)
  
   if (sysctlbyname("hw.ncpu", &processor_count, &size, NULL, 0))
     processor_count = 2;
-#elif defined(__linux__) || defined(__QNX__) || defined(OS_X) || defined(__FreeBSD__) || defined(__OpenBSD__)
+#elif defined(USE_SYSCONF_NPROCESSORS_ONLN)
   processor_count = sysconf(_SC_NPROCESSORS_ONLN);
 #elif defined(RKTIO_SYSTEM_WINDOWS)
   SYSTEM_INFO sysinfo;
