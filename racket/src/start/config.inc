@@ -350,9 +350,9 @@ static void extract_built_in_arguments(const self_exe_t self_exe, char **_prog, 
     char **argv2;
 
     p = NULL;
-#ifdef DOS_FILE_SYSTEM
     if ((scheme_cmdline_exe_hack[0] == '?')
 	|| (scheme_cmdline_exe_hack[0] == '*')) {
+#ifdef DOS_FILE_SYSTEM
       /* This is how we make launchers in Windows. The cmdline is
 	 added as a resource of type 257. The long integer at
 	 scheme_cmdline_exe_hack[4] says where the command line starts
@@ -424,9 +424,7 @@ static void extract_built_in_arguments(const self_exe_t self_exe, char **_prog, 
 		+ 4);
 	}
       }
-    }
 #else
-    if (scheme_cmdline_exe_hack[0] == '?') {
       long fileoff, cmdoff, cmdlen, need, got;
       int fd;
       fileoff = get_segment_offset(self_exe);
@@ -454,8 +452,38 @@ static void extract_built_in_arguments(const self_exe_t self_exe, char **_prog, 
 	}
       }
       close(fd);
-    }
+
+      if (scheme_cmdline_exe_hack[0] == '*') {
+        /* "*" means that the first item is argv[0] replacement,
+           because this executable is being treated as a launcher */
+        sprog = prog;
+        prog = (char *)p + 4;
+        
+        if (prog[0] == '/') {
+          /* Absolute path */
+        } else {
+          /* Make it absolute, relative to this executable */
+          int plen = strlen(prog);
+          int mlen = strlen(self_exe);
+          char *s2;
+
+          while (mlen && (self_exe[mlen - 1] != '/')) {
+            mlen--;
+          }
+          s2 = (char *)malloc(mlen + plen + 1);
+          memcpy(s2, self_exe, mlen);
+          memcpy(s2 + mlen, prog, plen + 1);
+          prog = s2;
+        }
+
+        p += (p[0]
+              + (((long)p[1]) << 8)
+              + (((long)p[2]) << 16)
+              + (((long)p[3]) << 24)
+              + 4);
+      }
 #endif
+    }
 
     if (!p)
       p = (unsigned char *)scheme_cmdline_exe_hack + 1;

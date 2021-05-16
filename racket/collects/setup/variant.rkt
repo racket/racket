@@ -4,7 +4,8 @@
          setup/cross-system
          racket/promise)
 
-(provide variant-suffix)
+(provide variant-suffix
+         script-variant?)
 
 (define plain-variant
   (delay/sync
@@ -14,13 +15,13 @@
           'cs
           (cross-system-type 'gc))]
      [else
-      (let* ([dir (find-console-bin-dir)]
-             [exe (cond [(eq? 'windows (system-type)) "Racket.exe"]
-                        [(equal? #".dll" (system-type 'so-suffix))
-                         ;; in cygwin so-suffix is ".dll"
-                         "racket.exe"]
-                        [else "racket"])]
-             [f (build-path dir exe)])
+      (for/or ([dir (in-list (get-console-bin-search-dirs))])
+        (define exe (cond [(eq? 'windows (system-type)) "Racket.exe"]
+                          [(equal? #".dll" (system-type 'so-suffix))
+                           ;; in cygwin so-suffix is ".dll"
+                           "racket.exe"]
+                          [else "racket"]))
+        (define f (build-path dir exe))
         (and (file-exists? f)
              (with-input-from-file f
                (lambda ()
@@ -42,3 +43,6 @@
                                  (if (eq? 'cs (force plain-variant)) "" "CS"))]
              [else (error 'variant-suffix "unknown variant: ~e" variant)])])
     (if cased? r (string-downcase r))))
+
+(define (script-variant? v)
+  (memq v '(script-3m script-cgc script-cs)))

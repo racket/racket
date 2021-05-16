@@ -11,8 +11,7 @@
 
 (define (compute-cross!)
   (unless cross-system-table
-    (define lib-dir (find-lib-dir))    
-    (define ht (and lib-dir
+    (define ht (for/or ([lib-dir (in-list (get-cross-lib-search-dirs))])
                     (let ([f (build-path lib-dir "system.rktd")])
                       (and (file-exists? f)
                            (let ([ht (call-with-default-reading-parameterization

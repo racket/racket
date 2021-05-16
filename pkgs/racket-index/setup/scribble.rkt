@@ -58,6 +58,7 @@
                                  dest-dir
                                  flags
                                  under-main?
+                                 via-search?
                                  pkg?
                                  category
                                  out-count
@@ -197,6 +198,11 @@
                    (define src (simplify-path (build-path dir (car d)) #f))
                    (define name (cadddr d))
                    (define dest (doc-path dir name flags under-main?))
+                   (define via-search? (and under-main?
+                                            (not (or (equal? (find-doc-dir) dest)
+                                                     (let-values ([(base name dir?) (split-path dest)])
+                                                       (equal? (path->directory-path (find-doc-dir))
+                                                               base))))))
                    (make-doc dir
                              (let ([spec (directory-record-spec rec)])
                                (list* (car spec)
@@ -208,7 +214,7 @@
                                           (cdr spec))))
                              src
                              dest
-                             flags under-main? (and (path->pkg src) #t)
+                             flags under-main? via-search? (and (path->pkg src) #t)
                              (caddr d)
                              (list-ref d 4)
                              (if (path? name) (path-element->string name) name)
@@ -235,21 +241,28 @@
   (define main-doc-exists? (ormap (lambda (d) (member 'main-doc-root (doc-flags d))) 
                                   main-docs))
 
-  (define (can-build*? docs) (can-build? only-dirs docs))
+  (define (can-build*? docs) (can-build? only-dirs avoid-main? docs))
   
   (define main-db (find-doc-db-path latex-dest #f main-doc-exists?))
   (define user-db (find-doc-db-path latex-dest #t main-doc-exists?))
 
   ;; Ensure that databases are created:
-  (define (touch-db db-file)
+  (define (touch-db db-file [copy-from #f])
     (unless (file-exists? db-file)
       (define-values (base name dir?) (split-path db-file))
       (make-directory* base)
+      (when copy-from (copy-file copy-from db-file))
       (doc-db-disconnect
        (doc-db-file->connection db-file #t))))
   (when (or (ormap can-build*? main-docs)
             (and tidy? (not avoid-main?)))
-    (touch-db main-db))
+    ;; start with docindex from previous search layer, if any
+    (define prev-db (and (not (file-exists? main-db))
+                         (for/or ([dir (in-list (get-doc-extra-search-dirs))])
+                           (define db (build-path dir "docindex.sqlite"))
+                           (and (file-exists? db)
+                                db))))
+    (touch-db main-db prev-db))
   (when (or (ormap can-build*? user-docs)
             (and tidy? make-user?))
     (touch-db user-db))
@@ -282,7 +295,7 @@
                           (or (ormap can-build*? user-docs)
                               (and tidy? make-user?)
                               always-user?)))
-  (define (can-build**? doc) (can-build? only-dirs doc auto-main? auto-user?))
+  (define (can-build**? doc) (can-build? only-dirs avoid-main? doc auto-main? auto-user?))
   
   (unless latex-dest
     ;; Make sure "scribble.css", etc., is in place:
@@ -318,7 +331,7 @@
   (log-setup-info "getting document information")
   (define (make-sequential-get-info only-fast?)
     (get-doc-info only-dirs latex-dest
-                  auto-main? auto-user? main-doc-exists?
+                  avoid-main? auto-main? auto-user? main-doc-exists?
                   with-record-error setup-printf #f 
                   only-fast? force-out-of-date?
                   no-lock (if gc-after-each-sequential? gc-point void)))
@@ -328,11 +341,12 @@
                             [((doc-order-hint (car docs)) . > . -10) 0]
                             [else
                              (add1 (loop (cdr docs)))])))
+  (define count (for/sum ([doc (in-list docs)]) (if (can-build**? doc) 1 0)))
   (define infos
-    (and (ormap can-build**? docs)
+    (and (count . > . 0)
          (filter 
           values
-          (if (or ((min worker-count (length docs)) . < . 2)
+          (if (or ((min worker-count count) . < . 2)
                   only-fast?)
               ;; non-parallel version:
               (map (make-sequential-get-info only-fast?) docs)
@@ -353,7 +367,7 @@
                  (lambda (workerid)
                    (init-lock-ch!)
                    (list workerid program-name (verbose) only-dirs latex-dest
-                         auto-main? auto-user? main-doc-exists?
+                         avoid-main? auto-main? auto-user? main-doc-exists?
                          force-out-of-date? lock-ch))
                  (list-queue
                   (list-tail docs num-sequential)
@@ -367,10 +381,10 @@
                   (lambda (args)
                     (apply setup-printf args)))
                  (define-worker (get-doc-info-worker workerid program-name verbosev only-dirs latex-dest 
-                                                     auto-main? auto-user? main-doc-exists?
+                                                     avoid-main? auto-main? auto-user? main-doc-exists?
                                                      force-out-of-date? lock-ch)
                    (define ((get-doc-info-local program-name only-dirs latex-dest
-                                                auto-main? auto-user? main-doc-exists?
+                                                avoid-main? auto-main? auto-user? main-doc-exists?
                                                 force-out-of-date? lock
                                                 send/report) 
                             doc)
@@ -384,7 +398,7 @@
                          (go)))
                      (s-exp->fasl (serialize 
                                    ((get-doc-info only-dirs latex-dest
-                                                  auto-main? auto-user? main-doc-exists?
+                                                  avoid-main? auto-main? auto-user? main-doc-exists?
                                                   with-record-error setup-printf workerid
                                                   #f force-out-of-date? lock void)
                                     (deserialize (fasl->s-exp doc))))))
@@ -393,7 +407,7 @@
                    (match-message-loop
                     [doc (send/success 
                           ((get-doc-info-local program-name only-dirs latex-dest
-                                               auto-main? auto-user? main-doc-exists?
+                                               avoid-main? auto-main? auto-user? main-doc-exists?
                                                force-out-of-date? (lock-via-channel lock-ch)
                                                send/report) 
                            doc))])))))))))
@@ -887,20 +901,23 @@
                     (find-doc-dir))
                 "docindex.sqlite")]))
 
-(define (can-build? only-dirs doc [auto-main? #f] [auto-user? #f])
-  (or (not only-dirs)
-      (and auto-main?
-           (memq 'depends-all-main (doc-flags doc)))
-      (and auto-user?
-           (or (memq 'depends-all (doc-flags doc))
-               (memq 'depends-all-user (doc-flags doc))))
-      (ormap (lambda (d)
-               (let ([d (path->directory-path d)])
-                 (let loop ([dir (path->directory-path (doc-src-dir doc))])
-                   (or (equal? dir d)
-                       (let-values ([(base name dir?) (split-path dir)])
-                         (and (path? base) (loop base)))))))
-             only-dirs)))
+(define (can-build? only-dirs avoid-main? doc [auto-main? #f] [auto-user? #f])
+  (and (not (doc-via-search? doc))
+       (or (not avoid-main?)
+           (not (doc-under-main? doc)))
+       (or (not only-dirs)
+           (and auto-main?
+                (memq 'depends-all-main (doc-flags doc)))
+           (and auto-user?
+                (or (memq 'depends-all (doc-flags doc))
+                    (memq 'depends-all-user (doc-flags doc))))
+           (ormap (lambda (d)
+                    (let ([d (path->directory-path d)])
+                      (let loop ([dir (path->directory-path (doc-src-dir doc))])
+                        (or (equal? dir d)
+                            (let-values ([(base name dir?) (split-path dir)])
+                              (and (path? base) (loop base)))))))
+                  only-dirs))))
 
 (define (load-doc/ensure-prefix doc)
   (define (ensure-doc-prefix v src-spec)
@@ -991,7 +1008,7 @@
   (sha1 i))
 
 (define ((get-doc-info only-dirs latex-dest
-                       auto-main? auto-user? main-doc-exists?
+                       avoid-main? auto-main? auto-user? main-doc-exists?
                        with-record-error setup-printf workerid 
                        only-fast? force-out-of-date? lock gc-point)
          doc)
@@ -999,7 +1016,7 @@
   ;; First, move pre-rendered documentation, if any, into place
   (let ([rendered-dir (let-values ([(base name dir?) (split-path (doc-dest-dir doc))])
                         (build-path (doc-src-dir doc) "doc" name))])
-    (when (and (can-build? only-dirs doc)
+    (when (and (can-build? only-dirs avoid-main? doc)
                (directory-exists? rendered-dir)
                (not (file-exists? (build-path rendered-dir "synced.rktd")))
                (or (not (directory-exists? (doc-dest-dir doc)))
@@ -1024,7 +1041,7 @@
                            path)))]
          [src-sha1 (and src-zo (get-compiled-file-sha1 src-zo))]
          [renderer (make-renderer latex-dest doc main-doc-exists?)]
-         [can-run? (can-build? only-dirs doc)]
+         [can-run? (can-build? only-dirs avoid-main? doc)]
          [stamp-data (with-handlers ([exn:fail:filesystem? (lambda (exn) (list "" "" ""))])
                        (let ([v (call-with-input-file* stamp-file read)])
                          (if (and (list? v)
@@ -1117,7 +1134,7 @@
                                       (for-each delete-file info-out-files)
                                       (delete-file info-in-file)
                                       ((get-doc-info only-dirs latex-dest
-                                                     auto-main? auto-user? main-doc-exists?
+                                                     avoid-main? auto-main? auto-user? main-doc-exists?
                                                      with-record-error setup-printf workerid 
                                                      #f #f lock gc-point)
                                        doc))])
@@ -1126,7 +1143,7 @@
                (error "old info has wrong version or flags"))
              (when (and (or (not provides-time)
                             (provides-time . < . info-out-time))
-                        (can-build? only-dirs doc))
+                        (can-build? only-dirs avoid-main? doc))
                ;; Database is out of sync, and we don't need to build
                ;; this document, so update databse now. Note that a
                ;; timestamp is good enough for determing a sync,

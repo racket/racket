@@ -17,6 +17,7 @@
          planet/private/planet-shared
          (only-in planet/resolver resolve-planet-path)
          setup/cross-system
+         setup/variant
 
          "option.rkt"
          compiler/compiler
@@ -1552,17 +1553,32 @@
                  (make-directory* dir))
                (define skip-non-addon? (and (cc-main? cc)
                                             (avoid-main-installation)))
+               (define skip-untethered-main? (and (cc-main? cc)
+                                                  ;; If the executable already exists in a search
+                                                  ;; directory other than the one for `p`, no need
+                                                  ;; to write `p` after all
+                                                  (for/or ([dir (in-list (if (and (eq? kind 'gui)
+                                                                                  (not (script-variant?
+                                                                                        (current-launcher-variant))))
+                                                                             (get-gui-bin-extra-search-dirs)
+                                                                             (get-console-bin-extra-search-dirs)))])
+                                                    (define-values (base name dir?) (split-path p))
+                                                    (define p2 (build-path dir name))
+                                                    (or (file-exists? p2)
+                                                        (directory-exists? p2)))))
                (unless skip-non-addon?
-                 (prep-dir p)
-                 (prep-dir receipt-path)
+                 (unless skip-untethered-main?
+                   (prep-dir p)
+                   (prep-dir receipt-path))
                  (when config-p
                    (prep-dir config-p)))
                (when addon-p
                  (prep-dir addon-p))
-               (hash-set! created-launchers
-                          (record-launcher receipt-path mzln kind (current-launcher-variant) 
-                                           (cc-collection cc) (cc-path cc))
-                          #t)
+               (unless skip-untethered-main?
+                 (hash-set! created-launchers
+                            (record-launcher receipt-path mzln kind (current-launcher-variant) 
+                                             (cc-collection cc) (cc-path cc))
+                            #t))
                (define (create p user? tethered?)
                  (define aux
                    (append
@@ -1604,7 +1620,8 @@
                     p
                     aux)))
                (unless skip-non-addon?
-                 (create p (not (cc-main? cc)) #f)
+                 (unless skip-untethered-main?
+                   (create p (not (cc-main? cc)) #f))
                  (when config-p
                    (create config-p #f #t)))
                (when addon-p
@@ -1789,6 +1806,7 @@
                                copy-tag
                                move-tag
                                find-target-dir
+                               get-extra-search-dirs
                                find-user-target-dir
                                path->relative-string/*
                                receipt-file
@@ -1828,37 +1846,48 @@
                               (define (copy-lib lib moving?)
                                 (define src (path->complete-path lib (cc-path cc)))
                                 (define lib-name (file-name-from-path lib))
-                                (define dest (build-dest-path dir lib-name))
-                                (define already? (or (and moving?
-                                                          (not (file-exists? src))
-                                                          (not (directory-exists? src))
-                                                          (or (file-exists? dest)
-                                                              (directory-exists? dest)))
-                                                     (same-content? src dest)))
-                                (unless already?
-                                  (setup-printf "installing" (string-append what " ~a")
-                                                (path->relative-string/* dest)))
-                                (hash-set!
-                                 installed-libs
-                                 (record-lib receipt-path lib-name (cc-collection cc) (cc-path cc))
-                                 #t)
-                                (unless already?
-                                  (hash-set! dests dest #t)
-                                  (delete-directory/files/hard dest)
-				  (make-parent-directory* dest)
-                                  (if (file-exists? src)
-                                      (if (cc-main? cc)
-                                          (copy-file src dest)
-                                          (copy-user-lib src dest))
-                                      (copy-directory/files src dest)))
-                                src)
+                                (cond
+                                  [(and (cc-main? cc)
+                                        (for/or ([s-dir (in-list (get-extra-search-dirs))])
+                                          (let ([p (build-dest-path s-dir lib-name)])
+                                            (or (file-exists? p)
+                                                (directory-exists? p)))))
+                                   ;; already exists in one of the search directories, so
+                                   ;; don't copy/move to this one
+                                   #f]
+                                  [else
+                                   (define dest (build-dest-path dir lib-name))
+                                   (define already? (or (and moving?
+                                                             (not (file-exists? src))
+                                                             (not (directory-exists? src))
+                                                             (or (file-exists? dest)
+                                                                 (directory-exists? dest)))
+                                                        (same-content? src dest)))
+                                   (unless already?
+                                     (setup-printf "installing" (string-append what " ~a")
+                                                   (path->relative-string/* dest)))
+                                   (hash-set!
+                                    installed-libs
+                                    (record-lib receipt-path lib-name (cc-collection cc) (cc-path cc))
+                                    #t)
+                                   (unless already?
+                                     (hash-set! dests dest #t)
+                                     (delete-directory/files/hard dest)
+                                     (make-parent-directory* dest)
+                                     (if (file-exists? src)
+                                         (if (cc-main? cc)
+                                             (copy-file src dest)
+                                             (copy-user-lib src dest))
+                                         (copy-directory/files src dest)))
+                                   src]))
                               
                               (for ([lib (in-list copy-libs)])
                                 (copy-lib lib #f))
                               
                               (for ([lib (in-list move-libs)])
                                 (define src (copy-lib lib #t))
-                                (delete-directory/files src #:must-exist? #f)))))
+                                (when src
+                                  (delete-directory/files src #:must-exist? #f))))))
       (when (or no-specific-collections?
                 (make-tidy))
         (unless (avoid-main-installation)
@@ -1967,6 +1996,7 @@
                          'copy-foreign-libs
                          'move-foreign-libs
                          find-lib-dir
+                         get-cross-lib-extra-search-dirs
                          find-user-lib-dir
                          path->relative-string/lib
                          "libs.rktd" #t
@@ -1991,6 +2021,7 @@
                          'copy-shared-files
                          'move-shared-files
                          find-share-dir
+                         get-share-extra-search-dirs
                          find-user-share-dir
                          path->relative-string/share
                          "shares.rktd" #t
@@ -2009,6 +2040,7 @@
                          'copy-man-pages
                          'move-man-pages
                          find-man-dir
+                         get-man-extra-search-dirs
                          find-user-man-dir
                          path->relative-string/man
                          "mans.rktd" #f

@@ -46,6 +46,11 @@ directory}:
        @tech[#:doc '(lib "pkg/scribblings/pkg.scrbl")]{package
        scope}. The default is @racket[(version)].}
 
+ @item{@indexed-racket['collects-search-dirs] --- a list of paths,
+       strings, byte strings, or @racket[#f] representing the search
+       path for collections. Each @racket[#f] in the list, if any, is
+       replaced with the @tech{main collection directory}.}
+
  @item{@indexed-racket['lib-dir] --- a path, string, or byte string for the
        @deftech{main library directory}. It defaults to a @filepath{lib}
        sibling directory of the @tech{main collection directory}.}
@@ -66,12 +71,23 @@ directory}:
        It defaults to a @filepath{share} sibling directory of the main
        collection directory.}
 
+ @item{@indexed-racket['share-search-dirs] --- analogous to
+       @racket['lib-search-dirs], where @racket[#f] is replaced by the
+       default search path, which is a user- and version-specific
+       directory followed by a directory as potentially configured via
+       @scheme['share-dir].
+
+       @history[#:added "8.1.0.6"]}
+       
  @item{@indexed-racket['links-file] --- a path, string, or byte string for the
        @tech[#:doc reference-doc]{collection links file}. It defaults
        to a @filepath{links.rktd} file in the @tech{main shared-file directory}.}
 
  @item{@indexed-racket['links-search-files] --- like @racket['lib-search-dirs],
-       but for @tech[#:doc reference-doc]{collection links file}.}
+       but for @tech[#:doc reference-doc]{collection links file}. A @racket[#f]
+       is replaced by the default search path, which is the user- and version-specific
+       links file followed by the links file as potentially configured
+       via @scheme['links-file].}
 
  @item{@indexed-racket['pkgs-dir] --- a path, string, or byte string
        for packages that have @exec{installation} @tech[#:doc '(lib
@@ -118,6 +134,22 @@ directory}:
 
        @history[#:added "6.8.0.2"]}
 
+ @item{@indexed-racket['bin-search-dirs] --- like
+       @racket['lib-search-dirs], but for finding executables
+       such as @exec{racket}. A @racket[#f]
+       is replaced by the default search path, which is a
+       user- and version-specific directory followed by the main console
+       executable directory as potentially configured via
+       @scheme['bin-dir].
+
+       @history[#:added "8.1.0.6"]}
+
+ @item{@indexed-racket['gui-bin-search-dirs] --- like
+       @racket['bin-search-dirs], but for GUI executables,
+       and defaults to the @racket['bin-search-dirs] value.
+
+       @history[#:added "8.1.0.6"]}
+
  @item{@indexed-racket['apps-dir] --- a path, string, or byte string
        for the installation's directory for @filepath{.desktop} files.
        It defaults to a @filepath{applications} subdirectory of the
@@ -125,15 +157,26 @@ directory}:
 
  @item{@indexed-racket['man-dir] --- a path, string, or byte string for the
        installation's man-page directory. It defaults to a @filepath{man}
-       sibling directory of the @tech{main collection directory}.}
+       sibling directory of the @tech{main shared-file directory}.}
+
+ @item{@indexed-racket['man-search-dirs] --- analogous to
+       @racket['lib-search-dirs], where @racket[#f] is replaced by the
+       default search path, which is a user- and version-specific
+       directory followed by a directory as potentially configured via
+       @scheme['man-dir].
+
+       @history[#:added "8.1.0.6"]}
 
  @item{@indexed-racket['doc-dir] --- a path, string, or byte string for the
        main documentation directory. The value defaults to a
        @filepath{doc} sibling directory of the
        @tech{main collection directory}.}
 
- @item{@indexed-racket['doc-search-dirs] --- like @racket['lib-search-dirs],
-       but for directories containing documentation.}
+ @item{@indexed-racket['doc-search-dirs] --- analogous to
+       @racket['lib-search-dirs], where @racket[#f] is replaced by the
+       default search path, which is a user- and version-specific
+       directory followed by a directory as potentially configured via
+       @scheme['doc-dir].}
 
  @item{@indexed-racket['doc-search-url] --- a URL string that is augmented
        with version and search-tag queries to form a remote
@@ -210,7 +253,8 @@ directory}:
        directory to hold extra copies of executables that are tied to the
        configuration directory (as reported by @racket[find-config-dir])
        that is active at the time the executables are created. See also
-       @racket[find-config-tethered-console-bin-dir] and
+       @secref["tethered-install"],
+       @racket[find-config-tethered-console-bin-dir], and
        @racket[find-config-tethered-gui-bin-dir].}
 
   @item{@indexed-racket['interactive-file] and

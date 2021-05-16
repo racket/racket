@@ -150,10 +150,28 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define (find-relevant-lib-dir f #:default [default #f])
+  (or
+   (for/or ([lib-dir (in-list (get-cross-lib-search-dirs))])
+     (define p (build-path lib-dir f))
+     (and (or (file-exists? p)
+              (directory-exists? p))
+          lib-dir))
+   default
+   (error 'find-relevant-lib-dir
+          "could not find ~s"
+          f)))
+
+(define (find-in-lib f)
+  (build-path (find-relevant-lib-dir f #:default (find-lib-dir))
+              f))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define (prepare-macosx-mred exec-name dest aux variant)
   (let* ([name (let-values ([(base name dir?) (split-path dest)])
                  (path-replace-extension name #""))]
-         [src (build-path (find-lib-dir) "Starter.app")]
+         [src (find-in-lib "Starter.app")]
          [creator (let ([c (assq 'creator aux)])
                     (or (and c
                              (cdr c))
@@ -290,31 +308,6 @@
                                              name))))
                 resource-files))
     (build-path dest "Contents" "MacOS" name)))
-
-;; The starter-info file is now disabled. The GRacket
-;; command line is handled the same as the Racket command
-;; line.
-(define use-starter-info? #f)
-(define (finish-osx-mred dest flags exec-name keep-exe? relative?)
-  (call-with-output-file (build-path dest 
-                                     "Contents" 
-                                     "Resources" 
-                                     "starter-info")
-    #:exists 'truncate
-    (lambda (port)
-      (write-plist 
-       `(dict ,@(if keep-exe?
-                    `((assoc-pair "executable name"
-                                  ,(path->string 
-                                    (if relative?
-                                        (relativize exec-name dest
-                                                    (lambda (p)
-                                                      (build-path 'up 'up 'up p)))
-                                        exec-name))))
-                    null)
-              (assoc-pair "stored arguments"
-                          (array ,@flags)))
-       port))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1535,14 +1528,13 @@
                   (cond
                     [(and mred? (eq? 'macosx (cross-system-type)))
                      (values (prepare-macosx-mred exe dest aux variant) 
-                             (mac-dest->executable (build-path (find-lib-dir) "Starter.app")
+                             (mac-dest->executable (find-in-lib "Starter.app")
                                                    #t)
                              #t)]
                     [unix-starter?
-                     (let ([starter (build-path (find-lib-dir) 
-                                                (if (force exe-suffix?)
-                                                    "starter.exe"
-                                                    "starter"))])
+                     (let ([starter (find-in-lib (if (force exe-suffix?)
+                                                     "starter.exe"
+                                                     "starter"))])
                        (when (or (file-exists? dest)
                                  (directory-exists? dest)
                                  (link-exists? dest))
@@ -1581,7 +1573,7 @@
                                            mred?)
                     (when mred?
                       ;; adjust relative path, since exe may change directory :
-                      (define rel (find-relative-path* dest (find-lib-dir)))
+                      (define rel (find-relative-path* dest (find-relevant-lib-dir "Racket.framework")))
                       (update-framework-path (format "@executable_path/../../../~a"
                                                      (path->directory-path rel))
                                              (mac-dest->executable dest mred?)
@@ -1591,7 +1583,7 @@
                   (when (regexp-match #rx"^@executable_path" 
                                       (get-current-framework-path dest "Racket"))
                     (update-framework-path (string-append
-                                            (path->string (find-lib-dir))
+                                            (path->string (find-relevant-lib-dir "Racket.framework"))
                                             "/")
                                            dest
                                            mred?))))))
@@ -1626,7 +1618,7 @@
                                         dest))])
             (define (gui-bin->config rel)
               ;; Find the path to config-dir relative to the executable
-              (define p (find-relative-path* dest (find-config-dir)))
+              (define p (find-relative-path* (if keep-exe? orig-exe dest) (find-config-dir)))
               (simplify-path
                (if (eq? rel 'same)
                    p
@@ -1635,18 +1627,17 @@
             (if m
                 (if (cdr m)
                     (update-config-dir (dest->executable dest) (cdr m))
-                    (when mred?
+                    (when (and mred? (not keep-exe?))
                       (cond
-                       [osx?
-                        ;; adjust relative path (since GRacket is likely off by one):
-                        (update-config-dir (mac-dest->executable dest mred?)
-                                           (gui-bin->config "../../.."))]
-                       [(eq? 'windows (cross-system-type))
-                        (unless keep-exe?
-                          ;; adjust relative path (since GRacket is likely off by one):
-                          (update-config-dir dest (gui-bin->config 'same)))]
-                       [else
-                        (update-config-dir dest (gui-bin->config 'same))])))
+                        [osx?
+                         ;; adjust relative path (since GRacket is likely off by one):
+                         (update-config-dir (mac-dest->executable dest mred?)
+                                            (gui-bin->config "../../.."))]
+                        [(eq? 'windows (cross-system-type))
+                         ;; adjust relative path (since GRacket is likely off by one):
+                         (update-config-dir dest (gui-bin->config 'same))]
+                        [else
+                         (update-config-dir dest (gui-bin->config 'same))])))
                 ;; Check whether we need an absolute path to config:
                 (let ([dir (get-current-config-dir (dest->executable dest))])
                   (when (relative-path? dir)
@@ -1676,10 +1667,11 @@
 		   (lambda (start decl-end end)
 		     (let ([start-s (number->string start)]
 			   [decl-end-s (number->string decl-end)]
-                       [end-s (number->string end)])
+                           [end-s (number->string end)])
 		       (append (if launcher?
-				   (if (and (eq? 'windows (cross-system-type))
-					    keep-exe?)
+				   (if (and keep-exe?
+                                            ;; a unix starter uses the same path as it execs
+                                            (not unix-starter?))
 				       ;; argv[0] replacement:
 				       (list (path->string 
 					      (if relative?
@@ -1820,7 +1812,7 @@
                   (when verbose?
                     (eprintf "Setting collection path\n"))
                   (set-collects-path dest-exe collects-path-bytes)]
-                 [mred?
+                 [(and mred? (not keep-exe?))
                   (cond
                    [osx?
                     ;; default path in `gracket' is off by one:
@@ -1828,13 +1820,10 @@
 						 (build-path 'up 'up 'up
                                                              (find-relative-path* dest (find-collects-dir)))))]
                    [(eq? 'windows (cross-system-type))
-                    (unless keep-exe?
-                      ;; off by one in this case, too:
-                      (set-collects-path dest-exe (path->bytes
-						   (find-relative-path* dest (find-collects-dir)))))])])
+                    ;; off by one in this case, too:
+                    (set-collects-path dest-exe (path->bytes
+                                                 (find-relative-path* dest (find-collects-dir))))])])
                 (cond
-                  [(and use-starter-info? osx?)
-                   (finish-osx-mred dest full-cmdline exe keep-exe? relative?)]
                   [unix-starter?
                    (let ([numpos (with-input-from-file dest-exe 
                                    (lambda () (find-cmdline 
@@ -1869,7 +1858,7 @@
                               (write-bytes #"s" out))
                             (flush-output out))
                           (file-position out (+ numpos 7))
-                          (write-bytes #"!" out)
+                          (write-bytes (if keep-exe? #"*" #"!") out)
                           (write-num start)
                           (write-num decl-end)
                           (write-num end)
@@ -1921,7 +1910,7 @@
                                              (file-position out))])
                             (file-position out cmdpos)
                             (fprintf out "~a...~a~a"
-                                     (if (and keep-exe? (eq? 'windows (cross-system-type))) "*" "?")
+                                     (if keep-exe? "*" "?")
                                      (integer->integer-bytes end 4 #t #f)
                                      (integer->integer-bytes (- new-end end) 4 #t #f)))))
                       (lambda ()

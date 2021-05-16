@@ -9,8 +9,15 @@
 (provide (except-out (all-from-out "private/dirs.rkt")
                      config:dll-dir
                      config:bin-dir
+                     config:gui-bin-dir
+                     config:bin-search-dirs
+                     config:gui-bin-search-dirs
                      config:config-tethered-console-bin-dir
                      config:config-tethered-gui-bin-dir
+                     config:lib-search-dirs
+                     config:share-search-dirs
+                     config:man-search-dirs
+                     config:doc-search-dirs
                      define-finder
                      get-config-table
                      to-path)
@@ -79,6 +86,61 @@
 
 (define (find-addon-tethered-gui-bin-dir)
   (find-addon-bin-dir 'addon-tethered-gui-bin-dir))
+
+;; ----------------------------------------
+;; Extra search paths
+
+(provide get-console-bin-search-dirs
+         get-gui-bin-search-dirs
+         get-share-search-dirs
+         get-man-search-dirs
+         get-console-bin-extra-search-dirs
+         get-gui-bin-extra-search-dirs
+         get-share-extra-search-dirs
+         get-man-extra-search-dirs
+         get-doc-extra-search-dirs
+         get-cross-lib-extra-search-dirs)
+
+(define (make-search-list config:search-dirs find-dir)
+  (combine-search (force config:search-dirs)
+                  (let ([p (find-dir)])
+                    (if p
+                        (list p)
+                        null))))
+
+(define (get-console-bin-search-dirs)
+  (make-search-list config:bin-search-dirs find-console-bin-dir))
+
+(define (get-gui-bin-search-dirs)
+  (make-search-list config:gui-bin-search-dirs find-gui-bin-dir))
+
+(define (get-share-search-dirs)
+  (make-search-list config:share-search-dirs find-share-dir))
+  
+(define (get-man-search-dirs)
+  (make-search-list config:man-search-dirs find-man-dir))
+
+
+(define (make-extra-search-list config:search-dirs)
+  (combine-search (force config:search-dirs) null))
+
+(define (get-console-bin-extra-search-dirs)
+  (make-extra-search-list config:bin-search-dirs))
+
+(define (get-gui-bin-extra-search-dirs)
+  (make-extra-search-list config:gui-bin-search-dirs))
+
+(define (get-share-extra-search-dirs)
+  (make-extra-search-list config:share-search-dirs))
+  
+(define (get-man-extra-search-dirs)
+  (make-extra-search-list config:man-search-dirs))
+
+(define (get-doc-extra-search-dirs)
+  (make-extra-search-list config:doc-search-dirs))
+
+(define (get-cross-lib-extra-search-dirs)
+  (make-extra-search-list config:lib-search-dirs))
 
 ;; ----------------------------------------
 ;; DLLs

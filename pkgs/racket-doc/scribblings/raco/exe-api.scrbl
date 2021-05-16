@@ -279,10 +279,10 @@ currently supported keys are as follows:
         brings the other instance to the front; @racket[#f] means that
         multiple instances are expected.}
 
-  @item{@racket['forget-exe?] (Windows, Mac OS) : A boolean;
+  @item{@racket['forget-exe?] (Unix, Windows, Mac OS) : A boolean;
         @racket[#t] for a launcher (see @racket[launcher?] below) does
         not preserve the original executable name for
-        @racket[(find-system-path 'exec-file)]; the main consequence
+        @racket[(find-system-path 'exec-file)]; one consequence
         is that library collections will be found relative to the
         launcher instead of the original executable.}
 
@@ -329,12 +329,12 @@ use of @tech[#:doc reference-doc]{collection links files}.
 
 If the @racket[#:launcher?] argument is @racket[#t], then
 @racket[mod-list] should be null, @racket[literal-files] should be
-null, @racket[literal-sexp] should be @racket[#f], and the platform
-should be Windows or Mac OS. The embedding executable is created in
+null, and @racket[literal-sexp] should be @racket[#f]. The embedding executable is created in
 such a way that @racket[(find-system-path 'exec-file)] produces the
 source Racket or GRacket path instead of the embedding executable (but
 the result of @racket[(find-system-path 'run-file)] is still the
-embedding executable).
+embedding executable), unless @racket['forget-exe?] is associated
+to a true value in @racket[aux].
 
 The @racket[#:variant] argument indicates which variant of the
 original binary to use for embedding. The default is

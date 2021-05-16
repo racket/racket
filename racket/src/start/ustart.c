@@ -18,7 +18,7 @@
 # define PRESERVE_IN_EXECUTABLE /* empty */
 #endif
 
-/* The config string after : is replaced with ! followed by a sequence
+/* The config string after : is replaced with ! or * followed by a sequence
    of little-endian 4-byte ints:
     start - offset into the binary
     prog_end - offset; start to prog_end is the program region
@@ -31,6 +31,10 @@
      exe_path - program to start (relative is w.r.t. executable)
      dll_path - DLL directory if non-empty (relative is w.r.t. executable)
      cmdline_arg ...
+
+   A * instead of ! at the start means that `-E` should be skipped,
+   so that `(find-system-path 'exec-file)` refers to the started
+   executable instaed of this starter.
 
    For ELF binaries, the absolute values of `start', `decl_end', `prog_end',
    and `end' are ignored if a ".rackcmdl" (starter) or ".rackprog"
@@ -301,7 +305,7 @@ int main(int argc, char **argv)
   }
 
   data = (char *)malloc(end - prog_end);
-  new_argv = (char **)malloc((count + argc + (2 * collcount) + 13) * sizeof(char*));
+  new_argv = (char **)malloc((count + argc + (2 * collcount) + 15) * sizeof(char*));
 
   fd = open(embedding_me, O_RDONLY, 0);
   lseek(fd, prog_end, SEEK_SET);
@@ -345,13 +349,6 @@ int main(int argc, char **argv)
   argpos = 1;
   inpos = 1;
 
-  /* Add -E flag; we can't just put `me` in `argv[0]`, because some
-     OSes (well, just OpenBSD) cannot find the executable path of a
-     process, and the actual executable may be needed to find embedded
-     boot images. */
-  new_argv[argpos++] = "-E";
-  new_argv[argpos++] = me;
-
   /* Keep all X11 flags to the front: */
   if (x11) {
     int n;
@@ -371,6 +368,17 @@ int main(int argc, char **argv)
       }
     }
   }
+
+  if (config[7] != '*') {
+    /* Add -E flag; we can't just put `me` in `argv[0]`, because some
+       OSes (well, just OpenBSD) cannot find the executable path of a
+       process, and the actual executable may be needed to find embedded
+       boot images. */
+    new_argv[argpos++] = "-E";
+    new_argv[argpos++] = me;
+  }
+  new_argv[argpos++] = "-N";
+  new_argv[argpos++] = me;
 
   /* Add -X and -S flags */
   {
@@ -392,11 +400,14 @@ int main(int argc, char **argv)
   new_argv[argpos++] = "-G";
   new_argv[argpos++] = absolutize(_configdir + _configdir_offset, me);
 
-  /* next four args are "-k" and numbers; leave room to insert the
-     filename in place of "-k", and fix the numbers to match start,
-     decl_end, and prog_end */
-  new_argv[argpos++] = "-Y";
-  fix_argv = argpos;
+  if (count && !strcmp(data, "-k")) {
+    /* next four args are "-k" and numbers; leave room to insert the
+       filename in place of "-k", and fix the numbers to match start,
+       decl_end, and prog_end */
+    new_argv[argpos++] = "-Y";
+    fix_argv = argpos;
+  } else
+    fix_argv = 0;
 
   /* Add built-in flags: */
   while (count--) {

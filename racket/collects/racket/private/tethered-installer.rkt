@@ -27,4 +27,5 @@
                         (list "-A" (path->string (find-system-path 'addon-dir)))
                         null))
          #:launcher? #t
-         #:aux `((relative? . #f)))))))
+         #:aux `((relative? . #f)
+                 (forget-exe? . #t)))))))
