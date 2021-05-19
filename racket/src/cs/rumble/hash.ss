@@ -599,7 +599,7 @@
     (raise-arguments-error 'hash-keys-subset?
                            "given hash tables do not use the same key comparison"
                            "first table" ht1
-                           "first table" ht2)]))
+                           "second table" ht2)]))
 
 ;; Use `eql?` for recursive comparisons
 (define (hash=? ht1 ht2 eql?)
