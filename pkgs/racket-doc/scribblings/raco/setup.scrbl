@@ -545,6 +545,10 @@ Optional @filepath{info.rkt} fields trigger additional actions by
      @item{@racket['no-search] : Build the document without a search
            box.}
 
+     @item{@racket['every-main-layer] : With @racket['main-doc],
+           indicates that the document should be rendered separately
+           at every installation layer (see @secref["layered-install"]).}
+
     ]
 
     The @racket[_category] list specifies how to show the document in

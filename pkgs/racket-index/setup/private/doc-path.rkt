@@ -23,12 +23,13 @@
              (memq 'main-doc flags)
              (pair? (path->main-collects-relative dir)))
          (and main?
-              ;; check for existing directory in search path before
-              ;; assuming the main doc directory
-              (or (for/or ([dir (get-doc-search-dirs)])
-                    (define p (build-path dir name))
-                    (and (directory-exists? p)
-                         p))
+              ;; check for existing directory in search path (unless
+              ;; 'every-main-layer) before assuming the main doc directory
+              (or (and (not (memq 'every-main-layer flags))
+                       (for/or ([dir (get-doc-extra-search-dirs)])
+                         (define p (build-path dir name))
+                         (and (directory-exists? p)
+                              p)))
                   (build-path (find-doc-dir) name)))]
         [else 
          (and (not (eq? 'never user-doc-mode))

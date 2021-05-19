@@ -158,7 +158,8 @@
   (define (scribblings-flag? sym)
     (memq sym '(main-doc main-doc-root user-doc-root user-doc multi-page
                          depends-all depends-all-main depends-all-user
-                         no-depend-on always-run keep-style no-search)))
+                         no-depend-on always-run keep-style no-search
+                         every-main-layer)))
   (define (validate-scribblings-infos infos)
     (define (validate path [flags '()] [cat '(library)] [name #f] [out-count 1] [order-hint 0])
       (and (string? path) (relative-path? path)
