@@ -129,7 +129,7 @@ Returns @racket[#t] if @racket[hash] compares keys with @racket[eq?],
 @defproc[(hash-strong? [hash hash?]) boolean?]{
 
 Returns @racket[#t] if @racket[hash] retains its keys strongly,
-@racket[#f] if it retains keys strongly or like @tech{ephemerons}.
+@racket[#f] if it retains keys weakly or like @tech{ephemerons}.
 
 @history[#:added "8.0.0.10"]}
 
