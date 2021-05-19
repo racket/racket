@@ -129,7 +129,7 @@
          (let ([ht (impersonator-val ht)])
            (mutable-hash? ht)))
     (impersonate-hash-set! ht k v)]
-   [else (raise-argument-error 'hash-set! "(and/c hash? (not/c immutable?))" ht)]))
+   [else (raise-argument-error 'hash-set! "(and/c hash? (not/c immutable?))" 0 ht k v)]))
 
 (define (mutable-hash-set! ht k v)
   (lock-acquire (mutable-hash-lock ht))
@@ -148,7 +148,7 @@
          (let ([ht (impersonator-val ht)])
            (mutable-hash? ht)))
     (impersonate-hash-remove! ht k)]
-   [else (raise-argument-error 'hash-remove! "(and/c hash? (not/c immutable?))" ht)]))
+   [else (raise-argument-error 'hash-remove! "(and/c hash? (not/c immutable?))" 0 ht k)]))
 
 (define (mutable-hash-remove! ht k)
   (lock-acquire (mutable-hash-lock ht))
@@ -230,7 +230,7 @@
    [(and (impersonator? ht)
          (intmap? (impersonator-val ht)))
     (impersonate-hash-set ht k v)]
-   [else (raise-argument-error 'hash-set "(and/c hash? immutable?)" ht)]))
+   [else (raise-argument-error 'hash-set "(and/c hash? immutable?)" 0 ht k v)]))
 
 (define (hash-remove ht k)
   (cond
@@ -238,7 +238,7 @@
    [(and (impersonator? ht)
          (intmap? (impersonator-val ht)))
     (impersonate-hash-remove ht k)]
-   [else (raise-argument-error 'hash-remove "(and/c hash? immutable?)" ht)]))
+   [else (raise-argument-error 'hash-remove "(and/c hash? immutable?)" 0 ht k)]))
 
 (define (hash-clear ht)
   (cond
@@ -364,7 +364,7 @@
          (authentic-hash? (impersonator-val ht)))
     (impersonate-hash-ref ht k)]
    [else
-    (raise-argument-error 'hash-ref "hash?" ht)]))
+    (raise-argument-error 'hash-ref "hash?" 0 ht k)]))
 
 (define/who hash-ref-key
   (case-lambda
@@ -396,7 +396,7 @@
          (authentic-hash? (impersonator-val ht)))
     (impersonate-hash-ref-key ht k)]
    [else
-    (raise-argument-error 'hash-ref-key "hash?" ht)]))
+    (raise-argument-error 'hash-ref-key "hash?" 0 ht k)]))
 
 (define (mutable-hash-ref-key/none ht k)
   (lock-acquire (mutable-hash-lock ht))
@@ -764,7 +764,7 @@
          (authentic-hash? (impersonator-val ht)))
     ;; `hash-iterate-next` must not hash any keys:
     (hash-iterate-next (impersonator-val ht) i)]
-   [else (raise-argument-error who "hash?" ht)]))
+   [else (raise-argument-error who "hash?" 0 ht i)]))
 
 (define (locked-iterable-hash-iterate-next ht init-i)
   (let loop ([i (or init-i -1)])
