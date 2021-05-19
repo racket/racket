@@ -415,44 +415,45 @@ complete solutions.
 
 As an example for @racket[register-finalizer],
 suppose that you're dealing with a foreign function that returns a
-C string that you should free.  Here is an attempt at creating a suitable type:
+C pointer that you should free, but you mostly want to use the memory
+at a 16-byte offset.  Here is an attempt at creating a suitable type:
 
 @racketblock[
-(define @#,racketidfont{_sixteen-bytes/free}
+(define @#,racketidfont{_pointer-at-sixteen/free}
   (make-ctype _pointer
-              #f (code:comment @#,t{a Racket bytes can be used as a pointer})
+              #f (code:comment @#,t{i.e., just @racket[_pointer] as an argument type})
               (lambda (x)
-                (let ([b (make-sized-byte-string x 16)])
+                (let ([p (ptr-add x 16)])
                   (register-finalizer x free)
-                  b))))
+                  p))))
 ]
 
 The above code is wrong: the finalizer is registered for @racket[x],
-which is no longer needed after the byte string is created.  Changing
-the example to register the finalizer for @racket[b] corrects the problem,
-but then @racket[free] is invoked @racket[b] it instead of on @racket[x].
+which is no longer needed after the new pointer @racket[p] is created.  Changing
+the example to register the finalizer for @racket[p] corrects the problem,
+but then @racket[free] is invoked @racket[p] instead of on @racket[x].
 In the process of fixing this problem, we might be careful and log a message
 for debugging:
 
 @racketblock[
-(define @#,racketidfont{_sixteen-bytes/free}
+(define @#,racketidfont{_pointer-at-sixteen/free}
   (make-ctype _pointer
-              #f (code:comment @#,t{a Racket bytes can be used as a pointer})
+              #f
               (lambda (x)
-                (let ([b (make-sized-byte-string x 16)])
-                  (register-finalizer b
+                (let ([p (ptr-add x 16)])
+                  (register-finalizer p
                     (lambda (ignored)
-                      (log-debug (format "Releasing ~s\n" b))
+                      (log-debug (format "Releasing ~s\n" p))
                       (free x)))
-                  b))))
+                  p))))
 ]
 
 Now, we never see any logged event. The problem is that the finalizer is a
-closure that keeps a reference to @racket[b]. Instead of referencing the
+closure that keeps a reference to @racket[p]. Instead of referencing the
 value that is finalized, use the input argument to the finalizer; simply changing
-@racket[ignored] to @racket[b] above solves the problem.  (Removing the
+@racket[ignored] to @racket[p] above solves the problem.  (Removing the
 debugging message also avoids the problem, since the finalization
-procedure would then not close over @racket[b].)}
+procedure would then not close over @racket[p].)}
 
 
 @deftogether[(
