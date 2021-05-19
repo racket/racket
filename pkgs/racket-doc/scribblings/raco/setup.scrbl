@@ -2577,13 +2577,13 @@ layer:
  @item{An @defterm{installation} layer with tethering is like a one
        without tethering (see @secref["layered-install"]), but where
        the layer's @filepath{@nonterm{layer-dir}/etc/config.rktd} file
-       htat maps @racket['config-tethered-console-bin-dir] to
+       that maps @racket['config-tethered-console-bin-dir] to
        @nonterm{tethered-bin-dir} and
        @racket['config-tethered-gui-bin-dir] to
-       @nonterm{tethered-gui-bin-dir}. The @racket['bin-dir]
-       configuration can point to a directory that is ignored, since
-       the executables there will not be tethered. Initialize the
-       tethered layer with
+       @nonterm{tethered-gui-bin-dir}. The @racket['bin-dir] and
+       @racket['gui-bin-dir] configurations can point to the same
+       directories, but executables are not specifically created there by
+       @exec{raco setup}. Initialize the tethered layer with
 
        @commandline{racket -G @nonterm{layer-dir}/etc -l- raco setup}}
 

@@ -1554,31 +1554,33 @@
                (define skip-non-addon? (and (cc-main? cc)
                                             (avoid-main-installation)))
                (define skip-untethered-main? (and (cc-main? cc)
-                                                  ;; If the executable already exists in a search
-                                                  ;; directory other than the one for `p`, no need
-                                                  ;; to write `p` after all
-                                                  (for/or ([dir (in-list (if (and (eq? kind 'gui)
-                                                                                  (not (script-variant?
-                                                                                        (current-launcher-variant))))
-                                                                             (get-gui-bin-extra-search-dirs)
-                                                                             (get-console-bin-extra-search-dirs)))])
-                                                    (define-values (base name dir?) (split-path p))
-                                                    (define p2 (build-path dir name))
-                                                    (or (file-exists? p2)
-                                                        (directory-exists? p2)))))
+                                                  (or
+                                                   ;; Don't create untethered if we're creating tethered
+                                                   config-p
+                                                   ;; If the executable already exists in a search
+                                                   ;; directory other than the one for `p`, no need
+                                                   ;; to write `p` after all
+                                                   (for/or ([dir (in-list (if (and (eq? kind 'gui)
+                                                                                   (not (script-variant?
+                                                                                         (current-launcher-variant))))
+                                                                              (get-gui-bin-extra-search-dirs)
+                                                                              (get-console-bin-extra-search-dirs)))])
+                                                     (define-values (base name dir?) (split-path p))
+                                                     (define p2 (build-path dir name))
+                                                     (or (file-exists? p2)
+                                                         (directory-exists? p2))))))
                (unless skip-non-addon?
+                 (prep-dir receipt-path)
                  (unless skip-untethered-main?
-                   (prep-dir p)
-                   (prep-dir receipt-path))
+                   (prep-dir p))
                  (when config-p
                    (prep-dir config-p)))
                (when addon-p
                  (prep-dir addon-p))
-               (unless skip-untethered-main?
-                 (hash-set! created-launchers
-                            (record-launcher receipt-path mzln kind (current-launcher-variant) 
-                                             (cc-collection cc) (cc-path cc))
-                            #t))
+               (hash-set! created-launchers
+                          (record-launcher receipt-path mzln kind (current-launcher-variant) 
+                                           (cc-collection cc) (cc-path cc))
+                          #t)
                (define (create p user? tethered?)
                  (define aux
                    (append
