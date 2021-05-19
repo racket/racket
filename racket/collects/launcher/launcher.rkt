@@ -394,13 +394,14 @@
          [alt-exe-is-gracket? (and alt-exe
                                    (let ([m (assq 'exe-is-gracket aux)])
                                      (and m (cdr m))))]
-         [use-exe (or alt-exe (case kind
-                                [(mred) (if (eq? 'macosx (cross-system-type))
-                                            (format "GRacket~a.app/Contents/MacOS/Gracket~a"
-                                                    (variant-suffix variant #t)
-                                                    (variant-suffix variant #t))
-                                            "gracket")]
-                                [(mzscheme) "racket"]))]
+         [use-exe (or alt-exe
+                      (case kind
+                        [(mred) (if (eq? 'macosx (cross-system-type))
+                                    (format "GRacket~a.app/Contents/MacOS/Gracket~a"
+                                            (variant-suffix variant #t)
+                                            (variant-suffix variant #t))
+                                    (string-append "gracket" (variant-suffix variant #f)))]
+                        [(mzscheme) (string-append "racket" (variant-suffix variant #f))]))]
          [x-flags? (and (eq? kind 'mred)
                         (eq? (cross-system-type) 'unix)
                         (not (script-variant? variant)))]
@@ -465,12 +466,8 @@
               (make-relative-path-header dest bindir)
               (make-absolute-path-header bindir))]
          [exec (format
-                "exec \"${bindir}/~a~a\" ~a"
+                "exec \"${bindir}/~a\" ~a"
                 use-exe
-                (if alt-exe
-                    ""
-                    (variant-suffix variant (and (eq? kind 'mred)
-                                                 (eq? 'macosx (cross-system-type)))))
                 pre-str)]
          [args (format
                 "~a~a ${1+\"$@\"}\n"
