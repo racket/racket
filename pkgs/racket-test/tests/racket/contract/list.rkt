@@ -47,6 +47,12 @@
   (test/pos-blame 
    'nelistof5
    '(contract (non-empty-listof integer?) (list #f #t) 'pos 'neg))
+  (contract-error-test
+   'nelistof6
+   '(contract (non-empty-listof integer?) '() 'pos 'neg)
+   (lambda (e)
+     (regexp-match? #rx"promised: [(]and/c list[?] pair[?][)]"
+                    (exn-message e))))
   
   (test/spec-passed/result 
    'imlistof1

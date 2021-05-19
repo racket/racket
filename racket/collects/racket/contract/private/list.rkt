@@ -135,7 +135,7 @@
                      '(expected: "~s" given: "~e")
                      (if empty-ok?
                          'list?
-                         (format "~s" `(and/c list? pair?)))
+                         '(and/c list? pair?))
                      val))
 
 (define (blame-add-listof-context blame) (blame-add-context blame "an element of"))
