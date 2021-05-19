@@ -153,6 +153,9 @@ GRMAIN_DEPS = $(srcdir)/../grmain.c \
   $(srcdir)/../../include/../gc2/gc2.h \
   $(srcdir)/../../include/../gc2/../include/schthread.h \
   $(srcdir)/../../include/../src/schemef.h \
+  $(srcdir)/../../../start/config.inc \
+  $(srcdir)/../../../start/self_exe.inc \
+  $(srcdir)/../../../start/gui_filter.inc \
   $(srcdir)/../../cmdline.inc
 
 xsrc/grmain.c: $(GRMAIN_DEPS)
