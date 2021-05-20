@@ -446,7 +446,7 @@
                                                        (find-addon-tethered-gui-bin-dir))
                                                   (and config?
                                                        (find-config-tethered-gui-bin-dir))
-                                                  (find-gui-bin-dir-for use-exe #f))]
+                                                  (find-gui-bin-dir))]
                                         [rel (find-relative-path cdir gdir)])
                                    (cond
                                      [(relative-path? rel)
