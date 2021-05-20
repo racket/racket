@@ -1459,6 +1459,8 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
   order. (Normally, the result includes the result of
   @racket[(find-links-file)], which is where new installation-wide
   links are installed by @exec{raco link} or @racket[links].) The
+  result of @racket[find-user-links-file]
+  is @emph{not} added to the returned list. The
   files indicated by the returned paths may or may not exist.
 
   @see-config[links-search-files]}
@@ -1482,7 +1484,8 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
   Returns a list of paths to the directories containing packages in
   installation scope.  (Normally, the result includes the result of
   @racket[(find-pkgs-dir)], which is where new packages are installed
-  by @exec{raco pkg install}.) The directories indicated by the returned
+  by @exec{raco pkg install}.) The result of @racket[find-user-pkgs-dir]
+  is @emph{not} added to the returned list. The directories indicated by the returned
   paths may or may not exist.
 
   @see-config[pkgs-search-dirs]}

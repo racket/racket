@@ -85,9 +85,9 @@ directory}:
 
  @item{@indexed-racket['links-search-files] --- like @racket['lib-search-dirs],
        but for @tech[#:doc reference-doc]{collection links file}. A @racket[#f]
-       is replaced by the default search path, which is the user- and version-specific
-       links file followed by the links file as potentially configured
-       via @scheme['links-file].}
+       is replaced by the default search path, which has the links file as potentially configured
+       via @scheme['links-file]. A user- and version-specific
+       links file is always added to the beginning of a search.}
 
  @item{@indexed-racket['pkgs-dir] --- a path, string, or byte string
        for packages that have @exec{installation} @tech[#:doc '(lib
