@@ -18,10 +18,10 @@
   (unless (or (eq? setup-collects 'skip)
               no-setup?
               (not (member (getenv "PLT_PKG_NOSETUP") '(#f ""))))
-    (define installation? (eq? 'installation (current-pkg-scope)))
+    (define user? (eq? 'user (current-pkg-scope)))
     (unless (setup:setup
-             #:make-user? (not installation?)
-             #:avoid-main? (not installation?)
+             #:make-user? user?
+             #:avoid-main? user?
              #:make-docs? (not no-docs?)
              #:collections (and setup-collects
                                 (map (lambda (s)
