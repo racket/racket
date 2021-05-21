@@ -744,7 +744,7 @@
       (lambda (y w k)
         (nanopass-case (L15d Triv) w
           [(immediate ,imm)
-           (if (real-imm32? imm)
+           (if (signed-32? imm)
                (k y w)
                (let ([tmp (make-tmp 'u)]
                      [zero (with-output-language (L15d Triv)
@@ -752,8 +752,11 @@
                  (with-output-language (L15d Effect)
                    (seq
                     `(set! ,(make-live-info) ,tmp ,w)
-                    `(set! ,(make-live-info) ,tmp (asm ,null-info ,asm-add ,tmp ,y))
-                    (k tmp zero)))))])))
+                    (if (eq? y %zero)
+                        (k tmp zero)
+                        (seq
+                         `(set! ,(make-live-info) ,tmp (asm ,null-info ,asm-add ,tmp ,y))
+                         (k tmp zero)))))))])))
 
     (let* ([info-cc-eq (make-info-condition-code 'eq? #f #t)]
            [asm-eq (asm-relop info-cc-eq)])
