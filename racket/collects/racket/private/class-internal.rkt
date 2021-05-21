@@ -1720,7 +1720,14 @@
                  #'super-expression 
                  #f #f
                  (syntax->list #'(interface-expr ...))
-                 (syntax->list #'(defn-or-expr ...)))]))
+                 (syntax->list #'(defn-or-expr ...)))]
+          [(_  super-expression no-parens-interface-expr
+               defn-or-expr
+               ...)
+           (raise-syntax-error 'class*
+                               "expected a sequence of interfaces"
+                               stx
+                               #'no-parens-interface-expr)]))
      ;; class
      (lambda (stx)
         (syntax-case stx ()
