@@ -47,7 +47,7 @@ racket  \
   --compile-any  \
   --compiled @nonterm{ios-racket-dir}/src/build/cs/c/compiled:  \
   --cross  \
-  --cross-compiler tarm64osx @nonterm{ios-racket-dir}/lib  \
+  --cross-compiler tarm64osx @nonterm{ios-racket-dir}/src/build/cs/c  \
   --config @nonterm{ios-racket-dir}/etc  \
   --collects @nonterm{ios-racket-dir}/collects
 }
