@@ -468,74 +468,120 @@
   (case-lambda
     [(in-ctc)
      (define ctc (coerce-contract 'parameter/c in-ctc))
-     (make-parameter/c ctc ctc #f)]
+     (cond
+       [(chaperone-contract? ctc)
+        (chaperone-parameter/c ctc #f)]
+       [else
+        (impersonator-parameter/c ctc #f)])]
     [(in-ctc out-ctc)
-     (make-parameter/c (coerce-contract 'parameter/c in-ctc)
-                       (coerce-contract 'parameter/c out-ctc)
-                       #t)]))
+     (define in (coerce-contract 'parameter/c in-ctc))
+     (define out (coerce-contract 'parameter/c out-ctc))
+     (cond
+       [(and (chaperone-contract? in) (chaperone-contract? out))
+        (chaperone-parameter/c in out)]
+       [else
+        (impersonator-parameter/c in out)])]))
 
+(define (parameter/c-lnp ctc)
+  (define in-proc (get/build-late-neg-projection (base-parameter/c-in ctc)))
+  (define out-proc (if (base-parameter/c-out/f ctc)
+                       (get/build-late-neg-projection (base-parameter/c-out/f ctc))
+                       in-proc))
+  (λ (blame)
+    (define blame/c (blame-add-context blame "the parameter of"))
+    (define in-proj (in-proc (blame-swap blame/c)))
+    (define out-proj (out-proc blame/c))
+    (λ (val neg-party)
+      (define blame+neg-party (cons blame/c neg-party))
+      (cond
+        [(parameter? val)
+         (chaperone-procedure
+          val
+          (case-lambda
+            [(x)
+             (with-contract-continuation-mark
+                 blame+neg-party
+               (in-proj x neg-party))]
+            [() (λ (res)
+                  (with-contract-continuation-mark
+                      blame+neg-party
+                    (out-proj res neg-party)))])
+          impersonator-prop:contracted ctc
+          impersonator-prop:blame blame+neg-party)]
+        [else
+         (raise-blame-error blame #:missing-party neg-party
+                            val '(expected "a parameter"))]))))
+
+(define (parameter/c-name ctc)
+  (define out (base-parameter/c-out/f ctc))
+  (apply build-compound-type-name
+         `(parameter/c ,(base-parameter/c-in ctc)
+                       ,@(if out
+                             (list out)
+                             (list)))))
+
+(define (parameter/c-first-order ctc)
+  (define tst (contract-first-order (base-parameter/c-out ctc)))
+  (λ (x)
+    (and (parameter? x)
+         (tst (x)))))
+
+(define (parameter/c-stronger this that)
+  (and (base-parameter/c? that)
+       (cond
+         [(or (base-parameter/c-out/f this)
+              (base-parameter/c-out/f that))
+          (and (contract-struct-stronger? (base-parameter/c-in that)
+                                          (base-parameter/c-in this))
+               (contract-struct-stronger? (base-parameter/c-out this)
+                                          (base-parameter/c-out that)))]
+         [else
+          (contract-struct-equivalent? (base-parameter/c-in this)
+                                       (base-parameter/c-in that))])))
+
+(define (parameter/c-equivalent this that)
+  (and (base-parameter/c? that)
+       (cond
+         [(or (base-parameter/c-out/f this)
+              (base-parameter/c-out/f that))
+          (and (contract-struct-equivalent? (base-parameter/c-in this)
+                                            (base-parameter/c-in that))
+               (contract-struct-equivalent? (base-parameter/c-out this)
+                                            (base-parameter/c-out that)))]
+         [else
+          (contract-struct-equivalent? (base-parameter/c-in this)
+                                       (base-parameter/c-in that))])))
+  
 ;; in - negative contract
-;; out - positive contract
-;; both-supplied? - for backwards compat printing
-(define-struct parameter/c (in out both-supplied?)
-  #:property prop:custom-write custom-write-property-proc
+;; out - positive contract or #f
+;; out is #f if it was not supplied to `parameter/c`
+(struct base-parameter/c (in out/f)
+  #:property prop:custom-write custom-write-property-proc)
+
+(define (base-parameter/c-out b-p/c)
+  (or (base-parameter/c-out/f b-p/c)
+      (base-parameter/c-in b-p/c)))
+
+(struct impersonator-parameter/c base-parameter/c ()
   #:omit-define-syntaxes
   #:property prop:contract
   (build-contract-property
    #:trusted trust-me
-   #:late-neg-projection
-   (λ (ctc)
-     (define in-proc (get/build-late-neg-projection (parameter/c-in ctc)))
-     (define out-proc (get/build-late-neg-projection (parameter/c-out ctc)))
-     (λ (blame)
-       (define blame/c (blame-add-context blame "the parameter of"))
-       (define in-proj (in-proc (blame-swap blame/c)))
-       (define out-proj (out-proc blame/c))
-       (λ (val neg-party)
-         (define blame+neg-party (cons blame/c neg-party))
-         (cond
-           [(parameter? val)
-            (define (add-profiling f)
-              (λ (x)
-                (with-contract-continuation-mark
-                 blame+neg-party
-                 (f x neg-party))))
-            ;; TODO this ought to have the `contracted` property, but it's not a chaperone...
-            (make-derived-parameter
-             val
-             (add-profiling in-proj)
-             (add-profiling out-proj))]
-           [else
-            (raise-blame-error blame #:missing-party neg-party
-                               val '(expected "a parameter"))]))))
+   #:late-neg-projection parameter/c-lnp
+   #:name parameter/c-name
+   #:first-order parameter/c-first-order
+   #:stronger parameter/c-stronger
+   #:equivalent parameter/c-equivalent))
 
-   #:name
-   (λ (ctc) (apply build-compound-type-name
-                   `(parameter/c ,(parameter/c-in ctc)
-                                 ,@(if (parameter/c-both-supplied? ctc)
-                                       (list (parameter/c-out ctc))
-                                       (list)))))
-   #:first-order
-   (λ (ctc)
-      (let ([tst (contract-first-order (parameter/c-out ctc))])
-        (λ (x)
-           (and (parameter? x)
-                (tst (x))))))
-
-   #:stronger
-   (λ (this that)
-      (and (parameter/c? that)
-           (and (contract-struct-stronger? (parameter/c-out this)
-                                           (parameter/c-out that))
-                (contract-struct-stronger? (parameter/c-in that)
-                                           (parameter/c-in this)))))
-   #:equivalent
-   (λ (this that)
-      (and (parameter/c? that)
-           (and (contract-struct-equivalent? (parameter/c-out this)
-                                             (parameter/c-out that))
-                (contract-struct-equivalent? (parameter/c-in that)
-                                             (parameter/c-in this)))))))
+(struct chaperone-parameter/c base-parameter/c ()
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property
+   #:trusted trust-me
+   #:late-neg-projection parameter/c-lnp
+   #:name parameter/c-name
+   #:first-order parameter/c-first-order
+   #:stronger parameter/c-stronger
+   #:equivalent parameter/c-equivalent))
 
 (define (procedure-arity-includes-equivalent? this that)
   (and (procedure-arity-includes/c? that)
