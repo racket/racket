@@ -38,3 +38,10 @@
        #'(define (id)
            init ...
            (set-virtual-register! future-pos #f)))]))
+
+(define (ensure-virtual-registers)
+  ;; Use the `current-future` register to detect when we're in a
+  ;; foreign thread that has not yet been initialized to run Rumble
+  ;; and later layers:
+  (when (eq? 0 (current-future))
+    (init-virtual-registers)))

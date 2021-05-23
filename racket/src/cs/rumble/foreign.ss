@@ -1813,6 +1813,7 @@
     ;; Not in a place's main thread; queue an async callback
     ;; and wait for the response
     (let ([known-thread? (eqv? (place-thread-category) PLACE-KNOWN-THREAD)])
+      (unless known-thread? (ensure-virtual-registers))
       (async-callback-queue-call async-callback-queue
                                  async-apply
                                  thunk

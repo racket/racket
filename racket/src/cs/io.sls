@@ -494,6 +494,7 @@
                  (cond
                   [(eqv? 0 (get-thread-id)) (go)]
                   [else
+                   (ensure-virtual-registers)
                    (post-as-asynchronous-callback go)]))))])
       (let ([callable (foreign-callable __collect_safe glib-log-message (string int string) void)])
         (values

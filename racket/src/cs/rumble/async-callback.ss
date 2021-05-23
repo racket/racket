@@ -22,7 +22,7 @@
 (define (async-callback-queue-call async-callback-queue run-thunk thunk interrupts-disabled? need-atomic? wait-for-result?)
   (let* ([result-done? (box #f)]
          [result #f]
-         [q async-callback-queue]
+         [q (or async-callback-queue orig-place-async-callback-queue)]
          [m (async-callback-queue-lock q)])
     (when interrupts-disabled? (enable-interrupts)) ; interrupt "lock" ordered after mutex
     (when need-atomic? (scheduler-start-atomic)) ; don't abandon engine after mutex is acquired

@@ -744,6 +744,7 @@
           continuation-current-primitive
           call-as-asynchronous-callback
           post-as-asynchronous-callback
+          ensure-virtual-registers
 
           ;; compile-time use in "thread.sls"
           current-atomic-virtual-register

@@ -38,14 +38,32 @@
                   [else
                    (loop (subbytes bstr 0 (caar m)))
                    (loop (subbytes bstr (cdar m)))]))]))))
-     (values
-      ;; pthread_create
-      (lambda (proc arg)
-        (call-in-os-thread (lambda () (proc arg))))
-      ;; scheme_glib_log_message_test-pointer
-      scheme_glib_log_message_test
-      ;; scheme_glib_log_message_test
-      scheme_glib_log_message_test)]
+     (cond
+       ;; prefer C library `pthread_create`, because that makes the thread more foreign to Chez Scheme:
+       [(get-ffi-obj 'pthread_create #f (_fun (_ptr o _pointer) (_pointer = #f) _intptr _pointer -> _int)
+                     (lambda () #f))
+        => (lambda (pthread_create)
+             (values
+              pthread_create
+              (vm-eval
+               ;; We have to drop down to Chez Scheme here, because `__collect-safe`
+               ;; is accessible from Racket only via `#:async-apply`, and that ends up
+               ;; testing the FFI instead of a part of glib logging.
+               `(let ([callable (foreign-callable __collect_safe
+                                                  ',scheme_glib_log_message_test
+                                                  (string)
+                                                  void)])
+                  (lock-object callable)
+                  (foreign-callable-entry-point callable)))
+              scheme_glib_log_message_test))]
+       [else
+        (values
+         (lambda (proc arg)
+           (call-in-os-thread (lambda () (proc arg))))
+         ;; scheme_glib_log_message_test-pointer
+         scheme_glib_log_message_test
+         ;; scheme_glib_log_message_test
+         scheme_glib_log_message_test)])]
     [else
      (values #f #f #f)]))
     
