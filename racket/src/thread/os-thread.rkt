@@ -1,7 +1,8 @@
 #lang racket/base
 (require "check.rkt"
          "host.rkt"
-         "atomic.rkt")
+         "atomic.rkt"
+         "parameter.rkt")
 
 (provide unsafe-os-thread-enabled?
          unsafe-call-in-os-thread
@@ -17,6 +18,7 @@
   (unless threaded? (raise-unsupported who))
   (fork-pthread (lambda ()
                   (start-atomic) ; just in case
+                  (current-thread/in-atomic #f) ; don't inherit
                   (proc)))
   (void))
 

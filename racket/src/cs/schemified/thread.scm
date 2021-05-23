@@ -15049,7 +15049,11 @@
          (if threaded? (void) (raise-unsupported 'unsafe-call-in-os-thread))
          (|#%app|
           fork-pthread
-          (lambda () (begin (start-atomic) (|#%app| proc_0))))
+          (lambda ()
+            (begin
+              (start-atomic)
+              (current-thread/in-atomic #f)
+              (|#%app| proc_0))))
          (void))))))
 (define finish_2628
   (make-struct-type-install-properties
