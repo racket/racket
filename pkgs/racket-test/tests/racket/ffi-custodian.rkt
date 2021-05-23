@@ -77,3 +77,39 @@
   (error "custodian-shutdown callback wasn't called"))
 
 (unregister-custodian-shutdown 'anything #f)
+
+;; ----------------------------------------
+;; Check unregistration callback after successful register
+
+(let ([c2 (make-custodian)]
+      [val (gensym)]
+      [ran? #f])
+  (define unreg
+    (register-finalizer-and-custodian-shutdown
+     val (lambda (v) (set! ran? #t)) c2
+     #:custodian-available (lambda (unreg) unreg)))
+  (unless (and (procedure? unreg)
+               (procedure-arity-includes? unreg 1))
+    (error "custodian-shutdown unregister is not a suitable procedure"))
+  (unreg val)
+  (custodian-shutdown-all c2)
+  (when ran?
+    (error "custodian-shutdown unregister did not work")))
+
+;; check that the unregister function doesn't retain the value:
+(let ([c2 (make-custodian)]
+      [val (gensym)])
+  (define unreg
+    (register-finalizer-and-custodian-shutdown
+     val void c2
+     #:custodian-available (lambda (unreg) unreg)))
+  (unless (eq? 'cgc (system-type 'gc))
+    (let ([we (make-will-executor)]
+          [done? #f])
+      (will-register we val (lambda (val)
+                              (unreg val)
+                              (set! done? #t)))
+      (collect-garbage)
+      (unless (and (will-try-execute we)
+                   done?)
+        (error "will wasn't ready")))))

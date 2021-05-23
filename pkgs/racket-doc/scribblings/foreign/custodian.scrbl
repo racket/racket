@@ -26,11 +26,15 @@ a pointer that can be supplied to
 If @racket[at-exit?] is true, then @racket[callback] is applied when
 Racket exits, even if the custodian is not explicitly shut down.
 
-If @racket[weak?] is true, then @racket[callback] may not be called
-if @racket[v] is determined to be unreachable during garbage
-collection.  The value @racket[v] is always weakly held by the
-custodian, even if @racket[weak?] is @racket[#f]; see
-@cpp{scheme_add_managed} for more information.
+If @racket[weak?] is true, then @racket[callback] may not be called if
+@racket[v] is determined to be unreachable during garbage collection.
+The value @racket[v] is initially weakly held by the custodian, even
+if @racket[weak?] is @racket[#f]. A value associated with a custodian
+can therefore be finalized via will executors, at least through will
+registrations and @racket[register-finalizer] uses @emph{after}
+calling @racket[register-custodian-shutdown], but the value becomes
+strongly held when no there are no other strong references and no
+later-registered finalizers or wills apply.
 
 If @racket[ordered?] is true when @racket[weak] is @racket[#f], then
 @racket[v] is retained in a way that allows finalization of @racket[v]
@@ -39,7 +43,7 @@ via @racket[register-finalizer] to proceed.
 Normally, @racket[weak?] should be false. To trigger actions based on
 finalization or custodian shutdown---whichever happens first---leave
 @racket[weak?] as @racket[#f] and have a finalizer run in atomic mode
-and cancel the shutdown action via
+to check that the custodian shutdown has not happened and then cancel the shutdown action via
 @racket[unregister-custodian-shutdown]. If @racket[weak?] is true or
 if the finalizer is not run in atomic mode, then there's no guarantee
 that either of the custodian or finalizer callbacks has completed by
@@ -48,7 +52,7 @@ be no longer registered to the custodian, while the finalizer for
 @racket[v] might be still running or merely queued to run.
 Furthermore, if finalization is via @racket[register-finalizer] (as
 opposed to a @tech[#:doc reference.scrbl]{will executor}), then supply
-@racket[ordered?] as true; @racket[ordered?] is false while
+@racket[ordered?] as true; if @racket[ordered?] is false while
 @racket[weak?] is false, then @racket[custodian] may retain @racket[v]
 in a way that does not allow finalization to be triggered when
 @racket[v] is otherwise inaccessible. See also
@@ -71,7 +75,8 @@ is taken.}
                  [callback (any/c . -> . any)]
                  [custodian custodian? (current-custodian)]
                  [#:at-exit? at-exit? any/c #f]
-                 [#:custodian-unavailable unavailable-callback ((-> void?) -> any) (lambda (reg-fnl) (reg-fnl))])
+                 [#:custodian-available available-callback ((any/c -> void?) -> any) (lambda (_unreg) (void))]
+                 [#:custodian-unavailable unavailable-callback ((-> void?) -> any) (lambda (_reg-fnl) (_reg-fnl))])
          any]{
 
 Registers @racket[callback] to be applied (in atomic mode) to
@@ -82,14 +87,25 @@ object @racket[v] is subject to the the constraints of
 @racket[register-finalizer]---particularly the constraint that
 @racket[v] must not be reachable from itself.
 
+When @racket[v] is successfully registered with @racket[custodian] and
+a finalizer is registered, then @racket[available-callback] is called
+with a function @racket[_unreg] that unregisters the @racket[v] and
+disables the use of @racket[callback] through the custodian or a
+finalizer. The value @racket[v] must be provided to @racket[_unreg]
+(otherwise it would be in @racket[_unreg]'s closure, possibly
+preventing the value from being finalized). The
+@racket[available-callback] function is called in tail position, so
+its result is the result of
+@racket[register-finalizer-and-custodian-shutdown].
+
 If @racket[custodian] is already shut down, then
 @racket[unavailable-callback] is applied in tail position to a
-function that registers a finalizer. By default, a finalizer is
-registered anyway, but usually a better choice is to report an error.
-If @racket[custodian] is not already shut down, then the result
-from @racket[register-finalizer-and-custodian-shutdown] is @|void-const|.
+function @racket[reg-fnl] that registers a finalizer. By default, a
+finalizer is registered anyway, but usually a better choice is to
+report an error.
 
-@history[#:added "6.1.1.6"]}
+@history[#:added "6.1.1.6"
+         #:changed "8.1.0.6" @elem{Added the @racket[#:custodian-available] argument.}]}
 
 
 @defproc[(make-custodian-at-root) custodian?]{

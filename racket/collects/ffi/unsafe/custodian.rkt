@@ -27,7 +27,8 @@
 (define (register-finalizer-and-custodian-shutdown value callback
                                                    [custodian (current-custodian)]
                                                    #:at-exit? [at-exit? #f]
-                                                   #:custodian-unavailable [custodian-unavailable (lambda (r) (r))])
+                                                   #:custodian-unavailable [custodian-unavailable (lambda (r) (r))]
+                                                   #:custodian-available [success-k (lambda (unregister) (void))])
   (define done? #f)
   (define (do-callback obj) ; called in atomic mode
     (unless done?
@@ -43,6 +44,13 @@
         (lambda ()
           (unregister-custodian-shutdown obj registration)
           (do-callback obj))))))
-  (if registration
-      (do-finalizer)
-      (custodian-unavailable do-finalizer)))
+  (cond
+    [registration
+     (do-finalizer)
+     (success-k (lambda (obj)
+                  (call-as-atomic
+                   (lambda ()
+                     (set! done? #t)
+                     (unregister-custodian-shutdown obj registration)))))]
+    [else
+     (custodian-unavailable do-finalizer)]))
