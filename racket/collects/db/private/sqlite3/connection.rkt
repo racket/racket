@@ -31,11 +31,10 @@
                   busy-retry-delay)
     (super-new)
 
-    (register-finalizer this shutdown-connection)
-
     (define -db db)
     (define saved-tx-status #f) ;; set by with-lock, only valid while locked
-    (define creg (register-custodian-shutdown this shutdown-connection))
+    (define creg (register-custodian-shutdown this shutdown-connection #:ordered? #t))
+    (register-finalizer this shutdown-connection)
 
     (sqlite3_extended_result_codes db #t)
 
