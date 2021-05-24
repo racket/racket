@@ -8,3 +8,7 @@
   (map place-wait
        (for/list ([i 4])
          (dynamic-place ''#%kernel 'list))))
+
+(module+ test
+  (module config info
+    (define timeout 600)))

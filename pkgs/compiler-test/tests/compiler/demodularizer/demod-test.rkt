@@ -74,3 +74,8 @@
                       (list "-e"
                             (path->string
                              (collection-file-path "pre-base.rkt" "racket/private")))))))
+
+
+(module+ test
+  (module config info
+    (define timeout 600)))
