@@ -85,6 +85,13 @@
     (list->set all-pkgs))
   (define metadata-ns (make-metadata-namespace))
   (define in-pkgs (remove-duplicates given-pkgs))
+
+  ;; Check that all packages are installed, so we don't remove half of
+  ;; them and leave things in an potentialy inconsistent state:
+  (for ([pkg (in-list in-pkgs)])
+    (unless (set-member? all-pkgs pkg)
+      (pkg-not-installed pkg db)))
+
   (define remove-pkgs
     (if auto?
         ;; compute fixpoint:

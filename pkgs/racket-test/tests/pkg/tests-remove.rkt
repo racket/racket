@@ -34,6 +34,10 @@
    (shelly-install "remove test with immediately redundant package name"
                    "test-pkgs/pkg-test1.zip"
                    "pkg-test1 pkg-test1")
+   (shelly-install "remove test where second in given list does not exist"
+                   "test-pkgs/pkg-test1.zip"
+                   $ "raco pkg remove pkg-test1 not-there" =exit> 1 =stderr> #rx"not currently installed"
+                   $ "racket -e '(require pkg-test1)'" =exit> 0)
    (shelly-install "remove of dep fails"
                    "test-pkgs/pkg-test1.zip"
                    $ "raco pkg show -l -u -a" =stdout> #rx"Package +Checksum +Source\npkg-test1 +[a-f0-9.]+ +\\(file .+/test-pkgs/pkg-test1.zip\"\\)\n"

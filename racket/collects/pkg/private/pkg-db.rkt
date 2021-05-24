@@ -25,7 +25,8 @@
          update-auto
          scope->links-file
          installed-pkg-table
-         installed-pkg-names)
+         installed-pkg-names
+         pkg-not-installed)
 
 (define (read-pkg-db)
   (unless (pkg-lock-held)
