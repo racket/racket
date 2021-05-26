@@ -224,6 +224,9 @@
   (ctest #f contract-equivalent?
          (parameter/c (between/c 1 4) (between/c 0 5))
          (parameter/c (between/c 0 5) (between/c 1 4)))
+  (ctest #f contract-equivalent?
+         (parameter/c (between/c 0 5))
+         (parameter/c (between/c 0 5) (between/c 1 6)))
 
   (ctest #f contract-equivalent? (symbols 'x 'y) (symbols 'x 'y 'z))
   (ctest #f contract-equivalent? (symbols 'x 'y 'z) (symbols 'x 'y))

@@ -238,6 +238,7 @@
                                (parameter/c (between/c 1 4) (between/c 0 5)))
   (ctest #f trust/not-stronger? (parameter/c (between/c 1 4) (between/c 0 5))
                                (parameter/c (between/c 0 5) (between/c 1 4)))
+  (ctest #f trust/not-stronger? (parameter/c (between/c 0 5)) (parameter/c (between/c 0 5) (between/c 1 6)))
 
   (ctest #t trust/not-stronger? (symbols 'x 'y) (symbols 'x 'y 'z))
   (ctest #f trust/not-stronger? (symbols 'x 'y 'z) (symbols 'x 'y))
