@@ -105,6 +105,7 @@ void rktio_lsan_ignore_object(void *p)
 {
 #if __has_feature(address_sanitizer) || defined(__SANITIZE_ADDRESS__)
   __lsan_ignore_object(p);
+  printf("successfully ignored %x\n", (uintptr_t p)
 #endif
     return;
 }

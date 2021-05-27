@@ -3332,6 +3332,8 @@
   (begin-unsafe (hash-ref rktio-table 'rktio_get_last_error_string)))
 (define rktio_get_error_string
   (begin-unsafe (hash-ref rktio-table 'rktio_get_error_string)))
+(define rktio_lsan_ignore_object
+  (begin-unsafe (hash-ref rktio-table 'rktio_lsan_ignore_object)))
 (define rktio_filesize_ref
   (begin-unsafe (hash-ref rktio-table 'rktio_filesize_ref)))
 (define rktio_timestamp_ref
@@ -16103,6 +16105,9 @@
                                               #f
                                               #f)))
                                         (begin
+                                          (|#%app|
+                                           rktio_lsan_ignore_object
+                                           converter_0)
                                           (set-bytes-converter-custodian-reference!
                                            converter_0
                                            cref_0)
@@ -34398,11 +34403,11 @@
                 'subprocess
                 "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                 stderr_0))
-             (let ((lr1324 unsafe-undefined)
+             (let ((lr1325 unsafe-undefined)
                    (group_0 unsafe-undefined)
                    (command_0 unsafe-undefined)
                    (exact/args_0 unsafe-undefined))
-               (set! lr1324
+               (set! lr1325
                  (call-with-values
                   (lambda ()
                     (if (path-string? group/command_0)
@@ -34457,9 +34462,9 @@
                    ((group_1 command_1 exact/args_1)
                     (vector group_1 command_1 exact/args_1))
                    (args (raise-binding-result-arity-error 3 args)))))
-               (set! group_0 (unsafe-vector*-ref lr1324 0))
-               (set! command_0 (unsafe-vector*-ref lr1324 1))
-               (set! exact/args_0 (unsafe-vector*-ref lr1324 2))
+               (set! group_0 (unsafe-vector*-ref lr1325 0))
+               (set! command_0 (unsafe-vector*-ref lr1325 1))
+               (set! exact/args_0 (unsafe-vector*-ref lr1325 2))
                (call-with-values
                 (lambda ()
                   (if (if (pair? exact/args_0)
