@@ -480,7 +480,7 @@
     [else
      (impersonator-parameter/c in-ctc out-ctc/f)]))
 
-(define (parameter/c-lnp ctc)
+(define ((parameter/c-lnp chaperone-or-impersonate-procedure) ctc)
   (define in-proc (get/build-late-neg-projection (base-parameter/c-in ctc)))
   (define out-proc (if (base-parameter/c-out/f ctc)
                        (get/build-late-neg-projection (base-parameter/c-out/f ctc))
@@ -493,7 +493,7 @@
       (define blame+neg-party (cons blame/c neg-party))
       (cond
         [(parameter? val)
-         (chaperone-procedure
+         (chaperone-or-impersonate-procedure
           val
           (case-lambda
             [(x)
@@ -565,7 +565,7 @@
   #:property prop:contract
   (build-contract-property
    #:trusted trust-me
-   #:late-neg-projection parameter/c-lnp
+   #:late-neg-projection (parameter/c-lnp impersonate-procedure)
    #:name parameter/c-name
    #:first-order parameter/c-first-order
    #:stronger parameter/c-stronger
@@ -575,7 +575,7 @@
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
    #:trusted trust-me
-   #:late-neg-projection parameter/c-lnp
+   #:late-neg-projection (parameter/c-lnp chaperone-procedure)
    #:name parameter/c-name
    #:first-order parameter/c-first-order
    #:stronger parameter/c-stronger

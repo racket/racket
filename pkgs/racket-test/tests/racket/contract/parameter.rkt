@@ -65,6 +65,16 @@
        (contract (parameter/c integer?)
                  p 'pos 'neg)
        p))
+   #f)
+
+  (test/spec-passed/result
+   'parameter/c9b
+   '(let ([p (make-parameter (λ (x) x))])
+      (chaperone-of?
+       (contract (parameter/c (-> integer? integer?)
+                              #:impersonator? #f)
+                 p 'pos 'neg)
+       p))
    #t)
   
   (test/spec-passed/result
@@ -101,7 +111,7 @@
      (parameter/c (-> integer? integer?)
                   #:impersonator? #f))
    #t)
-  
+
   (test/spec-passed/result
    'parameter/c13
    '(chaperone-contract?
