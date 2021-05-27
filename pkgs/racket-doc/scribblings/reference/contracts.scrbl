@@ -797,12 +797,21 @@ inspect the entire tree.
 @history[#:changed "6.0.1.6" @elem{Added @racket[#:inv].}]
 }
 
-@defproc[(parameter/c [in contract?] [out contract? in])
+@defproc[(parameter/c [in contract?]
+                      [out contract? in]
+                      [#:impersonator? impersonator? any/c #t])
          contract?]{
 
 Produces a contract on parameters whose values must match
 @racket[_out]. When the value in the contracted parameter
 is set, it must match @racket[_in].
+
+ If @racket[impersonator?] is a true value, then
+ @racket[parameter/c] always returns an @tech{impersonator
+ contract}. If it is @racket[#f], then the result will be a
+ @tech{chaperone contract} when both @racket[in] and
+ @racket[out] are @tech{chaperone contracts}, and an @tech{
+  impersonator contract} otherwise.
 
 @examples[#:eval (contract-eval) #:once
 (define/contract current-snack
