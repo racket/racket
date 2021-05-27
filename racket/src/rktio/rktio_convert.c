@@ -2,6 +2,17 @@
 #include "rktio_private.h"
 #include <string.h>
 #include <stdlib.h>
+#ifndef __has_feature
+#   define __has_feature(x) 0
+#endif
+
+#if __has_feature(address_sanitizer) || defined(__SANITIZE_ADDRESS__)
+#include <sanitizer/lsan_interface.h>
+#define LSAN_IGNORE(x) __lsan_ignore_object(x)
+#else
+#define LSAN_IGNORE(x) 
+#endif
+
 
 #ifdef OS_X
 # define MACOS_UNICODE_SUPPORT
@@ -490,6 +501,8 @@ rktio_converter_t *rktio_converter_open(rktio_t *rktio, const char *to_enc, cons
 
   cvt = malloc(sizeof(rktio_converter_t));
   cvt->cd = cd;
+  LSAN_IGNORE(cd);
+  LSAN_IGNORE(cvt);
   return cvt;
 }
 
