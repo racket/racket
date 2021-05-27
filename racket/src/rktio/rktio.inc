@@ -215,3 +215,4 @@ Sforeign_symbol("rktio_set_last_error_step", (void *)rktio_set_last_error_step);
 Sforeign_symbol("rktio_remap_last_error", (void *)rktio_remap_last_error);
 Sforeign_symbol("rktio_get_last_error_string", (void *)rktio_get_last_error_string);
 Sforeign_symbol("rktio_get_error_string", (void *)rktio_get_error_string);
+Sforeign_symbol("rktio_lsan_ignore_object", (void *)rktio_lsan_ignore_object);
