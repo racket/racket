@@ -104,7 +104,7 @@ void rktio_free(void *p)
 void rktio_lsan_ignore_object(void *p)
 {
 #if __has_feature(address_sanitizer) || defined(__SANITIZE_ADDRESS__)
-  __lsan_ignore_object(p)
+  __lsan_ignore_object(p);
 #endif
     return;
 }
