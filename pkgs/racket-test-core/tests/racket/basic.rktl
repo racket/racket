@@ -1521,6 +1521,8 @@
 ;; Regexps that shouldn't work:
 (err/rt-test (regexp "[a--b]") exn:fail?)
 (err/rt-test (regexp "[a-b-c]") exn:fail?)
+(err/rt-test (regexp "abc)") exn:fail?)
+(err/rt-test (pregexp "abc)") exn:fail?)
 
 ;; A good test of unicode-friendly ".":
 (test '("load-extension: couldn't open \\\" (%s)\"") 
