@@ -170,6 +170,8 @@ compress_boot_files_by_default=no
 
 cs_auto_flags=--disable-auto-flags
 
+COPY_NEW_CFLAGS_TO_CPPFLAGS=no
+
 ###### Autoconfigure #######
 
 m4_include(../ac/sdk_ios.m4)
@@ -198,7 +200,6 @@ fi
 if test "$ARFLAGS" = '' ; then 
   ARFLAGS=rc
 fi
-
 
 WINDRES=windres
 

@@ -2972,13 +2972,20 @@
           (lambda () (parse-regexp.1 unsafe-undefined p3_0 0 config_0))
           (case-lambda
            ((rx_0 pos_0)
-            (let ((app_0
-                   (begin-unsafe
-                    (unbox (parse-config-group-number-box config_0)))))
-              (values
-               rx_0
-               app_0
-               (unbox (parse-config-references?-box config_0)))))
+            (let ((pos_1 pos_0))
+              (let ((tmp_0
+                     (if (let ((app_0 pos_1)) (= app_0 (chytes-length$1 p3_0)))
+                       'eos
+                       (chytes-ref/char p3_0 pos_1))))
+                (if (eqv? tmp_0 '#\x29)
+                  (parse-error p3_0 pos_0 config_0 "unmatched `)` in pattern")
+                  (let ((app_0
+                         (begin-unsafe
+                          (unbox (parse-config-group-number-box config_0)))))
+                    (values
+                     rx_0
+                     app_0
+                     (unbox (parse-config-references?-box config_0))))))))
            (args (raise-binding-result-arity-error 2 args)))))))))
 (define parse-regexp.1
   (|#%name|

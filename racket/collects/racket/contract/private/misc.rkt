@@ -464,25 +464,23 @@
 
 ;; (parameter/c in/out-ctc)
 ;; (parameter/c in-ctc out-ctc)
-(define/subexpression-pos-prop parameter/c
-  (case-lambda
-    [(in-ctc)
-     (define ctc (coerce-contract 'parameter/c in-ctc))
-     (cond
-       [(chaperone-contract? ctc)
-        (chaperone-parameter/c ctc #f)]
-       [else
-        (impersonator-parameter/c ctc #f)])]
-    [(in-ctc out-ctc)
-     (define in (coerce-contract 'parameter/c in-ctc))
-     (define out (coerce-contract 'parameter/c out-ctc))
-     (cond
-       [(and (chaperone-contract? in) (chaperone-contract? out))
-        (chaperone-parameter/c in out)]
-       [else
-        (impersonator-parameter/c in out)])]))
+(define unsupplied (gensym))
+(define/subexpression-pos-prop (parameter/c in [out unsupplied] #:impersonator? [impersonator? #t])
+  (define ctc (coerce-contract 'parameter/c in))
+  (define in-ctc (coerce-contract 'parameter/c in))
+  (define out-ctc/f
+    (if (equal? out unsupplied)
+        #f
+        (coerce-contract 'parameter/c out)))
+  (cond
+    [(and (not impersonator?)
+          (chaperone-contract? in-ctc)
+          (or (not out-ctc/f) (chaperone-contract? out-ctc/f)))
+     (chaperone-parameter/c in-ctc out-ctc/f)]
+    [else
+     (impersonator-parameter/c in-ctc out-ctc/f)]))
 
-(define (parameter/c-lnp ctc)
+(define ((parameter/c-lnp chaperone-or-impersonate-procedure) ctc)
   (define in-proc (get/build-late-neg-projection (base-parameter/c-in ctc)))
   (define out-proc (if (base-parameter/c-out/f ctc)
                        (get/build-late-neg-projection (base-parameter/c-out/f ctc))
@@ -495,7 +493,7 @@
       (define blame+neg-party (cons blame/c neg-party))
       (cond
         [(parameter? val)
-         (chaperone-procedure
+         (chaperone-or-impersonate-procedure
           val
           (case-lambda
             [(x)
@@ -567,7 +565,7 @@
   #:property prop:contract
   (build-contract-property
    #:trusted trust-me
-   #:late-neg-projection parameter/c-lnp
+   #:late-neg-projection (parameter/c-lnp impersonate-procedure)
    #:name parameter/c-name
    #:first-order parameter/c-first-order
    #:stronger parameter/c-stronger
@@ -577,7 +575,7 @@
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
    #:trusted trust-me
-   #:late-neg-projection parameter/c-lnp
+   #:late-neg-projection (parameter/c-lnp chaperone-procedure)
    #:name parameter/c-name
    #:first-order parameter/c-first-order
    #:stronger parameter/c-stronger

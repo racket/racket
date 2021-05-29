@@ -3251,6 +3251,8 @@ compress_boot_files_by_default=no
 
 cs_auto_flags=--disable-auto-flags
 
+COPY_NEW_CFLAGS_TO_CPPFLAGS=no
+
 ###### Autoconfigure #######
 
 if test "${enable_ios}" != "" ; then
@@ -4316,7 +4318,6 @@ if test "$ARFLAGS" = '' ; then
   ARFLAGS=rc
 fi
 
-
 WINDRES=windres
 
 ############## platform tests ################
@@ -4894,8 +4895,10 @@ fi
 if test "${enable_ubsan}" = "yes" ; then
    UBSAN="-fsanitize=undefined -fno-sanitize=alignment -fno-sanitize=float-divide-by-zero"
    CFLAGS="$CFLAGS $UBSAN"
-   CPPFLAGS="$CPPFLAGS $UBSAN"
-   PREFLAGS="$PREFLAGS $UBSAN"
+   if test "${COPY_NEW_CFLAGS_TO_CPPFLAGS}" = "yes" ; then
+     CPPFLAGS="$CPPFLAGS $UBSAN"
+     PREFLAGS="$PREFLAGS $UBSAN"
+   fi
    LDFLAGS="$LDFLAGS $UBSAN"
 fi
 
@@ -4905,11 +4908,12 @@ fi
 if test "${enable_asan}" = "yes" ; then
    ASAN="-fsanitize=address -fsanitize-recover=address -fno-omit-frame-pointer -fno-common"
    CFLAGS="$CFLAGS $ASAN"
-   CPPFLAGS="$CPPFLAGS $ASAN"
-   PREFLAGS="$PREFLAGS $ASAN"
+   if test "${COPY_NEW_CFLAGS_TO_CPPFLAGS}" = "yes" ; then
+     CPPFLAGS="$CPPFLAGS $ASAN"
+     PREFLAGS="$PREFLAGS $ASAN"
+   fi
    LDFLAGS="$LDFLAGS $ASAN"
 fi
-
 
 
 ############## Makefile includes ################

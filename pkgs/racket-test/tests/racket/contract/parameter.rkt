@@ -65,6 +65,16 @@
        (contract (parameter/c integer?)
                  p 'pos 'neg)
        p))
+   #f)
+
+  (test/spec-passed/result
+   'parameter/c9b
+   '(let ([p (make-parameter (λ (x) x))])
+      (chaperone-of?
+       (contract (parameter/c (-> integer? integer?)
+                              #:impersonator? #f)
+                 p 'pos 'neg)
+       p))
    #t)
   
   (test/spec-passed/result
@@ -80,14 +90,28 @@
    'parameter/c11
    '(chaperone-contract?
      (parameter/c integer?))
+   #f)
+
+  (test/spec-passed/result
+   'parameter/c11b
+   '(chaperone-contract?
+     (parameter/c integer?
+                  #:impersonator? #f))
    #t)
 
   (test/spec-passed/result
    'parameter/c12
    '(chaperone-contract?
      (parameter/c (-> integer? integer?)))
+   #f)
+
+  (test/spec-passed/result
+   'parameter/c12b
+   '(chaperone-contract?
+     (parameter/c (-> integer? integer?)
+                  #:impersonator? #f))
    #t)
-  
+
   (test/spec-passed/result
    'parameter/c13
    '(chaperone-contract?
@@ -113,5 +137,13 @@
    'parameter/c16
    '(chaperone-contract?
      (parameter/c integer?
+                  (-> integer? integer?)
+                  #:impersonator? #f))
+   #t)
+
+  (test/spec-passed/result
+   'parameter/c16b
+   '(chaperone-contract?
+     (parameter/c integer?
                   (-> integer? integer?)))
-   #t))
+   #f))
