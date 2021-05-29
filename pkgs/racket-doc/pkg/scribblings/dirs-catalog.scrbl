@@ -46,7 +46,7 @@ a catalog (see @secref["catalog-protocol"]) to list the packages that
 are contained in each directory specified by @racket[dirs]. Packages
 are discovered in @racket[dirs] as subdirectories that have an
 @filepath{info.rkt} file; if @racket[immediate?] is true, then each
-directory is @racket[dirs] is checked for an immediate @filepath{info.rkt}
+directory in @racket[dirs] is checked for an immediate @filepath{info.rkt}
 file before checking subdirectories.
 
 If @racket[link?] is true, then the catalog specifies that the package
