@@ -220,7 +220,7 @@ modifies the content of a vector.
 
 To explain such modifications to data, we must distinguish between
 @tech{values}, which are the results of expressions, and
-@deftech{objects}, which hold the data referenced by a value.
+@deftech{objects}, which actually hold data.
 
 A few kinds of @tech{objects} can serve directly as values, including
 booleans, @racket[(void)], and small exact integers. More generally,
