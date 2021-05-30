@@ -311,7 +311,7 @@ syntactic-form names refer to the bindings defined in
 
 In a fully expanded program for a namespace whose @tech{base phase} is
 0, the relevant @tech{phase level} for a binding in the program is
-@math{N} if the bindings has @math{N} surrounding
+@math{N} if the binding has @math{N} surrounding
 @racket[begin-for-syntax] and @racket[define-syntaxes] forms---not
 counting any @racket[begin-for-syntax] forms that wrap a
 @racket[module] or @racket[module*] form for the body of the @racket[module]
