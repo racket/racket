@@ -529,7 +529,7 @@ core syntactic forms are encountered:
        @tech{phase level} 1 (i.e., the @tech{transformer environment}
        is extended). More generally, @racket[begin-for-syntax] forms
        can be nested, and each @racket[begin-for-syntax] shifts its
-       body definition by one @tech{phase level}.}
+       body by one @tech{phase level}.}
 
  @item{When a @racket[let-values] form is encountered, the body of the
        @racket[let-values] form is extended (by creating new
