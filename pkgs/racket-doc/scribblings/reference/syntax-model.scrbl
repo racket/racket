@@ -965,7 +965,7 @@ x
 For a top-level definition (outside of a module), the order of
  evaluation affects the binding of a generated definition for a
  generated identifier use. If the use precedes the definition, then
- the use is resolved with the bindings that are in place that at
+ the use is resolved with the bindings that are in place at that
  point, which will not be a macro-generated binding.
  (No such dependency on order occurs
  within a module, since a module binding covers the entire module
