@@ -770,7 +770,7 @@ they share a common module declaration.
    (#%provide x)
    (define-values (x) (gensym)))
  (define ns (current-namespace))
- (define (same-instence? mod)
+ (define (same-instance? mod)
    (namespace-require mod)
    (define a
      (parameterize ([current-namespace (make-base-namespace)])
@@ -783,8 +783,8 @@ they share a common module declaration.
        (namespace-require mod)
        (namespace-variable-value 'x)))
    (eq? a b))
- (same-instence? ''noncross)
- (same-instence? ''cross)
+ (same-instance? ''noncross)
+ (same-instance? ''cross)
  ]
 
 The intent of a @tech{cross-phase persistent} module is to support values that are
