@@ -211,7 +211,7 @@ The @racket[quote-syntax] form bridges the evaluation of a program and
 the representation of a program. Specifically, @racket[(quote-syntax
 _datum #:local)] produces a syntax object that preserves all of the
 lexical information that @racket[_datum] had when it was parsed as
-part of the @racket[quote-syntax] form. Note that
+part of the @racket[quote-syntax] form. Note that the
 @racket[(quote-syntax _datum)] form is similar, but it removes certain
 @tech{scopes} from the @racket[_datum]'s @tech{scope sets};
 see @racket[quote-syntax] for more information.
