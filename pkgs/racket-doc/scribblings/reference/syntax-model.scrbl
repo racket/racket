@@ -1202,8 +1202,8 @@ property value is used for naming the expression, and it overrides any
 name that was inferred from the expression's context. Normally, the
 property value should be a symbol. A @racket['inferred-name] 
 property value of @|void-const| hides a name that would otherwise be
-inferred from context (perhaps because a binding identifier's was 
-automatically generated and should not be exposed).
+inferred from context (perhaps to avoid exposing an identifier from an 
+automatically generated binding).
 
 To support the propagation and merging of consistent properties during
 expansions, the value of the @racket['inferred-name] property can be a
