@@ -103,7 +103,7 @@ case
                  x))]
 
 the inner @racket[let] creates a second scope for the second
-@racket[x]s, so its @tech{scope set} is a superset of the first
+@racket[x], so its @tech{scope set} is a superset of the first
 @racket[x]'s @tech{scope set}---which means that the binding for the
 second @racket[x] @tech{shadows} the one for the first @racket[x], and
 the third @racket[x] refers to the binding created by the second one.
