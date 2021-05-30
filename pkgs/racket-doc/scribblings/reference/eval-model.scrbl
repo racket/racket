@@ -495,7 +495,7 @@ The replacement of a @tech{variable} with a @tech{location} during
 evaluation implements Racket's @deftech{lexical scoping}. For example,
 when an argument variable @racket[x] is replaced by
 the @tech{location} @racket[xloc], it is replaced @italic{throughout} the
-body of the procedure, including any nested @racket[lambda]
+body of the procedure, including appropriate nested @racket[lambda]
 forms. As a result, future references to the @tech{variable} always
 access the same @tech{location}.
 
