@@ -224,8 +224,8 @@ particular phase level, starting with @tech{phase level} 0. @tech{Bindings}
 from the @tech{syntax object}'s @tech{lexical information} drive the
 expansion process, and cause new bindings to be introduced for the
 lexical information of sub-expressions. In some cases, a
-sub-expression is expanded in a deeper phase than the enclosing
-expression.
+sub-expression is expanded in a phase deeper (having a  
+bigger phase level number) than the enclosing expression.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @subsection[#:tag "fully-expanded"]{Fully Expanded Programs}
