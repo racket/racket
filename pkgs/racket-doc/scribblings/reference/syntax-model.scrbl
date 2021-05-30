@@ -1075,8 +1075,8 @@ levels}). Operations such as @racket[namespace-require] create initial
 @tech{bindings} using the namespace's @tech{scopes}, and the further
 expansion and evaluation in the namespace can create additional
 @tech{bindings}. Evaluation of a form with a namespace always adds the
-namespace's phase-specific @tech{scopes} to the form and to any result
-of expanding the top-level form; as a result, every binding identifier
+namespace's phase-specific @tech{scopes} to the form and to the result
+of expanding a top-level form; as a consequence, every binding identifier
 has at least one @tech{scope}. The namespace's additional scope, which
 is added at all @tech{phase levels}, is added only on request (e.g.,
 by using @racket[eval] as opposed to @racket[eval-syntax]). Except for
