@@ -456,11 +456,11 @@ exceptions during its handler's invocation.
 Events also allow you to encode many different communication
 patterns between multiple concurrent parts of a program. One
 common such pattern is producer-consumer. Here is a way to
-implement on variation on it using the above ideas. Generally
+implement a variation on it using the above ideas. Generally
 speaking, these communication patterns are implemented via
-a server loops that uses @racket[sync] to wait for any of
-a number of different possibilities to occur and then
-reacts them, updating some local state.
+a server loop that uses @racket[sync] to wait for any
+number of different possibilities to occur and then
+reacts to them, updating some local state.
 
 @examples[
  #:eval concurrency-eval

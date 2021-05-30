@@ -220,7 +220,7 @@ modifies the content of a vector.
 
 To explain such modifications to data, we must distinguish between
 @tech{values}, which are the results of expressions, and
-@deftech{objects}, which hold the data referenced by a value.
+@deftech{objects}, which actually hold data.
 
 A few kinds of @tech{objects} can serve directly as values, including
 booleans, @racket[(void)], and small exact integers. More generally,
@@ -386,9 +386,9 @@ an @tech{object}, so evaluating @racket[(f 7)] starts with a
 Unlike in algebra, however, the @tech{value} associated with a procedure
 argument variable can be changed in the body of a procedure by using
 @racket[set!], as in the example @racket[(lambda (x) (begin (set! x 3)
-x))]. Since the @tech{value} associated with argument variable @racket[x] can be
-changed, the value cannot be substituted for @racket[x] when
-the procedure is first applied.
+x))]. Since the @tech{value} associated with argument variable @racket[x] should be
+able to change, we cannot just substitute the value in for @racket[x] when
+we first apply the procedure.
 
 @margin-note{We do not use the term ``parameter variable'' to refer to
 the argument variable names declared with a function. This choice avoids
@@ -770,7 +770,7 @@ they share a common module declaration.
    (#%provide x)
    (define-values (x) (gensym)))
  (define ns (current-namespace))
- (define (same-instence? mod)
+ (define (same-instance? mod)
    (namespace-require mod)
    (define a
      (parameterize ([current-namespace (make-base-namespace)])
@@ -783,8 +783,8 @@ they share a common module declaration.
        (namespace-require mod)
        (namespace-variable-value 'x)))
    (eq? a b))
- (same-instence? ''noncross)
- (same-instence? ''cross)
+ (same-instance? ''noncross)
+ (same-instance? ''cross)
  ]
 
 The intent of a @tech{cross-phase persistent} module is to support values that are
