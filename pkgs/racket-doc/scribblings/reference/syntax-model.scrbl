@@ -966,8 +966,8 @@ For a top-level definition (outside of a module), the order of
  evaluation affects the binding of a generated definition for a
  generated identifier use. If the use precedes the definition, then
  the use is resolved with the bindings that are in place at that
- point, which will not be a macro-generated binding.
- (No such dependency on order occurs
+ point, which will not include the binding from the subsequently 
+ macro-generated definition. (No such dependency on order occurs
  within a module, since a module binding covers the entire module
  body.) To support the declaration of an identifier before its use,
  the @racket[define-syntaxes] form avoids binding an identifier if the
