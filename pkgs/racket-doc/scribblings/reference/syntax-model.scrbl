@@ -1086,7 +1086,7 @@ every namespace uses the same @tech{scope} as the one added to all
 @tech{phase levels}, while the @tech{scopes} specific to a @tech{phase
 level} are always distinct.
 
-As a starting point evaluating @tech{compiled} code, each namespace
+As a starting point for evaluating @tech{compiled} code, each namespace
 encapsulates a distinct set of top-level variables at various
 @tech{phases}, as well as a potentially distinct set of module
 instances in each @tech{phase}. That is, even though module
