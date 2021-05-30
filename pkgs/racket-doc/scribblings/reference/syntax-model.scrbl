@@ -520,7 +520,7 @@ core syntactic forms are encountered:
  @item{When a @racket[define], @racket[define-values],
        @racket[define-syntax], or @racket[define-syntaxes] form is
        encountered at the top level or module level, a binding is
-       added @tech{phase level} 0 (i.e., the @tech{base environment}
+       added to @tech{phase level} 0 (i.e., the @tech{base environment}
        is extended) for each defined identifier.}
 
  @item{When a @racket[begin-for-syntax] form is encountered at the top
