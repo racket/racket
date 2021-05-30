@@ -27,7 +27,7 @@ The @tech{expand} pass recursively processes a @tech{syntax object}
 to produce a complete @tech{parse} of the program. @tech{Binding}
 information in a @tech{syntax object} drives the @tech{expansion}
 process, and when the @tech{expansion} process encounters a
-@tech{binding} form, it extends syntax objects for sub-expression with
+@tech{binding} form, it extends syntax objects for sub-expressions with
 new binding information.
 
 @;------------------------------------------------------------------------
