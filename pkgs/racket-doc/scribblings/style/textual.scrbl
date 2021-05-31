@@ -30,8 +30,8 @@ your code.
  (define (conversion f)
    (* 5/9 (- f 32)))
 ]
- @filebox[@tt{really bad} ;; gotta use codeblock to keep the newlines
- @codeblock{#lang racket
+ @filebox[@tt{really bad} ;; gotta use codeblock0 to keep the newlines
+ @codeblock0{#lang racket
  (define (conversion f)
    (* 5/9 (- f 32)
      )
@@ -55,8 +55,8 @@ end of long sequences, be those definitions or pieces of data.
      step
      ))
  ]
- @filebox[@tt{also acceptable} ;; use codeblock to keep the newlines
- @codeblock{#lang racket
+ @filebox[@tt{also acceptable} ;; use codeblock0 to keep the newlines
+ @codeblock0{#lang racket
  (define turn%
    (class object%
      (init-field state)
