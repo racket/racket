@@ -44,4 +44,6 @@
   ;; foreign thread that has not yet been initialized to run Rumble
   ;; and later layers:
   (when (eq? 0 (current-future))
-    (init-virtual-registers)))
+    (init-virtual-registers)
+    ;; set `place-thread-category` back to "unknown":
+    (place-thread-category PLACE-UNKNOWN-THREAD)))
