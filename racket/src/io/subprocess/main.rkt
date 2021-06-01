@@ -297,12 +297,15 @@
       [(sw_shownoactivate SW_SHOWNOACTIVATE) RKTIO_SW_SHOWNOACTIVATE]
       [(sw_shownormal SW_SHOWNORMAL) RKTIO_SW_SHOWNORMAL]
       [else (raise-argument-error who "(or/c 'sw_hide ....)" show-mode)]))
+  ;; Let `rktio_shell_execute` handle its own atomicity. That's because
+  ;; it can yield to Windows events, and events need to be handled by callbacks
+  ;; starting from a mode that's like a Racket foreign call.
   (define r (rktio_shell_execute rktio
                                  (and verb (string->bytes/utf-8 verb))
                                  (string->bytes/utf-8 target)
                                  (string->bytes/utf-8 parameters)
                                  (->host (->path dir) who '(exists))
-                                 show_mode))
+                                 show_mode)))
   (when (rktio-error? r) (raise-rktio-error who r "failed"))
   #f)
 

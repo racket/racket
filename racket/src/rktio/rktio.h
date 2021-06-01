@@ -91,8 +91,9 @@ Thread and signal conventions:
 #define RKTIO_EXTERN_NOERR  RKTIO_EXTERN
 #define RKTIO_EXTERN_STEP   RKTIO_EXTERN
 
-#define RKTIO_NULLABLE      /* empty */
-#define RKTIO_BLOCKING      /* empty */
+#define RKTIO_NULLABLE      /* empty; pointer type can be NULL */
+#define RKTIO_BLOCKING      /* empty; function blocks indefinitely */
+#define RKTIO_MSG_QUEUE     /* empty; function can dispatch events on Windows */
 
 /*************************************************/
 /* Initialization and general datatypes          */
@@ -1100,12 +1101,12 @@ enum {
   RKTIO_SW_SHOWNORMAL
 };
 
-RKTIO_EXTERN rktio_ok_t rktio_shell_execute(rktio_t *rktio,
-                                            rktio_const_string_t verb,
-                                            rktio_const_string_t target,
-                                            rktio_const_string_t arg,
-                                            rktio_const_string_t dir,
-                                            int show_mode);
+RKTIO_EXTERN RKTIO_MSG_QUEUE rktio_ok_t rktio_shell_execute(rktio_t *rktio,
+                                                            rktio_const_string_t verb,
+                                                            rktio_const_string_t target,
+                                                            rktio_const_string_t arg,
+                                                            rktio_const_string_t dir,
+                                                            int show_mode);
 /* Supported only on Windows to run `ShellExecute`. The `dir` argument
    needs to have normalized path separators. */
 

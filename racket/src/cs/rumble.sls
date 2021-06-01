@@ -653,6 +653,7 @@
           poll-async-callbacks            ; not exported to Racket
           set-make-async-callback-poll-wakeup! ; not exported to Racket
           set-foreign-eval!               ; not exported to Racket
+          call-enabling-ffi-callbacks     ; not exported to Racket
 
           ptr-ref/int8 ptr-set!/int8      ; not exported to Racket
           ptr-ref/uint8 ptr-set!/uint8    ; not exported to Racket

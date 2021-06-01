@@ -1827,6 +1827,12 @@
                                  ;; Wait for result:
                                  #t))]))
 
+(define (call-enabling-ffi-callbacks proc)
+  (disable-interrupts)
+  (let ([v (proc)])
+    (enable-interrupts)
+    v))
+
 (define scheduler-start-atomic void)
 (define scheduler-end-atomic void)
 (define (set-scheduler-atomicity-callbacks! start-atomic end-atomic)

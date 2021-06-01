@@ -1251,7 +1251,7 @@
   (int get_gmt)))
 (define-function/errno
  #f
- ()
+ (msg-queue)
  rktio_ok_t
  rktio_shell_execute
  (((ref rktio_t) rktio)
