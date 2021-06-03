@@ -73,6 +73,12 @@
 				     (add1 'x)))))
 (define test-param3 (make-parameter 'three list))
 (define test-param4 (make-derived-parameter test-param3 box list))
+(define test-param5 (make-parameter
+		     'five
+                     (let ()
+                       (struct s (x)
+                         #:property prop:procedure 0)
+                       (s (lambda (x) x)))))
 
 (test 'one test-param1)
 (test 'two test-param2) 
@@ -126,6 +132,10 @@
 (parameterize ([test-param4 'yet-another-three])
   (test '(#&yet-another-three) test-param3) 
   (test '((#&yet-another-three)) test-param4))
+
+(test 'five test-param5)
+(test (void) test-param5 5)
+(test 5 test-param5)
 
 (let ([cd (make-derived-parameter current-directory values values)])
   (test (current-directory) cd)

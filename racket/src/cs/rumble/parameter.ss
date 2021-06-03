@@ -101,7 +101,7 @@
           (let ([c (or (parameter-cell data)
                        default-c)])
             (thread-cell-set! c (if guard
-                                    (guard v)
+                                    (|#%app| guard v)
                                     v)))])
         3
         data))]))
