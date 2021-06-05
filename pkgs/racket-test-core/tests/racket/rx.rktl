@@ -606,6 +606,9 @@
        (#"^(a|)\\1?b" #"acb" #f)
        #"^(a|)\\1{2}b"
        #"^(a|)\\1{2,3}b"
+       (#"(^.|\\1){2}" #"aa" (#"aa" #"a")) ; self backreferences are allowed
+       (#"(^.|\\1){2}" #"baa" #f)
+       (#"(.\\1)" #"aa" #f)
        (#"ab{1,3}bc" #"abbbbc" (#"abbbbc"))
        (#"ab{1,3}bc" #"abbbc" (#"abbbc"))
        (#"ab{1,3}bc" #"abbc" (#"abbc"))

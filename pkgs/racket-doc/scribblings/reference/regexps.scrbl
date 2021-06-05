@@ -171,7 +171,11 @@ backreference can be used for repetition patterns; in the case of
 mutual dependencies among backreferences, the inference chooses the
 fixpoint that maximizes non-emptiness.  Finiteness is not inferred for
 backreferences (i.e., a backreference is assumed to match an
-arbitrarily large sequence).
+arbitrarily large sequence). No syntactic constraint prohibits a
+backreference within the group that it references, although such self
+references might create a pattern with no possible matches (as in the
+case of @litchar{(.\1)}, although @litchar{(^.|\1){2}} matches an
+input that starts with the same two characters).
 
 @type-table
 
