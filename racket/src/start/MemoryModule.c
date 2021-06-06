@@ -109,6 +109,8 @@ typedef struct {
 
 #define GET_HEADER_DICTIONARY(module, idx)  &(module)->headers->OptionalHeader.DataDirectory[idx]
 
+static BOOL WINAPI GetModuleHandleExW_redirect(DWORD dwFlags, LPCWSTR lpModuleName, HMODULE *phModule);
+
 static inline uintptr_t
 AlignValueDown(uintptr_t value, uintptr_t alignment) {
     return value & ~(alignment - 1);
@@ -538,7 +540,13 @@ HCUSTOMMODULE MemoryDefaultLoadLibrary(LPCSTR filename, void *userdata)
 FARPROC MemoryDefaultGetProcAddress(HCUSTOMMODULE module, LPCSTR name, void *userdata)
 {
     UNREFERENCED_PARAMETER(userdata);
-    return (FARPROC) GetProcAddress((HMODULE) module, name);
+
+    FARPROC result = GetProcAddress((HMODULE) module, name);
+
+    if (result == &GetModuleHandleExW)
+      return GetModuleHandleExW_redirect;
+
+    return result;
 }
 
 void MemoryDefaultFreeLibrary(HCUSTOMMODULE module, void *userdata)
@@ -1158,6 +1166,17 @@ MemoryLoadStringEx(HMEMORYMODULE module, UINT id, LPTSTR buffer, int maxsize, WO
     wcstombs(buffer, data->NameString, size);
 #endif
     return size;
+}
+
+/* Based on https://github.com/py2exe/py2exe/pull/67 by @leejeonghun
+   to make embedding OpenSSL work.
+   (MIT/X11 License) */
+BOOL WINAPI GetModuleHandleExW_redirect(DWORD dwFlags, LPCWSTR lpModuleName, HMODULE *phModule) {
+  if ((dwFlags & GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS) && (phModule != NULL)) {
+    *phModule = GetModuleHandle(NULL);
+    return TRUE;
+  }
+  return GetModuleHandleExW(dwFlags, lpModuleName, phModule);
 }
 
 #ifdef TESTSUITE
