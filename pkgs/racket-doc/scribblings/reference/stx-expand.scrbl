@@ -93,48 +93,6 @@ to the syntax object:
 
 @itemize[
 
- @item{@indexed-racket['module-variable-provides] --- a list of
- provided items, where each item is one of the following:
-
-  @itemize[
-
-  @item{@racket[symbol] --- represents a locally defined variable that
-  is provided with its defined name.}
-
-  @item{@racket[(cons _provided-sym _defined-sym)] --- represents a
-  locally defined variable that is provided with renaming; the first
-  symbol is the exported name, and the second symbol is the defined
-  name.}
-
-  @item{@racket[(list* module-path-index _provided-sym _defined-sym)]
-  --- represents a re-exported and possibly re-named variable from the
-  specified module; @racket[module-path-index] is either a
-  @tech{module path index} or symbol (see @secref["modpathidx"]),
-  indicating the source module for the binding. The
-  @racket[_provided-sym] is the external name for the re-export, and
-  @racket[_defined-sym] is the originally defined name in the module
-  specified by @racket[module-path-index].}
-
-  ]}
-
- @item{@indexed-racket['module-syntax-provides] --- like
- @racket['module-variable-provides], but for syntax exports instead of
- variable exports.}
-
- @item{@indexed-racket['module-indirect-provides] --- a list of symbols for
- variables that are defined in the module but not exported; they may
- be exported indirectly through macro expansions.  Definitions of
- macro-generated identifiers create uninterned symbols in this list.
- The order of identifiers in the list corresponds to an order for
- access from bytecode.}
-
- @item{@indexed-racket['module-indirect-for-meta-provides] --- similar
- to @racket['module-indirect-provides]: an association list from a
- phase level to a list of symbols for variables that are defined in
- the module at phases higher than @racket[0] and not exported.
-
- @history[#:added "6.5.0.5"]}
-
  @item{@indexed-racket['module-body-context] --- a syntax
  object whose @tech{lexical information} corresponds to the inside of
  the module, so it includes the expansion's @tech{outside-edge scope}
@@ -164,3 +122,8 @@ to the syntax object:
 
 ]
 
+@history[#:changed "7.0" @elem{Removed @racket['module-variable-provides],
+                               @racket['module-syntax-provides],
+                               @racket['module-indirect-provides],
+                               and @racket['module-indirect-for-meta-provides]
+                               properties.}]
