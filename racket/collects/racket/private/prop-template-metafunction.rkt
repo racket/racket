@@ -1,8 +1,8 @@
 (module prop-template-metafunction '#%kernel
-  (#%provide (protect template-metafunction
-                      prop:template-metafunction
-                      (rename prop:template-metafunction? template-metafunction?)
-                      template-metafunction-accessor))
+  (#%provide template-metafunction
+             prop:template-metafunction
+             (rename prop:template-metafunction? template-metafunction?)
+             template-metafunction-accessor)
   
   ;; The prop:template-metafunction structure type property can contain one of:
   ;;  - an identifier bound to the run-time metafunction procedure
