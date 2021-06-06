@@ -81,5 +81,9 @@
             #f)
        ;; Drop any query or fragment in the URL:
        (struct-copy url pkg-url
+                    [scheme (case (url-scheme pkg-url)
+                              [("git+http") "http"]
+                              [("git+https") "https"]
+                              [else (url-scheme pkg-url)])]
                     [query null]
                     [fragment #f]))))
