@@ -63,17 +63,8 @@
                                prop:template-metafunction-guard))
   
   (define-values (template-metafunction-accessor)
-    (lambda (instance . more-args)
-      (let-values ([(raw) (if (null? more-args) ;; no failure-result given
-                              (template-metafunction-raw-accessor instance)
-                              (if (null? (cdr more-args))
-                                  (let-values ([(failure-result) (car more-args)])
-                                    (template-metafunction-raw-accessor instance
-                                                                        failure-result))
-                                  (raise-arity-error 'template-metafunction-accessor
-                                                     (list 1 2)
-                                                     (cons instance more-args))))])
-        (raw instance))))
+    (lambda (instance)
+      ((template-metafunction-raw-accessor instance) instance)))
   
   ;; A default struct type with prop:template-metafunction.
   ;; (struct template-metafunction (proc-id)
