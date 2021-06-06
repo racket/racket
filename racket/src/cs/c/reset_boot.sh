@@ -13,7 +13,7 @@ ready_mach()
     if [ ! -f "$DEST" ]; then
         mkdir -p `dirname $DEST`
         ln -s "$RELINIT" "$DEST"
-    elif [ "`/usr/bin/find "$INIT" -newer "$DEST"`" != "" ] ; then
+    elif [ "`find "$INIT" -newer "$DEST"`" != "" ] ; then
         rm "$DEST"
         ln -s "$RELINIT" "$DEST"
     fi

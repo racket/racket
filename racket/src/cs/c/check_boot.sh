@@ -13,7 +13,7 @@ check_pb()
     DEST=$SCHEME_WORKAREA/pb/boot/pb/$1
     if [ ! -e $DEST ] ; then
         touch boot_pending
-    elif [ "`/usr/bin/find "$SRC" -newer "$DEST"`" != "" ] ; then
+    elif [ "`find "$SRC" -newer "$DEST"`" != "" ] ; then
         touch boot_pending
     fi
 }
@@ -33,7 +33,7 @@ check_mach()
     INIT=$SCHEME_WORKAREA/boot/$MACH/$1
     if [ ! -e $INIT ] ; then
         touch boot_pending
-    elif [ "`/usr/bin/find "$SRC" -newer "$INIT"`" != "" ] ; then
+    elif [ "`find "$SRC" -newer "$INIT"`" != "" ] ; then
         touch boot_pending
     fi
 }
