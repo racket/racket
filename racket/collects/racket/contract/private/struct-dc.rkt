@@ -1570,19 +1570,7 @@
                                          (free-identifier=? (datum->syntax stx x)
                                                             sel)))
                              si-selectors)
-                      (define strip-reg 
-                        (regexp (format "^~a-" (regexp-quote (symbol->string (syntax-e struct-id))))))
-                      (define field-name
-                        (datum->syntax 
-                         (disarm sel)
-                         (string->symbol (regexp-replace strip-reg
-                                                         (symbol->string (syntax-e sel))
-                                                         ""))))
-                      (cond
-                        [(free-identifier=? #'struct-name struct-id)
-                         #`(#:selector #,sel)]
-                        [else
-                         #`(#,field-name #:parent #,struct-id)])]
+                      #`(#:selector #,sel)]
                      [else #f])])]
                [else #f])))
          (unless candidate

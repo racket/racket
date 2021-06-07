@@ -199,6 +199,24 @@
    (λ (x)
      (and (exn:fail:contract:blame? x)
           (regexp-match #rx"promised: foo?" (exn-message x)))))
+
+  (test/spec-passed/result
+   'struct/c18
+   '(let ()
+      (struct bar (x) #:name Bar)
+      (struct baz Bar (z) #:name Baz)
+      (bar-x (contract (struct/c Baz number? string?)
+                       (baz 1 "x") 'pos 'neg)))
+   1)
+
+  (test/spec-passed/result
+   'struct/c19
+   '(let ()
+      (struct bar (x) #:name Bar)
+      (struct baz Bar (z) #:name Baz)
+      (baz-z (contract (struct/c Baz string? number?)
+                       (baz "x" 2) 'pos 'neg)))
+   2)
   
   (test/spec-passed/result
    'struct/c-contract-accessor
