@@ -831,8 +831,10 @@
            (raise-syntax-error 
             'struct/dc 
             (string-append 
-             "expected an identifier that names a field or a sequence with a field name,"
-             " the #:parent keyword, and the parent struct")
+             "could not identify selector;\n"
+             " expected either an identifier that names a field,\n"
+             " a sequence with a field name, #:parent, and the parent struct that matches, or\n"
+             " a sequence starting with #:selector and a selector identifier")
             stx
             sel-name)))
        
