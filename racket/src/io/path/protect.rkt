@@ -38,6 +38,9 @@
                   (or (eqv? b (char->integer #\.))
                       (eqv? b (char->integer #\space))))
              #t]
+            ;; If changing the following,
+            ;; consider also changing syntax->tmp-context-string
+            ;; in racket/collects/racket/file.rkt
             [(or (eqv? b (char->integer #\/))
                  (eqv? b (char->integer #\"))
                  (eqv? b (char->integer #\|))

@@ -352,14 +352,211 @@
 (err/rt-test (open-output-file (build-path (current-directory) "baddir" "x"))
 	    exn:fail:filesystem?)
 
+;; Tests for make-temporary-{file,directory}{,*}
+
+;; arities
+(arity-test make-temporary-file 0 3)
+(test 'make-temporary-file object-name make-temporary-file)
+(let-values ([(required accepted) (procedure-keywords make-temporary-file)])
+  (test '() 'make-temporary-file-no-required-keywords required)
+  (test '(#:base-dir #:copy-from) 'make-temporary-file-accepts-keywords accepted))
+(arity-test make-temporary-file* 2 2)
+(test 'make-temporary-file* object-name make-temporary-file*)
+(let-values ([(required accepted) (procedure-keywords make-temporary-file*)])
+  (test '() 'make-temporary-file*-no-required-keywords required)
+  (test '(#:base-dir #:copy-from) 'make-temporary-file*-accepts-keywords accepted))
+(arity-test make-temporary-directory 0 1)
+(test 'make-temporary-directory object-name make-temporary-directory)
+(let-values ([(required accepted) (procedure-keywords make-temporary-directory)])
+  (test '() 'make-temporary-directory-no-required-keywords required)
+  (test '(#:base-dir) 'make-temporary-directory-accepts-keywords accepted))
+(arity-test make-temporary-directory* 2 2)
+(test 'make-temporary-directory* object-name make-temporary-directory*)
+(let-values ([(required accepted) (procedure-keywords make-temporary-directory*)])
+  (test '() 'make-temporary-directory*-no-required-keywords required)
+  (test '(#:base-dir) 'make-temporary-directory*-accepts-keywords accepted))
+
+;; tests for using srcloc in templates
 (let ([tf (make-temporary-file)])
   (let-values ([(base name dir?) (split-path tf)])
-    (test #t 'make-temporary-file-uses-srcloc (and (regexp-match #rx"file.rktl" (path->bytes name)) #t)))
+    (test #t 'make-temporary-file-uses-srcloc (regexp-match? #rx"file.rktl" name)))
   (delete-file tf))
+(let ([tf (make-temporary-file #:copy-from 'directory)])
+  (let-values ([(base name dir?) (split-path tf)])
+    (test #t 'make-temporary-file-with-kw-uses-srcloc (regexp-match? #rx"file.rktl" name)))
+  (delete-directory tf))
+(let ([tf (make-temporary-directory)])
+  (let-values ([(base name dir?) (split-path tf)])
+    (test #t 'make-temporary-directory-uses-srcloc (regexp-match? #rx"file.rktl" name)))
+  (delete-directory tf))
+(let ([tf (make-temporary-directory #:base-dir (find-system-path 'temp-dir))])
+  (let-values ([(base name dir?) (split-path tf)])
+    (test #t 'make-temporary-directory-with-kw-uses-srcloc (regexp-match? #rx"file.rktl" name)))
+  (delete-directory tf))
+(let ([tf (make-temporary-file* #"abc" #"xyz")])
+  (let-values ([(base name dir?) (split-path tf)])
+    (test #t 'make-temporary-file*-uses-srcloc (regexp-match? #rx"file.rktl" name)))
+  (delete-file tf))
+(let ([tf (make-temporary-file* #"abc" #"xyz" #:base-dir (find-system-path 'temp-dir))])
+  (let-values ([(base name dir?) (split-path tf)])
+    (test #t 'make-temporary-file*-with-kw-uses-srcloc (regexp-match? #rx"file.rktl" name)))
+  (delete-file tf))
+(let ([tf (make-temporary-directory* #"abc" #"xyz")])
+  (let-values ([(base name dir?) (split-path tf)])
+    (test #t 'make-temporary-directory*-uses-srcloc (regexp-match? #rx"file.rktl" name)))
+  (delete-directory tf))
+(let ([tf (make-temporary-directory* #"abc" #"xyz" #:base-dir (find-system-path 'temp-dir))])
+  (let-values ([(base name dir?) (split-path tf)])
+    (test #t 'make-temporary-directory*-with-kw-uses-srcloc (regexp-match? #rx"file.rktl" name)))
+  (delete-directory tf))
 
-(let ([tf ((λ (t) (t)) make-temporary-file)])
-  (test #t 'make-temporary-file-in-ho-position (file-exists? tf))
+;; tests for actually using template, prefix, and suffix
+(let ([tf (make-temporary-file "abc~a.xyz")])
+  (let-values ([(base name dir?) (split-path tf)])
+    (test #t 'make-temporary-file-respects-template
+          (regexp-match? #rx"^abc.*\\.xyz$" name)))
   (delete-file tf))
+(let ([tf (make-temporary-file* #"abc" #".xyz")])
+  (let-values ([(base name dir?) (split-path tf)])
+    (test #t 'make-temporary-file*-respects-prefix/suffix
+          (regexp-match? #rx"^abc.*\\.xyz$" name)))
+  (delete-file tf))
+(let ([td (make-temporary-directory "abc~a.xyz")])
+  (let-values ([(base name dir?) (split-path td)])
+    (test #t 'make-temporary-directory-respects-template
+          (regexp-match? #rx"^abc.*\\.xyz$" name)))
+  (delete-directory td))
+(let ([td (make-temporary-directory* #"abc" #".xyz")])
+  (let-values ([(base name dir?) (split-path td)])
+    (test #t 'make-temporary-directory*-respects-prefix/suffix
+          (regexp-match? #rx"^abc.*\\.xyz$" name)))
+  (delete-directory td))
+
+;; tests for higher-order use
+(let ([make-temporary-file ((λ (x) x) make-temporary-file)])
+  (define dir (make-temporary-file "mtf-ho-dir~a" 'directory))
+  (test #t 'make-temporary-file-in-ho-position (directory-exists? dir))
+  (define tf (make-temporary-file #:base-dir dir))
+  (test #t 'make-temporary-file-in-ho-position-with-kw (file-exists? tf))
+  (delete-file tf)
+  (delete-directory dir))
+(let ([make-temporary-directory ((λ (x) x) make-temporary-directory)])
+  (define dir (make-temporary-directory "mtd-ho-dir~a"))
+  (test #t 'make-temporary-directory-in-ho-position (directory-exists? dir))
+  (define td (make-temporary-directory #:base-dir dir))
+  (test #t 'make-temporary-directory-in-ho-position-with-kw (directory-exists? td))
+  (delete-directory td)
+  (delete-directory dir))
+(let ([make-temporary-file* ((λ (x) x) make-temporary-file*)])
+  (define tf1 (make-temporary-file* #"mtf-star-ho-dir" #""))
+  (test #t 'make-temporary-file*-in-ho-position (file-exists? tf1))
+  (delete-file tf1)
+  (define tf2 (make-temporary-file* #"abc" #"xyz" #:base-dir (find-system-path 'temp-dir)))
+  (test #t 'make-temporary-file*-in-ho-position-with-kw (file-exists? tf2))
+  (delete-file tf2))
+(let ([make-temporary-directory* ((λ (x) x) make-temporary-directory*)])
+  (define dir (make-temporary-directory* #"mtd-star-ho-dir" #""))
+  (test #t 'make-temporary-directory*-in-ho-position (directory-exists? dir))
+  (define td (make-temporary-directory* #"abc" #"xyz" #:base-dir dir))
+  (test #t 'make-temporary-directory*-in-ho-position-with-kw (directory-exists? td))
+  (delete-directory td)
+  (delete-directory dir))
+
+;; tests for #:copy-from
+(let ()
+  (define a (make-temporary-file))
+  (call-with-output-file a
+    #:exists 'truncate
+    (λ (out) (write 'copy-from out)))
+  (define b (make-temporary-file #:copy-from a))
+  (delete-file a)
+  (test 'copy-from 'make-temporary-file-copy-from (call-with-input-file b read))
+  (delete-file b))
+
+;; tests for function names in error messages
+(define rx:tmp-file #rx"make-temporary-file")
+(define rx:tmp-dir #rx"make-temporary-directory")
+(define rx:tmp-file* #rx"make-temporary-file*")
+(define rx:tmp-dir* #rx"make-temporary-directory*")
+(err/rt-test (make-temporary-file "bad\0~a") exn:fail:contract? rx:tmp-file)
+(err/rt-test (make-temporary-directory "bad\0~a") exn:fail:contract? rx:tmp-dir)
+(err/rt-test (make-temporary-file "bad~x") exn:fail:contract? rx:tmp-file)
+(err/rt-test (make-temporary-directory "bad~x") exn:fail:contract? rx:tmp-dir)
+(err/rt-test (make-temporary-file* #"bad\0" #"xyz") exn:fail:contract? rx:tmp-file*)
+(err/rt-test (make-temporary-directory* #"abc" #"bad\0") exn:fail:contract? rx:tmp-dir*)
+(err/rt-test (make-temporary-file* "bad" #"xyz") exn:fail:contract? rx:tmp-file*)
+(err/rt-test (make-temporary-directory* #"abc" "bad~x") exn:fail:contract? rx:tmp-dir*)
+(err/rt-test (make-temporary-file* #"abc" #"xyz" #:copy-from 'directory)
+             exn:fail:contract?
+             rx:tmp-file*)
+
+;; tests for absolute paths
+(let* ([temp-dir (find-system-path 'temp-dir)]
+       [absolute-prefix
+        (path->bytes (build-path temp-dir "absolute"))])
+  (define tf (make-temporary-file* absolute-prefix #""))
+  (test #t 'make-temporary-file-absolute (file-exists? tf))
+  (delete-file tf)
+  (define td (make-temporary-directory* absolute-prefix #""))
+  (test #t 'make-temporary-directory-absolute (directory-exists? td))
+  (delete-directory td)
+  (err/rt-test (make-temporary-file* absolute-prefix #"" #:base-dir temp-dir)
+               exn:fail:contract?
+               rx:tmp-file)
+  (err/rt-test (make-temporary-directory* absolute-prefix #"" #:base-dir temp-dir)
+               exn:fail:contract?
+               rx:tmp-dir))
+
+;; tests for a template that produces a syntactic directory path
+(let ([dir-template
+       (path->string
+        ;; path-element->string would drop directory separator
+        (path->directory-path "syntactically-dir~atmp"))])
+  (define td (make-temporary-directory dir-template))
+  (test #t 'make-temporary-dir-syntactic-dir-template (directory-exists? td))
+  (delete-directory td)
+  (err/rt-test (make-temporary-file dir-template) exn:fail:contract? rx:tmp-file))
+
+;; tests for Windows paths that are absolute but not complete
+(when (eq? 'windows (system-path-convention-type))
+  (define complete-temp-dir
+    (path->complete-path
+     (find-system-path 'temp-dir)))
+  (define elems
+    (explode-path complete-temp-dir))
+  (define drive
+    (car elems))
+  (test #t 'make-temporary-file-w32-drive-spec (complete-path? drive))
+  (define temp-dir-no-drive
+    (apply build-path (cdr elems)))
+  (define abs-not-complete
+    (let* ([pth (build-path temp-dir-no-drive "rkttmp")]
+           [bs (path->bytes pth)])
+      (if (eqv? (char->integer #\\) (bytes-ref bs 0))
+          pth
+          (bytes->path (bytes-append #"\\" bs)))))
+  (test #t 'make-temporary-file-w32-abs-template (absolute-path? abs-not-complete))
+  (test #f 'make-temporary-file-w32-abs-not-complete (complete-path? abs-not-complete))
+  (define abs-not-complete/bytes
+    (path->bytes abs-not-complete))
+  (let ([tf (make-temporary-file* abs-not-complete/bytes #"")])
+    (test #t 'make-temporary-file-w32-abs-no-base-dir (file-exists? tf))
+    (delete-file tf))
+  (let ([tf (make-temporary-file* abs-not-complete/bytes #"" #:base-dir drive)])
+    (test #t 'make-temporary-file-w32-abs-base-drive (file-exists? tf))
+    (delete-file tf))
+  ;; no absolute template w/ relative base-dir
+  (err/rt-test (make-temporary-file* abs-not-complete/bytes #""
+                                     #:base-dir "relative")
+               exn:fail:contract?)
+  ;; no absolute template w/ driveless absolute base-dir
+  (err/rt-test (make-temporary-file* abs-not-complete/bytes #""
+                                     #:base-dir temp-dir-no-drive)
+               exn:fail:contract?)
+  ;; no absolute template w/ complete base-dir that is not just drive spec
+  (err/rt-test (make-temporary-file* abs-not-complete/bytes #""
+                                     #:base-dir (build-path drive (cadr elems)))
+               exn:fail:contract?))
 
 
 (define tempfilename (make-temporary-file))
