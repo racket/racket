@@ -523,6 +523,8 @@ Scheme_Object *scheme_make_sized_offset_path(char *chars, intptr_t d, intptr_t l
   return scheme_make_sized_offset_kind_path(chars, d, len, copy, SCHEME_PLATFORM_PATH_KIND);
 }
 
+/* If changing the following, consider also changing
+   syntax->tmp-context-string in racket/collects/racket/file.rkt */
 # define IS_SPEC_CHAR(x) (IS_A_DOS_SEP(x) || ((x) == '"') || ((x) == '|') \
                           || ((x) == ':') || ((x) == '<') || ((x) == '>') \
                           || ((x) == '?') || ((x) == '*'))

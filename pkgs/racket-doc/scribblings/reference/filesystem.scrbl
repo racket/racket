@@ -1,5 +1,6 @@
 #lang scribble/doc
 @(require "mz.rkt"
+          scribble/core
           (for-label framework/preferences
                      racket/runtime-path
                      launcher/launcher
@@ -680,7 +681,7 @@ directory.}
 
 @defparam*[current-directory-for-user path path-string? (and/c path? complete-path?)]{
 
-Like @racket[current-directory], but use only by
+Like @racket[current-directory], but for use only by
 @racket[srcloc->string] for reporting paths relative to a
 directory.
 
@@ -1390,43 +1391,125 @@ will not create it.
 
 
 @defproc[(make-temporary-file [template string? "rkttmp~a"]
-                              [copy-from-filename (or/c path-string? #f 'directory) #f]
-                              [directory (or/c path-string? #f) #f])
-         path?]{
+                              [#:copy-from copy-from (or/c path-string? #f 'directory) #f]
+                              [#:base-dir base-dir (or/c path-string? #f) #f]
+                              [compat-copy-from (or/c path-string? #f 'directory) copy-from]
+                              [compat-base-dir (or/c path-string? #f) base-dir])
+         (and/c path? complete-path?)]{
 
-Creates a new temporary file and returns a pathname string for the
-file.  Instead of merely generating a fresh file name, the file is
+Creates a new temporary file and returns its path.
+Instead of merely generating a fresh file name, the file is
 actually created; this prevents other threads or processes from
 picking the same temporary name.
 
-The @racket[template] argument must be a format string suitable
-for use with @racket[format] and one additional string argument (where
-the string contains only digits). If the resulting string is a
-relative path, it is combined with the result of
-@racket[(find-system-path 'temp-dir)], unless @racket[directory] is
-provided and non-@racket[#f], in which case the
-file name generated from @racket[template] is combined with
-@racket[directory] to obtain a full path.
+The @racket[template] argument must be a format string
+suitable for use with @racket[format] and one additional
+string argument (which will contain only digits). By
+default, if @racket[template] produces a relative path, it
+is combined with the result of
+@racket[(find-system-path 'temp-dir)] using
+@racket[build-path]; alternatively, @racket[template] may
+produce an absolute path, in which case
+@racket[(find-system-path 'temp-dir)] is not consulted. If
+@racket[base-dir] is provided and non-@racket[#false],
+@racket[template] must not produce a @tech{complete} path,
+and @racket[base-dir] will be used instead of
+@racket[(find-system-path 'temp-dir)]. Using
+@racket[base-dir] is generally more reliable than including
+directory components in @racket[template]: it avoids subtle
+bugs from manipulating paths as string and eleminates the
+need to sanitize @racket[format] escape sequences.
 
-The @racket[template] argument's default is only the string @racket["rkttmp~a"]
-when there is no source location information for the callsite of
-@racket[make-temporary-file] (or if @racket[make-temporary-file] is
-used in a higher-order position). If there is such information, then the template
-string is based on the source location.
+On Windows, @racket[template] may produce an absolute path
+which is not a complete path (see @secref["windowspaths"])
+when @racket[base-dir] is absent or @racket[#f] (in which
+case it will be resolved relative to
+@racket[(current-directory)]) or if @racket[base-dir] is a
+drive specification (in which case it will be used as with
+@racket[build-path]). If @racket[base-dir] is any other kind
+of path, it is an error for @racket[template] to produce an
+absolute path.
 
-If @racket[copy-from-filename] is provided as path, the temporary file
+When the @racket[template] argument is not provided, if
+there is source location information for the callsite of
+@racket[make-temporary-file], a template string is generated
+based on the source location: the default is
+@racket["rkttmp~a"] only when no source location information
+is available (e.g@._ if @racket[make-temporary-file] is used
+in a higher-order position).
+
+If @racket[copy-from] is provided as path, the temporary file
 is created as a copy of the named file (using @racket[copy-file]). If
-@racket[copy-from-filename] is @racket[#f], the temporary file is
-created as empty. If @racket[copy-from-filename] is
-@racket['directory], then the temporary ``file'' is created as a
-directory.
+@racket[copy-from] is @racket[#f], the temporary file is
+created as empty. As a special case, for backwards compatibility,
+if @racket[copy-from] is @racket['directory],
+then the temporary ``file'' is created as a directory:
+for clarity, prefer @racket[make-temporary-directory] for creating
+temporary directories.
 
 When a temporary file is created, it is not opened for reading or
-writing when the pathname is returned. The client program calling
+writing when the path is returned. The client program calling
 @racket[make-temporary-file] is expected to open the file with the
 desired access and flags (probably using the @racket['truncate] flag;
 see @racket[open-output-file]) and to delete it when it is no longer
-needed.}
+needed.
+
+The by-position arguments @racket[compat-copy-from] and
+@racket[compat-base-dir] are for backwards compatibility:
+if provided, they take precedence over the @racket[#:copy-from] and
+@racket[#:base-dir] keyword variants.
+Supplying by-position arguments prevents @racket[make-temporary-file]
+from generating a @racket[template] using the source location.
+
+@history[
+ #:changed "8.4.0.3"
+ @elem{Added the @racket[#:copy-from] and @racket[#:base-dir] arguments.}
+ ]}
+
+@defproc[(make-temporary-directory [template string? "rkttmp~a"]
+                                   [#:base-dir base-dir (or/c path-string? #f) #f])
+         (and/c path? complete-path?)]{
+
+ Like @racket[make-temporary-file], but
+ creates a directory, rather than a regular file.
+
+ As with @racket[make-temporary-file], if the
+ @racket[template] argument is not provided, a template
+ string is generated from the source location of the call to
+ @racket[make-temporary-directory] when possible: the default
+ is @racket["rkttmp~a"] only when no source location
+ information is available.
+
+@history[
+ #:added "8.4.0.3"
+ ]}
+
+@deftogether[
+ (@defproc[(make-temporary-file* [prefix bytes?]
+                                 [suffix bytes?]
+                                 [#:copy-from copy-from (or/c path-string? #f) #f]
+                                 [#:base-dir base-dir (or/c path-string? #f) #f])
+           (and/c path? complete-path?)]
+   @defproc[(make-temporary-directory* [prefix bytes?]
+                                       [suffix bytes?]
+                                       [#:base-dir base-dir (or/c path-string? #f) #f])
+            (and/c path? complete-path?)])]{
+
+ Like @racket[make-temporary-file] and
+ @racket[make-temporary-directory], respectively, but, rather
+ than using a template for @racket[format], the path is based
+ on @racket[(bytes-append prefix generated suffix)], where
+ @racket[generated] is a byte string chosen by the
+ implementation to produce a unique path. If there is source
+ location information for the callsite of
+ @racket[make-temporary-file*] or
+ @racket[make-temporary-directory*], @racket[generated] will
+ incorporate that information. The resulting path is combined
+ with @racket[base-dir] as with @racket[make-temorary-file].
+
+ @history[
+ #:added "8.4.0.3"
+ ]}
 
 @defproc[(call-with-atomic-output-file [file path-string?] 
                                        [proc ([port output-port?] [tmp-path path?]  . -> . any)]
