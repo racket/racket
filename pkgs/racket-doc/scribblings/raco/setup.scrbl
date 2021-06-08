@@ -2526,7 +2526,8 @@ consults the @racket['bin-search-dirs] list to check whether the
 executable is already installed in one of those directories, and if so,
 it will refrain from creating a copy in the new layer. The same
 search-list check also applies to native libraries, shared files, and
-man pages.
+man pages, but with the additional check that the file to install matches
+the one that is already installed.
 
 The default path to @filepath{config.rktd} is hardwired within a
 @exec{racket} executable. In some cases, it can make sense for the

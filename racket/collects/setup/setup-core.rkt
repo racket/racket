@@ -1852,8 +1852,12 @@
                                   [(and (cc-main? cc)
                                         (for/or ([s-dir (in-list (get-extra-search-dirs))])
                                           (let ([p (build-dest-path s-dir lib-name)])
-                                            (or (file-exists? p)
-                                                (directory-exists? p)))))
+                                            (and (or (file-exists? p)
+                                                     (directory-exists? p))
+                                                 (or (and moving?
+                                                          (not (file-exists? src))
+                                                          (not (directory-exists? src)))
+                                                     (same-content? src p))))))
                                    ;; already exists in one of the search directories, so
                                    ;; don't copy/move to this one
                                    #f]
