@@ -44,12 +44,6 @@ Racket software includes or extends the following copyrighted material:
 }
 
 @copyright{
-  Collector C++ extension by Jesse Hull and John Ellis
-  Copyright (c) 1994 Xerox Corporation
-  All rights reserved.
-}
-
-@copyright{
   GNU MP Library
   Copyright (c) 1991, 1992, 1993, 1994, 1996, 1999, 2000, 2007
   Free Software Foundation, Inc.

@@ -4,7 +4,8 @@ components distributed under other licenses. In short:
 
   * The Racket CS runtime system embeds Chez Scheme, which is
     distributed under the Apache version 2.0 license. This runtime
-    system is built from code in racket/src/cs.
+    system is built from code in racket/src/cs and
+    racket/src/ChezScheme.
 
   * The Racket BC runtime system includes code distributed under the
     GNU Lesser General Public License, version 3. This runtime system
@@ -38,7 +39,7 @@ The following are used in all Racket executables:
   racket/src/rktio/rktio_sha2.c. mbed TLS is licensed under the Apache
   v2.0 License.
 
-The following are used only in the traditional Racket executable:
+The following are used only in the Racket BC executable:
 
 * libscheme. Code from libscheme can be found in racket/src/racket.
   See the file racket/src/LICENSE-libscheme.txt.
@@ -50,10 +51,6 @@ The following are used only in the traditional Racket executable:
 * GMP. Code from GMP can be found in racket/src/racket/src. The
   version of GMP used is distributed under the GNU Lesser General
   Public License version 3.
-
-* The Boehm Collector. Code for this package can be found in
-  racket/src/racket/gc. See the file racket/src/racket/gc/README.QUICK
-  for license information.
 
 * zlib. Code translated from earlier versions of zlib can be found in
   racket/racket/collects/file/{gzip,gunzip}.rkt. Zlib is distributed
@@ -85,5 +82,3 @@ standard Racket distribution:
 * SCM. Code from SCM can be found in
   pkgs/racket-benchmarks/tests/racket/benchmarks/shootout/pidigits1.rkt
   SCM is available under the LGPL.
-
-
