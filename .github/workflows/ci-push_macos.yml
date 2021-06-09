@@ -1,4 +1,4 @@
-name: CI MacOS Intel
+name: CI MacOS
 
 on: [push]
 
