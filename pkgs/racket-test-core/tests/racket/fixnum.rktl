@@ -4,13 +4,9 @@
          racket/unsafe/ops
          "for-util.rkt")
 
-(define 64-bit? (= (system-type 'word) 64))
-
-(define (fixnum-width) (if (eq? 'racket (system-type 'vm))
-                           (if 64-bit? 63 31)
-                           (if 64-bit? 61 30)))
-(define (least-fixnum) (- (expt 2 (sub1 (fixnum-width)))))
-(define (greatest-fixnum) (sub1 (expt 2 (sub1 (fixnum-width)))))
+(define (least-fixnum) (most-negative-fixnum))
+(define (greatest-fixnum) (most-positive-fixnum))
+(define (fixnum-width) (add1 (integer-length (most-positive-fixnum))))
 
 (test #t fixnum? (least-fixnum))
 (test #t fixnum? (greatest-fixnum))

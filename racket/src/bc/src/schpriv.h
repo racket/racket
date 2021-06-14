@@ -57,6 +57,8 @@
 
 #define IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(v) (((v) >= -1073741824) && ((v) <= 1073741823))
 
+#define MOST_POSITIVE_FIXNUM (((uintptr_t)-1) >> 2)
+#define MOST_NEGATIVE_FIXNUM ((((uintptr_t)-1) >> 1) ^ (((uintptr_t)-1) >> 2))
 
 /* We support 2^SCHEME_PRIM_OPT_INDEX_SIZE combinations of optimization flags: */
 
