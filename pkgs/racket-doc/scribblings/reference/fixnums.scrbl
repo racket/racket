@@ -276,7 +276,7 @@ The values of @racket[(most-positive-fixnum)] and
 @racket[(most-negative-fixnum)] depend on the platform and virtual
 machine, but all fixnums are in the range
 @racket[(most-negative-fixnum)] to @racket[(most-positive-fixnum)]
-inclusive, and all numbers in that range are fixnums.
+inclusive, and all exact integers in that range are fixnums.
 
 @history[#:added "8.1.0.7"]}
 
