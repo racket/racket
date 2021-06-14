@@ -19,7 +19,7 @@
 (arity-test vector-ref 2 2)
 (err/rt-test (vector-ref "apple" 3))
 (err/rt-test (vector-ref #(4 5 6) 3) exn:application:mismatch?)
-(err/rt-test (vector-ref #() 0) exn:application:mismatch?)
+(err/rt-test (vector-ref #() 0) exn:application:mismatch? #rx"empty vector")
 (err/rt-test (vector-ref #() (expt 2 100)) exn:application:mismatch?)
 (err/rt-test (vector-ref #(4 5 6) -1))
 (err/rt-test (vector-ref #(4 5 6) 2.0))

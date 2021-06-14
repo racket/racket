@@ -124,11 +124,16 @@
                        [(fxvector? v) (values "fxvector" (fxvector-length v))]
                        [(flvector? v) (values "flvector" (flvector-length v))]
                        [else (values "value" #f)]))])
-        (format-error-values (string-append "index is out of range\n"
-                                            "  index: ~s\n"
-                                            "  valid range: [0, " (if len (number->string (sub1 len)) "...") "]\n"
-                                            "  " what ": ~s")
-                             irritants))]
+        (if (eqv? len 0)
+            (format-error-values (string-append "index is out of range for empty " what "\n"
+                                                "  index: ~s\n"
+                                                "  " what ": ~s")
+                                 irritants)
+            (format-error-values (string-append "index is out of range\n"
+                                                "  index: ~s\n"
+                                                "  valid range: [0, " (if len (number->string (sub1 len)) "...") "]\n"
+                                                "  " what ": ~s")
+                                 irritants)))]
      [else
       (format-error-values (string-append "contract violation\n"
                                           "  expected: exact-nonnegative-integer?\n"
