@@ -804,16 +804,9 @@
 
 (define 64-bit? (= (system-type 'word) 64))
 
-(define (fixnum-width) (if (eq? 'racket (system-type 'vm))
-                           (if 64-bit? 63 31)
-                           (if 64-bit? 61 30)))
-(define low-fixnum (- (expt 2 (sub1 (fixnum-width)))))
-(define high-fixnum (sub1 (expt 2 (sub1 (fixnum-width)))))
+(define (fixnum-width) (add1 (integer-length (most-positive-fixnum))))
 
 (define s:fixnum? fixnum?)
-
-(define (most-positive-fixnum) high-fixnum)
-(define (most-negative-fixnum) low-fixnum)
 
 (define (make-compile-time-value v) v)
 
