@@ -215,3 +215,4 @@ rktio_set_last_error_step
 rktio_remap_last_error
 rktio_get_last_error_string
 rktio_get_error_string
+rktio_lsan_ignore_object

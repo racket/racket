@@ -1419,6 +1419,10 @@ RKTIO_EXTERN_NOERR const char *rktio_get_error_string(rktio_t *rktio, int kind, 
    deallocated, but it only lasts reliably until the next call to
    either of the functions. */
 
+/* Inform LeakSanitizer that this object should not be considered a leak */
+RKTIO_EXTERN void rktio_lsan_ignore_object(void *o);
+
 /*************************************************/
+
 
 #endif

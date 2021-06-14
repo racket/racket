@@ -1473,4 +1473,5 @@
  (ref char)
  rktio_get_error_string
  (((ref rktio_t) rktio) (int kind) (int errid)))
+(define-function () void rktio_lsan_ignore_object (((ref void) o)))
 )

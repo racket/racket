@@ -7,6 +7,17 @@
 # include <sys/sysctl.h>
 #endif
 
+/* __has_feature(address_sanitizer) is used later for Clang, this is for
+ * compatibility with other compilers (such as GCC and MSVC) */
+#ifndef __has_feature
+#   define __has_feature(x) 0
+#endif
+
+#if __has_feature(address_sanitizer) || defined(__SANITIZE_ADDRESS__)
+#include <sanitizer/lsan_interface.h>
+#endif
+
+
 rktio_t *rktio_init(void)
 {
   rktio_t *rktio;
@@ -87,4 +98,14 @@ void rktio_destroy(rktio_t *rktio)
 void rktio_free(void *p)
 {
   free(p);
+}
+
+
+void rktio_lsan_ignore_object(void *p)
+{
+#if __has_feature(address_sanitizer) || defined(__SANITIZE_ADDRESS__)
+  __lsan_ignore_object(p);
+  printf("successfully ignored %x\n", (uintptr_t p)
+#endif
+    return;
 }

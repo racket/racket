@@ -85,6 +85,7 @@
           [else
            (define converter (bytes-converter c #f))
            (define cref (unsafe-custodian-register (or cust (current-custodian)) converter close-converter #f #f))
+           (rktio_lsan_ignore_object converter)
            (set-bytes-converter-custodian-reference! converter cref)
            (end-atomic)
            converter])])]))

@@ -2,6 +2,9 @@
 #include "rktio_private.h"
 #include <string.h>
 #include <stdlib.h>
+#ifndef __has_feature
+#   define __has_feature(x) 0
+#endif
 
 #ifdef OS_X
 # define MACOS_UNICODE_SUPPORT
