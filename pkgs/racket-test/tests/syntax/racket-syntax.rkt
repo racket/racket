@@ -24,6 +24,15 @@
 (check-equal? (format-symbol "~a?" 'null) 'null?)
 (check-equal? (format-symbol "~a?" "null") 'null?)
 
+(check-exn
+ exn:fail:contract?
+ (lambda ()
+   (format-id 'here "wrong--first-arg-is-not-syntax")))
+
+(check free-identifier=?
+       (format-id #f "cb~a" #'a)
+       #'cba)
+
 ;; ----
 
 (check-equal? (syntax->datum
