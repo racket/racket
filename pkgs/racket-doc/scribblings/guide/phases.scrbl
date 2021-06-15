@@ -302,7 +302,7 @@ it doesn't:
 ]
 
 In the definition of module @racket[a], the variable
-@racket[see-button] is at phase 0 and its value is the syntax object
+@racket[see-button] is at phase 0, and its value is the syntax object
 for @racket[button], which shows the only visible @racket[button]
 binding is at the same phase. (That is the key detail.)
 As discussed, the @racket[for-syntax] import shifts the phase level of @emph{both}
@@ -312,7 +312,7 @@ into phase 1, which refers to @racket[button] in @racket[a] at phase
 1.
 The fact that in module @racket[b] there is also a phase 0 variable
 @racket[button] from a different instantiation of module @racket[a]
-does not matter because there is no way to reach it
+does not matter, because there is no way to reach it
 from the (shifted) @racket[see-button] from  @racket[a].
 
 This kind of phase-level mismatch between instantiations can be repaired 
