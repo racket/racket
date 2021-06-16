@@ -620,12 +620,15 @@ first found match is to the entire content of @racket[input].
 ]
 
 Beware that @racket[regexp-match-exact?] can return @racket[#f] if
-@racket[pattern] generates a partial match for @racket[input] first,
-even if @racket[pattern] could also generate a complete match.
+@racket[pattern] generates a partial match for @racket[input] first, even if
+@racket[pattern] could also generate a complete match. To check if there is any
+match of @racket[pattern] that covers all of @racket[input], use
+@racket[rexexp-match?] with @elem{@litchar{^(?:}@racket[pattern]@litchar{)$}}
+instead.
 
 @examples[
 (regexp-match-exact? #rx"a|ab" "ab")
-(regexp-match? #rx"^(a|ab)$" "ab")
+(regexp-match? #rx"^(?:a|ab)$" "ab")
 ]}
 
 
