@@ -612,7 +612,7 @@ match succeeds, @racket[#f] otherwise.
           boolean?]{
 
 Like @racket[regexp-match?], but @racket[#t] is only returned when the
-entire content of @racket[input] matches @racket[pattern].
+first found match is to the entire content of @racket[input].
 
 @examples[
 (regexp-match-exact? #rx"x." "12x4x6")
