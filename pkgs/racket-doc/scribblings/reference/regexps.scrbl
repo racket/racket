@@ -629,6 +629,15 @@ instead.
 @examples[
 (regexp-match-exact? #rx"a|ab" "ab")
 (regexp-match? #rx"^(?:a|ab)$" "ab")
+]
+
+The @litchar{(?:)} grouping is necessary because concatenation has
+lower precedence than alternation; the regular expression without it,
+@litchar{^a|ab$}, matches any input that either starts with
+@litchar{a} or ends with @litchar{ab}.
+
+@examples[
+(regexp-match? #rx"^a|ab$" "123ab")
 ]}
 
 
