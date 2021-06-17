@@ -393,7 +393,8 @@
       (unless (get-info/full dir #:namespace (make-base-namespace))
         (error 'pkg-binary-create "rewrite failed"))
       ;; compile it, if not package-level:
-      (when (strip-binary-compile-info)
+      (when (and (not (eq? mode 'source))
+                 (strip-binary-compile-info))
         (unless (eq? level 'package)
           (managed-compile-zo new-p))))))
 
