@@ -14869,23 +14869,29 @@
                   1))))))))))
 (define locale-string-encoding/bytes
   (lambda ()
-    (begin
-      (sync-locale!)
-      (let ((e_0
-             (|#%app| rktio_locale_encoding (unsafe-place-local-ref cell.1))))
-        (if (vector? e_0)
-          (begin
-            (unsafe-end-atomic)
-            (let ((base-msg_0 "error getting locale encoding"))
-              (begin-unsafe
-               (raise
-                (let ((app_0
-                       (format-rktio-message
-                        'locale-string-encoding
-                        e_0
-                        base-msg_0)))
-                  (|#%app| exn:fail app_0 (current-continuation-marks)))))))
-          (begin0 (|#%app| rktio_to_bytes e_0) (|#%app| rktio_free e_0)))))))
+    (if (locale-encoding-is-utf-8?)
+      #vu8(85 84 70 45 56)
+      (begin
+        (sync-locale!)
+        (let ((e_0
+               (|#%app|
+                rktio_locale_encoding
+                (unsafe-place-local-ref cell.1))))
+          (if (vector? e_0)
+            (begin
+              (unsafe-end-atomic)
+              (let ((base-msg_0 "error getting locale encoding"))
+                (begin-unsafe
+                 (raise
+                  (let ((app_0
+                         (format-rktio-message
+                          'locale-string-encoding
+                          e_0
+                          base-msg_0)))
+                    (|#%app| exn:fail app_0 (current-continuation-marks)))))))
+            (begin0
+              (|#%app| rktio_to_bytes e_0)
+              (|#%app| rktio_free e_0))))))))
 (define 1/locale-string-encoding
   (|#%name|
    locale-string-encoding
