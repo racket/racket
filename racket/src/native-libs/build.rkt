@@ -384,7 +384,7 @@
                                 null))]
     [("libiconv")
      (nonmac-only)
-     (config)]
+     (config #:configure '("--enable-extra-encodings"))]
     [("sqlite")
      (nonmac-only)
      (config #:fixup (and win?
