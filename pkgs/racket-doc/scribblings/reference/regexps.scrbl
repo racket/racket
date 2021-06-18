@@ -612,11 +612,32 @@ match succeeds, @racket[#f] otherwise.
           boolean?]{
 
 Like @racket[regexp-match?], but @racket[#t] is only returned when the
-entire content of @racket[input] matches @racket[pattern].
+first found match is to the entire content of @racket[input].
 
 @examples[
 (regexp-match-exact? #rx"x." "12x4x6")
 (regexp-match-exact? #rx"1.*x." "12x4x6")
+]
+
+Beware that @racket[regexp-match-exact?] can return @racket[#f] if
+@racket[pattern] generates a partial match for @racket[input] first, even if
+@racket[pattern] could also generate a complete match. To check if there is any
+match of @racket[pattern] that covers all of @racket[input], use
+@racket[rexexp-match?] with @elem{@litchar{^(?:}@racket[pattern]@litchar{)$}}
+instead.
+
+@examples[
+(regexp-match-exact? #rx"a|ab" "ab")
+(regexp-match? #rx"^(?:a|ab)$" "ab")
+]
+
+The @litchar{(?:)} grouping is necessary because concatenation has
+lower precedence than alternation; the regular expression without it,
+@litchar{^a|ab$}, matches any input that either starts with
+@litchar{a} or ends with @litchar{ab}.
+
+@examples[
+(regexp-match? #rx"^a|ab$" "123ab")
 ]}
 
 
