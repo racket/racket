@@ -651,21 +651,29 @@ like @racket[define-unit].}
 
 @defform*[
 [(define-signature-form sig-form-id expr)
- (define-signature-form (sig-form-id id) body ...+)]
+ (define-signature-form (sig-form-id id) body ...+)
+ (define-signature-form (sig-form-id id intro-id) body ...+)]
 ]{
 
 Binds @racket[sig-form-id] for use within a @racket[define-signature]
 form.
 
 In the first form, the result of @racket[expr] must be a transformer
-procedure.  In the second form, @racket[sig-form-id] is bound to a
+procedure that accepts one argument.  In the second form, @racket[sig-form-id] is bound to a
 transformer procedure whose argument is @racket[id] and whose body is
-the @racket[body]s. The result of the transformer must be a list of
+the @racket[body]s. The third form is like the second one, but
+@racket[intro-id] is bound to a procedure that is analogous to @racket[syntax-local-introduce]
+for the signature-form expansion.
+
+The result of the transformer procedure must be a list of
 syntax objects, which are substituted for a use of
 @racket[sig-form-id] in a @racket[define-signature] expansion. (The
 result is a list so that the transformer can produce multiple
 declarations; @racket[define-signature] has no splicing @racket[begin]
-form.)}
+form.)
+
+@history[#:changed "8.1.0.7" @elem{Added support for the form with a transformer
+                                   @racket[expr].}]}
 
 @defform/subs[
 (struct/ctc id ([field contract-expr] ...) struct-option ...) 

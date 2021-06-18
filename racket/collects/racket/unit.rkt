@@ -63,16 +63,23 @@
         #'(define-syntax name
             (make-set!-transformer
              (make-signature-form (λ (arg intro-arg) . val)))))))
+    ((_ name proc-expr)
+     (identifier? #'name)
+     (syntax-protect
+      #'(define-syntax name
+          (let ([name proc-expr])
+            (make-set!-transformer
+             (make-signature-form (λ (arg ignored) (name arg))))))))
     ((_ . l)
      (let ((l (checked-syntax->list stx)))
-       (unless (>= 3 (length l))
-         (raise-stx-err 
-          (format "expected syntax matching (~a (id id) expr ...)"
-                  (syntax-e (stx-car stx)))))
-       (unless (= 2 (length (checked-syntax->list (car l))))
-         (raise-stx-err
-          "expected syntax matching (identifier identifier)"
-          (car l)))))))
+       (define name (syntax-e (stx-car stx)))
+       (raise-stx-err 
+        (format (string-append "bad syntax\n"
+                               "  expected one of:\n"
+                               "   (~a (id id) expr ...)\n"
+                               "   (~a (id id id) expr ...)\n"
+                               "   (~a id proc-expr)")
+                name name name))))))
 
 (module+ compat
   ;; export only for compatibility with `mzlib/unit`
