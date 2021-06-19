@@ -834,13 +834,13 @@ compiled. Instead, @racket[expr] is preserved in the module as a
 compile-time expression (in the sense of
 @racket[begin-for-syntax]). Later, at the time that an executable is
 created, the compile-time portion of the module is executed (again),
-and the result of @racket[expr] is the file to be included with the
+and the result of @racket[expr] is the file or directory to be included with the
 executable. The reason for the extra compile-time execution is that
 the result of @racket[expr] might be platform-dependent, so the result
 should not be stored in the (platform-independent) bytecode form of
 the module; the platform at executable-creation time, however, is the
 same as at run time for the executable. Note that @racket[expr] is
-still evaluated at run-time; consequently, avoid procedures like
+still evaluated at run time; consequently, avoid procedures like
 @racket[collection-path], which depends on the source installation,
 and instead use relative paths and forms like @racket[(list 'lib _str
 ...+)].
@@ -849,7 +849,12 @@ If a path is needed only on some platforms and not on others, use
 @racket[define-runtime-path-list] with an @racket[expr] that produces an
 empty list on platforms where the path is not needed.
 
-Beware that @racket[define-runtime-path] in a @tech{phase level} other
+Beware that if @racket[expr] produces the path of a directory when
+creating an executable, the directory's full content (including any
+subdirectories) is included with the executable or eventual
+distribution.
+
+Also beware that @racket[define-runtime-path] in a @tech{phase level} other
 than 0 does not cooperate properly with an executable creator. To work
 around that limitation, put @racket[define-runtime-path] in a separate
 module---perhaps a @tech{submodule} created by @racket[module]---then
