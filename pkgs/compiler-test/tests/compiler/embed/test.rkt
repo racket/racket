@@ -139,55 +139,61 @@
   (define dest (if mred? mr-dest mz-dest))
   (define (flags s)
     (string-append "-" s))
-  (define (one-mz-test filename expect literal?)
-    ;; Try simple mode: one module, launched from cmd line:
-    (prepare dest filename)
-    (make-embedding-executable 
-     dest mred? #f
-     `((#t (lib ,filename "tests" "compiler" "embed")))
-     null
-     #f
-     `(,(flags "l") ,(string-append "tests/compiler/embed/" filename)))
-    (try-exe dest expect mred?)
+  (define (one-mz-test filename expect literal?
+                       #:only-via-path? [only-via-path? #f])
+    (unless only-via-path?
+      ;; Try simple mode: one module, launched from cmd line:
+      (prepare dest filename)
+      (make-embedding-executable 
+       dest mred? #f
+       `((#t (lib ,filename "tests" "compiler" "embed")))
+       null
+       #f
+       `(,(flags "l") ,(string-append "tests/compiler/embed/" filename)))
+      (try-exe dest expect mred?)
 
-    ;; As a launcher:
-    (prepare dest filename)
-    ((if mred? make-gracket-launcher make-racket-launcher)
-     (list "-l" (string-append "tests/compiler/embed/" filename))
-     dest)
-    (try-exe dest expect mred? #:dist? #f)
+      ;; As a launcher:
+      (prepare dest filename)
+      ((if mred? make-gracket-launcher make-racket-launcher)
+       (list "-l" (string-append "tests/compiler/embed/" filename))
+       dest)
+      (try-exe dest expect mred? #:dist? #f)
 
-    ;; Try explicit prefix:
-    (printf/flush ">>>explicit prefix\n")
-    (let ([w/prefix
-	   (lambda (pfx)
-	     (prepare dest filename)
-	     (make-embedding-executable 
-	      dest mred? #f
-	      `((,pfx (lib ,filename "tests" "compiler" "embed"))
-                (#t (lib "scheme/init")))
-	      null
-	      #f
-	      `(,(flags "lne") 
-                "scheme/base"
-                ,(format "(require '~a~a)" 
-                         (or pfx "")
-                         (regexp-replace #rx"[.].*$" filename ""))))
-	     (try-exe dest expect mred?))])
-      (w/prefix #f)
-      (w/prefix 'before:))
+      ;; Try explicit prefix:
+      (printf/flush ">>>explicit prefix\n")
+      (let ([w/prefix
+             (lambda (pfx)
+               (prepare dest filename)
+               (make-embedding-executable 
+                dest mred? #f
+                `((,pfx (lib ,filename "tests" "compiler" "embed"))
+                  (#t (lib "scheme/init")))
+                null
+                #f
+                `(,(flags "lne") 
+                  "scheme/base"
+                  ,(format "(require '~a~a)" 
+                           (or pfx "")
+                           (regexp-replace #rx"[.].*$" filename ""))))
+               (try-exe dest expect mred?))])
+        (w/prefix #f)
+        (w/prefix 'before:)))
 
-    (when literal?
+    (when (or literal?
+              only-via-path?)
+      (define main-mod-name
+        `'',(string->symbol (regexp-replace #rx"[.].*$" filename "")))
+      
       ;; Try full path, and use literal S-exp to start
       (printf/flush ">>>literal sexp\n")
       (prepare dest filename)
       (let ([path (build-path (collection-path "tests" "compiler" "embed") filename)])
         (make-embedding-executable 
          dest mred? #f
-         `((#t ,path))
+         `((#f ,path))
          null
          (base-compile
-          `(namespace-require '(file ,(path->string path))))
+          `(namespace-require ,main-mod-name))
          `(,(flags ""))))
       (try-exe dest expect mred?)
       
@@ -197,10 +203,10 @@
       (let ([path (build-path (collection-path "tests" "compiler" "embed") filename)])
         (make-embedding-executable 
          dest mred? #f
-         `((#t (file ,(path->string path))))
+         `((#f (file ,(path->string path))))
          null
          (base-compile
-          `(namespace-require '(file ,(path->string path))))
+          `(namespace-require ,main-mod-name))
          `(,(flags ""))))
       (try-exe dest expect mred?)
 
@@ -213,10 +219,11 @@
          `((#f ,filename))
          null
          (base-compile
-          `(namespace-require '',(string->symbol (regexp-replace #rx"[.].*$" filename ""))))
+          `(namespace-require ,main-mod-name))
          `(,(flags ""))))
-      (try-exe dest expect mred?)
-
+      (try-exe dest expect mred?))
+    
+    (when literal?
       ;; Try multiple modules
       (printf/flush ">>>multiple\n")
       (prepare dest filename)
@@ -277,7 +284,8 @@
     (one-mz-test "embed-me34.rkt" "This is 34 in a second place.\n" #f)
     (one-mz-test "embed-me35.rkt" "'ok-35\n" #f)
     (one-mz-test "embed-me36.rkt" "'ok-36\n" #f)
-    (one-mz-test "embed-me38.rkt" "\"found license\"\n" #f))
+    (one-mz-test "embed-me38.rkt" "\"found license\"\n" #f)
+    (one-mz-test "embed-me40.rkt" "#t\n" #f #:only-via-path? #t))
 
   ;; Try unicode expr and cmdline:
   (prepare dest "unicode")

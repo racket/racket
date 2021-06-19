@@ -14,6 +14,7 @@
          file/ico
          racket/private/so-search
          racket/private/share-search
+         racket/private/link-path
          setup/cross-system
          "private/cm-minimal.rkt"
          "private/winsubsys.rkt"
@@ -731,7 +732,10 @@
                                                                            (error 'embed "unexpected nested module path index ~s" base)))
                                                                        (cons path (lookup-full-name sub-filename)))))
                                                               ;; a run-time path:
-                                                              (cons sub-path (lookup-full-name sub-filename)))))
+                                                              (cons (if (path? sub-path)
+                                                                        `(path ,(encode-link-path sub-path))
+                                                                        sub-path)
+                                                                    (lookup-full-name sub-filename)))))
                                                    (append all-file-imports (map (lambda (p) #f) extra-runtime-paths))
                                                    (append sub-files (take extra-files (length extra-runtime-paths)))
                                                    (append sub-paths extra-runtime-paths)))
@@ -1309,7 +1313,10 @@
                                                                      (path->bytes p)
                                                                      (if (and (pair? p)
                                                                               (eq? 'module (car p)))
-                                                                         (list 'module (cadr p))
+                                                                         (list 'module (let ([p (cadr p)])
+                                                                                         (if (path? p)
+                                                                                             `(path ,(encode-link-path p))
+                                                                                             p)))
                                                                          p)))
                                                            (let ([p (cond
                                                                      [(bytes? p) (bytes->path p)]

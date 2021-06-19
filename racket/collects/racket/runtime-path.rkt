@@ -3,6 +3,7 @@
 ;; Library for accessing paths relative to a source file at runtime
 
 (require racket/list
+         racket/private/link-path
          "private/so-search.rkt"
          "private/share-search.rkt"
          "private/this-expression-source-directory.rkt"
@@ -62,7 +63,10 @@
                     (if (path? p)
                         (path->bytes p)
                         (if (and (pair? p) (eq? 'module (car p)))
-                            (list 'module (cadr p))
+                            (list 'module (let ([p (cadr p)])
+                                            (if (path? p)
+                                                `(path ,(encode-link-path p))
+                                                p)))
                             p)))
               #f)])
       (and p
