@@ -456,7 +456,7 @@ has that property.
 Each expansion step occurs in a particular @deftech{context}, and
 transformers and core syntactic forms may expand differently for
 different @tech{contexts}. For example, a @racket[module] form is
-allowed only in a @tech{top-level context}, and it fails in other
+allowed only in a @tech{top-level context} or @tech{module context}, and it fails in other
 contexts. The possible @tech{contexts} are as follows:
 
 @itemize[

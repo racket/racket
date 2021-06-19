@@ -121,7 +121,8 @@ the parameter value is used for the module name and @racket[id] is
 ignored, otherwise @racket[(#,(racket quote) id)] is the name of the
 declared module. For a @tech{submodule}, @racket[id] is the name of
 the submodule to be used as an element within a @racket[submod] module
-path.
+path. A @racket[module] form is not allowed in an @tech{expression context}
+or @tech{internal-definition context}.
 
 @margin-note/ref{For a @racket[module]-like form that works in
 definitions context other than the top level or a module body, see

@@ -48,7 +48,7 @@
  (lambda (s ctx)
    (unless (eq? (expand-context-context ctx) 'top-level)
      (log-expand ctx 'prim-module #f)
-     (raise-syntax-error #f "allowed only at the top level" s))
+     (raise-syntax-error #f "allowed only at the top level or in a module top-level" s))
    (performance-region
     ['expand 'module]
     (expand-module s ctx #f))))
@@ -80,7 +80,7 @@
  (lambda (s ctx)
    (log-expand ctx 'prim-declare #f)
    ;; The `#%module-begin` expander handles `#%declare`
-   (raise-syntax-error #f "not allowed outside of a module body" s)))
+   (raise-syntax-error #f "not allowed outside of a module top-level" s)))
 
 ;; ----------------------------------------
 
