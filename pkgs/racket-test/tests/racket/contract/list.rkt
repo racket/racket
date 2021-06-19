@@ -30,6 +30,21 @@
   (test/pos-blame 
    'listof5
    '(contract (listof integer?) (list #f #t) 'pos 'neg))
+
+  (test/spec-passed/result
+   'listof-any/c1
+   '(contract (listof any/c) '(1 2 3) 'pos 'neg)
+   '(1 2 3))
+  (test/spec-passed/result
+   'listof-any/c2
+   '(contract (listof any/c) '() 'pos 'neg)
+   '())
+  (test/pos-blame
+   'listof-any/c3
+   '(contract (listof any/c) #f 'pos 'neg))
+  (test/pos-blame
+   'listof-any/c4
+   '(contract (listof any/c) (cons 1 2) 'pos 'neg))
   
   (test/spec-passed/result 
    'nelistof1
