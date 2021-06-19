@@ -2236,6 +2236,13 @@ the regexp matches @racket[(path->string sys-lib-subpath)],
 
 @section[#:tag "cross-system"]{API for Cross-Platform Configuration}
 
+See @other-doc[#:indirect @exec{raco cross} '(lib
+"raco/private/cross/raco-cross.scrbl")] for information about
+@exec{raco cross}, a tool that is provided by the
+@filepath{raco-cross} package as a convenient interface to
+cross-compilation for Racket. The underlying API documented here
+supports @exec{raco cross} and other tools.
+
 @defmodule[setup/cross-system]{The @racketmodname[setup/cross-system]
 library provides functions for querying the system properties of a
 destination platform, which can be different than the current platform
