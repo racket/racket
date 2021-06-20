@@ -113,6 +113,8 @@
                    #:subs? [subs? #f]
                    #:subs-intro [subs-intro (default-intro)]
                    fmt . args)
+  (unless (or (syntax? lctx) (eq? lctx #f))
+    (apply raise-argument-error 'format-id "(or/c syntax? #f)" 0 lctx fmt args))
   (check-restricted-format-string 'format-id fmt)
   (define arg-strs (map (lambda (a) (->string a 'format-id)) args))
   (define str (apply format fmt arg-strs))
