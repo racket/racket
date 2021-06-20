@@ -36,6 +36,8 @@
   (test-name 'boolean? (or/c #f #t))
   (test-name 'boolean? (or/c #t #f))
   (test-name '(or/c #t #f 'x) (or/c #t #f 'x))
+  (test-name '(or/c any/c #f) (or/c any/c #f))
+  (test-name '(or/c #f any/c) (or/c #f any/c))
 
   (test-name '(if/c integer? odd? (-> integer? integer?))
              (if/c integer? odd? (-> integer? integer?)))
