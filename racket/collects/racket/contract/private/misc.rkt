@@ -28,7 +28,7 @@
          parameter/c
          procedure-arity-includes/c
          
-         any/c any/c?
+         any/c named-any/c
          any
          none/c
          make-none/c
@@ -662,6 +662,10 @@
     (rand-nat))
    'random-any/c-generated-procedure))
 
+(define ((any/c-random-generate ctc) fuel)
+  (define env (contract-random-generate-get-current-environment))
+  (λ () (random-any/c env fuel)))
+
 (define-struct any/c ()
   #:property prop:custom-write custom-write-property-proc
   #:omit-define-syntaxes
@@ -670,16 +674,26 @@
   (build-flat-contract-property
    #:trusted trust-me
    #:late-neg-projection (λ (ctc) any/c-blame->neg-party-fn)
-   #:stronger (λ (this that) (any/c? that))
-   #:equivalent (λ (this that) (any/c? that))
+   #:stronger (λ (this that) (prop:any/c? that))
+   #:equivalent (λ (this that) (prop:any/c? that))
    #:name (λ (ctc) 'any/c)
-   #:generate (λ (ctc) 
-                (λ (fuel) 
-                  (define env (contract-random-generate-get-current-environment))
-                  (λ () (random-any/c env fuel))))
+   #:generate any/c-random-generate
    #:first-order get-any?))
 
 (define/final-prop any/c (make-any/c))
+
+(define-struct named-any/c (name)
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:any/c #f
+  #:property prop:flat-contract
+  (build-flat-contract-property
+   #:trusted trust-me
+   #:late-neg-projection (λ (ctc) any/c-blame->neg-party-fn)
+   #:stronger (λ (this that) (prop:any/c? that))
+   #:equivalent (λ (this that) (prop:any/c? that))
+   #:name (λ (ctc) (named-any/c-name ctc))
+   #:generate any/c-random-generate
+   #:first-order get-any?))
 
 (define-syntax (any stx)
   (raise-syntax-error 'any "use of 'any' outside the range of an arrow contract" stx))

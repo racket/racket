@@ -1,7 +1,8 @@
 #lang racket/base
 (require "test-util.rkt")
 (parameterize ([current-contract-namespace
-                (make-basic-contract-namespace)])
+                (make-basic-contract-namespace
+                 'racket/contract/private/prop)])
   
   (test/pos-blame
    'or/c1
@@ -115,6 +116,15 @@
   (test/pos-blame
    'or/c23
    '(contract (or/c 'x 'y 1 2) 3 'pos 'neg))
+
+  (test/spec-passed
+   'or/c24
+   '(contract (or/c any/c #f) 3 'pos 'neg))
+
+  (test/spec-passed/result
+   'or/c25
+   '(prop:any/c? (or/c any/c #f))
+   #t)
   
   (test/spec-passed/result
    'or/c-not-error-early

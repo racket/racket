@@ -207,7 +207,7 @@
                  (last-elem-proj+blame val neg-party)]))
             val)]
          [else
-          (if (eq? elem-ctc any/c)
+          (if (prop:any/c? elem-ctc)
               (λ (val neg-party)
                 (if (list? val)
                     val
@@ -392,7 +392,7 @@
   (define ctc-car (the-cons/c-hd-ctc ctc))
   (define ctc-cdr (the-cons/c-tl-ctc ctc))
   (cond
-    [(and (any/c? ctc-car) (any/c? ctc-cdr))
+    [(and (prop:any/c? ctc-car) (prop:any/c? ctc-cdr))
      'pair?]
     [else
      (build-compound-type-name 'cons/c ctc-car ctc-cdr)]))
