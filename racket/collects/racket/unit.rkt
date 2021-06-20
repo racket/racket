@@ -1863,11 +1863,18 @@
                                           (car int+ext-id)
                                           (lambda () #f)))
                        int+ext-id))))))
+       (define (push-rename-in spec renames)
+         (syntax-case spec (bind-at tag)
+           [(bind-at u spec)
+            #`(bind-at u #,(push-rename-in #'spec renames))]
+           [(tag t spec)
+            #`(tag t #,(push-rename-in #'spec renames))]
+           [_ #`(rename #,spec . #,renames)]))
        (with-syntax ((((int-id . ext-id) ...) int+ext-ids)
                      ((def-name ...) (generate-temporaries (map car int+ext-ids))))
          (values
           (syntax-protect
-           #'(:unit (import) (export (rename export-spec (def-name int-id) ...))
+           #`(:unit (import) (export #,(push-rename-in #'export-spec #'((def-name int-id) ...)))
                     (define def-name int-id)
                     ...))
           null
@@ -2058,11 +2065,19 @@
       (cdr ti)))
 
 (define-for-syntax (temp-id-with-tags id i)
-  (syntax-case i (tag)
-    [(tag t sig)
-     (list id #`(tag t #,id) #'sig)]
-    [_else
-     (list id id i)]))
+  (let loop ([i i] [at #f])
+    (syntax-case i (tag bind-at)
+      [(tag t sig)
+       (list id #`(tag t #,id) (let ([l #'(tag t sig)])
+                                 (if at
+                                     #`(bind-at #,at #,l)
+                                     l)))]
+      [(bind-at u i)
+       (loop #'i #'u)]
+      [_else
+       (list id id (if at
+                       #`(bind-at #,at #,i)
+                       i))])))
 
 (define-syntax/err-param (define-values/invoke-unit stx)
   (syntax-case stx (import export)
@@ -2070,15 +2085,17 @@
      (quasisyntax/loc stx
        (define-values/invoke-unit/core u e ...)))
     ((_ u (import i ...) (export e ...))
-     (with-syntax (((EU ...) (generate-temporaries #'(e ...)))
+     (with-syntax ((((EU EUl e) ...) (map temp-id-with-tags
+                                          (generate-temporaries #'(e ...))
+                                          (syntax->list #'(e ...))))
                    (((IU IUl i) ...) (map temp-id-with-tags
                                           (generate-temporaries #'(i ...))
                                           (syntax->list #'(i ...))))
                    ((iu ...) (generate-temporaries #'(i ...)))
-                   ((i-id ...) (map cdadr
+                   ((i-id ...) (map (lambda (p) (unprocess-tagged-id (cadr p)))
                                     (map process-tagged-import
                                          (syntax->list #'(i ...)))))
-                   ((e-id ...) (map cdadr 
+                   ((e-id ...) (map (lambda (p) (unprocess-tagged-id (cadr p)))
                                     (map process-tagged-export
                                          (syntax->list #'(e ...))))))
        (quasisyntax/loc stx
@@ -2086,7 +2103,7 @@
            (define-unit-from-context iu i)
            ...
            (define-compound-unit u2 (import)
-             (export EU ...)
+             (export EUl ...)
              (link [((IU : i-id)) iu] ... [((EU : e-id) ...) u IUl ...]))
            (define-values/invoke-unit/core u2 e ...)))))
     ((_)
@@ -2330,9 +2347,9 @@
   (define (imps/exps-from-unit u)      
     (let* ([ui (lookup-def-unit u)]
            [unprocess (lambda (p)
-                        #`(bind-at #,u #,(unprocess-tagged-id (cons (car p) (cdr p)))))]
+                        #`(bind-at #,u #,(unprocess-tagged-id p)))]
            [isigs (map unprocess (unit-info-import-sig-ids ui))]
-           [esigs (map unprocess (unit-info-export-sig-ids ui))])
+           [esigs (map (if exports unprocess-tagged-id unprocess) (unit-info-export-sig-ids ui))])
       (values isigs esigs)))
   (define (drop-from-other-list exp-tagged imp-tagged imp-sources)
     (let loop ([ts imp-tagged] [ss imp-sources])

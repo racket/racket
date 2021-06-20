@@ -1335,6 +1335,7 @@
                         (link (((S : sig)) (unit (import) (export sig) (define-struct s (x y))))
                               (() (unit (import sig) (export)
                                     s) S)))))))
+
 (let ()
   (local-require scheme/unit)
   (define-signature sig ((struct s (x y))))
@@ -1830,6 +1831,25 @@
         (invoke-unit
          (compound-unit/infer (import) (export)
                               (link x2 u b)))))
+
+;; make sure `define-values/invoke-unit/infer` works with tagged imports:
+(let ()
+  (define-signature s^ [])
+  (define-unit u@
+    (import (tag t s^))
+    (export))
+  (define-values/invoke-unit/infer u@)
+  (void))
+(let ()
+  (define-signature s^ [x])
+  (define-signature o^ [y])
+  (define-unit u@
+    (import (tag t s^))
+    (export (tag m o^))
+    (define y x))
+  (define x 'ex)
+  (define-values/invoke-unit/infer u@)
+  (test 'ex y))
 
 #;
 (let ()
