@@ -693,6 +693,23 @@
 (err/rt-test (split*-list '() '() #f))
 (err/rt-test (take-common-prefix 1 1))
 
+(test '(a b) take-common-prefix* '((a b c d) (a b x y z) (a b 1 2 3)))
+(test '() take-common-prefix* '((1 a b c) (a b c d) (a b 1 2 3)))
+(test '(1 2) take-common-prefix* '((1 2) (1 2) (1 2)))
+(test '(1 2) take-common-prefix* '((1 2 3 4) (1 2 4 3)) =)
+(test '((c d) (x y z) (1 2 3)) drop-common-prefix* '((a b c d) (a b x y z) (a b 1 2 3)))
+(define (split*-list* ls)
+  (define-values (prefix tails)
+    (split-common-prefix* ls))
+  (list prefix tails))
+(test '((a b) ((c d) (x y z) (1 2 3))) split*-list* '((a b c d) (a b x y z) (a b 1 2 3)))
+(err/rt-test (take-common-prefix* '() #f))
+(err/rt-test (take-common-prefix* '(1)))
+(err/rt-test (take-common-prefix* 1))
+(err/rt-test (drop-common-prefix* '() #f))
+(err/rt-test (split-common-prefix* '() #f))
+
+
 ;; ---------- remf / remf* ----------
 
 (test '() remf positive? '())

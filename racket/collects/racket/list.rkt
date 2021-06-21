@@ -36,6 +36,10 @@
          take-common-prefix
          drop-common-prefix
 
+         split-common-prefix*
+         take-common-prefix*
+         drop-common-prefix*
+
          append*
          flatten
          add-between
@@ -318,6 +322,60 @@
   (let-values ([(prefix atail btail)
                 (internal-split-common-prefix as bs same? #f 'drop-common-prefix)])
     (values atail btail)))
+
+; ==================================================================================================
+; internal-split-common-prefix*: listof list? procedure? boolean? symbol? -> list? listof list?
+; --------------------------------------------------------------------------------------------------
+; Returns the longest common prefix of lists in ls together with the tails of lists in ls with the
+; prefix removed. Drives generalized split-/take-/drop-common-prefix procedures.
+; ==================================================================================================
+(define (internal-split-common-prefix* ls same? keep-prefix? name)
+  (unless (list? ls)
+    (raise-argument-error name "listof list?" ls))
+  (let check ([ls ls])
+    (unless (null? ls)
+      (if (list? (car ls))
+          (check (cdr ls))
+          (error name "non-list found in list: ~a in ~a" (car ls) ls))))
+  (unless (and (procedure? same?)
+               (procedure-arity-includes? same? 2))
+    (raise-argument-error name "(any/c any/c . -> . any/c)" same?))
+  (if (null? ls)
+      (values '() '())
+      (let loop ([ls ls] [prefix '()])
+        (if (and (andmap pair? ls)
+                 (andmap (lambda (v) (same? (caar ls) v)) (map car ls)))
+            (loop (map cdr ls)
+                  (and keep-prefix?
+                       (append prefix (list (caar ls)))))
+            (values prefix ls)))))
+
+; ==================================================================================================
+; split-common-prefix*: listof list? -> list? listof list?
+; --------------------------------------------------------------------------------------------------
+; Returns the longest common prefix of lists in ls together
+; with the tails of lists in ls with the prefix removed.
+; ==================================================================================================
+(define (split-common-prefix* ls [same? equal?])
+  (internal-split-common-prefix* ls same? #t 'split-common-prefix*))
+
+; ==================================================================================================
+; take-common-prefix*: listof list? -> list?
+; --------------------------------------------------------------------------------------------------
+; Returns the longest common prefix of lists in ls.
+; ==================================================================================================
+(define (take-common-prefix* ls [same? equal?])
+  (let-values ([(prefix ls) (internal-split-common-prefix* ls same? #t 'take-common-prefix*)])
+    prefix))
+
+; ==================================================================================================
+; drop-common-prefix*: listof list? -> listof list?
+; --------------------------------------------------------------------------------------------------
+; Returns the tails of lists in ls with the longest common prefix removed
+; ==================================================================================================
+(define (drop-common-prefix* ls [same? equal?])
+  (let-values ([(prefix ls) (internal-split-common-prefix* ls same? #f 'drop-common-prefix*)])
+    ls))
 
 (define append*
   (case-lambda [(ls) (apply append ls)] ; optimize common case

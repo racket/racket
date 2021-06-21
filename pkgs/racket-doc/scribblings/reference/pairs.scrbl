@@ -1152,6 +1152,24 @@ combined with the from-right functionality of @racket[take-right],
 @history[#:added "6.3"]{}
 }
 
+@deftogether[(
+  @defproc[(take-common-prefix* [lst (listof list?)]
+                                [same? (any/c any/c . -> . any/c) equal?])
+           list?]
+  @defproc[(drop-common-prefix* [lst (listof list?)]
+                                [same? (any/c any/c . -> . any/c) equal?])
+           (listof list?)]
+  @defproc[(split-common-prefix* [lst (listof list?)]
+                                 [same? (any/c any/c . -> . any/c) equal?])
+           (values list? (listof list?))]
+)]{
+
+  Like @racket[take-common-prefix], @racket[drop-common-prefix], and
+  @racket[split-common-prefix], but operating on arbitrarily-sized lists of
+  lists @racket[lst].
+
+@history[#:added "7.6"]{}
+}
 
 @defproc[(add-between [lst list?] [v any/c]
                       [#:before-first before-first list? '()]
