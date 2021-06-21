@@ -519,7 +519,14 @@ bindings of each @racket[require-spec] are visible for expanding later
   named module, using the export identifiers as the local identifiers.
   (See below for information on @racket[module-path].) The lexical
   context of the @racket[module-path] form determines the context of
-  the introduced identifiers.}
+  the introduced identifiers.
+
+  If any identifier provided by @racket[module-path] has a symbol form
+  that is @tech{uninterned}, the identifier is not imported (i.e., it
+  is impossible to import a binding for an uninterned symbol). This
+  restriction is intended to avoid compilation differences depending
+  on whether a module has been saved to a file or not (see
+  @secref["print-compiled"]).}
 
  @defsubform[(only-in require-spec id-maybe-renamed ...)]{
   Like @racket[require-spec], but constrained to those exports for
