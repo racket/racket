@@ -277,6 +277,13 @@ a nul character or nul byte.
 Finds a path for the executable @racket[program], returning
 @racket[#f] if the path cannot be found.
 
+On Windows, if @racket[program] is not found and it has no file
+extension, then the search starts over with @filepath{.exe} added to
+@racket[program], and the result is @racket[#f] only if the path with
+@filepath{.exe} also cannot be found. The result includes the
+extension @filepath{.exe} if only @racket[program] with the extension
+is found.
+
 If @racket[related] is not @racket[#f], then it must be a relative
 path string, and the path found for @racket[program] must be such
 that the file or directory @racket[related] exists in the same
@@ -313,7 +320,10 @@ not defined, @racket[program] is prefixed with the current
 directory and used in the search algorithm above. (On Windows, the
 current directory is always implicitly the first item in
 @envvar{PATH}, so @racket[find-executable-path] checks the current
-directory first on Windows.)}
+directory first on Windows.)
+
+@history[#:changed "8.1.0.7" @elem{Added search with @filepath{.exe}
+                                   on Windows.}]}
 
 @;------------------------------------------------------------------------
 @section[#:tag "fileutils"]{Files}
