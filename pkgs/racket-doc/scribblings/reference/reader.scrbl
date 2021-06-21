@@ -423,14 +423,14 @@ Whether wrapping a pair or list, if the pair or list was formed with
 property is attached to the result with the value @racket[#\[]. If the
 @racket[read-square-bracket-with-tag] @tech{parameter} is set to
 @racket[#t], then the resulting pair or list is wrapped by the
-equivalent of @racket[(cons '#%brackets _pair-or-list)].
+equivalent of @racket[(cons @#,indexed-racket['#%brackets] _pair-or-list)].
 
 Similarly, if the list or pair was formed with @litchar["{"] and
 @litchar["}"], then a @racket['paren-shape] property is attached to
 the result with the value @racket[#\{].  If the
 @racket[read-curly-brace-with-tag] @tech{parameter} is set to
 @racket[#t], then the resulting pair or list is wrapped by the
-equivalent of @racket[(cons '#%braces _pair-or-list)].
+equivalent of @racket[(cons @#,indexed-racket['#%braces] _pair-or-list)].
 
 If a delimited @litchar{.} appears in any other configuration, then
 the @exnraise[exn:fail:read]. Similarly, if the reader encounters a
@@ -992,15 +992,15 @@ infix dot, then a delimiter must precede the @litchar{.}.
 Finally, after reading any datum @racket[_x], the reader will consume 
 whitespace, BOM characters, and comments to look for zero or more sequences of a
 @litchar{.} followed by another datum @racket[_y]. It will then group
-@racket[_x] and @racket[_y] together in a @racket[#%dot] form so that
-@racket[_x.y] reads equal to @racket[(#%dot _x _y)].
+@racket[_x] and @racket[_y] with @indexed-racket['#%dot] so that
+@racket[_x.y] reads equal to reading @racket[(#%dot _x _y)].
 
 If @racket[_x.y] has another @litchar{.} after it, the reader will
 accumulate more @litchar{.}-separated datums, grouping them from
-left-to-right. For example, @racket[_x.y.z] reads equal to
+left-to-right. For example, @racket[_x.y.z] reads equal to reading
 @racket[(#%dot (#%dot _x _y) _z)].
 
-In @racket[read-syntax] mode, the @racket[#%dot] symbol has the
+In @racket[read-syntax] mode, the @racket['#%dot] symbol has the
 source location information of the @litchar{.} character and the
 entire list has the source location information spanning from the
 start of @racket[_x] to the end of @racket[_y].
