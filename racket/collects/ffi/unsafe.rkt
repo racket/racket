@@ -1238,7 +1238,7 @@
                                (let ([s (make-bytes n)])
                                  (memcpy s x n)
                                  s))))]
-    [(_ . xs) (_bytes/nul-teriminated . xs)]
+    [(_ . xs) (_bytes/nul-terminated . xs)]
     [_ _bytes/nul-terminated]))
 
 ;; (_array <type> <len> ...+)
