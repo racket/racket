@@ -8140,7 +8140,7 @@
                                    ((maybe-grow_0
                                      (|#%name|
                                       maybe-grow
-                                      (lambda ()
+                                      (lambda (suggested-amt_0)
                                         (begin
                                           (if (let ((or-part_0
                                                      (not
@@ -8185,9 +8185,19 @@
                                                                  #f)))
                                                           (min+1
                                                            app_6
-                                                           (*
-                                                            (pipe-data-len o_0)
-                                                            2))))))
+                                                           (let ((app_7
+                                                                  (fx*
+                                                                   (pipe-data-len
+                                                                    o_0)
+                                                                   2)))
+                                                             (fxmax
+                                                              app_7
+                                                              (unsafe-fxlshift
+                                                               1
+                                                               (fxmin
+                                                                (integer-length
+                                                                 suggested-amt_0)
+                                                                12)))))))))
                                                   (begin
                                                     (if (fx=
                                                          0
@@ -8339,7 +8349,10 @@
                                                 (pipe-data-end o_0)
                                                 top-pos_0)
                                              (if (fx= (pipe-data-start o_0) 0)
-                                               (maybe-grow_0)
+                                               (maybe-grow_0
+                                                (fx-
+                                                 src-end820_0
+                                                 src-start819_0))
                                                (let ((amt_0
                                                       (let ((app_6
                                                              (fx-
@@ -8426,7 +8439,10 @@
                                                       this-id_0
                                                       amt_0)
                                                      amt_0)))
-                                               (maybe-grow_0))))))))))))))
+                                               (maybe-grow_0
+                                                (fx-
+                                                 src-end820_0
+                                                 src-start819_0)))))))))))))))
                          (try-again_0)))))))
                app_4
                app_5
@@ -8502,7 +8518,7 @@
           make-pipe-ends
           (lambda (limit21_0 input-name22_0 output-name23_0)
             (begin
-              (let ((len_0 (min+1 limit21_0 16)))
+              (let ((len_0 (min+1 limit21_0 63)))
                 (let ((d_0
                        (create-pipe-data
                         pipe-data-vtable.1
@@ -34404,11 +34420,11 @@
                 'subprocess
                 "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                 stderr_0))
-             (let ((lr1324 unsafe-undefined)
+             (let ((lr1325 unsafe-undefined)
                    (group_0 unsafe-undefined)
                    (command_0 unsafe-undefined)
                    (exact/args_0 unsafe-undefined))
-               (set! lr1324
+               (set! lr1325
                  (call-with-values
                   (lambda ()
                     (if (path-string? group/command_0)
@@ -34463,9 +34479,9 @@
                    ((group_1 command_1 exact/args_1)
                     (vector group_1 command_1 exact/args_1))
                    (args (raise-binding-result-arity-error 3 args)))))
-               (set! group_0 (unsafe-vector*-ref lr1324 0))
-               (set! command_0 (unsafe-vector*-ref lr1324 1))
-               (set! exact/args_0 (unsafe-vector*-ref lr1324 2))
+               (set! group_0 (unsafe-vector*-ref lr1325 0))
+               (set! command_0 (unsafe-vector*-ref lr1325 1))
+               (set! exact/args_0 (unsafe-vector*-ref lr1325 2))
                (call-with-values
                 (lambda ()
                   (if (if (pair? exact/args_0)
