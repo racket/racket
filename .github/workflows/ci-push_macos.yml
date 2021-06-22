@@ -187,7 +187,7 @@ jobs:
           tar -xvjf racketcs-macos-x64_git${{ github.sha }}.tar.bz2 -C host-racket --strip-components 1
       - name: Build iOS Racket
         run: |
-          set -euo pipefail
+          set -euxo pipefail
           mkdir -p racket/src/build-ios
           pushd racket/src/build-ios
           ../configure \
@@ -196,6 +196,10 @@ jobs:
             --enable-racket=${{ github.workspace }}/host-racket/bin/racket \
             --enable-scheme=${{ github.workspace }}/host-racket/src/cs/c
           make
+          (cd cs/c/ && make install-cross)
+          mkdir -p ../../lib
+          cp cs/c/compile-xpatch.tarm64osx ../../lib/
+          cp cs/c/library-xpatch.tarm64osx ../../lib/
           make install
 
   # Tests
