@@ -26,7 +26,7 @@
                                         (vector->list v)))
                          (unless (and (vector? v)
                                       (andmap string? l))
-                           (raise-argument-error who "(vectorof string?)" l))
+                           (raise-argument-error who "(vectorof string?)" v))
                          (list->vector (map string->immutable-string l)))
                   'current-command-line-arguments))
 

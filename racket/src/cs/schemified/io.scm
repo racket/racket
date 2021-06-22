@@ -39124,7 +39124,7 @@
            (raise-argument-error
             'current-command-line-arguments
             "(vectorof string?)"
-            l_0))
+            v_0))
          (list->vector (map_1346 string->immutable-string l_0)))))
    'current-command-line-arguments))
 (define 1/current-print
