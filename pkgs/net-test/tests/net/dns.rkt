@@ -94,7 +94,7 @@
 (define *utah-ip*      "155.98.68.106")
 (define *nwu-mx*       '("cuda.eecs.northwestern.edu" "barra.eecs.northwestern.edu"))
 (define *kame-url*     "www.kame.net")
-(define *kame-ip*      '("2001:2f0:0:8800:226:2dff:fe0b:4311" "2001:2f0:0:8800::1:1"))
+(define *kame-ips*      '("2001:2f0:0:8800:226:2dff:fe0b:4311" "2001:2f0:0:8800::1:1"))
 (define *xmpp-client*  (srv-rr 0 0 5222 "xmpp.racket-lang.org"))
 
 (define (nameserver-tests nameserver)
