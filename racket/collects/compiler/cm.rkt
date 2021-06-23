@@ -184,7 +184,9 @@
   
   build-side-chan)
 
-(define (compile-lock->parallel-lock-client build-side-chan [custodian #f])
+(define (compile-lock->parallel-lock-client build-side-chan
+                                            [custodian #f]
+                                            [current-shutdown-evt (lambda () never-evt)])
   (define monitor-threads (make-hash))
   (define add-monitor-chan (make-channel))
   (define kill-monitor-chan (make-channel))
@@ -226,7 +228,7 @@
              (parameterize ([current-custodian custodian])
                (thread
                 (λ ()
-                  (thread-wait compiling-thread)
+                  (sync compiling-thread (current-shutdown-evt))
                   ;; compiling thread died; alert the server
                   ;; & remove this thread from the table
                   (place-channel-put died-chan-compiling-side (eq-hash-code compiling-thread))

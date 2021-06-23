@@ -573,7 +573,9 @@ result will not call @racket[proc] with @racket['unlock].)
 ]
 }
 
-@defproc[(compile-lock->parallel-lock-client [pc place-channel?] [cust (or/c #f custodian?) #f])
+@defproc[(compile-lock->parallel-lock-client [pc place-channel?]
+                                             [cust (or/c #f custodian?) #f]
+                                             [current-shutdown-evt (-> evt?) (lambda () never-evt)])
          (-> (or/c 'lock 'unlock) bytes? boolean?)]{
 
   Returns a function that follows the @racket[parallel-lock-client] protocol
@@ -587,7 +589,20 @@ result will not call @racket[proc] with @racket['unlock].)
   perform the compilation. If one of the threads is terminated, the presence of the
   custodian lets another one continue. (The custodian is also used to create
   a thread that manages a thread-safe table.)
-}
+
+  Just checking for thread termination is not always sufficient to
+  release a lock, because a thread created with
+  @racket[thread/suspend-to-kill] is merely suspending by removing its
+  ability to run. The @racket[current-shutdown-evt] argument returns
+  an @tech[#:doc reference-doc]{synchronizable event} that the monitor
+  thread waits on at the same time as it waits for a thread to
+  terminate. If the event becomes ready, then the monitor releases a
+  lock the same as if the thread was terminated. For example,
+  @racket[current-shutdown-evt] might return a @tech[#:doc
+  reference-doc]{custodian box} to detect a custodian shutdown.
+
+@history[#:changed "8.1.0.7" @elem{Added the @racket[current-shutdown-evt] argument.}]}
+
 
 @defproc[(make-compile-lock) place-channel?]{
   Creates a place-channel that can be used with
