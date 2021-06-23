@@ -492,8 +492,12 @@ a @tech{local variable}. When this code is evaluated, a
 hold the value @racket[11].
 
 The replacement of a @tech{variable} with a @tech{location} during
-evaluation implements Racket's @deftech{lexical scoping}. For example,
-when an argument variable @racket[x] is replaced by
+evaluation implements Racket's @deftech{lexical scoping}.
+@margin-note*{For the purposes of substituting @racket[xloc] for @racket[x],
+all variable bindings must use distinct names, so no @racket[x] that
+is really a different variable will get replaced. Ensuring that
+distinction is one of the jobs of the macro expander; see @secref["syntax-model"].}
+For example, when an argument variable @racket[x] is replaced by
 the @tech{location} @racket[xloc], it is replaced @italic{throughout} the
 body of the procedure, including any nested @racket[lambda]
 forms. As a result, future references to the @tech{variable} always
