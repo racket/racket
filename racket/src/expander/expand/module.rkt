@@ -41,7 +41,8 @@
          "parsed.rkt"
          "expanded+parsed.rkt"
          "append.rkt"
-         "save-and-restore.rkt")
+         "save-and-restore.rkt"
+         "module-prompt.rkt")
 
 (add-core-form!
  'module
@@ -828,6 +829,13 @@
                                                       #:in exp-body
                                                       #:as-transformer? #t))
           (add-defined-syms! requires+provides syms phase #:as-transformer? #t)
+          (define (install-values vals)
+            ;; Install transformers in the namespace for expansion:
+            (for ([sym (in-list syms)]
+                  [val (in-list vals)]
+                  [id (in-list ids)])
+              (maybe-install-free=id-in-context! val id phase partial-body-ctx)
+              (namespace-set-transformer! m-ns phase sym val)))
           ;; Expand and evaluate RHS:
           (define-values (exp-rhs parsed-rhs vals)
             (expand+eval-for-syntaxes-binding 'define-syntaxes
@@ -838,13 +846,13 @@
                                                             [module-lifts #f]
                                                             [to-module-lifts #f]
                                                             [need-eventually-defined need-eventually-defined])
-                                              #:log-next? #f))
-          ;; Install transformers in the namespace for expansion:
-          (for ([sym (in-list syms)]
-                [val (in-list vals)]
-                [id (in-list ids)])
-            (maybe-install-free=id-in-context! val id phase partial-body-ctx)
-            (namespace-set-transformer! m-ns phase sym val))
+                                              #:log-next? #f
+                                              #:wrap (lambda (go)
+                                                       (call-with-module-prompt/value-list
+                                                        'define-syntaxes
+                                                        go
+                                                        ids
+                                                        install-values))))
           (log-expand partial-body-ctx 'exit-case `(,(m 'define-syntaxes) ,ids ,exp-rhs))
           (define parsed-body (parsed-define-syntaxes (keep-properties-only exp-body) ids syms parsed-rhs))
           (cons (if (expand-context-to-parsed? partial-body-ctx)
@@ -1325,12 +1333,31 @@
                   body))
     (cond
      [(parsed-define-values? p)
+      (define syms (parsed-define-values-syms p))
       (define ids (parsed-define-values-ids p))
-      (define vals (eval-for-bindings 'define-values ids (parsed-define-values-rhs p) phase m-ns ctx))
-      (for ([id (in-list ids)]
-            [sym (in-list (parsed-define-values-syms p))]
-            [val (in-list vals)])
-        (namespace-set-variable! m-ns phase sym val))]
+      (eval-for-bindings 'define-values ids (parsed-define-values-rhs p) phase m-ns ctx
+                         #:wrap (lambda (go)
+                                  ;; prompt is outside setting variables, to be consistent
+                                  ;; with a visit where definitions have prompts
+                                  (call-with-module-prompt/value-list
+                                   'define
+                                   go
+                                   ids
+                                   (lambda (vals)
+                                     (for ([sym (in-list syms)]
+                                           [val (in-list vals)])
+                                       (namespace-set-variable! m-ns phase sym val))))))
+      ;; In case the module prompt was used to escape, to be consistent
+      ;; with a visit later, complain if variables are not set
+      (for ([sym (in-list syms)])
+        (namespace-get-variable m-ns phase sym
+                                (lambda ()
+                                  (raise
+                                   (exn:fail:contract:variable
+                                    (string-append "define-values: skipped variable definition during expansion\n"
+                                                   "  variable: " (symbol->string sym))
+                                    (current-continuation-marks)
+                                    sym)))))]
      [(or (parsed-define-syntaxes? p)
           (semi-parsed-begin-for-syntax? p))
       ;; already evaluated during expansion
@@ -1344,11 +1371,12 @@
       (parameterize ([current-namespace m-ns])
         (parameterize-like
          #:with ([current-expand-context ctx])
-         (eval-single-top
-          (compile-single p (make-compile-context
-                             #:namespace m-ns
-                             #:phase phase))
-          m-ns)))])))
+         (let ([c (compile-single p (make-compile-context
+                                     #:namespace m-ns
+                                     #:phase phase))])
+           (call-with-module-prompt
+            (lambda ()
+              (eval-single-top c m-ns))))))])))
 
 ;; ----------------------------------------
 

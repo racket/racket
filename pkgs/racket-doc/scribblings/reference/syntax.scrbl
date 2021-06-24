@@ -258,6 +258,14 @@ each of the definition's variables has a value; if the portion of the
 prompt-delimited continuation that installs values is skipped, then
 the @exnraise[exn:fail:contract:variable?].
 
+Portions of a module body at higher phase levels are delimited
+similarly to run-time portions. For example, portions of a module
+within @racket[begin-for-syntax] are delimited by a continuation
+prompt both as the module is expanded and when it is visited. The
+evaluation of a @racket[define-syntaxes] form is delimited, but unlike
+@racket[define-values], there is no check that the syntax definition
+completed.
+
 Accessing a @tech{module-level variable} before it is defined signals
 a run-time error, just like accessing an undefined global variable.
 If a module (in its fully expanded form) does not contain a
