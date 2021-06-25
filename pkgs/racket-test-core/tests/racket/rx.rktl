@@ -2085,6 +2085,9 @@
       (bytes-append #"\xFF"
                     (string->bytes/utf-8 "\u03BB")))
 
+(test #"" regexp-replace* #"[a-z]" #"abc" #"")
+(test "" regexp-replace* "[a-z]" "abc" "")
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

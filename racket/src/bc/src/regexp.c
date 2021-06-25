@@ -5958,7 +5958,7 @@ static Scheme_Object *gen_replace(const char *name, int argc, Scheme_Object *arg
       startpd = startp[0];
       endpd = endp[0];
 
-      if (!startpd && (endpd == end) && !result_pre) {
+      if (!startpd && (endpd == end) && !result_pre && !all) {
 	if (was_non_byte)
 	  return scheme_make_sized_utf8_string(insert, len);
 	else
@@ -5994,7 +5994,7 @@ static Scheme_Object *gen_replace(const char *name, int argc, Scheme_Object *arg
           more = 0;
 
 	total = len + (startpd - srcoffset) + more;
-        if (total + result_pre_len > result_pre_size) {
+        if (!result_pre || (total + result_pre_len > result_pre_size)) {
           char *naya;
           intptr_t new_size = (2 * ((result_pre_len < total) ? total : result_pre_len)) + 1;
           naya = (char *)scheme_malloc_atomic(new_size);
