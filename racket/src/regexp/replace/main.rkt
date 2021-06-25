@@ -56,16 +56,16 @@
                           #:in-port-ok? #f
                           #:in-path-ok? #f
                           #:mode 'positions))
-    
+
     (define (recur)
-      (define pos (cdar poss))
+      (define end (cdar poss))
       (cond
-        [(= pos search-pos)
-         (if (= search-pos (chytes-length in))
-             (list (subchytes in 0 0))
-             (cons (subchytes in search-pos (add1 search-pos))
-                   (loop (add1 search-pos) #t)))]
-        [else (loop (cdar poss) #t)]))
+        [(= (caar poss) end)
+         (if (= end (chytes-length in))
+             null
+             (cons (subchytes in end (add1 end))
+                   (loop (add1 end) #t)))]
+        [else (loop end #t)]))
     
     (cond
       [(not poss)

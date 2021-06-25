@@ -956,7 +956,10 @@ before the @litchar{\}. For example, the Racket constant
 
 Like @racket[regexp-replace], except that every instance of
 @racket[pattern] in @racket[input] is replaced with @racket[insert],
-instead of just the first match. Only non-overlapping instances of
+instead of just the first match. The result is @racket[input] only if
+there are no matches, @racket[start-pos] is @racket[0], and
+@racket[end-pos] is @racket[#f] or the length of @racket[input].
+Only non-overlapping instances of
 @racket[pattern] in @racket[input] are replaced, so instances of
 @racket[pattern] within inserted strings are @italic{not} replaced
 recursively. Zero-length matches are treated the same as in
@@ -975,7 +978,10 @@ string or the stream up to an end-of-file.
                                   (string-upcase two))))
 (regexp-replace* #px"\\w" "hello world" string-upcase 0 5)
 (display (regexp-replace* #rx"x" "12x4x6" "\\\\"))
-]}
+]
+
+@history[#:changed "8.1.0.7" @elem{Changed to return @racket[input] when no
+                                   replacements are performed.}]}
 
 @defproc[(regexp-replaces [input (or/c string? bytes?)]
                           [replacements

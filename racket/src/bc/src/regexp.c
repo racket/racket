@@ -5771,6 +5771,8 @@ static Scheme_Object *gen_replace(const char *name, int argc, Scheme_Object *arg
   char *source, *prefix = NULL, *deststr;
   rxpos *startp, *maybep, *endp, minpos;
   int prefix_len = 0, prefix_offset = 0, sourcelen, srcoffset = 0, was_non_byte, destlen;
+  char *result_pre = NULL;
+  int result_pre_len = 0, result_pre_size = 0;
   int cannot_match_more = 0;
 
   if (SCHEME_TYPE(argv[0]) != scheme_regexp_type
@@ -5901,10 +5903,10 @@ static Scheme_Object *gen_replace(const char *name, int argc, Scheme_Object *arg
               if (endp[i] > 0) {
                 Scheme_Object *m2;
                 if (was_non_byte) {
-                  m2 = scheme_make_sized_offset_utf8_string(source, srcoffset, endp[i] - srcoffset);
+                  m2 = scheme_make_sized_offset_utf8_string(source, 0, endp[i]);
                   m = scheme_append_char_string(m, m2);
                 } else {
-                  m2 = scheme_make_sized_offset_byte_string(source, srcoffset, endp[i] - srcoffset, 1);
+                  m2 = scheme_make_sized_offset_byte_string(source, 0, endp[i], 1);
                   m = scheme_append_byte_string(m, m2);
                 } 
               }
@@ -5956,7 +5958,7 @@ static Scheme_Object *gen_replace(const char *name, int argc, Scheme_Object *arg
       startpd = startp[0];
       endpd = endp[0];
 
-      if (!startpd && (endpd == end) && !prefix) {
+      if (!startpd && (endpd == end) && !result_pre) {
 	if (was_non_byte)
 	  return scheme_make_sized_utf8_string(insert, len);
 	else
@@ -5977,7 +5979,6 @@ static Scheme_Object *gen_replace(const char *name, int argc, Scheme_Object *arg
 	else
 	  return scheme_make_sized_byte_string(result, total, 0);
       } else {
-	char *naya;
 	intptr_t total;
         int more;
 
@@ -5992,24 +5993,27 @@ static Scheme_Object *gen_replace(const char *name, int argc, Scheme_Object *arg
         } else
           more = 0;
 
-	total = len + prefix_len + (startpd - srcoffset);
-	
-	naya = (char *)scheme_malloc_atomic(total + more + 1);
-        if (prefix_len)
-          memcpy(naya, prefix, prefix_len);
-	memcpy(naya + prefix_len, source + srcoffset, startpd - srcoffset);
-	memcpy(naya + prefix_len + (startpd - srcoffset), insert, len);
-        if (more) {
-          memcpy(naya + prefix_len + (endpd - srcoffset) + len, source + startpd, more);
-          total += more;
+	total = len + (startpd - srcoffset) + more;
+        if (total + result_pre_len > result_pre_size) {
+          char *naya;
+          intptr_t new_size = (2 * ((result_pre_len < total) ? total : result_pre_len)) + 1;
+          naya = (char *)scheme_malloc_atomic(new_size);
+          if (result_pre_size > 0)
+            memcpy(naya, result_pre, result_pre_len);
+          result_pre = naya;
+          result_pre_size = new_size;
         }
-
-	prefix = naya;
-	prefix_len = total;
+	
+	memcpy(result_pre + result_pre_len, source + srcoffset, startpd - srcoffset);
+	memcpy(result_pre + result_pre_len + (startpd - srcoffset), insert, len);
+        if (more) {
+          memcpy(result_pre + result_pre_len + (endpd - srcoffset) + len, source + startpd, more);
+        }
+        result_pre_len += total;
 
 	srcoffset = endpd + more;
       }
-    } else if (!prefix) {
+    } else if (!result_pre) {
       if (was_non_byte)
 	return argv[1];
       else
@@ -6019,12 +6023,12 @@ static Scheme_Object *gen_replace(const char *name, int argc, Scheme_Object *arg
       intptr_t total, slen;
       
       slen = sourcelen - srcoffset;
-      total = prefix_len + slen;
+      total = result_pre_len + slen;
       
       result = (char *)scheme_malloc_atomic(total + 1);
-      memcpy(result, prefix, prefix_len);
-      memcpy(result + prefix_len, source + srcoffset, slen);
-      result[prefix_len + slen] = 0;
+      memcpy(result, result_pre, result_pre_len);
+      memcpy(result + result_pre_len, source + srcoffset, slen);
+      result[result_pre_len + slen] = 0;
       
       if (was_non_byte)
 	return scheme_make_sized_utf8_string(result, total);

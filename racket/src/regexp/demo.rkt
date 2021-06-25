@@ -137,6 +137,9 @@
 (test (rx:regexp-replace* (rx:regexp "(?<=(..)).") "abc" "[\\1]" #"\xFFx")
       "a[xa][ab]")
 
+(test (rx:regexp-replace* (rx:byte-regexp #"(?<=(..))") #"abc" #"[\\1]" #"x")
+      #"a[xa]b[ab]c[bc]")
+
 ;; Don't get stuck waiting for an unneeded byte:
 (let ()
   (define-values (i o) (make-pipe))

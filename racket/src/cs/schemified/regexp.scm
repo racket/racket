@@ -9263,26 +9263,23 @@
                                         recur
                                         (lambda ()
                                           (begin
-                                            (let ((pos_0 (cdar poss_0)))
-                                              (if (= pos_0 search-pos_0)
+                                            (let ((end_0 (cdar poss_0)))
+                                              (if (= (caar poss_0) end_0)
                                                 (if (=
-                                                     search-pos_0
+                                                     end_0
                                                      (chytes-length in_0))
-                                                  (list (subchytes in_0 0 0))
+                                                  null
                                                   (let ((app_0
                                                          (subchytes
                                                           in_0
-                                                          search-pos_0
-                                                          (add1
-                                                           search-pos_0))))
+                                                          end_0
+                                                          (add1 end_0))))
                                                     (cons
                                                      app_0
                                                      (loop_0
-                                                      (add1 search-pos_0)
+                                                      (add1 end_0)
                                                       #t))))
-                                                (loop_0
-                                                 (cdar poss_0)
-                                                 #t))))))))
+                                                (loop_0 end_0 #t))))))))
                                   (if (not poss_0)
                                     (let ((result_0
                                            (if (zero? search-pos_0)
