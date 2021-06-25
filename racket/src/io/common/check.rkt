@@ -23,9 +23,9 @@
                        "ending "
                        end-pos
                        in-value
-                       0
+                       start-pos
                        max-end
-                       start-pos)))
+                       0)))
 
 (define (check-immutable-field who v sti)
   (when (exact-integer? v)
