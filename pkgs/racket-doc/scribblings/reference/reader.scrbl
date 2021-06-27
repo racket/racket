@@ -57,7 +57,7 @@ necessarily produce an interned value at the receiving
 @section[#:tag "default-readtable-dispatch"]{Delimiters and Dispatch}
 
 Along with @racketlink[char-whitespace?]{whitespace} and a BOM
-character, the following characters are @defterm{delimiters}:
+character, the following characters are @deftech{delimiters}:
 
 @t{
   @hspace[2] @ilitchar{(} @ilitchar{)} @ilitchar{[} @ilitchar{]}
@@ -203,15 +203,18 @@ characters in the input stream as follows:
 
 @guideintro["symbols"]{the syntax of symbols}
 
-A sequence that does not start with a delimiter or @litchar{#} is
+A sequence that does not start with a @tech{delimiter} or @litchar{#} is
 parsed as either a @tech{symbol}, a @tech{number} (see
 @secref["parse-number"]), or a @tech{extflonum}
 (see @secref["parse-extflonum"]), 
 except that @litchar{.} by itself is never
 parsed as a symbol or number (unless the @racket[read-accept-dot]
-parameter is set to @racket[#f]). A @as-index{@litchar{#%}} also
-starts a symbol. The resulting symbol is @tech{interned}. A successful
+parameter is set to @racket[#f]). A successful
 number or extflonum parse takes precedence over a symbol parse.
+A @as-index{@litchar{#%}} also
+starts a symbol. The resulting symbol is @tech{interned}.
+See the start of @secref["default-readtable-dispatch"] for information
+about @litchar{|} and @litchar{\} in parsing symbols.
 
 @index["case-sensitivity"]{@index["case-insensitive"]{When}} the
 @racket[read-case-sensitive] @tech{parameter} is set to @racket[#f],
@@ -243,7 +246,7 @@ case-sensitive mode.
 
 @section-index["numbers" "parsing"]
 
-A sequence that does not start with a delimiter is parsed as a @tech{number}
+A sequence that does not start with a @tech{delimiter} is parsed as a @tech{number}
 when it matches the following grammar case-insensitively for
 @nonterm{number@sub{10}} (decimal), where @metavar{n} is a
 meta-meta-variable in the grammar. The resulting number is @tech{interned} in 
@@ -263,7 +266,7 @@ exact.
 If the reader encounters @as-index{@litchar{#b}} (binary),
 @as-index{@litchar{#o}} (octal), @as-index{@litchar{#d}} (decimal), or
 @as-index{@litchar{#x}} (hexadecimal), it must be followed by a
-sequence that is terminated by a delimiter or end-of-file, and that
+sequence that is terminated by a @tech{delimiter} or end-of-file, and that
 is either an @tech{extflonum} (see @secref["parse-extflonum"]) or
 matches the @nonterm{general-number@sub{2}},
 @nonterm{general-number@sub{8}}, @nonterm{general-number@sub{10}}, or
@@ -372,10 +375,10 @@ extflonum reading.
 @section[#:tag "parse-boolean"]{Reading Booleans}
 
 A @as-index{@litchar{#true}}, @as-index{@litchar{#t}},
-@as-index{@litchar{#T}} followed by a delimiter is the input syntax
+@as-index{@litchar{#T}} followed by a @tech{delimiter} is the input syntax
 for the @tech{boolean} constant ``true,'' and @as-index{@litchar{#false}},
 @as-index{@litchar{#f}}, or @as-index{@litchar{#F}} followed by a
-delimiter is the complete input syntax for the @tech{boolean} constant
+@tech{delimiter} is the complete input syntax for the @tech{boolean} constant
 ``false.''
 
 
@@ -389,7 +392,7 @@ and lists.
 To parse the pair or list, the reader recursively reads data
 until a matching @as-index{@litchar{)}}, @as-index{@litchar{]}}, or
 @as-index{@litchar["}"]} (respectively) is found, and it specially handles
-a delimited @litchar{.}.  Pairs @litchar{()}, @litchar{[]}, and
+a @litchar{.} surrounded by @tech{delimiters}.  Pairs @litchar{()}, @litchar{[]}, and
 @litchar{{}} are treated the same way, so the remainder of this
 section simply uses ``parentheses'' to mean any of these pair.
 
@@ -987,7 +990,7 @@ unless the number is prefixed with @litchar{#e}, @litchar{#i},
 @litchar{#b}, @litchar{#o}, @litchar{#d}, @litchar{#x}, or an
 equivalent prefix as discussed in @secref["parse-number"]. If these
 numbers are followed by a @litchar{.} intended to be read as a C-style
-infix dot, then a delimiter must precede the @litchar{.}.
+infix dot, then a @tech{delimiter} must precede the @litchar{.}.
 
 Finally, after reading any datum @racket[_x], the reader will consume 
 whitespace, BOM characters, and comments to look for zero or more sequences of a
