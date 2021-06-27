@@ -63,7 +63,7 @@
     (parameterize ([current-directory name])
 
       ;; LICENSE files
-      (displayln "Generating LICENSE-APACHE and LICENSE-MIT files. You are free to change the license.")
+      (displayln "Initializing license (Apache-2.0 OR MIT). You are free to change the license.")
       (with-output-to-file "LICENSE-MIT"
         (lambda () (expand/display #<<EOS
 <<name>> 
@@ -167,6 +167,7 @@ EOS
 (define pkg-desc "Description Here")
 (define version "0.0")
 (define pkg-authors '(<<user>>))
+(define license '(Apache-2.0 OR MIT))
 
 EOS
 )))
