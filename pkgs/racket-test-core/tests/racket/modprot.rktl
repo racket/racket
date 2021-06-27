@@ -1,6 +1,7 @@
 (load-relative "loadtest.rktl")
 
 (Section 'modprot)
+(require racket/file)
 
 ;; ============================================================
 
@@ -456,6 +457,47 @@
            (syntax-case (expand (datum->syntax s1 '(struct secret (val)))) ()
              [(_ a b (_ (_ _ _ c) . _) . _) #'c])])
       (err/rt-test (eval s4-weak) exn:fail:syntax?))))
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(let ()
+  (define work-dir (make-temporary-file "deputy-check-~a" 'directory))
+  
+  (define m '(module m racket/base
+               (provide m)
+               (define (m) '(this is m))))
+
+  (define n '(module n racket/base
+               (require "am.rkt")
+               (m)))
+
+  (define (make e f)
+    (parameterize ([current-directory work-dir]
+                   [current-load-relative-directory work-dir])
+      (define c (parameterize ([current-namespace  (make-base-namespace)])
+                  (compile e)))
+      (call-with-output-file*
+       f
+       #:exists 'truncate
+       (lambda (o)
+         (write c o)))))
+
+  (make m "am.rkt")
+  (make n "an.rkt")
+
+  (parameterize ([current-namespace  (make-base-namespace)])
+    (parameterize ([current-code-inspector  (make-inspector)])
+      (parameterize ([current-module-declare-name
+                      (make-resolved-module-path
+                       (build-path work-dir "am.rkt"))])
+        (eval m)))
+    ;; attempt to import from a module with a weaker code inspector
+    (err/rt-test (dynamic-require (build-path work-dir "an.rkt") #f)
+                 exn:fail?
+                 "weaker code inspector"))
+
+  (delete-directory/files work-dir))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
