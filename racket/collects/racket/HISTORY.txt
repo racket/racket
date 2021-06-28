@@ -1,6 +1,15 @@
+Version 8.2, July 2021
+CS: faster exact-rational arithmetic
+Improve support for layered and tethered installations
+Fix CS cross compilation and add documentation reference to
+ the "raco-cross" package
+Add `most-positive-fixnum` and `most-negative-fixnum`
+CS: support for nonatomic allocation via ffi/unsafe
+Other bug repairs and other changes noted in the documentation
+
 Version 8.1, April 2021
 Add ephemeron hash tables
-Added support for "git+https://" packages sources
+Add support for "git+https://" packages sources
 Changed Git package references to default to repo-indicated
  default branch (HEAD, roughly) instead of "master"
 CS: compiler improvements, especially related to structures
