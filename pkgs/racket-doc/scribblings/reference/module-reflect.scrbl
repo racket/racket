@@ -303,6 +303,10 @@ resolved name can depend on the value of
 @racket[current-directory]. The @racket[load?] argument is propagated as
 the last argument to the @tech{module name resolver}.
 
+Beware that concurrent resolution in namespaces that share a module
+registry can create race conditions when loading modules. See also
+@racket[namespace-call-with-registry-lock].
+
 See @racket[resolve-module-path-index].
 
 @history[#:changed "6.90.0.16" @elem{Added the @racket[load?] optional argument.}]}
