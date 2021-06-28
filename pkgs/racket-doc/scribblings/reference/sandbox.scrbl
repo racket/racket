@@ -1046,6 +1046,13 @@ exception).  Each of the two limits can be @racket[#f] to indicate the
 absence of a limit. See also @racket[custodian-limit-memory] for
 information on memory limits.
 
+To enforce limits, @racket[thunk] is run in a new thread. As usual,
+the new thread starts with the same parameter values as the one that
+calls @racket[call-with-limits]. @emph{Not} as usual, parameter values
+from the thread used to run @racket[thunk] are copied back to the
+thread that called @racket[call-with-limits] when @racket[thunk]
+completes.
+
 Sandboxed evaluators use @racket[call-with-limits], according to the
 @racket[sandbox-eval-limits] setting and uses of
 @racket[set-eval-limits]: each expression evaluation is protected from
