@@ -2093,8 +2093,7 @@ accessors, and mutators are protected by contracts.  For the definitions of
 
 The @racket[struct/contract] form only allows a subset of the
 @racket[struct-option] keywords: @racket[#:mutable], @racket[#:transparent],
-@racket[#:auto-value], @racket[#:omit-define-syntaxes], @racket[#:property] and
-@racket[#:omit-define-values].
+@racket[#:auto-value], @racket[#:omit-define-syntaxes], and @racket[#:property].
 
 @examples[#:eval (contract-eval) #:once
 (struct/contract fruit ([seeds number?]))
@@ -2117,11 +2116,12 @@ Works like @racket[struct/contract], except that the syntax for supplying a
 has a @racketidfont{make-} prefix on @racket[struct-id] is implicitly
 supplied.  For the definitions of
 @racket[field] and @racket[struct-option], see @racket[define-struct].
+Like @racket[struct] versus @racket[define-struct],
+@racket[struct/contract] is normally preferred to @racket[define-struct/contract].
 
 The @racket[define-struct/contract] form only allows a subset of the
 @racket[struct-option] keywords: @racket[#:mutable], @racket[#:transparent],
-@racket[#:auto-value], @racket[#:omit-define-syntaxes], @racket[#:property] and
-@racket[#:omit-define-values].
+@racket[#:auto-value], @racket[#:omit-define-syntaxes], and @racket[#:property].
 
 @examples[#:eval (contract-eval) #:once
 (define-struct/contract fish ([color number?]))
