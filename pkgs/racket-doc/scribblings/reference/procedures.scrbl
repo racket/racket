@@ -694,9 +694,11 @@ Combines calls to each function with @racket[or].  Equivalent to
 @defproc*[([(curry [proc procedure?]) procedure?]
            [(curry [proc procedure?] [v any/c] ...+) any/c])]{
 
-Returns a procedure that is a curried version of @racket[proc]. When
+The result of @racket[(curry proc)] is a procedure that is a curried
+version of @racket[proc]. When
 the resulting procedure is first applied, unless it is given the
-maximum number of arguments that it can accept, the result is a
+maximum number of arguments that it can accept according to
+@racket[(procedure-arity proc)], the result is a
 procedure to accept additional arguments.
 
 @mz-examples[#:eval fun-eval
@@ -705,9 +707,10 @@ procedure to accept additional arguments.
 ((curry cons) 1 2)
 ]
 
-After the first application of the result of @racket[curry], each
+After the first application of the result of @racket[(curry proc)], each
 further application accumulates arguments until an acceptable number
-of arguments have been accumulated, at which point the original
+of arguments according to @racket[(procedure-arity proc)] have been
+accumulated, at which point the original
 @racket[proc] is called.
 
 @mz-examples[#:eval fun-eval
@@ -731,7 +734,8 @@ is curried.
 
 The @racket[curry] function also supports functions with keyword arguments:
 keyword arguments will be accumulated in the same way as positional arguments
-until all required keyword arguments have been supplied.
+until all required keyword arguments according to @racket[(procedure-keywords proc)]
+have been supplied.
 
 @mz-examples[#:eval fun-eval
   (eval:no-prompt
