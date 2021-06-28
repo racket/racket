@@ -247,6 +247,22 @@
 (test 'y syntax-property stx-with-property 'x)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that expansion without main code inspector taints its result
+
+(let ([check-tainted
+       (lambda (expand)
+         (test #f syntax-tainted? (expand #'(+ 1 2)))
+         (test #t syntax-tainted? (expand #'(+ 1 2) (make-inspector)))
+         (test #t syntax-tainted? (parameterize ([current-code-inspector (make-inspector)])
+                                    (expand #'(+ 1 2)))))])
+  (check-tainted expand)
+  (check-tainted expand-syntax)
+  (check-tainted expand-once)
+  (check-tainted expand-syntax-once)
+  (check-tainted expand-to-top-form)
+  (check-tainted expand-syntax-to-top-form))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that protected references are annotated with a 'protected property
 
 (module exports-macros-that-expand-to-protected-references racket/base
@@ -1229,41 +1245,7 @@
   (test 11 eval-syntax (syntax-case (expand-syntax #'++t3) ()
                          [(_ x) #'x]))
   (test 11 eval-syntax (syntax-case (expand #'(++t4 z)) ()
-                         [(d-v (_) x) #'x]))
-
-  (err/rt-test (teval (syntax-case (expand #'++v) ()
-                        [(_ x) #'x]))
-               exn:fail:syntax?)
-  (err/rt-test (teval (syntax-case (expand #'++v2) ()
-                        [(_ x) #'x]))
-               exn:fail:syntax?)
-  (err/rt-test (teval (syntax-case (expand #'++v3) ()
-                        [(_ x) #'x]))
-               exn:fail:syntax?))
-
-(let ()
-  (define (test-disarm disarm)
-    (let ([expr (expand-syntax #'++v)])
-      (test expr syntax-protect expr)
-      (let ([new (syntax-protect #'no-marks)])
-        (test #t syntax? new)
-        (test 'no-marks syntax-e new))
-      (test #t (lambda (v) (and (syntax? v) (syntax-tainted? v)))
-            (syntax-case expr ()
-              [(beg id) #'beg]))
-      (test #t (lambda (v) (and (syntax? v) (not (syntax-tainted? v))))
-            (syntax-case (disarm expr) ()
-              [(beg id) #'beg]))
-      (test #t (lambda (v) (and (syntax? v) (syntax-tainted? v)))
-            (syntax-case (disarm (datum->syntax expr (syntax-e expr))) ()
-              [(beg id) #'beg]))
-      (test #t (lambda (v) (and (syntax? v) (not (syntax-tainted? v))))
-            (syntax-case (let ([expr (disarm expr)]) (datum->syntax expr (syntax-e expr))) ()
-              [(beg id) #'beg]))))
-  (test-disarm (lambda (stx)
-                 (syntax-disarm stx (current-code-inspector))))
-  (test-disarm (lambda (stx)
-                 (syntax-disarm stx #f))))
+                         [(d-v (_) x) #'x])))
 
 #;
 (let ([expr (expand-syntax #'(++apply-to-d ack))])
@@ -2044,71 +2026,10 @@
 (define (syntax-touch s) (datum->syntax s (syntax-e s)))
 
 (test #f syntax-tainted? #'x)
-(test #f syntax-tainted? (syntax-touch #'x))
-(test #f syntax-tainted? (syntax-arm #'x))
-(test #t syntax-tainted? (syntax-touch (syntax-arm #'x)))
-(test #t syntax-tainted? (car (syntax-e (syntax-arm #'(x y)))))
 
-(test #f syntax-tainted? (car (syntax-e (syntax-arm (syntax-property #'(x y) 
-                                                                     'taint-mode
-                                                                     'transparent)
-                                                    #f #t))))
-(test #f syntax-tainted? (car (syntax-e (syntax-arm (syntax-property #'(x y) 
-                                                                     'certify-mode
-                                                                     'transparent)
-                                                    #f #t))))
-(test #f ormap syntax-tainted? (syntax-e (syntax-arm #'(begin x) #f #t)))
-(test #t andmap syntax-tainted? (syntax-e (syntax-arm (syntax-property #'(begin x)
-                                                                       'taint-mode
-                                                                       'opaque)
-                                                      #f #t)))
-
-(test #f andmap syntax-tainted? (syntax-e (cadr (syntax-e (syntax-arm #'(define-values (x y z) (values 1 2 3))
-                                                                      #f #t)))))
-(test #f andmap syntax-tainted? (syntax-e 
-                                 (cadr 
-                                  (syntax-e 
-                                   (cadr 
-                                    (syntax-e 
-                                     (syntax-arm #'(begin (define-values (x y z) (values 1 2 3)))
-                                                 #f #t)))))))
-
-(let ()
-  (define i1 (make-inspector))
-  (define i2 (make-inspector))
-  
-  (define x (syntax-arm #'(x) i1))
-  
-  (test #f syntax-tainted? (car (syntax-e (syntax-disarm x i1))))
-  (test #t syntax-tainted? (car (syntax-e (syntax-disarm x i2))))
-  
-  (define y (syntax-rearm (syntax-arm #'(y) i2) x))
-  
-  (test #t syntax-tainted? (car (syntax-e (syntax-disarm y i1))))
-  (test #t syntax-tainted? (car (syntax-e (syntax-disarm y i2))))
-  (test #f syntax-tainted? (car (syntax-e (syntax-disarm (syntax-disarm y i1) i2)))))
-
-(let ([round-trip
-       (lambda (stx)
-         (parameterize ([current-namespace (make-base-namespace)])
-           (let ([s (open-output-bytes)])
-             (write (compile `(quote-syntax ,stx)) s)
-             (parameterize ([read-accept-compiled #t])
-               (eval (read (open-input-bytes (get-output-bytes s))))))))])
-  (test #f syntax-tainted? (round-trip (syntax-arm (quote-syntax foo))))
-  (test #t syntax-tainted? (syntax-touch (round-trip (syntax-arm (quote-syntax foo)))))
-  (test #t syntax-tainted? (round-trip (syntax-touch (syntax-arm (quote-syntax foo))))))
-
-;; Make sure that a taint-transparent syntax object loses its lexical context:
-(let ([b-stx #'(begin 1)])
-  (test #t free-identifier=? #'begin (datum->syntax b-stx 'begin))
-  (let ([a-b-stx (parameterize ([current-namespace (make-base-namespace)])
-                   (eval '(define-syntax-rule (b e)
-                            (begin e)))
-                   (expand '(b 1)))])
-    (test #f free-identifier=? #'begin (datum->syntax a-b-stx 'begin))
-    (test #t free-identifier=? #'begin (syntax-case a-b-stx ()
-                                         [(b . _) (datum->syntax #'b 'begin)]))))
+(test #f syntax-tainted? (syntax-property (syntax-property #'s 'key #'val) 'key))
+(test #t syntax-tainted? (syntax-property (syntax-taint (syntax-property #'s 'key #'val))
+                                          'key))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; syntax-debug-info
@@ -2127,37 +2048,6 @@
       (let ([y 10])
         (for/or ([e (in-list (hash-ref (syntax-debug-info (quote-syntax x #:local) 0 #t) 'bindings null))])
           (eq? 'y (hash-ref e 'name #f)))))
-
-;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Check that attacks are thwarted via `syntax-local-get-shadower'
-;; or `make-syntax-delta-introducer':
-
-(module secret-value-42 racket
-   (define secret 42)
-   (define-syntax-rule (m) (even? secret))
-   (provide m))
-(require 'secret-value-42)
-
-(define-syntax (evil-via-shadower stx)
-  (syntax-case stx ()
-    [(_ e)
-     (let* ([ee (local-expand #'e 'expression null)]
-            [id (with-syntax ([(app f x) ee]) #'f)]
-            [okid (syntax-local-get-shadower id)])
-       #`(let ([#,okid values])
-           #,ee))]))
-
-(define-syntax (evil-via-delta-introducer stx)
-  (syntax-case stx ()
-    [(_ e)
-     (let* ([ee (local-expand #'e 'expression null)]
-            [id (with-syntax ([(app f x) ee]) #'f)]
-            [okid ((make-syntax-delta-introducer id #'e) #'even?)])
-       #`(let ([#,okid values])
-           #,ee))]))
-
-(syntax-test #'(evil-via-shadower (m)))
-(syntax-test #'(evil-via-delta-introducer (m)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that `syntax-make-delta-introducer` transfers

@@ -131,7 +131,8 @@ should be a value as described below that can be saved in marshaled bytecode.
 
 The two-argument form returns an arbitrary property value associated
 to @racket[stx] with the key @racket[key], or @racket[#f] if no value
-is associated to @racket[stx] for @racket[key].
+is associated to @racket[stx] for @racket[key]. If @racket[stx] is @tech{tainted},
+then syntax objects with the result value are tainted.
 
 To support marshaling to bytecode, a value for a preserved syntax
 property must be a non-cyclic value that is either

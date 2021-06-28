@@ -4,7 +4,7 @@
 (module modbeg '#%kernel
   (#%require (for-syntax '#%kernel))
 
-  (#%provide (for-syntax make-wrapping-module-begin))
+  (#%provide (for-syntax (protect make-wrapping-module-begin)))
 
   (begin-for-syntax
    (define-values (make-wrapping-module-begin)

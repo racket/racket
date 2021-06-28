@@ -101,12 +101,11 @@
                                                (struct*-copy expand-context body-ctx
                                                              [name name])
                                                body-ctx)))
-      (define disarmed-exp-body (syntax-disarm exp-body))
-      (case (core-form-sym disarmed-exp-body phase)
+      (case (core-form-sym exp-body phase)
         [(begin)
          ;; Splice a `begin` form
-         (log-expand body-ctx 'prim-begin disarmed-exp-body)
-         (define-match m disarmed-exp-body '(begin e ...))
+         (log-expand body-ctx 'prim-begin exp-body)
+         (define-match m exp-body '(begin e ...))
          (define (track e) (syntax-track-origin e exp-body))
          (define splice-bodys (append (map track (m 'e)) rest-bodys))
          (log-expand body-ctx 'splice splice-bodys)
@@ -125,8 +124,8 @@
         [(define-values)
          ;; Found a variable definition; add bindings, extend the
          ;; environment, and continue
-         (log-expand body-ctx 'prim-define-values disarmed-exp-body)
-         (define-match m disarmed-exp-body '(define-values (id ...) rhs))
+         (log-expand body-ctx 'prim-define-values exp-body)
+         (define-match m exp-body '(define-values (id ...) rhs))
          (define ids (remove-use-site-scopes (m 'id) body-ctx))
          (log-expand body-ctx 'rename-one (list ids (m 'rhs)))
          (define new-dups (check-no-duplicate-ids ids phase exp-body dups))
@@ -175,8 +174,8 @@
          ;; Found a macro definition; add bindings, evaluate the
          ;; compile-time right-hand side, install the compile-time
          ;; values in the environment, and continue
-         (log-expand body-ctx 'prim-define-syntaxes disarmed-exp-body)
-         (define-match m disarmed-exp-body '(define-syntaxes (id ...) rhs))
+         (log-expand body-ctx 'prim-define-syntaxes exp-body)
+         (define-match m exp-body '(define-syntaxes (id ...) rhs))
          (define ids (remove-use-site-scopes (m 'id) body-ctx))
          (log-expand body-ctx 'rename-one (list ids (m 'rhs)))
          (define new-dups (check-no-duplicate-ids ids phase exp-body dups))

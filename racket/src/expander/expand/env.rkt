@@ -62,12 +62,11 @@
   (if (and no-stops? (local-variable? t))
       (let ([bind-id (local-variable-id t)])
         ;; Keep source locations and properties of original reference:
-        (define pruned-id (datum->syntax (syntax-disarm bind-id) (syntax-e bind-id) id id))
+        (define pruned-id (datum->syntax bind-id (syntax-e bind-id) id id))
         ;; Don't transition from non-`syntax-original?` to `syntax-original?`
-        (define new-id (if (syntax-any-macro-scopes? id)
-                           (syntax-property-remove pruned-id original-property-sym)
-                           pruned-id))
-        (syntax-rearm new-id id))
+        (if (syntax-any-macro-scopes? id)
+            (syntax-property-remove pruned-id original-property-sym)
+            pruned-id))
       id))
 
 ;; `missing` is a token to represent the absence of a binding; a

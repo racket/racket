@@ -549,22 +549,11 @@ Syntax-object constants within a module, such as literal identifiers
 in a template, retain the inspector of their source module. In this
 way, a macro from a trusted module can be used within an untrusted
 module, and @tech{protected} identifiers in the macro expansion still
-work, even through they ultimately appear in an untrusted module.
-Typically, such identifiers should be @tech{arm}ed, so that they
-cannot be extracted from the macro expansion and abused by untrusted
-code.
-
-When @racket[datum->syntax] is used to transfer the context of a
-syntax object to another, then it may taint the resulting syntax
-object. Even if the source syntax object is not @tech{arm}ed, however,
-the resulting syntax object may have limited access to bindings;
-@racket[datum->syntax] will not transfer an inspector from the source
-syntax object unless @racket[datum->syntax] is called during the
-expansion of a macro whose module's declaration-time code inspector
-is strong enough.
-More generally, @racket[datum->syntax] chooses the strongest inspector
-that is the same as or weaker than the inspector of the currently
-expanding macro's module and the source syntax object's inspector.
+work, even through they ultimately appear in an untrusted module. To
+prevent abuse of identifiers by extracting them from expanded code,
+functions like @racket[local-expand] are @tech{protected}, and
+functions like @racket[expand] return @tech{tainted} syntax if not
+given a sufficiently powerful inspector.
 
 Compiled code from a @filepath{.zo} file is inherently untrustworthy,
 unfortunately, since it can be synthesized by means other than

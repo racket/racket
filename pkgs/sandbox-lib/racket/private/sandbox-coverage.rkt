@@ -66,7 +66,9 @@
                (expand-syntax (if (syntax? e)
                                 e
                                 (namespace-syntax-introduce
-                                 (datum->syntax #f e))))
+                                 (datum->syntax #f e)))
+                              (variable-reference->module-declaration-inspector
+                               (#%variable-reference)))
                (namespace-base-phase))
               e)
             immediate-eval?))))
