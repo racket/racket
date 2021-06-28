@@ -3646,4 +3646,33 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(let ([o (open-output-bytes)])
+  (parameterize ([current-output-port o])
+    (define m
+      '(module continuations-at-phase-1 racket/base
+         (require (for-syntax racket/base))
+         
+         (begin-for-syntax
+           (define k (call/cc (lambda (k) k)))
+           (set! k k)
+           (k 5)
+           (printf "~s\n" k)
+           (define more #f)
+           (let ([me (call/cc (lambda (k) (lambda (v) (k v))))])
+             (set! more me)
+             (printf "~s\n" me))
+           (more 88))))
+    (eval m))
+  (test "5\n#<procedure>\n88\n" get-output-string o))
+
+(let ([o (open-output-bytes)])
+  (parameterize ([current-output-port o])
+    (namespace-require ''continuations-at-phase-1))
+  (test "" get-output-string o)
+  (parameterize ([current-output-port o])
+    (eval 'car))
+  (test "5\n#<procedure>\n88\n" get-output-string o))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

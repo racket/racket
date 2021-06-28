@@ -1044,7 +1044,7 @@ static void *platform_plain_sector(int count, int executable)
 {
   void *p;
 
-  p = VirtualAlloc(NULL, (count + 1) << LOG_SECTOR_SEGMENT_SIZE,
+  p = VirtualAlloc(NULL, count << LOG_SECTOR_SEGMENT_SIZE,
                    MEM_COMMIT | MEM_RESERVE,
                    executable ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
   

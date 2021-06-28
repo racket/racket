@@ -107,7 +107,7 @@
          [fixup (lambda (re sfx)
                   (if (regexp-match re (path->bytes path))
                       path
-                      (path-replace-extension path sfx)))])
+                      (path-add-extension path sfx #".")))])
     (case (cross-system-type)
       [(windows) (fixup #rx#".[.][eE][xX][eE]$" #".exe")]
       [(macosx) (if mred?

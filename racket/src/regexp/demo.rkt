@@ -74,8 +74,71 @@
 (test (rx:regexp-match-positions "(?:(?m:^$))(?<=..)" "ge \n TLambda-tc\n\n ;; (extend Γ o Γx-s\n extend\n\n ;;" 29 #f #f #"\n")
       '((46 . 46)))
 
-(test (regexp-replace* "-" "zero-or-more?" "_")
+;; Match groups spans prefix:
+(test (rx:regexp-match-positions (rx:regexp "(?<=(..))") "aaa" 0 #f #f #"x")
+      '((1 . 1) (-1 . 1)))
+(test (rx:regexp-match-positions (rx:regexp "(?<=(.))") "aaa" 0 #f #f #"x")
+      '((0 . 0) (-1 . 0)))
+(test (rx:regexp-match-positions (rx:byte-regexp #"(?<=(.))") #"aaa" 0 #f #f #"x")
+      '((0 . 0) (-1 . 0)))
+(test (rx:regexp-match-peek-positions (rx:byte-regexp #"(?<=(.))") (open-input-bytes #"aaa") 0 #f #f #"x")
+      '((0 . 0) (-1 . 0)))
+(test (rx:regexp-match-positions (rx:regexp "(?<=(.))") "aaa" 0 #f #f (string->bytes/utf-8 "\u3BB"))
+      '((0 . 0) (-1 . 0)))
+(test (rx:regexp-match-positions (rx:regexp "(?<=(.)).") "\u03BBaa" 0 #f #f (string->bytes/utf-8 "\u3BC"))
+      '((0 . 1) (-1 . 0)))
+(test (rx:regexp-match (rx:regexp "(?<=(.))") "aaa" 0 #f #f (string->bytes/utf-8 "\u3BB"))
+      '("" "\u3BB"))
+(test (rx:regexp-match (rx:regexp "(?<=(.)).") "aaa" 0 #f #f (string->bytes/utf-8 "\u3BB"))
+      '("a" "\u3BB"))
+(test (rx:regexp-match (rx:regexp "(?<=(.)).") "\u03BBaa" 0 #f #f (string->bytes/utf-8 "\u3BC"))
+      '("\u3BB" "\u3BC"))
+(test (rx:regexp-match (rx:byte-regexp #"(?<=(.))") #"aaa" 0 #f #f #"x")
+      '(#"" #"x"))
+(test (rx:regexp-match (rx:byte-regexp #"(?<=(.))..") (open-input-bytes #"abc") 0 #f #f #"x")
+      '(#"ab" #"x"))
+(test (rx:regexp-match-peek (rx:byte-regexp #"(?<=(.))..") (open-input-bytes #"abc") 0 #f #f #"x")
+      '(#"ab" #"x"))
+
+;; Replacement where match groups spans prefix:
+(test (rx:regexp-replace (rx:byte-regexp #"(?<=(.))") #"aaa" #"[\\1]" #"x")
+      #"[x]aaa")
+(test (rx:regexp-replace (rx:byte-regexp #"(?<=(..))") #"abc" #"[\\1]" #"x")
+      #"a[xa]bc")
+(test (rx:regexp-replace (rx:byte-regexp #"(?<=(.)).") #"aaa" #"[\\1]" #"x")
+      #"[x]aa")
+(test (rx:regexp-replace (rx:regexp "(?<=(.))") "aaa" "[\\1]" #"x")
+      "[x]aaa")
+(test (rx:regexp-replace (rx:regexp "(?<=(..))") "aaa" "[\\1]" #"x")
+      "a[xa]aa")
+(test (rx:regexp-replace (rx:regexp "(?<=(.)).") "aaa" "[\\1]" #"x")
+      "[x]aa")
+(test (rx:regexp-replace (rx:regexp "(?<=(.)).") "aaa" "[\\1]" #"\xFFx")
+      "[x]aa")
+(test (rx:regexp-replace (rx:regexp "(?<=(.)).") "abc" "[\\1]" #"\xFF") ; can't match non-UTF-8 prefix
+      "a[a]c")
+(test (rx:regexp-replace (rx:regexp "(?<=(..)).") "aaa" "[\\1]"
+                         (bytes-append #"\xFF"
+                                       (string->bytes/utf-8 "\u03BBx")))
+      "[\u03BBx]aa")
+(test (rx:regexp-replace (rx:regexp "(?<=(..)).") "aaa" (lambda (m m1) (string-append "{" m1 "}"))
+                         (bytes-append #"\xFF"
+                                       (string->bytes/utf-8 "\u03BBx")))
+      "{\u03BBx}aa")
+
+(test (rx:regexp-replace* "-" "zero-or-more?" "_")
       "zero_or_more?")
+(test (rx:regexp-replace* "" "aaa" "c")
+      "cacacac")
+(test (rx:regexp-replace* (rx:regexp "(?<=(.)).") "aaa" "[\\1]" #"\xFFx")
+      "[x][a][a]")
+(test (rx:regexp-replace* (rx:regexp "(?<=(.)).") "abc" "[\\1]" #"\xFFx")
+      "[x][a][b]")
+(test (rx:regexp-replace* (rx:regexp "(?<=(..)).") "abc" "[\\1]" #"\xFFx")
+      "a[xa][ab]")
+
+(test (rx:regexp-replace* (rx:byte-regexp #"(?<=(..))") #"abc" #"[\\1]" #"x")
+      #"a[xa]b[ab]c[bc]")
 
 ;; Don't get stuck waiting for an unneeded byte:
 (let ()
@@ -93,6 +156,11 @@
   (write-string "123" o)
   (define rx (rx:pregexp "^(12)\\1|123"))
   (test (rx:regexp-match rx i) '(#"123" #f)))
+
+;; Check for quadratic `regexp-replace*`:
+(time
+ (test (rx:regexp-replace* (rx:regexp "a") (make-string (* 1024 1024) #\a) "x")
+       (make-string (* 1024 1024) #\x)))
 
 ;; ----------------------------------------
 

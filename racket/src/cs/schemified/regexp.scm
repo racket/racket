@@ -7803,13 +7803,22 @@
                string-offset
                (lambda (pos_0)
                  (begin
-                   (+
-                    result-offset16_0
-                    (bytes-utf-8-length
-                     bstr-in20_0
-                     '#\x3f
-                     start-index14_0
-                     (- pos_0 delta15_0))))))))
+                   (let ((end-index_0 (- pos_0 delta15_0)))
+                     (if (< end-index_0 start-index14_0)
+                       (-
+                        result-offset16_0
+                        (bytes-utf-8-length
+                         bstr-in20_0
+                         '#\x3f
+                         end-index_0
+                         start-index14_0))
+                       (+
+                        result-offset16_0
+                        (bytes-utf-8-length
+                         bstr-in20_0
+                         '#\x3f
+                         start-index14_0
+                         end-index_0)))))))))
          (let ((app_0
                 (let ((app_0 (string-offset_0 ms-pos21_0)))
                   (cons app_0 (string-offset_0 me-pos22_0)))))
@@ -9214,70 +9223,101 @@
                      (if (if (not string-mode?_0) (string? insert_0) #f)
                        (string->bytes/utf-8 insert_0)
                        insert_0)))
-                (letrec*
-                 ((loop_0
-                   (|#%name|
-                    loop
-                    (lambda (search-pos_0)
-                      (begin
-                        (let ((poss_0
-                               (drive-regexp-match.1
-                                #f
-                                #f
-                                #f
-                                #f
-                                #f
-                                'positions
-                                #f
-                                #f
-                                search-pos_0
-                                who_0
-                                rx_0
-                                in_0
-                                0
-                                #f
-                                #f
-                                prefix_0)))
-                          (let ((recur_0
-                                 (|#%name|
-                                  recur
-                                  (lambda ()
-                                    (begin
-                                      (let ((pos_0 (cdar poss_0)))
-                                        (if (= pos_0 search-pos_0)
-                                          (if (=
-                                               search-pos_0
-                                               (chytes-length in_0))
-                                            (subchytes in_0 0 0)
-                                            (let ((app_0
-                                                   (subchytes
-                                                    in_0
-                                                    search-pos_0
-                                                    (add1 search-pos_0))))
-                                              (chytes-append
-                                               app_0
-                                               (loop_0 (add1 search-pos_0)))))
-                                          (loop_0 (cdar poss_0)))))))))
-                            (if (not poss_0)
-                              (if (zero? search-pos_0)
-                                in_0
-                                (subchytes in_0 search-pos_0))
-                              (let ((app_0
-                                     (subchytes
-                                      in_0
+                (let ((need-lookbehind_0 (rx:regexp-max-lookbehind rx_0)))
+                  (letrec*
+                   ((loop_0
+                     (|#%name|
+                      loop
+                      (lambda (search-pos_0 get-list?_0)
+                        (begin
+                          (let ((use-prefix_0
+                                 (if (< search-pos_0 need-lookbehind_0)
+                                   prefix_0
+                                   #f)))
+                            (let ((in-start_0
+                                   (if use-prefix_0
+                                     0
+                                     (max
+                                      0
+                                      (- search-pos_0 need-lookbehind_0)))))
+                              (let ((poss_0
+                                     (drive-regexp-match.1
+                                      #f
+                                      #f
+                                      #f
+                                      #f
+                                      #f
+                                      'positions
+                                      #f
+                                      #f
                                       search-pos_0
-                                      (caar poss_0))))
-                                (let ((app_1
-                                       (replacements who_0 in_0 poss_0 ins_0)))
-                                  (chytes-append
-                                   app_0
-                                   app_1
-                                   (if all?_0
-                                     (recur_0)
-                                     (subchytes in_0 (cdar poss_0))))))))))))))
-                 (loop_0 0))))))))))
+                                      who_0
+                                      rx_0
+                                      in_0
+                                      in-start_0
+                                      #f
+                                      #f
+                                      prefix_0)))
+                                (let ((recur_0
+                                       (|#%name|
+                                        recur
+                                        (lambda ()
+                                          (begin
+                                            (let ((end_0 (cdar poss_0)))
+                                              (if (= (caar poss_0) end_0)
+                                                (if (=
+                                                     end_0
+                                                     (chytes-length in_0))
+                                                  null
+                                                  (let ((app_0
+                                                         (subchytes
+                                                          in_0
+                                                          end_0
+                                                          (add1 end_0))))
+                                                    (cons
+                                                     app_0
+                                                     (loop_0
+                                                      (add1 end_0)
+                                                      #t))))
+                                                (loop_0 end_0 #t))))))))
+                                  (if (not poss_0)
+                                    (let ((result_0
+                                           (if (zero? search-pos_0)
+                                             in_0
+                                             (subchytes in_0 search-pos_0))))
+                                      (if get-list?_0
+                                        (list result_0)
+                                        result_0))
+                                    (let ((pre_0
+                                           (subchytes
+                                            in_0
+                                            search-pos_0
+                                            (caar poss_0))))
+                                      (let ((new_0
+                                             (replacements
+                                              who_0
+                                              in_0
+                                              poss_0
+                                              ins_0
+                                              prefix_0)))
+                                        (if all?_0
+                                          (let ((result_0
+                                                 (list*
+                                                  pre_0
+                                                  new_0
+                                                  (recur_0))))
+                                            (if get-list?_0
+                                              result_0
+                                              (apply chytes-append result_0)))
+                                          (chytes-append
+                                           pre_0
+                                           new_0
+                                           (subchytes
+                                            in_0
+                                            (cdar poss_0))))))))))))))))
+                   (loop_0 0 #f)))))))))))
 (define replacements
-  (lambda (who_0 in_0 poss_0 insert_0)
+  (lambda (who_0 in_0 poss_0 insert_0 prefix_0)
     (if (procedure? insert_0)
       (let ((a_0
              (apply
@@ -9298,10 +9338,11 @@
                                              (cons
                                               (if pos_0
                                                 (let ((app_0 (car pos_0)))
-                                                  (subchytes
+                                                  (subchytes*
                                                    in_0
                                                    app_0
-                                                   (cdr pos_0)))
+                                                   (cdr pos_0)
+                                                   prefix_0))
                                                 #f)
                                               fold-var_0)))
                                         (values fold-var_1))))
@@ -9326,7 +9367,7 @@
                       (let ((pos_0 (list-ref poss_0 n_0)))
                         (if pos_0
                           (let ((app_0 (car pos_0)))
-                            (subchytes in_0 app_0 (cdr pos_0)))
+                            (subchytes* in_0 app_0 (cdr pos_0) prefix_0))
                           (subchytes in_0 0 0)))
                       (subchytes in_0 0 0)))))))
           (let ((cons-chytes_0
@@ -9407,6 +9448,61 @@
                                        (d-loop_0 (add1 pos_0) 0))))))
                                (loop_0 (add1 pos_0) since_0)))))))))
                   (loop_0 0 0)))))))))))
+(define subchytes*
+  (lambda (in_0 start_0 end_0 prefix_0)
+    (if (< start_0 0)
+      (let ((len_0 (unsafe-bytes-length prefix_0)))
+        (if (string? in_0)
+          (letrec*
+           ((loop_0
+             (|#%name|
+              loop
+              (lambda (index_0 start_1 end-index_0 end_1)
+                (begin
+                  (if (zero? start_1)
+                    (let ((pre-part_0
+                           (bytes->string/utf-8
+                            (subbytes prefix_0 index_0 end-index_0))))
+                      (if (> end_1 0)
+                        (string-append pre-part_0 (substring in_0 0 end_1))
+                        pre-part_0))
+                    (letrec*
+                     ((bloop_0
+                       (|#%name|
+                        bloop
+                        (lambda (index_1)
+                          (begin
+                            (let ((b_0 (unsafe-bytes-ref prefix_0 index_1)))
+                              (if (let ((or-part_0
+                                         (not (bitwise-bit-set? b_0 7))))
+                                    (if or-part_0
+                                      or-part_0
+                                      (bitwise-bit-set? b_0 6)))
+                                (if (>= end_1 0)
+                                  (loop_0
+                                   index_1
+                                   (add1 start_1)
+                                   end-index_0
+                                   end_1)
+                                  (let ((app_0 (add1 start_1)))
+                                    (loop_0
+                                     index_1
+                                     app_0
+                                     index_1
+                                     (add1 end_1))))
+                                (bloop_0 (sub1 index_1)))))))))
+                     (bloop_0 (sub1 index_0)))))))))
+           (loop_0 len_0 start_0 len_0 end_0))
+          (let ((pre-part_0
+                 (let ((app_0 (+ (unsafe-bytes-length prefix_0) start_0)))
+                   (subbytes
+                    prefix_0
+                    app_0
+                    (+ (unsafe-bytes-length prefix_0) (min 0 end_0))))))
+            (if (> end_0 0)
+              (bytes-append pre-part_0 (subbytes in_0 0 end_0))
+              pre-part_0))))
+      (subchytes in_0 start_0 end_0))))
 (define 1/regexp
   (let ((regexp_0
          (|#%name|

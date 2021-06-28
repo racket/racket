@@ -40,7 +40,8 @@
          "rebuild.rkt"
          "parsed.rkt"
          "expanded+parsed.rkt"
-         "implicit-property.rkt")
+         "implicit-property.rkt"
+         "bindings-arity-error.rkt")
 
 (provide expand
          lookup
@@ -54,6 +55,7 @@
          context->transformer-context
          eval-for-syntaxes-binding
          eval-for-bindings
+         raise-bindings-arity-error
          apply-rename-transformer
 
          keep-properties-only
@@ -654,7 +656,8 @@
 ;; the number of returned values matches the number of target
 ;; identifiers; return the expanded form as well as its values
 (define (expand+eval-for-syntaxes-binding who rhs ids ctx
-                                          #:log-next? [log-next? #t])
+                                          #:log-next? [log-next? #t]
+                                          #:wrap [wrap #f])
   (define exp-rhs (expand-transformer rhs (as-named-context ctx ids)))
   (define phase (add1 (expand-context-phase ctx)))
   (define parsed-rhs (if (expand-context-to-parsed? ctx)
@@ -671,7 +674,8 @@
                              (namespace->namespace-at-phase
                               (expand-context-namespace ctx)
                               phase)
-                             ctx)))
+                             ctx
+                             #:wrap wrap)))
 
 ;; Expand and evaluate `s` as a compile-time expression, returning
 ;; only the compile-time values
@@ -683,7 +687,8 @@
 ;; Expand and evaluate `s` as an expression in the given phase;
 ;; ensuring that the number of returned values matches the number of
 ;; target identifiers; return the values
-(define (eval-for-bindings who ids p phase ns ctx)
+(define (eval-for-bindings who ids p phase ns ctx
+                           #:wrap [wrap #f])
   (define compiled (if (can-direct-eval? p ns (root-expand-context-self-mpi ctx))
                        #f
                        (compile-single p (make-compile-context
@@ -698,17 +703,16 @@
                              (parameterize-like
                               #:with ([current-expand-context ctx])
                               (if compiled
-                                  (eval-single-top compiled ns)
-                                  (direct-eval p ns (root-expand-context-self-mpi ctx))))))))
+                                  (if wrap
+                                      (wrap (lambda () (eval-single-top compiled ns)))
+                                      (eval-single-top compiled ns))
+                                  (let ([self-mpi (root-expand-context-self-mpi ctx)])
+                                    (if wrap
+                                        (wrap (lambda () (direct-eval p ns self-mpi)))
+                                        (direct-eval p ns self-mpi)))))))))
       list))
-  (unless (= (length vals) (length ids))
-    (apply raise-result-arity-error
-           who
-           (length ids)
-           (cond
-             [(null? ids) ""]
-             [else (format "\n  in: definition of ~a~a" (syntax-e (car ids)) (if (pair? (cdr ids)) " ..." ""))])
-           vals))
+  (unless (or wrap (= (length vals) (length ids)))
+    (raise-bindings-arity-error who ids vals))
   vals)
 
 ;; ----------------------------------------

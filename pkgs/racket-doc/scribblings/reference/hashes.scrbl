@@ -627,8 +627,8 @@ about modifying @racket[hash] within @racket[proc].
 Returns the number of keys mapped by @racket[hash].
 
 For the @tech{CS} implementation of Racket, the result is always
-computed in time and atomically. For the @tech{BC} implementation of
-Racket, the result is computed in constant time and atomically only if
+computed in constant time and atomically. For the @tech{BC} implementation
+of Racket, the result is computed in constant time and atomically only if
 @racket[hash] does not retain keys weakly or like an @tech{ephemeron},
 otherwise, a traversal is required to count the keys.}
 

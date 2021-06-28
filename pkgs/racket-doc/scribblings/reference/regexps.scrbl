@@ -538,8 +538,8 @@ fails.}
                                  [input-prefix bytes? #""])
           (or/c (cons/c (cons/c exact-nonnegative-integer?
                                 exact-nonnegative-integer?)
-                        (listof (or/c (cons/c exact-nonnegative-integer?
-                                              exact-nonnegative-integer?)
+                        (listof (or/c (cons/c exact-integer?
+                                              exact-integer?)
                                       #f)))
                 #f)]{
 
@@ -561,6 +561,29 @@ positions indicate the number of bytes that were read, including
 (regexp-match-positions #rx"x." "12x4x6")
 (regexp-match-positions #rx"x." "12x4x6" 3)
 (regexp-match-positions #rx"(-[0-9]*)+" "a-12--345b")
+]
+
+Range results after the first one can include negative numbers if
+@racket[input-prefix] is non-empty and if @racket[pattern] includes a
+lookbehind pattern. Such ranges start in the @racket[input-prefix]
+instead of @racket[input]. More generally, when @racket[start-pos] is
+positive, then range results that are less than @racket[start-pos]
+start in @racket[input-prefix].
+
+@examples[
+(regexp-match-positions #rx"(?<=(.))." "a" 0 #f #f #"x")
+(regexp-match-positions #rx"(?<=(..))." "a" 0 #f #f #"x")
+(regexp-match-positions #rx"(?<=(..))." "_a" 1 #f #f #"x")
+]
+
+Although @racket[input-prefix] is always a byte string, when the
+returned positions are string indices and they refer to a portion of
+@racket[input-prefix], then they correspond to a UTF-8 decoding of
+a tail of @racket[input-prefix].
+
+@examples[
+(bytes-length (string->bytes/utf-8 "\u3BB"))
+(regexp-match-positions #rx"(?<=(.))." "a" 0 #f #f (string->bytes/utf-8 "\u3BB"))
 ]}
 
 @defproc[(regexp-match-positions* [pattern (or/c string? bytes? regexp? byte-regexp?)]
@@ -933,7 +956,10 @@ before the @litchar{\}. For example, the Racket constant
 
 Like @racket[regexp-replace], except that every instance of
 @racket[pattern] in @racket[input] is replaced with @racket[insert],
-instead of just the first match. Only non-overlapping instances of
+instead of just the first match. The result is @racket[input] only if
+there are no matches, @racket[start-pos] is @racket[0], and
+@racket[end-pos] is @racket[#f] or the length of @racket[input].
+Only non-overlapping instances of
 @racket[pattern] in @racket[input] are replaced, so instances of
 @racket[pattern] within inserted strings are @italic{not} replaced
 recursively. Zero-length matches are treated the same as in
@@ -952,7 +978,10 @@ string or the stream up to an end-of-file.
                                   (string-upcase two))))
 (regexp-replace* #px"\\w" "hello world" string-upcase 0 5)
 (display (regexp-replace* #rx"x" "12x4x6" "\\\\"))
-]}
+]
+
+@history[#:changed "8.1.0.7" @elem{Changed to return @racket[input] when no
+                                   replacements are performed.}]}
 
 @defproc[(regexp-replaces [input (or/c string? bytes?)]
                           [replacements

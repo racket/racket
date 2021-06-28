@@ -3302,6 +3302,9 @@ static void remove_thread(Scheme_Thread *r)
 
 void scheme_end_current_thread(void)
 {
+  if (SAME_OBJ(scheme_current_thread, scheme_main_thread))
+    exit_or_escape(scheme_current_thread);
+
   remove_thread(scheme_current_thread);
   
   thread_ended_with_activity = 1;

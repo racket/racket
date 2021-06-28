@@ -6,6 +6,7 @@
                      racket/future
                      racket/promise
                      racket/file
+                     racket/place
                      compiler/cm
                      compiler/cm-accomplice
                      setup/parallel-build
@@ -523,13 +524,13 @@ any security guard put in place by
 
 @defparam[parallel-lock-client proc 
                                (or/c #f
-                                     (->i ([command (or/c 'lock 'unlock)]
-                                           [file bytes?])
-                                          [res (command) (if (eq? command 'lock)
-                                                             boolean?
-                                                             void?)]))]{
+                                     (->i ([_command (or/c 'lock 'unlock)]
+                                           [_file bytes?])
+                                          [res (_command) (if (eq? _command 'lock)
+                                                              boolean?
+                                                              void?)]))]{
 
-Holds the parallel compilation lock client, which
+Creates a parallel compilation lock client, which
 is used by the result of @racket[make-compilation-manager-load/use-compiled-handler] to
 prevent compilation races between parallel builders.  
 
@@ -538,18 +539,20 @@ compilation is done (and thus multiple threads or places running compilations
 via @racket[make-compilation-manager-load/use-compiled-handler] will potentially
 corrupt each other's @filepath{.zo} files).
 
-When @racket[proc] is a function, its first argument is a command, indicating
-if it wants to lock or unlock the path specified in the second argument.
+When @racket[proc] is a function, its first argument is a command
+@racket['lock] pr @racket['unlock], which indicates whether the caller
+wants to lock or unlock a target @racket[_zo-path], and the second
+argument is the target @racket[_zo-path] (expressed as a byte string).
 
-When the @racket[proc] @racket['lock] command returns @racket[#t], the current
-builder has obtained the lock for @racket[zo-path].
-Once compilation of @racket[zo-path] is complete, the builder process must
+When @racket[proc] returns @racket[#t] for a @racket['lock] command, the current
+builder has obtained the lock for @racket[_zo-path].
+Once compilation of @racket[_zo-path] is complete, the builder process must
 release the lock by calling @racket[proc] @racket['unlock] with the exact same
-@racket[zo-path].
+@racket[_zo-path].
 
-When the @racket[proc] @racket['lock] command returns @racket[#f], another
-parallel builder obtained the lock first and has already compiled the zo.  The
-parallel builder should continue without compiling @racket[zo-path].
+When @racket[proc] returns @racket[#f] for a @racket['lock] command, another
+parallel builder obtained the lock first and has already compiled the target.  The
+parallel builder should continue without compiling @racket[_zo-path].
 (In this case, @racket[make-compilation-manager-load/use-compiled-handler]'s
 result will not call @racket[proc] with @racket['unlock].)
 
@@ -570,26 +573,41 @@ result will not call @racket[proc] with @racket['unlock].)
 ]
 }
 
-@defproc[(compile-lock->parallel-lock-client [pc place-channel?] [cust (or/c #f custodian?) #f])
+@defproc[(compile-lock->parallel-lock-client [pc place-channel?]
+                                             [cust (or/c #f custodian?) #f]
+                                             [current-shutdown-evt (-> evt?) (lambda () never-evt)])
          (-> (or/c 'lock 'unlock) bytes? boolean?)]{
 
-  Returns a function that follows the @racket[parallel-lock-client]
-  by communicating over @racket[pc]. The argument must
-  be the result of @racket[make-compile-lock].
+  Returns a function that follows the @racket[parallel-lock-client] protocol
+  by communicating over @racket[pc], where @racket[pc] must
+  be a result of @racket[make-compile-lock].
   
-  This communication protocol implementation is not kill safe. To make it kill safe,
-  it needs a sufficiently powerful custodian, i.e., one that is not subject to
-  termination (unless all of the participants in the compilation are also terminated).
-  It uses this custodian to create a thread that monitors the threads that are
-  doing the compilation. If one of them is terminated, the presence of the
+  This communication protocol implementation is not kill-safe when @racket[cust] is @racket[#f].
+  Making the protocol kill-safe requires a sufficiently powerful custodian (i.e., one that is not subject to
+  termination unless all of the participants in the compilation are also terminated)
+  supplied as @racket[cust]. The given custodian is used to create a thread that monitors the threads that are
+  perform the compilation. If one of the threads is terminated, the presence of the
   custodian lets another one continue. (The custodian is also used to create
-  a thread that manages a thread safe table.)
-}
+  a thread that manages a thread-safe table.)
+
+  Just checking for thread termination is not always sufficient to
+  release a lock, because a thread created with
+  @racket[thread/suspend-to-kill] is merely suspending by removing its
+  ability to run. The @racket[current-shutdown-evt] argument returns
+  an @tech[#:doc reference-doc]{synchronizable event} that the monitor
+  thread waits on at the same time as it waits for a thread to
+  terminate. If the event becomes ready, then the monitor releases a
+  lock the same as if the thread was terminated. For example,
+  @racket[current-shutdown-evt] might return a @tech[#:doc
+  reference-doc]{custodian box} to detect a custodian shutdown.
+
+@history[#:changed "8.1.0.7" @elem{Added the @racket[current-shutdown-evt] argument.}]}
+
 
 @defproc[(make-compile-lock) place-channel?]{
-  Creates a @racket[place-channel?] that can be used with
-            @racket[compile-lock->parallel-lock-client] to avoid concurrent
-            compilations of the same Racket source files in multiple places.
+  Creates a place-channel that can be used with
+  @racket[compile-lock->parallel-lock-client] to avoid concurrent
+  compilations of the same Racket source files in multiple places.
 }
 
 @defproc[(install-module-hashes! [bstr bytes?]

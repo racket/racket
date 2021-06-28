@@ -467,7 +467,10 @@ be a string indicating a required extension for the directory name. }
 @defproc[(embedding-executable-add-suffix [path path-string?] [mred? any/c])
          path-string?]{
 
-Adds a suitable executable suffix, if it's not present already.}
+Adds a suitable executable suffix, if it's not present already.
+
+@history[#:changed "8.1.0.7" @elem{Changed to actually add a suffix, instead of
+                                   replacing an existing suffix.}]}
 
 
 @; ----------------------------------------

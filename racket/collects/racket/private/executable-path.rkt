@@ -35,28 +35,36 @@
                                           lib))
                                    #f)
                                (and (not reverse?) (next)))))
-                       exec-name))])
-         (if (and (relative-path? program)
+                       exec-name))]
+                [try-exec
+                 (lambda (program)
+                   (if (and (relative-path? program)
+                            (let-values ([(base name dir?) (split-path program)])
+                              (eq? base 'relative)))
+                       (let ([paths-bstr (environment-variables-ref (current-environment-variables)
+                                                                    #"PATH")]
+                             [win-add (lambda (s) (if (eq? (system-type) 'windows)
+                                                      (cons (bytes->path #".") s)
+                                                      s))])
+                         (let loop ([paths (win-add
+                                            (if paths-bstr
+                                                (path-list-string->path-list paths-bstr
+                                                                             null)
+                                                null))])
+                           (if (null? paths)
+                               #f
+                               (let* ([base (path->complete-path (car paths))]
+                                      [name (build-path base program)])
+                                 (if (file-exists? name)
+                                     (found-exec name)
+                                     (loop (cdr paths)))))))
+                       (let ([p (path->complete-path program)])
+                         (and (file-exists? p) (found-exec p)))))])
+         (or (try-exec program)
+             (and (eq? 'windows (system-type))
                   (let-values ([(base name dir?) (split-path program)])
-                    (eq? base 'relative)))
-             (let ([paths-bstr (environment-variables-ref (current-environment-variables)
-                                                          #"PATH")]
-                   [win-add (lambda (s) (if (eq? (system-type) 'windows) 
-                                       (cons (bytes->path #".") s) 
-                                       s))])
-               (let loop ([paths (win-add 
-                                  (if paths-bstr
-                                      (path-list-string->path-list paths-bstr
-                                                                   null)
-                                      null))])
-                 (if (null? paths)
-                     #f
-                     (let* ([base (path->complete-path (car paths))]
-                            [name (build-path base program)])
-                       (if (file-exists? name)
-                           (found-exec name)
-                           (loop (cdr paths)))))))
-             (let ([p (path->complete-path program)])
-               (and (file-exists? p) (found-exec p)))))]
+                    (and (path? name)
+                         (not (regexp-match? #rx"[.]" name))
+                         (try-exec (path-replace-extension program #".exe")))))))]
       [(program libpath) (find-executable-path program libpath #f)]
       [(program) (find-executable-path program #f #f)])))
