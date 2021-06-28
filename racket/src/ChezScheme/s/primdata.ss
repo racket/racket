@@ -1520,6 +1520,7 @@
   (make-source-object [sig [(sfd uint uint) (sfd uint uint nzuint nzuint) -> (source-object)]] [flags pure true mifoldable discard])
   (make-sstats [sig [(time time exact-integer exact-integer time time exact-integer) -> (sstats)]] [flags alloc])
   (make-thread-parameter [feature pthreads] [sig [(ptr) (ptr procedure) -> (thread-parameter)]] [flags true cp02 cp03])
+  (make-uninitialized-string [sig [(length) -> (string)]] [flags alloc])
   (make-weak-eq-hashtable [sig [() (uint) -> (eq-hashtable)]] [flags alloc])
   (make-weak-eqv-hashtable [sig [() (uint) -> (hashtable)]] [flags alloc])
   (make-weak-hashtable [sig [(procedure procedure) (procedure procedure uint) -> (hashtable)]] [flags alloc])

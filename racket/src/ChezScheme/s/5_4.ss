@@ -25,7 +25,7 @@
             ($oops 'substring
                    "~s and ~s are not valid start/end indices for ~s"
                    m n s1))
-         (let ([s2 (make-string (fx- n m))])
+         (let ([s2 (make-uninitialized-string (fx- n m))])
             (do ([j 0 (fx+ j 1)] [i m (fx+ i 1)])
                 ((fx= i n) s2)
                 (string-set! s2 j (string-ref s1 i)))))))
@@ -38,7 +38,7 @@
       (let ([n1 (string-length s1)] [n2 (string-length s2)])
         (let ([n (+ n1 n2)])
           (unless (fixnum? n) ($oops who "result string size ~s is not a fixnum" n))
-          (let ([s (make-string n)])
+          (let ([s (make-uninitialized-string n)])
             (string-copy! s1 0 s 0 n1)
             (string-copy! s2 0 s n1 n2)
             s)))))
@@ -48,7 +48,7 @@
       (let f ([ls args] [n 0])
         (if (null? ls)
             (if (fixnum? n)
-                (make-string n)
+                (make-uninitialized-string n)
                 ($oops who "result string size ~s is not a fixnum" n))
             (let ([s1 (car ls)])
               (unless (string? s1) ($oops who "~s is not a string" s1))
@@ -89,7 +89,7 @@
 
 (define list->string
    (lambda (x)
-      (let ([s (make-string ($list-length x 'list->string))])
+      (let ([s (make-uninitialized-string ($list-length x 'list->string))])
          (do ([ls x (cdr ls)] [i 0 (fx+ i 1)])
              ((null? ls) s)
              (let ([c (car ls)])
@@ -102,7 +102,7 @@
     (unless (string? s1)
       ($oops who "~s is not a string" s1))
     (let ([n (string-length s1)])
-      (let ([s2 (make-string n)])
+      (let ([s2 (make-uninitialized-string n)])
         ($byte-copy!
           s1 (constant string-data-disp)
           s2 (constant string-data-disp)
