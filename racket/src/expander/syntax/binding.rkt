@@ -170,7 +170,7 @@
                                (modified-content
                                 content
                                 (propagation-mpi-shift (and (modified-content? content*)
-                                                            (modified-content-scope-propagations+tamper content*))
+                                                            (modified-content-scope-propagations+taint content*))
                                                        (lambda (s) (shift-cons shift s))
                                                        inspector
                                                        (syntax-scopes s)
@@ -321,7 +321,7 @@
                              (modified-content
                               content
                               (propagation-mpi-shift (and (modified-content? content*)
-                                                          (modified-content-scope-propagations+tamper content*))
+                                                          (modified-content-scope-propagations+taint content*))
                                                      #f
                                                      insp
                                                      (syntax-scopes s)

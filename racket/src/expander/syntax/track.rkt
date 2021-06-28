@@ -11,7 +11,7 @@
 
 (define (syntax-track-origin new-stx old-stx [id (if (identifier? old-stx)
                                                      old-stx
-                                                     (let ([v (syntax-e/no-taint old-stx)])
+                                                     (let ([v (syntax-e old-stx)])
                                                        (and (pair? v)
                                                             (car v))))])
   (define old-props (syntax-props old-stx))

@@ -31,13 +31,23 @@
 (provide primitive-ids)
 
 ;; Register core primitives:
-(define-syntax-rule (add-core-primitives! #:table primitive-ids id ...)
+(define-syntax-rule (add-core-primitives! #:table primitive-ids id/maybe-protected ...)
   (begin
-    (define primitive-ids (seteq 'id ...))
+    (define primitive-ids (seteq (quote-core id/maybe-protected) ...))
     (void
      (begin
-       (add-core-primitive! 'id id)
+       (add-a-core-primitive! id/maybe-protected)
        ...))))
+
+(define-syntax quote-core
+  (syntax-rules (protect)
+    [(_ (protect id)) 'id]
+    [(_ id) 'id]))
+
+(define-syntax add-a-core-primitive!
+  (syntax-rules (protect)
+    [(_ (protect id)) (add-core-primitive! 'id id #:protected? #t)]
+    [(_ id) (add-core-primitive! 'id id)]))
 
 (add-core-primitives! #:table primitive-ids
                       
@@ -131,8 +141,8 @@
                       make-syntax-delta-introducer
                       syntax-local-make-delta-introducer
                       
-                      syntax-local-value
-                      syntax-local-value/immediate
+                      (protect syntax-local-value)
+                      (protect syntax-local-value/immediate)
                       
                       syntax-local-lift-expression
                       syntax-local-lift-values-expression
@@ -151,11 +161,11 @@
                       
                       syntax-local-get-shadower
                       
-                      local-expand
-                      local-expand/capture-lifts
-                      local-transformer-expand
-                      local-transformer-expand/capture-lifts
-                      syntax-local-expand-expression
+                      (protect local-expand)
+                      (protect local-expand/capture-lifts)
+                      (protect local-transformer-expand)
+                      (protect local-transformer-expand/capture-lifts)
+                      (protect syntax-local-expand-expression)
 
                       internal-definition-context?
                       syntax-local-make-definition-context
@@ -192,7 +202,7 @@
                       module-path-index-split
                       module-path-index-submodule
 
-                      current-module-name-resolver
+                      (protect current-module-name-resolver)
                       current-module-declare-name
                       current-module-declare-source
                       

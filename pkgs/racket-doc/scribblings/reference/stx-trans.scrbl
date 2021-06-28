@@ -18,6 +18,9 @@ expander or while a module is @tech{visit}ed (see
 @racket[syntax-transforming?]), otherwise the
 @exnraise[exn:fail:contract].})
 
+@(define (provided-as-protected) @t{This procedure's binding is provided as
+  @tech{protected} in the sense of @racket[protect-out].})
+
 
 @title[#:tag "stxtrans"]{Syntax Transformers}
 
@@ -357,12 +360,15 @@ expansion history to external tools.
 (show 1)
 ]
 
+@provided-as-protected[]
+
 @history[#:changed "6.0.1.3" @elem{Changed treatment of @racket[#%top]
                                    so that it is never introduced as
                                    an explicit wrapper.}
          #:changed "6.0.90.27" @elem{Loosened the contract on the @racket[intdef-ctx] argument to
                                      allow an empty list, which is treated the same way as
-                                     @racket[#f].}]}
+                                     @racket[#f].}
+         #:changed "8.2.0.2" @elem{Changined binding to protected.}]}
 
 
 @defproc[(syntax-local-expand-expression [stx any/c] [opaque-only? any/c #f])
@@ -395,9 +401,10 @@ that is triggered by an enclosing @racket[local-expand] call, then the
 result of @racket[syntax-local-expand-expression] can include
 @racket[#%expression] forms.
 
-@transform-time[]
+@transform-time[] @provided-as-protected[]
 
-@history[#:changed "6.90.0.13" @elem{Added the @racket[opaque-only?] argument.}]}
+@history[#:changed "6.90.0.13" @elem{Added the @racket[opaque-only?] argument.}
+         #:changed "8.2.0.2" @elem{Changined binding to protected.}]}
 
 
 @defproc[(local-transformer-expand [stx any/c]
@@ -420,8 +427,11 @@ otherwise lifts are captured in @racket[let-values] forms. If no
 expressions are lifted during expansion, then no @racket[begin]
 or @racket[let-values] wrapper is added.
 
+@provided-as-protected[]
+
 @history[#:changed "6.5.0.3" @elem{Allow and capture lifts in a
-                                   @racket['top-level] context.}]}
+                                   @racket['top-level] context.}
+         #:changed "8.2.0.2" @elem{Changined binding to protected.}]}
 
 
 @defproc[(local-expand/capture-lifts
@@ -448,7 +458,11 @@ expressions are not expanded, but instead left as provided in the
 If @racket[context-v] is @racket['top-level] or @racket['module], then
 @racket[module] forms can appear in the result as added via
 @racket[syntax-local-lift-module]. If @racket[context-v] is
-@racket['module], then @racket[module*] forms can appear, too.}
+@racket['module], then @racket[module*] forms can appear, too.
+
+@provided-as-protected[]
+
+@history[#:changed "8.2.0.2" @elem{Changined binding to protected.}]}
 
 
 @defproc[(local-transformer-expand/capture-lifts
@@ -465,7 +479,11 @@ If @racket[context-v] is @racket['top-level] or @racket['module], then
 Like @racket[local-expand/capture-lifts], but @racket[stx] is expanded
 as a transformer expression instead of a run-time expression. Lifted
 expressions are reported as @racket[define-values] forms (in the
-transformer environment).}
+transformer environment).
+
+@provided-as-protected[]
+
+@history[#:changed "8.2.0.2" @elem{Changined binding to protected.}]}
 
 
 @defproc[(internal-definition-context? [v any/c]) boolean?]{
@@ -693,10 +711,13 @@ if not @racket[#f]. If @racket[failure-thunk] is @racket[false], the
   (transformer-3)
 ]
 
+@provided-as-protected[]
+
 @history[
  #:changed "6.90.0.27" @elem{Changed @racket[intdef-ctx] to accept a list of internal-definition
                              contexts in addition to a single internal-definition context or
-                             @racket[#f].}]}
+                             @racket[#f].}
+ #:changed "8.2.0.2" @elem{Changined binding to protected.}]}
 
 
 @defproc[(syntax-local-value/immediate [id-stx syntax?]
@@ -732,7 +753,11 @@ values), or an exception is raised if @racket[failure-thunk] is
       [(_ name:id)
        (define-values [_ orig-name] (syntax-local-value/immediate #'name))
        #`'(name #,orig-name)]))
-  (show-secret-identity agent-007)]}
+  (show-secret-identity agent-007)]
+
+@provided-as-protected[]
+
+@history[#:changed "8.2.0.2" @elem{Changined binding to protected.}]}
 
 
 @defproc[(syntax-local-lift-expression [stx syntax?])
@@ -1128,7 +1153,7 @@ binding of @racket[_m-id] should be transferred to the binding
 instance of @racket[_orig-id], so that it captures uses with the same
 lexical context as the use of @racket[_m-id].
 
-If @racket[ext-stx] is @tech{tainted} or @tech{armed}, then an
+If @racket[ext-stx] is @tech{tainted}, then an
 identifier result from the created procedure is @tech{tainted}.}
 
 

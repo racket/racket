@@ -2,9 +2,6 @@
 (require "../common/struct-star.rkt"
          "../syntax/module-binding.rkt"
          "../syntax/api.rkt"
-         (only-in "../syntax/taint.rkt"
-                  [syntax-disarm raw:syntax-disarm]
-                  [syntax-rearm raw:syntax-rearm])
          "../namespace/namespace.rkt"
          "../namespace/module.rkt"
          "../namespace/core.rkt"
@@ -230,7 +227,6 @@
                                               [only-immediate? #t]
                                               [phase phase]
                                               [namespace ns])))
-    (define disarmed-exp-s (raw:syntax-disarm exp-s))
     (cond
      [(or (pair? require-lifts) (pair? lifts))
       ;; Fold in lifted definitions and try again
@@ -246,10 +242,10 @@
       exp-s]
      [(and just-once? (not (eq? exp-s wb-s))) exp-s]
      [else
-      (case (core-form-sym disarmed-exp-s phase)
+      (case (core-form-sym exp-s phase)
         [(begin)
-         (log-expand ctx 'prim-begin disarmed-exp-s)
-         (define-match m disarmed-exp-s '(begin e ...))
+         (log-expand ctx 'prim-begin exp-s)
+         (define-match m exp-s '(begin e ...))
          ;; Map `loop` over the `e`s, but in the case of `eval`,
          ;; tail-call for last one:
          (define (begin-loop es)
@@ -275,8 +271,8 @@
             new-s]
            [else (begin-loop (m 'e))])]
         [(begin-for-syntax)
-         (log-expand tl-ctx 'prim-begin-for-syntax disarmed-exp-s)
-         (define-match m disarmed-exp-s '(begin-for-syntax e ...))
+         (log-expand tl-ctx 'prim-begin-for-syntax exp-s)
+         (define-match m exp-s '(begin-for-syntax e ...))
          (define next-phase (add1 phase))
          (define next-ns (namespace->namespace-at-phase ns next-phase))
          (log-expand tl-ctx 'prepare-env)
@@ -305,12 +301,10 @@
       (namespace-syntax-introduce (datum->syntax #f s) ns)))
 
 (define (re-pair form-id s r)
-  (raw:syntax-rearm
-   (datum->syntax (raw:syntax-disarm s)
-                  (cons form-id r)
-                  s
-                  s)
-   s))
+  (datum->syntax s
+                 (cons form-id r)
+                 s
+                 s))
 
 ;; ----------------------------------------
 
@@ -339,7 +333,7 @@
     ;; We don't "hide" this require in the same way as
     ;; a top-level `#%require`, because it's already
     ;; hidden in the sense of having an extra scope
-    (define-match m (raw:syntax-disarm s) '(#%require req))
+    (define-match m s '(#%require req))
     (parse-and-perform-requires! (list (m 'req)) s
                                  ns phase #:run-phase phase
                                  (make-requires+provides #f)

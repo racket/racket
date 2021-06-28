@@ -553,7 +553,12 @@ For internal testing purposes, when the
 @as-index{@envvar{PLT_VALIDATE_COMPILE}} environment variable is set,
 the default compilation handler runs a bytecode validator immediately
 on its own compilation results (instead of relying only on validation
-when compiled bytecode is loaded).}
+when compiled bytecode is loaded).
+
+The @racket[current-compile] binding is provided as @tech{protected}
+in the sense of @racket[protect-out].
+
+@history[#:changed "8.2.0.2" @elem{Changined binding to protected.}]}
 
 
 @defproc[(compile [top-level-form any/c]) compiled-expression?]{

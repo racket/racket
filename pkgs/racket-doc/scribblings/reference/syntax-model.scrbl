@@ -156,8 +156,9 @@ relevant.
 @section[#:tag "stxobj-model"]{Syntax Objects}
 
 A @deftech{syntax object} combines a simpler Racket value, such as a symbol or pair, with
-@tech{lexical information}, @tech{source-location} information, @tech{syntax properties}, and @tech{tamper
-status}. The @deftech{lexical information} of a @tech{syntax object} comprises a set of @tech{scope
+@tech{lexical information}, @tech{source-location} information, @tech{syntax properties}, and
+whether the syntax object is
+@tech{tainted}. The @deftech{lexical information} of a @tech{syntax object} comprises a set of @tech{scope
 sets}, one for each @tech{phase level}. In particular, an @tech{identifier} is represented as a syntax
 object containing a @tech{symbol}, and its @tech{lexical information} can be combined with the global
 table of bindings to determine its @tech{binding} (if any) at each @tech{phase level}.
@@ -711,10 +712,6 @@ In addition to using scopes to track introduced identifiers, the
 expander tracks the expansion history of a form through @tech{syntax
 properties} such as @racket['origin]. See @secref["stxprops"] for
 more information.
-
-Finally, the expander uses a @tech{tamper status} to control the way
-that unexported and protected @tech{module bindings} are used. See
-@secref["stxcerts"] for more information on a @tech{tamper status}.
 
 The expander's handling of @racket[letrec-syntaxes+values] is similar
 to its handling of @racket[define-syntaxes]. A

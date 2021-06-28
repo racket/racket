@@ -806,13 +806,11 @@ For an example of @racket[:do-in], see @racket[define-sequence-syntax].}
 
 @defproc[(for-clause-syntax-protect [stx syntax?]) syntax?]{
 
-Provided @racket[for-syntax]: Like @racket[syntax-protect], but allows
-the @racket[for] expander to @tech{disarm} the result syntax object,
-and arms the pieces of a clause instead of the entire syntax object.
+Provided @racket[for-syntax]: Like @racket[syntax-protect], just
+returns its argument.
 
-Use this function to protect the result of a
-@racket[_clause-transform-expr] that is bound by
-@racket[define-sequence-syntax].}
+@history[#:changed "8.2.0.2" @elem{Changed to just return @racket[stx] instead
+                                   of returning ``armed'' syntax.}]}
 
 
 @section{Do Loops}

@@ -63,6 +63,8 @@
 (define core-forms #hasheq())
 (define core-primitives #hasheq())
 
+(struct protected-core (val) #:authentic)
+
 (define-syntax-rule (add-core-form! sym proc)
   ;; The `void` wrapper suppress a `print-values` wrapper:
   (void (add-core-form!* sym proc)))
@@ -73,11 +75,13 @@
                              sym
                              proc)))
 
-(define (add-core-primitive! sym val)
+(define (add-core-primitive! sym val #:protected? [protected? #f])
   (add-core-binding! sym)
   (set! core-primitives (hash-set core-primitives
                                   sym
-                                  val)))
+                                  (if protected?
+                                      (protected-core val)
+                                      val))))
 
 (define (add-core-binding! sym)
   (add-binding! (datum->syntax core-stx sym)
@@ -89,7 +93,6 @@
   (declare-module!
    ns
    (make-module #:cross-phase-persistent? #t
-                #:no-protected? #t
                 #:predefined? #t
                 #:self core-mpi
                 #:provides
@@ -97,9 +100,12 @@
                                                              core-forms))]
                                         [syntax? (in-list '(#f #t))]
                                         #:when #t
-                                        [sym (in-hash-keys syms)])
+                                        [(sym val) (in-hash syms)])
                              (define b (make-module-binding core-mpi 0 sym))
-                             (values sym (if syntax? (provided b #f #t) b))))
+                             (values sym (cond
+                                           [syntax? (provided b #f #t)]
+                                           [(protected-core? val) (provided b #t #f)]
+                                           [else b]))))
                 #:phase-level-linklet-info-callback
                 (lambda (phase-level ns insp)
                   (and (zero? phase-level)
@@ -116,7 +122,9 @@
                   (case phase-level
                     [(0)
                      (for ([(sym val) (in-hash core-primitives)])
-                       (namespace-set-consistent! ns 0 sym val))
+                       (namespace-set-consistent! ns 0 sym (if (protected-core? val)
+                                                               (protected-core-val val)
+                                                               val)))
                      (for ([(sym proc) (in-hash core-forms)])
                        (namespace-set-transformer! ns 0 sym (if (procedure-arity-includes? proc 2)
                                                                 ;; An actual core form:

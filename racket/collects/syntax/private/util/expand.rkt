@@ -1,9 +1,9 @@
 #lang racket/base
 (require syntax/kerncase
          syntax/stx)
-(provide head-local-expand-and-categorize-syntaxes
-         categorize-expanded-syntaxes
-         head-local-expand-syntaxes)
+(provide (protect-out head-local-expand-and-categorize-syntaxes
+                      categorize-expanded-syntaxes
+                      head-local-expand-syntaxes))
 
 ;; head-local-expand-syntaxes : syntax boolean boolean -> stxs ^ 6
 ;; Setting allow-def-after-expr? allows def/expr interleaving.

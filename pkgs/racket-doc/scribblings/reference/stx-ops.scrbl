@@ -168,10 +168,8 @@ object for every pair of parentheses in the source, and by creating a
 pair-valued @tech{syntax object} @italic{only} for parentheses in the
 source. See @secref["parse-pair"] for more information.
 
-If @racket[stx] is @tech{tainted} or @tech{armed}, then any syntax
-object in the result of @racket[(syntax-e stx)] is @tech{tainted}, and
-multiple calls to @racket[syntax-e] may return values that are not
-@racket[eq?]. For a @racket[stx] that is not @tech{armed}, the results from
+If @racket[stx] is @tech{tainted}, then any syntax object in the
+result of @racket[(syntax-e stx)] is @tech{tainted}. The results from
 multiple calls to @racket[syntax-e] of @racket[stx] are @racket[eq?].}
 
 
@@ -182,7 +180,7 @@ of @tech{syntax object}s when @racket[(syntax->datum stx)] would produce a
 list. In other words, @tech{syntax pairs} in @racket[(syntax-e stx)]
 are flattened.
 
-If @racket[stx] is @tech{tainted} or @tech{armed}, then any syntax
+If @racket[stx] is @tech{tainted}, then any syntax
 object in the result of @racket[(syntax->list stx)] is @tech{tainted}.
 
 @examples[#:eval stx-eval
@@ -255,8 +253,7 @@ properties (see @secref["stxprops"]) of @racket[prop] (even the
 hidden ones that would not be visible via @racket[syntax-property-symbol-keys]); if @racket[v]
 is a pair, vector, box, immutable @tech{hash table}, or immutable
 @tech{prefab} structure, recursively converted values are not given
-properties. If @racket[ctxt] is @tech{tainted} or
-@tech{armed}, then the resulting syntax object from
+properties. If @racket[ctxt] is @tech{tainted}, then the resulting syntax object from
 @racket[datum->syntax] is @tech{tainted}. The @tech{code inspector}
 of @racket[ctxt], if any, is compared to the code inspector of the
 module for the macro currently being transformed, if any; if both

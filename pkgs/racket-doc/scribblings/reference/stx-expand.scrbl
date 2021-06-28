@@ -4,7 +4,9 @@
 @title{Expanding Top-Level Forms}
 
 
-@defproc[(expand [top-level-form any/c]) syntax?]{
+@defproc[(expand [top-level-form any/c]
+                 [insp inspector? (current-code-inspector)])
+         syntax?]{
 
 Expands all non-primitive syntax in @racket[top-level-form], and
 returns a syntax object for the expanded form that contains only core
@@ -13,7 +15,11 @@ forms, matching the grammar specified by @secref["fully-expanded"].
 Before @racket[top-level-form] is expanded, its lexical context is
 enriched with @racket[namespace-syntax-introduce], just as for
 @racket[eval]. Use @racket[syntax->datum] to convert the returned
-syntax object into a printable datum.}
+syntax object into a printable datum.
+
+If @racket[insp] is not the original @tech{code inspector} (i.e., the
+value of @racket[(current-code-inspector)] when Racket starts), then
+the result syntax object is @tech{tainted}.
 
 Here's an example of using @racket[expand] on a module:
 
@@ -37,14 +43,23 @@ Here's an example of using @racket[expand] on a non-top-level form:
    #f
    '(delay (+ 1 2)))))]
 
-@defproc[(expand-syntax [stx syntax?]) syntax?]{
+@history[#:changed "8.2.0.2" @elem{Added the @racket[insp] argument and tainting.}]}
 
-Like @racket[(expand stx)], except that the argument must be a
+
+@defproc[(expand-syntax [stx syntax?]
+                        [insp inspector? (current-code-inspector)])
+         syntax?]{
+
+Like @racket[(expand stx insp)], except that the argument must be a
 @tech{syntax object}, and its lexical context is not enriched before
-expansion.}
+expansion.
+
+@history[#:changed "8.2.0.2" @elem{Added the @racket[insp] argument and tainting.}]}
 
 
-@defproc[(expand-once [top-level-form any/c]) syntax?]{
+@defproc[(expand-once [top-level-form any/c]
+                      [insp inspector? (current-code-inspector)])
+         syntax?]{
 
 Partially expands @racket[top-level-form] and returns a syntax object
 for the partially-expanded expression. Due to limitations in the
@@ -54,17 +69,28 @@ result that is different from expansion via @racket[expand].
 
 Before @racket[top-level-form] is expanded, its lexical context is
 enriched with @racket[namespace-syntax-introduce], as for
-@racket[eval].}
+@racket[eval].
+
+The @racket[insp] argument determines whether the result is
+@tech{tainted}, the same as for @racket[expand].
+
+@history[#:changed "8.2.0.2" @elem{Added the @racket[insp] argument and tainting.}]}
 
 
-@defproc[(expand-syntax-once [stx syntax?]) syntax?]{
+@defproc[(expand-syntax-once [stx syntax?]
+                             [insp inspector? (current-code-inspector)])
+         syntax?]{
 
 Like @racket[(expand-once stx)], except that the argument
 must be a @tech{syntax object}, and its lexical context is not
-enriched before expansion.}
+enriched before expansion.
+
+@history[#:changed "8.2.0.2" @elem{Added the @racket[insp] argument and tainting.}]}
 
 
-@defproc[(expand-to-top-form [top-level-form any/c]) syntax?]{
+@defproc[(expand-to-top-form [top-level-form any/c]
+                             [insp inspector? (current-code-inspector)])
+         syntax?]{
 
 Partially expands @racket[top-level-form] to reveal the outermost
 syntactic form. This partial expansion is mainly useful for detecting
@@ -75,14 +101,23 @@ result as using @racket[expand] on the original syntax.
 
 Before @racket[stx-or-sexpr] is expanded, its lexical context is
 enriched with @racket[namespace-syntax-introduce], as for
-@racket[eval].}
+@racket[eval].
+
+The @racket[insp] argument determines whether the result is
+@tech{tainted}, the same as for @racket[expand].
+
+@history[#:changed "8.2.0.2" @elem{Added the @racket[insp] argument and tainting.}]}
 
 
-@defproc[(expand-syntax-to-top-form [stx syntax?]) syntax?]{
+@defproc[(expand-syntax-to-top-form [stx syntax?]
+                                    [insp inspector? (current-code-inspector)])
+         syntax?]{
 
 Like @racket[(expand-to-top-form stx)], except that the argument must
 be a @tech{syntax object}, and its lexical context is not enriched
-before expansion.}
+before expansion.
+
+@history[#:changed "8.2.0.2" @elem{Added the @racket[insp] argument and tainting.}]}
 
 @;------------------------------------------------------------------------
 @section[#:tag "modinfo"]{Information on Expanded Modules}

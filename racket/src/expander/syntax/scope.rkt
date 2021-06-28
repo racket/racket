@@ -8,7 +8,7 @@
          "../common/inline.rkt"
          "syntax.rkt"
          "binding-table.rkt"
-         "tamper.rkt"
+         "taint-object.rkt"
          "taint.rkt"
          "../common/phase.rkt"
          "fallback.rkt"
@@ -27,7 +27,6 @@
          push-scope
 
          syntax-e ; handles lazy scope and taint propagation
-         syntax-e/no-taint ; like `syntax-e`, but doesn't explode a dye pack
 
          syntax-scope-set
          syntax-any-scopes?
@@ -393,7 +392,7 @@
                                                                   (op (fallback-first smss) sc)))]
                    [content* (if (datum-has-elements? content)
                                  (let ([prop (prop-op (and (modified-content? content*)
-                                                           (modified-content-scope-propagations+tamper content*))
+                                                           (modified-content-scope-propagations+taint content*))
                                                       sc
                                                       (syntax-scopes s)
                                                       (syntax-shifted-multi-scopes s)
@@ -406,7 +405,7 @@
                    [scopes (op (syntax-scopes s) sc)]
                    [content* (if (datum-has-elements? content)
                                  (let ([prop (prop-op (and (modified-content? content*)
-                                                           (modified-content-scope-propagations+tamper content*))
+                                                           (modified-content-scope-propagations+taint content*))
                                                       sc
                                                       (syntax-scopes s)
                                                       (syntax-shifted-multi-scopes s)
@@ -422,10 +421,10 @@
     [(not (modified-content? content*))
      content*]
     [else
-     (define prop (modified-content-scope-propagations+tamper content*))
+     (define prop (modified-content-scope-propagations+taint content*))
      (cond
        [(or (propagation? prop)
-            (tamper-needs-propagate? prop))
+            (taint-needs-propagate? prop))
         (define content (modified-content-content content*))
         (define new-content
           (cond
@@ -437,12 +436,12 @@
                                (define sub-content (if (modified-content? sub-content*)
                                                        (modified-content-content sub-content*)
                                                        sub-content*))
-                               (define scope-propagations+tamper
+                               (define scope-propagations+taint
                                  (propagation-merge
                                   sub-content
                                   prop
                                   (and (modified-content? sub-content*)
-                                       (modified-content-scope-propagations+tamper sub-content*))
+                                       (modified-content-scope-propagations+taint sub-content*))
                                   (syntax-scopes sub-s)
                                   (syntax-shifted-multi-scopes sub-s)
                                   (syntax-mpi-shifts sub-s)))
@@ -462,33 +461,27 @@
                                             [inspector (propagation-apply-inspector
                                                         prop
                                                         (syntax-inspector sub-s))]
-                                            [content* (if scope-propagations+tamper
-                                                          (modified-content sub-content scope-propagations+tamper)
+                                            [content* (if scope-propagations+taint
+                                                          (modified-content sub-content scope-propagations+taint)
                                                           sub-content)])))]
             [else
              (non-syntax-map content
                              (lambda (tail? x) x)
                              (lambda (sub-s)
                                (struct-copy/t syntax sub-s
-                                              [tamper (tamper-tainted-for-content
-                                                       (syntax-content sub-s))])))]))
-        (define new-tamper (tamper-propagated (if (propagation? prop)
-                                                  (propagation-tamper prop)
-                                                  prop)))
-        (define new-content* (if new-tamper
-                                 (modified-content new-content new-tamper)
+                                              [taint (tainted-for-content
+                                                      (syntax-content sub-s))])))]))
+        (define new-taint (taint-propagated (if (propagation? prop)
+                                                (propagation-taint prop)
+                                                prop)))
+        (define new-content* (if new-taint
+                                 (modified-content new-content new-taint)
                                  new-content))
         (if (syntax-content*-cas! s content* new-content*)
             new-content*
             ;; some other thread beat us to it?
             (syntax-propagated-content* s))]
        [else content*])]))
-
-(define (syntax-e/no-taint s)
-  (define content* (syntax-propagated-content* s))
-  (if (modified-content? content*)
-      (modified-content-content content*)
-      content*))
 
 (define (syntax-e s)
   (define e (syntax-content* s))
@@ -498,17 +491,9 @@
     ;; General case:
     [else
      (define content* (syntax-propagated-content* s))
-     (cond
-       [(modified-content? content*)
-        (define content (modified-content-content content*))
-        (define prop (modified-content-scope-propagations+tamper content*))
-        ;; Since we just called `syntax-propagate-content*`, we know that
-        ;; `prop` is not a propagation
-        (cond
-          [(not (tamper-armed? prop)) content]
-          [(datum-has-elements? content) (taint-content content)]
-          [else content])]
-       [else content*])]))
+     (if (modified-content? content*)
+         (modified-content-content content*)
+         content*)]))
 
 ;; When a representative-scope is manipulated, we want to
 ;; manipulate the multi scope, instead (at a particular
@@ -562,7 +547,7 @@
                              [content* (re-modify-content s d)]
                              [shifted-multi-scopes
                               (push (syntax-shifted-multi-scopes s))]))
-              syntax-e/no-taint))
+              syntax-e))
 
 ;; ----------------------------------------
 
@@ -575,12 +560,12 @@
                      prev-mss   ; owner's mpi-shifts before adds
                      add-mpi-shifts ; #f or (mpi-shifts -> mpi-shifts)
                      inspector  ; #f or inspector
-                     tamper)    ; see "tamper.rkt"
+                     taint)    ; see "taint-object.rkt"
   #:authentic
   #:sealed
   #:property prop:propagation syntax-e
-  #:property prop:propagation-tamper (lambda (p) (propagation-tamper p))
-  #:property prop:propagation-set-tamper (lambda (p v) (propagation-set-tamper p v)))
+  #:property prop:propagation-taint (lambda (p) (propagation-taint p))
+  #:property prop:propagation-set-taint (lambda (p v) (propagation-set-taint p v)))
 
 (define (propagation-add prop sc prev-scs prev-smss prev-mss)
   (if (propagation? prop)
@@ -612,7 +597,7 @@
                (not (propagation-inspector prop))
                (not (propagation-add-mpi-shifts prop)))
           ;; Nothing left to propagate, except maybe taint
-          (propagation-tamper prop)]
+          (propagation-taint prop)]
          [else
           (struct-copy propagation prop
                        [scope-ops
@@ -692,16 +677,16 @@
 (define (propagation-apply-inspector prop i)
   (or i (propagation-inspector prop)))
 
-(define (propagation-set-tamper prop t)
+(define (propagation-set-taint prop t)
   (if (propagation? prop)
       (struct-copy propagation prop
-                   [tamper t])
+                   [taint t])
       t))
 
 (define (propagation-merge content prop base-prop prev-scs prev-smss prev-mss)
   (cond
    [(not (datum-has-elements? content))
-    (if (tamper-tainted? (propagation-tamper prop))
+    (if (propagation-taint prop)
         'tainted
         base-prop)]
    [(not (propagation? base-prop))
@@ -709,7 +694,7 @@
      [(and (eq? (propagation-prev-scs prop) prev-scs)
            (eq? (propagation-prev-smss prop) prev-smss)
            (eq? (propagation-prev-mss prop) prev-mss)
-           (eq? (propagation-tamper prop) base-prop))
+           (eq? (propagation-taint prop) base-prop))
       prop]
      [else
       (propagation prev-scs
@@ -718,7 +703,7 @@
                    prev-mss
                    (propagation-add-mpi-shifts prop)
                    (propagation-inspector prop)
-                   (if (tamper-tainted? (propagation-tamper prop))
+                   (if (propagation-taint prop)
                        'tainted/need-propagate
                        base-prop))])]
    [else
@@ -738,17 +723,17 @@
              [else (hash-set ops sc 'flip)])])))
     (define add (propagation-add-mpi-shifts prop))
     (define base-add (propagation-add-mpi-shifts base-prop))
-    (define new-tamper
-      (if (or (tamper-tainted? (propagation-tamper prop))
-              (tamper-tainted? (propagation-tamper base-prop)))
+    (define new-taint
+      (if (or (propagation-taint prop)
+              (propagation-taint base-prop))
           'tainted/need-propagate
-          (propagation-tamper base-prop)))
+          (propagation-taint base-prop)))
     (if (and (zero? (hash-count new-ops))
              (not add)
              (not base-add)
              (not (propagation-inspector prop))
              (not (propagation-inspector base-prop)))
-        new-tamper
+        new-taint
         (struct-copy propagation base-prop
                      [scope-ops new-ops]
                      [add-mpi-shifts (if (and add base-add)
@@ -756,7 +741,7 @@
                                          (or add base-add))]
                      [inspector (or (propagation-inspector base-prop)
                                     (propagation-inspector prop))]
-                     [tamper new-tamper]))]))
+                     [taint new-taint]))]))
 
 ;; ----------------------------------------
 
@@ -810,7 +795,7 @@
                                    [content* (re-modify-content s d)]
                                    [shifted-multi-scopes
                                     (shift-all (syntax-shifted-multi-scopes s))]))
-                    syntax-e/no-taint))))
+                    syntax-e))))
 
 ;; ----------------------------------------
 
@@ -854,7 +839,7 @@
                                    [scopes (swap-scs (syntax-scopes s))]
                                    [shifted-multi-scopes
                                     (swap-smss (syntax-shifted-multi-scopes s))]))
-                    syntax-e/no-taint))))
+                    syntax-e))))
 
 ;; ----------------------------------------
 

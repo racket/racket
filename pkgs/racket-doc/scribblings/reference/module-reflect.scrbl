@@ -186,13 +186,17 @@ are treated the same as four arguments with the fourth argument as
 @racket[#t], except that an error is also logged. Support for three
 arguments will be removed in a future version.
 
+The @racket[current-module-name-resolver] binding is provided as
+@tech{protected} in the sense of @racket[protect-out].
+
 @history[#:changed "6.0.1.12" 
          @elem{Added error logging to the default module name resolver
                when called with three arguments.}
          #:changed "7.0.0.17"
          @elem{Added special treatment of @racket[submod] forms with a
                nonexistent collection by the default module name
-               resolver.}]}
+               resolver.}
+         #:changed "8.2.0.2" @elem{Changined binding to protected.}]}
 
 
 @defparam[current-module-declare-name name (or/c resolved-module-path? #f)]{
