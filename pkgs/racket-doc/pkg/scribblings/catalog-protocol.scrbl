@@ -53,27 +53,27 @@ information about packages:
               @history[#:changed "6.0.1.7" @elem{Added relative-path support
                                                  to clients of a catalog server.}]}
 
-        @item{@racket['checksum] (requires) --- a string for a
+        @item{@racket['checksum] (required) --- a string for a
               @tech{checksum}.}
 
-        @item{@racket['name] --- a string that is the same as
+        @item{@racket['name] (optional) --- a string that is the same as
               @nonterm{package}.}
 
-        @item{@racket['author] --- a string for the author of the
+        @item{@racket['author] (optional) --- a string for the author of the
               package, normally an e-mail address.}
 
-        @item{@racket['description] --- a string describing the
+        @item{@racket['description] (optional) --- a string describing the
               package.}
 
-        @item{@racket['tags] --- a list of strings that describe the
+        @item{@racket['tags] (optional) --- a list of strings that describe the
               package's categorization.}
 
-        @item{@racket['dependencies] --- a list of dependencies for
+        @item{@racket['dependencies] (optional) --- a list of dependencies for
               the package, in the same shape as a @racket[deps]
               @filepath{info.rkt} field as described in
               @secref["metadata"].}
 
-        @item{@racket['modules] --- a list of module paths for modules
+        @item{@racket['modules] (optional) --- a list of module paths for modules
               that are provided by the package; each module path should
               be normalized in the sense of
               @racket[collapse-module-path].}
