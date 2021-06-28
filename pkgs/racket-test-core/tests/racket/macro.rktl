@@ -846,6 +846,8 @@
   (check-error [((a ...) (b ...)) (datum ((a 0 b) ...))])
   (check-error [((a ...) (b ...)) (datum (((a) (b)) ...))]))
 
+(syntax-test (quote-syntax (syntax-case #f () [#s(a ... b) 'ok])))
+
 ;; ----------------------------------------
 ;; Check `#%variable-reference' expansion to make sure
 ;;  a lexically bound identifier is made consistent with
