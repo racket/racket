@@ -427,6 +427,9 @@
                   "#!/bin/sh\n"
                   "# This script was created by make-"
                   (symbol->string kind)"-launcher\n")]
+         [use-librktdir? (if alt-exe
+                             alt-exe-is-gracket?
+                             (eq? kind 'mred))]
          [addon? (let ([im (assoc 'install-mode aux)])
                    (and im (eq? (cdr im) 'addon-tethered)))]
          [config? (let ([im (assoc 'install-mode aux)])
@@ -487,6 +490,8 @@
         (newline)
         ;; comments needed to rehack launchers when paths change
         ;; (see setup/unixstyle-install.rkt)
+        (when use-librktdir?
+          (display "# unixstyle-install: use librktdir\n"))
         (display "# {{{ bindir\n")
         (display dir-finder)
         (display "# }}} bindir\n")

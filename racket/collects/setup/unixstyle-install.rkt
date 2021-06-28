@@ -249,18 +249,17 @@
                   (error (format "could not find binpath block in script: ~a"
                                  file)))]
            [m2 (regexp-match-positions
-                #rx#"\n# {{{ librktdir\n(.*?\n)# }}} librktdir\n" buf)])
+                #rx#"\n# unixstyle-install: use librktdir\n" buf)])
       ;; 'truncate file to keep it executable
       (with-output-to-file file #:exists 'truncate
         (lambda ()
           (write-bytes buf (current-output-port) 0 (caadr m))
           (define (escaped-dir: sym)
             (regexp-replace* #rx"[\"`'$\\]" (dir: sym) "\\\\&"))
-          (printf "bindir=\"~a\"\n" (escaped-dir: 'bin))
-          (when m2
-            (write-bytes buf (current-output-port) (cdadr m) (caadr m2))
-            (printf "librktdir=\"~a\"\n" (escaped-dir: 'librkt)))
-          (write-bytes buf (current-output-port) (cdadr (or m2 m)))))))
+          (printf "bindir=\"~a\"\n" (if m2
+                                        (escaped-dir: 'librkt)
+                                        (escaped-dir: 'bin)))
+          (write-bytes buf (current-output-port) (cdadr m))))))
   (let ([magic (with-input-from-file file (lambda () (let ([r (read-bytes 10)])
                                                        (if (eof-object? r)
                                                            #""
