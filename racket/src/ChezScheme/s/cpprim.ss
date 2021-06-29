@@ -7087,7 +7087,7 @@
                                     (build-string-fill t-str t-bytes maybe-e-fill)
                                     t-str))))))))))
         (define default-fill `(immediate ,(ptr->imm #\nul)))
-        (define-inline 3 make-uninitialized-string
+        (define-inline 3 $make-uninitialized-string
           [(e-length) (do-make-string e-length #f)])
         (define-inline 3 make-string
           [(e-length) (do-make-string e-length default-fill)]
@@ -7099,10 +7099,6 @@
                 (and (or (fixnum? x) (bignum? x))
                      (<= 0 x (constant maximum-string-length))))
               e-length))
-          (define-inline 2 make-uninitialized-string
-            [(e-length)
-             (and (valid-length? e-length)
-                  (do-make-string e-length #f))])
           (define-inline 2 make-string
             [(e-length)
              (and (valid-length? e-length)
