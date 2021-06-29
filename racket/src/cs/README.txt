@@ -46,8 +46,9 @@ build:
    the Racket CS implementation).
 
    Unlike Chez Scheme boot files, the files generated in "schemified"
-   are human-readable and -editable Scheme code. That possibilities
-   provides a way out of bootstrapping black holes, even without BC.
+   are human-readable and -editable Scheme code. That provides a way
+   out of bootstrapping black holes, even without BC.
+   
 
 
 ========================================================================
