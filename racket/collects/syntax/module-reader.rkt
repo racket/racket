@@ -231,6 +231,9 @@
               (let ([spec (regexp-try-match #px"^[ \t]+(.*?)(?=\\s|$)" in)]) ;; if this changes, the regexp in planet's lang/reader.rkt must also change
                 (and spec (let ([s (cadr spec)])
                             (if (equal? s "") #f s)))))])
+    (define (peek-leading-spaces in)
+      (let ([m (regexp-match-peek #px"^[ \t]+" in)])
+        (if m (bytes-length (car m)) 0)))
     (define (get in export-sym src line col pos spec-as-stx? mk-fail-thunk)
       (define (bad str eof?)
         ((if eof? raise-read-eof-error raise-read-error)
@@ -240,8 +243,11 @@
          (let-values ([(line col pos2) (port-next-location in)])
            (and pos pos2 (- pos2 pos)))))
       (let*-values ([(spec-line spec-col spec-pos) (port-next-location in)]
+                    [(leading-spaces) (peek-leading-spaces in)]
+                    [(spec-col) (and spec-col (+ spec-col leading-spaces))]
+                    [(spec-pos) (and spec-pos (+ spec-pos leading-spaces))]
                     [(spec) (read-spec in)]
-                    [(spec-end-line spec-end-col spec-end-pos) (port-next-location in)])
+                    [(_line _col spec-end-pos) (port-next-location in)])
         (if (not spec)
             (bad #f (eof-object? (peek-byte in)))
             (let ([parsed-spec (spec->module-path spec)])
