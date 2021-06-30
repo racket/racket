@@ -51,7 +51,7 @@ order.}
                                                  immutable?)]{
 
 Returns a newly allocated immutable vector with as many slots as provided
-@racket[v]s, where the slots are contain the given @racket[v]s in
+@racket[v]s, where the slots contain the given @racket[v]s in
 order.}
 
 
