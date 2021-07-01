@@ -61,7 +61,8 @@
          exn:fail:sandbox-terminated?
          exn:fail:sandbox-terminated-reason
          exn:fail:resource?
-         exn:fail:resource-resource)
+         exn:fail:resource-resource
+         default-language-readers)
 
 ; for backward compatibility; maybe it should be removed:
 (define gui? (gui-available?))
@@ -568,7 +569,7 @@
 ;; uncovered expressions with.  The input can be a list of sexprs/syntaxes, or
 ;; a list with a single input port spec (path/string/bytes) value.  Note that
 ;; the source can be a filtering function.
-(define (input->code inps source-in n accept-lang?)
+(define (input->code inps source-in n accept-lang? #:readers [reqreaders #f])
   (if (null? inps)
     (values '() source-in)
     (let ([p (input->port (car inps))])
@@ -584,7 +585,12 @@
                (parameterize ([current-input-port p])
                  (if accept-lang?
                    (parameterize ([read-accept-reader #t] ; needed for #lang too
-                                  [read-accept-lang #t])
+                                  [read-accept-lang #t]
+                                  [current-reader-guard (lambda (v)
+                                                          (when reqreaders
+                                                            (unless (member v reqreaders)
+                                                              (error 'make-evaluator "disallowed reader module path: ~.s" v)))
+                                                          v)])
                      ((sandbox-reader) source))
                    ((sandbox-reader) source))))
              ;; close a port if we opened it
@@ -707,16 +713,19 @@
 ;; (indirectly through private/sandbox-coverage).  But there is a small problem
 ;; here -- errortrace/stacktrace.rkt will grab the declaration-time code inspector.
 ;; So we grab it here too, and use it to wrap the code that invokes errortrace. 
-;; If errortrace/stacktrace.rkt is changed to grab the current inspector, then 
-;; it would be better to avoid this here, and pass `evaluate-program' the
-;; inspector that was in effect when the sandbox was created.
 (define orig-code-inspector (variable-reference->module-declaration-inspector
                              (#%variable-reference)))
 
 (define (evaluate-program program limit-thunk submod-names uncovered!)
-  (when uncovered!
-    (parameterize ([current-code-inspector orig-code-inspector])
-      (eval `(,#'#%require racket/private/sandbox-coverage))))
+  (define get-uncovered-expressions
+    (cond
+      [uncovered!
+       (parameterize ([current-code-inspector orig-code-inspector])
+         (current-compile
+          ((dynamic-require 'racket/private/sandbox-coverage 'make-errortrace-compile-handler)
+           orig-code-inspector))
+         (dynamic-require 'racket/private/sandbox-coverage 'get-uncovered-expressions))]
+      [else void]))
   (define ns
     (syntax-case* program (module) literal-identifier=?
       [(module mod . body)
@@ -742,9 +751,7 @@
                       (eval program))
                     (when ns (set! ns (ns)))))))
   (when uncovered!
-    (define get (let ([ns (current-namespace)])
-                  (lambda () (eval '(get-uncovered-expressions) ns))))
-    (uncovered! (list (get) get)))
+    (uncovered! (list (get-uncovered-expressions) get-uncovered-expressions)))
   (when (namespace? ns) (current-namespace ns)))
 
 (define null-input         (open-input-bytes #""))
@@ -1246,11 +1253,14 @@
                                #:allow-read [allow null] 
                                #:allow-for-require [allow-for-require null]
                                #:allow-for-load [allow-for-load null]
-                               #:language [reqlang #f])
+                               #:language [reqlang #f]
+                               #:readers [reqreaders (and reqlang
+                                                          (module-path? reqlang)
+                                                          (default-language-readers reqlang))])
   ;; this is for a complete module input program
   (define (make-program)
     (define-values [prog source]
-      (input->code (list input-program) 'program #f #t))
+      (input->code (list input-program) 'program #f #t #:readers reqreaders))
     (unless (= 1 (length prog))
       (error 'make-module-evaluator "expecting a single `module' program; ~a"
              (if (zero? (length prog))
@@ -1273,3 +1283,16 @@
                    all-for-require
                    (if (path? input-program) (cons input-program all-for-load) all-for-load)
                    make-program))
+
+(define (default-language-readers reqlang)
+  (unless (module-path? reqlang)
+    (raise-argument-error 'default-language-readers "module-path?" reqlang))
+  (list
+   `(submod ,reqlang reader)
+   (cond
+     [(symbol? reqlang)
+      (string->symbol (format "~a/lang/reader" reqlang))]
+     [else
+      (collapse-module-path "lang/reader.rkt" reqlang)])
+   '(submod at-exp reader)
+   'at-exp/lang/reader))

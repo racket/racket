@@ -3,6 +3,9 @@
 #lang racket/base
 (require errortrace/stacktrace racket/unit (for-template racket/base))
 
+(provide make-errortrace-compile-handler
+         (protect-out get-uncovered-expressions))
+
 ;; Test coverage run-time support
 (define test-coverage-enabled (make-parameter #t))
 (define test-coverage-info (make-hasheq))
@@ -41,8 +44,6 @@
                       [(cdar r) r]
                       [else (cons (car xs) (cdr r))])))))))
 
-(provide get-uncovered-expressions)
-
 ;; no profiling
 (define profile-key #f)
 (define profiling-enabled (lambda () #f))
@@ -54,7 +55,7 @@
 
 (define-values/invoke-unit/infer stacktrace@)
 
-(define errortrace-compile-handler
+(define (make-errortrace-compile-handler)
   (let ([orig (current-compile)]
         [ns (current-namespace)])
     (lambda (e immediate-eval?)
@@ -69,5 +70,3 @@
                (namespace-base-phase))
               e)
             immediate-eval?))))
-
-(current-compile errortrace-compile-handler)
