@@ -716,14 +716,13 @@
 (define orig-code-inspector (variable-reference->module-declaration-inspector
                              (#%variable-reference)))
 
-(define (evaluate-program program limit-thunk submod-names uncovered!)
+(define (evaluate-program program limit-thunk submod-names uncovered! allow-syntactic-requires)
   (define get-uncovered-expressions
     (cond
       [uncovered!
        (parameterize ([current-code-inspector orig-code-inspector])
          (current-compile
-          ((dynamic-require 'racket/private/sandbox-coverage 'make-errortrace-compile-handler)
-           orig-code-inspector))
+          ((dynamic-require 'racket/private/sandbox-coverage 'make-errortrace-compile-handler)))
          (dynamic-require 'racket/private/sandbox-coverage 'get-uncovered-expressions))]
       [else void]))
   (define ns
@@ -746,9 +745,28 @@
                       d
                       (current-load-relative-directory)))])
     ((limit-thunk (lambda ()
-                    (if (and (pair? program) (eq? 'begin (car program)))
-                      (eval* (cdr program))
-                      (eval program))
+                    (cond
+                      [(and (pair? program) (eq? 'begin (car program)))
+                       (eval* (cdr program))]
+                      [allow-syntactic-requires
+                       (define c (parameterize ([current-module-name-resolver
+                                                 (let ([mnr (current-module-name-resolver)])
+                                                   (case-lambda
+                                                     [(resolved-mod ns) (mnr resolved-mod ns)]
+                                                     [(mod-path wrt-resolved-mod src-stx load?)
+                                                      ;; The intent is that a non-#f `src-stx` indicates
+                                                      ;; a `require` that appears in `program` --- as opposed
+                                                      ;; to, say, a `dynamic-reuire` that implements a
+                                                      ;; `lazy-require` in a macro implementation
+                                                      (when src-stx
+                                                        (unless (member mod-path allow-syntactic-requires)
+                                                          (error 'module "disallowed `require` module path: ~.s"
+                                                                 mod-path)))
+                                                      (mnr mod-path wrt-resolved-mod src-stx load?)]))])
+                                   (compile program)))
+                       (eval c)]
+                      [else
+                       (eval program)])
                     (when ns (set! ns (ns)))))))
   (when uncovered!
     (uncovered! (list (get-uncovered-expressions) get-uncovered-expressions)))
@@ -795,7 +813,7 @@
    (current-continuation-marks)
    reason))
 
-(define (make-evaluator* who init-hook allow-for-require allow-for-load program-maker)
+(define (make-evaluator* who init-hook allow-for-require allow-for-load allow-syntactic-requires program-maker)
   (define orig-code-inspector (current-code-inspector))
   (define orig-security-guard (current-security-guard))
   (define orig-cust     (current-custodian))
@@ -877,7 +895,8 @@
              prog)
            limit-thunk
            submod-names
-           (and coverage? (lambda (es+get) (set! uncovered es+get))))))
+           (and coverage? (lambda (es+get) (set! uncovered es+get)))
+           allow-syntactic-requires)))
        (channel-put result-ch 'ok))
      (set! eval-handler (cadr (sandbox-eval-handlers))) ; interactions handler
      ;; finally wait for interaction expressions
@@ -1207,6 +1226,7 @@
                         #:allow-read [allow null]
                         #:allow-for-require [allow-for-require null]
                         #:allow-for-load [allow-for-load null]
+                        #:allow-syntactic-requires [allow-syntactic-requires #f]
                         . input-program)
   ;; `input-program' is either a single argument specifying a file/string, or
   ;;  multiple arguments for a sequence of expressions
@@ -1245,6 +1265,7 @@
                                (list (car input-program))
                                '())
                            all-for-load)
+                   allow-syntactic-requires
                    (lambda () (build-program lang 
                                              (map normalize-require-for-syntax requires)
                                              input-program))))
@@ -1253,6 +1274,7 @@
                                #:allow-read [allow null] 
                                #:allow-for-require [allow-for-require null]
                                #:allow-for-load [allow-for-load null]
+                               #:allow-syntactic-requires [allow-syntactic-requires #f]
                                #:language [reqlang #f]
                                #:readers [reqreaders (and reqlang
                                                           (module-path? reqlang)
@@ -1282,6 +1304,7 @@
                    void
                    all-for-require
                    (if (path? input-program) (cons input-program all-for-load) all-for-load)
+                   allow-syntactic-requires
                    make-program))
 
 (define (default-language-readers reqlang)
