@@ -7,6 +7,7 @@
          (only-in racket/list split-at)
          (for-syntax scheme/base)
          (prefix-in m: mzlib/match)
+         (prefix-in r: racket/base)
          rackunit)
 
 (define-syntax (comp stx)
@@ -900,6 +901,13 @@
                 [`#s(meow ,@(list-rest a))
                  a])
               (list 1))
+   (test-case "mutated struct predicate"
+     (let ()
+       (r:struct point (x y))
+       (set! point? pair?)
+       (check-exn exn:fail:contract?
+                  (lambda () (match (cons 1 2) [(point x y) (list x y)])))))
+     
 
    (test-case
     "robby's slow example"
