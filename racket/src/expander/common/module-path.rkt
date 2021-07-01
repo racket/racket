@@ -201,7 +201,7 @@
     [(name) (make-self-module-path-index (make-resolved-module-path name))]
     [() top-level-module-path-index]))
 
-(define/who (module-path-index-resolve mpi [load? #f])
+(define/who (module-path-index-resolve mpi [load? #f] [stx #f])
   (check who module-path-index? mpi)
   (or (module-path-index-resolved mpi)
       (let ([mod-name (performance-region
@@ -211,7 +211,7 @@
                         (module-path-index-resolve/maybe
                          (module-path-index-base mpi)
                          load?)
-                        #f
+                        stx
                         load?))])
         (unless (resolved-module-path? mod-name)
           (raise-arguments-error 'module-path-index-resolve

@@ -5,6 +5,7 @@
          "../syntax/api.rkt"
          "../syntax/error.rkt"
          "../syntax/srcloc.rkt"
+         "../syntax/taint.rkt"
          "../namespace/namespace.rkt"
          "../eval/parameter.rkt"
          "../eval/main.rkt"
@@ -398,7 +399,7 @@
                                             (exn:fail:syntax:missing-module
                                              msg
                                              (current-continuation-marks)
-                                             (list stx)
+                                             (list (syntax-taint stx))
                                              s)
                                             (exn:fail:filesystem:missing-module
                                              msg

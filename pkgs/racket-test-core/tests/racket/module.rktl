@@ -660,6 +660,20 @@
 (test #f module-declared? '(submod no-such-collection/x nested) #t)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; provide a source-location syntax object to `module-path-index-resolve`
+
+(let ([bad #'no-such-collection-based-module])
+  (err/rt-test (module-path-index-resolve (module-path-index-join (syntax-e bad) #f)
+                                          #t
+                                          bad)
+               exn:fail:syntax:missing-module?))
+
+(let ([bad #'no-such-collection-based-module])
+  (err/rt-test (module-path-index-resolve (module-path-index-join (syntax-e bad) #f)
+                                          #t)
+               exn:fail:filesystem:missing-module?))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check shadowing of initial imports:
 
 (let ([m-code '(module m racket/base (define-syntax-rule (lambda . _) 5) (provide lambda))]
