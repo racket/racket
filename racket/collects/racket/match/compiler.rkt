@@ -152,12 +152,20 @@
     [(box? k)
      ;; all the rows are structures with the same predicate
      (let* ([s (Row-first-pat (car rows))]
+            [pred (Struct-pred s)]
             [accs (Struct-accessors s)]
-            [accs (if (Struct-complete? s)
-                      (build-list (length accs) (λ (i) #`(λ (x) (unsafe-struct-ref x #,i))))
-                      accs)]
-            [pred (Struct-pred s)])
-       (compile-con-pat accs pred Struct-ps))]
+            [accs^ (if (Struct-complete? s)
+                       (for/list ([i (in-naturals)]
+                                  [acc (in-list accs)])
+                         ;; avoid using unsafe-struct-ref if the
+                         ;; predicate or acccessor has been mutated
+                         #`(lambda (x)
+                             (if (and (variable-reference-constant? (#%variable-reference #,pred))
+                                      (variable-reference-constant? (#%variable-reference #,acc)))
+                                 (unsafe-struct-ref x #,i)
+                                 (#,acc x))))
+                       accs)])
+       (compile-con-pat accs^ pred Struct-ps))]
     [(syntax? k) (constant-pat k)]
     [(procedure? k) (constant-pat k)]
     [else (error 'match-compile "bad key: ~a" k)]))
