@@ -223,7 +223,7 @@
                           #:who who)
   (performance-region
    ['expand 'require]
-   (define module-name (module-path-index-resolve mpi #t))
+   (define module-name (module-path-index-resolve mpi #t orig-s))
    (define bind-in-stx (if (adjust-rename? adjust)
                            (adjust-rename-to-id adjust)
                            in-stx))

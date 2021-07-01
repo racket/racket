@@ -288,7 +288,8 @@ Returns @racket[#t] if @racket[v] is a @tech{module path index},
 
 
 @defproc[(module-path-index-resolve [mpi module-path-index?]
-                                    [load? any/c #f])
+                                    [load? any/c #f]
+                                    [src-stx (or/c syntax? #f) #f])
          resolved-module-path?]{
 
 Returns a @tech{resolved module path} for the resolved module name,
@@ -301,15 +302,17 @@ on the kind of module paths encapsulated by @racket[mpi], the computed
 resolved name can depend on the value of
 @racket[current-load-relative-directory] or
 @racket[current-directory]. The @racket[load?] argument is propagated as
-the last argument to the @tech{module name resolver}.
+the last argument to the @tech{module name resolver}, while the
+@racket[src-stx] argument is propagated as the next-to-last argument.
 
 Beware that concurrent resolution in namespaces that share a module
 registry can create race conditions when loading modules. See also
 @racket[namespace-call-with-registry-lock].
 
-See @racket[resolve-module-path-index].
+See also @racket[resolve-module-path-index].
 
-@history[#:changed "6.90.0.16" @elem{Added the @racket[load?] optional argument.}]}
+@history[#:changed "6.90.0.16" @elem{Added the @racket[load?] optional argument.}
+         #:changed "8.2" @elem{Added the @racket[src-stx] optional argument.}]}
 
 
 @defproc[(module-path-index-split [mpi module-path-index?])
