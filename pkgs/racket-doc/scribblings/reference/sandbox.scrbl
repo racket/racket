@@ -29,13 +29,16 @@ for the common use case where sandboxes are very limited.
                                         null]
                             [#:allow-for-require allow-for-require (listof (or/c module-path? path?)) null]
                             [#:allow-for-load allow-for-load (listof path-string?) null]
-                            [#:allow-read allow-read (listof (or/c module-path? path-string?)) null])
+                            [#:allow-read allow-read (listof (or/c module-path? path-string?)) null]
+                            [#:allow-syntactic-requires allow-syntactic-requires (or/c #f (listof module-path?)) #f])
             (any/c . -> . any)]
            [(make-module-evaluator [module-decl (or/c syntax? pair? path? input-port? string? bytes?)]
-                                   [#:language   lang  (or/c #f module-path?) #f]
+                                   [#:language  lang  (or/c #f module-path?) #f]
+                                   [#:readers   readers  (or/c #f (listof module-path?)) (and lang (default-language-readers lang))]
                                    [#:allow-for-require allow-for-require (listof (or/c module-path? path?)) null]
                                    [#:allow-for-load allow-for-load (listof path-string?) null]
-                                   [#:allow-read allow-read (listof (or/c module-path? path-string?)) null])
+                                   [#:allow-read allow-read (listof (or/c module-path? path-string?)) null]
+                                   [#:allow-syntactic-requires allow-syntactic-requires (or/c #f (listof module-path?)) #f])
             (any/c . -> . any)])]{
 
 The @racket[make-evaluator] function creates an evaluator with a
@@ -50,11 +53,15 @@ environment. In particular, filesystem access is restricted, which may
 interfere with using modules from the filesystem that are not
 in a @tech{collection}.  See below for
 information on the @racket[allow-for-require],
-@racket[allow-for-load], and @racket[allow-read] arguments.  When
+@racket[allow-for-load], and @racket[allow-read] arguments; collection-based
+module files typically do not need to be included in those lists.  When
 @racket[language] is a module path or when @racket[requires] is
 provided, the indicated modules are implicitly included in the
-@racket[allow-for-require] list. (For backward compatibility,
-non-@racket[module-path?] path strings are allowed in
+@racket[allow-for-require] list. When @racket[allow-syntactic-requires]
+is not @racket[#f], it constraints the set of modules that can be directly
+referenced in a module; see below for more information.
+(For backward compatibility,
+non-@racket[module-path?] path strings are allowed in arguments like
 @racket[requires]; they are implicitly converted to paths before
 addition to @racket[allow-for-require].)
 
@@ -142,6 +149,13 @@ argument:
 The @racket[requires] list adds additional imports to the module or
 namespace for the @racket[input-program]s, even in the case that
 @racket[require] is not made available through the @racket[language].
+The @racket[allow-syntactic-requires] argument, if non-@racket[#f],
+constrains @racket[require] references expanded in the module when the
+@racket[language] argument implies a @racket[module] wrapper; more
+precisely, it constrains the module paths that can be resolved when a
+syntax object is provided to the @tech{module name resolver}, which
+will include @racket[require] forms that are created by macro
+expansion.
 
 The following examples illustrate the difference between an evaluator
 that puts the program in a module and one that merely initializes a
@@ -170,9 +184,15 @@ The @racket[make-module-evaluator] function is essentially a
 restriction of @racket[make-evaluator], where the program must be a
 module, and all imports are part of the program.  In some cases it is
 useful to restrict the program to be a module using a specific module
-in its language position --- use the optional @racket[lang] argument
-to specify such a restriction (the default, @racket[#f], means no
-restriction is enforced). When the program is specified as a path, then
+in its language position; use the optional @racket[lang] argument
+to specify such a restriction, where @racket[#f] means that no
+restriction is enforced. The @racket[readers] argument similarly
+constrains the paths that can follow @hash-lang[] or @schememetafont{#reader}
+if it is not @racket[#f], and the default is based on @racket[lang].
+The @racket[allow-syntactic-requires] argument is treated the same as
+for @racket[make-evaluator] in the module-wrapper case.
+
+When the program is specified as a path, then
 the path is implicitly added to the @racket[allow-for-load] list.
 
 @racketblock[
@@ -274,7 +294,8 @@ ports, and works when used from a module (by using a new namespace):
     (read-eval-print-loop)))
 ]
 
-}
+@history[#:changed "1.2" @elem{Added the @racket[#:readers] and
+         @racket[#:allow-syntactic-require] arguments.}]}
 
 
 @defproc*[([(exn:fail:sandbox-terminated? [v any/c]) boolean?]
@@ -823,6 +844,31 @@ procedure is called when initializing an evaluator, and the default
 parameter value constructs a new @tech{environment variable set} using
 @racket[(environment-variables-copy
 (current-environment-variables))].}
+
+@defproc[(default-language-readers [lang module-path?]) (listof module-path?)]{
+
+Creates a default list of readers that should be allowed to produce a
+module that uses @racket[lang] as the language.
+
+This default list includes the following (and more paths may be added
+in the future):
+
+@itemlist[
+
+ @item{@racket[`(submod ,lang reader)]}
+
+ @item{@racketvalfont{'}@racket[lang]@racketvalfont{/lang/reader} if @racket[lang] is a symbol}
+
+ @item{the module path producing by adding the relative path @racket["lang/reader.rkt"]
+       to @racket[lang] if @racket[lang] is not a symbol}
+
+ @item{@racket['(submod at-exp reader)]}
+
+ @item{@racket['at-exp/lang/reader]}
+
+]
+
+@history[#:added "1.2"]}
 
 @; ----------------------------------------------------------------------
 

@@ -722,4 +722,32 @@
 
 ;; ----------------------------------------
 
+;; Check reader guard on a sandbox:
+(err/rt-test (make-module-evaluator "#lang s-exp something-bad" #:language 'racket/base)
+             exn:fail?
+             #rx"disallowed reader module path: [(]submod s-exp reader[)]")
+
+(void (make-module-evaluator "#lang at-exp racket/base"
+                             #:language 'racket/base))
+(void (make-module-evaluator "#lang s-exp racket/base"
+                             #:language 'racket/base
+                             #:readers '((submod s-exp reader)
+                                         s-exp/lang/reader
+                                         racket/base
+                                         (submod racket/base reader))))
+
+;; ----------------------------------------
+
+;; Check require guard on a sandbox:
+
+(err/rt-test (make-module-evaluator "#lang racket/base (require json)"
+                                    #:allow-syntactic-requires '(racket/runtime-config))
+             exn:fail?
+             #rx"disallowed `require` module path: json")
+(void
+ (make-module-evaluator "#lang racket/base (require json)"
+                        #:allow-syntactic-requires '(racket/runtime-config json)))
+
+;; ----------------------------------------
+
 (report-errs)
