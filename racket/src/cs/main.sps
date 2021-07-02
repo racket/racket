@@ -82,7 +82,9 @@
 
    (define (startup-error fmt . args)
      (#%fprintf (#%current-error-port) "~a: " (path->string (find-system-path 'exec-file)))
-     (#%apply #%fprintf (#%current-error-port) fmt args)
+     (if (null? args)
+         (#%display fmt (#%current-error-port))
+         (#%apply #%fprintf (#%current-error-port) fmt args))
      (#%newline (#%current-error-port))
      (exit 1))
 
@@ -296,8 +298,8 @@
 
    (define (add-namespace-require-load! mod-path arg)
      (unless (module-path? mod-path)
-       (startup-error "bad module path: ~V derived from command-line argument: ~a"
-                      mod-path
+       (startup-error "bad module path: ~a derived from command-line argument: ~a"
+                      (format "~v" mod-path)
                       arg))
      (set! loads
            (cons (lambda () (namespace-require+ mod-path))
