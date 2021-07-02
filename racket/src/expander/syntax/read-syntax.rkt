@@ -9,6 +9,7 @@
          "../eval/dynamic-require.rkt"
          "../namespace/api-module.rkt"
          "../namespace/namespace.rkt"
+         "../namespace/registry.rkt"
          "srcloc.rkt"
          "../compile/read-linklet.rkt")
 
@@ -76,7 +77,7 @@
               #:local-graph? local-graph?
               #:read-compiled read-linklet-bundle-or-directory
               #:call-with-root-namespace call-with-root-namespace
-              #:dynamic-require dynamic-require
+              #:dynamic-require locked-dynamic-require
               #:module-declared? read-module-declared?
               #:coerce read-coerce
               #:coerce-key read-coerce-key)))
@@ -87,7 +88,7 @@
                       #:wrap read-to-syntax
                       #:read-compiled read-linklet-bundle-or-directory
                       #:call-with-root-namespace call-with-root-namespace
-                      #:dynamic-require dynamic-require
+                      #:dynamic-require locked-dynamic-require
                       #:module-declared? read-module-declared?
                       #:coerce read-coerce
                       #:coerce-key read-coerce-key))
@@ -171,3 +172,11 @@
       (parameterize ([current-namespace root-ns])
         (thunk))
       (thunk)))
+
+(define (locked-dynamic-require mod sym [fail-thunk #f])
+  (registry-call-with-lock
+   (namespace-module-registry (current-namespace))
+   (lambda ()
+     (if fail-thunk
+         (dynamic-require mod sym fail-thunk)
+         (dynamic-require mod sym)))))
