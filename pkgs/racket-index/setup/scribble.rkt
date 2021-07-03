@@ -575,14 +575,20 @@
             (let* ([filename (sxref-path latex-dest (info-doc info) "in.sxref")]
                    [as-user? (and (not (main-doc? (info-doc info)))
                                   (not (equal? main-db user-db)))]
+                   [maybe-attach-db (and as-user?
+                                         ;; we expect `main-db` to exist in this mode,
+                                         ;; but an installation might be set up without
+                                         ;; docs for some reason
+                                         (file-exists? main-db)
+                                         main-db)]
                    [found-deps (doc-db-get-dependencies filename
                                                         (if as-user? user-db main-db)
-                                                        #:attach (if as-user? main-db #f)
+                                                        #:attach maybe-attach-db
                                                         #:main-doc-relative-ok? #t)]
                    [missing (if first?
                                 (doc-db-check-unsatisfied filename
                                                           (if as-user? user-db main-db)
-                                                          #:attach (if as-user? main-db #f))
+                                                          #:attach maybe-attach-db)
                                 null)])
               (for ([found-dep (in-list found-deps)])
                 ;; Record a definite dependency:
