@@ -759,7 +759,13 @@
                                                       ;; to, say, a `dynamic-reuire` that implements a
                                                       ;; `lazy-require` in a macro implementation
                                                       (when src-stx
-                                                        (unless (member mod-path allow-syntactic-requires)
+                                                        (unless (or (member mod-path allow-syntactic-requires)
+                                                                    ;; always allow relative submodule paths:
+                                                                    (and (list? mod-path)
+                                                                         (= 3 (length mod-path))
+                                                                         (eq? (car mod-path) 'submod)
+                                                                         (or (equal? (cadr mod-path) ".")
+                                                                             (equal? (cadr mod-path) ".."))))
                                                           (error 'module "disallowed `require` module path: ~.s"
                                                                  mod-path)))
                                                       (mnr mod-path wrt-resolved-mod src-stx load?)]))])
