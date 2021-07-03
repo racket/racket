@@ -120,7 +120,22 @@
     (define (join-ids ids sep) ; joins ids with sep; ids = stx-pair
       (syntax-case ids ()
        [(id) #'id]
-       [(id . ids) (format-id #'id "~a~a~a" #'id sep (join-ids #'ids sep))])))
+       [(id . ids) (format-id #'id "~a~a~a" #'id sep (join-ids #'ids sep))]))
+    (define (make-variable-like-transformer orig-id)
+      (make-set!-transformer
+       (λ (stx)
+         (syntax-case stx (set!)
+           [id
+            (identifier? #'id)
+            orig-id]
+           [(set! id val)
+            (raise-syntax-error
+             #f "cannot mutate identifier" stx #'id)]
+           [(id . args)
+            (datum->syntax
+             stx
+             (cons #'(#%expression id) (cdr (syntax-e stx)))
+             stx)])))))
   
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; sequence transformers:
@@ -1496,15 +1511,48 @@
     (syntax-rules ()
       [(_ x) x]
       [(_ x ...) (values x ...)]))
+
+  ;; helpers to prevent assignment:
+  (define-syntax (let-immutable stx)
+    (syntax-case stx ()
+      [(_ loop ([name rhs] ...) body0 body ...)
+       (identifier? #'loop)
+       (syntax/loc stx
+         (let loop ([name rhs] ...)
+           (let-syntax ([name (make-variable-like-transformer #'name)]
+                        ...)
+             body0 body ...)))]
+      [(_ ([name rhs] ...) body0 body ...)
+       (syntax/loc stx
+         (let ([name rhs] ...)
+           (let-syntax ([name (make-variable-like-transformer #'name)]
+                        ...)
+             body0 body ...)))]))
+  (define-syntax-rule (let-values-immutable ([(var ...) rhs] ...)
+                                            body0 body ...)
+    (let-values ([(var ...) rhs] ...)
+      (let-syntax ((~@ [var (make-variable-like-transformer #'var)]
+                       ...)
+                   ...)
+        body0 body ...)))
+  (define-syntax let*-values-immutable
+    (syntax-rules ()
+      [(_ () body0 body ...)
+       (let () body0 body ...)]
+      [(_ ([(var ...) rhs] . bindings) body0 body ...)
+       (let-values-immutable
+        ([(var ...) rhs])
+        (let*-values-immutable bindings body0 body ...))]))
+
   
   (define-syntax-rule (inner-recur/fold (fold-var ...) [expr ...] next-k)
-    (let-values ([(fold-var ...) (let-values () expr ...)])
+    (let-values-immutable ([(fold-var ...) (let-values () expr ...)])
       next-k))
 
   (define-for-syntax ((make-inner-recur/foldr/strict fold-vars) stx)
     (syntax-case stx ()
       [(_ () [expr ...] next-k)
-       #`(let-values ([#,(map syntax-local-introduce fold-vars) next-k])
+       #`(let-values-immutable ([#,(map syntax-local-introduce fold-vars) next-k])
            expr ...)]))
 
   (define-for-syntax ((make-inner-recur/foldr/lazy fold-vars delayed-id delayer-id) stx)
@@ -1513,7 +1561,7 @@
        (with-syntax ([(fold-var ...) (map syntax-local-introduce fold-vars)]
                      [delayed-id (syntax-local-introduce delayed-id)]
                      [delayer-id delayer-id])
-         #`(let*-values
+         #`(let*-values-immutable
                ([(delayed-id) (delayer-id #,(syntax-protect #'next-k))]
                 #,@(cond
                      [(= (length fold-vars) 1)
@@ -1563,12 +1611,12 @@
        (if (syntax-e #'inner-recur)
            ;; General, non-nested-loop approach:
            (syntax-protect
-            #`(let ([fold-var fold-init] ...)
+            #`(let-immutable ([fold-var fold-init] ...)
                 (push-under-break inner-recur (fold-var ...) [expr1 expr ...] next-k break-k final?-id)))
            ;; Nested-loop approach (which is slightly faster when it works):
            (syntax-protect
-            #`(let ([fold-var fold-init] ...)
-                (let-values ([(fold-var ...) (let () expr1 expr ...)])
+            #`(let-immutable ([fold-var fold-init] ...)
+                (let-values-immutable ([(fold-var ...) (let () expr1 expr ...)])
                   (values fold-var ...)))))]
       ;; Switch-to-emit case (no more clauses to generate):
       [(_ [orig-stx inner-recur nested? #f binds] fold-bind next-k break-k final?-id () . body)
@@ -1587,13 +1635,13 @@
                       (reverse (syntax->list #'binds))])
          (syntax-protect
           (quasisyntax/loc #'orig-stx
-            (let-values (outer-binding ... ...)
+            (let-values-immutable (outer-binding ... ...)
               outer-check ...
               #,(quasisyntax/loc #'orig-stx
-                  (let for-loop ([fold-var fold-init] ...
-                                 loop-binding ... ...)
+                  (let-immutable for-loop ([fold-var fold-init] ...
+                                           loop-binding ... ...)
                     (if (and pos-guard ...)
-                        (let-values (inner-binding ... ...)
+                        (let-values-immutable (inner-binding ... ...)
                           (if (and pre-guard ...)
                               #,(if (syntax-e #'inner-recur)
                                     ;; The general non-nested-loop approach:
@@ -1608,11 +1656,12 @@
                                           rest expr1 . body))
                                     ;; The specialized nested-loop approach, which is
                                     ;; slightly faster when it works:
-                                    #'(let-values ([(fold-var ...)
-                                                    (for/foldX/derived [orig-stx inner-recur nested? #f ()]
-                                                      ([fold-var fold-var] ...)
-                                                      next-k break-k final?-id
-                                                      rest expr1 . body)])
+                                    #'(let-values-immutable
+                                        ([(fold-var ...)
+                                          (for/foldX/derived [orig-stx inner-recur nested? #f ()]
+                                                             ([fold-var fold-var] ...)
+                                                             next-k break-k final?-id
+                                                             rest expr1 . body)])
                                         (if (and post-guard ... (not final?-id))
                                             (for-loop fold-var ... loop-arg ... ...)
                                             next-k)))
@@ -1628,7 +1677,7 @@
       ;; Guard case, no pending emits:
       [(_ [orig-stx inner-recur nested? #f ()] ([fold-var fold-init] ...) next-k break-k final?-id (#:when expr . rest) . body)
        (syntax-protect
-        #'(let ([fold-var fold-init] ...)
+        #'(let-immutable ([fold-var fold-init] ...)
             (if expr
                 (for/foldX/derived [orig-stx inner-recur nested? #f ()]
                                    ([fold-var fold-var] ...) next-k break-k final?-id rest . body)
@@ -1636,7 +1685,7 @@
       ;; Negative guard case, no pending emits:
       [(_ [orig-stx inner-recur nested? #f ()] ([fold-var fold-init] ...) next-k break-k final?-id (#:unless expr . rest) . body)
        (syntax-protect
-        #'(let ([fold-var fold-init] ...)
+        #'(let-immutable ([fold-var fold-init] ...)
             (if expr
                 (if final?-id break-k next-k)
                 (for/foldX/derived [orig-stx inner-recur nested? #f ()]
@@ -1644,7 +1693,7 @@
       ;; Break case, no pending emits:
       [(_ [orig-stx inner-recur nested? #f ()] ([fold-var fold-init] ...) next-k break-k final?-id (#:break expr . rest) . body)
        (syntax-protect
-        #'(let ([fold-var fold-init] ...)
+        #'(let-immutable ([fold-var fold-init] ...)
             (if expr
                 break-k
                 (for/foldX/derived [orig-stx inner-recur nested? #f ()]
@@ -1652,7 +1701,7 @@
       ;; Final case, no pending emits:
       [(_ [orig-stx inner-recur nested? #f ()] ([fold-var fold-init] ...) next-k break-k final?-id (#:final expr . rest) . body)
        (syntax-protect
-        #'(let ([fold-var fold-init] ...)
+        #'(let-immutable ([fold-var fold-init] ...)
             (let ([final? (or expr final?-id)])
               (for/foldX/derived [orig-stx inner-recur nested? #f ()]
                                  ([fold-var fold-var] ...) next-k break-k final? rest . body))))]
