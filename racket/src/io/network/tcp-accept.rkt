@@ -40,14 +40,15 @@
             (end-atomic))])]
       [else
        (end-atomic)
-       (sync (rktio-evt
-              ;; in atomic mode
-              (lambda ()
-                (or (tcp-listener-closed? listener)
-                    (accept-ready? listener)))
-              ;; in atomic mode
-              (lambda (ps)
-                (rktio_poll_add_accept rktio (tcp-listener-lnr listener) ps))))
+       ((if enable-break? sync/enable-break sync)
+        (rktio-evt
+         ;; in atomic mode
+         (lambda ()
+           (or (tcp-listener-closed? listener)
+               (accept-ready? listener)))
+         ;; in atomic mode
+         (lambda (ps)
+           (rktio_poll_add_accept rktio (tcp-listener-lnr listener) ps))))
        (loop)])))
 
 (define/who (tcp-accept-ready? listener)
