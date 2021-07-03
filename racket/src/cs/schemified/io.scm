@@ -36386,22 +36386,25 @@
                                (unsafe-end-atomic)))))
                        (begin
                          (unsafe-end-atomic)
-                         (sync
-                          (rktio-evt1.1
-                           (lambda ()
-                             (let ((or-part_0
-                                    (begin-unsafe
-                                     (unbox
-                                      (tcp-listener-closed listener4_0)))))
-                               (if or-part_0
-                                 or-part_0
-                                 (|#%app| accept-ready? listener4_0))))
-                           (lambda (ps_0)
-                             (|#%app|
-                              rktio_poll_add_accept
-                              (unsafe-place-local-ref cell.1)
-                              (tcp-listener-lnr listener4_0)
-                              ps_0))))
+                         (let ((app_0
+                                (if enable-break?1_0 sync/enable-break sync)))
+                           (|#%app|
+                            app_0
+                            (rktio-evt1.1
+                             (lambda ()
+                               (let ((or-part_0
+                                      (begin-unsafe
+                                       (unbox
+                                        (tcp-listener-closed listener4_0)))))
+                                 (if or-part_0
+                                   or-part_0
+                                   (|#%app| accept-ready? listener4_0))))
+                             (lambda (ps_0)
+                               (|#%app|
+                                rktio_poll_add_accept
+                                (unsafe-place-local-ref cell.1)
+                                (tcp-listener-lnr listener4_0)
+                                ps_0)))))
                          (loop_0))))))))))
           (loop_0)))))))
 (define 1/tcp-accept-ready?
