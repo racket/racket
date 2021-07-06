@@ -774,8 +774,8 @@ In addition to the bindings described below,
 compile-time expressions with @racket[define-runtime-path].
 
 @defform[(define-runtime-path id maybe-runtime?-id expr)
-         #:grammar ([maybe-runtime? code:blank
-                                    (code:line #:runtime?-id runtime?-id)])]{
+         #:grammar ([maybe-runtime?-id code:blank
+                                       (code:line #:runtime?-id runtime?-id)])]{
 
 Uses @racket[expr] as both a compile-time (i.e., @tech{phase} 1)
 expression and a run-time (i.e., @tech{phase} 0) expression. In either
