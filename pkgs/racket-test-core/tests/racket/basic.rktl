@@ -384,6 +384,11 @@
 (test '(1/2) assv '1/2 '(((a)) (1/2) ((c))))
 (test '(1/2) assoc '1/2 '(((a)) (1/2) ((c))))
 
+(arity-test placeholder-set! 2 2)
+(err/rt-test (placeholder-set! #f #f))
+(arity-test placeholder-get 1 1)
+(err/rt-test (placeholder-get #f))
+
 (test #f immutable? (cons 1 null))
 (test #f immutable? (list 1))
 (test #f immutable? (list 1 2))
