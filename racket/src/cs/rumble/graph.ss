@@ -9,10 +9,12 @@
   (parent hash-placeholder)
   (fields))
 
-(define (placeholder-set! ph datum)
+(define/who (placeholder-set! ph datum)
+  (check who placeholder? ph)
   (set-placeholder-val! ph datum))
 
-(define (placeholder-get ph)
+(define/who (placeholder-get ph)
+  (check who placeholder? ph)
   (placeholder-val ph))
 
 (define/who (make-hash-placeholder alst)
