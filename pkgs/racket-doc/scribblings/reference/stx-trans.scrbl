@@ -1028,11 +1028,102 @@ definition context.
 
 @defproc[(syntax-local-introduce [stx syntax?]) syntax?]{
 
-Produces a syntax object that is like @racket[stx], except that the
-presence of @tech{scopes} for the current expansion---both the
-macro-introduction scope and the use-site scope, if any---is flipped
-on all parts of the syntax object. See @secref["transformer-model"] for information
-on macro-introduction and use-site @tech{scopes}.
+Produces a syntax object that is like @racket[stx], but the presence of
+a macro-introduction scope or use-site scope is flipped for all 
+parts of the syntax object. This has the effect of flipping the
+apparent introduction site of each part: parts that were introduced by a
+macro will behave as if they were introduced at the use site,
+and vice versa. (See @secref["transformer-model"] for information on 
+macro-introduction and use-site @tech{scopes}.)
+
+@racket[syntax-local-introduce] is typically needed in macros that
+bring stashed identifiers into a new context. For example,
+the @racket[invoke] macro below wants to return the value of the
+locally defined @racket[foo], but as written, it will not:
+
+@examples[#:eval stx-eval
+(define foo 'locally-defined-foo)
+(define-syntax stashed-foo #'foo)
+ 
+(define-syntax (invoke stx)
+  (syntax-case stx ()
+    [(_ id)
+     (with-syntax ([old-id (syntax-local-value #'id)])
+       #'(begin
+           (define foo 'macro-defined-foo)
+           old-id))]))
+ 
+(invoke stashed-foo)
+]
+
+This macro can be fixed by applying
+@racket[syntax-local-introduce] to the result of
+@racket[(syntax-local-value #'id)], which cancels 
+the macro-introduction scope on @racket[old-id], 
+so it can refer to a binding outside of the macro’s expansion.
+
+@examples[#:eval stx-eval
+(define foo 'locally-defined-foo)
+(define-syntax stashed-foo #'foo)
+ 
+(define-syntax (invoke stx)
+  (syntax-case stx ()
+    [(_ id)
+     (with-syntax ([old-id (syntax-local-introduce
+                             (syntax-local-value #'id))])
+       #'(begin
+           (define foo 'macro-defined-foo)
+           old-id))]))
+ 
+(invoke stashed-foo)
+]
+
+Along these lines, @racket[syntax-local-introduce] can also be used
+to create an unhygienic binding at the use site, by making a 
+macro-introduced identifier appear as if it originated at the
+use site. It is important, however, that the syntax object passed
+to @racket[syntax-local-introduce] be free of any extraneous scopes.
+
+For instance, the @racket[sli-x-broken] macro below won't work because we're 
+using @racket[#'x] as an identifier. The @racket[#'] prefix creates a syntax
+object that has the scopes of the current context (in this case, inside the 
+macro). Even though this identifier's macro-introduction scope is canceled by 
+@racket[syntax-local-introduce], these other scopes prevent it 
+from binding the @racket[x] at the use site.
+
+But in the @racket[sli-x] macro, we use @racket[(datum->syntax #f _id)] to 
+produce an identifier with no scopes. Starting from this clean slate, the
+scopes added by @racket[syntax-local-introduce] will make the unhygienic 
+binding work.
+
+@examples[#:eval stx-eval
+
+(module sli-broken racket
+  (provide sli-x-broken)
+  (define-syntax (sli-x-broken stx)
+    (syntax-case stx ()
+      [(_) (with-syntax ([x (syntax-local-introduce #'x)])
+             #'(define x 'syntax-local-introduce-x))])))
+
+(require 'sli-broken)
+
+(eval:error (let ()
+              (sli-x-broken)
+              x))
+
+(module sli racket
+  (provide sli-x)
+  (define-syntax (sli-x stx)
+    (syntax-case stx ()
+      [(_) (with-syntax ([x (syntax-local-introduce 
+                              (datum->syntax #f 'x))])
+             #'(define x 'syntax-local-introduce-x))])))
+
+(require 'sli)
+(let ()
+  (sli-x)
+  x)
+]
 
 @transform-time[]
 
