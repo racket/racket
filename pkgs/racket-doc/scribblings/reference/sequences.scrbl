@@ -612,7 +612,7 @@ each element in the sequence.
   @racket[producer], which would usually use some state to do its work.
 
   If a @racket[stop] value is not given, the sequence goes on
-  infinitely, and therefore it common to use it with a finite sequence
+  infinitely, and therefore it is common to use it with a finite sequence
   or using @racket[#:break] etc.  If a @racket[stop] value is given, it
   is used to identify a value that marks the end of the sequence (and
   the @racket[stop] value is not included in the sequence);
