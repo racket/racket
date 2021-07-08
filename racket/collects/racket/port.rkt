@@ -41,13 +41,14 @@
          copy-port
          input-port-append
          convert-stream
-         make-limited-input-port
          reencode-input-port
          reencode-output-port
          dup-input-port
          dup-output-port
 
          (contract-out
+           [make-limited-input-port ((input-port? exact-nonnegative-integer?) (any/c)
+                                     . ->* . input-port?)]
            [read-bytes-avail!-evt (mutable-bytes? input-port-with-progress-evts?
                                    . -> . evt?)]
            [peek-bytes-avail!-evt (mutable-bytes? exact-nonnegative-integer? evt?/false
