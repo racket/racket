@@ -77,7 +77,7 @@ non-@racket[#f] value from its @racket[expr]s.  As a special case,
  (define (got-milk? lst)
    (and (not (null? lst))
         (or (eq? 'milk (car lst))
-            (got-milk? (cdr lst))))) (code:comment @#,t{recurs only if needed}))
+            (got-milk? (cdr lst))))) (code:comment @#,t{recurse only if needed}))
 (got-milk? '(apple banana))
 (got-milk? '(apple milk banana))
 ]
