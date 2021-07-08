@@ -34,6 +34,8 @@
          in-immutable-set
          in-mutable-set
          in-weak-set
+
+         set->hash
          
          chaperone-hash-set
          impersonate-hash-set)
@@ -45,9 +47,8 @@
 (define (custom-set-member? s x)
   (dprintf "custom-set-member?\n")
   (set-check-elem 'set-member? s x)
-  (hash-ref (custom-set-table s)
-            (set-wrap-elem s x)
-            #f))
+  (hash-has-key? (custom-set-table s)
+                 (set-wrap-elem s x)))
 
 (define (custom-set-count s)
   (dprintf "custom-set-count\n")
@@ -61,9 +62,9 @@
   (define table1 (custom-set-table s1))
   (define table2 (custom-set-table s2))
   (and (for/and ([k (in-hash-keys table1)])
-         (hash-ref table2 k #f))
+         (hash-has-key? table2 k))
        (for/and ([k (in-hash-keys table2)])
-         (hash-ref table1 k #f))))
+         (hash-has-key? table1 k))))
 
 (define (custom-subset? s1 s2)
   (dprintf "custom-subset?\n")
@@ -73,7 +74,7 @@
   (define table1 (custom-set-table s1))
   (define table2 (custom-set-table s2))
   (for/and ([k (in-hash-keys table1)])
-    (hash-ref table2 k #f)))
+    (hash-has-key? table2 k)))
 
 (define (custom-proper-subset? s1 s2)
   (dprintf "custom-proper-subset?\n")
@@ -83,9 +84,9 @@
   (define table1 (custom-set-table s1))
   (define table2 (custom-set-table s2))
   (and (for/and ([k (in-hash-keys table1)])
-         (hash-ref table2 k #f))
+         (hash-has-key? table2 k))
        (for/or ([k (in-hash-keys table2)])
-         (not (hash-ref table1 k #f)))))
+         (not (hash-has-key? table1 k)))))
 
 (define (custom-set-map s f)
   (dprintf "custom-set-map\n")
@@ -109,6 +110,12 @@
 (define (custom-set->stream s)
   (dprintf "custom-set->stream\n")
   (sequence->stream (custom-in-set s)))
+
+(define (set->hash s)
+  (unless (custom-set? s)
+    (raise (exn:fail:contract (format "not a hash set: ~a" s)
+                              (current-continuation-marks))))
+  (custom-set-table s))
 
 (define (custom-set-first s)
   (dprintf "custom-set-first\n")
@@ -188,7 +195,7 @@
        ([table (custom-set-table largest-immutable)])
        ([s2 (in-list (remove largest-immutable (cons s sets)))])
      (for/fold ([table table]) ([x (in-hash-keys (custom-set-table s2))])
-       (if (hash-ref table x #f)
+       (if (hash-has-key? table x)
            (hash-remove table x)
            (hash-set table x #t))))))
 
@@ -200,7 +207,7 @@
   (define (keep? k)
     (for/and ([s2 (in-list all-sets)]
               #:unless (eq? s2 smallest-immutable))
-      (hash-ref (custom-set-table s2) k #f)))
+      (hash-has-key? (custom-set-table s2) k)))
   (define smallest-table (custom-set-table smallest-immutable))
   (update-custom-set-table
    s
@@ -218,7 +225,7 @@
     (set-check-compatible 'set-subtract s s2))
   (define (remove? k)
     (for/or ([s2 (in-list sets)])
-      (hash-ref (custom-set-table s2) k #f)))
+      (hash-has-key? (custom-set-table s2) k)))
   (define initial-table (custom-set-table s))
   (update-custom-set-table
    s
@@ -262,7 +269,7 @@
       (apply raise-argument-error 'set-symmetric-difference! "generic-set?" i s sets))
     (set-check-compatible 'set-symmetric-difference! s s2)
     (for ([x (in-hash-keys (custom-set-table s2))])
-      (if (hash-ref table x #f)
+      (if (hash-has-key? table x)
           (hash-remove! table x)
           (hash-set! table x #t)))))
 
@@ -276,7 +283,7 @@
       (custom-set-table s2)))
   (define (keep? k)
     (for/and ([table (in-list tables)])
-      (hash-ref table k #f)))
+      (hash-has-key? table k)))
   (define table (custom-set-table s))
   (define to-remove
     (for/list ([k (in-hash-keys table)]
@@ -295,7 +302,7 @@
       (custom-set-table s2)))
   (define (remove? k)
     (for/or ([table (in-list tables)])
-      (hash-ref table k #f)))
+      (hash-has-key? table k)))
   (define table (custom-set-table s))
   (define to-remove
     (for/list ([k (in-hash-keys table)]
