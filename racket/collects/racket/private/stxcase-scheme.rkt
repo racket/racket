@@ -36,7 +36,7 @@
                       stx
                       id)))
                  (syntax->list kws)))))
-  
+
   ;; From Dybvig, mostly:
   (-define-syntax syntax-rules
     (lambda (stx)
@@ -49,6 +49,15 @@
 	     (lambda (x)
 	       (syntax-case** sr #t x (k ...) free-identifier=? #f
 		 ((_ . pattern) (syntax-protect (syntax/loc x template)))
+		 ...)))))
+	((sr (k ...) #:no-protect ((keyword . pattern) template) ...)
+	 (andmap identifier? (syntax->list (syntax (k ...))))
+	 (begin
+           (check-sr-rules stx (syntax (keyword ...)))
+	   (syntax/loc stx
+	     (lambda (x)
+	       (syntax-case** sr #t x (k ...) free-identifier=? #f
+		 ((_ . pattern) (syntax/loc x template))
 		 ...))))))))
 
   (-define-syntax syntax-id-rules
@@ -61,6 +70,14 @@
 	    (lambda (x)
 	      (syntax-case** sidr #t x (k ...) free-identifier=? #f
 		(pattern (syntax-protect (syntax/loc x template)))
+		...)))))
+	((sidr (k ...) #:no-protect (pattern template) ...)
+	 (andmap identifier? (syntax->list (syntax (k ...))))
+	 (syntax/loc x
+	   (make-set!-transformer
+	    (lambda (x)
+	      (syntax-case** sidr #t x (k ...) free-identifier=? #f
+		(pattern (syntax/loc x template))
 		...))))))))
 
   (-define (syntax-protect stx)
