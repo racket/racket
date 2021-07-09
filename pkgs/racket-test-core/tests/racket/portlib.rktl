@@ -723,6 +723,11 @@
       (test 1 peek-bytes-avail!* b 1 #f s)
       (test 2 read-bytes-avail!* b s))))
 
+;; module-level contract violation check
+(err/rt-test (make-limited-input-port (open-input-bytes #"_") 1.0)
+             exn:fail:contract?)
+
+
 ;; Make sure that blocking on a limited input port doesn't
 ;; block in the case of a peek after available bytes:
 (let ()
