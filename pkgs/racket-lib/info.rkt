@@ -20,3 +20,6 @@
 (define pkg-desc "Combines platform-specific native libraries that are useful for base Racket")
 
 (define pkg-authors '(eli jay matthias mflatt robby ryanc samth))
+
+(define license
+  '(Apache-2.0 OR MIT))

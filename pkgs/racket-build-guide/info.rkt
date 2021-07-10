@@ -14,3 +14,6 @@
 (define pkg-desc "Racket build and contribution documentation")
 
 (define pkg-authors '(mflatt))
+
+(define license
+  '(Apache-2.0 OR MIT))

@@ -41,3 +41,6 @@
 (define pkg-desc "Base Racket test suites")
 
 (define pkg-authors '(eli jay matthias mflatt robby ryanc samth))
+
+(define license
+  '(Apache-2.0 OR MIT))

@@ -24,3 +24,6 @@
 (define pkg-desc "Racket libraries that are currently always available")
 
 (define pkg-authors '(mflatt))
+
+(define license
+  '(Apache-2.0 OR MIT))

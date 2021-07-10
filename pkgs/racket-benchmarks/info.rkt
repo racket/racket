@@ -15,3 +15,6 @@
 
 (define pkg-desc "Racket benchmarks")
 (define pkg-authors '(eli jay mflatt robby samth stamourv))
+
+(define license
+  '(Apache-2.0 OR MIT))
