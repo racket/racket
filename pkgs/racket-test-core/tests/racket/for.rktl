@@ -317,6 +317,24 @@
                                                 (+ i j)
                                                 (* i j)))
 
+(test "abcd" 'for/string (for/string ((i (in-range 4)))
+                           (integer->char (+ 97 i))))
+(test "1234" 'for/string-fast (for/string #:length 4 ((i (in-range 4)))
+                                (integer->char (+ 49 i))))
+(test "ABCD\0\0" 'for/string-fast (for/string #:length 6 ((i (in-range 4)))
+                                    (integer->char (+ 65 i))))
+(test "wxyzff" 'for/string-fast (for/string #:length 6 #:fill #\f ((i (in-range 4)))
+                                  (integer->char (+ 119 i))))
+
+(test "llllmnlnp" 'for*/string (for*/string ((i (in-range 3))
+                                             (j (in-range 3)))
+                                 (integer->char (+ 108 i j))
+                                 (integer->char (+ 108 (* i j)))))
+(test "llllmnlnp" 'for*/string-fast (for*/string #:length 9 ((i (in-range 3))
+                                                             (j (in-range 3)))
+                                      (integer->char (+ 108 i j))
+                                      (integer->char (+ 108 (* i j)))))
+
 ;; Test for both length too long and length too short
 (let ((v (make-vector 3)))
   (vector-set! v 0 0)
@@ -336,6 +354,25 @@
 (test 5 'for*/vector-long-iter 
       (vector-length (for*/vector #:length 5 ((i (in-range 3)) (j (in-range 3))) (+ i j))))
 
+(let ((s (string-append "ij" (make-string 1))))
+  (test s 'for/string-short-iter (for/string #:length 3 ((i (in-range 2)))
+                                   (integer->char (+ 105 i)))))
+
+(let ((s (make-string 10)))
+  (for* ((i (in-range 3))
+         (j (in-range 3)))
+    (string-set! s (+ j (* i 3)) (integer->char (+ i j))))
+  (let ((w (for*/string #:length 10 ((i (in-range 3)) (j (in-range 3)))
+             (integer->char (+ i j)))))
+    (test s 'for*/string-short-iter w)))
+
+(test 2 'for/string-long-iter
+      (string-length (for/string #:length 2 ((i (in-range 10)))
+                       (integer->char i))))
+(test 5 'for*/string-long-iter 
+      (string-length (for*/string #:length 5 ((i (in-range 3)) (j (in-range 3)))
+                       (integer->char (+ i j)))))
+
 ;; Test for many body expressions
 (let* ((v (vector 1.0 2.0 3.0))
        (v2 (for/vector ((i (in-range 3))) 
@@ -346,6 +383,17 @@
              (vector-ref v i))))
   (test (vector 2.0 3.0 4.0) 'for/vector-many-body v2)
   (test (vector 3.0 4.0 5.0) 'for/vector-length-many-body v3))
+
+(let* ((char+1 (λ (x) (integer->char (add1 (char->integer x)))))
+       (s (string-copy "apx"))
+       (s2 (for/string ((i (in-range 3))) 
+             (string-set! s i (char+1 (string-ref s i)))
+             (string-ref s i)))
+       (s3 (for/string #:length 3 ((i (in-range 3)))
+             (string-set! s i (char+1 (string-ref s i)))
+             (string-ref s i))))
+  (test "bqy" 'for/string-many-body s2)
+  (test "crz" 'for/string-length-many-body s3))
 
 ;; Stop when a length is specified, even if the sequence continues:
 (test '#(0 1 2 3 4 5 6 7 8 9)
@@ -362,6 +410,16 @@
       (for*/vector #:length 10 ([(i j) (in-parallel (in-naturals)
                                                     (in-naturals 1))])
                    (+ i j)))
+
+(test "0123456789"
+      'nat
+      (for/string #:length 10 ([i (in-naturals)])
+        (integer->char (+ 48 i))))
+(test "bdfhjlnprt"
+      'parallel
+      (for*/string #:length 10 ([(i j) (in-parallel (in-naturals)
+                                                    (in-naturals 1))])
+        (integer->char (+ 97 i j))))
 
 ;; Make sure the sequence stops at the length before consuming another element:
 (test '(#("1" "2" "3" "4" "5" "6" "7" "8" "9" "10") . 10)
@@ -380,6 +438,25 @@
                       (number->string i))
          c)))
 
+(test (cons "123456789a" 10)
+      'producer
+      (let ([c 0])
+        (cons
+         (for/string #:length 10 ([i (in-producer (lambda () (set! c (add1 c)) c))])
+           (define s (number->string i 16))
+           (string-ref (number->string i 16) (sub1 (string-length s))))
+         c)))
+
+(test (cons "123456789a" 10)
+      'producer
+      (let ([c 0])
+        (cons
+         (for*/string #:length 10 ([j '(0)]
+                                   [i (in-producer (lambda () (set! c (add1 c)) c))])
+           (define s (number->string i 16))
+           (string-ref (number->string i 16) (sub1 (string-length s))))
+         c)))
+
 ;; Check empty clauses
 (let ()
   (define vector-iters 0)
@@ -395,6 +472,21 @@
                      (set! vector-iters (+ 1 vector-iters))
                      3.4))
   (test 2 values vector-iters))
+
+(let ()
+  (define string-iters 0)
+  (test "e\0\0\0"
+        'no-clauses
+        (for/string #:length 4 ()
+          (set! string-iters (add1 string-iters))
+          #\e))
+  (test 1 values string-iters)
+  (test "f\0\0\0"
+        'no-clauses
+        (for*/string #:length 4 ()
+          (set! string-iters (add1 string-iters))
+          #\f))
+  (test 2 values string-iters))
 
 ;; Check #:when and #:unless:
 (test (vector 0 1 2 1 2)
@@ -426,6 +518,20 @@
                    #:unless (even? x)
                    [y (in-range 3)])
         (+ x y)))
+
+(let ([s "The slow silver seal slumbered under the soft STARRY sky"])
+  (test "da Sl0w Silva Sal Slumbaad unda da S0fd Sdy Sky"
+        'string-when-unless
+        (for/string ([c (in-string s)]
+                     #:when (not (char-ci=? #\a c))
+                     #:unless (char-ci=? #\h c)
+                     #:when (not (char-ci=? #\r c)))
+          (cond [(char-ci=? #\s c) (char-upcase c)]
+                [(char-ci=? #\t c) #\d]
+                [(char-ci=? #\e c) #\a]
+                [(char-ci=? #\o c) #\0]
+                [else (char-downcase c)]))))
+          
 
 (test #hash((a . 1) (b . 2) (c . 3)) 'mk-hash
       (for/hash ([v (in-naturals)]
