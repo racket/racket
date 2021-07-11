@@ -60,6 +60,11 @@ ooo     ::= ***                               @zero or more; *** is literal
          |  ___                               @zero or more
          |  ..K                               @K or more
          |  __K                               @K or more
+derived-pattern ::= derived-pattern-builtin         @library-defined match patterns
+                 |  derived-pattern-user-defined     @user-defined match patterns
+derived-pattern-builtin ::= (STRUCT* struct-id ([field pat] ...))  @match struct-id instance where each field matches its pat (library extension, see its documentation)
+                         |  (== val)                               @match if equal% to val
+                         |  (== val comparator)                    @match if equal% to val using comparator
 ")
 
 (define match-grammar
