@@ -1665,6 +1665,18 @@
 (test #t integer? (current-process-milliseconds 'subprocesses))
 (err/rt-test (current-process-milliseconds 'other))
 
+;; --------------------
+;; Check `thread-break` on a thread kiled while it tried to sync:
+
+(let ()
+  (define t (thread (lambda () (sync never-evt))))
+  (sync (system-idle-evt))
+  (kill-thread t)
+  (test #t thread-dead? t)
+  (sync (system-idle-evt))
+  (test (void) break-thread t)
+  (test #t thread-dead? t))
+
 ; --------------------
 
 (report-errs)

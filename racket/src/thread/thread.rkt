@@ -846,6 +846,7 @@
 (define (do-break-thread t kind check-t)
   ((atomically
     (cond
+      [(thread-dead? t) void]
       [(thread-forward-break-to t)
        => (lambda (other-t)
             (lambda () (do-break-thread other-t kind check-t)))]

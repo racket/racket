@@ -7886,30 +7886,32 @@
        (begin
          (start-atomic)
          (begin0
-           (let ((c1_0 (thread-forward-break-to t_0)))
-             (if c1_0
-               (lambda () (do-break-thread c1_0 kind_0 check-t_0))
-               (begin
-                 (if (if (thread-pending-break t_0)
-                       (break>? kind_0 (thread-pending-break t_0))
-                       #f)
-                   (set-thread-pending-break! t_0 kind_0)
-                   (void))
-                 (if (thread-pending-break t_0)
-                   (void)
-                   (begin
+           (if (1/thread-dead? t_0)
+             void
+             (let ((c1_0 (thread-forward-break-to t_0)))
+               (if c1_0
+                 (lambda () (do-break-thread c1_0 kind_0 check-t_0))
+                 (begin
+                   (if (if (thread-pending-break t_0)
+                         (break>? kind_0 (thread-pending-break t_0))
+                         #f)
                      (set-thread-pending-break! t_0 kind_0)
-                     (thread-did-work!)
-                     (run-suspend/resume-callbacks t_0 car)
-                     (run-suspend/resume-callbacks t_0 cdr)
-                     (if (thread-descheduled? t_0)
-                       (if (thread-suspended? t_0)
-                         (void)
-                         (begin
-                           (run-interrupt-callback t_0)
-                           (thread-reschedule! t_0)))
-                       (void))))
-                 void)))
+                     (void))
+                   (if (thread-pending-break t_0)
+                     (void)
+                     (begin
+                       (set-thread-pending-break! t_0 kind_0)
+                       (thread-did-work!)
+                       (run-suspend/resume-callbacks t_0 car)
+                       (run-suspend/resume-callbacks t_0 cdr)
+                       (if (thread-descheduled? t_0)
+                         (if (thread-suspended? t_0)
+                           (void)
+                           (begin
+                             (run-interrupt-callback t_0)
+                             (thread-reschedule! t_0)))
+                         (void))))
+                   void))))
            (end-atomic))))
       (if (eq? t_0 check-t_0)
         (begin
