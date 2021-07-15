@@ -482,7 +482,7 @@ If no element in @racket[lst] is equal to @racket[v] (according to @racket[proc]
 
 @history[#:changed "8.2.0.2"
          @elem{Guaranteed that the output is @racket[eq?] to @racket[lst]
-               if no element in @racket[lst] is equal to @racket[v].}]}
+               if no removal occurs.}]}
 
 
 @defproc[(remq [v any/c] [lst list?])
@@ -516,7 +516,11 @@ Like @racket[remove], but removes from @racket[lst] every instance of
 every element of @racket[v-lst].
 
 @mz-examples[
-  (remove* (list 1 2) (list 1 2 3 2 4 5 2))]}
+  (remove* (list 1 2) (list 1 2 3 2 4 5 2))]
+
+@history[#:changed "8.2.0.2"
+         @elem{Guaranteed that the output is @racket[eq?] to @racket[lst]
+               if no removal occurs.}]}
 
 
 @defproc[(remq* [v-lst list?] [lst list?])

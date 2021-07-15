@@ -81,11 +81,15 @@
       (raise-argument-error who "list?" r))
     (let rloop ([r r])
       (cond
-        [(null? r) null]
+        [(null? r) r]
         [else (let ([first-r (car r)])
                 (let loop ([l-rest l])
                   (cond
-                    [(null? l-rest) (cons first-r (rloop (cdr r)))]
+                    [(null? l-rest)
+                     (define next (rloop (cdr r)))
+                     (if (eq? next (cdr r))
+                         r
+                         (cons first-r next))]
                     [(equal? (car l-rest) first-r) (rloop (cdr r))]
                     [else (loop (cdr l-rest))])))])))
 

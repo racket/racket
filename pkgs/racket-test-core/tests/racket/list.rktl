@@ -693,7 +693,8 @@
 (err/rt-test (split*-list '() '() #f))
 (err/rt-test (take-common-prefix 1 1))
 
-;; ---------- remove ----------
+;; ---------- remove / remove* ----------
+(test '() remove 2 '())
 (test '(1 3 2 4) remove 2 '(1 2 3 2 4))
 (test '((1) (3)) remove '(2) '((1) (2) (3)))
 (test '("1" "3") remove "2" '("1" "2" "3"))
@@ -702,6 +703,13 @@
 (test '(1 2 3 2 4) remove 5 '(1 2 3 2 4))
 (let ([xs '(1 2 3 2 4)])
   (test #t eq? xs (remove 5 xs)))
+
+(test '() remove* '(2) '())
+(test '(1 3 4) remove* '(2) '(1 2 3 2 4))
+(test '(1 3) remove* '(4 2) '(1 2 3 2 4))
+(test '(1 2 3 2 4) remove* '() '(1 2 3 2 4))
+(let ([xs '(1 2 3 2 4)])
+  (test #t eq? xs (remove* '() xs)))
 
 ;; ---------- remf / remf* ----------
 
