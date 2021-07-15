@@ -50,7 +50,7 @@ language, though it may also be @racket[require]d to get
                                      . -> . any/c)
                                     (input-port? (input-port? . -> . any/c) 
                                      boolean? . -> . any/c))]
-               [module-wrapper (or/c ((-> any/c) . -> . any/c)
+               [module-wrapper-expr (or/c ((-> any/c) . -> . any/c)
                                      ((-> any/c) boolean? . -> . any/c))]
                [info-expr (symbol? any/c (symbol? any/c . -> . any/c) . -> . any/c)]
                [language-info-expr (or/c (vector/c module-path? symbol? any/c) #f)]
