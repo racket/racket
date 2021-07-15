@@ -51,9 +51,13 @@
     (unless (list? list)
       (raise-argument-error who "list?" list))
     (let loop ([list list])
-      (cond [(null? list) null]
+      (cond [(null? list) list]
             [(equal? item (car list)) (cdr list)]
-            [else (cons (car list) (loop (cdr list)))])))
+            [else
+             (define next (loop (cdr list)))
+             (if (eq? next (cdr list))
+                 list
+                 (cons (car list) next))])))
 
   (define remove
     (case-lambda

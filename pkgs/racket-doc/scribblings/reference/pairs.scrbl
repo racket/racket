@@ -467,14 +467,18 @@ element from first to last.
 
 Returns a list that is like @racket[lst], omitting the first element of
 @racket[lst] that is equal to @racket[v] using the comparison procedure
-@racket[proc] (which must accept two arguments).
+@racket[proc] (which must accept two arguments),
+with @racket[v] as the first argument and an element in @racket[lst] as the second argument.
+If no element in @racket[lst] is equal to @racket[v] (according to @racket[proc]),
+@racket[lst] is returned unchanged.
 
 @mz-examples[
   (remove 2 (list 1 2 3 2 4))
-  (remove 2 (list 1 2 3 2 4) =)
   (remove '(2) (list '(1) '(2) '(3)))
   (remove "2" (list "1" "2" "3"))
-  (remove #\c (list #\a #\b #\c))]}
+  (remove #\c (list #\a #\b #\c))
+  (remove "B" (list "a" "A" "b" "B") string-ci=?)
+  (remove 5 (list 1 2 3 2 4))]}
 
 
 @defproc[(remq [v any/c] [lst list?])
