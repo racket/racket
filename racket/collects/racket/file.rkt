@@ -10,6 +10,7 @@
          make-directory*
          make-parent-directory*
          make-temporary-file
+         make-temporary-directory
 
          get-preference
          put-preferences
@@ -134,70 +135,160 @@
     ;; Do nothing with an immediately relative path or a root directory
     (void)]))
 
-(define-syntax (make-temporary-file stx)
+(define-for-syntax (infer-temporary-file-template stx)
+  (define line   (syntax-line stx))
+  (define col    (syntax-column stx))
+  (define source (syntax-source stx))
+  (define pos    (syntax-position stx))
+  (define str-src
+    (cond [(path? source)
+           (regexp-replace #rx"^<(.*?)>(?=/)"
+                           (path->relative-string/library source)
+                           (lambda (_ s) (string-upcase s)))]
+          [(string? source) source]
+          [else #f]))
+  (define str-loc
+    (cond [(and line col) (format "-~a-~a" line col)]
+          [pos (format "--~a" pos)]
+          [else ""]))
+  (define combined-str (string-append (or str-src "rkttmp") str-loc))
+  (define sanitized-str (regexp-replace* #rx"[<>:\"/\\|]" combined-str "-"))
+  (define max-len 50) ;; must be even
+  (define not-too-long-str
+    (cond [(< max-len (string-length sanitized-str))
+           (string-append (substring sanitized-str 0 (- (/ max-len 2) 2))
+                          "----"
+                          (substring sanitized-str
+                                     (- (string-length sanitized-str)
+                                        (- (/ max-len 2) 2))))]
+          [else sanitized-str]))
+  (string-append not-too-long-str "_~a"))
+
+(define-syntax (make-temporary-directory stx)
   (with-syntax ([app (datum->syntax stx #'#%app stx)])
     (syntax-case stx ()
-      [x (identifier? #'x) #'make-temporary-file/proc]
+      [x
+       (identifier? #'x)
+       #'make-temporary-directory/proc]
       [(_)
-       (let ()
-         (define line   (syntax-line stx))
-         (define col    (syntax-column stx))
-         (define source (syntax-source stx))
-         (define pos    (syntax-position stx))
-         (define str-src
-           (cond [(path? source)
-                  (regexp-replace #rx"^<(.*?)>(?=/)"
-                                  (path->relative-string/library source)
-                                  (lambda (_ s) (string-upcase s)))]
-                 [(string? source) source]
-                 [else #f]))
-         (define str-loc
-           (cond [(and line col) (format "-~a-~a" line col)]
-                 [pos (format "--~a" pos)]
-                 [else ""]))
-         (define combined-str (string-append (or str-src "rkttmp") str-loc))
-         (define sanitized-str (regexp-replace* #rx"[<>:\"/\\|]" combined-str "-"))
-         (define max-len 50) ;; must be even
-         (define not-too-long-str
-           (cond [(< max-len (string-length sanitized-str))
-                  (string-append (substring sanitized-str 0 (- (/ max-len 2) 2))
-                                 "----"
-                                 (substring sanitized-str
-                                            (- (string-length sanitized-str)
-                                               (- (/ max-len 2) 2))))]
-                 [else sanitized-str]))
-         #`(app make-temporary-file/proc
-                #,(string-append not-too-long-str "_~a")))]
+       #`(app make-temporary-directory/proc
+              '#,(infer-temporary-file-template stx))]
+      [(_ #:base-dir base-dir)
+       (not (keyword? #'base-dir))
+       #`(app make-temporary-directory/proc
+              '#,(infer-temporary-file-template stx)
+              #:base-dir base-dir)]
+      [(_ . whatever)
+       #'(app make-temporary-directory/proc . whatever)])))
+
+(define-syntax (make-temporary-file stx)
+  (with-syntax ([app (datum->syntax stx #'#%app stx)])
+    (define (infer-template #:copy-from [copy-from #''#f]
+                            #:base-dir [base-dir #''#f])
+      #`(app make-temporary-file/proc
+             '#,(infer-temporary-file-template stx)
+             #,copy-from
+             #,base-dir))
+    (syntax-case stx ()
+      [x
+       (identifier? #'x)
+       #'make-temporary-file/proc]
+      [(_)
+       (infer-template)]
+      [(_ #:copy-from copy-from)
+       (not (keyword? #'copy-from))
+       (infer-template #:copy-from #'copy-from)]
+      [(_ #:base-dir base-dir)
+       (not (keyword? #'base-dir))
+       (infer-template #:base-dir #'base-dir)]
+      [(_ #:base-dir base-dir #:copy-from copy-from)
+       (not (or (keyword? #'base-dir)
+                (keyword? #'copy-from)))
+       (infer-template #:copy-from #'copy-from #:base-dir #'base-dir)]
+      [(_ #:copy-from copy-from #:base-dir base-dir )
+       (not (or (keyword? #'base-dir)
+                (keyword? #'copy-from)))
+       (infer-template #:copy-from #'copy-from #:base-dir #'base-dir)]
       [(_ . whatever)
        #'(app make-temporary-file/proc . whatever)])))
 
-(define make-temporary-file/proc
+(define-values [make-temporary-file/proc
+                make-temporary-directory/proc]
   (let ()
-    (define (make-temporary-file [template "rkttmp~a"] [copy-from #f] [base-dir #f])
-      (with-handlers ([exn:fail:contract?
-                       (lambda (x)
-                         (raise-arguments-error 'make-temporary-file
-                                                "format string does not expect 1 argument"
-                                                "format string" template))])
-        (format template void))
+    (define (make-temporary-file [template "rkttmp~a"]
+                                 #:copy-from [_copy-from #f]
+                                 #:base-dir [_base-dir #f]
+                                 [copy-from _copy-from]
+                                 [base-dir _base-dir])
+      (do-make-temporary-file 'make-temporary-file
+                              template copy-from base-dir))
+    (define (make-temporary-directory [template "rkttmp~a"]
+                                      #:base-dir [base-dir #f])
+      (do-make-temporary-file 'make-temporary-directory
+                              template 'directory base-dir))
+    (define (do-make-temporary-file who template copy-from base-dir)
       (unless (or (not copy-from)
                   (path-string? copy-from)
                   (eq? copy-from 'directory))
-        (raise-argument-error 'make-temporary-file
+        (raise-argument-error who
                               "(or/c path-string? 'directory #f)"
                               copy-from))
       (unless (or (not base-dir) (path-string? base-dir))
-        (raise-argument-error 'make-temporary-file
+        (raise-argument-error who
                               "(or/c path-string? #f)"
                               base-dir))
+      (unless (string? template)
+        (raise-argument-error who "string?" template))
+      (let* ([result
+              (with-handlers ([exn:fail:contract?
+                               (lambda (x)
+                                 (raise-arguments-error
+                                  who
+                                  "malformed template"
+                                  "expected" (unquoted-printing-string
+                                              "a format string accepting 1 string argument")
+                                  "given" template))])
+                ;; docs promise argument will be a string containing only digits
+                (format template "0"))])
+        (unless (path-string? result)
+          (raise-arguments-error
+           who
+           "given template produced an invalid path"
+           "promised" (unquoted-printing-string "path-string?")
+           "produced" result
+           "template" template))
+        (define (bad-result-msg details)
+          ;; i.e. the result is valid as path, but not for our purposes
+          (string-append "given template produced an invalid result;\n " details))
+        (when (and base-dir (complete-path? result))
+          ;; On Windows, base-dir could be a drive specification,
+          ;; in which case it is ok for result to be an absolute path without a drive.
+          (raise-arguments-error
+           who
+           (bad-result-msg "complete path can not be combined with base-dir")
+           "template" template
+           "produced" result
+           "base-dir" base-dir))
+        (unless (eq? 'directory copy-from)
+          (when (let-values ([{_base _name must-be-dir?}
+                              (split-path result)])
+                  must-be-dir?)
+            (raise-arguments-error
+             who
+             (bad-result-msg
+              "syntactic directory path not allowed unless copy-from is 'directory")
+             "template" template
+             "produced" result
+             "copy-from" copy-from))))
       (let ([tmpdir (find-system-path 'temp-dir)])
         (let loop ([s (current-seconds)]
                    [ms (inexact->exact (truncate (current-inexact-milliseconds)))]
                    [tries 0])
-          (let ([name (let ([n (format template (format "~a~a" s ms))])
+          (let ([pth (path->complete-path
+                      (let ([n (format template (format "~a~a" s ms))])
                         (cond [base-dir (build-path base-dir n)]
                               [(relative-path? n) (build-path tmpdir n)]
-                              [else n]))])
+                              [else n])))])
             (with-handlers ([(lambda (exn)
                                (or (exn:fail:filesystem:exists? exn)
                                    (and (exn:fail:filesystem:errno? exn)
@@ -223,11 +314,12 @@
                                      (add1 tries)))])
               (if copy-from
                   (if (eq? copy-from 'directory)
-                      (make-directory name)
-                      (copy-file copy-from name))
-                  (close-output-port (open-output-file name)))
-              name)))))
-    make-temporary-file))
+                      (make-directory pth)
+                      (copy-file copy-from pth))
+                  (close-output-port (open-output-file pth)))
+              pth)))))
+    (values make-temporary-file
+            make-temporary-directory)))
 
 ;;  Open a temporary path for writing, automatically renames after,
 ;;  and arranges to delete path if there's an exception. Uses the an
@@ -257,7 +349,7 @@
       (delete-file path)))
   (let ([bp (current-break-parameterization)]
         [tmp-path (parameterize ([current-security-guard (or guard (current-security-guard))])
-                    (make-temporary-file "tmp~a" #f (or (path-only path) (current-directory))))]
+                    (make-temporary-file #:base-dir (or (path-only path) (current-directory))))]
         [ok? #f])
     (dynamic-wind
      void
@@ -291,7 +383,7 @@
                           (rename-file-or-directory tmp-path path #t)
                           void))]
                      [else
-                      (let ([tmp-path2 (make-temporary-file "tmp~a" #f (path-only path))])
+                      (let ([tmp-path2 (make-temporary-file #:base-dir (path-only path))])
                         (with-handlers ([exn:fail:filesystem? void])
                           (rename-file-or-directory path tmp-path2 #t))
                         (rename-file-or-directory tmp-path path #t)
