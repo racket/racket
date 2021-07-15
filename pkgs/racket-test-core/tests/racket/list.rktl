@@ -700,7 +700,7 @@
 (test '(#\a #\b) remove #\c '(#\a #\b #\c))
 (test '("a" "A" "B") remove "B" '("a" "A" "b" "B") string-ci=?)
 (test '(1 2 3 2 4) remove 5 '(1 2 3 2 4))
-(let* ([xs '(1 2 3 2 4)])
+(let ([xs '(1 2 3 2 4)])
   (test #t eq? xs (remove 5 xs)))
 
 ;; ---------- remf / remf* ----------
