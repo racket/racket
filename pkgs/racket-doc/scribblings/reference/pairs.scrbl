@@ -478,7 +478,11 @@ If no element in @racket[lst] is equal to @racket[v] (according to @racket[proc]
   (remove "2" (list "1" "2" "3"))
   (remove #\c (list #\a #\b #\c))
   (remove "B" (list "a" "A" "b" "B") string-ci=?)
-  (remove 5 (list 1 2 3 2 4))]}
+  (remove 5 (list 1 2 3 2 4))]
+
+@history[#:changed "8.2.0.2"
+         @elem{Guaranteed that the output is @racket[eq?] to @racket[lst]
+               if no element in @racket[lst] is equal to @racket[v].}]}
 
 
 @defproc[(remq [v any/c] [lst list?])
