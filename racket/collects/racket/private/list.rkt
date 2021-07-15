@@ -47,15 +47,17 @@
     ;; don't provide the extra args if not needed, it's a bit faster
     (if getkey (raw-sort lst less? getkey cache-keys?) (raw-sort lst less?)))
 
-  (define (do-remove who item orig-list equal?)
-    (unless (list? orig-list)
-      (raise-argument-error who "list?" orig-list))
-    (call/cc
-     (λ (k)
-       (let loop ([list orig-list])
-         (cond [(null? list) (k orig-list)]
-               [(equal? item (car list)) (cdr list)]
-               [else (cons (car list) (loop (cdr list)))])))))
+  (define (do-remove who item list equal?)
+    (unless (list? list)
+      (raise-argument-error who "list?" list))
+    (let loop ([list list])
+      (cond [(null? list) list]
+            [(equal? item (car list)) (cdr list)]
+            [else
+             (define next (loop (cdr list)))
+             (if (eq? next (cdr list))
+                 list
+                 (cons (car list) next))])))
 
   (define remove
     (case-lambda
