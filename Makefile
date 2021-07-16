@@ -47,7 +47,7 @@ RACKETCS_SUFFIX =
 RACKET =
 RACKET_FOR_BOOTFILES = $(RACKET)
 RACKET_FOR_BUILD = $(RACKET)
-PB_BRANCH = circa-8.1.0.6-2
+PB_BRANCH = 8.2
 PB_REPO = https://github.com/racket/pb
 SINGLE_BRANCH_FLAG = --single-branch
 EXTRA_REPOS_BASE =
@@ -58,7 +58,7 @@ PB_DIR = racket/src/ChezScheme/boot/pb
 WIN32_BOOT_ARGS = SETUP_BOOT_MODE=--boot WIN32_BUILD_LEVEL=bc PLAIN_RACKET=racket\racketbc
 WIN32_SETUP_BOOT = -O "info@compiler/cm" -l- setup $(SETUP_BOOT_MODE) racket/src/setup-go.rkt racket/src/build/compiled ignored racket/src/build/ignored.d
 CSBUILD_ARGUMENTS = --pull --racketcs-suffix "$(RACKETCS_SUFFIX)" $(DISABLE_STATIC_LIBS) --boot-mode "$(SETUP_BOOT_MODE)" --extra-repos-base "$(EXTRA_REPOS_BASE)"
-SRC_CATALOG = $(DEFAULT_SRC_CATALOG)
+SRC_CATALOG = "https://download.racket-lang.org/releases/8.2/catalog/"
 DOC_SEARCH = 
 SERVER = localhost
 SERVER_PORT = 9440
@@ -310,19 +310,19 @@ maybe-fetch-pb-as-is:
 	echo done
 fetch-pb-from:
 	mkdir -p racket/src/ChezScheme/boot
-	if [ ! -d racket/src/ChezScheme/boot/pb ] ; 	  then git clone -q $(SINGLE_BRANCH_FLAG) -b circa-8.1.0.6-2 $(PB_REPO) racket/src/ChezScheme/boot/pb ; 	  else cd racket/src/ChezScheme/boot/pb && git fetch -q origin circa-8.1.0.6-2:remotes/origin/circa-8.1.0.6-2 ; fi
-	cd racket/src/ChezScheme/boot/pb && git remote set-branches origin circa-8.1.0.6-2
-	cd racket/src/ChezScheme/boot/pb && git checkout -q circa-8.1.0.6-2
+	if [ ! -d racket/src/ChezScheme/boot/pb ] ; 	  then git clone -q $(SINGLE_BRANCH_FLAG) -b 8.2 $(PB_REPO) racket/src/ChezScheme/boot/pb ; 	  else cd racket/src/ChezScheme/boot/pb && git fetch -q origin 8.2:remotes/origin/8.2 ; fi
+	cd racket/src/ChezScheme/boot/pb && git remote set-branches origin 8.2
+	cd racket/src/ChezScheme/boot/pb && git checkout -q 8.2
 pb-fetch:
 	$(MAKE) fetch-pb EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" PB_REPO="$(PB_REPO)" SINGLE_BRANCH_FLAG="$(SINGLE_BRANCH_FLAG)"
 pb-build:
 	cd racket/src/ChezScheme && racket rktboot/main.rkt --machine pb
 pb-stage:
-	cd racket/src/ChezScheme/boot/pb && git branch circa-8.1.0.6-2
-	cd racket/src/ChezScheme/boot/pb && git checkout circa-8.1.0.6-2
+	cd racket/src/ChezScheme/boot/pb && git branch 8.2
+	cd racket/src/ChezScheme/boot/pb && git checkout 8.2
 	cd racket/src/ChezScheme/boot/pb && git add . && git commit --amend -m "new build"
 pb-push:
-	cd racket/src/ChezScheme/boot/pb && git push -u origin circa-8.1.0.6-2
+	cd racket/src/ChezScheme/boot/pb && git push -u origin 8.2
 win-cs-base:
 	IF "$(RACKET_FOR_BUILD)" == "" $(MAKE) win-bc-then-cs-base SETUP_BOOT_MODE=--boot WIN32_BUILD_LEVEL=bc PLAIN_RACKET=racket\racketbc DISABLE_STATIC_LIBS="$(DISABLE_STATIC_LIBS)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" JOB_OPTIONS="$(JOB_OPTIONS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)"
 	IF not "$(RACKET_FOR_BUILD)" == "" $(MAKE) win-just-cs-base SETUP_BOOT_MODE=--chain DISABLE_STATIC_LIBS="$(DISABLE_STATIC_LIBS)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" JOB_OPTIONS="$(JOB_OPTIONS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" RACKET_FOR_BUILD="$(RACKET_FOR_BUILD)"
