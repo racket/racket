@@ -195,7 +195,7 @@ from @racketmodname[xml] with minimal dependencies.
 
 @defproc[(read-xml [in input-port? (current-input-port)]) document?]{
 
-Reads in an XML document from the given or current input port XML
+Reads in an XML document from the given or current input port. XML
 documents contain exactly one element, raising @racket[xml-read:error]
 if the input stream has zero elements or more than one element.
        
