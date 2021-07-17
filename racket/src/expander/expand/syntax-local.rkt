@@ -3,6 +3,7 @@
          "../common/struct-star.rkt"
          "../syntax/syntax.rkt"
          "../common/phase.rkt"
+         "../common/phase+space.rkt"
          "../syntax/scope.rkt"
          "../syntax/binding.rkt"
          "../syntax/taint.rkt"
@@ -388,11 +389,11 @@
   (requireds->phase-ht (extract-module-definitions (expand-context-requires+provides ctx))))
   
   
-(define/who (syntax-local-module-required-identifiers mod-path phase-level)
+(define/who (syntax-local-module-required-identifiers mod-path phase+space-shift)
   (unless (or (not mod-path) (module-path? mod-path))
     (raise-argument-error who "(or/c module-path? #f)" mod-path))
-  (unless (or (eq? phase-level #t) (phase? phase-level))
-    (raise-argument-error who (format "(or/c ~a #t)" phase?-string) phase-level))
+  (unless (or (eq? phase+space-shift #t) (phase+space-shift? phase+space-shift))
+    (raise-argument-error who (format "(or/c ~a #t)" phase+space-shift?-string) phase+space-shift))
   (unless (syntax-local-transforming-module-provides?)
     (raise-arguments-error who "not currently transforming module provides"))
   (define ctx (get-current-expand-context 'syntax-local-module-required-identifiers))
@@ -402,15 +403,15 @@
   (define requireds
     (extract-all-module-requires requires+provides
                                  mpi
-                                 (if (eq? phase-level #t) 'all phase-level)))
+                                 (if (eq? phase+space-shift #t) 'all (intern-phase+space-shift phase+space-shift))))
   (and requireds
-       (for/list ([(phase ids) (in-hash (requireds->phase-ht requireds))])
-         (cons phase ids))))
+       (for/list ([(phase+space-shift ids) (in-hash (requireds->phase-ht requireds))])
+         (cons phase+space-shift ids))))
 
 (define (requireds->phase-ht requireds)
   (for/fold ([ht (hasheqv)]) ([r (in-list requireds)])
     (hash-update ht
-                 (required-phase r)
+                 (required-phase+space r)
                  (lambda (l) (cons (required-id r) l))
                  null)))
 

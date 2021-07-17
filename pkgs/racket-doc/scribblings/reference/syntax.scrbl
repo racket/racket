@@ -451,7 +451,7 @@ context} or a @tech{module-begin context}. Each
 
 @defform/subs[#:literals (only-in prefix-in except-in rename-in lib file planet submod + - =
                           for-syntax for-template for-label for-meta only-meta-in combine-in 
-                          relative-in quote)
+                          relative-in quote for-space only-space-in)
               (require require-spec ...)
               ([require-spec module-path
                              (only-in require-spec id-maybe-renamed ...)
@@ -461,10 +461,12 @@ context} or a @tech{module-begin context}. Each
                              (combine-in require-spec ...)
                              (relative-in module-path require-spec ...)
                              (only-meta-in phase-level require-spec ...)
+                             (only-space-in space require-spec ...)
                              (for-syntax require-spec ...)
                              (for-template require-spec ...)
                              (for-label require-spec ...)
                              (for-meta phase-level require-spec ...)
+                             (for-space space require-spec ...)
                              derived-require-spec]
                [module-path root-module-path
                             (submod root-module-path submod-path-element ...)
@@ -508,13 +510,14 @@ be bound in the importing context. Each identifier is mapped to a
 particular export of a particular module; the identifier to bind may
 be different from the symbolic name of the originally exported
 identifier. Each identifier also binds at a particular @tech{phase
-level}.
+level} and in a @tech{binding space}.
 
-No identifier can be bound multiple times in a given @tech{phase
-level} by an import, unless all of the bindings refer to the same
+No identifier can be bound multiple times in a given combination of
+@tech{phase level} and @tech{binding space} by an import, unless
+all of the bindings refer to the same
 original definition in the same module.  In a @tech{module context},
 an identifier can be either imported or defined for a given
-@tech{phase level}, but not both.
+@tech{phase level} and @tech{binding space}, but not both.
 
 The syntax of @racket[require-spec] can be extended via
 @racket[define-require-syntax], and when multiple
@@ -524,10 +527,12 @@ bindings of each @racket[require-spec] are visible for expanding later
 @racketmodname[racket/base]) are as follows:
 
  @specsubform[module-path]{ Imports all exported bindings from the
-  named module, using the export identifiers as the local identifiers.
+  named module, using the export name for the local identifiers.
   (See below for information on @racket[module-path].) The lexical
   context of the @racket[module-path] form determines the context of
-  the introduced identifiers.
+  the introduced identifiers, adding a space scope for exports
+  in a particular @tech{binding space}, and in each export's
+  @tech{phase level}.
 
   If any identifier provided by @racket[module-path] has a symbol form
   that is @tech{uninterned}, the identifier is not imported (i.e., it
@@ -649,10 +654,18 @@ bindings of each @racket[require-spec] are visible for expanding later
    num-eggs
   ]}
 
+ @defsubform[(only-space-in space require-spec ...)]{
+  Like the combination of @racket[require-spec]s, but removing any
+  binding that is not provided for the @tech{binding space} identifier by
+  @racket[space]---which is normally an identifier, but @racket[#f] for
+  @racket[space] corresponds to the @tech{default binding space}.
+
+  @history[#:added "8.2.0.3"]}
+  
  @specsubform[#:literals (for-meta)
               (for-meta phase-level require-spec ...)]{Like the combination of
-  @racket[require-spec]s, but the binding specified by
-  each @racket[require-spec] is shifted by @racket[phase-level]. The
+  @racket[require-spec]s, but the bindings specified by
+  each @racket[require-spec] are shifted by @racket[phase-level]. The
   @tech{label phase level} corresponds to @racket[#f], and a shifting
   combination that involves @racket[#f] produces @racket[#f].
   
@@ -681,6 +694,20 @@ bindings of each @racket[require-spec] are visible for expanding later
   @racket[(for-meta #f require-spec ...)]. If an identifier in any of the
   @racket[require-spec]s is bound at more than one phase level, a syntax error
   is reported.}
+
+ @specsubform[#:literals (for-space)
+              (for-space space require-spec ...)]{Like the combination of
+  @racket[require-spec]s, but the bindings specified by
+  each @racket[require-spec] are moved to the @tech{binding space}
+  specified by @racket[space]---which is normally an identifier,
+  but @racket[#f] for @racket[space] corresponds to the
+  @tech{default binding space}.
+
+  A binding is moved to the new space by removing the scope for the
+  space originally implied by @racket[require-spec], if any, and
+  adding the scope for @racket[space], if any.
+
+  @history[#:added "8.2.0.3"]}
 
  @specsubform[derived-require-spec]{See @racket[define-require-syntax]
  for information on expanding the set of @racket[require-spec]
@@ -951,6 +978,7 @@ level} 0 are imported.
                              (for-syntax provide-spec ...)
                              (for-template provide-spec ...)
                              (for-label provide-spec ...)
+                             (for-space space provide-spec ...)
                              derived-provide-spec]
                [phase-level exact-integer #f])]{
 
@@ -964,7 +992,8 @@ within the module. Also, each export is drawn from a particular
 @tech{phase level} and exported at the same @tech{phase level}; by
 default, the relevant phase level is the number of
 @racket[begin-for-syntax] forms that enclose the @racket[provide]
-form.
+form. Finally, each export is drawn from a @tech{binding space}
+and exported at the same @tech{binding space}.
 
 The syntax of @racket[provide-spec] can be extended by bindings to
 @tech{provide transformers} or @tech{provide pre-transformers}, such
@@ -973,7 +1002,8 @@ as follows.
 
  @specsubform[id]{ Exports @racket[id], which must be @tech{bound}
  within the module (i.e., either defined or imported) at the relevant
- @tech{phase level}. The symbolic form of @racket[id] is used as the
+ @tech{phase level} and @tech{binding space}. The symbolic form of
+ @racket[id] is used as the
  external name, and the symbolic form of the defined or imported
  identifier must match (otherwise, the external name could be
  ambiguous).
@@ -1034,7 +1064,8 @@ as follows.
 
  @defsubform[(rename-out [orig-id export-id] ...)]{ Exports each
  @racket[orig-id], which must be @tech{bound} within the module at
- the relevant @tech{phase level}.  The symbolic name for each export is
+ the relevant @tech{phase level} and @tech{binding space}.
+ The symbolic name for each export is
  @racket[export-id] instead of @racket[orig-id].
 
  @examples[#:eval (syntax-eval) #:once
@@ -1203,6 +1234,29 @@ as follows.
               (for-label provide-spec ...)]{Same as
  @racket[(for-meta #f provide-spec ...)].}
 
+ @specsubform[#:literals (for-space) 
+              (for-space space provide-spec ...)]{ Like the union of the
+ @racket[provide-spec]s, but adjusted to apply to the @tech{binding space}
+ specified by @racket[space]---where @racket[space] is either an identifier
+ or @racket[#f] for the @tech{default binding space}. In particular, an @racket[_id]
+ or @racket[rename-out] form as a @racket[provide-spec] refers to a binding
+ in @racket[space], an @racket[all-defined-out] exports only definitions in
+ @racket[space], and an @racket[all-from-out] exports bindings imported into @racket[space].
+
+ When providing a binding for a non-default binding space, normally a
+ module should also provide a binding for the default binding space,
+ where the default-space binding represents the intended meaning of
+ the identifier. When a module later imports the same name in
+ different spaces from modules that adhere to this convention, then if
+ the two modules also (re)export the same binding for the name in the
+ default space, the imports are likely consistent. If the two modules
+ export different bindings for the name in the default space, then
+ attempting to import both modules will trigger an error about
+ conflicting imports, and a programmer can explicitly resolve the
+ mismatch.
+
+ @history[#:added "8.2.0.3"]}
+
  @specsubform[derived-provide-spec]{See @racket[define-provide-syntax]
  for information on expanding the set of @racket[provide-spec] forms.}
 
@@ -1214,6 +1268,7 @@ multiple symbolic names.}
 @defform[(for-meta phase-level require-spec ...)]{See @racket[require] and @racket[provide].}
 @defform[(for-syntax require-spec ...)]{See @racket[require] and @racket[provide].} @defform[(for-template require-spec ...)]{See @racket[require] and @racket[provide].}
 @defform[(for-label require-spec ...)]{See @racket[require] and @racket[provide].}
+@defform[(for-space space require-spec ...)]{See @racket[require] and @racket[provide].}
 
 @defform/subs[(#%require raw-require-spec ...)
               ([raw-require-spec phaseless-spec
@@ -1221,7 +1276,9 @@ multiple symbolic names.}
                                  (#,(racketidfont "for-syntax") phaseless-spec ...)
                                  (#,(racketidfont "for-template") phaseless-spec ...)
                                  (#,(racketidfont "for-label") phaseless-spec ...)
-                                 (#,(racketidfont "just-meta") phase-level raw-require-spec ...)]
+                                 (#,(racketidfont "just-meta") phase-level raw-require-spec ...)
+                                 (#,(racketidfont "for-space") space phaseless-spec ...)
+                                 (#,(racketidfont "just-space") space raw-require-spec ...)]
                [phase-level exact-integer
                             #f]
                [phaseless-spec raw-module-path
@@ -1251,7 +1308,11 @@ composable, and not extensible. Also, sub-form names like
 symbolically, instead of via bindings. Although not formalized in the
 grammar above, a @racketidfont{just-meta} form cannot appear within a
 @racketidfont{just-meta} form, but it can appear under @racketidfont{for-meta},
- @racketidfont{for-syntax}, @racketidfont{for-template}, or @racketidfont{for-label}.
+@racketidfont{for-syntax}, @racketidfont{for-template}, or @racketidfont{for-label}.
+A @racketidfont{just-meta}, @racketidfont{for-meta},
+@racketidfont{for-syntax}, @racketidfont{for-template}, or @racketidfont{for-label}
+form cannot appear under @racketidfont{for-space} or @racketidfont{just-space},
+and @racketidfont{for-space} cannot appear under @racketidfont{just-space}.
 
 Each @racket[raw-require-spec] corresponds to the obvious
 @racket[_require-spec], but the @racketidfont{rename} sub-form has the
@@ -1267,7 +1328,10 @@ to a path in the sense of @racket[path?]. Since path values are never
 produced by @racket[read-syntax], they appear only in programmatically
 constructed expressions. They also appear naturally as arguments to
 functions such as @racket[namespace-require], with otherwise take a
-quoted @racket[raw-module-spec].}
+quoted @racket[raw-module-spec].
+
+@history[#:changed "8.2.0.3" @elem{Added @racketidfont{for-space}
+                                   and @racketidfont{just-space}.}]}
 
 
 @defform/subs[(#%provide raw-provide-spec ...)
@@ -1278,7 +1342,10 @@ quoted @racket[raw-module-spec].}
                                  (#,(racketidfont "protect") raw-provide-spec ...)]
                [phase-level exact-integer
                             #f]
-               [phaseless-spec id 
+               [phaseless-spec spaceless-spec
+                               (#,(racketidfont "for-space") space spaceless-spec ...)
+                               (#,(racketidfont "protect") spaceless-spec ...)]
+               [spaceless-spec id 
                                (#,(racketidfont "rename") local-id export-id) 
                                (#,(racketidfont "struct") struct-id (field-id ...))
                                (#,(racketidfont "all-from") raw-module-path)
@@ -1287,7 +1354,7 @@ quoted @racket[raw-module-spec].}
                                (#,(racketidfont "all-defined-except") id ...)
                                (#,(racketidfont "prefix-all-defined") prefix-id) 
                                (#,(racketidfont "prefix-all-defined-except") prefix-id id ...)
-                               (#,(racketidfont "protect") phaseless-spec ...)
+                               (#,(racketidfont "protect") spaceless-spec ...)
                                (#,(racketidfont "expand") (id . datum))])]{
 
 The primitive export form, to which @racket[provide] expands.  A
@@ -1330,7 +1397,9 @@ itself. That is, macro-introduced imports are not re-exported, unless
 the @racketidfont{all-from} or @racketidfont{all-from-except} form was
 introduced at the same time. Similarly, @racketidfont{all-defined} and
 its variants export only definitions accessible from the lexical
-context of the @racket[phaseless-spec] form.}
+context of the @racket[spaceless-spec] form.
+
+@history[#:changed "8.2.0.3" @elem{Added @racketidfont{for-space}.}]}
 
 @; --------------------
 

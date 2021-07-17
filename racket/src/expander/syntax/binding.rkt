@@ -82,8 +82,8 @@
 (define (same-binding-nominals? ab bb)
   (and (eq? (module-path-index-resolve (module-binding-nominal-module ab))
             (module-path-index-resolve (module-binding-nominal-module bb)))
-       (eqv? (module-binding-nominal-require-phase ab)
-             (module-binding-nominal-require-phase bb))
+       (eqv? (module-binding-nominal-require-phase+space-shift ab)
+             (module-binding-nominal-require-phase+space-shift bb))
        (eqv? (module-binding-nominal-sym ab)
              (module-binding-nominal-sym bb))))
 
@@ -110,8 +110,8 @@
               (module-binding-nominal-module b)
               (module-binding-nominal-sym b)
               (module-binding-phase b)
-              (module-binding-nominal-require-phase b)
-              (module-binding-nominal-phase b)))]
+              (module-binding-nominal-require-phase+space-shift b)
+              (module-binding-nominal-phase+space b)))]
    [(local-binding? b)
     'lexical]
    [else #f]))

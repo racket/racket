@@ -29,7 +29,7 @@
                                  [else
                                   (for/list ([b (in-list (cons b (module-binding-extra-nominal-bindings b)))])
                                     (cond
-                                      [(and (eqv? (module-binding-nominal-phase b)
+                                      [(and (eqv? (module-binding-nominal-phase+space b)
                                                   phase)
                                             (eq? (module-binding-nominal-sym b) sym))
                                        (module-binding-nominal-module b)]
@@ -37,7 +37,7 @@
                                        (list (module-binding-nominal-module b)
                                              (module-binding-phase b)
                                              (module-binding-nominal-sym b)
-                                             (module-binding-nominal-phase b))]))])
+                                             (module-binding-nominal-phase+space b))]))])
                                (if defined-names?
                                    (list (module-binding-sym b))
                                    null))))]

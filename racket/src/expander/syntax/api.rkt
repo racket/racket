@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../common/phase.rkt"
+         "../common/phase+space.rkt"
          "../common/module-path.rkt"
          (rename-in "syntax.rkt"
                     [syntax->datum raw:syntax->datum]
@@ -107,9 +108,9 @@
                                        [sym as-sym]
                                        [phase as-phase]
                                        [nominal-mpi mpi]
-                                       [nominal-phase phase]
+                                       [nominal-phase+space phase]
                                        [nominal-sym sym]
-                                       [nominal-require-phase 0]
+                                       [nominal-require-phase+space-shift 0]
                                        [insp #f])
   (check who syntax-binding-set? bs)
   (check who symbol? as-sym)
@@ -118,14 +119,14 @@
   (check who symbol? sym)
   (check who phase? #:contract phase?-string phase)
   (check who module-path-index? nominal-mpi)
-  (check who phase? #:contract phase?-string nominal-phase)
+  (check who phase+space? #:contract phase+space?-string nominal-phase+space)
   (check who symbol? nominal-sym)
-  (check who phase? #:contract phase?-string nominal-require-phase)
+  (check who phase+space-shift? #:contract phase+space-shift?-string nominal-require-phase+space-shift)
   (check who inspector? #:or-false insp)
   (raw:syntax-binding-set-extend bs as-sym as-phase mpi
                                  sym phase
-                                 nominal-mpi nominal-phase nominal-sym
-                                 nominal-require-phase
+                                 nominal-mpi (intern-phase+space nominal-phase+space) nominal-sym
+                                 (intern-phase+space-shift nominal-require-phase+space-shift)
                                  insp))
 
 (define/who (syntax-binding-set->syntax bs datum)

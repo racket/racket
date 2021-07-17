@@ -1,7 +1,8 @@
 #lang scribble/doc
 @(require "mz.rkt"
           (for-label compiler/embed
-                     syntax/modresolve))
+                     syntax/modresolve
+                     racket/phase+space))
 
 @title{Module Names and Loading}
 
@@ -405,15 +406,16 @@ the module's explicit imports.}
 
 @defproc[(module-compiled-exports [compiled-module-code compiled-module-expression?]
                                   [verbosity (or/c #f 'defined-names) #f])
-         (values (listof (cons/c (or/c exact-integer? #f) list?))
-                 (listof (cons/c (or/c exact-integer? #f) list?)))]{
+         (values (listof (cons/c phase+space? list?))
+                 (listof (cons/c phase+space? list?)))]{
 
-Returns two association lists mapping @tech{phase level} values (where
-@racket[#f] corresponds to the @tech{label phase level}) to exports at
-the corresponding phase. The first association list is for exported
+Returns two association lists mapping from a combination of @tech{phase level}
+and @tech{binding space} to exports at
+the corresponding phase and space. The first association list is for exported
 variables, and the second is for exported syntax. Beware however, that
 value bindings re-exported though a @tech{rename transformer} are in
-the syntax list instead of the value list.
+the syntax list instead of the value list. See @racket[phase+space?]
+for information on the phase-and-space representation.
 
 Each associated list, which is represented by @racket[list?] in the
 result contracts above, more precisely matches the contract
@@ -423,9 +425,9 @@ result contracts above, more precisely matches the contract
                 (listof 
                  (or/c module-path-index?
                        (list/c module-path-index?
-                               (or/c exact-integer? #f)
+                               phase+space?
                                symbol?
-                               (or/c exact-integer? #f))))
+                               phase+space?)))
                 (code:comment @#,elem{only if @racket[verbosity] is @racket['defined-names]:})
                 symbol?))
 ]
@@ -449,12 +451,14 @@ than the name that is exported).
 For each origin, a @tech{module path index} by itself means that the
 binding was imported with a @tech{phase level} shift of @racket[0]
 (i.e., a plain @racket[require] without @racket[for-meta],
-@racket[for-syntax], etc.), and imported identifier has the same name
+@racket[for-syntax], etc.) into the default @tech{binding space} (i.e.,
+without @racket[for-space]), and the imported identifier has the same name
 as the re-exported name. An origin represented with a list indicates
-explicitly the import, the import @tech{phase level} shift (where
-@racket[#f] corresponds to a @racket[for-label] import), the import
-name of the re-exported binding, and the @tech{phase level} of the
-import.
+explicitly the import, the @tech{phase level} plus @tech{binding space}
+where the imported identifier is bound (see @racket[phase+space?] for more
+information on the representation), the symbolic name of the import
+as bound in the importing module, and the @tech{phase level} plus
+@tech{binding space} of the identifier from the exporting module.
 
 @examples[#:eval mod-eval
           (module-compiled-exports
@@ -473,7 +477,8 @@ import.
                  (define compile-time (current-seconds)))))
            'defined-names)]
 
-@history[#:changed "7.5.0.6" @elem{Added the @racket[verbosity] argument.}]}
+@history[#:changed "7.5.0.6" @elem{Added the @racket[verbosity] argument.}
+         #:changed "8.2.0.3" @elem{Generalized results to phase--space combinations.}]}
 
 
 
@@ -707,8 +712,8 @@ A module can be @tech{declare}d by using @racket[dynamic-require].
           [mod (or/c module-path? module-path-index?
                      resolved-module-path?)]
           [verbosity (or/c #f 'defined-names) #f])
-         (values (listof (cons/c (or/c exact-integer? #f) list?))
-                 (listof (cons/c (or/c exact-integer? #f) list?)))]{
+         (values (listof (cons/c phase+space? list?))
+                 (listof (cons/c phase+space? list?)))]{
 
  Like @racket[module-compiled-exports], but produces the
  exports of @racket[mod], which must be @tech{declare}d (but
@@ -724,7 +729,8 @@ A module can be @tech{declare}d by using @racket[dynamic-require].
             (define bush (* 2 pi)))
           (module->exports ''banana)]
 
-@history[#:changed "7.5.0.6" @elem{Added the @racket[verbosity] argument.}]}
+@history[#:changed "7.5.0.6" @elem{Added the @racket[verbosity] argument.}
+         #:changed "8.2.0.3" @elem{Generalized results to phase--space combinations.}]}
 
 
 @defproc[(module->indirect-exports

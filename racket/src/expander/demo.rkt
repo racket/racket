@@ -1466,3 +1466,151 @@
   (check-value (syntax-property s 'keep-me) 17)
   (check-value (syntax-property (syntax-deserialize (syntax-serialize s)) 'keep-me) #f)
   (check-value (syntax-property (syntax-deserialize (syntax-serialize s #f '(keep-me))) 'keep-me) 17))
+
+;; ----------------------------------------
+;; Nominals
+
+(eval-module-declaration
+ '(module provides-force '#%kernel
+    (#%provide force)
+    (define-values (force) 'force)))
+
+(eval-module-declaration
+ '(module reprovides-force '#%kernel
+    (#%require 'provides-force)
+    (#%provide force)))
+
+(eval-module-declaration
+ '(module export-of-force-has-two-nominals '#%kernel
+    (#%require (only 'provides-force force)
+               (only 'reprovides-force force))
+    (#%provide force result)
+    (define-values (result other)
+      (module->exports (variable-reference->resolved-module-path
+                        (#%variable-reference))))))
+
+(parameterize ([current-namespace demo-ns])
+  (dynamic-require ''export-of-force-has-two-nominals 'result))
+
+;; ----------------------------------------
+;; Spaces
+
+(define (make-own-ns)
+  (define ns (make-namespace))
+  (namespace-attach-module (current-namespace) ''#%kernel ns)
+  (namespace-require ''#%kernel ns)
+  ns)
+
+(define (in-space space datum ns)
+  (namespace-syntax-introduce
+   ((eval-expression `(make-interned-syntax-introducer ',space))
+    (datum->syntax #f datum))
+   ns))
+
+(define (declare-soup ns)
+  (eval-module-declaration
+   #:namespace ns
+   '(module soup-kettle '#%kernel
+      (#%require (for-syntax '#%kernel))
+      (#%provide (for-space soup kettle))
+      (define-syntaxes (def)
+        (lambda (stx)
+          (datum->syntax
+           #f
+           (list (quote-syntax define-values)
+                 (list
+                  ((make-interned-syntax-introducer 'soup)
+                   (syntax-local-introduce
+                    (quote-syntax kettle))))
+                 (quote-syntax 11)))))
+      (def)
+      (define-values (kettle) 10))))
+
+(let ()
+  (define ns (make-own-ns))
+  
+  (check-error
+   (eval-module-declaration
+    #:namespace ns
+    '(module soup-kettle '#%kernel
+       (#%provide (for-space soup kettle))
+       (define-values (kettle) 10)))
+   "defined only outside the space")
+  (declare-soup ns)
+
+  (eval-expression
+   #:namespace ns
+   '(#%require 'soup-kettle))
+
+  (check-error
+   (eval-expression
+    #:namespace ns
+    'kettle)
+   #rx"kettle")
+
+  (eval-expression
+   #:namespace ns
+   #:check 11
+   (in-space 'soup 'kettle ns)))
+
+(let ()
+  (define ns (make-own-ns))
+  (declare-soup ns)
+  (eval-expression
+   #:namespace ns
+   '(#%require (for-space meal 'soup-kettle)))
+
+  (check-error
+   (eval-expression
+    #:namespace ns
+    'kettle)
+   #rx"kettle")
+
+  (check-error
+   (eval-expression
+    #:namespace ns
+    (in-space 'soup 'kettle ns))
+   #rx"kettle")
+
+  (eval-expression
+   #:namespace ns
+   #:check 11
+   (in-space 'meal 'kettle ns)))
+
+(let ()
+  (define ns (make-own-ns))
+  (declare-soup ns)
+
+  (eval-expression
+   #:namespace ns
+   '(#%require (only 'soup-kettle kettle)))
+  (eval-expression
+   #:namespace ns
+   #:check 11
+   (in-space 'soup 'kettle ns)))
+
+(let ()
+  (define ns (make-own-ns))
+  (namespace-require '(for-syntax '#%kernel) ns)
+  
+  (declare-soup ns)
+
+  (eval-expression
+   #:namespace ns
+   '(#%require (for-syntax 'soup-kettle)))
+
+  (check-error
+   (eval-expression
+    #:namespace ns
+    'kettle)
+   #rx"kettle")
+
+  (check-error
+   (eval-expression
+    #:namespace ns
+    '(define-syntaxes () kettle))
+   #rx"kettle")
+
+  (eval-expression
+   #:namespace ns
+   `(define-syntaxes (something) ,(in-space 'soup 'kettle ns))))

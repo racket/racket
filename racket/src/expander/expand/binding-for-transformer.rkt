@@ -18,7 +18,7 @@
     ;; consulting the exporting module
     (define m (namespace->module ns (module-path-index-resolve
                                      (module-binding-nominal-module b))))
-    (define b/p (hash-ref (hash-ref (module-provides m) (module-binding-nominal-phase b) #hasheq())
+    (define b/p (hash-ref (hash-ref (module-provides m) (module-binding-nominal-phase+space b) #hasheq())
                           (module-binding-nominal-sym b)
                           #f))
     (provided-as-transformer? b/p)]

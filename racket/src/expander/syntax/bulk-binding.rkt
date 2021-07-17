@@ -4,6 +4,7 @@
          "binding-table.rkt" ; defines `prop:bulk-binding`
          "binding.rkt"
          "../common/module-path.rkt"
+         "../common/phase+space.rkt"
          "../namespace/provided.rkt")
 
 (provide provide-binding-to-require-binding
@@ -41,21 +42,21 @@
 ;; ----------------------------------------
 
 ;; Helper for both regular imports and bulk bindings, which converts a
-;; providing module's view of a binding to a requiring mdoule's view.
+;; providing module's view of a binding to a requiring module's view.
 (define (provide-binding-to-require-binding binding/p   ; the provided binding
                                             sym         ; the symbolic name of the provide
                                             #:self self ; the providing module's view of itself
                                             #:mpi mpi   ; the requiring module's view
-                                            #:provide-phase-level provide-phase-level
-                                            #:phase-shift phase-shift)
+                                            #:provide-phase+space provide-phase+space
+                                            #:phase+space-shift phase+space-shift)
   (define binding (provided-as-binding binding/p))
   (define from-mod (module-binding-module binding))
   (module-binding-update binding
                          #:module (module-path-index-shift from-mod self mpi)
                          #:nominal-module mpi
-                         #:nominal-phase provide-phase-level
+                         #:nominal-phase+space provide-phase+space
                          #:nominal-sym sym
-                         #:nominal-require-phase phase-shift
+                         #:nominal-require-phase+space-shift phase+space-shift
                          #:frame-id #f
                          #:extra-inspector (and (not (provided-as-protected? binding/p)) ; see [*] below
                                                 (module-binding-extra-inspector binding))
@@ -78,8 +79,8 @@
                       excepts              ; hash table of excluded symbols (before adding prefix)
                       [self #:mutable]     ; the providing module's self
                       mpi                  ; this binding's view of the providing module
-                      provide-phase-level  ; providing module's import phase
-                      phase-shift          ; providing module's instantiation phase
+                      provide-phase+space  ; providing module's import phase and space
+                      phase+space-shift    ; providing module's instantiation phase and space level
                       bulk-binding-registry) ; a registry for finding bulk bindings lazily
   #:authentic
   #:property prop:bulk-binding
@@ -100,7 +101,7 @@
            ;; Reset `provide` and `self` to the discovered information
            (set-bulk-binding-self! b (bulk-provide-self bulk-provide))
            (define provides (hash-ref (bulk-provide-provides bulk-provide)
-                                      (bulk-binding-provide-phase-level b)))
+                                      (bulk-binding-provide-phase+space b)))
            ;; Remove exceptions and add prefix
            (define excepts (bulk-binding-excepts b))
            (define prefix (bulk-binding-prefix b))
@@ -124,8 +125,8 @@
                   sym)
       #:self (bulk-binding-self b)
       #:mpi (bulk-binding-mpi b)
-      #:provide-phase-level (bulk-binding-provide-phase-level b)
-      #:phase-shift (bulk-binding-phase-shift b)))
+      #:provide-phase+space (bulk-binding-provide-phase+space b)
+      #:phase+space-shift (bulk-binding-phase+space-shift b)))
    ;; modname
    (lambda (b mpi-shifts)
      (bulk-binding-module-name b mpi-shifts)))
@@ -143,15 +144,15 @@
     (ser-push! (bulk-binding-prefix b))
     (ser-push! (bulk-binding-excepts b))
     (ser-push! (bulk-binding-mpi b))
-    (ser-push! (bulk-binding-provide-phase-level b))
-    (ser-push! (bulk-binding-phase-shift b))
+    (ser-push! (bulk-binding-provide-phase+space b))
+    (ser-push! (bulk-binding-phase+space-shift b))
     (ser-push! 'tag '#:bulk-binding-registry)))
 
-(define (deserialize-bulk-binding prefix excepts mpi provide-phase-level phase-shift bulk-binding-registry)
-  (bulk-binding #f prefix excepts #f mpi provide-phase-level phase-shift bulk-binding-registry))
+(define (deserialize-bulk-binding prefix excepts mpi provide-phase+space phase-level bulk-binding-registry)
+  (bulk-binding #f prefix excepts #f mpi (intern-phase+space provide-phase+space) phase-level bulk-binding-registry))
 
-(define (deserialize-bulk-binding+provides provides self prefix excepts mpi provide-phase-level phase-shift bulk-binding-registry)
-  (bulk-binding provides prefix excepts self mpi provide-phase-level phase-shift bulk-binding-registry))
+(define (deserialize-bulk-binding+provides provides self prefix excepts mpi provide-phase+space phase-level bulk-binding-registry)
+  (bulk-binding provides prefix excepts self mpi (intern-phase+space provide-phase+space) phase-level bulk-binding-registry))
 
 (define (bulk-provides-add-prefix-remove-exceptions provides prefix excepts)
   (for/hash ([(sym val) (in-hash provides)]

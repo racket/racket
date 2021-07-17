@@ -1112,7 +1112,7 @@
     (syntax-case stx ()
       [(_mod _m _racket
              (_mod-begin config-runtime
-                         (_req (_just-meta _0 (_rename rl1 . _whatever))
+                         (_req (_just-meta _0 (_just-space #f (_rename rl1 . _whatever)))
                                (_only rl2))))
        (list #'rl1 #'rl2)]))
   

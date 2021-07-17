@@ -4,10 +4,12 @@
          "../syntax/taint.rkt"
          "../syntax/track.rkt"
          "../common/phase.rkt"
+         "../common/phase+space.rkt"
          "../syntax/scope.rkt"
          "../syntax/match.rkt"
          "../syntax/binding.rkt"
          "../syntax/error.rkt"
+         "../syntax/space-scope.rkt"
          "require+provide.rkt"
          "context.rkt"
          "protect.rkt"
@@ -20,7 +22,7 @@
 
 (provide parse-and-expand-provides!)
 
-(define layers '(raw phaseless id))
+(define layers '(raw phaseless spaceless id))
 
 (define provide-form-name 'provide) ; complain as `provide` instead of `#%provide`
 
@@ -30,7 +32,8 @@
   ;; returns a list of expanded specs while registering provides in `rp`
   (define ns (expand-context-namespace ctx))
   (let loop ([specs specs]
-             [at-phase phase]
+             [at-phase phase] ; works as a phase or a phase level
+             [at-space-level '#:none]
              [protected? #f]
              [layer 'raw])
     (define-values (track-stxess exp-specss)
@@ -52,6 +55,7 @@
            (define-values (track-stxes exp-specs)
              (loop (m 'spec)
                    (phase+ p at-phase)
+                   at-space-level
                    protected?
                    'phaseless))
            (values null
@@ -67,6 +71,7 @@
            (define-values (track-stxes exp-specs)
              (loop (m 'spec)
                    (phase+ 1 at-phase)
+                   at-space-level
                    protected?
                    'phaseless))
            (values null
@@ -82,6 +87,7 @@
            (define-values (track-stxes exp-specs)
              (loop (m 'spec)
                    #f
+                   at-space-level
                    protected?
                    'phaseless))
            (values null
@@ -91,14 +97,34 @@
                      (rebuild
                       spec
                       `(,(m 'for-label) ,@exp-specs)))))]
-          [(protect)
+          [(for-space)
            (check-nested 'phaseless)
+           (define-match m disarmed-spec '(for-space space spec ...))
+           (define space (syntax-e (m 'space)))
+           (unless (space? space)
+             (raise-syntax-error provide-form-name "bad `for-space' space" orig-s spec))
+           (define-values (track-stxes exp-specs)
+             (loop (m 'spec)
+                   at-phase
+                   space
+                   protected?
+                   'spaceless))
+           (values null
+                   (list
+                    (syntax-track-origin*
+                     track-stxes
+                     (rebuild
+                      spec
+                      `(,(m 'for-space) ,(m 'space) ,@exp-specs)))))]
+          [(protect)
+           (check-nested 'spaceless)
            (when protected?
              (raise-syntax-error provide-form-name "nested `protect' not allowed" orig-s spec))
            (define-match m disarmed-spec '(protect p-spec ...))
            (define-values (track-stxes exp-specs)
              (loop (m 'p-spec)
                    at-phase
+                   at-space-level
                    #t
                    layer))
            (values null
@@ -109,9 +135,9 @@
                       spec
                       `(,(m 'protect) ,@exp-specs)))))]
           [(rename)
-           (check-nested 'phaseless)
+           (check-nested 'spaceless)
            (define-match m disarmed-spec '(rename id:from id:to))
-           (parse-identifier! (m 'id:from) orig-s (syntax-e (m 'id:to)) at-phase ns rp protected?)
+           (parse-identifier! (m 'id:from) orig-s (syntax-e (m 'id:to)) at-phase at-space-level ns rp protected?)
            (values null (list spec))]
           [(struct)
            (check-nested 'phaseless)
@@ -119,34 +145,34 @@
            (parse-struct! (m 'id:struct) orig-s (m 'id:field) at-phase ns rp protected?)
            (values null (list spec))]
           [(all-from)
-           (check-nested 'phaseless)
+           (check-nested 'spaceless)
            (define-match m disarmed-spec '(all-from mod-path))
-           (parse-all-from (m 'mod-path) orig-s self null at-phase ns rp protected? ctx)
+           (parse-all-from (m 'mod-path) orig-s self null at-phase at-space-level ns rp protected? ctx)
            (values null (list spec))]
           [(all-from-except)
-           (check-nested 'phaseless)
+           (check-nested 'spaceless)
            (define-match m disarmed-spec '(all-from-except mod-path id ...))
-           (parse-all-from (m 'mod-path) orig-s self (m 'id) at-phase ns rp protected? ctx)
+           (parse-all-from (m 'mod-path) orig-s self (m 'id) at-phase at-space-level ns rp protected? ctx)
            (values null (list spec))]
           [(all-defined)
-           (check-nested 'phaseless)
+           (check-nested 'spaceless)
            (define-match m disarmed-spec '(all-defined))
-           (parse-all-from-module self spec orig-s null #f at-phase ns rp protected?)
+           (parse-all-from-module self spec orig-s null #f at-phase at-space-level ns rp protected?)
            (values null (list spec))]
           [(all-defined-except)
-           (check-nested 'phaseless)
+           (check-nested 'spaceless)
            (define-match m disarmed-spec '(all-defined-except id ...))
-           (parse-all-from-module self spec orig-s (m 'id) #f at-phase ns rp protected?)
+           (parse-all-from-module self spec orig-s (m 'id) #f at-phase at-space-level ns rp protected?)
            (values null (list spec))]
           [(prefix-all-defined)
-           (check-nested 'phaseless)
+           (check-nested 'spaceless)
            (define-match m disarmed-spec '(prefix-all-defined id:prefix))
-           (parse-all-from-module self spec orig-s null (syntax-e (m 'id:prefix)) at-phase ns rp protected?)
+           (parse-all-from-module self spec orig-s null (syntax-e (m 'id:prefix)) at-phase at-space-level ns rp protected?)
            (values null (list spec))]
           [(prefix-all-defined-except)
-           (check-nested 'phaseless)
+           (check-nested 'spaceless)
            (define-match m disarmed-spec '(prefix-all-defined-except id:prefix id ...))
-           (parse-all-from-module self spec orig-s (m 'id) (syntax-e (m 'id:prefix)) at-phase ns rp protected?)
+           (parse-all-from-module self spec orig-s (m 'id) (syntax-e (m 'id:prefix)) at-phase at-space-level ns rp protected?)
            (values null (list spec))]
           [(expand)
            (define-match ex-m disarmed-spec '(expand (id . datum))) ; just check syntax
@@ -165,6 +191,7 @@
            (define-values (track-stxes exp-specs)
              (loop (e-m 'spec)
                    at-phase
+                   at-space-level
                    protected?
                    layer))
            (values (list* spec exp-spec track-stxes)
@@ -172,7 +199,7 @@
           [else
            (cond
             [(identifier? spec)
-             (parse-identifier! spec orig-s (syntax-e spec) at-phase ns rp protected?)
+             (parse-identifier! spec orig-s (syntax-e spec) at-phase at-space-level ns rp protected?)
              (values null (list spec))]
             [else
              (raise-syntax-error provide-form-name "bad syntax" orig-s spec)])])))
@@ -181,13 +208,17 @@
 
 ;; ----------------------------------------
 
-(define (parse-identifier! spec orig-s sym at-phase ns rp protected?)
-  (define b (resolve+shift/extra-inspector spec at-phase ns))
+(define (parse-identifier! spec orig-s sym at-phase at-space-level ns rp protected?)
+  (define at-space (space+ #f at-space-level))
+  (define b (resolve+shift/extra-inspector (add-space-scope spec at-space) at-phase ns))
   (unless (module-binding? b)
     (raise-syntax-error provide-form-name "provided identifier is not defined or required" orig-s spec))
+  (when at-space
+    (when (same-binding? b (resolve+shift/extra-inspector (remove-space-scope spec at-space) at-phase ns))
+      (raise-syntax-error provide-form-name "provided identifier is defined only outside the space" orig-s spec)))
   (define as-transformer? (binding-for-transformer? b spec at-phase ns))
   (define immed-b (resolve+shift spec at-phase #:immediate? #t))
-  (add-provide! rp sym at-phase b immed-b spec orig-s
+  (add-provide! rp sym (intern-phase+space at-phase at-space) b immed-b spec orig-s
                 #:as-protected? protected?
                 #:as-transformer? as-transformer?))
 
@@ -205,27 +236,32 @@
                             "struct:~a"
                             "~a?"))])
     (define id (mk fmt))
-    (parse-identifier! id orig-s (syntax-e id) at-phase ns rp protected?))
+    (parse-identifier! id orig-s (syntax-e id) at-phase #f ns rp protected?))
   (for ([field (in-list fields)])
     (define get-id (mk2 "~a-~a" field))
     (define set-id (mk2 "set-~a-~a!" field))
-    (parse-identifier! get-id orig-s (syntax-e get-id) at-phase ns rp protected?)
-    (parse-identifier! set-id orig-s (syntax-e set-id) at-phase ns rp protected?)))
+    (parse-identifier! get-id orig-s (syntax-e get-id) at-phase #f ns rp protected?)
+    (parse-identifier! set-id orig-s (syntax-e set-id) at-phase #f ns rp protected?)))
   
-(define (parse-all-from mod-path-stx orig-s self except-ids at-phase ns rp protected? ctx)
+(define (parse-all-from mod-path-stx orig-s self except-ids at-phase at-space-level ns rp protected? ctx)
   (define mod-path (syntax->datum mod-path-stx))
   (unless (module-path? mod-path)
     (raise-syntax-error provide-form-name "not a module path" orig-s mod-path-stx))
   (define mpi (module-path->mpi/context mod-path ctx))
-  (parse-all-from-module mpi #f orig-s except-ids #f at-phase ns rp protected?))
+  (parse-all-from-module mpi #f orig-s except-ids #f at-phase at-space-level ns rp protected?))
   
-(define (parse-all-from-module mpi matching-stx orig-s except-ids prefix-sym at-phase ns rp protected?)
-  (define requireds (extract-module-requires rp mpi at-phase))
+(define (parse-all-from-module mpi matching-stx orig-s except-ids prefix-sym at-phase at-space-level ns rp protected?)
+  (define at-phase+space-shift (intern-phase+space-shift at-phase at-space-level))
+  (define requireds (extract-module-requires rp mpi at-phase+space-shift))
 
-  (define (phase-desc) (cond
-                        [(zero-phase? at-phase) ""]
-                        [(label-phase? at-phase) " for-label"]
-                        [else (format " for phase ~a" at-phase)]))
+  (define (phase-desc) (string-append
+                        (cond
+                          [(zero-phase? at-phase) ""]
+                          [(label-phase? at-phase) " for-label"]
+                          [else (format " for phase level ~a" at-phase)])
+                        (cond
+                          [(not (space+ #f at-space-level)) ""]
+                          [else (format " in space level ~s" at-space-level)])))
   (unless requireds
     (raise-syntax-error provide-form-name
                         (format "cannot provide from a module without a matching require~a"
@@ -237,25 +273,28 @@
         (string->symbol (string-append (symbol->string prefix-sym) (symbol->string sym)))
         sym))
 
+  (define at-phase+space (phase+space+ 0 at-phase+space-shift))
   (define found (make-hasheq))
   
   ;; Register all except excluded bindings:
   (for ([i (in-list requireds)])
-    (define id (required-id i))
-    (define phase (required-phase i))
+    (define id (required-id i)) ; includes space scope, if any
+    (define phase+space (required-phase+space i))
+    (define phase (phase+space-phase phase+space))
+    (define space (phase+space-space phase+space))
     (unless (or (and matching-stx
                      ;; For `(all-defined-out)`, phase and binding context must match:
-                     (not (and (eqv? phase at-phase)
+                     (not (and (eqv? phase+space at-phase+space)
                                (free-identifier=? id
-                                                  (datum->syntax matching-stx (syntax-e id))
+                                                  (add-space-scope (datum->syntax matching-stx (syntax-e id)) space)
                                                   phase
                                                   phase))))
                 (for/or ([except-id (in-list except-ids)])
-                  (and (free-identifier=? id except-id phase phase)
+                  (and (free-identifier=? id (add-space-scope except-id space) phase phase)
                        (hash-set! found except-id #t))))
       (define b (resolve+shift/extra-inspector id phase ns))
       (define immed-b (resolve+shift id phase #:immediate? #t))
-      (add-provide! rp (add-prefix (syntax-e id)) phase b immed-b id orig-s 
+      (add-provide! rp (add-prefix (syntax-e id)) phase+space b immed-b id orig-s 
                     #:as-protected? protected?
                     #:as-transformer? (required-as-transformer? i))))
   
@@ -265,8 +304,10 @@
       (unless (or (hash-ref found except-id #f)
                   (for/or ([i (in-list requireds)])
                     (define id (required-id i))
-                    (define phase (required-phase i))
-                    (free-identifier=? id except-id phase phase)))
+                    (define phase+space (required-phase+space i))
+                    (define phase (phase+space-phase phase+space))
+                    (define space (phase+space-space phase+space))
+                    (free-identifier=? id (add-space-scope except-id space) phase phase)))
         (raise-syntax-error provide-form-name
                             (format (if matching-stx
                                         "excluded identifier was not defined or required in the module~a"

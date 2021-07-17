@@ -2,10 +2,12 @@
 (require "../common/set.rkt"
          "../common/performance.rkt"
          "../common/phase.rkt"
+         "../common/phase+space.rkt"
          "../syntax/syntax.rkt"
          "../syntax/scope.rkt"
          "../syntax/binding.rkt"
          "../syntax/error.rkt"
+         "../syntax/space-scope.rkt"
          "../namespace/namespace.rkt"
          "../namespace/module.rkt"
          "../namespace/provided.rkt"
@@ -26,7 +28,7 @@
 (struct adjust-all-except (prefix-sym syms))
 (struct adjust-rename (to-id from-sym))
 
-(define layers '(raw phaseless path))
+(define layers '(raw phaseless spaceless justspaceless path))
 
 (define (parse-and-perform-requires! reqs orig-s m-ns phase-shift
                                      requires+provides
@@ -43,8 +45,10 @@
                                      #:who who)
   (let loop ([reqs reqs]
              [top-req #f]
-             [phase-shift phase-shift]
+             [phase-shift phase-shift] ; this really should be called `phase-level` everywhere
+             [space-level '#:none]
              [just-meta 'all]
+             [just-space #t]  ; #t means "all"
              [adjust #f]
              [for-meta-ok? #t]
              [just-meta-ok? #t]
@@ -66,7 +70,9 @@
          (loop (m 'spec) 
                (or top-req req)
                (phase+ phase-shift p)
+               space-level
                just-meta
+               just-space
                adjust
                #f just-meta-ok? 'raw)]
         [(for-syntax)
@@ -75,7 +81,9 @@
          (loop (m 'spec)
                (or top-req req)
                (phase+ phase-shift 1)
+               space-level
                just-meta
+               just-space
                adjust
                #f just-meta-ok? 'raw)]
         [(for-template)
@@ -84,7 +92,9 @@
          (loop (m 'spec)
                (or top-req req)
                (phase+ phase-shift -1)
+               space-level
                just-meta
+               just-space
                adjust
                #f just-meta-ok? 'raw)]
         [(for-label)
@@ -93,7 +103,9 @@
          (loop (m 'spec)
                (or top-req req)
                (phase+ phase-shift #f)
+               space-level
                just-meta
+               just-space
                adjust
                #f just-meta-ok? 'raw)]
         [(just-meta)
@@ -105,52 +117,92 @@
          (loop (m 'spec)
                (or top-req req)
                phase-shift
+               space-level
                p
+               just-space
                adjust
                for-meta-ok? #f 'raw)]
-        [(only)
+        [(for-space)
          (check-nested 'phaseless)
+         (define-match m req '(for-space space spec ...))
+         (define space (syntax-e (m 'space)))
+         (unless (space? space)
+           (raise-syntax-error #f "bad space" orig-s req))
+         (loop (m 'spec) 
+               (or top-req req)
+               phase-shift
+               space
+               just-meta
+               just-space
+               adjust
+               #f #f 'spaceless)]
+        [(just-space)
+         (check-nested 'spaceless)
+         (define-match m req '(just-space space spec ...))
+         (define space (syntax-e (m 'space)))
+         (unless (space? space)
+           (raise-syntax-error #f "bad space" orig-s req))
+         (loop (m 'spec)
+               (or top-req req)
+               phase-shift
+               space-level
+               just-meta
+               space
+               adjust
+               #f #f 'justspaceless)]
+        [(only)
+         (check-nested 'justspaceless)
          (define-match m req '(only spec id ...))
          (loop (list (m 'spec))
                (or top-req req)
                phase-shift
+               space-level
                just-meta
+               just-space
                (adjust-only (ids->sym-set (m 'id)))
                #f #f 'path)]
         [(prefix)
-         (check-nested 'phaseless)
+         (check-nested 'justspaceless)
          (define-match m req '(prefix id:prefix spec))
          (loop (list (m 'spec))
                (or top-req req)
                phase-shift
+               space-level
                just-meta
+               just-space
                (adjust-prefix (syntax-e (m 'id:prefix)))
                #f #f 'path)]
         [(all-except)
-         (check-nested 'phaseless)
+         (check-nested 'justspaceless)
          (define-match m req '(all-except spec id ...))
          (loop (list (m 'spec))
                (or top-req req)
                phase-shift
+               space-level
                just-meta
+               just-space
                (adjust-all-except '|| (ids->sym-set (m 'id)))
                #f #f 'path)]
         [(prefix-all-except)
-         (check-nested 'phaseless)
+         (check-nested 'justspaceless)
          (define-match m req '(prefix-all-except id:prefix spec id ...))
          (loop (list (m 'spec))
                (or top-req req)
                phase-shift
+               space-level
                just-meta
+               just-space
                (adjust-all-except (syntax-e (m 'id:prefix)) (ids->sym-set (m 'id)))
                #f #f 'path)]
         [(rename)
-         (check-nested 'phaseless)
+         (check-nested 'justspaceless)
          (define-match m req '(rename spec id:to id:from))
          (loop (list (m 'spec))
                (or top-req req)
                phase-shift
+               space-level
                just-meta
+               just-space
                (adjust-rename (m 'id:to) (syntax-e (m 'id:from)))
                #f #f 'path)]
         [else
@@ -168,8 +220,10 @@
          (perform-require! mpi req self
                            (or req top-req) m-ns
                            #:phase-shift phase-shift
+                           #:space-level space-level
                            #:run-phase run-phase
                            #:just-meta just-meta
+                           #:just-space just-space
                            #:adjust adjust
                            #:requires+provides requires+provides
                            #:run? run?
@@ -207,8 +261,10 @@
 (define (perform-require! mpi orig-s self
                           in-stx m-ns
                           #:phase-shift phase-shift
+                          #:space-level [space-level '#:none]
                           #:run-phase run-phase
                           #:just-meta [just-meta 'all]
+                          #:just-space [just-space #t]
                           #:adjust [adjust #f]
                           #:requires+provides [requires+provides #f]
                           #:visit? [visit? #t]
@@ -232,7 +288,7 @@
    (unless m (raise-unknown-module-error 'require module-name))
    (define interned-mpi
      (if requires+provides
-         (add-required-module! requires+provides mpi phase-shift
+         (add-required-module! requires+provides mpi (intern-phase+space-shift phase-shift space-level)
                                (module-cross-phase-persistent? m))
          mpi))
    (when visit?
@@ -242,7 +298,8 @@
    (when (not (or visit? run?))
      ;; make the module available:
      (namespace-module-make-available! m-ns interned-mpi phase-shift #:visit-phase run-phase))
-   (define can-bulk-bind? (and (or (not adjust)
+   (define can-bulk-bind? (and (eq? space-level '#:none)
+                               (or (not adjust)
                                    (adjust-prefix? adjust)
                                    (adjust-all-except? adjust))
                                (not skip-variable-phase-level)))
@@ -256,7 +313,7 @@
    (define update-nominals-box (and can-bulk-bind? (box null)))
    (bind-all-provides!
     m
-    bind-in-stx phase-shift m-ns interned-mpi module-name
+    bind-in-stx phase-shift space-level m-ns interned-mpi module-name
     #:in orig-s
     #:defines-mpi (and requires+provides (requires+provides-self requires+provides))
     #:only (cond
@@ -264,6 +321,7 @@
             [(adjust-rename? adjust) (list (adjust-rename-from-sym adjust))]
             [else #f])
     #:just-meta just-meta
+    #:just-space just-space
     #:bind? bind?
     #:can-bulk? can-bulk-bind?
     #:bulk-prefix bulk-prefix
@@ -271,13 +329,13 @@
     #:bulk-callback (and
                      requires+provides
                      can-bulk-bind?
-                     (lambda (provides provide-phase-level)
+                     (lambda (provides provide-phase+space)
                        ;; Returns #t if any binding is already shadowed by a definition:
                        (add-bulk-required-ids! requires+provides
                                                bind-in-stx
                                                (module-self m) mpi phase-shift
                                                provides
-                                               provide-phase-level
+                                               provide-phase+space
                                                #:prefix bulk-prefix
                                                #:excepts bulk-excepts
                                                #:symbols-accum (and (positive? (hash-count bulk-excepts))
@@ -292,7 +350,9 @@
                   copy-variable-phase-level)
               (lambda (binding as-transformer?)
                 (define sym (module-binding-nominal-sym binding))
-                (define provide-phase (module-binding-nominal-phase binding))
+                (define provide-phase+space (module-binding-nominal-phase+space binding))
+                (define provide-phase (phase+space-phase provide-phase+space))
+                (define provide-space (phase+space-space provide-phase+space))
                 (define adjusted-sym
                   (cond
                     [(not (symbol-interned? sym))
@@ -324,9 +384,10 @@
                 (define skip-bind?
                   (cond
                     [(and adjusted-sym requires+provides)
-                     (define s (datum->syntax bind-in-stx adjusted-sym))
                      (define bind-phase (phase+ phase-shift provide-phase))
-                     (define skip-bind?
+                     (define bind-space (space+ provide-space space-level))
+                     (define s (add-space-scope (datum->syntax bind-in-stx adjusted-sym) bind-space))
+                     (define bound-status
                        (cond
                          [initial-require? #f]
                          [else
@@ -338,12 +399,14 @@
                                              #:in orig-s
                                              #:remove-shadowed!? #t
                                              #:who who)]))
-                     (unless skip-bind?
+                     (unless (eq? bound-status 'defined)
                        (add-defined-or-required-id! requires+provides
-                                                    s bind-phase binding
+                                                    s (intern-phase+space bind-phase bind-space) binding
                                                     #:can-be-shadowed? can-be-shadowed?
                                                     #:as-transformer? as-transformer?))
-                     skip-bind?]
+                     ;; don't bind if 'defined (definition should shadow requires)
+                     ;; or already 'required (keep existing and updated nominals)
+                     bound-status]
                     [else #f]))
                 (when (and copy-variable-phase-level
                            (not as-transformer?)
@@ -372,11 +435,12 @@
 
 ;; ----------------------------------------
 
-(define (bind-all-provides! m in-stx phase-shift ns mpi module-name
+(define (bind-all-provides! m in-stx phase-shift space-level ns mpi module-name
                             #:in orig-s
                             #:defines-mpi defines-mpi
                             #:only only-syms
                             #:just-meta just-meta
+                            #:just-space just-space
                             #:bind? bind?
                             #:can-bulk? can-bulk?
                             #:bulk-prefix bulk-prefix
@@ -384,13 +448,18 @@
                             #:filter filter
                             #:bulk-callback bulk-callback)
   (define self (module-self m))
-  (for ([(provide-phase-level provides) (in-hash (module-provides m))]
-        #:when (or (eq? just-meta 'all)
-                   (eqv? just-meta provide-phase-level)))
-    (define phase (phase+ phase-shift provide-phase-level))
+  (define phase+space-shift (intern-phase+space-shift phase-shift space-level))
+  (for ([(provide-phase+space provides) (in-hash (module-provides m))]
+        #:when (and (or (eq? just-meta 'all)
+                        (eqv? just-meta (phase+space-phase provide-phase+space)))
+                    (or (eq? just-space #t)
+                        (eqv? just-space (phase+space-space provide-phase+space)))))
+    (define phase+space (phase+space+ provide-phase+space phase+space-shift))
+    (define phase (phase+space-phase phase+space))
+    (define space (phase+space-space phase+space))
     (define need-except?
       (and bulk-callback
-           (bulk-callback provides provide-phase-level)))
+           (bulk-callback provides provide-phase+space)))
     (when bind?
       (when filter
         (for ([sym (in-list (or only-syms (hash-keys provides)))])
@@ -399,17 +468,17 @@
             (define b (provide-binding-to-require-binding binding/p sym
                                                           #:self self
                                                           #:mpi mpi
-                                                          #:provide-phase-level provide-phase-level
-                                                          #:phase-shift phase-shift))
+                                                          #:provide-phase+space provide-phase+space
+                                                          #:phase+space-shift phase+space-shift))
             (let-values ([(sym) (filter b (provided-as-transformer? binding/p))])
               (when (and sym
                          (not can-bulk?)) ;; bulk binding added later
                 ;; Add a non-bulk binding, since `filter` has checked/adjusted it
-                (add-binding! (datum->syntax in-stx sym) b phase))))))
+                (add-binding! (add-space-scope (datum->syntax in-stx sym) space) b phase))))))
       ;; Add bulk binding after all filtering
       (when can-bulk?
         (define bulk-binding-registry (namespace-bulk-binding-registry ns))
-        (add-bulk-binding! in-stx
+        (add-bulk-binding! (add-space-scope in-stx space)
                            (bulk-binding (or (and (not bulk-prefix)
                                                   (zero? (hash-count bulk-excepts))
                                                   provides)
@@ -422,7 +491,7 @@
                                                   (bulk-provides-add-prefix-remove-exceptions
                                                    provides bulk-prefix bulk-excepts)))
                                          bulk-prefix bulk-excepts
-                                         self mpi provide-phase-level phase-shift
+                                         self mpi provide-phase+space phase-shift
                                          bulk-binding-registry)
                            phase
                            #:in orig-s

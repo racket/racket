@@ -7,6 +7,7 @@
                      racket/provide-syntax
                      racket/keyword-transform
                      racket/stxparam
+                     racket/phase+space
                      syntax/intdef))
 
 @(define stx-eval (make-base-eval))
@@ -926,14 +927,16 @@ being expanded. Otherwise, the result is @racket[0].
 
 @defproc[(syntax-local-module-exports [mod-path (or/c module-path?
                                                       (syntax/c module-path?))])
-         (listof (cons/c (or/c exact-integer? #f) (listof symbol?)))]{
+         (listof (cons/c phase+space? (listof symbol?)))]{
 
-Returns an association list from @tech{phase-level} numbers (or
-@racket[#f] for the @tech{label phase level}) to lists of symbols,
+Returns an association list from @tech{phase level} and
+@tech{binding space} combinations to lists of symbols,
 where the symbols are the names of @racket[provide]d
 bindings from @racket[mod-path] at the corresponding @tech{phase level}.
 
-@transform-time[]}
+@transform-time[]
+
+@history[#:changed "8.2.0.3" @elem{Generalized result to phase--space combinations.}]}
 
 
 @defproc[(syntax-local-submodules) (listof symbol?)]{
@@ -1081,7 +1084,7 @@ loaded from compiled code. (In this sense, the relationship between @racket[make
 and @racket[make-interned-syntax-introducer] is analogous to the relationship between
 @racket[gensym] and @racket[quote].)
 
-This function is intended for the implementation of separate binding environments within a single
+This function is intended for the implementation of separate @tech{binding spaces} within a single
 phase, for which the scope associated with each environment must be the same across modules.
 
 Unlike @racket[make-syntax-introducer], the scope added by a procedure created with
@@ -1157,8 +1160,8 @@ level as reported by @racket[syntax-local-phase-level].}
 
 @defproc[(syntax-local-module-required-identifiers
           [mod-path (or/c module-path? #f)]
-          [phase-level (or/c exact-integer? #f #t)])
-         (or/c (listof (cons/c (or/c exact-integer? #f)
+          [shift (or/c #t phase+space-shift?)])
+         (or/c (listof (cons/c phase+space?
                                (listof identifier?)))
                #f)]{
 
@@ -1166,24 +1169,28 @@ Can be called only while
 @racket[syntax-local-transforming-module-provides?] returns
 @racket[#t].
 
-It returns an association list mapping phase levels to lists of
+It returns an association list mapping @tech{phase level} and
+@tech{binding space} combinations to lists of
 identifiers.  Each list of identifiers includes all bindings imported
 (into the module being expanded) using the module path
 @racket[mod-path], or all modules if @racket[mod-path] is
 @racket[#f]. The association list includes all identifiers imported
-with a @racket[phase-level] shift, or all shifts if
-@racket[phase-level] is @racket[#t]. If @racket[phase-level] is
+with a phase level and binding space shift as represented by @racket[shift],
+or all shifts if @racket[shift] is @racket[#t]. If @racket[shift] is
 not @racket[#t], the result can be @racket[#f] if no identifiers
-are exported at that phase.
+are imported at that shift.
 
 When an identifier is renamed on import, the result association list
 includes the identifier by its internal name. Use
 @racket[identifier-binding] to obtain more information about the
 identifier.
 
-Beware that the @tech{phase-level} keys are absolute relative to the
+Beware that the @tech{phase-level} shifts are absolute relative to the
 enclosing module, and not relative to the current transformer phase
-level as reported by @racket[syntax-local-phase-level].}
+level as reported by @racket[syntax-local-phase-level].
+
+@history[#:changed "8.2.0.3" @elem{Generalized @racket[shift] and result
+                                   to phase--space combinations.}]}
 
 @deftogether[(
 @defthing[prop:liberal-define-context struct-type-property?]
@@ -1285,9 +1292,9 @@ Returns @racket[#t] if @racket[v] has the
                    [src-sym symbol?]
                    [src-mod-path (or/c module-path?
                                        (syntax/c module-path?))]
-                   [mode (or/c exact-integer? #f)]
-                   [req-mode (or/c exact-integer? #f)]
-                   [orig-mode (or/c exact-integer? #f)]
+                   [mode phase+space?]
+                   [req-mode phase+space-shift?]
+                   [orig-mode phase+space?]
                    [orig-stx syntax?])]{
 
 A structure representing a single imported identifier:
@@ -1303,23 +1310,27 @@ A structure representing a single imported identifier:
  @item{@racket[src-mod-path] --- a @tech{module path} (relative to the
        importing module) for the source of the imported binding.}
 
- @item{@racket[mode] --- the @tech{phase level} of the binding in the
-       importing module.}
+ @item{@racket[mode] --- the @tech{phase level} and @tech{binding
+       space} of the binding in the importing module, which must be the
+       same as @racket[(phase+space+ orig-mode req-mode)].}
 
- @item{@racket[req-mode] --- the @tech{phase level} shift of the
-       import relative to the exporting module.}
+ @item{@racket[req-mode] --- the @tech{phase level} shift and
+       @tech{binding space} shift of the import relative to the
+       exporting module.}
 
- @item{@racket[orig-mode] --- the @tech{phase level} of the
-       binding as exported by the exporting module.}
+ @item{@racket[orig-mode] --- the @tech{phase level} and @tech{binding
+       space} of the binding as exported by the exporting module.}
 
  @item{@racket[orig-stx] --- a @tech{syntax object} for the source of
        the import, used for error reporting.}
 
-]}
+]
+
+@history[#:changed "8.2.0.3" @elem{Generalized modes to phase--space combinations.}]}
 
 
 @defstruct[import-source ([mod-path-stx (syntax/c module-path?)]
-                          [mode (or/c exact-integer? #f)])]{
+                          [mode phase+space-shift?])]{
 
 A structure representing an imported module, which must be
 @tech{instantiate}d or @tech{visit}ed even if no binding is imported
@@ -1330,9 +1341,12 @@ into a module.
  @item{@racket[mod-path-stx] --- a @tech{module path} (relative
        to the importing module) for the source of the imported binding.}
 
- @item{@racket[mode] --- the @tech{phase level} shift of the import.}
+ @item{@racket[mode] --- the @tech{phase level} shift and
+       @tech{binding space} shift of the import.}
 
-]}
+]
+
+@history[#:changed "8.2.0.3" @elem{Generalized @racket[mode] to phase--space combinations.}]}
 
 
 @defparam[current-require-module-path module-path (or/c #f module-path-index?)]{
@@ -1421,7 +1435,7 @@ See also @racket[define-provide-syntax], which supports macro-style
 @tech{provide transformers}.
 
 
-@defproc[(expand-export [provide-spec syntax?] [modes (listof (or/c exact-integer? #f))])
+@defproc[(expand-export [provide-spec syntax?] [modes (listof phase+space?)])
          (listof export?)]{
 
 Expands the given @racket[_provide-spec] to a list of exports. The
@@ -1429,23 +1443,27 @@ Expands the given @racket[_provide-spec] to a list of exports. The
 sub-@racket[_provide-specs]; for example, an identifier refers to a
 binding in the @tech{phase level} of the enclosing @racket[provide]
 form, unless the @racket[modes] list specifies otherwise. Normally,
-@racket[modes] is either empty or contains a single element.}
+@racket[modes] is either empty or contains a single element.
+
+@history[#:changed "8.2.0.3" @elem{Generalized @racket[modes] to phase--space combinations.}]}
 
 
-@defproc[(pre-expand-export [provide-spec syntax?] [modes (listof (or/c exact-integer? #f))])
+@defproc[(pre-expand-export [provide-spec syntax?] [modes (listof phase+space?)])
          syntax?]{
 
 Expands the given @racket[_provide-spec] at the level of @tech{provide
 pre-transformers}. The @racket[modes] argument is the same as for
-@racket[expand-export].}
+@racket[expand-export].
+
+@history[#:changed "8.2.0.3" @elem{Generalized @racket[modes] to phase--space combinations.}]}
 
 
-@defproc*[([(make-provide-transformer [proc (syntax? (listof (or/c exact-integer? #f))
+@defproc*[([(make-provide-transformer [proc (syntax? (listof phase+space?)
                                              . -> . (listof export?))])
             provide-transformer?]
-           [(make-provide-transformer [proc (syntax? (listof (or/c exact-integer? #f))
+           [(make-provide-transformer [proc (syntax? (listof phase+space?)
                                              . -> . (listof export?))]
-                                      [pre-proc (syntax? (listof (or/c exact-integer? #f))
+                                      [pre-proc (syntax? (listof phase+space?)
                                                  . -> . syntax?)])
             (and/c provide-transformer? provide-pre-transformer?)])]{
 
@@ -1457,7 +1475,7 @@ Often used in combination with @racket[expand-export] and/or
 @racket[pre-expand-export].}
 
 
-@defproc[(make-provide-pre-transformer [pre-proc (syntax? (listof (or/c exact-integer? #f))
+@defproc[(make-provide-pre-transformer [pre-proc (syntax? (listof phase+space?)
                                                   . -> . syntax?)])
          provide-pre-transformer?]{
 
@@ -1521,7 +1539,7 @@ Returns @racket[#t] if @racket[v] has the
 
 @defstruct[export ([local-id identifier?]
                    [out-sym symbol?]
-                   [mode (or/c exact-integer? #f)]
+                   [mode phase+space?]
                    [protect? any/c]
                    [orig-stx syntax?])]{
 
@@ -1534,8 +1552,8 @@ A structure representing a single exported identifier:
 
  @item{@racket[out-sym] --- the external name of the binding.}
 
- @item{@racket[mode] --- the @tech{phase level} of the binding in the
-       exporting module.}
+ @item{@racket[mode] --- the @tech{phase level} and @tech{binding
+       space} of the export (which affects how it is imported).}
 
  @item{@racket[protect?] --- indicates whether the identifier should
        be protected (see @secref["modprotect"]).}
@@ -1543,7 +1561,9 @@ A structure representing a single exported identifier:
  @item{@racket[orig-stx] --- a @tech{syntax object} for the source of
        the export, used for error reporting.}
 
-]}
+]
+
+@history[#:changed "8.2.0.3" @elem{Generalized @racket[mode] to phase--space combinations.}]}
 
 
 @defproc[(syntax-local-provide-certifier)

@@ -340,6 +340,77 @@
          (pseudo-+ ++))
 (test 12 values (++ 7 5))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test binding-space support
+
+(let ()
+  (define-syntax (in-space stx)
+    (syntax-case stx ()
+      [(_ space id) #`(quote-syntax
+                       #,((make-interned-syntax-introducer (syntax-e #'space))
+                          (syntax-local-introduce (datum->syntax #f (syntax-e #'id)))))]))
+  
+  (define (make-soup-module #:with-default? with-default?)
+    `(module soup-kettle racket/base
+       (require (for-syntax racket/base))
+       (provide (for-space soup kettle) ,@(if with-default?
+                                              '(kettle)
+                                              '()))
+       (define-syntax (define-soup stx)
+         (syntax-case stx ()
+           [(_ id rhs)
+            #`(define #,((make-interned-syntax-introducer 'soup)
+                         #'id)
+                rhs)]))
+       (define-soup kettle 'soup)
+       (define kettle 'default)))
+
+  ;; check just providing in `soup` space
+  (parameterize ([current-namespace (make-base-namespace)])
+    (err/rt-test/once
+     (eval '(module soup-kettle racket/base
+              (#%provide (for-space soup kettle))
+              (define kettle 'default)))
+     exn:fail:syntax?
+     #rx"defined only outside the space")
+
+    (eval (make-soup-module #:with-default? #f))
+    (eval '(require 'soup-kettle))
+
+    (err/rt-test/once (eval 'kettle) exn:fail:contract:variable?)
+
+    (test 'soup eval (namespace-syntax-introduce (in-space soup kettle))))
+
+  ;; check providing in `soup` and default spaces
+  (parameterize ([current-namespace (make-base-namespace)])
+    (eval (make-soup-module #:with-default? #t))
+    (eval '(require 'soup-kettle))
+    (test 'soup eval (namespace-syntax-introduce (in-space soup kettle)))
+    (test 'default eval 'kettle))
+
+  ;; check shifting spaces when both `soup` and default are provided
+  (parameterize ([current-namespace (make-base-namespace)])
+    (eval (make-soup-module #:with-default? #t))
+    (err/rt-test/once (eval '(require (for-space bisque 'soup-kettle)))
+                      exn:fail:syntax?
+                      #rx"identifier already required")
+    (eval '(require (for-space bisque (only-space-in soup 'soup-kettle))))
+    (test 'soup eval (namespace-syntax-introduce (in-space bisque kettle)))
+    (err/rt-test/once (eval 'kettle) exn:fail:contract:variable?))
+
+  ;; check shifting phase for `soup` and default spaces
+  (parameterize ([current-namespace (make-base-namespace)])
+    (eval (make-soup-module #:with-default? #t))
+    (eval '(require (for-syntax 'soup-kettle racket/base)))
+    (err/rt-test/once (eval 'kettle) exn:fail:contract:variable?)
+    (err/rt-test/once (eval (namespace-syntax-introduce (in-space bisque kettle))) exn:fail:contract:variable?)
+    (eval '(define-syntax (m stx) #`(quote #,(datum->syntax #'here kettle))))
+    (test 'default eval '(m))
+    (eval (namespace-syntax-introduce
+           (datum->syntax #f `(define-syntax (soup-m stx) #`(quote #,(datum->syntax #'here ,(in-space soup kettle)))))))
+    (test 'soup eval '(soup-m)))
+
+  (void))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test proper bindings for `#%module-begin'
@@ -2517,14 +2588,26 @@ case of module-leve bindings; it doesn't cover local bindings.
     (module->exports (variable-reference->resolved-module-path
                       (#%variable-reference)))))
 
-(let ([l (dynamic-require ''export-of-force-has-three-different-nominals 'result)])
-  (define (same-mod? a b) (equal? (module-path-index-resolve a)
-                                  (module-path-index-resolve b)))
-  (define b (cadr (assoc 'force (cdr (assoc 0 l)))))
-  (test 3 length b)
-  (test #f same-mod? (car b) (cadr b))
-  (test #f same-mod? (cadr b) (caddr b))
-  (test #f same-mod? (car b) (caddr b)))
+(module export-of-force-has-three-different-nominals-no-bulk racket/base
+  (require (only-in racket force)
+           (only-in racket/promise force)
+           (only-in racket/private/promise force))
+  (provide force result)
+
+  (define-values (result other)
+    (module->exports (variable-reference->resolved-module-path
+                      (#%variable-reference)))))
+
+(for ([modname (list ''export-of-force-has-three-different-nominals
+                     ''export-of-force-has-three-different-nominals-no-bulk)])
+  (let ([l (dynamic-require modname 'result)])
+    (define (same-mod? a b) (equal? (module-path-index-resolve a)
+                                    (module-path-index-resolve b)))
+    (define b (cadr (assoc 'force (cdr (assoc 0 l)))))
+    (test 3 length b)
+    (test #f same-mod? (car b) (cadr b))
+    (test #f same-mod? (cadr b) (caddr b))
+    (test #f same-mod? (car b) (caddr b))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

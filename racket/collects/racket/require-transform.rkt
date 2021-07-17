@@ -6,6 +6,7 @@
              "private/qq-and-or.rkt"
              "private/cond.rkt"
              "private/define.rkt"
+             "phase+space.rkt"
              (for-template (only '#%kernel quote))
              (for-syntax '#%kernel))
   
@@ -30,17 +31,14 @@
                           (and (syntax? path)
                                (module-path? (syntax->datum path))))
                 (raise-argument-error 'make-import "(or/c module-path? module-path-syntax?)" path))
-              (unless (or (not mode)
-                          (exact-integer? mode))
-                (raise-argument-error 'make-import "(or/c exact-integer? #f)" mode))
-              (unless (or (not req-mode)
-                          (exact-integer? req-mode))
-                (raise-argument-error 'make-import "(or/c exact-integer? #f)" req-mode))
-              (unless (or (not orig-mode)
-                          (exact-integer? orig-mode))
-                (raise-argument-error 'make-import "(or/c exact-integer? #f)" orig-mode))
-              (unless (equal? mode (and req-mode orig-mode (+ req-mode orig-mode)))
-                (raise-arguments-error 'make-import 
+              (unless (phase+space? mode)
+                (raise-argument-error 'make-import "phase+space?" mode))
+              (unless (phase+space-shift? req-mode)
+                (raise-argument-error 'make-import "phase+space-shift?" req-mode))
+              (unless (phase+space? orig-mode)
+                (raise-argument-error 'make-import "phase+space?" orig-mode))
+              (unless (equal? mode (phase+space+ orig-mode req-mode))
+                (raise-arguments-error 'make-import
                                        "original mode and require mode not consistent with mode" 
                                        "original mode" orig-mode 
                                        "require mode" req-mode
@@ -54,9 +52,8 @@
               (unless (and (syntax? path)
                            (module-path? (syntax->datum path)))
                 (raise-argument-error 'make-import-source "(and/c syntax? (lambda (s) (module-path? (syntax->datum s))))" path))
-              (unless (or (not mode)
-                          (exact-integer? mode))
-                (raise-argument-error 'make-import-source "(or/c exact-integer? #f)" mode))
+              (unless (phase+space-shift? mode)
+                (raise-argument-error 'make-import-source "phase+space-shift?" mode))
               (values path mode)))
     
   (define-values (prop:require-transformer require-transformer? require-transformer-get-proc)

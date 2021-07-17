@@ -39,7 +39,8 @@
          "syntax/serialize.rkt"
          (only-in "eval/module-cache.rkt" module-cache-place-init!)
          (only-in "common/performance.rkt" performance-place-init!)
-         (only-in "eval/shadow-directory.rkt" shadow-directory-place-init!))
+         (only-in "eval/shadow-directory.rkt" shadow-directory-place-init!)
+         (only-in "common/phase+space.rkt" phase+space-place-init!))
 
 ;; All bindings provided by this module must correspond to variables
 ;; (as opposed to syntax). Provided functions must not accept keyword
@@ -222,6 +223,7 @@
   (scope-place-init!)
   (cache-place-init!)
   (core-place-init!)
+  (phase+space-place-init!)
   (module-path-place-init!)
   (module-cache-place-init!)
   (shadow-directory-place-init!)

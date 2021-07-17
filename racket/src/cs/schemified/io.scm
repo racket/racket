@@ -2483,11 +2483,13 @@
           (lambda (list_1)
             (begin
               (if (null? list_1)
-                null
+                list_1
                 (if (|#%app| equal?_0 item_0 (car list_1))
                   (cdr list_1)
-                  (let ((app_0 (car list_1)))
-                    (cons app_0 (loop_0 (cdr list_1)))))))))))
+                  (let ((next_0 (loop_0 (cdr list_1))))
+                    (if (eq? next_0 (cdr list_1))
+                      list_1
+                      (cons (car list_1) next_0))))))))))
        (loop_0 list_0)))))
 (define remq (lambda (item_0 list_0) (do-remove 'remq item_0 list_0 eq?)))
 (define print-value-columns
@@ -34420,11 +34422,11 @@
                 'subprocess
                 "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                 stderr_0))
-             (let ((lr1325 unsafe-undefined)
+             (let ((lr1324 unsafe-undefined)
                    (group_0 unsafe-undefined)
                    (command_0 unsafe-undefined)
                    (exact/args_0 unsafe-undefined))
-               (set! lr1325
+               (set! lr1324
                  (call-with-values
                   (lambda ()
                     (if (path-string? group/command_0)
@@ -34479,9 +34481,9 @@
                    ((group_1 command_1 exact/args_1)
                     (vector group_1 command_1 exact/args_1))
                    (args (raise-binding-result-arity-error 3 args)))))
-               (set! group_0 (unsafe-vector*-ref lr1325 0))
-               (set! command_0 (unsafe-vector*-ref lr1325 1))
-               (set! exact/args_0 (unsafe-vector*-ref lr1325 2))
+               (set! group_0 (unsafe-vector*-ref lr1324 0))
+               (set! command_0 (unsafe-vector*-ref lr1324 1))
+               (set! exact/args_0 (unsafe-vector*-ref lr1324 2))
                (call-with-values
                 (lambda ()
                   (if (if (pair? exact/args_0)

@@ -1,4 +1,5 @@
 #lang racket/base
+(require racket/phase+space)
 
 (provide phase?
          phase+
@@ -14,14 +15,11 @@
 ;;
 ;;  * A "phase level" is a phase relative to a module's body.
 ;;
-;;  * A "phase shift" is a phase to combne with other phases.
+;;  * A "phase shift" is a delta to combne with other phases.
 ;;
 ;; This termonology is approximate, because one use's "phase" is
-;; another use's "phase level".
-
-(define (phase? v)
-  (or (not v)
-      (exact-integer? v)))
+;; another use's "phase level". Also, all three have the same
+;; representation.
 
 (define (phase+ a b)
   (and a b (+ a b)))
@@ -42,4 +40,4 @@
   (not a))
 
 ;; For contract errors:
-(define phase?-string "(or/c exact-integer? #f)")
+(define phase?-string "phase?")

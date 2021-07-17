@@ -148,9 +148,27 @@ form's @tech{scope sets} at all phases. The context of each binding
 and reference determines the @tech{phase level} whose @tech{scope set} is
 relevant.
 
+A @deftech{binding space} is a convention that distinguishes bindings
+by having a specific @tech{scope} for the space; an identifier is
+``bound in a space'' if its binding includes the space's scope in its
+@tech{scope set}. A space's scope is accessed indirectly by using
+@racket[make-interned-syntax-introducer]; that is, a space is just the
+set of bindings with a scope that is interned with that space's name,
+where the @deftech{default binding space} corresponds to having no
+interned scopes. The @racket[require] and @racket[provide] forms
+include support for bindings spaces through subforms like
+@racket[for-space] and @racket[only-space-in]. No other forms provided
+by the @racketmodname[racket] module bind or reference identifier in a
+specified space; such forms are intended to be implemented by new
+macros. By convention, when an identifier is bound in a space, a
+corresponding identifier also should be bound in the default binding
+space; that convention helps avoid mismatches between imports or
+mismatches due to local bindings that shadow only in some spaces.
+
 @history[#:changed "6.3" @elem{Changed local bindings to have a
                                specific phase level, like top-level
-                               and module bindings.}]
+                               and module bindings.}
+         #:changed "8.2.0.3" @elem{Added @tech{binding spaces}.}]
 
 @;------------------------------------------------------------------------
 @section[#:tag "stxobj-model"]{Syntax Objects}
