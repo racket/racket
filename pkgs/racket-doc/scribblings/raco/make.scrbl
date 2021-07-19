@@ -6,7 +6,7 @@
                      racket/future
                      racket/promise
                      racket/file
-                     racket/place
+                     (except-in racket/place processor-count)
                      compiler/cm
                      compiler/cm-accomplice
                      setup/parallel-build
