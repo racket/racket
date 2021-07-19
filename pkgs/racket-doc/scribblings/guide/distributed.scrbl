@@ -20,7 +20,7 @@
 The @racketmodname[racket/place/distributed] library provides support for
 distributed programming.
 
-The example bellow demonstrates how to launch a remote racket node instance,
+The example below demonstrates how to launch a remote racket node instance,
 launch remote places on the new remote node instance, and start an
 event loop that monitors the remote node instance.
 
