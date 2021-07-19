@@ -1,6 +1,7 @@
 Version 8.3
 Removed syntax arming and disarming in favor of a simpler system of
  protected syntax operations
+Added `require` and `provide` support for binding spaces
 
 Version 8.2, July 2021
 CS: faster exact-rational arithmetic

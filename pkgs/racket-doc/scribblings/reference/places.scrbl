@@ -436,7 +436,13 @@ The @racket[place*] binding is protected in the same way as
   @racket[place-message-allowed?], otherwise an @exnraise[exn:fail:contract].
 }
 
+@defproc[(processor-count) exact-positive-integer?]{
 
+  Returns the number of parallel computation units (e.g., processors or
+  cores) that are available on the current machine.
+
+  This is the same binding as available from @racketmodname[racket/future].
+}
 
 @;------------------------------------------------------------------------
 

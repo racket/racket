@@ -3,7 +3,6 @@
           (for-label racket/base
                      racket/include
                      racket/contract
-                     racket/future
                      racket/promise
                      racket/file
                      racket/place
