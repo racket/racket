@@ -23,21 +23,24 @@ two such values that are @racket[equal?] will be @racket[eqv?].
 
 @defproc[(phase? [v any/c]) boolean?]{
 
-Returns @racket[#f] if @racket[v] is a valid representation of a
-@tech{phase level}: either an exact integer representing a numbered
+Returns @racket[#t] if @racket[v] is a valid representation of a
+@tech{phase level}, @racket[#f] otherwise. A valid representation
+is either an exact integer representing a numbered
 phase level or @racket[#f] representing the @tech{label phase level}.}
 
 @defproc[(space? [v any/c]) boolean?]{
 
-Returns @racket[#f] if @racket[v] is a valid representation of a
-@tech{binding space}: either a symbol representing the space whose
+Returns @racket[#t] if @racket[v] is a valid representation of a
+@tech{binding space}, @racket[#f] otherwise. A valid representation
+is either a symbol representing the space whose
 scope is accessed via @racket[make-interned-syntax-introducer], or
 @racket[#f] representing the default binding space.}
 
 @defproc[(phase+space? [v any/c]) boolean?]{
 
-Returns @racket[#f] if @racket[v] is a valid representation of a
-@tech{phase level} and @tech{binding space} combination. The possible
+Returns @racket[#t] if @racket[v] is a valid representation of a
+@tech{phase level} and @tech{binding space} combination,
+@racket[#f] otherwise. The possible
 representations are as follows:
 
 @itemlist[
@@ -61,8 +64,9 @@ a combination.}
 
 @defproc[(phase+space-shift? [v any/c]) boolean?]{
 
-Returns @racket[#f] if @racket[v] is a valid representation of a
-@tech{phase level} shift and @tech{binding space} shift combination. A
+Returns @racket[#t] if @racket[v] is a valid representation of a
+@tech{phase level} shift and @tech{binding space} shift combination,
+@racket[#f] otherwise. A
 shift can be applied to a combination of a phase level and binding
 space using @racket[phase+shift+]. The possible representations of a
 shift are as follows:

@@ -487,6 +487,7 @@ context} or a @tech{module-begin context}. Each
                [id-maybe-renamed id
                                  [orig-id bind-id]]
                [phase-level exact-integer #f]
+               [space id #f]
                [vers code:blank
                      nat
                      (code:line nat minor-vers)]
@@ -980,7 +981,8 @@ level} 0 are imported.
                              (for-label provide-spec ...)
                              (for-space space provide-spec ...)
                              derived-provide-spec]
-               [phase-level exact-integer #f])]{
+               [phase-level exact-integer #f]
+               [space id #f])]{
 
 Declares exports from a module. A @racket[provide] form must appear in
 a @tech{module context} or a @tech{module-begin context}.
@@ -1281,6 +1283,8 @@ multiple symbolic names.}
                                  (#,(racketidfont "just-space") space raw-require-spec ...)]
                [phase-level exact-integer
                             #f]
+               [space id
+                      #f]
                [phaseless-spec raw-module-path
                                (#,(racketidfont "only") raw-module-path id ...)
                                (#,(racketidfont "prefix") prefix-id raw-module-path)
@@ -1345,6 +1349,8 @@ quoted @racket[raw-module-spec].
                [phaseless-spec spaceless-spec
                                (#,(racketidfont "for-space") space spaceless-spec ...)
                                (#,(racketidfont "protect") spaceless-spec ...)]
+               [space id
+                      #f]
                [spaceless-spec id 
                                (#,(racketidfont "rename") local-id export-id) 
                                (#,(racketidfont "struct") struct-id (field-id ...))
