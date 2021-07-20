@@ -1278,14 +1278,15 @@ multiple symbolic names.}
                                  (#,(racketidfont "for-syntax") phaseless-spec ...)
                                  (#,(racketidfont "for-template") phaseless-spec ...)
                                  (#,(racketidfont "for-label") phaseless-spec ...)
-                                 (#,(racketidfont "just-meta") phase-level raw-require-spec ...)
-                                 (#,(racketidfont "for-space") space phaseless-spec ...)
-                                 (#,(racketidfont "just-space") space raw-require-spec ...)]
+                                 (#,(racketidfont "just-meta") phase-level raw-require-spec ...)]
                [phase-level exact-integer
                             #f]
+               [phaseless-spec spaceless-spec
+                               (#,(racketidfont "for-space") space spaceless-spec ...)
+                               (#,(racketidfont "just-space") space phaseless-spec ...)]
                [space id
                       #f]
-               [phaseless-spec raw-module-path
+               [spaceless-spec raw-module-path
                                (#,(racketidfont "only") raw-module-path id ...)
                                (#,(racketidfont "prefix") prefix-id raw-module-path)
                                (#,(racketidfont "all-except") raw-module-path id ...)
@@ -1311,12 +1312,8 @@ composable, and not extensible. Also, sub-form names like
 @racketidfont{for-syntax} and @racketidfont{lib} are recognized
 symbolically, instead of via bindings. Although not formalized in the
 grammar above, a @racketidfont{just-meta} form cannot appear within a
-@racketidfont{just-meta} form, but it can appear under @racketidfont{for-meta},
-@racketidfont{for-syntax}, @racketidfont{for-template}, or @racketidfont{for-label}.
-A @racketidfont{just-meta}, @racketidfont{for-meta},
-@racketidfont{for-syntax}, @racketidfont{for-template}, or @racketidfont{for-label}
-form cannot appear under @racketidfont{for-space} or @racketidfont{just-space},
-and @racketidfont{for-space} cannot appear under @racketidfont{just-space}.
+@racketidfont{just-meta} form, and a @racketidfont{just-space} form
+cannot appear with a @racketidfont{just-space} form.
 
 Each @racket[raw-require-spec] corresponds to the obvious
 @racket[_require-spec], but the @racketidfont{rename} sub-form has the
@@ -1348,7 +1345,7 @@ quoted @racket[raw-module-spec].
                             #f]
                [phaseless-spec spaceless-spec
                                (#,(racketidfont "for-space") space spaceless-spec ...)
-                               (#,(racketidfont "protect") spaceless-spec ...)]
+                               (#,(racketidfont "protect") phaseless-spec ...)]
                [space id
                       #f]
                [spaceless-spec id 
