@@ -2822,6 +2822,9 @@ case of module-leve bindings; it doesn't cover local bindings.
       (compile/eval u-code)
       (test 'ns-val dynamic-require ''u 'v))))
 
+(err/rt-test (make-interned-syntax-introducer 5))
+(err/rt-test (make-interned-syntax-introducer (gensym)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Another example to check that re-expansion generates definition
 ;; names consistent with the previoud expansion.

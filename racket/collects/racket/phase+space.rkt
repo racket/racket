@@ -15,15 +15,21 @@
       (or (not v)
           (exact-integer? v))))
 
+  (define-values (interned-symbol?)
+    (lambda (v)
+      (and (symbol? v)
+           (symbol-interned? v))))
+
   (define-values (space?)
     (lambda (v)
-      (or (not v) (symbol? v))))
+      (or (not v)
+          (interned-symbol? v))))
 
   (define-values (phase+space?)
     (lambda (v)
       (or (phase? v)
           (and (pair? v)
-               (symbol? (cdr v))
+               (interned-symbol? (cdr v))
                (phase? (car v))))))
 
   (define-values (phase+space-shift?)
@@ -31,7 +37,7 @@
       (or (phase? v)
           (and (pair? v)
                (or (not (cdr v))
-                   (symbol? (cdr v)))
+                   (interned-symbol? (cdr v)))
                (phase? (car v))))))
 
   (define-values (phase+space-phase)

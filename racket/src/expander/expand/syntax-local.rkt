@@ -125,7 +125,9 @@
   (do-make-syntax-introducer (new-scope (if as-use-site? 'use-site 'macro))))
 
 (define/who (make-interned-syntax-introducer sym-key)
-  (check who symbol? sym-key)
+  (check who (lambda (v) (and (symbol? v) (symbol-interned? v)))
+         #:contract "(and/c symbol? symbol-interned?)"
+         sym-key)
   (do-make-syntax-introducer (make-interned-scope sym-key)))
 
 (define (do-make-syntax-introducer sc)

@@ -1097,7 +1097,7 @@ and different result procedures use distinct scopes.
                                added the optional operation argument
                                in the result procedure.}]}
 
-@defproc[(make-interned-syntax-introducer [key symbol?])
+@defproc[(make-interned-syntax-introducer [key (and/c symbol? symbol-interned?)])
          ((syntax?) ((or/c 'flip 'add 'remove)) . ->* . syntax?)]{
 
 Like @racket[make-syntax-introducer], but the encapsulated @tech{scope} is interned. Multiple calls to
@@ -1116,7 +1116,8 @@ Unlike @racket[make-syntax-introducer], the scope added by a procedure created w
 @racket[make-interned-syntax-introducer] is always treated like a use-site scope, not a
 macro-introduction scope, so it does not affect originalness as reported by @racket[syntax-original?].
 
-@history[#:added "6.90.0.28"]}
+@history[#:added "6.90.0.28"
+         #:changed "8.2.0.4" @elem{Added the constraint that @racket[key] is @tech{interned}.}]}
 
 @defproc[(make-syntax-delta-introducer [ext-stx identifier?]
                                        [base-stx (or/c syntax? #f)]

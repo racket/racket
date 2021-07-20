@@ -32,7 +32,7 @@ phase level or @racket[#f] representing the @tech{label phase level}.}
 
 Returns @racket[#t] if @racket[v] is a valid representation of a
 @tech{binding space}, @racket[#f] otherwise. A valid representation
-is either a symbol representing the space whose
+is either an @tech{interned} symbol representing the space whose
 scope is accessed via @racket[make-interned-syntax-introducer], or
 @racket[#f] representing the default binding space.}
 
