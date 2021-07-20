@@ -314,6 +314,7 @@
    (bind-all-provides!
     m
     bind-in-stx phase-shift space-level m-ns interned-mpi module-name
+    requires+provides
     #:in orig-s
     #:defines-mpi (and requires+provides (requires+provides-self requires+provides))
     #:only (cond
@@ -391,10 +392,11 @@
                        (cond
                          [initial-require? #f]
                          [else
+                          (adjust-shadow-requires! requires+provides s bind-phase bind-space)
                           (check-not-defined #:check-not-required? #t
                                              #:allow-defined? #t ; `define` shadows `require`
                                              requires+provides
-                                             s bind-phase
+                                             s bind-phase bind-space
                                              #:unless-matches binding
                                              #:in orig-s
                                              #:remove-shadowed!? #t
@@ -436,6 +438,7 @@
 ;; ----------------------------------------
 
 (define (bind-all-provides! m in-stx phase-shift space-level ns mpi module-name
+                            requires+provides
                             #:in orig-s
                             #:defines-mpi defines-mpi
                             #:only only-syms
@@ -457,6 +460,7 @@
     (define phase+space (phase+space+ provide-phase+space phase+space-shift))
     (define phase (phase+space-phase phase+space))
     (define space (phase+space-space phase+space))
+    (add-required-space! requires+provides space)
     (define need-except?
       (and bulk-callback
            (bulk-callback provides provide-phase+space)))

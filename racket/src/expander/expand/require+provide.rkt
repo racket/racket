@@ -9,6 +9,7 @@
          "../syntax/binding.rkt"
          "../syntax/error.rkt"
          "../syntax/bulk-binding.rkt"
+         "../syntax/like-ambiguous-binding.rkt"
          "../syntax/mapped-name.rkt"
          "../syntax/space-scope.rkt"
          "../namespace/namespace.rkt"
@@ -25,12 +26,14 @@
          set-requires+provides-all-bindings-simple?!
          
          (struct-out required)
+         add-required-space!
          add-required-module!
          add-defined-or-required-id!
          add-bulk-required-ids!
          add-enclosing-module-defined-and-required!
          remove-required-id!
          check-not-defined
+         adjust-shadow-requires!
          add-defined-syms!
          defined-sym-kind
          extract-module-requires
@@ -53,6 +56,7 @@
                            provides   ; phase+space -> sym -> binding or protected
                            phase-to-defined-syms ; phase -> sym -> (or/c 'variable 'transformer)
                            also-required ; sym -> binding
+                           spaces     ; sym -> #t to track all relevant spaces from requires
                            [can-cross-phase-persistent? #:mutable]
                            [all-bindings-simple? #:mutable]) ; tracks whether bindings are easily reconstructed
   #:authentic)
@@ -84,6 +88,7 @@
                      (make-hasheqv) ; provides
                      (make-hasheqv) ; phase-to-defined-syms
                      (make-hasheq)  ; also-required
+                     (make-hasheq)  ; spaces
                      #t
                      #t))
 
@@ -93,7 +98,8 @@
   (hash-clear! (requires+provides-requires r+p))
   (hash-clear! (requires+provides-provides r+p))
   (hash-clear! (requires+provides-phase-to-defined-syms r+p))
-  (hash-clear! (requires+provides-also-required r+p)))
+  (hash-clear! (requires+provides-also-required r+p))
+  (hash-clear! (requires+provides-spaces r+p)))
 
 ;; ----------------------------------------
 
@@ -101,6 +107,10 @@
   (intern-module-path-index! (requires+provides-require-mpis r+p) mpi))
 
 ;; ----------------------------------------
+
+(define (add-required-space! r+p space)
+  (when space
+    (hash-set! (requires+provides-spaces r+p) space #t)))
 
 ;; Register that a module is required at a given phase+space level, and return a
 ;; locally interned module path index
@@ -166,8 +176,9 @@
                                 #:accum-update-nominals accum-update-nominals
                                 #:who who)
   (define phase+space (phase+space+ provide-phase+space phase-level))
-  (define phase (phase+space-space phase+space))
-  (define s-at-space (add-space-scope s (phase+space-space phase+space)))
+  (define phase (phase+space-phase phase+space))
+  (define space (phase+space-space phase+space))
+  (define s-at-space (add-space-scope s space))
   (define shortcut-table (and check-and-remove?
                               ((hash-count provides) . > . 64)
                               (syntax-mapped-names s-at-space phase)))
@@ -193,9 +204,10 @@
                  (or (not shortcut-table)
                      (hash-ref shortcut-table sym #f)))
             (define id (datum->syntax s-at-space sym s-at-space))
+            (adjust-shadow-requires! r+p id phase space)
             (check-not-defined #:check-not-required? #t
                                #:allow-defined? #t
-                               r+p id (phase+space-phase phase+space) #:in orig-s
+                               r+p id phase space #:in orig-s
                                #:unless-matches
                                (lambda ()
                                  (provide-binding-to-require-binding binding/p
@@ -260,22 +272,33 @@
 ;; Removes a required identifier, in anticipation of it being defined.
 ;; The `check-not-defined` function below is similar, and it also includes
 ;; an option to remove shadowed bindings. Note that `id` may have a space scope.
-(define (remove-required-id! r+p id phase #:unless-matches binding)
-  (define b (resolve+shift id phase #:exactly? #t))
-  (when b
-    (define mpi (intern-mpi r+p (module-binding-nominal-module b)))
-    (define at-mod (hash-ref (requires+provides-requires r+p) mpi #f))
-    (when at-mod
-      (define nominal-phase+space-shift (module-binding-nominal-require-phase+space-shift b))
-      (define sym-to-reqds (hash-ref at-mod
-                                     nominal-phase+space-shift
-                                     #f))
-      (when sym-to-reqds
-        (define sym (syntax-e id))
-        (define l (hash-ref sym-to-reqds sym null))
-        (unless (null? l)
-          (unless (same-binding? b binding)
-            (hash-set! sym-to-reqds sym (remove-non-matching-requireds l id phase mpi nominal-phase+space-shift sym))))))))
+(define (remove-required-id! r+p id phase)
+  (define (remove! id #:bind-as-ambiguous? [bind-as-ambiguous? #f])
+    (define b (resolve+shift id phase #:exactly? #t))
+    (when (and (module-binding? b)
+               (not (eq? (requires+provides-self r+p)
+                         (module-binding-module b))))
+      (when bind-as-ambiguous?
+        (add-binding! id (like-ambiguous-binding) phase))
+      (define mpi (intern-mpi r+p (module-binding-nominal-module b)))
+      (define at-mod (hash-ref (requires+provides-requires r+p) mpi #f))
+      (when at-mod
+        (define nominal-phase+space-shift (module-binding-nominal-require-phase+space-shift b))
+        (define sym-to-reqds (hash-ref at-mod
+                                       nominal-phase+space-shift
+                                       #f))
+        (when sym-to-reqds
+          (define sym (syntax-e id))
+          (define l (hash-ref sym-to-reqds sym null))
+          (unless (null? l)
+            (hash-set! sym-to-reqds sym (remove-non-matching-requireds l id phase mpi nominal-phase+space-shift sym)))))))
+  ;; normal remove step:
+  (remove! id)
+  ;; try each space to implement shadowing definitions that, like local definitions,
+  ;; should trigger ambiguous-binding errors in other spaces; if `id` already has
+  ;; a space, adding an extra space should still be ok and consistent with local binding
+  (for ([space (in-hash-keys (requires+provides-spaces r+p))])
+    (remove! (add-space-scope id space) #:bind-as-ambiguous? #t)))
 
 ;; Prune a list of `required`s t remove any with a different binding
 (define (remove-non-matching-requireds reqds id phase mpi nominal-phase+space-shift sym)
@@ -293,14 +316,29 @@
 ;; allows that possibilify; the possible results are #f, 'defined, or 'required.
 (define (check-not-defined #:check-not-required? [check-not-required? #f]
                            #:allow-defined? [allow-defined? #f]
-                           r+p id phase #:in orig-s
+                           r+p id phase space #:in orig-s
                            #:unless-matches [ok-binding/delayed #f] ; binding or (-> binding)
                            #:remove-shadowed!? [remove-shadowed!? #f]
                            #:accum-update-nominals [accum-update-nominals #f]
                            #:who who)
   (define b (resolve+shift id phase #:exactly? #t))
+  (define (check-default-space)
+    (cond
+      [(or (not space) (not check-not-required?)) #f]
+      [else
+       (define default-b (resolve+shift (remove-space-scope id space) phase #:exactly? #t))
+       (define defined? (and default-b (eq? (requires+provides-self r+p)
+                                            (module-binding-module default-b))))
+       (cond
+         [(and defined?)
+          ;; Since the default space has a definition, we want to treat a
+          ;; require into a non-default space as ambiguous, which simulates
+          ;; the ambiguity that happens with a shadowing local binding
+          (add-binding! id (like-ambiguous-binding) phase)
+          'defined]
+         [else #f])]))
   (cond
-   [(not b) #f]
+   [(not b) (check-default-space)]
    [(not (module-binding? b))
     (raise-syntax-error #f "identifier out of context" id)]
    [else
@@ -316,7 +354,7 @@
                            (module-binding-sym b)
                            #f)))
        ;; Doesn't count as previously defined
-       #f]
+       (check-default-space)]
       [else
        (define define-shadowing-require? (and (not defined?) (not check-not-required?)))
        (define mpi (intern-mpi r+p (module-binding-nominal-module b)))
@@ -347,7 +385,7 @@
           ;; Binding is from an enclosing context; if it's from an
           ;; enclosing module, then we've already marked bindings
           ;; a non-simple --- otherwise, we don't care
-          #f]
+          (check-default-space)]
          [(and ok-binding (same-binding? b ok-binding))
           ;; It's the same binding already, so overall binding hasn't
           ;; become non-simple
@@ -381,6 +419,7 @@
           (set-requires+provides-all-bindings-simple?! r+p #f)
           'defined]
          [else
+          ;; We're shadowing a binding, either through a definition or a require
           (define nominal-phase+space-shift (module-binding-nominal-require-phase+space-shift b))
           (define sym-to-reqds (hash-ref at-mod nominal-phase+space-shift #hasheq()))
           (define reqds (hash-ref sym-to-reqds (syntax-e id) null))
@@ -410,6 +449,35 @@
                (hash-set! sym-to-reqds (syntax-e id)
                           (remove-non-matching-requireds reqds id phase mpi nominal-phase+space-shift (syntax-e id))))])
           #f])])]))
+
+;; For importing into the default space, adjust shadowable imports of
+;; the same name into non-default spaces to that they're treated as
+;; abiguous, the same as would happen for local bindings.
+(define (adjust-shadow-requires! r+p id phase space)
+  (unless space
+    (for ([space (in-hash-keys (requires+provides-spaces r+p))])
+      ;; Check binding in `space`
+      (define space-id (add-space-scope id space))
+      (define b (resolve+shift space-id phase #:exactly? #t))
+      (when (and (module-binding? b)
+                 (not (eq? (requires+provides-self r+p)
+                           (module-binding-module b))))
+        ;; Currently bound by require; by only a shadowable require?
+        (define mpi (intern-mpi r+p (module-binding-nominal-module b)))
+        (define at-mod (hash-ref (requires+provides-requires r+p) mpi #f))
+        (define nominal-phase+space-shift (module-binding-nominal-require-phase+space-shift b))
+        (define sym-to-reqds (hash-ref at-mod nominal-phase+space-shift #hasheq()))
+        (define reqds (hash-ref sym-to-reqds (syntax-e id) null))
+        (when (for/and ([r (in-list-ish reqds)])
+                (if (bulk-required? r)
+                    (bulk-required-can-be-shadowed? r)
+                    (required-can-be-shadowed? r)))
+          ;; It's a shadowable require, so we want to make it act ambiguous
+          ;; and treat it as no longer imported
+          (hash-set! sym-to-reqds (syntax-e id)
+                     (remove-non-matching-requireds reqds space-id phase mpi nominal-phase+space-shift (syntax-e id)))
+          (add-binding! space-id (like-ambiguous-binding) phase))))))
+        
 
 (define (add-defined-syms! r+p syms phase #:as-transformer? [as-transformer? #f])
   (define phase-to-defined-syms (requires+provides-phase-to-defined-syms r+p))

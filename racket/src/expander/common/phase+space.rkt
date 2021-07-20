@@ -47,7 +47,9 @@
          phase+space+
 
          phase+space?-string
-         phase+space-shift?-string)
+         phase+space-shift?-string
+
+         phase+space<?)
 
 (define-place-local interned (make-weak-hash))
 
@@ -95,3 +97,16 @@
 ;; For contract errors:
 (define phase+space?-string "phase+space?")
 (define phase+space-shift?-string "phase+space-shift?")
+
+(define (phase+space<? a b)
+  (define phase-a (phase+space-phase a))
+  (define phase-b (phase+space-phase b))
+  (or (phase<? phase-a phase-b)
+      (cond
+        [(eqv? phase-a phase-b)
+         (define space-a (phase+space-space a))
+         (define space-b (phase+space-space b))
+         (or (not space-a)
+             (and space-b
+                  (symbol<? space-a space-b)))]
+        [else #f])))

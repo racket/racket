@@ -1501,8 +1501,9 @@
   (namespace-require ''#%kernel ns)
   ns)
 
-(define (in-space space datum ns)
-  (namespace-syntax-introduce
+(define (in-space space datum ns
+                  #:introduce? [introduce? #t])
+  ((if introduce? namespace-syntax-introduce (lambda (stx ns) stx))
    ((eval-expression `(make-interned-syntax-introducer ',space))
     (datum->syntax #f datum))
    ns))
@@ -1614,3 +1615,66 @@
   (eval-expression
    #:namespace ns
    `(define-syntaxes (something) ,(in-space 'soup 'kettle ns))))
+
+(let ()
+  (define ns (make-own-ns))
+  (namespace-require '(for-syntax '#%kernel) ns)
+  
+  (declare-soup ns)
+
+  (check-error
+   (eval-module-declaration
+    #:namespace ns
+    `(module dinner '#%kernel
+       (define-values (kettle) 10)
+       (#%require 'soup-kettle)
+       ,(in-space 'soup 'kettle ns #:introduce? #f)))
+   "ambiguous")
+
+  (check-error
+   (eval-module-declaration
+    #:namespace ns
+    `(module dinner '#%kernel
+       (define-values (kettle) 10)
+       (#%require (only 'soup-kettle kettle))
+       ,(in-space 'soup 'kettle ns #:introduce? #f)))
+   "ambiguous")
+
+  (check-error
+   (eval-module-declaration
+    #:namespace ns
+    `(module dinner '#%kernel
+       (#%require 'soup-kettle)
+       (define-values (kettle) 10)
+       ,(in-space 'soup 'kettle ns #:introduce? #f)))
+   "ambiguous")
+
+  (check-error
+   (eval-module-declaration
+    #:namespace ns
+    `(module dinner '#%kernel
+       (#%require (only 'soup-kettle kettle))
+       (define-values (kettle) 10)
+       ,(in-space 'soup 'kettle ns #:introduce? #f)))
+   "ambiguous")
+
+  (eval-module-declaration
+   #:namespace ns
+   '(module soup+kernel '#%kernel
+      (#%require 'soup-kettle)
+      (#%provide (all-from 'soup-kettle)
+                 (all-from '#%kernel))))
+
+  (eval-module-declaration
+   #:namespace ns
+   '(module fish-kettle '#%kernel
+      (#%provide kettle)
+      (define-values (kettle) 'fish)))
+
+  (check-error
+   (eval-module-declaration
+    #:namespace ns
+    `(module dinner 'soup+kernel
+       (#%require 'fish-kettle)
+       ,(in-space 'soup 'kettle ns #:introduce? #f)))
+   "ambiguous"))

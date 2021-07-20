@@ -11,6 +11,7 @@
          "../syntax/module-binding.rkt"
          "../syntax/local-binding.rkt"
          "../syntax/bulk-binding.rkt"
+         "../syntax/like-ambiguous-binding.rkt"
          "../namespace/provided.rkt"
          "../common/module-path.rkt"
          "../common/module-path-intern.rkt"
@@ -871,6 +872,8 @@
      (decode* (deserialize-full-local-binding key free=id))]
     [(#:bulk-binding)
      (decode* (deserialize-bulk-binding prefix excepts mpi provide-phase-level phase-shift bulk-binding-registry))]
+    [(#:like-ambiguous-binding)
+     (decode* (like-ambiguous-binding))]
     [(#:bulk-binding+provides)
      (decode* (deserialize-bulk-binding+provides provides self prefix excepts mpi provide-phase-level phase-shift bulk-binding-registry))]
     [(#:provided)

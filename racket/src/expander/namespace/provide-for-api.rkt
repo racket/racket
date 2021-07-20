@@ -1,6 +1,7 @@
 #lang racket/base
 (require "provided.rkt"
          "../common/phase.rkt"
+         "../common/phase+space.rkt"
          "../common/module-path.rkt"
          "../syntax/module-binding.rkt")
 
@@ -43,7 +44,7 @@
                                    null))))]
                   #:unless (null? l))
         (cons phase (sort l symbol<? #:key car))))
-    (sort result-l phase<? #:key car))
+    (sort result-l phase+space<? #:key car))
   (values (extract (lambda (b/p) (not (provided-as-transformer? b/p))))
           (extract provided-as-transformer?)))
 
@@ -60,4 +61,4 @@
                        var-sym)))]
                #:unless (null? l))
       (cons phase (sort l symbol<?))))
-  (sort result-l phase<? #:key car))
+  (sort result-l phase+space<? #:key car))

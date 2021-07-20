@@ -10,6 +10,7 @@
          "full-binding.rkt"
          "module-binding.rkt"
          "local-binding.rkt"
+         "like-ambiguous-binding.rkt"
          "datum-map.rkt"
          "../expand/rename-trans.rkt"
          "../common/module-path.rkt"
@@ -250,6 +251,9 @@
            (when can-cache?
              (resolve+shift-cache-set! s phase result-b))
            result-b])]
+       [(like-ambiguous-binding? b) (if unbound-sym?
+                                        (syntax-content s)
+                                        ambiguous-value)]
        [else
         (when can-cache?
           (resolve+shift-cache-set! s phase (or b '#:none)))

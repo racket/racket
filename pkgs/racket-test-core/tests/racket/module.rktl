@@ -388,6 +388,19 @@
     (test 'soup eval (namespace-syntax-introduce (in-space soup kettle)))
     (test 'default eval 'kettle))
 
+  ;; check all-from-out and spaces
+  (for ([with-default? '(#f #t)])
+    (parameterize ([current-namespace (make-base-namespace)])
+      (eval (make-soup-module #:with-default? with-default?))
+      (eval '(module also-soup-kettle racket/base
+               (require 'soup-kettle)
+               (provide (all-from-out 'soup-kettle))))
+      (eval '(require 'also-soup-kettle))
+      (test 'soup eval (namespace-syntax-introduce (in-space soup kettle)))
+      (if with-default?
+          (test 'default eval 'kettle)
+          (err/rt-test/once (eval 'kettle) exn:fail:contract:variable?))))
+
   ;; check shifting spaces when both `soup` and default are provided
   (parameterize ([current-namespace (make-base-namespace)])
     (eval (make-soup-module #:with-default? #t))
@@ -409,6 +422,62 @@
     (eval (namespace-syntax-introduce
            (datum->syntax #f `(define-syntax (soup-m stx) #`(quote #,(datum->syntax #'here ,(in-space soup kettle)))))))
     (test 'soup eval '(soup-m)))
+
+  ;; check that definition in the default space makes the soup-space binding ambiguous
+  (for ([with-default? '(#f #t)])
+    (parameterize ([current-namespace (make-base-namespace)])
+      (eval (make-soup-module #:with-default? with-default?))
+      (err/rt-test/once (eval `(module m racket/base
+                                 (require 'soup-kettle)
+                                 (define kettle 'fish)
+                                 ,(in-space soup kettle)))
+                        exn:fail:syntax?
+                        #rx"ambiguous")
+      (err/rt-test/once (eval `(module m racket/base
+                                 (require (only-in 'soup-kettle kettle)) ; non-bulk
+                                 (define kettle 'fish)
+                                 ,(in-space soup kettle)))
+                        exn:fail:syntax?
+                        #rx"ambiguous")))
+
+  ;; same, but define before `require`
+  (for ([with-default? '(#f #t)])
+    (parameterize ([current-namespace (make-base-namespace)])
+      (eval (make-soup-module #:with-default? with-default?))
+      (err/rt-test/once (eval `(module m racket/base
+                                 (define kettle 'fish)
+                                 (require 'soup-kettle)
+                                 ,(in-space soup kettle)))
+                        exn:fail:syntax?
+                        #rx"ambiguous")
+      (err/rt-test/once (eval `(module m racket/base
+                                 (define kettle 'fish)
+                                 (require (only-in 'soup-kettle kettle)) ; non-bulk
+                                 ,(in-space soup kettle)))
+                        exn:fail:syntax?
+                        #rx"ambiguous")))
+
+  ;; same idea, but `require` shadowing initial import
+  (for ([with-default? '(#f #t)])
+    (parameterize ([current-namespace (make-base-namespace)])
+      (eval (make-soup-module #:with-default? with-default?))
+      (eval `(module soup-base racket/base
+               (require 'soup-kettle)
+               (provide (all-from-out racket/base)
+                        (for-space soup kettle))))
+      (define-values (b-vals b-stxs) (module->exports 'racket/base))
+      (define-values (sb-vals sb-stxs) (module->exports ''soup-base))
+      (test #t = (length b-stxs) (length sb-stxs))
+      (test (length b-vals) sub1 (length sb-vals))
+      (eval `(module fish-kettle racket/base
+               (provide kettle)
+               (define kettle 'fish)))
+      (err/rt-test/once (eval `(module m 'soup-base
+                                 (require 'fish-kettle)
+                                 ,(in-space soup kettle)))
+                        exn:fail:syntax?
+                        #rx"ambiguous")
+      (void)))
 
   (void))
 

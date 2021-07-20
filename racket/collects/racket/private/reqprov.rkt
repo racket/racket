@@ -879,7 +879,7 @@
   (define-for-syntax (add-mode-scope stx mode)
     (let ([space (phase+space-space mode)])
       (if space
-          ((make-interned-syntax-introducer space) stx)
+          ((make-interned-syntax-introducer space) stx 'add)
           stx)))
 
   (define-for-syntax (recur-pre stx modes)

@@ -6,7 +6,8 @@
          "binding-table.rkt"
          (submod "scope.rkt" for-debug)
          "binding.rkt"
-         "module-binding.rkt")
+         "module-binding.rkt"
+         "like-ambiguous-binding.rkt")
 
 (provide syntax-debug-info)
 
@@ -21,15 +22,18 @@
       (define context-ht (hash-set init-ht 'context context))
       (define sym (syntax-e s))
       (define (classify-binding b)
-        (if (local-binding? b)
-            'local
-            'module))
+        (cond
+          [(local-binding? b) 'local]
+          [(like-ambiguous-binding? b) 'ambiguous]
+          [else 'module]))
       (define (extract-binding b)
-        (if (local-binding? b)
-            (local-binding-key b)
-            (vector (module-binding-sym b)
-                    (module-binding-module b)
-                    (module-binding-phase b))))
+        (cond
+          [(local-binding? b) (local-binding-key b)]
+          [(like-ambiguous-binding? b) #t]
+          [else
+           (vector (module-binding-sym b)
+                   (module-binding-module b)
+                   (module-binding-phase b))]))
       (define bindings
         (append
          ;; Bindings based on the identifier `s`

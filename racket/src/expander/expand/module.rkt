@@ -1313,7 +1313,7 @@
 
 (define (check-ids-unbound ids phase requires+provides #:in s)
   (for ([id (in-list ids)])
-    (check-not-defined requires+provides id phase #:in s #:who 'module)))
+    (check-not-defined requires+provides id phase #f #:in s #:who 'module)))
 
 ;; ----------------------------------------
 

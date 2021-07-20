@@ -5,7 +5,8 @@
          "../compile/serialize-state.rkt"
          "syntax.rkt"
          "module-binding.rkt"
-         "full-binding.rkt")
+         "full-binding.rkt"
+         "like-ambiguous-binding.rkt")
 
 ;; A binding table within a scope maps symbol plus scope set
 ;; combinations (where the scope binding the binding table is always
@@ -165,7 +166,7 @@
     (binding-table-add-bulk (table-with-bulk-bindings bt bt null) scopes bulk)]))
 
 ;; The bindings of `bulk` at `scopes` should shadow any existing
-;; mappings in `sym-bindings`, except one for `except`
+;; mappings in `sym-bindings`, except one for `except` or a like-ambigious-binding
 (define (remove-matching-bindings syms scopes bulk #:except except)
   (define bulk-symbols (bulk-binding-symbols bulk #f null))
   (cond
@@ -189,8 +190,9 @@
   (cond
     [(and except
           (let ([b (hash-ref sym-bindings scopes #f)])
-            (and (module-binding? b)
-                 (eq? except (module-binding-module b)))))
+            (or (and (module-binding? b)
+                     (eq? except (module-binding-module b)))
+                (like-ambiguous-binding? b))))
      ;; Don't replace a shadowing definition
      syms]
     [else
