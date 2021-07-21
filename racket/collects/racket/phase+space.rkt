@@ -3,6 +3,7 @@
   
   (#%provide phase?
              space?
+             phase+space
              phase+space?
              phase+space-shift?
              phase+space-phase
@@ -31,6 +32,21 @@
           (and (pair? v)
                (interned-symbol? (cdr v))
                (phase? (car v))))))
+
+  (define-values (phase+space)
+    (lambda (phase space)
+      (if (variable-reference-from-unsafe? (#%variable-reference))
+          (void)
+          (begin
+            (if (phase? phase)
+                (void)
+                (raise-argument-error 'phase+space "phase?" phase))
+            (if (space? space)
+                (void)
+                (raise-argument-error 'phase+space "space?" space))))
+      (if space
+          (cons phase space)
+          phase)))
 
   (define-values (phase+space-shift?)
     (lambda (v)

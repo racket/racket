@@ -53,6 +53,13 @@ representations are as follows:
        
 ]}
 
+
+@defproc[(phase+space [phase phase?] [space space?]) phase+space?]{
+
+Returns a value to represent the combination of @racket[phase] and
+@racket[space].}
+
+
 @deftogether[(
 @defproc[(phase+space-phase [p+s phase+space?]) phase?]
 @defproc[(phase+space-space [p+s phase+space?]) phase?]
