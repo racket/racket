@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require syntax/modcode
+         syntax/modresolve
          racket/path)
 
 (provide dynamic-rerequire)
@@ -98,12 +99,19 @@
                   (values -inf.0 path)))
             (values -inf.0 path)))))
 
+(define (make-resolved-module-path/modresolve path-or-submod)
+  (make-resolved-module-path
+   (if (pair? path-or-submod)
+       (cdr path-or-submod)
+       path-or-submod)))
+
 (define (check-latest mod verbosity path-collector)
   (define mpi (module-path-index-join mod #f))
   (define done (make-hash))
   (let loop ([mpi mpi] [wrt-mpi #f] [wrt-path #f])
     (define reloaded? #f)
-    (define rpath (module-path-index-resolve mpi))
+    (define rpath (make-resolved-module-path/modresolve
+                   (resolve-module-path-index mpi wrt-path)))
     (define name (resolved-module-path-name rpath))
     (define path (if (pair? name)
                      (let ([path (car name)])
