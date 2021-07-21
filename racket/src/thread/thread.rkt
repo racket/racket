@@ -718,7 +718,9 @@
      (thread-did-work!)]
     [else (thread-did-no-work!)])
    (set-thread-sched-info! (current-thread/in-atomic) sched-info))
-  (engine-block))
+  (engine-block)
+  ;; in case we used `thread-did-no-work!` before blocking
+  (thread-did-work!))
 
 ;; Sleep for a while
 (define/who (sleep [secs 0])

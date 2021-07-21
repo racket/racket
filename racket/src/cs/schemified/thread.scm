@@ -7739,7 +7739,8 @@
             (thread-did-no-work!))
           (set-thread-sched-info! (current-thread/in-atomic) sched-info_0))
         (end-atomic))
-      (engine-block))))
+      (engine-block)
+      (|#%app| thread-did-work!))))
 (define 1/sleep
   (let ((sleep_0
          (|#%name|
