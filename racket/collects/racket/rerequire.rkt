@@ -32,10 +32,10 @@
 (define (rerequire-load/use-compiled orig re? verbosity path-collector)
   (define notify
     (if (or (eq? 'all verbosity) (and re? (eq? 'reload verbosity)))
-      (lambda (path)
-        (eprintf "  [~aloading ~a]\n" (if re? "re-" "") path)
-        (path-collector path))
-      path-collector))
+        (lambda (path)
+          (eprintf "  [~aloading ~a]\n" (if re? "re-" "") path)
+          (path-collector path))
+        path-collector))
   (lambda (path name)
     (if (and name
              (not (and (pair? name)
@@ -83,8 +83,8 @@
             ;; Evaluate the module:
             (parameterize ([current-module-declare-source actual-path])
               (eval code))))
-      ;; Not a module, or a submodule that we shouldn't load from source:
-      (begin (notify path) (orig path name)))))
+        ;; Not a module, or a submodule that we shouldn't load from source:
+        (begin (notify path) (orig path name)))))
 
 (define (get-timestamp path)
   (let ([ts (file-or-directory-modify-seconds path #f (lambda () #f))])
@@ -102,6 +102,7 @@
   (define mpi (module-path-index-join mod #f))
   (define done (make-hash))
   (let loop ([mpi mpi] [wrt-mpi #f] [wrt-path #f])
+    (define reloaded? #f)
     (define rpath (module-path-index-resolve mpi))
     (define name (resolved-module-path-name rpath))
     (define path (if (pair? name)
@@ -123,17 +124,23 @@
         (hash-set! done key #t)
         (define mod (hash-ref loaded key #f))
         (when mod
-          (for ([dep-mpi (in-list (mod-depends mod))])
-            (loop dep-mpi mpi path))
+          (define dependency-was-reloaded?
+            (foldl (lambda (dep-mpi acc)
+                     (or (loop dep-mpi mpi path) reloaded?))
+                   #f
+                   (mod-depends mod)))
           (define-values (ts actual-path) (get-timestamp npath))
-          (when (ts . > . (mod-timestamp mod))
+          (when (or dependency-was-reloaded?
+                    (ts . > . (mod-timestamp mod)))
             (define orig (current-load/use-compiled))
             (parameterize ([current-load/use-compiled
                             (rerequire-load/use-compiled orig #f verbosity path-collector)]
                            [current-module-declare-name rpath]
                            [current-module-declare-source actual-path])
               ((rerequire-load/use-compiled orig #t verbosity path-collector)
-               npath (mod-name mod)))))))))
+               npath (mod-name mod)))
+            (set! reloaded? #t)))))
+    reloaded?))
 
 ;; Is `mpi` a submod relative to "self"?
 (define (self-modidx-base? mpi)
