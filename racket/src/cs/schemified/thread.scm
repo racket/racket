@@ -4747,6 +4747,10 @@
          timeout-at_0))))))
 (define schedule-info-did-work!
   (lambda (sched-info_0) (set-schedule-info-did-work?! sched-info_0 #t)))
+(define schedule-info-repoll?
+  (lambda (sched-info_0)
+    (let ((or-part_0 (schedule-info-did-work? sched-info_0)))
+      (if or-part_0 or-part_0 (schedule-info-exts sched-info_0)))))
 (define reference-sink
   (lambda (v_0) (ephemeron-value (make-ephemeron #f (void)) (void) v_0)))
 (define finish_2437
@@ -7739,8 +7743,7 @@
             (thread-did-no-work!))
           (set-thread-sched-info! (current-thread/in-atomic) sched-info_0))
         (end-atomic))
-      (engine-block)
-      (|#%app| thread-did-work!))))
+      (engine-block))))
 (define 1/sleep
   (let ((sleep_0
          (|#%name|
@@ -12432,13 +12435,21 @@
       (current-thread/in-atomic t_0)
       (let ((e_0 (thread-engine t_0)))
         (begin
-          (set-thread-sched-info! t_0 #f)
+          (clear-sched-info! t_0)
           (current-future$1 (thread-future t_0))
           (set-place-current-thread! (unsafe-place-local-ref cell.1$2) t_0)
           (unsafe-place-local-set!
            cell.3
            (add1 (unsafe-place-local-ref cell.3)))
           (run-callbacks-in-engine e_0 callbacks_0 t_0 leftover-ticks_0))))))
+(define clear-sched-info!
+  (lambda (t_0)
+    (let ((sched-info_0 (thread-sched-info t_0)))
+      (if sched-info_0
+        (begin
+          (set-thread-sched-info! t_0 #f)
+          (if (schedule-info-repoll? sched-info_0) (thread-did-work!) (void)))
+        (void)))))
 (define current-thread-now-running!
   (lambda () (set-thread-engine! (current-thread/in-atomic) 'running)))
 (define swap-in-engine
