@@ -1274,16 +1274,16 @@ multiple symbolic names.}
 
 @defform/subs[(#%require raw-require-spec ...)
               ([raw-require-spec phaseless-spec
-                                 (#,(racketidfont "for-meta") phase-level phaseless-spec ...)
-                                 (#,(racketidfont "for-syntax") phaseless-spec ...)
-                                 (#,(racketidfont "for-template") phaseless-spec ...)
-                                 (#,(racketidfont "for-label") phaseless-spec ...)
+                                 (#,(racketidfont "for-meta") phase-level raw-require-spec ...)
+                                 (#,(racketidfont "for-syntax") raw-require-spec ...)
+                                 (#,(racketidfont "for-template") raw-require-spec ...)
+                                 (#,(racketidfont "for-label") raw-require-spec ...)
                                  (#,(racketidfont "just-meta") phase-level raw-require-spec ...)]
                [phase-level exact-integer
                             #f]
                [phaseless-spec spaceless-spec
-                               (#,(racketidfont "for-space") space spaceless-spec ...)
-                               (#,(racketidfont "just-space") space phaseless-spec ...)]
+                               (#,(racketidfont "for-space") space phaseless-spec ...)
+                               (#,(racketidfont "just-space") space spaceless-spec ...)]
                [space id
                       #f]
                [spaceless-spec raw-module-path
@@ -1310,10 +1310,24 @@ The primitive import form, to which @racket[require] expands. A
 @racket[require] form, except that the syntax is more constrained, not
 composable, and not extensible. Also, sub-form names like
 @racketidfont{for-syntax} and @racketidfont{lib} are recognized
-symbolically, instead of via bindings. Although not formalized in the
-grammar above, a @racketidfont{just-meta} form cannot appear within a
-@racketidfont{just-meta} form, and a @racketidfont{just-space} form
-cannot appear with a @racketidfont{just-space} form.
+symbolically, instead of via bindings. Some nested constraints are not
+formalized in the grammar above:
+
+@itemlist[
+
+ @item{a @racketidfont{just-meta} form cannot appear within a
+       @racketidfont{just-meta} form;}
+
+ @item{a @racketidfont{for-meta}, @racketidfont{for-syntax},
+       @racketidfont{for-template}, or @racketidfont{for-label} form
+       cannot appear within a @racketidfont{for-meta},
+       @racketidfont{for-syntax}, @racketidfont{for-template}, or
+       @racketidfont{for-label} form; and}
+
+ @item{a @racketidfont{for-space} form cannot appear within a
+       @racketidfont{for-space} form.}
+
+]
 
 Each @racket[raw-require-spec] corresponds to the obvious
 @racket[_require-spec], but the @racketidfont{rename} sub-form has the
