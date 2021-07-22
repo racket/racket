@@ -136,7 +136,7 @@
     ;; case the conservative assumption is that we might make progress
     ;; if `sched-info` waits on anything
     (when (schedule-info-repoll? sched-info)
-      (thread-did-work!))))
+      (thread-poll-not-done! t))))
 
 (define (current-thread-now-running!)
   (set-thread-engine! (current-thread/in-atomic) 'running))
@@ -232,6 +232,8 @@
                     (thread-reschedule! t))
                   (set! did? #t)))
   (when did?
+    ;; We've lost track of exactly which thread might get a different
+    ;; poll result, so just mark them all as needing polling
     (thread-did-work!))
   did?)
 

@@ -7740,7 +7740,7 @@
                   or-part_0
                   (schedule-info-did-work? sched-info_0)))
             (|#%app| thread-did-work!)
-            (thread-did-no-work!))
+            (thread-poll-done! (current-thread/in-atomic)))
           (set-thread-sched-info! (current-thread/in-atomic) sched-info_0))
         (end-atomic))
       (engine-block))))
@@ -7775,11 +7775,16 @@
      sleep
      (case-lambda (() (begin (sleep_0 0))) ((secs20_0) (sleep_0 secs20_0))))))
 (define cell.2$1 (unsafe-make-place-local hash2610))
-(define thread-did-no-work!
-  (lambda ()
+(define thread-poll-done!
+  (lambda (t_0)
     (unsafe-place-local-set!
      cell.2$1
-     (hash-set (unsafe-place-local-ref cell.2$1) (1/current-thread) #t))))
+     (hash-set (unsafe-place-local-ref cell.2$1) t_0 #t))))
+(define thread-poll-not-done!
+  (lambda (t_0)
+    (unsafe-place-local-set!
+     cell.2$1
+     (hash-remove (unsafe-place-local-ref cell.2$1) t_0))))
 (define thread-did-work!
   (lambda () (unsafe-place-local-set! cell.2$1 hash2610)))
 (define thread-unscheduled-for-work-tracking!
@@ -12448,7 +12453,9 @@
       (if sched-info_0
         (begin
           (set-thread-sched-info! t_0 #f)
-          (if (schedule-info-repoll? sched-info_0) (thread-did-work!) (void)))
+          (if (schedule-info-repoll? sched-info_0)
+            (thread-poll-not-done! t_0)
+            (void)))
         (void)))))
 (define current-thread-now-running!
   (lambda () (set-thread-engine! (current-thread/in-atomic) 'running)))
@@ -12850,7 +12857,7 @@
                                                               (thread-dead!
                                                                (check-not-unsafe-undefined
                                                                 t_0
-                                                                't_78)))
+                                                                't_80)))
                                                             (end-atomic)))
                                                         (engine-block))))))))))))
                                    (do-make-thread.1
