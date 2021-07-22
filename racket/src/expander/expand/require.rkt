@@ -460,7 +460,8 @@
     (define phase+space (phase+space+ provide-phase+space phase+space-shift))
     (define phase (phase+space-phase phase+space))
     (define space (phase+space-space phase+space))
-    (add-required-space! requires+provides space)
+    (when requires+provides
+      (add-required-space! requires+provides space))
     (define need-except?
       (and bulk-callback
            (bulk-callback provides provide-phase+space)))

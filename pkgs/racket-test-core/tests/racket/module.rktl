@@ -379,7 +379,11 @@
 
     (err/rt-test/once (eval 'kettle) exn:fail:contract:variable?)
 
-    (test 'soup eval (namespace-syntax-introduce (in-space soup kettle))))
+    (test 'soup eval (namespace-syntax-introduce (in-space soup kettle)))
+
+    (test #t namespace? (module->namespace ''soup-kettle))
+    (test (void) namespace-require '(rename 'soup-kettle also-kettle kettle))
+    (test (void) namespace-require '(for-space bisque 'soup-kettle)))
 
   ;; check providing in `soup` and default spaces
   (parameterize ([current-namespace (make-base-namespace)])
