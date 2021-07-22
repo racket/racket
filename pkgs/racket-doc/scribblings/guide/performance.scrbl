@@ -573,15 +573,13 @@ argument instead.
 
 @section[#:tag "Reachability and Garbage Collection"]{Reachability and Garbage Collection}
 
-In general, Racket re-uses the storage for a value when the
-garbage collector can prove that the object is unreachable from
-any other (reachable) value. Reachability is a low-level, 
-abstraction breaking concept (and thus one must understand many
-details of the runtime system's implementation to accurate predicate
-precisely when values are reachable from each other),
-but generally speaking one value is reachable from a second one when 
-there is some operation to recover the original value from the second
-one.
+In general, Racket re-uses the storage for a value when the garbage
+collector can prove that the object is unreachable from any other
+(reachable) value. Reachability is a low-level, abstraction-breaking
+concept, and thus it requires detailed knowledge of the runtime system
+to predict exactly when values are reachable from each other. But
+generally one value is reachable from a second one when there is some
+operation to recover the original value from the second one.
 
 To help programmers understand when an object is no longer reachable and its
 storage can be reused,
