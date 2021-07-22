@@ -36,7 +36,7 @@
 				(unless (memq name '(eq? eqv? equal? 
                                                          not k:true-object? null? pair? list? k:list-pair?
 							 real? number? boolean?
-							 procedure? symbol? keyword?
+							 procedure? symbol? symbol-interned? keyword?
 							 string? bytes?
 							 vector? box?
                                                          immutable?
@@ -220,6 +220,8 @@
     (un #t 'procedure? (lambda (x) 10))
     (un #t 'symbol? 'ok)
     (un #f 'symbol? #f)
+    (un #t 'symbol-interned? 'ok)
+    (un #f 'symbol-interned? (gensym))
     (un #t 'keyword? '#:ok)
     (un #f 'keyword? #f)
     (un #t 'vector? (vector 1 2 3))
