@@ -108,6 +108,7 @@
 (define (check-latest mod verbosity path-collector)
   (define mpi (module-path-index-join mod #f))
   (define done (make-hash))
+  (define loaded-files (make-hash))
   (let loop ([mpi mpi] [wrt-mpi #f] [wrt-path #f])
     (define reloaded? #f)
     (define rpath (make-resolved-module-path/modresolve
@@ -140,13 +141,15 @@
           (define-values (ts actual-path) (get-timestamp npath))
           (when (or dependency-was-reloaded?
                     (ts . > . (mod-timestamp mod)))
-            (define orig (current-load/use-compiled))
-            (parameterize ([current-load/use-compiled
-                            (rerequire-load/use-compiled orig #f verbosity path-collector)]
-                           [current-module-declare-name rpath]
-                           [current-module-declare-source actual-path])
-              ((rerequire-load/use-compiled orig #t verbosity path-collector)
-               npath (mod-name mod)))
+            (unless (hash-ref loaded-files npath #f)
+              (define orig (current-load/use-compiled))
+              (parameterize ([current-load/use-compiled
+                              (rerequire-load/use-compiled orig #f verbosity path-collector)]
+                             [current-module-declare-name rpath]
+                             [current-module-declare-source actual-path])
+                ((rerequire-load/use-compiled orig #t verbosity path-collector)
+                 npath (mod-name mod)))
+              (hash-set! loaded-files npath #t))
             (set! reloaded? #t)))))
     reloaded?))
 
