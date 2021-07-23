@@ -1,6 +1,6 @@
 name: Test with ASan
 
-on: [push, pull_request]
+on: [push]
 
 jobs:
 

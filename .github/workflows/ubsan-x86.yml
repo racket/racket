@@ -1,6 +1,6 @@
 name: Test with UBSan on X86
 
-on: [push, pull_request]
+on: [push]
 
 jobs:
 

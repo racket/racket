@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cify: [cify, nocify]
+        cify: [nocify]
           
     runs-on: macos-latest
     env:
@@ -64,7 +64,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cify: [cify, nocify]
+        cify: [nocify]
             
     runs-on: macos-latest
     
