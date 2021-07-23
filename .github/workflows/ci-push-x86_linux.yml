@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cify: [cify, nocify]      
+        cify: [cify, nocify]
     
     steps:
     - uses: actions/checkout@v2
@@ -70,12 +70,18 @@ jobs:
       fail-fast: false
       matrix:
         cify: [cify, nocify]
-        cc: [gcc, clang]
         jit: [jit, nojit]
+        cc: [gcc, clang]
         efp: [efp, noefp]
-        exclude:
+        include:
           - jit: nojit
+            cify: cify
+            efp: noefp
+            cc: gcc
+          - jit: jit
+            cify: nocify
             efp: efp
+            cc: clang
   
     steps:
     - uses: actions/checkout@v2
@@ -286,8 +292,12 @@ jobs:
         cify: [cify, nocify]
         jit: [jit, nojit]
         efp: [efp, noefp]
-        exclude:
+        include:
           - jit: nojit
+            cify: cify
+            efp: noefp
+          - jit: jit
+            cify: nocify
             efp: efp
 
     steps:
