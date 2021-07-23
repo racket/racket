@@ -69,10 +69,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cify: [cify, nocify]
-        jit: [jit, nojit]
-        cc: [gcc, clang]
-        efp: [efp, noefp]
+        cify: [nocify]
+        jit: [jit]
+        efp: [efp]
+        cc: [clang]
         include:
           - jit: nojit
             cify: cify
