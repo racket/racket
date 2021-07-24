@@ -101,15 +101,16 @@
 
 (define (make-resolved-module-path/modresolve path-or-submod)
   (make-resolved-module-path
-   (if (pair? path-or-submod)
-       (cdr path-or-submod)
-       path-or-submod)))
+   (cond
+     [(pair? path-or-submod) (cdr path-or-submod)]
+     [(path? path-or-submod) (simplify-path path-or-submod)]
+     [else path-or-submod])))
 
 (define (check-latest mod verbosity path-collector)
   (define mpi (module-path-index-join mod #f))
-  (define done (make-hash))
+  (define seen (make-hash))
   (define loaded-files (make-hash))
-  (let loop ([mpi mpi] [wrt-mpi #f] [wrt-path #f])
+  (let loop ([mpi mpi] [wrt-path #f])
     (define reloaded? #f)
     (define rpath (make-resolved-module-path/modresolve
                    (resolve-module-path-index mpi wrt-path)))
@@ -125,19 +126,18 @@
                            path))
                      name))
     (when (path? path)
-      (define npath (normal-case-path path))
+      (define npath (normal-case-path (simplify-path path)))
       (define key (if (pair? name)
                       (cons npath (cdr name))
                       npath))
-      (unless (hash-ref done key #f)
-        (hash-set! done key #t)
+      (unless (hash-has-key? seen key)
+        (hash-set! seen key #t)
         (define mod (hash-ref loaded key #f))
         (when mod
           (define dependency-was-reloaded?
-            (foldl (lambda (dep-mpi acc)
-                     (or (loop dep-mpi mpi path) reloaded?))
-                   #f
-                   (mod-depends mod)))
+            (for/fold ([reloaded? #f])
+                      ([dep-mpi (in-list (mod-depends mod))])
+              (or (loop dep-mpi path) reloaded?)))
           (define-values (ts actual-path) (get-timestamp npath))
           (when (or dependency-was-reloaded?
                     (ts . > . (mod-timestamp mod)))

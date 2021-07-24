@@ -156,3 +156,49 @@
 (do-test "zero compiled, one compiled, two compiled for reload" #f #f #t #f "foo" "zam")
 (do-test "zero compiled, one compiled, two compiled for initial" #f #f #f #t "foo" "zam")
 (do-test "all compiled" #f #f #f #f "foo" "zam")
+
+
+(test-case "up-paths"
+  (define dir (make-temporary-file "rereq-~a" 'directory))
+  (define subdir1 (build-path dir "a"))
+  (define subdir2 (build-path dir "b"))
+  (make-directory subdir1)
+  (make-directory subdir2)
+  (define path1 (build-path subdir1 "a.rkt"))
+  (define path2 (build-path subdir2 "b.rkt"))
+
+  (display-to-file
+   #:exists 'replace
+   #<<CODE
+#lang racket/base
+(provide proc)
+(define (proc) 1)
+CODE
+   path1)
+
+  (display-to-file
+   #:exists 'replace
+   #<<CODE
+#lang racket/base
+(require "../a/a.rkt")
+(provide proc)
+CODE
+   path2)
+
+  (define (reload)
+    (dynamic-rerequire path2 #:verbosity 'none)
+    (dynamic-require path2 'proc))
+
+  (check-equal? ((reload)) 1)
+
+  (sleep 1)
+  (display-to-file
+   #:exists 'replace
+   #<<CODE
+#lang racket/base
+(provide proc)
+(define (proc) 2)
+CODE
+   path1)
+
+  (check-equal? ((reload)) 2))
