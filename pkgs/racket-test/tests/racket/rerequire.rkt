@@ -67,7 +67,7 @@
                                    dirpath))])
             (delete-file file)))
 
-        (define (change-required-file proc-value)
+        (define (create-or-change-required-file proc-value recreate?)
           (display-to-file
            (string-append
             "#lang racket/base\n"
@@ -76,7 +76,7 @@
             (format "(define (proc) ~v)" proc-value))
            two-path
            #:exists 'replace)
-          (sleep 1) ; to make sure mod time changes so rerequire notices it
+          (when recreate? (sleep 1)) ; to make sure mod time changes so rerequire notices it
           (file-or-directory-modify-seconds
            two-path
            (current-seconds)))
@@ -102,7 +102,7 @@
         ;; create files, compile them as need be
         (create-zero)
         (create-one)
-        (change-required-file initial-value)
+        (create-or-change-required-file initial-value #f)
         (if zero-src?
             (if one-src?
                 (if two-src/1? (void) (compile-file two-path))
@@ -117,16 +117,24 @@
         (define loaded-files (dynamic-rerequire zero-path #:verbosity 'none))
         (define initial-value/actual ((dynamic-require zero-path 'proc)))
 
-        (check-pred check-loaded-files/initial loaded-files "first rerequire loaded wrong modules")
-        (check-equal? initial-value/actual initial-value "first rerequire loaded incorrect proc")
+        (check-pred check-loaded-files/initial
+                    loaded-files
+                    "first rerequire loaded wrong modules")
+        (check-equal? initial-value/actual
+                      initial-value
+                      "first rerequire loaded incorrect proc")
         
-        (change-required-file updated-value)
+        (create-or-change-required-file updated-value #t)
         (unless two-src/2?
           (compile-file two-path))
         (define reloaded-files (dynamic-rerequire zero-path #:verbosity 'none))
         (define updated-value/actual ((dynamic-require zero-path 'proc)))
-        (check-pred check-loaded-files/updated reloaded-files "second rerequire reloaded wrong modules")
-        (check-equal? updated-value/actual updated-value "second rerequire loaded incorrect proc")))]))
+        (check-pred check-loaded-files/updated
+                    reloaded-files
+                    "second rerequire reloaded wrong modules")
+        (check-equal? updated-value/actual
+                      updated-value
+                      "second rerequire loaded incorrect proc")))]))
         
 
 (do-test "all source" #t #t #t #t "foo" "zam")
