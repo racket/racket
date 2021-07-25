@@ -1328,7 +1328,8 @@ A structure representing a single imported identifier:
 @itemize[
 
  @item{@racket[local-id] --- the identifier to be bound within the
-       importing module.}
+       importing module, but @emph{without} any space-specific scope
+       implied by @racket[mode].}
 
  @item{@racket[src-sym] --- the external name of the binding as
        exported from its source module.}

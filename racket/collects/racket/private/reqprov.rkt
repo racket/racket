@@ -682,8 +682,8 @@
                     append
                     (map (lambda (orig-id bind-id)
                            (let ([rename-imports (filter (lambda (import)
-                                                           (free-identifier=? orig-id
-                                                                              (import-local-id import)))
+                                                           (import-identifier=? orig-id
+                                                                                (import-local-id import)))
                                                          imports)])
                              (unless (pair? rename-imports)
                                (raise-syntax-error
@@ -711,7 +711,7 @@
                 ;; Make sure no new name is in the leftover set:
                 (for-each (lambda (bind-id)
                             (when (ormap (lambda (import)
-                                           (and (free-identifier=? bind-id
+                                           (and (import-identifier=? bind-id
                                                                      (import-local-id import))
                                                 import))
                                          leftover-imports)
@@ -1286,15 +1286,23 @@
            (phase+space-phase (import-orig-mode i))
            (list #'for-meta
                  (phase+space-phase (import-mode i))
-                 (list #'for-space
-                       (phase+space-space (import-mode i))
-                       (list #'just-space
-                             (phase+space-space (import-orig-mode i))
-                             (list #'rename
-                                   (import-src-mod-path i)
-                                   (import-local-id i)
-                                   (import-src-sym i))))))
+                 (let ([at-space (list #'just-space
+                                       (phase+space-space (import-orig-mode i))
+                                       (list #'rename
+                                             (import-src-mod-path i)
+                                             (import-local-id i)
+                                             (import-src-sym i)))])
+                   ;; avoid a space shift if unnecessary:
+                   (if (eq? (phase+space-space (import-orig-mode i))
+                            (phase+space-space (import-mode i)))
+                       at-space
+                       (list #'for-space
+                             (phase+space-space (import-mode i))
+                             at-space)))))
      (import-orig-stx i)))
+
+  (define-for-syntax (import-local-id-with-space-scope i)
+    (add-mode-scope (import-local-id i) (import-mode i)))
 
   ;; (do-local-require rename spec ...)
   ;; Lifts (require spec ...) to the (module) top level, and makes the imported
@@ -1311,14 +1319,16 @@
                           stx
                           (list* #'only-meta-in 0 (syntax->list #'(spec ...)))
                           stx))]
-                       [(names) (map import-local-id imports)]
+                       [(names) (map import-local-id-with-space-scope imports)]
                        [(reqd-names)
                         ;; Could be just `(generate-temporaries names)`, but using the
                         ;; exported name turns out to be a hint to Check Syntax for binding
                         ;; arrows, for now:
                         (let ([intro (make-syntax-introducer)])
-                          (map (lambda (n) (intro (datum->syntax #f (syntax-e n) n)))
-                               names))]
+                          (map (lambda (n i) (intro (add-mode-scope (datum->syntax #f (syntax-e n) n)
+                                                                    (import-mode i))))
+                               names
+                               imports))]
                        [(renamed-imports) (map rename-import imports reqd-names)]
                        [(raw-specs) (map import->raw-require-spec renamed-imports)]
                        [(lifts) (map syntax-local-lift-require raw-specs reqd-names)])

@@ -2779,6 +2779,50 @@ case of module-leve bindings; it doesn't cover local bindings.
     (void)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `local-require` works with spaces and does not have an
+;; unnecessary space shift
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval `(module n racket/base
+           (define abcdef 1)
+           (provide abcdef)
+           (require (for-syntax racket/base))
+           (define-syntax (define-at-soup stx)
+             (syntax-case stx ()
+               [(_ id) #`(define #,((make-interned-syntax-introducer 'soup) #'id) 'ok)]))
+           (define-at-soup kettle)
+           (provide (for-space soup kettle))))
+
+  (define stx
+    (expand `(module m racket/base
+               (require (for-syntax racket/base))
+               (provide result)
+               (begin-for-syntax (local-require 'n) abcdef)
+               (define-syntax (at-soup stx)
+                 (syntax-case stx ()
+                   [(_ id) ((make-interned-syntax-introducer 'soup) #'id)]))
+               (define result
+                 (let ()
+                   (local-require 'n)
+                   (at-soup kettle))))))
+
+  (eval stx)
+  (test 'ok dynamic-require ''m 'result)
+
+  (let loop ([stx stx])
+    (cond
+      [(and (identifier? stx) (equal? 'abcdef (syntax-e stx)))
+       (define binding (identifier-binding stx))
+       (when binding
+         (unless (memq (list-ref binding 5) '(0 1))
+           (error 'local-require-test "shift for ~a: ~a" stx (list-ref binding 5))))]
+      [(pair? stx)
+       (loop (car stx))
+       (loop (cdr stx))]
+      [(syntax? stx)
+       (loop (syntax-e stx))])))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; `make-interned-syntax-introducer`
 
 (let ([ns-code '(module ns racket/base
