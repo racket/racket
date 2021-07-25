@@ -202,3 +202,75 @@ CODE
    path1)
 
   (check-equal? ((reload)) 2))
+
+
+(test-case "ordering"
+  (define dir (make-temporary-file "rereq-~a" 'directory))
+  (define path1 (build-path dir "a.rkt"))
+  (define path2 (build-path dir "b.rkt"))
+  (define path3 (build-path dir "c.rkt"))
+  (define path4 (build-path dir "d.rkt"))
+
+  (display-to-file
+   #:exists 'replace
+   #<<CODE
+#lang racket/base
+(provide proc)
+(define (proc) 1)
+CODE
+   path1)
+
+  (display-to-file
+   #:exists 'replace
+   #<<CODE
+#lang racket/base
+(require "a.rkt")
+(provide proc-b)
+(define proc-b proc)
+CODE
+   path2)
+
+  (display-to-file
+   #:exists 'replace
+   #<<CODE
+#lang racket/base
+(require "a.rkt")
+(provide proc-c)
+(define proc-c proc)
+CODE
+   path3)
+
+  (display-to-file
+   #:exists 'replace
+   #<<CODE
+#lang racket/base
+(require "b.rkt"
+         "c.rkt")
+(provide proc-b
+         proc-c)
+CODE
+   path4)
+
+  (define (reload)
+    (dynamic-rerequire path4 #:verbosity 'none)
+    (values
+     (dynamic-require path4 'proc-b)
+     (dynamic-require path4 'proc-c)))
+
+  (let-values ([(proc-b proc-c) (reload)])
+   (check-equal? (proc-b) 1)
+   (check-equal? (proc-c) 1))
+
+  (sleep 1)
+  (display-to-file
+   #:exists 'replace
+   #<<CODE
+#lang racket/base
+(provide proc)
+(define (proc) 2)
+CODE
+   path1)
+
+  (let-values ([(proc-b proc-c) (reload)])
+   (check-equal? (proc-b) 2)
+   (check-equal? (proc-c) 2)))

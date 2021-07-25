@@ -45,7 +45,7 @@
         (with-handlers ([(lambda (exn)
                            (and (pair? name)
                                 (exn:get-module-code? exn)))
-                         (lambda (exn) 
+                         (lambda (exn)
                            ;; Load-handler protocol: quiet failure when a
                            ;; submodule is not found
                            (void))])
@@ -108,50 +108,64 @@
 
 (define (check-latest mod verbosity path-collector)
   (define mpi (module-path-index-join mod #f))
+
   (define seen (make-hash))
-  (define loaded-files (make-hash))
+  (define (seen? k) (hash-has-key? seen k))
+  (define (mark-seen! k) (hash-set! seen k #t))
+
+  (define reloaded (make-hash))
+  (define (reloaded? p) (hash-has-key? reloaded p))
+  (define (mark-reloaded! p) (hash-set! reloaded p #t))
+
   (let loop ([mpi mpi] [wrt-path #f])
-    (define reloaded? #f)
     (define rpath (make-resolved-module-path/modresolve
                    (resolve-module-path-index mpi wrt-path)))
     (define name (resolved-module-path-name rpath))
-    (define path (if (pair? name)
-                     (let ([path (car name)])
-                       (if (and (symbol? path)
-                                ;; If the code was compiled from source, then the
-                                ;; "self" modidx may be reported for a submodule
-                                ;; import, so manually resolve to `wrt-path`:
-                                (self-modidx-base? mpi))
-                           wrt-path
-                           path))
-                     name))
-    (when (path? path)
-      (define npath (normal-case-path (simplify-path path)))
-      (define key (if (pair? name)
-                      (cons npath (cdr name))
-                      npath))
-      (unless (hash-has-key? seen key)
-        (hash-set! seen key #t)
-        (define mod (hash-ref loaded key #f))
-        (when mod
-          (define dependency-was-reloaded?
-            (for/fold ([reloaded? #f])
-                      ([dep-mpi (in-list (mod-depends mod))])
-              (or (loop dep-mpi path) reloaded?)))
-          (define-values (ts actual-path) (get-timestamp npath))
-          (when (or dependency-was-reloaded?
-                    (ts . > . (mod-timestamp mod)))
-            (unless (hash-ref loaded-files npath #f)
-              (define orig (current-load/use-compiled))
-              (parameterize ([current-load/use-compiled
-                              (rerequire-load/use-compiled orig #f verbosity path-collector)]
-                             [current-module-declare-name rpath]
-                             [current-module-declare-source actual-path])
-                ((rerequire-load/use-compiled orig #t verbosity path-collector)
-                 npath (mod-name mod)))
-              (hash-set! loaded-files npath #t))
-            (set! reloaded? #t)))))
-    reloaded?))
+    (define path
+      (cond
+        [(pair? name)
+         (define path (car name))
+         (if (and (symbol? path)
+                  ;; If the code was compiled from source, then the
+                  ;; "self" modidx may be reported for a submodule
+                  ;; import, so manually resolve to `wrt-path`:
+                  (self-modidx-base? mpi))
+             wrt-path
+             path)]
+        [else
+         name]))
+
+    (cond
+      [(path? path)
+       (define npath (normal-case-path (simplify-path path)))
+       (define key (if (pair? name)
+                       (cons npath (cdr name))
+                       npath))
+       (unless (seen? key)
+         (mark-seen! key)
+         (define mod
+           (hash-ref loaded key #f))
+         (when mod
+           (define dependency-was-reloaded?
+             (for/fold ([reloaded? #f])
+                       ([dep-mpi (in-list (mod-depends mod))])
+               (or (loop dep-mpi path) reloaded?)))
+           (define-values (ts actual-path)
+             (get-timestamp npath))
+           (when (or dependency-was-reloaded?
+                     (ts . > . (mod-timestamp mod)))
+             (unless (reloaded? npath)
+               (define orig (current-load/use-compiled))
+               (parameterize ([current-load/use-compiled
+                               (rerequire-load/use-compiled orig #f verbosity path-collector)]
+                              [current-module-declare-name rpath]
+                              [current-module-declare-source actual-path])
+                 ((rerequire-load/use-compiled orig #t verbosity path-collector)
+                  npath (mod-name mod)))
+               (mark-reloaded! npath)))))
+       (reloaded? npath)]
+
+      [else #f])))
 
 ;; Is `mpi` a submod relative to "self"?
 (define (self-modidx-base? mpi)
