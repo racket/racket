@@ -1030,7 +1030,7 @@ definition context.
 
 Produces a syntax object that is like @racket[stx], except that the
 presence of @tech{scopes} for the current expansion---both the
-macro-introduction scope and the use-site scope, if any---is flipped
+@tech{macro-introduction scope} and the @tech{use-site scope}, if any---is flipped
 on all parts of the syntax object. See @secref["transformer-model"] for information
 on macro-introduction and use-site @tech{scopes}.
 
@@ -1049,8 +1049,8 @@ on macro-introduction and use-site @tech{scopes}.
 
 Produces a procedure that encapsulates a fresh @tech{scope} and flips,
 adds, or removes it in a given syntax object. By default, the fresh
-scope is a macro-introduction scope, but providing a true value for
-@racket[as-use-site?] creates a scope that is like a use-site scope;
+scope is a @tech{macro-introduction scope}, but providing a true value for
+@racket[as-use-site?] creates a scope that is like a @tech{use-site scope};
 the difference is in how the scopes are treated by
 @racket[syntax-original?].
 
@@ -1085,8 +1085,8 @@ This function is intended for the implementation of separate binding environment
 phase, for which the scope associated with each environment must be the same across modules.
 
 Unlike @racket[make-syntax-introducer], the scope added by a procedure created with
-@racket[make-interned-syntax-introducer] is always treated like a use-site scope, not a
-macro-introduction scope, so it does not affect originalness as reported by @racket[syntax-original?].
+@racket[make-interned-syntax-introducer] is always treated like a @tech{use-site scope}, not a
+@tech{macro-introduction scope}, so it does not affect originalness as reported by @racket[syntax-original?].
 
 @history[#:added "6.90.0.28"]}
 
