@@ -868,7 +868,7 @@
                                        #:declared-submodule-names declared-submodule-names
                                        #:who 'module)
           (log-expand partial-body-ctx 'exit-case ready-body)
-          (cons exp-body
+          (cons ready-body
                 (loop tail? rest-bodys))]
          [(#%provide)
           (log-expand partial-body-ctx 'prim-stop #f)

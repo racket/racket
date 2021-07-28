@@ -3891,5 +3891,27 @@ case of module-leve bindings; it doesn't cover local bindings.
   (test "5\n#<procedure>\n88\n" get-output-string o))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; check that expanded `require` doens't keep use-site scopes
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval
+   `(module p2 racket/base
+      (provide cons)
+      (define cons 'p)))
+
+  (eval
+    (expand
+     `(module p racket/base
+        (require (for-syntax racket/base))
+        (define-syntax (bounce stx)
+          (syntax-case stx ()
+            [(_ mod ...)
+             (with-syntax ([(mod ...) ((make-syntax-introducer) #'(mod ...))])
+               #'(begin (begin (require mod)
+                               (provide (all-from-out mod)))
+                        ...))]))
+        (bounce 'p2)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
