@@ -441,7 +441,7 @@ boot.o: $(srcdir)/boot.c $(srcdir)/../../rktio/rktio.inc $(srcdir)/boot.h
 	$(CC) $(CFLAGS) -c -o boot.o $(srcdir)/boot.c
 
 starter@NOT_MINGW@: $(srcdir)/../../start/ustart.c $(srcdir)/../../start/self_exe.inc
-	$(CC) $(CFLAGS) -o starter $(srcdir)/../../start/ustart.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -o starter $(srcdir)/../../start/ustart.c
 
 
 repack-install-libs:
