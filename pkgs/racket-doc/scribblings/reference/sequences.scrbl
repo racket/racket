@@ -1328,7 +1328,7 @@ stream, but plain lists can be used as streams, and functions such as
   ]
 
   @examples[#:eval sequence-evaluator
-    (define-struct list-stream (v)
+    (struct list-stream (v)
       #:methods gen:stream
       [(define (stream-empty? stream)
          (empty? (list-stream-v stream)))
