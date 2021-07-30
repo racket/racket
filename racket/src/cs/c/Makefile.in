@@ -364,10 +364,10 @@ starter@MINGW@:
 	$(MAKE) MrStart.exe
 
 MzStart.exe: $(srcdir)/../../start/start.c start_rc.o
-	$(CC) $(CFLAGS) -o MzStart.exe -DMZSTART $(srcdir)/../../start/start.c start_rc.o
+	$(CC) $(CFLAGS) $(LDFLAGS) -o MzStart.exe -DMZSTART $(srcdir)/../../start/start.c start_rc.o
 
 MrStart.exe: $(srcdir)/../../start/start.c gstart_rc.o
-	$(CC) -mwindows $(CFLAGS) -o MrStart.exe -DMRSTART $(srcdir)/../../start/start.c gstart_rc.o
+	$(CC) -mwindows $(CFLAGS) $(LDFLAGS) -o MrStart.exe -DMRSTART $(srcdir)/../../start/start.c gstart_rc.o
 
 start_rc.o: $(srcdir)/../../worksp/starters/start.rc
 	@WINDRES@ -DMZSTART -i $(srcdir)/../../worksp/starters/start.rc -o start_rc.o
