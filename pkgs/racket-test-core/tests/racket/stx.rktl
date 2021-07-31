@@ -21,6 +21,16 @@
 (test 0 syntax-span (datum->syntax #f 10 '(aha 1 1 1 0)))
 (test 0 syntax-column (datum->syntax #f 10 '(aha 1 0 1 0)))
 
+(let ([loc (syntax-srcloc (datum->syntax #f 10 '(aha 7 88 999 3)))])
+  (test 'aha srcloc-source loc)
+  (test 7 srcloc-line loc)
+  (test 88 srcloc-column loc)
+  (test 999 srcloc-position loc)
+  (test 3 srcloc-span loc)
+  (test loc syntax-srcloc (datum->syntax #f 'x loc))
+  (test #f syntax-srcloc (datum->syntax #f 'x #f))
+  (test #f syntax-srcloc (datum->syntax #f 'y (datum->syntax #f 'x #f))))
+
 (err/rt-test (datum->syntax #f 10 10))
 (err/rt-test (datum->syntax #f 10 '(10)))
 (err/rt-test (datum->syntax #f 10 '(10 11)))
