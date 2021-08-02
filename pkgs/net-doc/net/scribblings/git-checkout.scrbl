@@ -23,6 +23,7 @@ for information on command-line arguments and flags.
                        [repository string?]
                        [#:dest-dir dest-dir (or/c path-string? #f)]
                        [#:ref ref (or/c string? 'head) 'head]
+                       [#:initial-search-ref initial-search-ref string? "master"]
                        [#:transport transport (or/c 'git 'http 'https) 'git]
                        [#:depth depth (or/c #f exact-positive-integer?) 1]
                        [#:status-printf status-printf (string? any/c ... . -> . void?) (lambda args
@@ -77,7 +78,9 @@ tag. Furthermore, the default @racket[depth] argument allows
 @racket[git-checkout] to obtain only the latest commit and its
 objects, instead of the entire history of the branch or commit.  If
 @racket[ref] is any other commit ID or tree ID, then the entire
-repository may have to be downloaded, including all branches.
+repository may have to be downloaded, including all branches; however,
+commits in the branch or tag named by @racket[initial-search-ref] will
+be checked, first.
 
 Status information is reported via @racket[status-printf]. The same
 information is always logged with the name @racket['git-checkout] at
@@ -112,7 +115,8 @@ Authentication.
          #:changed "6.6.0.5" @elem{Changed to raise @racket[exn:fail:git] exceptions
                                    instead of @racket[exn:fail].}
          #:changed "8.0.0.8" @elem{Added support for @racket[ref] as @racket['head]
-                                   and made @racket['head] the default.}]}
+                                   and made @racket['head] the default.}
+         #:changed "8.2.0.5" @elem{Added the @racket[initial-search-ref] argument.}]}
 
 @deftogether[(@defparam[current-git-username username (or/c string? #f)]
               @defparam[current-git-password password (or/c string? #f)])]{
