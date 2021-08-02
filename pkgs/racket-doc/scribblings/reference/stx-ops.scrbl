@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "mz.rkt")
+@(require "mz.rkt"
+          (for-label racket/syntax-srcloc))
 
 @(define stx-eval (make-base-eval))
 @(stx-eval '(require (for-syntax racket/base)))
@@ -35,21 +36,15 @@ Returns @racket[#t] if @racket[v] is a @tech{syntax object} and
 ]}
 
 
-@defproc[(syntax-srcloc [stx syntax?]) (or/c #f srcloc?)]{
-
-Returns the @tech{source location} for the @tech{syntax object}
-@racket[stx], or @racket[#f] if none is known.
-
-@history[#:added "8.2.0.5"]}
-
-
 @defproc[(syntax-source [stx syntax?]) any/c]{
 
 Returns the source component of the @tech{source location}
 for the @tech{syntax object} @racket[stx], or @racket[#f]
 if none is known. The source is represented by an arbitrary value
 (e.g., one passed to @racket[read-syntax]), but it is typically a file
-path string.}
+path string.
+
+See also @racket[syntax-srcloc] from @racketmodname[racket/syntax-srcloc]}.
 
 
 @defproc[(syntax-line [stx syntax?]) 
@@ -58,7 +53,11 @@ path string.}
 Returns the line number (positive exact integer)
 of the @tech{source location} for the start of the
 @tech{syntax object} in its source, or @racket[#f] if the line number or
-source is unknown. See also @secref["linecol"].}
+source is unknown. See also @secref["linecol"].
+
+@history[#:changed "7.0" @elem{Dropped a guarantee that @racket[syntax-line]
+                               and @racket[syntax-column] both produce
+                               @racket[#f] or both produce integers.}]}
 
 
 @defproc[(syntax-column [stx syntax?])
@@ -67,7 +66,11 @@ source is unknown. See also @secref["linecol"].}
 Returns the column number (non-negative exact integer)
 of the @tech{source location} for the start
 of the @tech{syntax object} in its source, or @racket[#f] if the source
-column is unknown. See also @secref["linecol"].}
+column is unknown. See also @secref["linecol"].
+
+@history[#:changed "7.0" @elem{Dropped a guarantee that @racket[syntax-line]
+                               and @racket[syntax-column] both produce
+                               @racket[#f] or both produce integers.}]}
 
 
 @defproc[(syntax-position [stx syntax?])
@@ -488,6 +491,21 @@ limited to---the following keys:
 ]
 
 @history[#:added "6.3"]}
+
+
+@section{Syntax Object Source Locations}
+
+@note-lib-only[racket/syntax-srcloc]
+
+@defproc[(syntax-srcloc [stx syntax?]) (or/c #f srcloc?)]{
+
+Returns the @tech{source location} for the @tech{syntax object}
+@racket[stx], or @racket[#f] if none is known.
+
+@history[#:added "8.2.0.5"]}
+
+
+
 
 @close-eval[stx-eval]
 

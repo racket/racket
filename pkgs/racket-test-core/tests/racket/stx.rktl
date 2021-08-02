@@ -1,6 +1,8 @@
 
 (load-relative "loadtest.rktl")
 
+(require racket/syntax-srcloc)
+
 (Section 'stx)
 
 (test #t syntax? (datum->syntax #f 'hello #f))
