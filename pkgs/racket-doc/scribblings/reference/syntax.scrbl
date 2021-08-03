@@ -1372,7 +1372,8 @@ quoted @racket[raw-module-spec].
                                (#,(racketidfont "prefix-all-defined") prefix-id) 
                                (#,(racketidfont "prefix-all-defined-except") prefix-id id ...)
                                (#,(racketidfont "protect") spaceless-spec ...)
-                               (#,(racketidfont "expand") (id . datum))])]{
+                               (#,(racketidfont "expand") (id . datum))
+                               (#,(racketidfont "expand") (id . datum) orig-form)])]{
 
 The primitive export form, to which @racket[provide] expands.  A
 @racket[_raw-module-path] is as for @racket[#%require]. A
@@ -1402,10 +1403,12 @@ macro-extensible via an explicit @racketidfont{expand} sub-form; the
 though it is not actually an expression), stopping when a
 @racket[begin] form is produced; if the expansion result is
 @racket[(begin raw-provide-spec ...)], it is spliced in place of the
-@racketidfont{expand} form, otherwise a syntax error is reported. The
-@racketidfont{expand} sub-form is not normally used directly; it
-provides a hook for implementing @racket[provide] and @tech{provide
-transformers}.
+@racketidfont{expand} form, otherwise a syntax error is reported.
+If an @racket[orig-form] part is provided, then it is used instead of the
+@racket[#%provide] form when raising syntax errors, such as a
+``provide identifier is not defined'' error. The @racketidfont{expand}
+sub-form is not normally used directly; it provides a hook for
+implementing @racket[provide] and @tech{provide transformers}.
 
 The @racketidfont{all-from} and @racketidfont{all-from-except} forms
 re-export only identifiers that are accessible in lexical context of
@@ -1416,7 +1419,9 @@ introduced at the same time. Similarly, @racketidfont{all-defined} and
 its variants export only definitions accessible from the lexical
 context of the @racket[spaceless-spec] form.
 
-@history[#:changed "8.2.0.3" @elem{Added @racketidfont{for-space}.}]}
+@history[#:changed "8.2.0.3" @elem{Added @racketidfont{for-space}.}
+         #:changed "8.2.0.5" @elem{Added @racket[orig-form] support
+                                   to @racketidfont{expand}.}]}
 
 @; --------------------
 

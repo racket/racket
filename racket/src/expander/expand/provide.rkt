@@ -34,7 +34,8 @@
              [at-phase phase] ; works as a phase or a phase level
              [at-space-level '#:none]
              [protected? #f]
-             [layer 'raw])
+             [layer 'raw]
+             [orig-s orig-s]) ; only for error reporting
     (define-values (track-stxess exp-specss)
       (for/lists (track-stxes exp-specs) ([spec (in-list specs)])
         (define fm (and (pair? (syntax-e spec))
@@ -55,7 +56,8 @@
                    (phase+ p at-phase)
                    at-space-level
                    protected?
-                   'phaseless))
+                   'phaseless
+                   orig-s))
            (values null
                    (list
                     (syntax-track-origin*
@@ -71,7 +73,8 @@
                    (phase+ 1 at-phase)
                    at-space-level
                    protected?
-                   'phaseless))
+                   'phaseless
+                   orig-s))
            (values null
                    (list
                     (syntax-track-origin*
@@ -87,7 +90,8 @@
                    #f
                    at-space-level
                    protected?
-                   'phaseless))
+                   'phaseless
+                   orig-s))
            (values null
                    (list
                     (syntax-track-origin*
@@ -106,7 +110,8 @@
                    at-phase
                    space
                    protected?
-                   'spaceless))
+                   'spaceless
+                   orig-s))
            (values null
                    (list
                     (syntax-track-origin*
@@ -124,7 +129,8 @@
                    at-phase
                    at-space-level
                    #t
-                   layer))
+                   layer
+                   orig-s))
            (values null
                    (list
                     (syntax-track-origin*
@@ -173,8 +179,9 @@
            (parse-all-from-module self spec orig-s (m 'id) (syntax-e (m 'id:prefix)) at-phase at-space-level ns rp protected?)
            (values null (list spec))]
           [(expand)
-           (define-match ex-m spec '(expand (id . datum))) ; just check syntax
-           (define-match m spec '(expand form)) ; get form to expand
+           (define-match orig-m spec #:try '(expand (id . datum) orig)) ; get orig, if available
+           (define-match ex-m spec #:unless (orig-m) '(expand (id . datum))) ; just check syntax
+           (define-match m spec '(expand form . _)) ; get form to expand
            (define exp-spec (expand (m 'form) (struct*-copy expand-context ctx
                                                             [stops (free-id-set at-phase (list (core-id 'begin at-phase)))]
                                                             ;; Discarding definition-context scopes is ok,
@@ -191,7 +198,8 @@
                    at-phase
                    at-space-level
                    protected?
-                   layer))
+                   layer
+                   (or (orig-m 'orig) orig-s)))
            (values (list* spec exp-spec track-stxes)
                    exp-specs)]
           [else

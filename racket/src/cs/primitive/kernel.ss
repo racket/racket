@@ -916,7 +916,6 @@
   [syntax-property-symbol-keys (known-procedure/no-prompt 2)]
   [syntax-source (known-procedure/no-prompt 2)]
   [syntax-span (known-procedure/no-prompt 2)]
-  [syntax-srcloc (known-procedure/no-prompt 2)]
   [syntax? (known-procedure/pure/folding 2)]
   [system-big-endian? (known-procedure/pure 1)]
   [system-idle-evt (known-procedure/pure 1)]

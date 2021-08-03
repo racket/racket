@@ -793,7 +793,7 @@
             (syntax-property
              (quasisyntax/loc stx 
                (#%provide #,(syntax-property
-                             #`(expand (provide-trampoline out ...))
+                             #`(expand (provide-trampoline out ...) #,stx)
                              'certify-mode 'transparent)))
              'certify-mode 'transparent))])]
       [else
