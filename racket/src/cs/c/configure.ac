@@ -182,8 +182,10 @@ m4_include(../ac/is_gcc.m4)
 
 # If using gcc, we want all warnings:
 if test "$is_gcc" != "" ; then 
-  CFLAGS="$CFLAGS -Wall"
-  cs_auto_flags="${cs_auto_flags} --enable-warning-flags"
+  if test "${enable_warning}" != "no" ; then
+    CFLAGS="$CFLAGS -Wall"
+    cs_auto_flags="${cs_auto_flags} --enable-warning-flags"
+  fi
 fi
 
 AC_CHECK_LIB(m, fmod)
@@ -736,7 +738,7 @@ if test "${enable_shared}" = "yes" ; then
   LTA="la"
   STRIP_LIB_DEBUG=":"
   LIBSFX=la
-  ICP_LIB="${LIBTOOLPROG} --mode=install install -s"
+  ICP_LIB="${LIBTOOLPROG} --mode=install install${ICP_STRIP_FLAG}"
 
   CONFIGURE_RACKET_SO_COMPILE="env PLT_CS_MAKE_LINK_SHARED=y"
 else

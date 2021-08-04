@@ -9,6 +9,8 @@ try_archive_conftest()
    $AR $ARFLAGS conftest.a conftest.$OBJEXT > /dev/null 2>&1
 }
 
+ICP_STRIP_FLAG=""
+
 if test "${enable_strip}" = "yes" ; then
   AC_CHECK_TOOL([STRIP], [strip])
   # Used to add -S flag, but not all `strip' variants support it:
@@ -36,6 +38,7 @@ if test "${enable_strip}" = "yes" ; then
       STRIP_DEBUG="${STRIP_LIB_DEBUG}"
     fi
   fi
+  ICP_STRIP_FLAG=" -s"
 fi
 
 case "$host_os" in

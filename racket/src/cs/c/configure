@@ -4082,8 +4082,10 @@ fi
 
 # If using gcc, we want all warnings:
 if test "$is_gcc" != "" ; then
-  CFLAGS="$CFLAGS -Wall"
-  cs_auto_flags="${cs_auto_flags} --enable-warning-flags"
+  if test "${enable_warning}" != "no" ; then
+    CFLAGS="$CFLAGS -Wall"
+    cs_auto_flags="${cs_auto_flags} --enable-warning-flags"
+  fi
 fi
 
 
@@ -4733,6 +4735,8 @@ try_archive_conftest()
    $AR $ARFLAGS conftest.a conftest.$OBJEXT > /dev/null 2>&1
 }
 
+ICP_STRIP_FLAG=""
+
 if test "${enable_strip}" = "yes" ; then
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}strip", so it can be a program name with args.
@@ -4862,6 +4866,7 @@ $as_echo "$set_strip_lib" >&6; }
       STRIP_DEBUG="${STRIP_LIB_DEBUG}"
     fi
   fi
+  ICP_STRIP_FLAG=" -s"
 fi
 
 case "$host_os" in
@@ -5676,7 +5681,7 @@ if test "${enable_shared}" = "yes" ; then
   LTA="la"
   STRIP_LIB_DEBUG=":"
   LIBSFX=la
-  ICP_LIB="${LIBTOOLPROG} --mode=install install -s"
+  ICP_LIB="${LIBTOOLPROG} --mode=install install${ICP_STRIP_FLAG}"
 
   CONFIGURE_RACKET_SO_COMPILE="env PLT_CS_MAKE_LINK_SHARED=y"
 else

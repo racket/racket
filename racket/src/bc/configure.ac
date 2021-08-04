@@ -1340,7 +1340,7 @@ if test "${enable_shared}" = "yes" ; then
   LIBSFX=la
   WXLIBS=WXLIBSDYN
   ICP="${LIBTOOLPROG} --mode=install cp"
-  ICP_LIB="${LIBTOOLPROG} --mode=install install -s"
+  ICP_LIB="${LIBTOOLPROG} --mode=install install${ICP_STRIP_FLAG}"
   ICP_STATIC_LIB='$(NOOP)'
   MRLIBINSTALL="install-lib"
   LIBFINISH="${LIBTOOLPROG} --mode=finish"
