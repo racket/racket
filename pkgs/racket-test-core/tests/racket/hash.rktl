@@ -759,5 +759,15 @@
     (test #f `(no-crash? ,op) fail?)))
 
 ;; ----------------------------------------
+;; check `hash-keys` on a table with weakly held keys:
+
+(test #t 'hash-keys 
+      (for/and ([i 10000])
+        (define ht (make-weak-hasheq))
+        (for ([i (in-range 1000)])
+          (hash-set! ht (number->string i) i))
+        (list? (hash-keys ht))))
+
+;; ----------------------------------------
 
 (report-errs)
