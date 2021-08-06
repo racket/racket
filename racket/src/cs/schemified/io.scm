@@ -2430,8 +2430,10 @@
         (lambda (pos_0)
           (begin
             (if pos_0
-              (let ((app_0 (hash-iterate-key h_0 pos_0)))
-                (cons app_0 (loop_0 (hash-iterate-next h_0 pos_0))))
+              (let ((k_0 (hash-iterate-key h_0 pos_0 unsafe-undefined)))
+                (let ((r_0 (loop_0 (hash-iterate-next h_0 pos_0))))
+                  (let ((k_1 k_0))
+                    (if (eq? k_1 unsafe-undefined) r_0 (cons k_1 r_0)))))
               null))))))
      (loop_0 (hash-iterate-first h_0)))))
 (define hash-values
@@ -34422,11 +34424,11 @@
                 'subprocess
                 "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                 stderr_0))
-             (let ((lr1324 unsafe-undefined)
+             (let ((lr1323 unsafe-undefined)
                    (group_0 unsafe-undefined)
                    (command_0 unsafe-undefined)
                    (exact/args_0 unsafe-undefined))
-               (set! lr1324
+               (set! lr1323
                  (call-with-values
                   (lambda ()
                     (if (path-string? group/command_0)
@@ -34481,9 +34483,9 @@
                    ((group_1 command_1 exact/args_1)
                     (vector group_1 command_1 exact/args_1))
                    (args (raise-binding-result-arity-error 3 args)))))
-               (set! group_0 (unsafe-vector*-ref lr1324 0))
-               (set! command_0 (unsafe-vector*-ref lr1324 1))
-               (set! exact/args_0 (unsafe-vector*-ref lr1324 2))
+               (set! group_0 (unsafe-vector*-ref lr1323 0))
+               (set! command_0 (unsafe-vector*-ref lr1323 1))
+               (set! exact/args_0 (unsafe-vector*-ref lr1323 2))
                (call-with-values
                 (lambda ()
                   (if (if (pair? exact/args_0)

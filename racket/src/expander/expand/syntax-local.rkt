@@ -58,6 +58,7 @@
          syntax-local-module-required-identifiers
          syntax-local-module-exports
          syntax-local-submodules
+         syntax-local-module-interned-scope-symbols
 
          syntax-local-expand-observer
          
@@ -451,6 +452,13 @@
   (for/list ([(name kind) (in-hash submods)]
              #:when (eq? kind 'module))
     name))
+
+(define/who (syntax-local-module-interned-scope-symbols)
+  ;; just returns all interned-scope symbols, but defined
+  ;; relative to a module expansion in case it's necessary to
+  ;; do better in the future
+  (void (get-current-expand-context who))
+  (interned-scope-symbols))
 
 ;; ----------------------------------------
 

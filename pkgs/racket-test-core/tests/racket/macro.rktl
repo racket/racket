@@ -1121,6 +1121,27 @@
 
 ;; ----------------------------------------
 
+(module binds-in-friend-spaces racket/base
+  (require (for-syntax racket/base)
+           (for-space friend1 racket/base))
+
+  (provide spaces)
+  
+  (define-syntax (def stx)
+    (syntax-case stx ()
+      [(_ id)
+       #`(begin
+           (define #,((make-interned-syntax-introducer 'friend2) #'id) 'ok)
+           (define id (quote #,(syntax-local-module-interned-scope-symbols))))]))
+  
+  (def spaces))
+
+(let ([spaces (dynamic-require ''binds-in-friend-spaces 'spaces)])
+  (test #t pair? (memq 'friend1 spaces))
+  (test #t pair? (memq 'friend2 spaces)))
+
+;; ----------------------------------------
+
 (parameterize ([current-namespace (make-base-namespace)])
   (define m '(module m racket/base
                (require racket/splicing

@@ -973,6 +973,23 @@ expansion context.
 @transform-time[]}
 
 
+@defproc[(syntax-local-module-interned-scope-symbols)
+         (listof symbol?)]{
+
+Returns a list of distinct @tech{interned} symbols corresponding to
+@tech{binding spaces} that have been used, so far, for binding within
+the current expansion context's module or top-level namespace. The
+result is conservative in the sense that it may include additional
+symbols that have not been used in the current module or namespace.
+
+The current implementation returns all symbols for @tech{reachable}
+interned scopes, but that behavior may change in the future to return
+a less conservative list of symbols.
+
+@transform-time[]
+
+@history[#:added "8.2.0.6"]}
+
 @defproc[(syntax-local-get-shadower [id-stx identifier?]
                                     [only-generated? any/c #f])
          identifier?]{

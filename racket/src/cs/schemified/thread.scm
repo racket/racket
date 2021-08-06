@@ -854,8 +854,10 @@
         (lambda (pos_0)
           (begin
             (if pos_0
-              (let ((app_0 (hash-iterate-key h_0 pos_0)))
-                (cons app_0 (loop_0 (hash-iterate-next h_0 pos_0))))
+              (let ((k_0 (hash-iterate-key h_0 pos_0 unsafe-undefined)))
+                (let ((r_0 (loop_0 (hash-iterate-next h_0 pos_0))))
+                  (let ((k_1 k_0))
+                    (if (eq? k_1 unsafe-undefined) r_0 (cons k_1 r_0)))))
               null))))))
      (loop_0 (hash-iterate-first h_0)))))
 (define hash-empty?

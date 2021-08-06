@@ -159,6 +159,7 @@
                       syntax-local-module-required-identifiers
                       syntax-local-module-exports
                       syntax-local-submodules
+                      syntax-local-module-interned-scope-symbols
                       
                       syntax-local-get-shadower
                       

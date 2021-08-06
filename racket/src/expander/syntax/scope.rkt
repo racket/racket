@@ -61,6 +61,8 @@
          shifted-multi-scope?
          shifted-multi-scope<?
 
+         interned-scope-symbols
+
          scope-place-init!)
 
 (module+ for-debug
@@ -322,23 +324,27 @@
 ;; The intern table used for interned scopes. Access to the table must be
 ;; atomic so that the table is not left locked if the expansion thread is
 ;; killed.
-(define-place-local interned-scopes-table (make-weak-hasheq))
+(define-place-local interned-scopes-table (make-ephemeron-hasheq))
+
+(define (interned-scope-symbols)
+  (call-as-atomic
+   (lambda ()
+     (hash-keys interned-scopes-table))))
 
 (define (scope-place-init!)
-  (set! interned-scopes-table (make-weak-hasheq)))
+  (set! interned-scopes-table (make-ephemeron-hasheq)))
 
 (define (make-interned-scope sym)
   (define (make)
     ;; since interned scopes are reused by unmarshalled code, and because they’re generally unlikely
     ;; to be a good target for bindings, always create them with a negative id
-    (make-ephemeron sym (interned-scope (- (new-scope-id!)) 'interned empty-binding-table sym)))
+    (interned-scope (- (new-scope-id!)) 'interned empty-binding-table sym))
   (call-as-atomic
    (lambda ()
-     (or (ephemeron-value
-          (hash-ref! interned-scopes-table sym make))
+     (or (hash-ref! interned-scopes-table sym #f)
          (let ([new (make)])
            (hash-set! interned-scopes-table sym new)
-           (ephemeron-value new))))))
+           new)))))
 
 (define (new-multi-scope [name #f])
   (intern-shifted-multi-scope 0 (multi-scope (new-scope-id!) name (box (hasheqv)) (box (hasheqv)) (box (hash)))))
