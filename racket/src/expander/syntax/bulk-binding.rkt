@@ -101,7 +101,8 @@
            ;; Reset `provide` and `self` to the discovered information
            (set-bulk-binding-self! b (bulk-provide-self bulk-provide))
            (define provides (hash-ref (bulk-provide-provides bulk-provide)
-                                      (bulk-binding-provide-phase+space b)))
+                                      (bulk-binding-provide-phase+space b)
+                                      #hasheq()))
            ;; Remove exceptions and add prefix
            (define excepts (bulk-binding-excepts b))
            (define prefix (bulk-binding-prefix b))
