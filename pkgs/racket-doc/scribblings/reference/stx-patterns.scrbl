@@ -528,11 +528,10 @@ source location value that @racket[datum->syntax] accepts.}]}
          #:contracts ([stx-expr syntax?])]{
 
 Like @racket[quasisyntax], but with source-location assignment like
-@racket[syntax/loc].}
+@racket[syntax/loc].
 
 @history[#:changed "8.2.0.6" @elem{Allows @racket[stx-expr] to be any
-source location value that @racket[datum->syntax] accepts.}]
-
+source location value that @racket[datum->syntax] accepts.}]}
 
 @defform[(quote-syntax/prune id)]{
 
