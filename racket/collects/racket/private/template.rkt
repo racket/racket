@@ -590,7 +590,7 @@
 ;;                              (Vector Any (Option Pos) (Option Nonneg) (Option Pos) (Option Nonneg))
 ;;                              Srcloc
 ;;                              #f)
-;; Raise exn if not syntax. Returns same syntax if suitable for srcloc
+;; Raise exn if not srcloc-like value. Returns same syntax if suitable for srcloc
 ;; (ie, if at least syntax-source or syntax-position set), #f otherwise.
 
 (define (check-loc who x)
