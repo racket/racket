@@ -81,7 +81,46 @@
                 (thread-wait pasv3-thd)
                 (thread-wait main-thd)
                 (get-output-string cop) => EXPECTED-USER-OUTPUT
-                ))))
+                ))
+        ;; make sure that TCP connections don't leak when attempting to open
+        ;; an FTP session fails
+        (test (for ([immediate-failure? '(#t #f)])
+                (define bad-custodian (make-custodian))
+                (parameterize ([current-custodian bad-custodian])
+                  (define bad-listener (tcp-listen 0))
+                  (define bad-port (let-values ([(_1 p _2 _3) (tcp-addresses bad-listener #t)]) p))
+                  (thread (lambda ()
+                            (let loop ()
+                              (define-values (i o) (tcp-accept bad-listener))
+                              (cond [immediate-failure?
+                                     (fprintf o "500 OOPS: cannot read user list\n")]
+                                    [else
+                                     ; After password
+                                     (fprintf o "220 FTP ready\n")
+                                     (flush-output o)
+                                     (read-bytes-line i 'any)
+                                     (fprintf o "331 Go ahead\n")
+                                     (flush-output o)
+                                     (read-bytes-line i 'any)
+                                     (fprintf o "530 Cannot login\n")])
+                              (close-output-port o)
+                              (close-input-port i)
+                              (loop))))
+                  (for ([i (in-range 10000)])
+                    ((with-handlers ([exn:fail? (lambda (exn)
+                                                  ;(printf "~s\n" (exn-message exn))
+                                                  void)])
+                       (define conn (ftp-establish-connection server bad-port user passwd))
+                       (thread (lambda ()
+                                 (displayln 'established)))
+                       (lambda () (error "connection didn't fail; server wasn't bad enough")))))
+                  ;; we should still be able to connect to the mock server
+                  (with-handlers ([exn:fail? (lambda (exn)
+                                               (eprintf "Failed to open one more connection; out of descriptors?\n")
+                                               (raise exn))])
+                    (tcp-connect server bad-port)))
+                (custodian-shutdown-all bad-custodian)))
+        ))
 
 (define S string-append)
 
