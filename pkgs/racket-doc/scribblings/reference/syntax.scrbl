@@ -964,7 +964,7 @@ level} 0 are imported.
 
 @defform/subs[#:literals (protect-out all-defined-out all-from-out rename-out 
                           except-out prefix-out struct-out for-meta combine-out
-                          for-syntax for-label for-template)
+                          for-syntax for-label for-template for-space)
               (provide provide-spec ...)
               ([provide-spec id
                              (all-defined-out)
