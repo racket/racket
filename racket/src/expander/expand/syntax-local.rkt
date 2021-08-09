@@ -164,6 +164,7 @@
   (define maybe-taint (if (syntax-clean? ext-s) values syntax-taint))
   (define shifts (syntax-mpi-shifts ext-s))
   (lambda (s [mode 'add])
+    (check 'syntax-introducer syntax? s)
     (define new-s
       (maybe-taint
        (case mode
