@@ -492,8 +492,8 @@ Illegal as an expression form. The @racket[unsyntax-splicing] form is
 for use only with a @racket[quasisyntax] template.}
 
 
-@defform[(syntax/loc stx-expr template)
-         #:contracts ([stx-expr (or/c #f srcloc? syntax?
+@defform[(syntax/loc loc-expr template)
+         #:contracts ([loc-expr (or/c #f srcloc? syntax?
                                       (list/c any/c
                                               (or/c exact-positive-integer? #f)
                                               (or/c exact-nonnegative-integer? #f)
@@ -507,30 +507,30 @@ for use only with a @racket[quasisyntax] template.}
 
 Like @racket[syntax], except that the immediate resulting syntax
 object takes its source-location information from the result of
-@racket[stx-expr] (which must produce a syntax object).
+@racket[loc-expr].
 
 Only the source location of the immediate result---the ``outermost''
 syntax object---is adjusted. The source location is @emph{not}
-adjusted if both the source and position of @racket[stx-expr] are
+adjusted if both the source and position of @racket[loc-expr] are
 @racket[#f]. The source location is adjusted only if the resulting
 syntax object comes from the template itself rather than the value of
 a syntax pattern variable. For example, if @racket[_x] is a syntax
-pattern variable, then @racket[(syntax/loc stx-expr _x)] does not use
-the location of @racket[stx-expr].
+pattern variable, then @racket[(syntax/loc loc-expr _x)] does not use
+the location of @racket[loc-expr].
 
 @history[#:changed "6.90.0.25" @elem{Previously, @racket[syntax/loc]
-did not enforce the contract on @racket[stx-expr] if @racket[template]
+did not enforce the contract on @racket[loc-expr] if @racket[template]
 was just a pattern variable.}
-         #:changed "8.2.0.6" @elem{Allows @racket[stx-expr] to be any
+         #:changed "8.2.0.6" @elem{Allows @racket[loc-expr] to be any
 source location value that @racket[datum->syntax] accepts.}]}
 
-@defform[(quasisyntax/loc stx-expr template)
-         #:contracts ([stx-expr syntax?])]{
+@defform[(quasisyntax/loc loc-expr template)
+         #:contracts ([loc-expr syntax?])]{
 
 Like @racket[quasisyntax], but with source-location assignment like
 @racket[syntax/loc].
 
-@history[#:changed "8.2.0.6" @elem{Allows @racket[stx-expr] to be any
+@history[#:changed "8.2.0.6" @elem{Allows @racket[loc-expr] to be any
 source location value that @racket[datum->syntax] accepts.}]}
 
 @defform[(quote-syntax/prune id)]{
