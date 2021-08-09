@@ -493,7 +493,17 @@ for use only with a @racket[quasisyntax] template.}
 
 
 @defform[(syntax/loc stx-expr template)
-         #:contracts ([stx-expr syntax?])]{
+         #:contracts ([stx-expr (or/c #f srcloc? syntax?
+                                      (list/c any/c
+                                              (or/c exact-positive-integer? #f)
+                                              (or/c exact-nonnegative-integer? #f)
+                                              (or/c exact-positive-integer? #f)
+                                              (or/c exact-nonnegative-integer? #f))
+                                      (vector/c any/c
+                                                (or/c exact-positive-integer? #f)
+                                                (or/c exact-nonnegative-integer? #f)
+                                                (or/c exact-positive-integer? #f)
+                                                (or/c exact-nonnegative-integer? #f)))])]{
 
 Like @racket[syntax], except that the immediate resulting syntax
 object takes its source-location information from the result of
@@ -510,14 +520,18 @@ the location of @racket[stx-expr].
 
 @history[#:changed "6.90.0.25" @elem{Previously, @racket[syntax/loc]
 did not enforce the contract on @racket[stx-expr] if @racket[template]
-was just a pattern variable.}]}
+was just a pattern variable.}
+         #:changed "8.2.0.6" @elem{Allows @racket[stx-expr] to be any
+source location value that @racket[datum->syntax] accepts.}]}
 
 @defform[(quasisyntax/loc stx-expr template)
          #:contracts ([stx-expr syntax?])]{
 
 Like @racket[quasisyntax], but with source-location assignment like
-@racket[syntax/loc].}
+@racket[syntax/loc].
 
+@history[#:changed "8.2.0.6" @elem{Allows @racket[stx-expr] to be any
+source location value that @racket[datum->syntax] accepts.}]}
 
 @defform[(quote-syntax/prune id)]{
 

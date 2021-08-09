@@ -582,15 +582,61 @@
       (do-template stx (cadr s) #f #f)
       (raise-syntax-error #f "bad syntax" stx)))
 
-;; check-loc : Symbol Any -> (U Syntax #f)
-;; Raise exn if not syntax. Returns same syntax if suitable for srcloc
+(define (check-option pred x)
+  (if x (pred x) #t))
+
+;; check-loc : Symbol Any -> (U Syntax
+;;                              (List Any (Option Pos) (Option Nonneg) (Option Pos) (Option Nonneg))
+;;                              (Vector Any (Option Pos) (Option Nonneg) (Option Pos) (Option Nonneg))
+;;                              Srcloc
+;;                              #f)
+;; Raise exn if not srcloc-like value. Returns same syntax if suitable for srcloc
 ;; (ie, if at least syntax-source or syntax-position set), #f otherwise.
+
 (define (check-loc who x)
-  (if (syntax? x)
-      (if (or (syntax-source x) (syntax-position x))
-          x
-          #f)
-      (raise-argument-error who "syntax?" x)))
+  (cond
+    [(not x) x]
+    [(srcloc? x) (if (or (srcloc-source x) (srcloc-position x))
+                     x
+                     #f)]
+    [(syntax? x) (check-loc who (syntax-srcloc x))]
+    [(and (list? x)
+          (= (length x) 5)
+          (check-option exact-positive-integer? (list-ref x 1))
+          (check-option exact-nonnegative-integer? (list-ref x 2))
+          (check-option exact-positive-integer? (list-ref x 3))
+          (check-option exact-nonnegative-integer? (list-ref x 4)))
+     (check-loc who (srcloc (list-ref x 0)
+                            (list-ref x 1)
+                            (list-ref x 2)
+                            (list-ref x 3)
+                            (list-ref x 4)))]
+    [(and (vector? x)
+          (= (vector-length x) 5)
+          (check-option exact-positive-integer? (vector-ref x 1))
+          (check-option exact-nonnegative-integer? (vector-ref x 2))
+          (check-option exact-positive-integer? (vector-ref x 3))
+          (check-option exact-nonnegative-integer? (vector-ref x 4)))
+     (check-loc who (srcloc (vector-ref x 0)
+                            (vector-ref x 1)
+                            (vector-ref x 2)
+                            (vector-ref x 3)
+                            (vector-ref x 4)))]
+    [else
+     (raise-argument-error
+      who
+      (string-append "(or/c #f srcloc? syntax?\n"
+                     "      (list/c any/c\n"
+                     "              (or/c exact-positive-integer? #f)\n"
+                     "              (or/c exact-nonnegative-integer? #f)\n"
+                     "              (or/c exact-positive-integer? #f)\n"
+                     "              (or/c exact-nonnegative-integer? #f))\n"
+                     "      (vector/c any/c\n"
+                     "                (or/c exact-positive-integer? #f)\n"
+                     "                (or/c exact-nonnegative-integer? #f)\n"
+                     "                (or/c exact-positive-integer? #f)\n"
+                     "                (or/c exact-nonnegative-integer? #f)))")
+      x)]))
 
 ;; ============================================================
 ;; Run-time support

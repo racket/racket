@@ -2782,7 +2782,7 @@
         (syntax->datum #'((~? x) ...))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Tests for syntax/loc
+;; Tests for syntax/loc and quasisyntax/loc
 
 (let ()
   (define (f stx) (list (syntax-source stx) (syntax-position stx)))
@@ -2794,12 +2794,21 @@
   (test '(source 1)  'syntax/loc (f (syntax/loc good1 (x))))
   (test '(source #f) 'syntax/loc (f (syntax/loc good3 (x))))
   (test '(#f 1)      'syntax/loc (f (syntax/loc good4 (x))))
+  (test '(source 1)  'syntax/loc (f (syntax/loc (srcloc 'source #f #f 1 4) (x))))
+  (test '(source 1)  'syntax/loc (f (syntax/loc (list 'source #f #f 1 4) (x))))
+  (test '(source 1)  'syntax/loc (f (syntax/loc (vector 'source #f #f 1 4) (x))))
+  (test #t 'syntax/loc (same-src? (syntax/loc #f (x)) (syntax (x))))
   (test #t 'syntax/loc (same-src? (syntax/loc bad1 (x)) (syntax (x))))
   ;; syntax/loc only applies loc to *new* syntax
   (with-syntax ([x #'here])
     (test #t 'syntax/loc (same-src? (syntax/loc good1 x) (syntax x))))
   (with-syntax ([(x ...) #'()] [y #'(here)])
-    (test #t 'syntax/loc (same-src? (syntax/loc good1 (x ... . y)) (syntax y)))))
+    (test #t 'syntax/loc (same-src? (syntax/loc good1 (x ... . y)) (syntax y))))
+
+  (test '(source 1)  'quasisyntax/loc (f (quasisyntax/loc (srcloc 'source #f #f 1 4) (x))))
+  (test '(source 1)  'quasisyntax/loc (f (quasisyntax/loc (list 'source #f #f 1 4) (x))))
+  (test '(source 1)  'quasisyntax/loc (f (quasisyntax/loc (vector 'source #f #f 1 4) (x))))
+  (test #t 'quasisyntax/loc (same-src? (quasisyntax/loc #f (x)) (syntax (x)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
