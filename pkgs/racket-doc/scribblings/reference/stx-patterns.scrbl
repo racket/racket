@@ -525,7 +525,17 @@ was just a pattern variable.}
 source location value that @racket[datum->syntax] accepts.}]}
 
 @defform[(quasisyntax/loc loc-expr template)
-         #:contracts ([loc-expr syntax?])]{
+         #:contracts ([loc-expr (or/c #f srcloc? syntax?
+                                      (list/c any/c
+                                              (or/c exact-positive-integer? #f)
+                                              (or/c exact-nonnegative-integer? #f)
+                                              (or/c exact-positive-integer? #f)
+                                              (or/c exact-nonnegative-integer? #f))
+                                      (vector/c any/c
+                                                (or/c exact-positive-integer? #f)
+                                                (or/c exact-nonnegative-integer? #f)
+                                                (or/c exact-positive-integer? #f)
+                                                (or/c exact-nonnegative-integer? #f)))])]{
 
 Like @racket[quasisyntax], but with source-location assignment like
 @racket[syntax/loc].
