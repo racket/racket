@@ -357,7 +357,7 @@ resulting port supports @racket[write-special], otherwise it does not.}
                              [name any/c (object-name in)]
                              [skip exact-nonnegative-integer? 0]
                              [#:init-position init-position exact-positive-integer? 1])
-         input-port]{
+         input-port?]{
 
 Returns an input port whose content is determined by peeking into
 @racket[in]. In other words, the resulting port contains an internal
@@ -524,7 +524,7 @@ the result port does not affect writing directly to @racket[out].}
                               [column (or/c exact-nonnegative-integer? #f)]
                               [position exact-positive-integer?]
                               [close? any/c #t]
-                              [#:name name (object-name out)])
+                              [#:name name (object-name in)])
          input-port?]{
 
 Produces an input port that is equivalent to @racket[in] except in how
@@ -576,7 +576,7 @@ Like @racket[relocate-input-port], but for output ports.}
                                 [init-pos exact-positive-integer?]
                                 [close? any/c #t]
                                 [count-lines! (-> any) void]
-                                [#:name name (object-name out)])
+                                [#:name name (object-name in)])
           input-port?]{
 
 Like @racket[relocate-input-port], except that arbitrary position
