@@ -24,10 +24,10 @@
 ; Cdata = (make-cdata Location Location String)
 (define-struct (cdata source) (string) #:transparent)
 
-; Section 2.2 of XML 1.1
-; (XML 1.0 is slightly different and more restrictive)
+; Set compatible with libxml2
 (define (valid-char? i)
   (and (exact-nonnegative-integer? i)
-       (or (<= #x1     i #xD7FF)
+       (or (<= #x20     i #xD7FF)
            (<= #xE000  i #xFFFD)
-           (<= #x10000 i #x10FFFF))))
+           (<= #x10000 i #x10FFFF)
+	   (= #x9 i) (= #xA i) (= #xD i))))
