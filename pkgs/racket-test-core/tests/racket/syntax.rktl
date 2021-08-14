@@ -910,6 +910,20 @@
 (error-test #'(let () (define x 0)) exn:begin-possibly-implicit?)
 (error-test #'(let () (struct a ())) exn:begin-possibly-implicit?)
 (error-test #'(cond [#t (define x 0)]) exn:begin-possibly-implicit?)
+(error-test #'(letrec () (define x 0)) exn:begin-possibly-implicit?)
+(error-test #'(let-syntax () (define x 0)) exn:begin-possibly-implicit?)
+(error-test #'(letrec-values () () (define x 0)) exn:begin-possibly-implicit?)
+;; Check that the exceptions have the source location of the use-site.
+(define (exn:srclocs-from-syntax.rktl? x)
+  (and (exn:srclocs? x)
+       (for/and ([srcloc (in-list ((exn:srclocs-accessor x) x))])
+         (regexp-match? #px"syntax.rktl" (srcloc-source srcloc)))))
+(error-test #'(let () (define x 0)) exn:srclocs-from-syntax.rktl?)
+(error-test #'(let () (struct a ())) exn:srclocs-from-syntax.rktl?)
+(error-test #'(cond [#t (define x 0)]) exn:srclocs-from-syntax.rktl?)
+(error-test #'(letrec () (define x 0)) exn:srclocs-from-syntax.rktl?)
+(error-test #'(let-syntax () (define x 0)) exn:srclocs-from-syntax.rktl?)
+(error-test #'(letrec-values () () (define x 0)) exn:srclocs-from-syntax.rktl?)
 
 ;; Weird test: check that `eval` does not wrap its last argument
 ;; in a prompt, which means that `(foo 10)` replaces the continuation

@@ -32,14 +32,18 @@
 	 (with-syntax ([((tmp ...) ...) 
 			(map
 			 generate-temporaries 
-			 (syntax->list (syntax ((id ...) ...))))])
-	   (syntax/loc stx
-	       (letrec-syntaxes+values ([(tmp ...) expr] ...) ()
-		 (letrec-syntaxes+values ([(id ...) (values
-						     (make-rename-transformer (quote-syntax tmp))
-						     ...)] ...)
-					 ()
-		   body1 body ...))))])))
+                         (syntax->list (syntax ((id ...) ...))))])
+           (with-syntax ([let-syntaxes-body/loc
+                          (syntax/loc stx
+                            (letrec-syntaxes+values ([(id ...)
+                                                      (values
+                                                       (make-rename-transformer (quote-syntax tmp))
+                                                       ...)] ...)
+                                                    ()
+                              body1 body ...))])
+             (syntax/loc stx
+               (letrec-syntaxes+values ([(tmp ...) expr] ...) ()
+                 let-syntaxes-body/loc))))])))
 
   (-define-syntax let-syntax
     (lambda (stx)
