@@ -110,7 +110,7 @@ Represents an attribute within an element.}
  If @racket[(permissive-xexprs)] is @racket[#t], then equivalent to @racket[any/c], otherwise equivalent to @racket[(make-none/c 'permissive)]}
 
 @defproc[(valid-char? [x any/c]) boolean?]{
- Returns true if @racket[x] is an exact-nonnegative-integer whose character interpretation under UTF-8 is from the set ([#x9] | [#xA] | [#xD] | [#x20-#xD7FF] | [#xE000-#xFFFD] | [#x10000-#x10FFFF]), which matches the behaviour of libxml2.
+ Returns true if @racket[x] is an exact-nonnegative-integer whose character interpretation under UTF-8 is from the set ([#x0-#xD7FF] | [#xE000-#xFFFD] | [#x10000-#x10FFFF]), in accordance with section 2.2 of the XML 1.1 spec relaxed to include \#x0.
 }
 
 @defstruct[(entity source) ([text (or/c symbol? valid-char?)])]{
