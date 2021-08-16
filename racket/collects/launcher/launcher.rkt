@@ -175,7 +175,7 @@
   (available-variants 'mzscheme))
 
 (define (install-template dest kind mz mr)
-  (define src (for/or ([lib-dir (in-list (get-lib-search-dirs))])
+  (define src (for/or ([lib-dir (in-list (get-cross-lib-search-dirs))])
                 (define p (build-path lib-dir
                                       (if (eq? kind 'mzscheme) mz mr)))
                 (and (or (file-exists? p)
