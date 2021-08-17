@@ -72,7 +72,7 @@ jobs:
         cify: [nocify]
         jit: [jit]
         efp: [efp]
-        cc: [clang]
+        cc: [gcc]
         include:
           - jit: nojit
             cify: cify
@@ -81,7 +81,7 @@ jobs:
           - jit: jit
             cify: nocify
             efp: efp
-            cc: clang
+            cc: gcc # clang has a problem with future tests timing out
   
     steps:
     - uses: actions/checkout@v2
@@ -137,7 +137,7 @@ jobs:
     - name: Installing
       working-directory: ./racket/src
       run: make -j $((cpus+1)) install
-    # We build on Linux with clang and gcc and on MacOS with clang only.
+    # We build on Linux with gcc and on MacOS with clang only.
     - name: Tarballing
       working-directory: /usr/local
       run: tar -cvjf /tmp/racket3m-debian10-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha}}.tar.bz2 racket3m
@@ -288,7 +288,7 @@ jobs:
         cify: [nocify]
         jit: [jit]
         efp: [efp]
-        cc: [clang]
+        cc: [gcc]
         include:
           - jit: nojit
             cify: cify
@@ -297,7 +297,7 @@ jobs:
           - jit: jit
             cify: nocify
             efp: efp
-            cc: clang
+            cc: gcc
 
     steps:
       - uses: actions/checkout@v2
