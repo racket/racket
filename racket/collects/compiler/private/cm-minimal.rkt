@@ -450,7 +450,9 @@
                    (cond
                      [(and just-touch? (file-exists? zo-name))
                       (log-compile-event path 'start-touch)
-                      (touch zo-name)]
+                      (touch zo-name)
+                      (when cross-zo-name
+                        (touch cross-zo-name))]
                      [else
                       (when just-touch? (set! just-touch? #f))
                       (define mi-recompile-from (select-machine-independent recompile-from
@@ -558,7 +560,8 @@
                                       (eq? (system-type 'target-machine) (deps-machine deps))))
                              (trace-printf "wrong machine: ~a" path))
                     (explain (or (not cross-deps)
-                                 (eq? (deps-machine cross-deps) (cross-system-type 'target-machine)))
+                                 (eq? (deps-machine cross-deps) (cross-system-type 'target-machine))
+                                 (not (deps-machine cross-deps)))
                              (trace-printf "wrong machine for cross: ~a" path))
                     (let ([imports-sha1
                            (get-dep-sha1s path
@@ -576,7 +579,8 @@
                (trace-printf "hash-equivalent: ~a" zo-name)
                (cond
                  [(and (deps-machine deps)
-                       (not cross-deps))
+                       (or (not cross-deps)
+                           (deps-machine cross-deps)))
                   (cond
                     [trying-sha1? #f]
                     [else (build/touch)])]
