@@ -198,5 +198,5 @@
          [(_ ?header:function-header ?clause ...)
           (quasisyntax
            (define ?header
-             (match*/derived (?? ?header.params) #,stx
+             (match*/derived (~? ?header.params) #,stx
                ?clause ...)))])))))
