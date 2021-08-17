@@ -512,6 +512,115 @@ In all modes, the @exnraise[exn:fail:filesystem] on error (e.g., if no
 such file exists).}
 
 
+@;{
+Notes:
+- Should the keys be symbols instead of strings?
+- Describe what a "device id" is.
+- What's the difference between `st_dev` and `st_rdev`? -> See `man 7 inode`
+- Explain `mode`, refer to other parts of the documentation where it makes sense.
+- Do we need to explain user id and group id? If someone wants/needs these values,
+  they probably know how to interpret them.
+- How to explain `device-id-for-special-file`? Also: give examples? See `man 7 inode`
+- Check if we should include `st_blksize` and `st_blocks`. Are these available on
+  Windows and Mac OS X? Do they cost extra time to determine?
+- We may not need all of `atime`, `mtime` and `ctime`. Anyway, they may not be
+  available on Windows or for certain file systems.
+- Although it would be nice to reuse the semantics of
+  `file-or-directory-modify-seconds` or `file-or-directory-permissions`, this
+  has some problems/limitations:
+  - Users might want the full precision for the timestamps (possibly down to
+    nanoseconds). This can, for example, be important for debugging to see in
+    which order files were modified.
+  - The `mode` contains more than permissions. For Posix, it contains the file
+    type (socket/symbolic link/regular file/block device/directory/character
+    device/FIFO) and set user/group id bits and sticky bit (see `man 7 inode`).
+  - Idea: Split `mode` into permissions, type and special bits.
+- The special bits (user id, group id, sticky) could be future extensions, but
+  in that case should we provide the "raw" mode, so that users can still
+  retrieve the information without waiting for an enhanced Racket version?
+- Don't only distinguish OSs, but also think about "non-native" file systems.
+  For example, what should the call do for NTFS file systems mounted on Linux?
+  What about CIFS or NFS mounts? These should be abstracted by `stat`, but the
+  returned values may be different. (For example, timestamps may have less
+  precision.)
+- Should we use `follow-links?` (as for `find-files`) or `as-link?` (as for
+  `file-or-directory-identity`) for the optional argument? Note: The plural
+  "follow links" is ok for stat; we may have more than one link to follow, i. e.
+  a link might point to a link.
+- When using real values for timestamps, could a nanosecond value overflow the
+  range of a 64-bit real? Do we need separate integer(?) fields for the integer
+  seconds and the fractional seconds? Even if we don't have to expect an overflow
+  _currently_, try avoid it (year 2038 problem). We could use a single integer
+  for the nanoseconds, including the fractional part? This would be inconvenient
+  and potentially confusing if APIs in the future used higher precision (though
+  I think that's unlikely). Speaking of confusion: If we use a single integer
+  for nanoseconds, how likely is it that users confuse the nanoseconds timestamp
+  with the seconds timestamp from `file-or-directory-modify-seconds`? Should we
+  do anything about this confusion? Having separate keys for whole seconds and
+  nanoseconds feels very awkward, given that we have arbitrary precision
+  integers in Racket.
+- On Windows, how are junctions reflected in the file type? Can we get this
+  information without an extra file system call?
+- Order of itemization items below? Possibilities:
+  - order them alphabetically
+  - follow the same order as in the `stat` man page
+  - try to group the items differently, perhaps to match other Racket
+    APIs/concepts
+- Terminology: "dangling link" or "dead link" or something else? We can't just
+  say the path must end in a file or directory because it might be a socket or
+  FIFO, for example.
+- How to handle Windows junctions? Should they be treated as like symbolic
+  links or something else? Check what I wrote in the ticket.
+- Does `stat` (and the corresponding Windows function) itself check for link
+  loops or do we need to handle this ourselves?
+}
+@defproc[(file-or-directory-stat [path path-string?]
+                                 [as-link? boolean? #f])
+         (hash/c string? any/c)]{
+
+@index['("inode")]{Returns} a hash with the following keys and values:
+
+@itemlist[
+ @item{@racketvalfont{"device-id"} : device id}
+ @item{@racketvalfont{"inode"} : inode number}
+ @item{@racketvalfont{"user-id"} : user id}
+ @item{@racketvalfont{"group-id"} : group id}
+ @item{@racketvalfont{"permissions"} : permissions as returned by
+   @racket[file-or-directory-permissions]}
+ @item{@racketvalfont{"group-id-bit?"} : whether the filesystem entry has the
+   group id bit set}
+ @item{@racketvalfont{"user-id-bit?"} : whether the filesystem entry has the
+   user id bit set}
+ @item{@racketvalfont{"sticky-bit?"} : whether the filesystem entry has the
+   sticky bit set}
+ @item{@racketvalfont{"type"} : one of @racketvalfont{'socket},
+   @racketvalfont{'symbolic-link}, @racketvalfont{'file}, @racketvalfont{'directory},
+   @racketvalfont{'block-device}, @racketvalfont{'character-device} or
+   @racketvalfont{'fifo}}
+ @item{@racketvalfont{"hardlink-count"} : number of hard links}
+ @item{@racketvalfont{"user-id"} : user id of owner}
+ @item{@racketvalfont{"group-id"} : group id of owner}
+ @item{@racketvalfont{"device-id-for-special-file"} : device id (if special file)}
+ @item{@racketvalfont{"size"} : size of file or link in bytes}
+ @item{@racketvalfont{"atime"} : last access time in seconds since the epoch}
+ @item{@racketvalfont{"mtime"} : last modification time in seconds since the epoch}
+ @item{@racketvalfont{"ctime"} : change time in seconds since the epoch}
+]
+
+Different from @racket[file-or-directory-modify-seconds], the timestamps may
+contain a fractional part, so they're real values, not integers. [but see
+comment in Scribble file]
+
+If @racket[as-link?] is a true value, then if @racket[path] refers to a
+symbolic link [what about junctions?], the stat information of the link is
+returned instead of the stat information of the referenced file system item.
+
+If @racket[as-link?] is @racketvalfont{#f} and @racket[path] isn't accessible,
+the @exnraise[exn:fail:filesystem]. This exception is also raised if
+@racket[as-link?] is a true value and @racket[path] can't be resolved, i. e. is
+a dangling link.}
+
+
 @defproc[(file-or-directory-identity [path path-string?]
                                      [as-link? any/c #f])
          exact-positive-integer?]{
