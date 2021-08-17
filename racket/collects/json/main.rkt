@@ -358,6 +358,21 @@
       (- c (char->integer #\0)))
     (define (maybe-bytes c)
       (if (eof-object? c) #"" (bytes c)))
+    ;; evaluate n * 10^exp to inexact? without passing large arguments to expt
+    ;; assumes n is an integer
+    (define (safe-exponential->inexact n exp)
+      (cond
+        [(< exp -309)
+         (cond
+           [(>= n 0) 0.0]
+           [else -0.0])]
+        [(> exp 309)
+         (cond
+           [(= n 0) 0.0]
+           [(> n 0) +inf.0]
+           [(< n 0) -inf.0])]
+        [else
+         (exact->inexact (* n (expt 10 exp)))]))
     ;; used to reconstruct input for error reporting:
     (define (n->string n exp)
       (define s (number->string n))
@@ -445,7 +460,7 @@
         [(digit-byte? c)
          (read-byte i)
          (read-exponent-rest n exp (+ (* 10 exp2) (to-number c)) sgn)]
-        [else (exact->inexact (* n (expt 10 (+ exp (* sgn exp2)))))]))
+        [else (safe-exponential->inexact n (+ exp (* sgn exp2)))]))
     (start))
   ;;
   (define (read-json [top? #f])
