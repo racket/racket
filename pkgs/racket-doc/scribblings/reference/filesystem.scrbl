@@ -542,10 +542,6 @@ Notes:
   What about CIFS or NFS mounts? These should be abstracted by `stat`, but the
   returned values may be different. (For example, timestamps may have less
   precision.)
-- Should we use `follow-links?` (as for `find-files`) or `as-link?` (as for
-  `file-or-directory-identity`) for the optional argument? Note: The plural
-  "follow links" is ok for stat; we may have more than one link to follow, i. e.
-  a link might point to a link.
 - When using real values for timestamps, could a nanosecond value overflow the
   range of a 64-bit real? Do we need separate integer(?) fields for the integer
   seconds and the fractional seconds? Even if we don't have to expect an overflow
