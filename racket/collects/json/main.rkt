@@ -361,12 +361,16 @@
     ;; evaluate n * 10^exp to inexact? without passing large arguments to expt
     ;; assumes n is an integer
     (define (safe-exponential->inexact n exp)
+      (define result-exp
+        (if (= n 0)
+            exp
+            (+ (log (abs n) 10) exp)))
       (cond
-        [(< exp -309)
+        [(< result-exp -400)
          (cond
            [(>= n 0) 0.0]
            [else -0.0])]
-        [(> exp 309)
+        [(> result-exp 400)
          (cond
            [(= n 0) 0.0]
            [(> n 0) +inf.0]

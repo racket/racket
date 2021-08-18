@@ -124,6 +124,7 @@
         (string->jsexpr @T{ 0e9999999999999999    }) => 0.0
         (string->jsexpr @T{ 0e-9999999999999999   }) => 0.0
         (string->jsexpr @T{ 0.001e310 }) => 1.0e307
+        (string->jsexpr @T{ 100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e-402 }) => 1e-292
         (string->jsexpr @T{ true  }) => #t
         (string->jsexpr @T{ false }) => #f
         (string->jsexpr @T{ null  }) => 'null
