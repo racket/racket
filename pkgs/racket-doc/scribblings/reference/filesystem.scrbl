@@ -514,7 +514,6 @@ such file exists).}
 
 @;{
 Notes:
-- Should the keys be symbols instead of strings?
 - Describe what a "device id" is.
 - What's the difference between `st_dev` and `st_rdev`? -> See `man 7 inode`
 - Explain `mode`, refer to other parts of the documentation where it makes sense.
@@ -576,35 +575,35 @@ Notes:
 }
 @defproc[(file-or-directory-stat [path path-string?]
                                  [as-link? boolean? #f])
-         (hash/c string? any/c)]{
+         (hash/c symbol? any/c)]{
 
 @index['("inode")]{Returns} a hash with the following keys and values:
 
 @itemlist[
- @item{@racketvalfont{"device-id"} : device id}
- @item{@racketvalfont{"inode"} : inode number}
- @item{@racketvalfont{"user-id"} : user id}
- @item{@racketvalfont{"group-id"} : group id}
- @item{@racketvalfont{"permissions"} : permissions as returned by
+ @item{@racketvalfont{'device-id} : device id}
+ @item{@racketvalfont{'inode} : inode number}
+ @item{@racketvalfont{'user-id} : user id}
+ @item{@racketvalfont{'group-id} : group id}
+ @item{@racketvalfont{'permissions} : permissions as returned by
    @racket[file-or-directory-permissions]}
- @item{@racketvalfont{"group-id-bit?"} : whether the filesystem entry has the
+ @item{@racketvalfont{'group-id-bit?} : whether the filesystem entry has the
    group id bit set}
- @item{@racketvalfont{"user-id-bit?"} : whether the filesystem entry has the
+ @item{@racketvalfont{'user-id-bit?} : whether the filesystem entry has the
    user id bit set}
- @item{@racketvalfont{"sticky-bit?"} : whether the filesystem entry has the
+ @item{@racketvalfont{'sticky-bit?} : whether the filesystem entry has the
    sticky bit set}
- @item{@racketvalfont{"type"} : one of @racketvalfont{'socket},
+ @item{@racketvalfont{'type} : one of @racketvalfont{'socket},
    @racketvalfont{'symbolic-link}, @racketvalfont{'file}, @racketvalfont{'directory},
    @racketvalfont{'block-device}, @racketvalfont{'character-device} or
    @racketvalfont{'fifo}}
- @item{@racketvalfont{"hardlink-count"} : number of hard links}
- @item{@racketvalfont{"user-id"} : user id of owner}
- @item{@racketvalfont{"group-id"} : group id of owner}
- @item{@racketvalfont{"device-id-for-special-file"} : device id (if special file)}
- @item{@racketvalfont{"size"} : size of file or link in bytes}
- @item{@racketvalfont{"atime"} : last access time in seconds since the epoch}
- @item{@racketvalfont{"mtime"} : last modification time in seconds since the epoch}
- @item{@racketvalfont{"ctime"} : change time in seconds since the epoch}
+ @item{@racketvalfont{'hardlink-count} : number of hard links}
+ @item{@racketvalfont{'user-id} : user id of owner}
+ @item{@racketvalfont{'group-id} : group id of owner}
+ @item{@racketvalfont{'device-id-for-special-file} : device id (if special file)}
+ @item{@racketvalfont{'size} : size of file or link in bytes}
+ @item{@racketvalfont{'atime} : last access time in seconds since the epoch}
+ @item{@racketvalfont{'mtime} : last modification time in seconds since the epoch}
+ @item{@racketvalfont{'ctime} : change time in seconds since the epoch}
 ]
 
 Different from @racket[file-or-directory-modify-seconds], the timestamps may
