@@ -225,8 +225,8 @@ Equivalent to @racket[(internal-definition-context-introduce intdef-ctx stx 'add
 
 @defproc[(syntax-local-eval [stx syntax?]
                             [intdef-ctx (or/c internal-definition-context?
-                                              (listof internal-definition-context?)
-                                              #f)
+                                              #f
+                                              (listof internal-definition-context?))
                              '()])
          any]{
 
