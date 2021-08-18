@@ -381,6 +381,7 @@
   [file-or-directory-identity (known-procedure/no-prompt 6)]
   [file-or-directory-modify-seconds (known-procedure/no-prompt 14)]
   [file-or-directory-permissions (known-procedure/no-prompt 6)]
+  [file-or-directory-stat (known-procedure/no-prompt 6)]
   [file-or-directory-type (known-procedure/no-prompt 6)]
   [file-position (known-procedure/no-prompt 6)]
   [file-position* (known-procedure/no-prompt 2)]
