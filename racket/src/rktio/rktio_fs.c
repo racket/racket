@@ -2291,11 +2291,10 @@ char *rktio_uname(rktio_t *rktio) {
  
 #ifdef RKTIO_SYSTEM_WINDOWS
 char *rktio_uname(rktio_t *rktio) {
-  char buff[1024], *r;
+  char buff[1024];
   OSVERSIONINFO info;
   BOOL hasInfo;
   char *p;
-  int len;
 
   info.dwOSVersionInfoSize = sizeof(info);
 
