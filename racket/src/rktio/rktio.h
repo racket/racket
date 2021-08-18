@@ -76,7 +76,7 @@ Thread and signal conventions:
 
  - On systems where signal handling is thread-specific, as on Linux,
    then `rktio_init` should be called before any additional threads,
-   so that a suitable inheritable siganl disposition can be
+   so that a suitable inheritable signal disposition can be
    configured.
 
 */
