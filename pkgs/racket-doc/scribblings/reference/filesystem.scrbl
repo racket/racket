@@ -542,18 +542,6 @@ Notes:
   What about CIFS or NFS mounts? These should be abstracted by `stat`, but the
   returned values may be different. (For example, timestamps may have less
   precision.)
-- When using real values for timestamps, could a nanosecond value overflow the
-  range of a 64-bit real? Do we need separate integer(?) fields for the integer
-  seconds and the fractional seconds? Even if we don't have to expect an overflow
-  _currently_, try avoid it (year 2038 problem). We could use a single integer
-  for the nanoseconds, including the fractional part? This would be inconvenient
-  and potentially confusing if APIs in the future used higher precision (though
-  I think that's unlikely). Speaking of confusion: If we use a single integer
-  for nanoseconds, how likely is it that users confuse the nanoseconds timestamp
-  with the seconds timestamp from `file-or-directory-modify-seconds`? Should we
-  do anything about this confusion? Having separate keys for whole seconds and
-  nanoseconds feels very awkward, given that we have arbitrary precision
-  integers in Racket.
 - On Windows, how are junctions reflected in the file type? Can we get this
   information without an extra file system call?
 - Order of itemization items below? Possibilities:
@@ -597,18 +585,26 @@ Notes:
  @item{@racketvalfont{'group-id} : group id of owner}
  @item{@racketvalfont{'device-id-for-special-file} : device id (if special file)}
  @item{@racketvalfont{'size} : size of file or link in bytes}
- @item{@racketvalfont{'atime} : last access time in seconds since the epoch}
- @item{@racketvalfont{'mtime} : last modification time in seconds since the epoch}
- @item{@racketvalfont{'ctime} : change time in seconds since the epoch}
+ @item{@racketvalfont{'access-time-seconds} : last access time in seconds since the epoch}
+ @item{@racketvalfont{'modification-time-seconds} : last modification time in
+   seconds since the epoch}
+ @item{@racketvalfont{'change-time-seconds} : change time in seconds since the epoch}
+ @item{@racketvalfont{'access-time-nanoseconds} : last access time in
+   nanoseconds since the epoch}
+ @item{@racketvalfont{'modification-time-nanoseconds} : last modification time in
+   nanoseconds since the epoch}
+ @item{@racketvalfont{'change-time-nanoseconds} : change time in nanoseconds
+   since the epoch}
 ]
-
-Different from @racket[file-or-directory-modify-seconds], the timestamps may
-contain a fractional part, so they're real values, not integers. [but see
-comment in Scribble file]
 
 If @racket[as-link?] is a true value, then if @racket[path] refers to a
 symbolic link [what about junctions?], the stat information of the link is
 returned instead of the stat information of the referenced file system item.
+
+Depending on the operating system and file system, the "nanoseconds" timestamps
+may have less than nanoseconds precision. For example, in one environment you
+may get @racketvalfont{1234567891234567891} (nanoseconds precision) and in
+another environment @racketvalfont{1234567891000000000} (seconds precision).
 
 If @racket[as-link?] is @racketvalfont{#f} and @racket[path] isn't accessible,
 the @exnraise[exn:fail:filesystem]. This exception is also raised if
