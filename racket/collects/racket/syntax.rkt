@@ -233,16 +233,32 @@
   ; behavior here:
   (internal-definition-context-introduce intdefs (datum->syntax #f stx) 'add))
 
-(define (syntax-local-eval stx [intdefs '()])
+(define (syntax-local-eval stx [intdefs #f])
+  (unless (syntax? stx)
+    (raise-argument-error 'syntax-local-eval
+                          "syntax?"
+                          0 stx intdefs))
+  
+  (unless (or (internal-definition-context? intdefs)
+              (not intdefs)
+              (and (list? intdefs) (andmap internal-definition-context? intdefs)))
+    (raise-argument-error 'syntax-local-eval
+                          (string-append
+                           "(or/c internal-definition-context?\n"
+                           "      #f\n"
+                           "      (listof internal-definition-context?))")
+                          1 stx intdefs))
+  
   (let* ([name (generate-temporary)]
          [intdef (syntax-local-make-definition-context)]
-         [all-intdefs (if (list? intdefs)
-                        (cons intdef intdefs)
-                        (list intdef intdefs))])
+         [all-intdefs (cond
+                        [(internal-definition-context? intdefs) (list intdef intdefs)]
+                        [(not intdefs)   (list intdef)]
+                        [(list? intdefs) (cons intdef intdefs)])])
     (syntax-local-bind-syntaxes (list name)
                                 #`(call-with-values (lambda () #,stx) list)
                                 intdef
-                                intdefs)
+                                all-intdefs)
     (apply values
            (syntax-local-value (for/fold ([name name]) ([intdef all-intdefs])
                                  (internal-definition-context-introduce intdef name 'add))
