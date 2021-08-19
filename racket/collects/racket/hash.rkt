@@ -17,10 +17,11 @@
                           (lambda (k x y) (combine x y))
                           (hash-duplicate-error 'hash-union))]
          one . rest)
+  (define one-empty (hash-clear one))
   (for/fold ([one one]) ([two (in-list rest)])
     (cond
       [(and (< (hash-count one) (hash-count two))
-            (equal? (hash-clear one) (hash-clear two)))
+            (equal? one-empty (hash-clear two)))
        (merge two one (λ (k a b) (combine/key k b a)))]
       [else (merge one two combine/key)])))
 
