@@ -157,7 +157,7 @@ and how they can be used to implement contracts.
 
 @defproc[(flat-named-contract [name any/c]
                               [flat-contract flat-contract?]
-                              [generator (or/c #f (-> contract (-> int? any))) #f])
+                              [generator (or/c #f (-> exact-nonnegative-integer? (-> any/c))) #f])
          flat-contract?]{
 Produces a @tech{flat contract} like @racket[flat-contract], but with the name @racket[name].
 
@@ -2953,7 +2953,7 @@ returns @racket[#f] but @racket[value-blame] returns @racket[#f].
            (->i ([c contract?])
                 [generator
                  (c)
-                 (-> (and/c positive? real?)
+                 (-> exact-nonnegative-integer?
                      (or/c (-> (or/c contract-random-generate-fail? c))
                            #f))])
            (λ (c) (λ (fuel) #f))]
@@ -3003,7 +3003,7 @@ returns @racket[#f] but @racket[value-blame] returns @racket[#f].
            (->i ([c contract?])
                 [generator
                  (c)
-                 (-> (and/c positive? real?)
+                 (-> exact-nonnegative-integer?
                      (or/c (-> (or/c contract-random-generate-fail? c))
                            #f))])
            (λ (c) (λ (fuel) #f))]
@@ -3012,7 +3012,7 @@ returns @racket[#f] but @racket[value-blame] returns @racket[#f].
            (->i ([c contract?])
                 [result
                  (c)
-                 (-> (and/c positive? real?)
+                 (-> exact-nonnegative-integer?
                      (values
                       (-> c void?)
                       (listof contract?)))])
@@ -3063,7 +3063,7 @@ returns @racket[#f] but @racket[value-blame] returns @racket[#f].
            (->i ([c contract?])
                 [generator
                  (c)
-                 (-> (and/c positive? real?)
+                 (-> exact-nonnegative-integer?
                      (or/c (-> (or/c contract-random-generate-fail? c))
                            #f))])
            (λ (c) (λ (fuel) #f))]
@@ -3072,7 +3072,7 @@ returns @racket[#f] but @racket[value-blame] returns @racket[#f].
            (->i ([c contract?])
                 [result
                  (c)
-                 (-> (and/c positive? real?)
+                 (-> exact-nonnegative-integer?
                      (values
                       (-> c void?)
                       (listof contract?)))])
