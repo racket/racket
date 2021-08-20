@@ -701,6 +701,31 @@ rktio_ok_t rktio_set_current_directory(rktio_t *rktio, const char *path)
   return !err;
 }
 
+rktio_stat_t *rktio_stat(rktio_t *rktio, rktio_const_string_t path, rktio_bool_t follow_links)
+{
+  struct stat *stat_buf;
+  struct rktio_stat_t *rktio_stat_buf;
+  int stat_result;
+
+  stat_buf = (struct stat *) malloc(sizeof(struct stat));
+  rktio_stat_buf = (struct rktio_stat_t *) malloc(sizeof(struct rktio_stat_t));
+
+  /* TODO: Select `stat` / `lstat` depending on `follow_links`. */
+  stat_result = lstat(path, stat_buf);
+  if (stat_result) {
+    /* TODO: error handling, including clean-up if necessary */
+  } else {
+    rktio_stat_buf->dev = stat_buf->st_dev;
+    rktio_stat_buf->inode = stat_buf->st_ino;
+    rktio_stat_buf->size = stat_buf->st_size;
+  }
+
+  /* We don't need this anymore since everything we need has been copied to
+     `rktio_stat_buf`. */
+  free(stat_buf);
+  return rktio_stat_buf;
+}
+
 static rktio_identity_t *get_identity(rktio_t *rktio, rktio_fd_t *fd, const char *path, int follow_links)
 {
   uintptr_t devi = 0, inoi = 0, inoi2 = 0;
