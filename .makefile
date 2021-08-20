@@ -1115,6 +1115,20 @@ win32-test-client:
 	$(MAKE) win-test-client
 
 # ------------------------------------------------------------
+# Run steps that require a working `racket` to build things
+# that need to be in sync to build `racket` in the first place
+
+derived:
+	if [ "$(RACKET)" = "" ] ; \
+	  then $(MAKE) derived-with-racket RACKET=racket ; \
+          else $(MAKE) derived-with-racket RACKET="$(RACKET)" ; fi
+
+derived-with-racket:
+	cd racket/src/rktio && make -f Mf-rktio RACKET="$(RACKET)"
+	cd racket/src/expander && make expander-maybe RACKET="$(RACKET)"
+	cd racket/src/cs && make RACKET="$(RACKET)"
+
+# ------------------------------------------------------------
 # Remake "Makefile"
 
 makemake: .makefile racket/src/makemake.rkt

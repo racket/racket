@@ -557,6 +557,10 @@ mode here, though, use plain `make` to compile the changes into a
 should be committed to the Racket repo along with the source-file
 changes.
 
+If you're working in a Racket repo checkout, and if you have a working
+`racket` in your `PATH`, `make derived` in the checkout's top-level
+directory includes a `make` in this directory.
+
 If you modify the "thread", "io", or "regexp" layer to add new
 bindings, you will also need to modify "primitive/kernel.ss" (or, less
 commonly, one of the other files in "primitive"). For example,
@@ -568,6 +572,12 @@ modules like `#%kernel`. The entries in "primitive" files use the
 constructors defined in "../schemify/known.rkt" to describe
 primitives; note that most of the numebrs you see are arity masks in
 the sense of `procedure-arity-mask`.
+
+For some additions to rktio with corresponding changes to the io
+layer, you may need to modify "io.sls" to fill in some conversion
+glue. For example, "io.sls" defines `rktio_identity_to_vector`, which
+unpacks a C-level structure from rktio into a Scheme value for
+consumption by the io layer.
 
 Modifying Chez Scheme
 ---------------------

@@ -94,3 +94,12 @@ bytecode:
 	$(RACKET) $(RKT_ARGS) bootstrap-run.rkt -c compiled/cache-src $(KNOT) -s -x -B -o compiled/exp.zo
 
 .PHONY: expander expander-src expander-src-generate demo run run-no-cache
+
+# Avoids rebuilding if it doesn't seem necessary:
+
+expander-maybe:
+	$(RACO) make bootstrap-run.rkt
+	$(MAKE) ../bc/src/startup.inc
+
+../bc/src/startup.inc: compiled/bootstrap-run_rkt.zo
+	$(MAKE) expander

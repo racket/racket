@@ -733,7 +733,10 @@ usual GitHub-based workflow:
 
 * Make your changes and rebuild with `make` or `make as-is` or `raco
   setup`, where `raco setup` is the best choice when modifying Racket
-  libraries that are in `"collects"` or a package.
+  libraries that are in `"collects"` or a package. If your changes
+  involve modifying things that are part of the `racket` executable,
+  then a simple `make` may not suffice; see “Modifying Racket” in
+  `"racket/src/README.txt"` for more information.
 
 * Commit changes to your fork and [submit a pull
   request](https://help.github.com/en/articles/creating-a-pull-request).

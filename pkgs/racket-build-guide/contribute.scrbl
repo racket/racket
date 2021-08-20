@@ -58,7 +58,11 @@ usual GitHub-based workflow:
  @item{Make your changes and rebuild with @exec{make} or @exec{make
        as-is} or @exec{raco setup}, where @exec{raco setup} is the
        best choice when modifying Racket libraries that are in
-       @filepath{collects} or a package.}
+       @filepath{collects} or a package. If your changes involve
+       modifying things that are part of the @exec{racket} executable,
+       then a simple @exec{make} may not suffice; see ``Modifying
+       Racket'' in @filepath{racket/src/README.txt} for more
+       information.}
 
  @item{Commit changes to your fork and
        @hyperlink["https://help.github.com/en/articles/creating-a-pull-request"]{submit
