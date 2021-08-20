@@ -1,0 +1,9 @@
+default:
+	cd racket/src/cs && make
+	cd racket/src/io && make demo
+
+doc:
+	raco setup -l scribblings/reference
+
+test:
+	racket -f pkgs/racket-test-core/tests/racket/file.rktl
