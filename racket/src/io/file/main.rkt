@@ -31,6 +31,7 @@
          rename-file-or-directory
          file-or-directory-modify-seconds
          file-or-directory-permissions
+         file-or-directory-stat
          file-or-directory-identity
          file-size
          copy-file
@@ -287,6 +288,38 @@
                    (cons 'execute l)
                    l)])
        l)]))
+
+(define/who (file-or-directory-stat p [as-link? #f])
+  (check who path-string? p)
+  (define host-path (->host p who '(exists)))
+  (start-atomic)
+  (define r0 (rktio_stat rktio host-path #f))
+  (define r (if (rktio-error? r0)
+                r0
+                (begin0
+                  (rktio_stat_to_vector r0)
+                  (rktio_free r0))))
+  (end-atomic)
+  (cond
+    [(rktio-error? r0)
+     (and (not no-error?)
+          (raise-filesystem-error who
+                                  r
+                                  (if host-path
+                                      (format (string-append
+                                               "error obtaining identity for path\n"
+                                               "  path: ~a")
+                                              (host-> host-path))
+                                      (format (string-append
+                                               "error obtaining identity for port\n"
+                                               "  port: ~v")
+                                              ; TODO
+                                              ; Used to be `port`, but support this later.
+                                              #f))))]
+    [else
+     (hash 'device-id (vector-ref r 0)
+           'inode (vector-ref r 1)
+           'size (vector-ref r 2))]))
 
 (define/who (file-or-directory-identity p [as-link? #f])
   (check who path-string? p)
