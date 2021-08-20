@@ -546,6 +546,32 @@ changing the set of primitives, be sure to update the version number
 in "../version/racket_version.h", so that various tools know to
 rebuild bytecode.
 
+Modifying "thread", "io", "regexp", "schemify", or "expander"
+-------------------------------------------------------------
+
+If you modify one of the layers in "../thread", "../io", "../regexp",
+"../schemify", or "../expander", then a `make run` here in development
+mode will pick up those changes. Even if you don't use development
+mode here, though, use plain `make` to compile the changes into a
+"schemified/*.scm" form. The bootstrapped forms in "schemified/*.scm"
+should be committed to the Racket repo along with the source-file
+changes.
+
+If you modify the "thread", "io", or "regexp" layer to add new
+bindings, you will also need to modify "primitive/kernel.ss" (or, less
+commonly, one of the other files in "primitive"). For example,
+"../io/main.rkt" needs to `provide` everything that should be exported
+from that layer, but any provided name also needs to be added to
+"primitive/kernel.ss" to make that exported to the `#%kernel` instance
+(a hash table) that the expander layer uses to create primitive
+modules like `#%kernel`. The entries in "primitive" files use the
+constructors defined in "../schemify/known.rkt" to describe
+primitives; note that most of the numebrs you see are arity masks in
+the sense of `procedure-arity-mask`.
+
+Modifying Chez Scheme
+---------------------
+
 If you modify the Chez Scheme implementation in "../ChezScheme" in a
 way that changes compiled code, then you should also update the Chez
 Scheme version number in "../ChezScheme/s/cmacro.ss" and in

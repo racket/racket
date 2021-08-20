@@ -54,10 +54,6 @@ demo: $(RKTIO_DEP)
 	$(RACO) make demo.rkt
 	$(RACKET) demo.rkt
 
-demo-thread: $(RKTIO_DEP)
-	$(RACO) make demo-thread.rkt
-	$(RACKET) demo-thread.rkt
-
 
 ../build/so-rktio/Makefile: ../rktio/configure ../rktio/Makefile.in ../rktio/rktio_config.h.in
 	mkdir -p ../build/so-rktio
