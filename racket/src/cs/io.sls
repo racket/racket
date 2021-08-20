@@ -210,6 +210,13 @@
       (make-ptr
        (ftype-ref rktio_length_and_addrinfo_t (address) (make-ftype-pointer rktio_length_and_addrinfo_t (ptr->address fs)) 0)))
 
+    (define (rktio_stat_to_vector p)
+      (let ([p (make-ftype-pointer rktio_stat_t (ptr->address p))])
+        (vector
+         (ftype-ref rktio_stat_t (dev) p)
+         (ftype-ref rktio_stat_t (inode) p)
+         (ftype-ref rktio_stat_t (size) p))))
+
     (define (rktio_identity_to_vector p)
       (let ([p (make-ftype-pointer rktio_identity_t (ptr->address p))])
         (vector
@@ -406,6 +413,7 @@
                                  'rktio_is_timestamp rktio_is_timestamp
                                  'rktio_recv_length_ref rktio_recv_length_ref
                                  'rktio_recv_address_ref rktio_recv_address_ref
+                                 'rktio_stat_to_vector rktio_stat_to_vector
                                  'rktio_identity_to_vector rktio_identity_to_vector
                                  'rktio_seconds_to_date* rktio_seconds_to_date*
                                  'rktio_convert_result_to_vector rktio_convert_result_to_vector
