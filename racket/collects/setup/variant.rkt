@@ -25,7 +25,7 @@
         (and (file-exists? f)
              (with-input-from-file f
                (lambda ()
-                 (define m (regexp-match #rx#"bINARy tYPe:..(.)"
+                 (define m (regexp-match #rx#"bINARy tYPe:e?..(.)"
                                          (current-input-port)))
                  (cond
                    [(not m) '3m]
