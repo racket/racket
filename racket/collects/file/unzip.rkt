@@ -313,18 +313,26 @@
 ;; unzip : [(or/c path-string? input-port) (bytes boolean input-port -> any)] -> any
 (define unzip
   (lambda (orig-in [read-entry (make-filesystem-entry-reader)]
-                   #:must-unzip? [must-unzip? #f]
+                   #:must-unzip? [must-unzip? #t]
                    #:preserve-timestamps? [preserve-timestamps? #f]
                    #:utc-timestamps? [utc? #f])
     (call-with-input
      orig-in
      (lambda (in)
+       (define tag (peek-integer 4 #f in #f))
        (cond
-         [(= (peek-integer 4 #f in #f) *local-file-header*)
+         [(eqv? tag *local-file-header*)
           (unzip-one-entry in read-entry preserve-timestamps? utc?)
           (unzip in read-entry
                  #:preserve-timestamps? preserve-timestamps?
                  #:utc-timestamps? utc?)]
+         [(memv tag (list *archive-extra-record*
+                          *central-file-header*
+                          *digital-signature*
+                          *zip64-end-of-central-directory-record*
+                          *zip64-end-of-central-directory-locator*
+                          *end-of-central-directory-record*))
+          (void)]
          [must-unzip?
           (error 'unzip "input does not appear to be an archive\n  input: ~e" orig-in)]
          [else (void)])))))
@@ -412,7 +420,7 @@
           (delete-directory/files temp-dir)))))
 
 (define (call-with-unzip zip-file user-proc
-                         #:must-unzip? [must-unzip? #f])
+                         #:must-unzip? [must-unzip? #t])
   (let ([temp-dir #f])
     (dynamic-wind
         (lambda ()
