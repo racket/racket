@@ -260,7 +260,7 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   mz_proc_thread        *proc_thread;
   Scheme_Object         *collection_paths;
   Scheme_Object         *collection_links;
-  Scheme_Place_Object   *directory;
+  Scheme_Object         *directory;
   Scheme_Place_Object   *place_obj;
   mzrt_sema             *ready;
   struct NewGC          *parent_gc;
