@@ -1,4 +1,8 @@
-This is the source code distribution for minimal Racket.
+This directory has the source code for the `racket` executable.
+
+If this directory is part of a Racket source code distribution, then
+the distribution may include additional packages. Those extra packages
+will be installed built with the `make install` step.
 
 If this directory is part of a clone of the Git repository for Racket,
 then the clone's root directory includes a makefile to both build
