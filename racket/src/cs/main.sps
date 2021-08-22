@@ -851,12 +851,23 @@
          ;; Only need to visit once (although multiple time is ok)
          (set-prepare-for-place! void)))))
 
+   (set-place-get-inherit!
+    (lambda ()
+      (list (current-directory)
+            (current-library-collection-paths)
+            (current-library-collection-links)
+            (current-compiled-file-roots))))
+
    (set-start-place!
-    (lambda (pch mod sym in out err cust plumber)
+    (lambda (pch mod sym in out err cust plumber inh)
       (io-place-init! in out err cust plumber)
       (regexp-place-init!)
       (expander-place-init!)
       (initialize-place!)
+      (current-directory (list-ref inh 0))
+      (current-library-collection-paths (list-ref inh 1))
+      (current-library-collection-links (list-ref inh 2))
+      (current-compiled-file-roots (list-ref inh 3))
       (let loop ([l (reverse embedded-load-in-places)])
         (unless (null? l)
           (let-values ([(path n m bstr) (apply values (car l))])

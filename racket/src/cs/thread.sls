@@ -24,6 +24,7 @@
                   [mutex-release rumble:mutex-release]
                   [pthread? rumble:thread?]
                   [fork-place rumble:fork-place]
+                  [place-get-inherit rumble:place-get-inherit]
                   [start-place rumble:start-place]
                   [fork-pthread rumble:fork-thread]
                   [threaded? rumble:threaded?]
@@ -162,6 +163,7 @@
         'get-wakeup-handle get-wakeup-handle
         'wakeup wakeup
         'fork-place rumble:fork-place
+        'place-get-inherit rumble:place-get-inherit
         'start-place rumble:start-place
         'fork-pthread rumble:fork-thread
         'get-initial-place rumble:get-initial-pthread

@@ -194,6 +194,7 @@ typedef struct Place_Start_Data {
   Scheme_Object *current_library_collection_paths;
   Scheme_Object *current_library_collection_links;
   Scheme_Object *compiled_roots;
+  Scheme_Object *current_directory;
   mzrt_sema *ready;  /* malloc'ed item */
   struct Scheme_Place_Object *place_obj;   /* malloc'ed item */
   struct NewGC *parent_gc;
@@ -259,6 +260,7 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   mz_proc_thread        *proc_thread;
   Scheme_Object         *collection_paths;
   Scheme_Object         *collection_links;
+  Scheme_Place_Object   *directory;
   Scheme_Place_Object   *place_obj;
   mzrt_sema             *ready;
   struct NewGC          *parent_gc;
@@ -362,6 +364,9 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   collection_paths = scheme_compiled_file_roots(0, NULL);
   place_data->compiled_roots = collection_paths;
 
+  directory = scheme_current_directory(0, NULL);
+  place_data->current_directory = directory;
+
   cust = scheme_get_current_custodian();
   mem_limit = GC_get_account_memory_limit(cust);
   place_data->cust_limit = scheme_make_integer(mem_limit);
@@ -464,6 +469,8 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
     place_data->current_library_collection_links = tmp;
     tmp = places_prepare_direct(place_data->compiled_roots);
     place_data->compiled_roots = tmp;
+    tmp = places_prepare_direct(place_data->current_directory);
+    place_data->current_directory = tmp;
     tmp = places_prepare_direct(place_data->channel);
     place_data->channel = tmp;
     tmp = places_prepare_direct(place_data->module);
@@ -2399,6 +2406,8 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   scheme_current_library_collection_links(1, a);
   a[0] = places_deep_direct_uncopy(place_data->compiled_roots);
   scheme_compiled_file_roots(1, a);
+  a[0] = places_deep_direct_uncopy(place_data->current_directory);
+  scheme_current_directory(1, a);
   scheme_seal_parameters();
 
   a[0] = places_deep_direct_uncopy(place_data->module);

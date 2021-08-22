@@ -4969,6 +4969,11 @@ static Scheme_Object *current_directory(int argc, Scheme_Object **argv)
                               "path-string?", 1);
 }
 
+Scheme_Object *scheme_current_directory(int argc, Scheme_Object **argv)
+{
+  return current_directory(argc, argv);
+}
+
 static Scheme_Object *current_user_directory(int argc, Scheme_Object **argv)
 {
   if (!argc)

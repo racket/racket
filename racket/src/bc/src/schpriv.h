@@ -3911,6 +3911,7 @@ Scheme_Object *scheme_maybe_build_path(Scheme_Object *base, Scheme_Object *elem)
 Scheme_Object *scheme_current_library_collection_paths(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_current_library_collection_links(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_compiled_file_roots(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_current_directory(int argc, Scheme_Object *argv[]);
 
 int scheme_can_enable_write_permission(void);
 

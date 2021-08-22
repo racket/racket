@@ -78,6 +78,7 @@
         [wakeup host:wakeup]
 
         [fork-place host:fork-place]
+        [place-get-inherit host:place-get-inherit]
         [start-place host:start-place]
         [exit host:exit]
         [current-place-roots host:current-place-roots]

@@ -194,13 +194,24 @@ such as a distributed places node produced by @racket[create-place-node].
  pumps bytes from the created place's ports to the current ports in the
  creating place.
 
+ Most @tech{parameters} in the created place have their original
+ initial values, but the created place inherits the creating place's
+ values for the following parameters: @racket[current-directory],
+ @racket[current-library-collection-paths],
+ @racket[current-library-collection-links],
+ and @racket[current-compiled-file-roots].
+
  The @racket[module-path] argument must not be a module path of the
  form @racket[(#,(racket quote) _sym)] unless the module is predefined (see
  @racket[module-predefined?]).
 
 The @racket[dynamic-place] binding is protected in the sense of
  @racket[protect-out], so access to this operation can be prevented
- by adjusting the code inspector (see @secref["modprotect"]).}
+ by adjusting the code inspector (see @secref["modprotect"]).
+
+@history[#:changed "8.2.0.7" @elem{Changed created place to inherit
+                                   the creating place's @racket[current-directory]
+                                   value.}]}
 
 
 @defproc[(dynamic-place* [module-path (or/c module-path? path?)]
