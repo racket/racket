@@ -5806,14 +5806,19 @@ static Scheme_Object *gen_replace(const char *name, int argc, Scheme_Object *arg
   else
     r = (regexp *)argv[0];
 
-  if (SCHEME_PROCP(argv[2])) {
-    if (!scheme_check_proc_arity(NULL, r->nsubexp, 2, argc, argv)) {
-      scheme_contract_error(name,
-                            "replace procedure's arity does not include regexp's match count",
-                            "regexp", 1, r,
-                            "regexp match count", 1, scheme_make_integer(r->nsubexp),
-                            "replace procedure", 1, argv[2],
-                            NULL);
+  if (0) {
+    /* This check is disabled for backward compatibility, because
+       `regexp-replace*` in `racket/private/string` does not check,
+       and that was the exported `regexp-replace*` for a long time. */
+    if (SCHEME_PROCP(argv[2])) {
+      if (!scheme_check_proc_arity(NULL, r->nsubexp, 2, argc, argv)) {
+        scheme_contract_error(name,
+                              "replace procedure's arity does not include regexp's match count",
+                              "regexp", 1, r,
+                              "regexp match count", 1, scheme_make_integer(r->nsubexp),
+                              "replace procedure", 1, argv[2],
+                              NULL);
+      }
     }
   }
 
