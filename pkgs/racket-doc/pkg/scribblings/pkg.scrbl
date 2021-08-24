@@ -1736,7 +1736,7 @@ packages can install DrDr metadata to it.}
 improvements to pieces of Racket. In particular, it would be wonderful
 to have a very thorough @filepath{data} collection of different
 data-structures. However, our existing setup for Scribble would force
-each new data structue to have a different top-level documentation
+each new data structure to have a different top-level documentation
 manual, rather than extending the documentation of the existing
 @filepath{data} collection. Similar issues will exist for the
 @filepath{net} and @filepath{file} collections. We should design a way
