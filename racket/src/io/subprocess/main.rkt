@@ -11,6 +11,7 @@
          "../port/input-port.rkt"
          "../port/fd-port.rkt"
          "../port/file-stream.rkt"
+         "../port/check.rkt"
          "../file/host.rkt"
          "../string/convert.rkt"
          "../locale/string.rkt"
@@ -130,6 +131,9 @@
           (maybe-wait stderr))
 
         (start-atomic)
+        (when stdout (check-not-closed who stdout))
+        (when stdin (check-not-closed who stdin))
+        (when (and stderr (not (eq? stderr 'stdout))) (check-not-closed who stderr))
         (poll-subprocess-finalizations)
         (check-current-custodian who)
         (define envvars (rktio_empty_envvars rktio))

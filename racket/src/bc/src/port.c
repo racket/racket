@@ -6166,6 +6166,8 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 
       op = scheme_output_port_record(outport);
 
+      CHECK_PORT_CLOSED(name, "output", port, op->closed);
+
       if (SAME_OBJ(op->sub_type, file_output_port_type)) {
 	int tmp;
 	tmp = MSC_IZE(fileno)(((Scheme_Output_File *)op->port_data)->f);
@@ -6183,6 +6185,8 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
       Scheme_Input_Port *ip;
 
       ip = scheme_input_port_record(inport);
+
+      CHECK_PORT_CLOSED(name, "input", port, ip->closed);
 
       if (SAME_OBJ(ip->sub_type, file_input_port_type)) {
 	int tmp;
@@ -6204,6 +6208,8 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
       Scheme_Output_Port *op;
 
       op = scheme_output_port_record(errport);
+
+      CHECK_PORT_CLOSED(name, "output", port, op->closed);
 
       if (SAME_OBJ(op->sub_type, file_output_port_type)) {
 	int tmp;

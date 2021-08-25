@@ -1279,6 +1279,18 @@
   (close-input-port e)
   (subprocess-wait s))
 
+;;-----------------------------------------------------
+
+(parameterize ([current-directory work-dir])
+  (define fn (make-temporary-file "subproc~a"))
+  (define i (open-input-file fn))
+  (define o (open-output-file fn #:exists 'update))
+  (close-input-port i)
+  (close-output-port o)
+  (err/rt-test (subprocess o #f #f (find-exe)) exn:fail? #rx"closed")
+  (err/rt-test (subprocess #f i #f (find-exe)) exn:fail? #rx"closed")
+  (err/rt-test (subprocess #f #f o (find-exe)) exn:fail? #rx"closed"))
+
 ;;------------------------------------------------------------
 
 ;; Test custom output port
