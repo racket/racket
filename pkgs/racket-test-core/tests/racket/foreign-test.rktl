@@ -871,6 +871,9 @@
   (define a-bar (bar (malloc 16 'raw)))
   (free a-bar))
 
+;; in Posix, so true for all OSes?
+(test 13 lookup-errno 'EACCES)
+
 (unless (eq? (system-type) 'windows)
   ;; saved-errno tests
   (define check-multiple-of-ten

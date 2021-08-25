@@ -1974,10 +1974,14 @@
 (define/who (lookup-errno sym)
   (check who symbol? sym)
   (let ([errno-alist
-         (case (machine-type)
-           [(a6le ta6le i3le ti3le) (linux-errno-alist)]
-           [(a6osx ta6osx i3osx ti3osx) (macosx-errno-alist)]
-           [(a6nt ta6nt i3nt ti3nt) (windows-errno-alist)]
+         (case (system-type 'os*)
+           [(linux) (linux-errno-alist)]
+           [(macosx darwin) (macosx-errno-alist)]
+           [(windows) (windows-errno-alist)]
+           [(freebsd) (freebsd-errno-alist)]
+           [(openbsd) (openbsd-errno-alist)]
+           [(netbsd) (netbsd-errno-alist)]
+           [(solaris) (solaris-errno-alist)]
            [else (raise-unsupported-error who)])])
     (cond
      [(assq sym errno-alist) => cdr]
