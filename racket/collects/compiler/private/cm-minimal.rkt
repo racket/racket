@@ -517,7 +517,21 @@
                                   (equal? (version) (deps-version deps))
                                   (deps-src-sha1 deps)
                                   (get-source-sha1 path)))
-            (define-syntax-rule (explain v e) (or v (and e #f)))
+            (define (explain-failure fmt . args)
+              (cond
+                [(or trying-sha1? (not (managed-recompile-only)))
+                 (apply trace-printf fmt args)
+                 #f]
+                [else
+                 ;; report error here, so we can provide more information:
+                 (error 'compile-zo 
+                        (string-append "compile from source disallowed\n"
+                                       "  module: ~a\n"
+                                       "  compile reason: ~a")
+                        path
+                        (apply format fmt args))]))
+            (define-syntax-rule (explain v (trace-printf arg ...))
+              (or v (explain-failure arg ...)))
             (cond
               [(and (not src-sha1)
                     (not (file-exists? actual-path)))
