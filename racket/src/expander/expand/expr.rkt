@@ -719,6 +719,11 @@
    (define-match empty-m s #:unless (or (id-m) (top-m)) '(#%variable-reference))
    (cond
     [(or (id-m) (top-m))
+     (when (top-m)
+       (define phase (expand-context-phase ctx))
+       (unless (and (identifier? (top-m '#%top))
+                    (free-identifier=? (top-m '#%top) (core-id '#%top phase) phase phase))
+         (raise-syntax-error #f "bad syntax" s)))
      (define var-id (if (id-m) (id-m 'id) (top-m 'id)))
      (define binding (resolve+shift var-id (expand-context-phase ctx)
                                     #:ambiguous-value 'ambiguous))

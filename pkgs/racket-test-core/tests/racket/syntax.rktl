@@ -2123,6 +2123,11 @@
 (compile '(#%variable-reference))
 (expand '(#%variable-reference))
 
+(test #t variable-reference? (#%variable-reference (#%top . test)))
+
+(syntax-test #'(#%variable-reference (oops . x)))
+(syntax-test #'(#%variable-reference ((this is a test) . x)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check marshal & unmarshal of a syntax object
 ;; containing a list with a hash table
