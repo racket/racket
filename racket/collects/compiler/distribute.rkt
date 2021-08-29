@@ -143,7 +143,7 @@
                (lambda (sub-dir type relative-dir)
                  (cond
                   [relative-base
-                   (if (string? relative-base) (string->path relative-base) relative-base)]
+                   (build-path relative-base relative-dir)]
                   [(not executables?)
                    (build-path dest-dir relative-dir)]
                   [sub-dir
