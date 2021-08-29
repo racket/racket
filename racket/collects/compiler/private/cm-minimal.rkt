@@ -23,7 +23,7 @@
 ;; generates and consults ".dep" files to manage dependencies. Two
 ;; design choices/constraints complicate its job:
 ;;
-;;  - Dependencies are recorded as unordered. Consequenlt, CM can't
+;;  - Dependencies are recorded as unordered. Consequenlty, CM can't
 ;;    recur in a simple way on dependencies, because a change in one
 ;;    dependency may cause another former dependency to be removed.
 ;;
@@ -43,7 +43,7 @@
 ;;
 ;; Other complications:
 ;;
-;;  - The collection sinstallation, `use-compile-file-paths`, and
+;;  - The collection installation, `use-compile-file-paths`, and
 ;;    `current-compiled-file-roots` create search paths that multiply.
 ;;    Generally, CM checks at all roots but writes only at the first
 ;;    root.
@@ -251,7 +251,8 @@
                [new-seen (hash-set seen path #t)])
           (define needs-build?
             (cond
-              [(and (cross-multi-compile? roots)
+              [(and (not sha1-only?)
+                    (cross-multi-compile? roots)
                     (or (not cross-deps)
                         (not cross-path-zo-time)))
                (trace-printf "missing cross-compiled for ~a..."
@@ -294,11 +295,13 @@
                                   (deps-machine cross-deps))
                              path)
                #t]
-              [(> path-time (or path-zo-time -inf.0))
+              [(and (> path-time (or path-zo-time -inf.0))
+                    (not sha1-only?))
                (trace-printf "newer src... ~a > ~a" path-time path-zo-time)
                (maybe-compile-zo deps cross-deps path->mode roots path orig-path read-src-syntax up-to-date collection-cache new-seen
                                  #:trying-sha1? sha1-only?)]
-              [(and cross-deps (> path-time (or cross-path-zo-time -inf.0)))
+              [(and cross-deps (> path-time (or cross-path-zo-time -inf.0))
+                    (not sha1-only?))
                (trace-printf "newer src than cross... ~a > ~a" path-time cross-path-zo-time)
                (maybe-compile-zo deps cross-deps path->mode roots path orig-path read-src-syntax up-to-date collection-cache new-seen
                                  #:trying-sha1? sha1-only?)]
@@ -845,7 +848,7 @@
           (write-updated-deps use-existing-deps assume-compiled-sha1 zo-name
                               #:target-machine #f))
         ;; Explicitly delete target file before writing ".dep", just so
-        ;; ".dep" is doesn't claim a description of the wrong file
+        ;; ".dep" doesn't claim a description of the wrong file
         (when (file-exists? zo-name)
           (try-delete-file zo-name #f))
         (cond
