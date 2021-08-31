@@ -586,6 +586,16 @@
     #t]
    [else #f]))
 
+;; returns whether the binding is to a primitive
+(define (check-top-binding-is-variable ctx b id s)
+  (define-values (t primitive? insp-of-t protected?)
+    (lookup b ctx id
+            #:in s
+            #:out-of-context-as-variable? (expand-context-in-local-expand? ctx)))
+  (unless (variable? t)
+    (raise-syntax-error #f "identifier does not refer to a variable" id s))
+  primitive?)
+
 (add-core-form!
  '#%top
  (lambda (s ctx [implicit-omitted? #f])
@@ -606,6 +616,9 @@
     [(and b
           (module-binding? b)
           (eq? (module-binding-module b) (root-expand-context-self-mpi ctx)))
+     ;; Within a module, check that binding is a variable, not syntax:
+     (unless (expand-context-allow-unbound? ctx)
+       (check-top-binding-is-variable ctx b id s))
      ;; Allow `#%top` in a module or top-level where it refers to the same
      ;; thing that the identifier by itself would refer to; in that case
      ;; `#%top` can be stripped within a module
@@ -614,6 +627,10 @@
          (cond
           [(top-level-module-path-index? (module-binding-module b)) s]
           [else id]))]
+    [(local-binding? b)
+     ;; In all contexts, including the top level, count as unbound
+     (raise-unbound-syntax-error #f "unbound identifier" id #f null
+                                 (syntax-debug-info-string id ctx))]
     [(register-eventual-variable!? id ctx)
      ;; Must be in a module, and we'll check the binding later, so strip `#%top`:
      (if (expand-context-to-parsed? ctx)
@@ -632,7 +649,7 @@
        (cond
         [tl-b
          ;; Expand to a reference to a top-level variable, instead of
-         ;; a local or required variable; don't include the temporary
+         ;; a required variable; don't include the temporary
          ;; binding scope in an expansion, though, in the same way that
          ;; `define-values` expands without it
          (if (expand-context-to-parsed? ctx)
@@ -729,18 +746,19 @@
                                     #:ambiguous-value 'ambiguous))
      (when (eq? binding 'ambiguous)
        (raise-ambiguous-error var-id ctx))
-     (unless (or binding
-                 (expand-context-allow-unbound? ctx))
+     (unless (and (or binding
+                      (expand-context-allow-unbound? ctx))
+                  (not (and (top-m) (local-binding? binding))))
        (raise-unbound-syntax-error #f "unbound identifier" s var-id null
                                    (syntax-debug-info-string var-id ctx)))
-     (define-values (t primitive? insp-of-t protected?)
-       (if binding
-           (lookup binding ctx var-id
-                   #:in s
-                   #:out-of-context-as-variable? (expand-context-in-local-expand? ctx))
-           (values #f #f #f #f)))
-     (when (and t (not (variable? t)))
-       (raise-syntax-error #f "identifier does not refer to a variable" var-id s))
+     (define primitive?
+       (cond
+         [(or (not binding)
+              (and (expand-context-allow-unbound? ctx)
+                   (top-m)))
+          #f]
+         [else
+          (check-top-binding-is-variable ctx binding var-id s)]))
      (if (expand-context-to-parsed? ctx)
          (parsed-#%variable-reference (keep-properties-only~ s)
                                       (cond

@@ -2124,6 +2124,60 @@
 (expand '(#%variable-reference))
 
 (test #t variable-reference? (#%variable-reference (#%top . test)))
+(test #t variable-reference? (#%variable-reference (#%top . list)))
+
+(define this-is-going-to-be-defined-as-syntax 5)
+(define-syntax this-is-going-to-be-defined-as-syntax #f)
+(syntax-test #'(#%variable-reference this-is-going-to-be-defined-as-syntax))
+(test #t variable-reference? (#%variable-reference (#%top . this-is-going-to-be-defined-as-syntax)))
+(test 5 values (#%top . this-is-going-to-be-defined-as-syntax))
+
+(define this-is-going-to-be-defined-as-macro 5)
+(define-syntax this-is-going-to-be-defined-as-macro (lambda (stx) #f))
+(syntax-test #'(#%variable-reference this-is-going-to-be-defined-as-macro))
+(test #t variable-reference? (#%variable-reference (#%top . this-is-going-to-be-defined-as-macro)))
+(test 5 values (#%top . this-is-going-to-be-defined-as-macro))
+
+(test #t variable-reference-constant? (#%variable-reference cons))
+(test #f variable-reference-constant? (#%variable-reference (#%top . cons)))
+
+(test #t procedure? (lambda () (#%variable-reference assume-this-name-is-not-defined-anywhere)))
+
+(syntax-test #'(let ([local #f]) (#%variable-reference (#%top . local))))
+
+(syntax-test #'(module m racket/base
+                 (let ([local #f])
+                   (#%variable-reference (#%top . local)))))
+(syntax-test #'(module m racket/base
+                 (require (for-syntax racket/base))
+                 (define-syntax (m stx) #'#f)
+                 (#%top . m)))
+(syntax-test #'(module m racket/base
+                 (require (for-syntax racket/base))
+                 (define-syntax m #f)
+                 (#%top . m)))
+(syntax-test #'(module m racket/base
+                 (require (for-syntax racket/base))
+                 (define-syntax (m stx) #'#f)
+                 (#%variable-reference (#%top . m))))
+(syntax-test #'(module m racket/base
+                 (require (for-syntax racket/base))
+                 (define-syntax m #f)
+                 (#%variable-reference (#%top . m))))
+(syntax-test #'(module m racket/base
+                 (require (for-syntax racket/base))
+                 (define-syntax (m stx) #'#f)
+                 (#%variable-reference m)))
+(syntax-test #'(module m racket/base
+                 (require (for-syntax racket/base))
+                 (define-syntax m #f)
+                 (#%variable-reference m)))
+(syntax-test #'(module m racket/base
+                 (#%variable-reference not-defined-anywhere)))
+(syntax-test #'(module m racket/base
+                 (#%top . not-defined-anywhere)))
+(syntax-test #'(module m racket/base
+                 (#%variable-reference (#%top . not-defined-anywhere))))
 
 (syntax-test #'(#%variable-reference (oops . x)))
 (syntax-test #'(#%variable-reference ((this is a test) . x)))

@@ -1760,10 +1760,12 @@ x
 Equivalent to @racket[id] when @racket[id] is bound to a module-level
 or top-level variable. In a top-level context, @racket[(#%top . id)]
 always refers to a top-level variable, even if @racket[id] is
-@tech{unbound} or otherwise bound.
+@tech{unbound} or bound to syntax, as long as @racket[id] does not
+have a local binding. In all contexts, @racket[(#%top . id)] is
+a syntax error if @racket[id] has a local binding.
 
 Within a @racket[module] form, @racket[(#%top . id)] expands to just
-@racket[id]---with the obligation that @racket[id] is defined within
+@racket[id] as long as @racket[id] is defined within
 the module and has no local binding in its context. At @tech{phase
 level} 0, @racket[(#%top . id)] is an immediate syntax error if
 @racket[id] is not bound. At @tech{phase level} 1 and higher, a syntax
@@ -1775,12 +1777,14 @@ introduces @racketidfont{#%top} identifiers.
 
 @examples[
 (define x 12)
-(let ([x 5]) (#%top . x))
+(#%top . x)
 ]
 
 @history[#:changed "6.3" @elem{Changed the introduction of
                                @racket[#%top] in a top-level context
-                               to @tech{unbound} identifiers only.}]}
+                               to @tech{unbound} identifiers only.}
+         #:changed "8.2.0.7" @elem{Changed treatment of locally bound @racket[id] to
+                                   always report a syntax error, even outside of a module.}]}
 
 @;------------------------------------------------------------------------
 @section{Locations: @racket[#%variable-reference]}
@@ -1797,6 +1801,11 @@ no @racket[id] is supplied, the resulting value refers to an
 within the enclosing module, or at the top level if the form is not
 inside a module).
 
+When @racket[(#%top . id)] is used, then the variable reference refers
+to the same variable as @racket[(#%top . id)]. Note that
+@racket[(#%top . id)] is not allowed if @racket[id] is locally bound
+or within a module if @racket[id] is bound as a transformer.
+
 A @tech{variable reference} can be used with
 @racket[variable-reference->empty-namespace],
 @racket[variable-reference->resolved-module-path], and
@@ -1805,7 +1814,10 @@ A @tech{variable reference} can be used with
 @racket[namespace-anchor->namespace] wrap those to provide a clearer
 interface. A @tech{variable reference} is also useful to low-level
 extensions; see @other-manual['(lib
-"scribblings/inside/inside.scrbl")].}
+"scribblings/inside/inside.scrbl")].
+
+@history[#:changed "8.2.0.7" @elem{Changed @racket[#%top] treatment to be
+                                   consistent with @racket[#%top] by itself.}]}
 
 @;------------------------------------------------------------------------
 @section[#:tag "application"]{Procedure Applications and @racket[#%app]}
