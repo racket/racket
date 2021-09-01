@@ -13067,7 +13067,7 @@ static const char *startup_source =
 "(let-values(((v_0)(syntax-e$1 old-stx_0)))(if(pair? v_0)(car v_0) #f)))"
 " id1_0)))"
 "(let-values()"
-"(let-values(((old-props_0)(syntax-props old-stx_0)))"
+"(let-values(((old-props_0)(hash-remove(syntax-props old-stx_0) original-property-sym)))"
 "(if(zero?(hash-count old-props_0))"
 "(let-values()"
 "(if id_0"
