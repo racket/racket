@@ -1342,8 +1342,8 @@ The following @filepath{info.rkt} fields are used by the package manager:
        set up (plus collections for global documentation indexes and
        links).}
 
- @item{@definfofield{license} --- a @deftech{license s-expression}
-  specifying the package's license. A license s-expression represents an @deftech{SPDX}
+ @item{@definfofield{license} --- a @deftech{license S-expression}
+  specifying the package's license. A license S-expression represents an @deftech{SPDX}
   @hyperlink["https://spdx.github.io/spdx-spec/appendix-IV-SPDX-license-expressions/"]{
    license expression} as a datum with the quoted form:
 
@@ -1372,7 +1372,7 @@ The following @filepath{info.rkt} fields are used by the package manager:
   @racketblock[(define license
                  '(Apache-2.0 OR MIT))]
 
-  The grammar of @tech{license s-expressions} is designed so that
+  The grammar of @tech{license S-expressions} is designed so that
   @racket[(format "~s" license)] produces a string conforming to the grammar in
   @hyperlink["https://spdx.github.io/spdx-spec/appendix-IV-SPDX-license-expressions/"]{
   Appendix IV} and
@@ -1418,7 +1418,7 @@ The following @filepath{info.rkt} fields are used by the package manager:
 
 @history[#:changed "6.1.0.5" @elem{Added @racketidfont{update-implies}.}
          #:changed "6.1.1.6" @elem{Added @racketidfont{distribution-preference}.}
-         #:changed "8.1.0.8" @elem{Added @racketidfont{license}.}]
+         #:changed "8.2.0.7" @elem{Added @racketidfont{license}.}]
 
 @; ----------------------------------------
 
