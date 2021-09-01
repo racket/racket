@@ -214,6 +214,13 @@
     (syntax-case stx ()
       [(_ x) (syntax (begin x))])))
 
+(define-syntax mcr-synth
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ x)
+       ;; drops originalness:
+       (datum->syntax #'x (syntax-e #'x) #'x)])))
+
 (define s (quote-syntax (mcr 5)))
 (define se (expand-once s))
 
@@ -242,6 +249,8 @@
 
 (test #t syntax-original? s)
 (test #f syntax-original? se)
+
+(test #f syntax-original? (expand-once (quote-syntax (mcr-synth 8))))
 
 ;; Check that a property in a template is preserved by #'
 
@@ -397,7 +406,7 @@
 
 (test (syntax-e (cadr (syntax-e (cadr (syntax-e s))))) syntax-e se)
 
-(test '((mcr2) mcr7)
+(test '(mcr7 mcr2) ; also acceptable: '((mcr2) mcr7)
       (tree-map syntax-e)
       (syntax-property se 'origin))
 
@@ -421,7 +430,7 @@
 (define s (quote-syntax (mcr7 (mcr5 (mcr2 5)))))
 (define se (expand-once s))
 
-(test '((mcr2 mcr5) mcr7)
+(test '(mcr7 mcr2 mcr5) ; also acceptable: '((mcr2 mcr5) mcr7)
       (tree-map syntax-e)
       (syntax-property se 'origin))
 

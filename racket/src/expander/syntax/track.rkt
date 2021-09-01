@@ -2,7 +2,8 @@
 (require "syntax.rkt"
          "scope.rkt"
          "property.rkt"
-         "preserved.rkt")
+         "preserved.rkt"
+         "original.rkt")
 
 (provide syntax-track-origin
          syntax-track-origin*)
@@ -14,7 +15,7 @@
                                                      (let ([v (syntax-e old-stx)])
                                                        (and (pair? v)
                                                             (car v))))])
-  (define old-props (syntax-props old-stx))
+  (define old-props (hash-remove (syntax-props old-stx) original-property-sym))
   (cond
    [(zero? (hash-count old-props))
     (if id
