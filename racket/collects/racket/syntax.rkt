@@ -234,11 +234,11 @@
   (internal-definition-context-introduce intdefs (datum->syntax #f stx) 'add))
 
 (define (syntax-local-eval stx [intdefs #f])
+  #;
   (unless (syntax? stx)
     (raise-argument-error 'syntax-local-eval
                           "syntax?"
                           0 stx intdefs))
-  
   (unless (or (internal-definition-context? intdefs)
               (not intdefs)
               (and (list? intdefs) (andmap internal-definition-context? intdefs)))

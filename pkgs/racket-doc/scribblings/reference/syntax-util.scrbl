@@ -223,7 +223,7 @@ Equivalent to @racket[(internal-definition-context-introduce intdef-ctx stx 'add
  @racket[internal-definition-context-add-scopes] function is preferred.
 }
 
-@defproc[(syntax-local-eval [stx syntax?]
+@defproc[(syntax-local-eval [stx any/c]
                             [intdef-ctx (or/c internal-definition-context?
                                               #f
                                               (listof internal-definition-context?))
