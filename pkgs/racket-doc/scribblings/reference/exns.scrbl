@@ -653,6 +653,29 @@ Calls to an error value conversion handler are @racket[parameterize]d
 to re-install the default error value conversion handler, and to
 enable printing of unreadable values (see @racket[print-unreadable]).}
 
+
+@defparam[error-syntax->string-handler proc (any/c (or/c exact-nonnegative-integer? #f)
+                                                  . -> .
+                                                  string?)]{
+
+A @tech{parameter} that determines the @deftech{error syntax
+conversion handler}, which is used to print a syntax form that is
+embedded in an error message, such as from @racket[raise-syntax-error]
+when @racket[error-print-source-location] is @racket[#t].
+
+The arguments to the handler are analogous to the arguments for a
+@tech{error value conversion handler} as configured with
+@racket[error-value->string-handler], except that @racket[#f] can be
+provided instead of an integer for the length, meaning that the
+printed form should not be truncated. The first argument is normally a
+@tech{syntax object}, but in the same way that
+@racket[raise-syntax-error] accepts other S-expressions, the error
+syntax conversion handler must also handle representations that are
+not syntax objects.
+
+@history[#:added "8.2.0.8"]}
+
+
 @defboolparam[error-print-source-location include?]{
 
 A @tech{parameter} that controls whether read and syntax error messages

@@ -2,7 +2,8 @@
 (require "../common/contract.rkt"
          "syntax.rkt"
          "scope.rkt"
-         "taint.rkt")
+         "taint.rkt"
+         (only-in '#%kernel regexp-replace*))
 
 (provide (struct-out exn:fail:syntax)
          make-exn:fail:syntax
@@ -12,7 +13,8 @@
          raise-syntax-error
          raise-unbound-syntax-error
 
-         set-current-previously-unbound!)
+         set-current-previously-unbound!
+         install-error-syntax->string-handler!)
 
 (struct exn:fail:syntax exn:fail (exprs)
   #:extra-constructor-name make-exn:fail:syntax
@@ -75,12 +77,12 @@
   (define at-message
     (or (and sub-expr
              (error-print-source-location)
-             (format "\n  at: ~.s" (->datum sub-expr)))
+             (string-append "\n  at:" (syntax->string sub-expr)))
         ""))
   (define in-message
     (or (and expr
              (error-print-source-location)
-             (format "\n  in: ~.s" (->datum expr)))
+             (string-append "\n  in:" (syntax->string expr)))
         ""))
   (define src-loc-str
     (or (and (error-print-source-location)
@@ -137,3 +139,26 @@
 (define current-previously-unbound (lambda () #f))
 (define (set-current-previously-unbound! proc)
   (set! current-previously-unbound proc))
+
+;; if `v` prints on multiple lines, add indentation,
+;; otherwise just add a space
+(define (syntax->string v)
+  (define str ((error-syntax->string-handler) v (error-print-width)))
+  (if (regexp-match? #rx"\n" str)
+      (string-append "\n"
+                     (regexp-replace* #rx"\n" str "\n   "))
+      (string-append " " str)))
+
+(define (install-error-syntax->string-handler!)
+  (error-syntax->string-handler
+   (let ([default-error-syntax->string-handler
+           (lambda (v len)
+             (unless (or (not len) (exact-nonnegative-integer? len))
+               (raise-argument-error 'default-error-value->string-handler
+                                     "(or/c exact-nonnegative-integer? #f)"
+                                     len))
+             (if len
+                 (parameterize ([error-print-width (max 3 len)])
+                   (format "~.s" (->datum v)))
+                 (format "~s" (->datum v))))])
+     default-error-syntax->string-handler)))

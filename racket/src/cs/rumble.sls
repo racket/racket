@@ -83,6 +83,7 @@
           raise
           error-print-width
           error-value->string-handler
+          error-syntax->string-handler
           error-print-context-length
           exception-handler-key
           uncaught-exception-handler

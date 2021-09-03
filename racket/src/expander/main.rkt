@@ -36,6 +36,7 @@
          (only-in "syntax/cache.rkt" cache-place-init!)
          (only-in "syntax/syntax.rkt" syntax-place-init!)
          (only-in "syntax/scope.rkt" scope-place-init!)
+         (only-in "syntax/error.rkt" install-error-syntax->string-handler!)
          "syntax/serialize.rkt"
          (only-in "eval/module-cache.rkt" module-cache-place-init!)
          (only-in "common/performance.rkt" performance-place-init!)
@@ -215,6 +216,7 @@
      (dynamic-require ''#%kernel 0))))
 
 (namespace-init!)
+(install-error-syntax->string-handler!)
 
 (define (datum->kernel-syntax s)
   (datum->syntax core-stx s))
@@ -230,4 +232,5 @@
   (shadow-directory-place-init!)
   (collection-place-init!)
   (performance-place-init!)
-  (namespace-init!))
+  (namespace-init!)
+  (install-error-syntax->string-handler!))

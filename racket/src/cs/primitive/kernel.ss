@@ -303,6 +303,7 @@
   [error-print-context-length (known-procedure/single-valued 3)]
   [error-print-source-location (known-procedure/single-valued 3)]
   [error-print-width (known-procedure/single-valued 3)]
+  [error-syntax->string-handler (known-procedure/single-valued 3)]
   [error-value->string-handler (known-procedure/single-valued 3)]
   [eval-jit-enabled (known-procedure/single-valued 3)]
   [even? (known-procedure/folding 2)]

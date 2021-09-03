@@ -2409,6 +2409,13 @@
   (check-err 'bad v))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test #t procedure? error-syntax->string-handler)
+(test "(lambda (x) x)" (error-syntax->string-handler) #'(lambda (x) x) #f)
+(test "(lambda (x) x)" (error-syntax->string-handler) '(lambda (x) x) #f)
+(test "(lambda..." (error-syntax->string-handler) '(lambda (x) x) 10)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test prop:rename-transformer with procedure content
 
 (begin-for-syntax

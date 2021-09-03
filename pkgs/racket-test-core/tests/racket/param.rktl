@@ -325,6 +325,12 @@
 		      '(format "~e" 10)
 		      exn:fail?
 		      (list "bad setting" zero-arg-proc one-arg-proc three-arg-proc))
+		(list error-syntax->string-handler
+		      (list (error-syntax->string-handler) (lambda (x w) (error 'converter)))
+		      '(with-handlers ([exn:fail:syntax? void])
+                         (raise-syntax-error #f "ok" #'oops))
+		      (lambda (x) (and (exn:fail? x) (regexp-match? #rx"converter" (exn-message x))))
+		      (list "bad setting" zero-arg-proc one-arg-proc three-arg-proc))
 
 		(list current-print
 		      (list (current-print)

@@ -47,6 +47,7 @@ ROSYM static Scheme_Object *windows_symbol;
 ROSYM static Scheme_Object *gai_symbol;
 ROSYM static Scheme_Object *arity_property;
 ROSYM static Scheme_Object *def_err_val_proc;
+ROSYM static Scheme_Object *def_err_stx_proc;
 ROSYM static Scheme_Object *def_error_esc_proc;
 ROSYM static Scheme_Object *default_display_handler;
 ROSYM static Scheme_Object *emergency_display_handler;
@@ -86,6 +87,7 @@ static Scheme_Object *raise_result_arity_error(int argc, Scheme_Object *argv[]);
 static Scheme_Object *error_escape_handler(int, Scheme_Object *[]);
 static Scheme_Object *error_display_handler(int, Scheme_Object *[]);
 static Scheme_Object *error_value_string_handler(int, Scheme_Object *[]);
+static Scheme_Object *error_syntax_string_handler(int, Scheme_Object *[]);
 static Scheme_Object *exit_handler(int, Scheme_Object *[]);
 static Scheme_Object *exe_yield_handler(int, Scheme_Object *[]);
 static Scheme_Object *error_print_width(int, Scheme_Object *[]);
@@ -95,6 +97,7 @@ static MZ_NORETURN void def_error_escape_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_error_display_proc(int, Scheme_Object *[]);
 static Scheme_Object *emergency_error_display_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_error_value_string_proc(int, Scheme_Object *[]);
+static Scheme_Object *def_error_syntax_string_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_exit_handler_proc(int, Scheme_Object *[]);
 static Scheme_Object *default_yield_handler(int, Scheme_Object *[]);
 static Scheme_Object *srcloc_to_string(int argc, Scheme_Object **argv);
@@ -807,6 +810,7 @@ void scheme_init_error(Scheme_Startup_Env *env)
 
   ADD_PARAMETER("error-display-handler",       error_display_handler,      MZCONFIG_ERROR_DISPLAY_HANDLER,       env);
   ADD_PARAMETER("error-value->string-handler", error_value_string_handler, MZCONFIG_ERROR_PRINT_VALUE_HANDLER,   env);
+  ADD_PARAMETER("error-syntax->string-handler", error_syntax_string_handler, MZCONFIG_ERROR_PRINT_SYNTAX_HANDLER, env);
   ADD_PARAMETER("error-escape-handler",        error_escape_handler,       MZCONFIG_ERROR_ESCAPE_HANDLER,        env);
   ADD_PARAMETER("exit-handler",                exit_handler,               MZCONFIG_EXIT_HANDLER,                env);
   ADD_PARAMETER("executable-yield-handler",    exe_yield_handler,          MZCONFIG_EXE_YIELD_HANDLER,           env);
@@ -846,10 +850,12 @@ void scheme_init_error(Scheme_Startup_Env *env)
   scheme_def_exit_proc = scheme_make_prim_w_arity(def_exit_handler_proc, "default-exit-handler", 1, 1);
   default_display_handler = scheme_make_prim_w_arity(def_error_display_proc, "default-error-display-handler", 2, 2);
   emergency_display_handler = scheme_make_prim_w_arity(emergency_error_display_proc, "emergency-error-display-handler", 2, 2);
-  
 
   REGISTER_SO(def_err_val_proc);
   def_err_val_proc = scheme_make_prim_w_arity(def_error_value_string_proc, "default-error-value->string-handler", 2, 2);
+
+  REGISTER_SO(def_err_stx_proc);
+  def_err_stx_proc = scheme_make_prim_w_arity(def_error_syntax_string_proc, "default-error-syntax->string-handler", 2, 2);
 
   REGISTER_SO(none_symbol);
   REGISTER_SO(fatal_symbol);
@@ -930,6 +936,7 @@ void scheme_init_error_config(void)
   scheme_set_root_param(MZCONFIG_EXIT_HANDLER, scheme_def_exit_proc);
   scheme_set_root_param(MZCONFIG_ERROR_DISPLAY_HANDLER, default_display_handler);
   scheme_set_root_param(MZCONFIG_ERROR_PRINT_VALUE_HANDLER, def_err_val_proc);
+  scheme_set_root_param(MZCONFIG_ERROR_PRINT_SYNTAX_HANDLER, def_err_val_proc);
   scheme_set_root_param(MZCONFIG_EXE_YIELD_HANDLER, def_exe_yield_proc);
 }
 
@@ -3358,6 +3365,27 @@ def_error_value_string_proc(int argc, Scheme_Object *argv[])
   return scheme_make_sized_utf8_string(s, l);
 }
 
+static Scheme_Object *
+def_error_syntax_string_proc(int argc, Scheme_Object *argv[])
+{
+  intptr_t len, l;
+  char *s;
+
+  if (SCHEME_TRUEP(argv[1]) && !SCHEME_INTP(argv[1]))
+    scheme_wrong_contract("default-error-syntax->string-handler", "number?", 1, argc, argv);
+
+  if (SCHEME_INTP(argv[1])) {
+    len = SCHEME_INT_VAL(argv[1]);
+    if (len < 3)
+      len = 3;
+  } else
+    len = -1;
+
+  s = scheme_write_to_string_w_max(argv[0], &l, len);
+
+  return scheme_make_sized_utf8_string(s, l);
+}
+
 static MZ_NORETURN void
 def_error_escape_proc(int argc, Scheme_Object *argv[])
 {
@@ -3389,6 +3417,15 @@ error_value_string_handler(int argc, Scheme_Object *argv[])
 {
   return scheme_param_config("error-value->string-handler",
 			     scheme_make_integer(MZCONFIG_ERROR_PRINT_VALUE_HANDLER),
+			     argc, argv,
+			     2, NULL, NULL, 0);
+}
+
+static Scheme_Object *
+error_syntax_string_handler(int argc, Scheme_Object *argv[])
+{
+  return scheme_param_config("error-value->syntax-handler",
+			     scheme_make_integer(MZCONFIG_ERROR_PRINT_SYNTAX_HANDLER),
 			     argc, argv,
 			     2, NULL, NULL, 0);
 }
