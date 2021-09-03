@@ -145,7 +145,7 @@
 (define (syntax->string v)
   (define str ((error-syntax->string-handler) v (error-print-width)))
   (if (regexp-match? #rx"\n" str)
-      (string-append "\n"
+      (string-append "\n   "
                      (regexp-replace* #rx"\n" str "\n   "))
       (string-append " " str)))
 

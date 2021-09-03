@@ -13680,7 +13680,7 @@ static const char *startup_source =
 "(begin"
 "(let-values(((str_0)((error-syntax->string-handler) v_0(error-print-width))))"
 "        (if (regexp-match? '#rx\"\\n\" str_0)"
-"          (string-append \"\\n\" (regexp-replace* '#rx\"\\n\" str_0 \"\\n   \"))"
+"          (string-append \"\\n   \" (regexp-replace* '#rx\"\\n\" str_0 \"\\n   \"))"
 "          (string-append \" \" str_0))))))"
 "(define-values"
 "(install-error-syntax->string-handler!)"
