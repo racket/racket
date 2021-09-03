@@ -762,13 +762,14 @@ This suggests the following new algorithm based on (s):
 
 (define (format-if prefix val)
   (if val
-      (format "\n  ~a: ~a" prefix val)
+      (let ([indent (make-string (+ 4 (string-length prefix)) #\space)])
+        (format "\n  ~a: ~a" prefix (regexp-replace* #rx"\n" val (string-append "\n" indent))))
       ""))
 
 (define (stx-if-loc stx)
   (and (syntax? stx)
        (error-print-source-location)
-       (format "~.s" (syntax->datum stx))))
+       ((error-syntax->string-handler) stx (error-print-width))))
 
 (define (infer-who stx)
   (let* ([maybe-id (if (stx-pair? stx) (stx-car stx) stx)])
