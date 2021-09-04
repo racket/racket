@@ -87,6 +87,7 @@
                 (1/file-or-directory-modify-seconds
                  file-or-directory-modify-seconds)
                 (1/file-or-directory-permissions file-or-directory-permissions)
+                (file-or-directory-stat file-or-directory-stat)
                 (1/file-or-directory-type file-or-directory-type)
                 (1/file-position file-position)
                 (1/file-position* file-position*)
@@ -3205,6 +3206,7 @@
   (begin-unsafe (hash-ref rktio-table 'rktio_get_file_modify_seconds)))
 (define rktio_set_file_modify_seconds
   (begin-unsafe (hash-ref rktio-table 'rktio_set_file_modify_seconds)))
+(define rktio_stat (begin-unsafe (hash-ref rktio-table 'rktio_stat)))
 (define rktio_fd_identity
   (begin-unsafe (hash-ref rktio-table 'rktio_fd_identity)))
 (define rktio_path_identity
@@ -3354,6 +3356,8 @@
   (begin-unsafe (hash-ref rktio-table 'rktio_recv_length_ref)))
 (define rktio_recv_address_ref
   (begin-unsafe (hash-ref rktio-table 'rktio_recv_address_ref)))
+(define rktio_stat_to_vector
+  (begin-unsafe (hash-ref rktio-table 'rktio_stat_to_vector)))
 (define rktio_identity_to_vector
   (begin-unsafe (hash-ref rktio-table 'rktio_identity_to_vector)))
 (define rktio_seconds_to_date*
