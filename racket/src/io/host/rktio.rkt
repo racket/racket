@@ -48,6 +48,7 @@
 (define-function () #f rktio_is_timestamp)
 (define-function () #f rktio_recv_length_ref)
 (define-function () #f rktio_recv_address_ref)
+(define-function () #f rktio_stat_to_vector)
 (define-function () #f rktio_identity_to_vector)
 (define-function () #f rktio_seconds_to_date*)
 (define-function () #f rktio_convert_result_to_vector)

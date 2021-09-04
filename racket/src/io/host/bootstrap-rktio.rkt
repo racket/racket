@@ -104,6 +104,13 @@
 (define (rktio_recv_address_ref p)
   (Rrktio_length_and_addrinfo_t-address (cast p _pointer rktio_length_and_addrinfo_t)))
 
+(define (rktio_stat_to_vector p)
+  (let ([p (cast p _pointer _Rrktio_stat_t-pointer)])
+    (vector
+     (Rrktio_stat_t-dev p)
+     (Rrktio_stat_t-inode p)
+     (Rrktio_stat_t-size p))))
+
 (define (rktio_identity_to_vector p)
   (let ([p (cast p _pointer _Rrktio_identity_t-pointer)])
     (vector
