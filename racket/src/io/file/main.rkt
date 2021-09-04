@@ -302,20 +302,19 @@
   (end-atomic)
   (cond
     [(rktio-error? r0)
-     (and (not no-error?)
-          (raise-filesystem-error who
-                                  r
-                                  (if host-path
-                                      (format (string-append
-                                               "error obtaining identity for path\n"
-                                               "  path: ~a")
-                                              (host-> host-path))
-                                      (format (string-append
-                                               "error obtaining identity for port\n"
-                                               "  port: ~v")
-                                              ; TODO
-                                              ; Used to be `port`, but support this later.
-                                              #f))))]
+     (raise-filesystem-error who
+                             r
+                             (if host-path
+                                 (format (string-append
+                                          "error obtaining identity for path\n"
+                                          "  path: ~a")
+                                         (host-> host-path))
+                                 (format (string-append
+                                          "error obtaining identity for port\n"
+                                          "  port: ~v")
+                                         ; TODO
+                                         ; Used to be `port`, but support this later.
+                                         #f)))]
     [else
      (hash 'device-id (vector-ref r 0)
            'inode (vector-ref r 1)
