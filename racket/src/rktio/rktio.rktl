@@ -177,6 +177,9 @@
 (define-struct-type rktio_status_t ((rktio_bool_t running) (int result)))
 (define-type rktio_timestamp_t intptr_t)
 (define-struct-type
+ rktio_stat_t
+ ((intptr_t dev) (intptr_t inode) (intptr_t size)))
+(define-struct-type
  rktio_identity_t
  ((uintptr_t a)
   (uintptr_t b)
@@ -1108,6 +1111,14 @@
  rktio_ok_t
  rktio_set_file_modify_seconds
  (((ref rktio_t) rktio) (rktio_const_string_t file) (rktio_timestamp_t secs)))
+(define-function/errno
+ NULL
+ ()
+ (ref rktio_stat_t)
+ rktio_stat
+ (((ref rktio_t) rktio)
+  (rktio_const_string_t path)
+  (rktio_bool_t follow_links)))
 (define-function/errno
  NULL
  ()
