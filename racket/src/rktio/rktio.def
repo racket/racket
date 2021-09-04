@@ -145,6 +145,7 @@ rktio_make_link
 rktio_file_size
 rktio_get_file_modify_seconds
 rktio_set_file_modify_seconds
+rktio_stat
 rktio_fd_identity
 rktio_path_identity
 rktio_get_file_or_directory_permissions
