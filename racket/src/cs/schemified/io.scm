@@ -18431,7 +18431,7 @@
    'current-write-relative-directory))
 (define 1/print-syntax-width
   (make-parameter
-   32
+   256
    (lambda (v_0)
      (begin
        (if (let ((or-part_0 (eqv? v_0 +inf.0)))

@@ -8056,7 +8056,7 @@ static void make_initial_config(Scheme_Thread *p)
   init_param(cells, paramz, MZCONFIG_PRINT_READER, scheme_false);
   init_param(cells, paramz, MZCONFIG_PRINT_LONG_BOOLEAN, scheme_false);
   init_param(cells, paramz, MZCONFIG_PRINT_AS_QQ, scheme_true);
-  init_param(cells, paramz, MZCONFIG_PRINT_SYNTAX_WIDTH, scheme_make_integer(32));
+  init_param(cells, paramz, MZCONFIG_PRINT_SYNTAX_WIDTH, scheme_make_integer(256));
 
   init_param(cells, paramz, MZCONFIG_COMPILE_MODULE_CONSTS, scheme_true);
   init_param(cells, paramz, MZCONFIG_USE_JIT, scheme_startup_use_jit ? scheme_true : scheme_false);
