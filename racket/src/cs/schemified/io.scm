@@ -18435,11 +18435,16 @@
    (lambda (v_0)
      (begin
        (if (let ((or-part_0 (eqv? v_0 +inf.0)))
-             (if or-part_0 or-part_0 (if (exact-integer? v_0) (>= v_0 3) #f)))
+             (if or-part_0
+               or-part_0
+               (let ((or-part_1 (eqv? v_0 0)))
+                 (if or-part_1
+                   or-part_1
+                   (if (exact-integer? v_0) (>= v_0 3) #f)))))
          (void)
          (raise-argument-error
           'print-syntax-width
-          "(or/c +inf.0 0 (and/c exact-integer? (>/c 3)))"
+          "(or/c +inf.0 0 (and/c exact-integer? (>=/c 3)))"
           v_0))
        v_0))
    'print-syntax-width))

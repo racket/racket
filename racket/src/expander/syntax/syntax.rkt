@@ -67,8 +67,14 @@
       (define srcloc-str (srcloc->string srcloc))
       (when srcloc-str
         (fprintf port ":~a" srcloc-str)))
-    (parameterize ([error-print-width (print-syntax-width)])
-      (fprintf port " ~.s" (syntax->datum s)))
+    (define width (print-syntax-width))
+    (cond
+      [(eqv? width 0) (void)]
+      [(eqv? width +inf.0)
+       (fprintf port " ~s" (syntax->datum s))]
+      [else
+       (parameterize ([error-print-width width])
+         (fprintf port " ~.s" (syntax->datum s)))])
     (write-string ">" port))
   #:property prop:serialize
   (lambda (s ser-push! state)

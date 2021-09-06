@@ -338,7 +338,7 @@
                          (unless (regexp-match #rx"hello" s) (error "bad format"))
                          (unless (regexp-match #rx"99[)]" s) (error "no 99")))
 		      (lambda (x) (and (exn:fail? x) (regexp-match? #rx"no 99" (exn-message x))))
-		      (list -1 0 2 12.0))
+		      (list -1 2 12.0))
 
 		(list current-print
 		      (list (current-print)
