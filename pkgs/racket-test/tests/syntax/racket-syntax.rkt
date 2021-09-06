@@ -45,6 +45,11 @@
                  (define/with-syntax (n ...) #'(1 2 3))
                  #'(0 n ...)))
               '(0 1 2 3))
+(check-equal? (syntax->datum
+               (let ()
+                 (define/with-syntax (0 (m n ...) ...) #'(0 (1 2) (3 4 5) (6)))
+                 #'(0 m ... (n ... $) ...)))
+              '(0 1 3 6 (2 $) (4 5 $) ($)))
 
 ;; ----
 
