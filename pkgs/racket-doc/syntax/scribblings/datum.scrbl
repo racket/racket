@@ -1,7 +1,8 @@
 #lang scribble/manual
 @(require "common.rkt"
           scribble/eval
-          (for-label racket/base 
+          (for-label racket/base
+                     racket/syntax
                      syntax/datum
                      syntax/parse))
 
@@ -107,6 +108,20 @@ Analogous to @racket[with-syntax], but for @racket[datum-case] and
   (datum ((a b) ...)))
 ]}
 
+@defform[(define/with-datum pattern datum-expr)]{
+
+The definition form of @racket[with-datum]. Analogous to
+@racket[define/with-syntax], but for @racket[datum-case] and @racket[datum].
+
+@examples[
+#:eval datum-eval
+ (define/with-datum ((x y) ...)
+   '((a 1) (b 2) (c 3)))
+ (datum ((x ...)
+         (y ...)))
+]
+
+@history[#:added "8.2.0.8"]}
 
 @deftogether[(
 @defform[(quasidatum template)]

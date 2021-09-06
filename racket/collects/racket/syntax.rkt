@@ -28,14 +28,13 @@
                                       stx
                                       #'pattern
                                       '())]
-            [depthmap (for/list ([x pvar-env])
+            [depthmap (for/list ([x (in-list pvar-env)])
                         (let loop ([x x] [d 0])
                           (if (pair? x)
                               (loop (car x) (add1 d))
                               (cons x d))))]
             [pvars (map car depthmap)]
-            [depths (map cdr depthmap)]
-            [mark (make-syntax-introducer)])
+            [depths (map cdr depthmap)])
        (with-syntax ([(pvar ...) pvars]
                      [(depth ...) depths]
                      [(valvar ...) (generate-temporaries pvars)])

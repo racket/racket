@@ -1,5 +1,6 @@
-#lang racket
-(require syntax/datum)
+#lang racket/base
+(require syntax/datum
+         syntax/macro-testing)
 
 (define (do-test expect got expr)
   (unless (equal? expect got) (error "failed\n" expr)))
@@ -10,7 +11,10 @@
     [(_ expect (datum-case expr () [pat (datum tmpl)]))
      (begin
        (test expect (values (datum-case expr () [pat (datum tmpl)])))
-       (test expect (with-datum ([pat expr]) (datum tmpl))))]
+       (test expect (with-datum ([pat expr]) (datum tmpl)))
+       (test expect (let ()
+                      (define/with-datum pat expr)
+                      (datum tmpl))))]
     [(_ expect expr)
      (do-test expect expr 'expr)]))
 
@@ -67,3 +71,16 @@
       (quasidatum (1 (undatum-splicing (list (+ 1 1) 3)))))
 (test '(1 2 3 4)
       (quasidatum (1 (undatum-splicing (list (+ 1 1) 3)) 4)))
+
+
+(test '(0 (1 2 3))
+      (datum-case '(1 2 3) ()
+        [p (datum (0 p))]))
+
+(test '(0 1 2 3)
+      (datum-case '(1 2 3) ()
+        [(n ...) (datum (0 n ...))]))
+
+(test '(0 1 3 6 (2 $) (4 5 $) ($))
+      (datum-case '(0 (1 2) (3 4 5) (6)) ()
+        [(0 (m n ...) ...) (datum (0 m ... (n ... $) ...))]))
