@@ -64,6 +64,13 @@
 (test #hash([four . 4] [three . 3] [one . 1] [two . 2])
       hash-union #hash([one . 1] [two . 1]) #hash([three . 3] [four . 4] [two . 1])
       #:combine +)
+(test #hash([1 . 1] [2 . 2] [3 . 3] [4 . 4])
+      hash-union #hash([1 . 1]) #hasheq([2 . 2] [3 . 3]) #hasheq([4 . 4]))
+(test #hasheq([1 . 1] [2 . 2] [3 . 3] [4 . 4])
+      hash-union #hasheq([1 . 1]) #hash([2 . 2] [3 . 3]) #hash([4 . 4]))
+(test #hash([1 . -2] [2 . 2])
+      hash-union #hash([1 . 1] [2 . 2]) #hash([1 . 3])
+      #:combine -)
 
 (test #hash((a . 5) (b . 7))
       hash-intersect #hash((a . 1) (b . 2) (c . 3)) #hash((a . 4) (b . 5))
