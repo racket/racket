@@ -231,6 +231,8 @@
                               define-in-vector-like
                               define-:vector-like-gen
                               make-in-vector-like
+                              for/bytes for*/bytes
+                              for/string for*/string
                               stream-ref stream-via-prop?
                               stream? stream-empty? stream-first stream-rest
                               prop:stream in-stream empty-stream make-do-stream

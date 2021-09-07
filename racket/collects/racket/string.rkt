@@ -9,7 +9,9 @@
          non-empty-string?
          string-prefix?
          string-suffix?
-         string-contains?)
+         string-contains?
+         for/string
+         for*/string)
 
 (module+ private
   (provide build-kmp-table))
@@ -24,7 +26,8 @@
                [(str . strss) (apply apply string-append str strss)]))
 
 (require (only-in racket/list add-between)
-         (only-in racket/unsafe/undefined [unsafe-undefined none]))
+         (only-in racket/unsafe/undefined [unsafe-undefined none])
+         (only-in racket/private/for for/string for*/string))
 
 (define (string-join strs [sep " "]
                      #:before-first [before-first none]

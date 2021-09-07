@@ -16,10 +16,11 @@
   "extflonum?" extflonum?
   extflvector? extflvector-length extflvector-ref extflvector-set! make-extflvector
   unsafe-extflvector-ref unsafe-extflvector-set! unsafe-extflvector-length
+  0.0T0
+  ;---
   in-extflvector*
   in-extflvector
   for/extflvector
   for*/extflvector
   extflvector-copy
-  0.0T0
   check-extflonum)

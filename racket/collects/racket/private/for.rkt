@@ -23,6 +23,8 @@
              for for*
              for/list for*/list
              for/vector for*/vector
+             for/bytes for*/bytes
+             for/string for*/string
              for/lists for*/lists
              for/and for*/and
              for/or for*/or
@@ -1841,10 +1843,74 @@
     (vector-copy! new-vec 0 vec 0 i)
     new-vec)
 
-  (define-for-syntax (for_/vector stx orig-stx for_/vector-stx for_/fold/derived-stx wrap-all?)
+  (define (grow-bytes b)
+    (define n (bytes-length b))
+    (define new-b (make-bytes (* 2 n)))
+    (bytes-copy! new-b 0 b 0 n)
+    new-b)
+
+  (define (shrink-bytes b i)
+    (define new-b (make-bytes i))
+    (bytes-copy! new-b 0 b 0 i)
+    new-b)
+
+  (define (grow-string s)
+    (define n (string-length s))
+    (define new-s (make-string (* 2 n)))
+    (string-copy! new-s 0 s 0 n)
+    new-s)
+
+  (define (shrink-string s i)
+    (define new-s (make-string i))
+    (string-copy! new-s 0 s 0 i)
+    new-s)
+
+  ;; A VectorLikeOps is a stx-list of 5 identifiers in order, each referring to a function:
+  ;;  * make-vector           : Natural [Elem] -> Vec
+  ;;  * unsafe-vector*-length : Vec -> Natural
+  ;;  * unsafe-vector*-set!   : Vec Natural Elem -> Void
+  ;;  * grow-vector           : Vec -> Vec
+  ;;  * shrink-vector         : Vec -> Vec
+  (begin-for-syntax
+    ;; VectorLikeOps
+    ;; where type Vec = (and/c vector? (not/c immutable?) (not/c impersonator?))
+    ;;   and type Elem = Any
+    (define vector-vec-like-ops
+      #'(make-vector
+         unsafe-vector*-length
+         unsafe-vector*-set!
+         grow-vector
+         shrink-vector))
+
+    ;; VectorLikeOps
+    ;; where type Vec = (and/c bytes? (not/c immutable?))
+    ;;   and type Elem = Byte
+    (define bytes-vec-like-ops
+      #'(make-bytes
+         unsafe-bytes-length
+         unsafe-bytes-set!
+         grow-bytes
+         shrink-bytes))
+
+    ;; VectorLikeOps
+    ;; where type Vec = (and/c string? (not/c immutable?))
+    ;;   and type Elem = Char
+    (define string-vec-like-ops
+      #'(make-string
+         unsafe-string-length
+         unsafe-string-set!
+         grow-string
+         shrink-string)))
+
+  (define-for-syntax (for_/vector stx orig-stx for_/vector-stx for_/fold/derived-stx wrap-all?
+                                  vec-like-ops
+                                  fill-default)
     (syntax-case stx ()
       [(_ (for-clause ...) body ...)
        (with-syntax ([orig-stx orig-stx]
+                     [(make-vector unsafe-vector*-length unsafe-vector*-set!
+                                   grow-vector shrink-vector)
+                      vec-like-ops]
                      [for_/fold/derived for_/fold/derived-stx]
                      [((middle-body ...) (last-body ...)) (split-for-body stx #'(body ...))])
           (syntax/loc stx
@@ -1863,6 +1929,9 @@
               (shrink-vector vec i))))]
       [(_ #:length length-expr #:fill fill-expr (for-clause ...) body ...)
        (with-syntax ([orig-stx orig-stx]
+                     [(make-vector unsafe-vector*-length unsafe-vector*-set!
+                                   grow-vector shrink-vector)
+                      vec-like-ops]
                      [(limited-for-clause ...)
                       ;; If `wrap-all?', wrap all binding clauses. Otherwise, wrap
                       ;; only the first and the first after each keyword clause:
@@ -1908,14 +1977,29 @@
                    (unsafe-fx+ 1 i)))
                 v))))]
       [(_ #:length length-expr (for-clause ...) body ...)
-       (for_/vector #'(fv #:length length-expr #:fill 0 (for-clause ...) body ...) 
-                    orig-stx for_/vector-stx for_/fold/derived-stx wrap-all?)]))
+       (with-syntax ([fill-default fill-default])
+         (for_/vector #'(fv #:length length-expr #:fill fill-default (for-clause ...) body ...) 
+                      orig-stx for_/vector-stx for_/fold/derived-stx wrap-all?
+                      vec-like-ops
+                      #'fill-default))]))
 
   (define-syntax (for/vector stx)
-    (for_/vector stx stx #'for/vector #'for/fold/derived #f))
+    (for_/vector stx stx #'for/vector #'for/fold/derived #f vector-vec-like-ops #'0))
 
   (define-syntax (for*/vector stx)
-    (for_/vector stx stx #'for*/vector #'for*/fold/derived #t))
+    (for_/vector stx stx #'for*/vector #'for*/fold/derived #t vector-vec-like-ops #'0))
+
+  (define-syntax (for/bytes stx)
+    (for_/vector stx stx #'for/bytes #'for/fold/derived #f bytes-vec-like-ops #'0))
+
+  (define-syntax (for*/bytes stx)
+    (for_/vector stx stx #'for*/bytes #'for*/fold/derived #t bytes-vec-like-ops #'0))
+
+  (define-syntax (for/string stx)
+    (for_/vector stx stx #'for/string #'for/fold/derived #f string-vec-like-ops #'#\nul))
+
+  (define-syntax (for*/string stx)
+    (for_/vector stx stx #'for*/string #'for*/fold/derived #t string-vec-like-ops #'#\nul))
 
   (define-for-syntax (do-for/lists for/fold-id stx)
     (define (do-without-result-clause normalized-stx)

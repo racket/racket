@@ -28,10 +28,11 @@
   "fixnum?" fixnum?
   fxvector? fxvector-length fxvector-ref fxvector-set! make-fxvector
   unsafe-fxvector-ref unsafe-fxvector-set! unsafe-fxvector-length
+  0
+  ;---
   in-fxvector*
   in-fxvector
   for/fxvector
   for*/fxvector
   fxvector-copy
-  0
   check-fxvector)
