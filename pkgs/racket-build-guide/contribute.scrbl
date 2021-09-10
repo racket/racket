@@ -76,15 +76,31 @@ See the @secref["contribute-guidelines"].
 @section[#:tag "pkg-contribute"]{Distribution-Package Contributions}
 
 If you find yourself changing a file that is in a
-@filepath{share/pkgs} subdirectory, then that file is not part of the
-main Racket Git repository. It almost certainly has its own Git
-repository somewhere else, possibly within
+@filepath{share/pkgs} subdirectory (either installed as part of a
+Racket release or as a product of an in-place build), then that file
+is not part of the main Racket Git repository. It almost certainly has
+its own Git repository somewhere else, possibly within
 @url{https://github.com/racket}, but possibly in another user's space.
 The name of the directory in @filepath{share/pkgs} is almost certainly
 the package name.
 
-To start working on a package @nonterm{pkg-name}, it's usually best to
-go to the root directory of your Racket repository checkout and run
+To start working on a package @nonterm{pkg-name} from a Racket release
+or snapshot, you first need to adjust the package installation to use
+the source specified by the main package catalog
+
+@commandline{raco pkg update @DFlag{no-setup} @DFlag{catalog} https://pkgs.racket-lang.org @nonterm{pkg-name}}
+
+and then in the directory you'd like to hold the package's source
+
+@commandline{raco pkg update @DFlag{clone} @nonterm{pkg-name}}
+
+will clone the package's source Git repository into
+@filepath{@nonterm{pkg-name}} within the current directory.
+
+Alternatively, if you already have an in-place build of the main
+Racket repository, you can start working on a package
+@nonterm{pkg-name}, by going to the root directory of your Racket
+repository checkout and running
 
 @commandline{raco pkg update @DFlag{clone} extra-pkgs/@nonterm{pkg-name}}
 
