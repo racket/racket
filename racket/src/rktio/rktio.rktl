@@ -178,7 +178,13 @@
 (define-type rktio_timestamp_t intptr_t)
 (define-struct-type
  rktio_stat_t
- ((intptr_t dev) (intptr_t inode) (intptr_t size)))
+ ((intptr_t device_id)
+  (intptr_t inode)
+  (intptr_t mode)
+  (intptr_t hardlink_count)
+  (intptr_t user_id)
+  (intptr_t group_id)
+  (intptr_t size)))
 (define-struct-type
  rktio_identity_t
  ((uintptr_t a)

@@ -107,8 +107,12 @@
 (define (rktio_stat_to_vector p)
   (let ([p (cast p _pointer _Rrktio_stat_t-pointer)])
     (vector
-     (Rrktio_stat_t-dev p)
+     (Rrktio_stat_t-device_id p)
      (Rrktio_stat_t-inode p)
+     (Rrktio_stat_t-mode p)
+     (Rrktio_stat_t-hardlink_count p)
+     (Rrktio_stat_t-user_id p)
+     (Rrktio_stat_t-group_id p)
      (Rrktio_stat_t-size p))))
 
 (define (rktio_identity_to_vector p)

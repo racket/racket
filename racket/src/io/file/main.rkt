@@ -318,7 +318,11 @@
     [else
      (hash 'device-id (vector-ref r 0)
            'inode (vector-ref r 1)
-           'size (vector-ref r 2))]))
+           ; TODO: Convert mode to individual key/values (see docs).
+           'hardlink-count (vector-ref r 3)
+           'user-id (vector-ref r 4)
+           'group-id (vector-ref r 5)
+           'size (vector-ref r 6))]))
 
 (define/who (file-or-directory-identity p [as-link? #f])
   (check who path-string? p)

@@ -29656,7 +29656,76 @@
      file-or-directory-permissions
      (case-lambda
       ((p_0) (begin (file-or-directory-permissions_0 p_0 #f)))
-      ((p_0 mode9_0) (file-or-directory-permissions_0 p_0 mode9_0))))))
+      ((p_0 mode7_0) (file-or-directory-permissions_0 p_0 mode7_0))))))
+(define 1/file-or-directory-stat
+  (let ((file-or-directory-stat_0
+         (|#%name|
+          file-or-directory-stat
+          (lambda (p10_0 as-link?9_0)
+            (begin
+              (begin
+                (if (path-string? p10_0)
+                  (void)
+                  (raise-argument-error
+                   'file-or-directory-stat
+                   "path-string?"
+                   p10_0))
+                (let ((host-path_0
+                       (->host p10_0 'file-or-directory-stat '(exists))))
+                  (begin
+                    (unsafe-start-atomic)
+                    (let ((r0_0
+                           (|#%app|
+                            rktio_stat
+                            (unsafe-place-local-ref cell.1)
+                            host-path_0
+                            #f)))
+                      (let ((r_0
+                             (if (vector? r0_0)
+                               r0_0
+                               (begin0
+                                 (|#%app| rktio_stat_to_vector r0_0)
+                                 (|#%app| rktio_free r0_0)))))
+                        (begin
+                          (unsafe-end-atomic)
+                          (if (vector? r0_0)
+                            (raise-filesystem-error
+                             'file-or-directory-stat
+                             r_0
+                             (if host-path_0
+                               (let ((app_0
+                                      (string-append
+                                       "error obtaining identity for path\n"
+                                       "  path: ~a")))
+                                 (1/format app_0 (host-> host-path_0)))
+                               (1/format
+                                (string-append
+                                 "error obtaining identity for port\n"
+                                 "  port: ~v")
+                                #f)))
+                            (let ((app_0 (vector-ref r_0 0)))
+                              (let ((app_1 (vector-ref r_0 1)))
+                                (let ((app_2 (vector-ref r_0 3)))
+                                  (let ((app_3 (vector-ref r_0 4)))
+                                    (let ((app_4 (vector-ref r_0 5)))
+                                      (hash
+                                       'device-id
+                                       app_0
+                                       'inode
+                                       app_1
+                                       'hardlink-count
+                                       app_2
+                                       'user-id
+                                       app_3
+                                       'group-id
+                                       app_4
+                                       'size
+                                       (vector-ref r_0 6)))))))))))))))))))
+    (|#%name|
+     file-or-directory-stat
+     (case-lambda
+      ((p_0) (begin (file-or-directory-stat_0 p_0 #f)))
+      ((p_0 as-link?9_0) (file-or-directory-stat_0 p_0 as-link?9_0))))))
 (define 1/file-or-directory-identity
   (let ((file-or-directory-identity_0
          (|#%name|

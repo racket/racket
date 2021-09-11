@@ -715,8 +715,12 @@ rktio_stat_t *rktio_stat(rktio_t *rktio, rktio_const_string_t path, rktio_bool_t
   if (stat_result) {
     /* TODO: error handling, including clean-up if necessary */
   } else {
-    rktio_stat_buf->dev = stat_buf->st_dev;
+    rktio_stat_buf->device_id = stat_buf->st_dev;
     rktio_stat_buf->inode = stat_buf->st_ino;
+    rktio_stat_buf->mode = stat_buf->st_mode;
+    rktio_stat_buf->hardlink_count = stat_buf->st_nlink;
+    rktio_stat_buf->user_id = stat_buf->st_uid;
+    rktio_stat_buf->group_id = stat_buf->st_gid;
     rktio_stat_buf->size = stat_buf->st_size;
   }
 
