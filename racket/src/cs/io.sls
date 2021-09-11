@@ -213,8 +213,12 @@
     (define (rktio_stat_to_vector p)
       (let ([p (make-ftype-pointer rktio_stat_t (ptr->address p))])
         (vector
-         (ftype-ref rktio_stat_t (dev) p)
+         (ftype-ref rktio_stat_t (device_id) p)
          (ftype-ref rktio_stat_t (inode) p)
+         (ftype-ref rktio_stat_t (mode) p)
+         (ftype-ref rktio_stat_t (hardlink_count) p)
+         (ftype-ref rktio_stat_t (user_id) p)
+         (ftype-ref rktio_stat_t (group_id) p)
          (ftype-ref rktio_stat_t (size) p))))
 
     (define (rktio_identity_to_vector p)

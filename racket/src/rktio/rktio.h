@@ -880,7 +880,7 @@ RKTIO_EXTERN rktio_ok_t rktio_set_file_modify_seconds(rktio_t *rktio, rktio_cons
 
 typedef struct rktio_stat_t {
   /* TODO: Currently limited for testing */
-  intptr_t dev, inode, size;
+  intptr_t device_id, inode, mode, hardlink_count, user_id, group_id, size;
 } rktio_stat_t;
 
 RKTIO_EXTERN rktio_stat_t *rktio_stat(rktio_t *rktio, rktio_const_string_t path, rktio_bool_t follow_links);
