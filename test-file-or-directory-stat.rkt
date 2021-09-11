@@ -3,6 +3,7 @@
 (module+ test
   (require
     racket/file
+    racket/math
     rackunit
     rackunit/text-ui)
 
@@ -18,7 +19,8 @@
         ; raises an exception.
         (delete-file temp-file-path)
         (check-equal? (hash-ref stat-result 'size) (string-length TEST-STRING))
-        (check-pred positive? (hash-ref stat-result 'inode))
-        (check-pred positive? (hash-ref stat-result 'device-id)))
+        (define (positive-fixnum? n) (and (positive-integer? n) (fixnum? n)))
+        (check-pred positive-fixnum? (hash-ref stat-result 'inode))
+        (check-pred positive-fixnum? (hash-ref stat-result 'device-id)))
   ))
 )
