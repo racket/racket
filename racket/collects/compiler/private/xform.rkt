@@ -1812,17 +1812,24 @@
                         (loop (cdr e))]
                        [else #f]))))))
 
+	;; also skips MsVC compiler pragmas
 	(define (skip-declspec-align e)
-	  (if (and (pair? e)
-		   (eq? '__declspec (tok-n (car e)))
-		   (parens? (cadr e))
-		   (let ([l (seq->list (seq-in (cadr e)))])
-		     (and (= 2 (length l))
-			  (eq? 'align (tok-n (car l)))
-			  (parens? (cadr l)))))
-	      ;; Drop __declspec
-	      (cddr e)
-	      ;; Nothing to drop
+	  (let ([e (skip-compiler-pragmas e)])
+	    (if (and (pair? e)
+		     (eq? '__declspec (tok-n (car e)))
+		     (parens? (cadr e))
+		     (let ([l (seq->list (seq-in (cadr e)))])
+		       (and (= 2 (length l))
+			    (memq (tok-n (car l)) '(align no_init_all))
+			    (parens? (cadr l)))))
+		;; Drop __declspec
+		(skip-compiler-pragmas (cddr e))
+		;; Nothing [else] to drop
+		e)))
+
+	(define (skip-compiler-pragmas e)
+	  (if (compiler-pragma? e)
+	      (skip-compiler-pragmas (cddr e))
 	      e))
 
         (define (struct-decl? e)
@@ -4120,9 +4127,13 @@
                          (pragma-s (car e))
                          (pragma-file (car e)) (pragma-line (car e)))])]
               [(compiler-pragma? e)
-               (unless (null? result)
-                 (error 'pragma "unexpected MSVC compiler pragma: ~e" e))
-               (values (list (car e) (cadr e)) (cddr e))]
+               (cond
+		[(null? result)
+		 (values (list (car e) (cadr e)) (cddr e))]
+		[(memq first '(typedef struct))
+		 (loop (cddr e) (list* (cadr e) (car e) result) first second)]
+		[else
+		 (error 'pragma "unexpected MSVC compiler pragma: ~e" e)])]
               [(eq? semi (tok-n (car e)))
                (values (reverse (cons (car e) result)) (cdr e))]
               [(and (eq? '|,| (tok-n (car e))) comma-sep?)
