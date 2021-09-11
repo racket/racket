@@ -87,7 +87,7 @@
                 (1/file-or-directory-modify-seconds
                  file-or-directory-modify-seconds)
                 (1/file-or-directory-permissions file-or-directory-permissions)
-                (file-or-directory-stat file-or-directory-stat)
+                (1/file-or-directory-stat file-or-directory-stat)
                 (1/file-or-directory-type file-or-directory-type)
                 (1/file-position file-position)
                 (1/file-position* file-position*)
