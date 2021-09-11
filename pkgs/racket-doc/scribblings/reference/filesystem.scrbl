@@ -566,8 +566,6 @@ Notes:
 @itemlist[
  @item{@racketvalfont{'device-id} : device id}
  @item{@racketvalfont{'inode} : inode number}
- @item{@racketvalfont{'user-id} : user id}
- @item{@racketvalfont{'group-id} : group id}
  @item{@racketvalfont{'permissions} : permissions as returned by
    @racket[file-or-directory-permissions]}
  @item{@racketvalfont{'group-id-bit?} : whether the filesystem entry has the
