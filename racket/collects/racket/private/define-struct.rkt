@@ -89,7 +89,7 @@
                          'constructor-for
                          (syntax-local-introduce #'self))
         alias-of (syntax-local-introduce #'self))]
-      [_ (transfer-srcloc orig stx)]))
+      [_ (raise-syntax-error #f "bad syntax" stx)]))
   
   (define-values-for-syntax (make-self-ctor-struct-info)
     (letrec-values ([(struct: make- ? ref set!)

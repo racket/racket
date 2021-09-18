@@ -491,6 +491,11 @@
 
 (struct-syntax-test 'define-struct)
 
+;; test using the transformer binding incorrectly
+(syntax-test #'(let ()
+                 (define-struct a ())
+                 (a . b)))
+
 (syntax-test #'(define-struct a (b c) #:transparent #:inspector #f))
 (syntax-test #'(define-struct a (b c) #:transparent #:prefab))
 (syntax-test #'(define-struct a (b c) #:prefab #:guard 10))
