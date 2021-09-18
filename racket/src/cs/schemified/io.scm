@@ -29703,24 +29703,63 @@
                                  "error obtaining identity for port\n"
                                  "  port: ~v")
                                 #f)))
-                            (let ((app_0 (vector-ref r_0 0)))
-                              (let ((app_1 (vector-ref r_0 1)))
-                                (let ((app_2 (vector-ref r_0 3)))
-                                  (let ((app_3 (vector-ref r_0 4)))
-                                    (let ((app_4 (vector-ref r_0 5)))
-                                      (hash
-                                       'device-id
-                                       app_0
-                                       'inode
-                                       app_1
-                                       'hardlink-count
-                                       app_2
-                                       'user-id
-                                       app_3
-                                       'group-id
-                                       app_4
-                                       'size
-                                       (vector-ref r_0 6)))))))))))))))))))
+                            (let ((combined-nanoseconds_0
+                                   (|#%name|
+                                    combined-nanoseconds
+                                    (lambda (seconds-index_0)
+                                      (begin
+                                        (let ((app_0
+                                               (*
+                                                1000000000
+                                                (vector-ref
+                                                 r_0
+                                                 seconds-index_0))))
+                                          (+
+                                           app_0
+                                           (vector-ref
+                                            r_0
+                                            (add1 seconds-index_0)))))))))
+                              (let ((app_0 (vector-ref r_0 0)))
+                                (let ((app_1 (vector-ref r_0 1)))
+                                  (let ((app_2 (vector-ref r_0 3)))
+                                    (let ((app_3 (vector-ref r_0 4)))
+                                      (let ((app_4 (vector-ref r_0 5)))
+                                        (let ((app_5 (vector-ref r_0 6)))
+                                          (let ((app_6 (vector-ref r_0 7)))
+                                            (let ((app_7
+                                                   (combined-nanoseconds_0 7)))
+                                              (let ((app_8 (vector-ref r_0 9)))
+                                                (let ((app_9
+                                                       (combined-nanoseconds_0
+                                                        9)))
+                                                  (let ((app_10
+                                                         (vector-ref r_0 11)))
+                                                    (hash
+                                                     'device-id
+                                                     app_0
+                                                     'inode
+                                                     app_1
+                                                     'hardlink-count
+                                                     app_2
+                                                     'user-id
+                                                     app_3
+                                                     'group-id
+                                                     app_4
+                                                     'size
+                                                     app_5
+                                                     'access-time-seconds
+                                                     app_6
+                                                     'access-time-nanoseconds
+                                                     app_7
+                                                     'modification-time-seconds
+                                                     app_8
+                                                     'modification-time-nanoseconds
+                                                     app_9
+                                                     'change-time-seconds
+                                                     app_10
+                                                     'change-time-nanoseconds
+                                                     (combined-nanoseconds_0
+                                                      11))))))))))))))))))))))))))
     (|#%name|
      file-or-directory-stat
      (case-lambda
