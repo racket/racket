@@ -17,7 +17,7 @@
          racket/runtime-path
          syntax/location
          setup/path-to-relative
-         (only-in setup/dirs find-doc-dir)
+         (only-in setup/dirs find-doc-dir find-user-doc-dir)
          "utils.rkt"
          (for-syntax racket/base)
          (for-syntax racket/runtime-path)
@@ -46,6 +46,23 @@
   (register-external-file search-merge-script)
   (register-external-file search-context-page))
 
+;; Build the URL representing the file that paths points to.
+;; The paths are like the arguments of build-path, except that
+;; the base directory is (find-doc-dir).
+;; If #:relative? is false (this is the default), the URL is absolute.
+;; Otherwise, the URL is relative to (find-user-doc-dir).
+(define (build-doc-url #:relative? [relative? #f] . paths)
+  (cond
+    [(not relative?)
+     (url->string
+      (path->url
+       (apply build-path (find-doc-dir) paths)))]
+    [else
+     (relative-path->relative-url-string
+      (find-relative-path
+       (build-path (find-user-doc-dir) "search")
+       (apply build-path (find-doc-dir) paths)))]))
+
 (define (quote-string val)
   (define (hex4 ch)
     (let ([s (number->string (char->integer (string-ref ch 0)) 16)])
@@ -73,7 +90,7 @@
   ;; This function does the url compacting.
   (define main-url ; (make sure that it terminates with a slash)
     (if user-dir?
-      (regexp-replace #rx"/*$" (url->string (path->url (find-doc-dir))) "/")
+      (regexp-replace #rx"/*$" (build-doc-url #:relative? #t) "/")
       "../"))
   (define compact-url
     (let ([rx (regexp (string-append "^" (regexp-quote main-url)))])
@@ -241,9 +258,8 @@
      plain
      (append
       (if user-dir?
-          (list (script-ref (url->string
-                             (path->url
-                              (build-path (find-doc-dir) "search" "plt-index.js")))))
+          (list (script-ref (build-doc-url "search" "plt-index.js"
+                                           #:relative? #t)))
           null)
       (list
        (script-ref "plt-index.js"
