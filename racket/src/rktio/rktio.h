@@ -81,6 +81,7 @@ Thread and signal conventions:
 
 */
      
+#include <time.h>
 #include "rktio_config.h"
 
 #ifndef RKTIO_EXTERN
@@ -880,7 +881,11 @@ RKTIO_EXTERN rktio_ok_t rktio_set_file_modify_seconds(rktio_t *rktio, rktio_cons
 
 typedef struct rktio_stat_t {
   /* TODO: Currently limited for testing */
-  intptr_t device_id, inode, mode, hardlink_count, user_id, group_id, size;
+  /* Eventually, this should use `int64_t`, available in C99 and up */
+  uintptr_t device_id, inode, mode, hardlink_count, user_id, group_id, size,
+            access_time_seconds, access_time_nanoseconds,
+            modification_time_seconds, modification_time_nanoseconds,
+            change_time_seconds, change_time_nanoseconds;
 } rktio_stat_t;
 
 RKTIO_EXTERN rktio_stat_t *rktio_stat(rktio_t *rktio, rktio_const_string_t path, rktio_bool_t follow_links);

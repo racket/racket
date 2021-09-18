@@ -305,6 +305,7 @@
      (raise-filesystem-error who
                              r
                              (if host-path
+                                 ; TODO: Adapt error messages.
                                  (format (string-append
                                           "error obtaining identity for path\n"
                                           "  path: ~a")
@@ -316,13 +317,25 @@
                                          ; Used to be `port`, but support this later.
                                          #f)))]
     [else
+     ; The nanosecond struct fields are only the fractional seconds part, i. e.
+     ; they're below 1_000_000_000. Thus combine them with the seconds parts to
+     ; get the nanoseconds including the whole seconds.
+     (define (combined-nanoseconds seconds-index)
+       (+ (* #e1e9 (vector-ref r seconds-index))
+          (vector-ref r (add1 seconds-index))))
      (hash 'device-id (vector-ref r 0)
            'inode (vector-ref r 1)
-           ; TODO: Convert mode to individual key/values (see docs).
+           ; TODO: Convert mode (index 2) to individual key/values (see docs).
            'hardlink-count (vector-ref r 3)
            'user-id (vector-ref r 4)
            'group-id (vector-ref r 5)
-           'size (vector-ref r 6))]))
+           'size (vector-ref r 6)
+           'access-time-seconds (vector-ref r 7)
+           'access-time-nanoseconds (combined-nanoseconds 7)
+           'modification-time-seconds (vector-ref r 9)
+           'modification-time-nanoseconds (combined-nanoseconds 9)
+           'change-time-seconds (vector-ref r 11)
+           'change-time-nanoseconds (combined-nanoseconds 11))]))
 
 (define/who (file-or-directory-identity p [as-link? #f])
   (check who path-string? p)
