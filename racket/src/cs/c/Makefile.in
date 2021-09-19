@@ -332,11 +332,13 @@ gracketcs@MINGW@:
 	$(MAKE) GRacketCS.exe
 
 RKT_DLL = libracketcsxxxxxxx.dll
+RAW_RKT_DLL = libracketcsxxx_RAW.dll
+DLL_REWRITES = ++rewrite $(RAW_RKT_DLL) $(RKT_DLL)
 EXE_DESTS = ++exe raw_racketcs.exe RacketCS.exe ++exe raw_gracketcs.exe GRacketCS.exe
 V_BOOTS = petite-v.boot scheme-v.boot racket-v.boot
 
-RacketCS.exe GRacketCS.exe $(RKT_DLL): raw_libracketcs.dll raw_gracketcs.exe raw_racketcs.exe $(EMBED_DEPS) $(V_BOOTS)
-	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt --target $(TARGET_MACH) @BOOT_COMPRESS_COMP@ $(EXE_DESTS) raw_libracketcs.dll $(RKT_DLL) $(V_BOOTS)
+RacketCS.exe GRacketCS.exe $(RKT_DLL): $(RAW_RKT_DLL) raw_gracketcs.exe raw_racketcs.exe $(EMBED_DEPS) $(V_BOOTS)
+	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt --target $(TARGET_MACH) $(DLL_REWRITES) @BOOT_COMPRESS_COMP@ $(EXE_DESTS) $(RAW_RKT_DLL) $(RKT_DLL) $(V_BOOTS)
 
 raw_racketcs.exe: main.o MemoryModule.o rres.o
 	$(CC) $(CFLAGS) -o raw_racketcs.exe main.o MemoryModule.o rres.o $(LDFLAGS)
@@ -344,8 +346,8 @@ raw_racketcs.exe: main.o MemoryModule.o rres.o
 raw_gracketcs.exe: grmain.o MemoryModule.o grres.o
 	$(CC) $(CFLAGS) -mwindows -o raw_gracketcs.exe grmain.o MemoryModule.o grres.o $(LDFLAGS)
 
-raw_libracketcs.dll: boot.o $(BOOT_OBJ_DEPS) libres.o
-	$(CC) $(CFLAGS) --shared -o raw_libracketcs.dll $(BOOT_OBJS) libres.o $(LDFLAGS) rktio/librktio.a -static-libgcc $(LIBS)
+$(RAW_RKT_DLL): boot.o $(BOOT_OBJ_DEPS) libres.o
+	$(CC) $(CFLAGS) --shared -o $(RAW_RKT_DLL) $(BOOT_OBJS) libres.o $(LDFLAGS) rktio/librktio.a -static-libgcc $(LIBS)
 
 MemoryModule.o: $(srcdir)/../../start/MemoryModule.c
 	$(CC) -c $(CFLAGS) -o MemoryModule.o $(srcdir)/../../start/MemoryModule.c
