@@ -531,7 +531,7 @@ system-install:
 include-install:
 	$(ICP) $(srcdir)/api.h "$(DESTDIR)$(includepltdir)/racketcs.h"
 	$(ICP) $(srcdir)/boot.h "$(DESTDIR)$(includepltdir)/racketcsboot.h"
-	$(ICP) $(SCHEME_INC)/scheme.h "$(DESTDIR)$(includepltdir)/chezscheme.h"
+	$(ICP) $(SCHEME_TARGET_INC)/scheme.h "$(DESTDIR)$(includepltdir)/chezscheme.h"
 
 common-install-libs:
 	$(ICP_LIB) libracketcs.a "$(DESTDIR)$(libdir)/libracketcs.a"
