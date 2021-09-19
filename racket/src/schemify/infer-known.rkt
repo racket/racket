@@ -80,6 +80,9 @@
                   (known-copy rhs)]
                  [else known]))]
          [defn a-known-constant]
+         [(hash-ref imports u-rhs #f)
+          ;; imported, but nothing known about it => could be mutable
+          a-known-constant]
          [else (known-copy rhs)])]
       [(parameter-result? rhs prim-knowns knowns mutated)
        (known-procedure 3)]

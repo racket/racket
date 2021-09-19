@@ -7148,5 +7148,24 @@
 (test '(1 2) dynamic-require ''check-inline-of-set!-expression 'result)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Regression test for schemify cross-module inlining
+
+(module modifies-its-exported-variable racket/base
+  (provide (all-defined-out))
+  (define X '())
+  (define (change-X!)
+    (set! X (cons 'shouldnt-be X))))
+
+(module uses-imported-variable-before-modify racket/base
+  (require 'modifies-its-exported-variable)
+  (provide old-X)
+  (define old-X
+    (let ([copy-of-X X])
+      (change-X!)
+      copy-of-X)))
+
+(test '() dynamic-require ''uses-imported-variable-before-modify 'old-X)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

@@ -14242,7 +14242,9 @@
                                        c2_0)))
                                  (if defn8_0
                                    a-known-constant
-                                   (known-copy rhs_0))))))))
+                                   (if (hash-ref imports12_0 u-rhs_0 #f)
+                                     a-known-constant
+                                     (known-copy rhs_0)))))))))
                      (if (parameter-result?
                           rhs_0
                           prim-knowns11_0
