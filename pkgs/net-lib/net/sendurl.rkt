@@ -3,11 +3,17 @@
 
 #lang racket/base
 
-(require racket/system racket/file racket/promise racket/port
-         racket/contract racket/promise json)
+(require racket/system racket/file racket/port
+         racket/contract
+         "sendurl/preferences.rkt"
+         (submod "sendurl/preferences.rkt" internals))
 
 (provide send-url send-url/file send-url/contents
+
+         ;; Reproviding bindings from sendurl/preferences for backwards compatibility
          browser-list external-browser
+         ;; A new config parameter: allowing trampoline or not
+         external-browser-trampoline
          ;; Obsolete definitions
          unix-browser-list browser-preference?
          (contract-out
@@ -18,62 +24,6 @@
 
 ;; Will we open a new browser window (where possible) by default?
 (define separate-by-default? #t)
-
-;; all possible unix browsers, filtered later to just existing executables
-;; order matters: the default will be the first of these that is found
-(define all-browsers/unix
-  '(;; general purpose launchers
-    xdg-open
-    ;; default browser launchers
-    sensible-browser x-www-browser
-    ;; common browsers
-    firefox chromium-browser google-chrome opera seamonkey epiphany
-    ))
-(define all-browsers/win '(cmd.exe)) ; proxy for a basic functioning Windows system
-(define all-browsers/mac '(open))
-
-;; by-need filtering of found executables
-(define existing-browsers->exes
-  (delay/sync
-    (filter values
-            (map (lambda (b)
-                   (let ([exe (find-executable-path (symbol->string b) #f)])
-                     (and exe (cons b exe))))
-                 (case (system-type)
-                   [(macosx)  all-browsers/mac]
-                   [(windows) all-browsers/win]
-                   [(unix)    all-browsers/unix]
-                   [else (error 'send-url
-                                "don't know how to open URL on platform: ~s" (system-type))])))))
-
-(define existing-browsers
-  (delay/sync (map car (force existing-browsers->exes))))
-(define-syntax browser-list
-  (syntax-id-rules (set!)
-    [(_ . xs) ((force existing-browsers) . xs)]
-    [(set! _ . xs) (error 'browser-list "cannot be mutated")]
-    [_ (force existing-browsers)]))
-
-
-;; Backwards compatibility
-
-(define unix-browser-list browser-list)
-
-;; : any -> bool
-(define (custom-browser? x)
-  (and (pair? x) (string? (car x)) (string? (cdr x))))
-
-;; : any -> bool
-(define (browser-preference? x)
-  (or (not x) (memq x browser-list) (custom-browser? x) (procedure? x)))
-
-(define external-browser
-  (make-parameter
-   #f ; #f means "consult the preferences file"
-   (lambda (x)
-     (if (browser-preference? x)
-       x
-       (error 'external-browser "~e is not a valid browser preference" x)))))
 
 (define (send-url/mac url #:browser [browser #f])
   (let ([browser-command (car browser-list)])
@@ -102,7 +52,8 @@
   (let ([url-str (if escape? (escape-url url-str) url-str)])
     (if (procedure? (external-browser))
       ((external-browser) url-str)
-      (if (regexp-match? #rx"[#?]" url-str)
+      (if (and (regexp-match? #rx"[#?]" url-str)
+               (external-browser-allow-trampoline?))
           (send-url/trampoline url-str separate-window?)
           (send-url/simple url-str separate-window?))))
   (void))
@@ -160,17 +111,10 @@
 (define (send-url/simple url [separate-window? separate-by-default?])
   ;; in cases where a browser was uninstalled, we might get a preference that
   ;; is no longer valid, this will turn it back to #f
-  (define (try pref)
-    (if (symbol? pref)
-      (if (memq pref browser-list) pref #f)
-      pref))
   (define browser
-    (or (try (external-browser))
-        (try (get-preference 'external-browser))
-        ;; no preference -- chose the first one from the filtered list
-        (and (pair? browser-list) (car browser-list))))
+    (available-external-browser))
   (define exe
-    (cond [(assq browser (force existing-browsers->exes)) => cdr]
+    (cond [(existing-browsers->exes browser) => cdr]
           [else #f]))
   (define (simple) (browser-run exe url))
   (define (w/arg a) (browser-run exe a url))
