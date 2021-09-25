@@ -44,14 +44,16 @@
                                         define-form  ;; Identifier
                                         default-make-fail ;; Identifier
                                         make-c-id)  ;; Identifier/#'#f
-    ;; do-make-c-id : Identifier -> Identifier
-    (define (do-make-c-id id)
-      (cond [(identifier? make-c-id)
-             (define result ((syntax-local-value make-c-id) id))
-             (unless (identifier? result)
-               (raise-syntax-error #f "invalid make-c-id result" make-c-id))
-             result]
-            [else id]))
+    (define-syntax-class c-id-spec #:attributes (c-id-expr)
+      #:literals (unquote)
+      (pattern (unquote c-id-expr:expr))
+      (pattern c-id:id
+               #:with c-id-expr (cond [(identifier? make-c-id)
+                                       (define result ((syntax-local-value make-c-id) #'c-id))
+                                       (unless (identifier? result)
+                                         (raise-syntax-error #f "invalid make-c-id result" make-c-id))
+                                       #`(quote #,result)]
+                                      [else #'(quote c-id)])))
     (with-syntax ([the-ffi-lib  the-ffi-lib]
                   [provide      provide-form]
                   [define-form  define-form]
@@ -59,22 +61,23 @@
       (lambda (stx)
         (syntax-parse stx
           [(_ s-id:id type:expr
-              (~seq (~or (~optional (~seq #:c-id c-id:id)
-                                    #:defaults ([c-id (do-make-c-id #'s-id)])
+              (~seq (~or (~optional (~seq #:c-id c-id)
                                     #:name "#:c-id keyword")
                          (~optional (~seq #:wrap wrapper:expr)
                                     #:defaults ([wrapper #'values])
                                     #:name "#:wrap keyword")
                          (~optional (~or (~seq #:make-fail make-fail:expr)
                                          (~seq #:fail fail:expr))
-                                    #:defaults ([make-fail #'default-make-fail])))
+                                    #:defaults ([make-fail #'default-make-fail]))
+                         (~optional (~seq (~and #:variable var-kw))
+                                    #:name "#:variable keyword"))
                     ...))
-           (with-syntax ([fail (if (attribute fail)
-                                   #'fail
-                                   #'(make-fail 's-id))])
+           #:with :c-id-spec #'(~? c-id s-id)
+           (with-syntax ([fail #'(~? fail (make-fail 's-id))]
+                         [get (if (attribute var-kw) #'make-c-parameter #'get-ffi-obj)])
              (with-syntax ([def (syntax/loc stx
                                   (define-form s-id
-                                    (wrapper (get-ffi-obj 'c-id the-ffi-lib type fail))))])
+                                    (wrapper (get c-id-expr the-ffi-lib type fail))))])
                (if (syntax-e #'provide)
                    (syntax/loc stx
                      (begin
