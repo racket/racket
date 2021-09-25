@@ -807,7 +807,7 @@ Some information that might improve your experience:
 * If you’re done and want to go back to the normal installation for
   <_pkg-name_>, use
 
-    `raco pkg update --catalog <pkg-name>`
+    `raco pkg update --lookup <pkg-name>`
 
 * See Developing Packages with Git for more information about how
   packages are meant to work as Git repositories.
