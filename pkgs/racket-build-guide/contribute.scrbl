@@ -140,7 +140,7 @@ Some information that might improve your experience:
  @item{If you're done and want to go back to the normal installation
        for @nonterm{pkg-name}, use
 
-        @commandline{raco pkg update @DFlag{catalog} @nonterm{pkg-name}}}
+        @commandline{raco pkg update @DFlag{lookup} @nonterm{pkg-name}}}
 
  @item{See @secref["git-workflow" #:doc '(lib
        "pkg/scribblings/pkg.scrbl")] for more information about how
