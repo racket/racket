@@ -174,7 +174,7 @@ Keep in mind that @racket[get-ffi-obj] is an unsafe procedure; see
 
 If the name is not found, and @racket[failure-thunk] is provided, it is
 used to produce a return value.  For example, a failure thunk can be
-provided to report a specific error if an name is not found:
+provided to report a specific error if a name is not found:
 
 @racketblock[
 (define foo
@@ -203,7 +203,8 @@ interface, including Racket callbacks.}
 
 @defproc[(make-c-parameter [objname (or/c string? bytes? symbol?)]
                            [lib (or/c ffi-lib? path-string? #f)]
-                           [type ctype?])
+                           [type ctype?]
+                           [failure-thunk (or/c (-> any) #f) #f])
          (and/c (-> any)
                 (any/c -> void?))]{
 
@@ -216,7 +217,9 @@ code interact through a library value.  Although
 @racket[make-c-parameter] can be used with any time, it is not
 recommended to use this for foreign functions, since each reference
 through the parameter will construct the low-level interface before the
-actual call.}
+actual call.
+
+@history[#:changed "8.4.0.5" @elem{Added @racket[failure-thunk] argument.}]}
 
 
 @defform[(define-c id lib-expr type-expr)]{

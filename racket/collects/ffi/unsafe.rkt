@@ -279,11 +279,19 @@
 ;; Combining the above two in a `define-c' special form which makes a Scheme
 ;; `binding', first a `parameter'-like constructor:
 (provide (protect-out make-c-parameter))
-(define (make-c-parameter name lib type)
-  (let ([obj (ffi-obj (get-ffi-obj-name 'make-c-parameter name)
-                      (get-ffi-lib-internal lib))])
-    (case-lambda [()    (ffi-get  obj type)]
-                 [(new) (ffi-set! obj type new)])))
+(define (make-c-parameter name lib type [failure #f])
+  (let ([name (get-ffi-obj-name 'get-ffi-obj name)]
+        [lib  (get-ffi-lib-internal lib)])
+    (define-values (obj error?)
+      (with-handlers
+        ([exn:fail:filesystem?
+          (lambda (e)
+            (if failure (values (failure) #t) (raise e)))])
+        (values (ffi-obj name lib) #f)))
+    (if error?
+        obj
+        (case-lambda [()    (ffi-get  obj type)]
+                     [(new) (ffi-set! obj type new)]))))
 ;; Then the fake binding syntax, uses the defined identifier to name the
 ;; object:
 (provide (protect-out define-c))
