@@ -672,6 +672,21 @@ XML
 </foo>
 XML
                          )
+       ;; Ensure 'peek works on empty tags when empty-tag-shorthand is a list of symbols
+       ;; in which the empty tag does not appear
+       (parameterize ([empty-tag-shorthand '(p)])
+         (test-indentation 'peek el #<<XML
+<foo>
+  <a></a>
+  <b>1</b>
+  <c>12</c>
+  <d>&sym;</d>
+  <span>&quot;blah&quot;</span>
+  <e>&#42;</e>
+</foo>
+XML
+                         ))
+
        (test-indentation 'scan el #<<XML
 <foo>
   <a />

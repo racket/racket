@@ -131,7 +131,7 @@
         (display " />" out)
         (let ([dent-kids (case dent
                            [(peek)
-                            (if (whitespace-sensitive? (car content))
+                            (if (or (null? content) (whitespace-sensitive? (car content)))
                                 'none
                                 dent)]
                            [(scan)
