@@ -194,7 +194,7 @@ The default style mapping includes mappings for the following symbols,
 so that the output follows popular code-formatting rules:
 
 @racketblock[
-'lambda 'case-lambda
+'lambda 'λ 'case-lambda
 'define 'define-macro 'define-syntax
 'let 'letrec 'let*
 'let-syntax 'letrec-syntax
