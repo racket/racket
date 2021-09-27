@@ -138,6 +138,8 @@ TO DO:
    (c-> ssl-context? string? void?)]
   [ssl-set-server-name-identification-callback!
    (c-> ssl-server-context? (c-> string? (or/c ssl-server-context? #f)) void?)]
+  [ssl-set-server-alpn!
+   (->* [ssl-server-context? (listof alpn-protocol-bytes/c)] [boolean?] void?)]
   [ssl-seal-context!
    (c-> ssl-context? void?)]
   [ssl-default-verify-sources
@@ -403,6 +405,19 @@ TO DO:
                     bs)]
                  [else #f])))
 
+(define-ssl SSL_CTX_set_alpn_select_cb
+  (_fun [ctx : _SSL_CTX*]
+        [cb : (_fun #:in-original-place? #t
+                    [ssl : _SSL*]
+                    [out : _pointer] ;; const unsigned char**
+                    [outlen : _pointer] ;; char *
+                    [in : _pointer]
+                    [inlen : _int]
+                    [arg : _pointer]
+                    -> _int)]
+        [arg : _pointer]
+        -> _int))
+
 (define-cpointer-type _EVP_MD*)
 (define-crypto EVP_sha224 (_fun -> _EVP_MD*/null))
 (define-crypto EVP_sha256 (_fun -> _EVP_MD*/null))
@@ -529,6 +544,7 @@ TO DO:
 (define TLSEXT_NAMETYPE_host_name 0)
 
 (define SSL_TLSEXT_ERR_OK 0)
+(define SSL_TLSEXT_ERR_ALERT_FATAL 2)
 (define SSL_TLSEXT_ERR_NOACK 3)
 
 (define NID_md5 4)
@@ -616,7 +632,9 @@ TO DO:
 
 (define-struct ssl-context (ctx [verify-hostname? #:mutable] [sealed? #:mutable]))
 (define-struct (ssl-client-context ssl-context) ())
-(define-struct (ssl-server-context ssl-context) ([servername-callback #:mutable #:auto]))
+(define-struct (ssl-server-context ssl-context)
+  ([sni-cb #:mutable #:auto]
+   [alpn-cb #:mutable #:auto]))
 
 (define-struct ssl-listener (l mzctx)
   #:property prop:evt (lambda (lst) (wrap-evt (ssl-listener-l lst) 
@@ -933,13 +951,46 @@ TO DO:
 
     ; hold onto cb so that the garbage collector doesn't reclaim
     ; the function that openssl is holding onto.
-    (set-ssl-server-context-servername-callback! ssl-context cb)
+    (set-ssl-server-context-sni-cb! ssl-context cb)
 
     (unless (= (SSL_CTX_callback_ctrl
 		(extract-ctx 'ssl-set-server-name-identification-callback! #t ssl-context)
 		SSL_CTRL_SET_TLSEXT_SERVERNAME_CB
 		cb) 1)
 	    (error 'ssl-set-server-name-identification-callback! "setting server name identification callback failed"))))
+
+(define (ssl-set-server-alpn! ssl-context alpn-protos [allow-no-match? #t])
+  (define server-alpns ;; Hash[Bytes => Nat], lower value is more preferred
+    (for/hash ([alpn (in-list alpn-protos)] [priority (in-naturals)])
+      (values (bytes->immutable-bytes alpn) priority)))
+  (define (cb ssl out outlen in inlen0 arg)
+    (define inlen (max 0 inlen0))
+    (define inbuf (make-bytes inlen))
+    (memcpy inbuf in inlen)
+    (define chosen-offset
+      (let loop ([offset 0] [best-offset #f] [best-priority +inf.0])
+        (cond [(< offset inlen)
+               (define plen (bytes-ref inbuf offset))
+               (cond [(<= (+ offset 1 plen) inlen)
+                      (define alpn (subbytes inbuf (+ offset 1) (+ offset 1 plen)))
+                      (define priority (hash-ref server-alpns alpn #f))
+                      (if (and priority (< priority best-priority))
+                          (loop (+ offset 1 plen) offset priority)
+                          (loop (+ offset 1 plen) best-offset best-priority))]
+                     [else best-offset])]
+              [else best-offset])))
+    (cond [chosen-offset
+           (ptr-set! out _pointer (ptr-add in (+ chosen-offset 1)))
+           (ptr-set! outlen _byte (bytes-ref inbuf chosen-offset))
+           SSL_TLSEXT_ERR_OK]
+          [allow-no-match?
+           SSL_TLSEXT_ERR_NOACK]
+          [else
+           SSL_TLSEXT_ERR_ALERT_FATAL]))
+  (set-ssl-server-context-alpn-cb! ssl-context cb)
+  (let ([ctx (extract-ctx 'ssl-set-server-alpn! #t ssl-context)])
+    (unless (zero? (SSL_CTX_set_alpn_select_cb ctx cb #f))
+      (error 'ssl-set-server-alpn! "setting server ALPN selection callback failed"))))
 
 (define (ssl-set-verify-hostname! ssl-context on?)
   ;; to check not sealed:
@@ -1599,7 +1650,8 @@ TO DO:
                       TLSEXT_NAMETYPE_host_name (string->bytes/latin-1 hostname)))
     (when (pair? alpn)
       (unless (eq? connect/accept 'connect)
-        (error who "ALPN is currently supported only in connect mode"))
+        (error who "#:alpn argument is supported only in connect mode~a"
+               ";\n for accept mode, use `ssl-set-server-alpn!`"))
       (define proto-list
         (apply bytes-append (for/list ([proto (in-list alpn)])
                               (bytes-append (bytes (bytes-length proto)) proto))))

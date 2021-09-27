@@ -482,7 +482,8 @@ If @racket[alpn-protocols] is not empty and @racket[mode] is
 @hyperlink[alpn-url]{ALPN}; see also @racket[ssl-connect] and
 @racket[ssl-get-alpn-selected]. If @racket[alpn-protocols] is not
 empty and @racket[mode] is @racket['accept], an exception
-(@racket[exn:fail]) is raised.
+(@racket[exn:fail]) is raised; use @racket[ssl-set-server-alpn!] to set
+the ALPN protocols for a server context.
 
 @history[#:changed "8.0.0.13" @elem{Added @racket[#:alpn] argument.}]}
 
@@ -766,6 +767,24 @@ using the original server context.
 
 }
 
+@defproc[(ssl-set-server-alpn! [context ssl-server-context?]
+                               [alpn-protocols (listof bytes?)]
+                               [allow-no-match? boolean? #t])
+         void?]{
+
+Sets the @hyperlink[alpn-url]{ALPN} protocols supported by the server
+context. The protocols are listed in order of preference,
+most-preferred first. That is, when a client connects, the server
+selects the first protocol in its @racket[alpn-protocols] that is
+supported by the client. If the client does not use ALPN, then the
+connection is accepted and no protocol is selected. If the client uses
+ALPN but has no protocols in common with the server, then if
+@racket[allow-no-match?] is true, the connection is accepted and no
+protocol is selected; if @racket[allow-no-match?]  is false, then the
+connection is refused.
+
+@history[#:added "8.4.0.5"]}
+
 @; ----------------------------------------------------------------------
 @section[#:tag "peer-verif"]{Peer Verification}
 
@@ -889,16 +908,11 @@ connection is closed), an exception is raised.
 Returns the ALPN protocol selected during negotiation, or @racket[#f]
 if no protocol was selected.
 
-This library currently only supports ALPN for client connections.
-
-According to @hyperlink["https://tools.ietf.org/html/rfc7301"]{RFC
-7301}, if a server does not support any of the protocols proposed by
-the client, it must reject the connection with a
-``no_application_protocol'' alert. In practice, however, some servers
-simply continue without selecting an application protocol (see
-@hyperlink["https://github.com/openssl/openssl/issues/2708"]{this
-OpenSSL bug}, for example), so it is recommended to always check the
-selected protocol after making a connection.
+If a server does not support any of the protocols proposed by a
+client, it might reject the connection or it might accept the
+connection without selecting an application protocol. So it is
+recommended to always check the selected protocol after making a
+connection.
 
 @history[#:added "8.0.0.13"]}
 
