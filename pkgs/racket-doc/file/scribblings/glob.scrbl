@@ -37,6 +37,8 @@ a set of path strings using the following @deftech[#:key "glob-wildcard"]{wildca
 }
 ]
 
+@margin-note{On Windows, wildcards cannot be escaped because @tt{\} is a path separator.}
+
 By default, wildcards will not match files or directories whose name begins
 with a period (aka "dotfiles").  To override, set the parameter
 @racket[glob-capture-dotfiles?] to a non-@racket[#f] value or supply a similar
