@@ -690,12 +690,24 @@
                                        (current-namespace)
                                        (not immediate-eval?))))
 
+(define (discard-line-terminators stx in)
+  (when (not (eof-object? stx))
+    (cond [(eqv? (peek-char in) #\return)
+           (read-char in)
+           (when (eqv? (peek-char in) #\newline)
+             (read-char in))]
+          [(eqv? (peek-char in) #\newline)
+           (read-char in)]
+          [else
+           (void)]))
+  stx)
+
 (define (default-read-interaction src in)
   (unless (input-port? in)
     (raise-argument-error 'default-read-interaction "input-port?" in))
   (parameterize ([read-accept-reader #t]
                  [read-accept-lang #f])
-    (read-syntax src in)))
+    (discard-line-terminators (read-syntax src in) in)))
 
 (define (boot)
   (set! -module-hash-table-table (make-weak-hasheq))

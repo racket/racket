@@ -513,7 +513,23 @@ The default read interaction handler accepts @racket[_src] and
 @racketblock[
 (parameterize ([read-accept-reader #t]
                [read-accept-lang #f])
-  (read-syntax _src _in))
+  (discard-line-terminators (read-syntax _src _in) _in))
+]
+
+where @racket[discard-line-terminators] is defined as
+
+@racketblock[
+(define (discard-line-terminators stx in)
+  (when (not (eof-object? stx))
+    (cond [(eqv? (peek-char in) #\return)
+           (read-char in)
+           (when (eqv? (peek-char in) #\newline)
+             (read-char in))]
+          [(eqv? (peek-char in) #\newline)
+           (read-char in)]
+          [else
+           (void)]))
+  stx)
 ]}
 
 

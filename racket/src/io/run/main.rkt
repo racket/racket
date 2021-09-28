@@ -40,11 +40,23 @@
                     p)
                   'current-print))
 
+(define/who (discard-line-terminators stx in)
+  (when (not (eof-object? stx))
+    (cond [(eqv? (peek-char in) #\return)
+           (read-char in)
+           (when (eqv? (peek-char in) #\newline)
+             (read-char in))]
+          [(eqv? (peek-char in) #\newline)
+           (read-char in)]
+          [else
+           (void)]))
+  stx)
+
 (define/who current-read-interaction
   (make-parameter (lambda (src in)
                     (parameterize ([installed-read-accept-reader #t]
                                    [installed-read-accept-lang #f])
-                      (installed-read-syntax src in)))
+                      (discard-line-terminators (installed-read-syntax src in) in)))
                   (lambda (p)
                     (check who (procedure-arity-includes/c 2) p)
                     p)
