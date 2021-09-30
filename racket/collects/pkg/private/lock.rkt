@@ -38,9 +38,9 @@
       (t)
       (let ([d (pkg-dir #f)])
         (unless read-only? (make-directory* d))
-        (if (directory-exists? d)
-            ;; If the directory exists, assume that a lock file is
-            ;; available or creatable:
+        (if (and (directory-exists? d)
+                 (or (not read-only?)
+                     (file-exists? (pkg-db-file))))
             (call-with-file-lock/timeout
              #f 
              mode
