@@ -584,14 +584,15 @@ Notes:
  @item{@racketvalfont{'device-id-for-special-file} : device id (if special file)}
  @item{@racketvalfont{'size} : size of file or link in bytes}
  @item{@racketvalfont{'access-time-seconds} : last access time in seconds since the epoch}
- @item{@racketvalfont{'modification-time-seconds} : last modification time in
+ @item{@racketvalfont{'modify-time-seconds} : last modification time in
    seconds since the epoch}
- @item{@racketvalfont{'change-time-seconds} : change time in seconds since the epoch}
+ @item{@racketvalfont{'change-time-seconds} : last change time in seconds since
+   the epoch}
  @item{@racketvalfont{'access-time-nanoseconds} : last access time in
    nanoseconds since the epoch}
- @item{@racketvalfont{'modification-time-nanoseconds} : last modification time in
+ @item{@racketvalfont{'modify-time-nanoseconds} : last modification time in
    nanoseconds since the epoch}
- @item{@racketvalfont{'change-time-nanoseconds} : change time in nanoseconds
+ @item{@racketvalfont{'change-time-nanoseconds} : last change time in nanoseconds
    since the epoch}
 ]
 

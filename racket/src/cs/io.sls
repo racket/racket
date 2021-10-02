@@ -222,8 +222,8 @@
          (ftype-ref rktio_stat_t (size) p)
          (ftype-ref rktio_stat_t (access_time_seconds) p)
          (ftype-ref rktio_stat_t (access_time_nanoseconds) p)
-         (ftype-ref rktio_stat_t (modification_time_seconds) p)
-         (ftype-ref rktio_stat_t (modification_time_nanoseconds) p)
+         (ftype-ref rktio_stat_t (modify_time_seconds) p)
+         (ftype-ref rktio_stat_t (modify_time_nanoseconds) p)
          (ftype-ref rktio_stat_t (change_time_seconds) p)
          (ftype-ref rktio_stat_t (change_time_nanoseconds) p))))
 

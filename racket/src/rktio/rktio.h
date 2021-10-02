@@ -884,7 +884,7 @@ typedef struct rktio_stat_t {
   /* Eventually, this should use `int64_t`, available in C99 and up */
   uintptr_t device_id, inode, mode, hardlink_count, user_id, group_id, size,
             access_time_seconds, access_time_nanoseconds,
-            modification_time_seconds, modification_time_nanoseconds,
+            modify_time_seconds, modify_time_nanoseconds,
             change_time_seconds, change_time_nanoseconds;
 } rktio_stat_t;
 

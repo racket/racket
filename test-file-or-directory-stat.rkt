@@ -21,18 +21,18 @@
         (check-pred positive-fixnum? (stat-ref 'inode))
         (check-pred positive-fixnum? (stat-ref 'device-id))
         ; Check timestamps.
-        (check-equal? (quotient (stat-ref 'modification-time-nanoseconds) #e1e9)
-                      (stat-ref 'modification-time-seconds))
+        (check-equal? (quotient (stat-ref 'modify-time-nanoseconds) #e1e9)
+                      (stat-ref 'modify-time-seconds))
         (check-equal? (quotient (stat-ref 'access-time-nanoseconds) #e1e9)
                       (stat-ref 'access-time-seconds))
         (check-equal? (quotient (stat-ref 'change-time-nanoseconds) #e1e9)
                       (stat-ref 'change-time-seconds))
-        (check-equal? (stat-ref 'modification-time-seconds)
+        (check-equal? (stat-ref 'modify-time-seconds)
                       (file-or-directory-modify-seconds temp-file-path))
         (check-equal? (stat-ref 'change-time-nanoseconds)
-                      (stat-ref 'modification-time-nanoseconds))
+                      (stat-ref 'modify-time-nanoseconds))
         (check-true (>= (stat-ref 'access-time-nanoseconds)
-                        (stat-ref 'modification-time-nanoseconds)))
+                        (stat-ref 'modify-time-nanoseconds)))
         ; TODO: Make sure the file is removed even if `file-or-directory-stat`
         ; raises an exception.
         (delete-file temp-file-path))

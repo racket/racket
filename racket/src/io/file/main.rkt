@@ -332,8 +332,8 @@
            'size (vector-ref r 6)
            'access-time-seconds (vector-ref r 7)
            'access-time-nanoseconds (combined-nanoseconds 7)
-           'modification-time-seconds (vector-ref r 9)
-           'modification-time-nanoseconds (combined-nanoseconds 9)
+           'modify-time-seconds (vector-ref r 9)
+           'modify-time-nanoseconds (combined-nanoseconds 9)
            'change-time-seconds (vector-ref r 11)
            'change-time-nanoseconds (combined-nanoseconds 11))]))
 
