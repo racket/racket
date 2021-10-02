@@ -187,8 +187,8 @@
   (uintptr_t size)
   (uintptr_t access_time_seconds)
   (uintptr_t access_time_nanoseconds)
-  (uintptr_t modification_time_seconds)
-  (uintptr_t modification_time_nanoseconds)
+  (uintptr_t modify_time_seconds)
+  (uintptr_t modify_time_nanoseconds)
   (uintptr_t change_time_seconds)
   (uintptr_t change_time_nanoseconds)))
 (define-struct-type

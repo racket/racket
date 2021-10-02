@@ -726,8 +726,8 @@ rktio_stat_t *rktio_stat(rktio_t *rktio, rktio_const_string_t path, rktio_bool_t
        (The value is always lower than 1_000_000_000.) */
     rktio_stat_buf->access_time_seconds = stat_buf->st_atim.tv_sec;
     rktio_stat_buf->access_time_nanoseconds = stat_buf->st_atim.tv_nsec;
-    rktio_stat_buf->modification_time_seconds = stat_buf->st_mtim.tv_sec;
-    rktio_stat_buf->modification_time_nanoseconds = stat_buf->st_mtim.tv_nsec;
+    rktio_stat_buf->modify_time_seconds = stat_buf->st_mtim.tv_sec;
+    rktio_stat_buf->modify_time_nanoseconds = stat_buf->st_mtim.tv_nsec;
     rktio_stat_buf->change_time_seconds = stat_buf->st_ctim.tv_sec;
     rktio_stat_buf->change_time_nanoseconds = stat_buf->st_ctim.tv_nsec;
   }

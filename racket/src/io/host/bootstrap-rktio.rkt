@@ -116,8 +116,8 @@
      (Rrktio_stat_t-size p)
      (Rrktio_stat_t-access_time_seconds p)
      (Rrktio_stat_t-access_time_nanoseconds p)
-     (Rrktio_stat_t-modification_time_seconds p)
-     (Rrktio_stat_t-modification_time_nanoseconds p)
+     (Rrktio_stat_t-modify_time_seconds p)
+     (Rrktio_stat_t-modify_time_nanoseconds p)
      (Rrktio_stat_t-change_time_seconds p)
      (Rrktio_stat_t-change_time_nanoseconds p))))
 
