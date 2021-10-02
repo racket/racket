@@ -470,7 +470,9 @@ Scheme_Object *scheme_make_sized_offset_path(char *chars, intptr_t d, intptr_t l
   return scheme_make_sized_offset_kind_path(chars, d, len, copy, SCHEME_PLATFORM_PATH_KIND);
 }
 
-# define IS_SPEC_CHAR(x) (IS_A_DOS_SEP(x) || ((x) == '"') || ((x) == '|') || ((x) == ':') || ((x) == '<') || ((x) == '>'))
+# define IS_SPEC_CHAR(x) (IS_A_DOS_SEP(x) || ((x) == '"') || ((x) == '|') \
+                          || ((x) == ':') || ((x) == '<') || ((x) == '>') \
+                          || ((x) == '?') || ((x) == '*'))
 static int is_special_filename(const char *_f, int offset, int len, int not_nul, int immediate);
 
 static Scheme_Object *make_protected_sized_offset_path(int protect, char *chars, 

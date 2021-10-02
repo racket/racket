@@ -24458,7 +24458,17 @@
                                                        (eqv? b_0 60)))
                                                   (if or-part_4
                                                     or-part_4
-                                                    (eqv? b_0 62)))))))))))
+                                                    (let ((or-part_5
+                                                           (eqv? b_0 62)))
+                                                      (if or-part_5
+                                                        or-part_5
+                                                        (let ((or-part_6
+                                                               (eqv? b_0 63)))
+                                                          (if or-part_6
+                                                            or-part_6
+                                                            (eqv?
+                                                             b_0
+                                                             42)))))))))))))))
                               #t
                               (loop_0 i_0 #f)))))))))))
              (loop_0 len_0 #t))))))))
