@@ -18,7 +18,7 @@
          
          module-path-index?
          module-path-index-resolve
-         module-path-index-unresolve
+         module-path-index-fresh
          module-path-index-join
          module-path-index-split
          module-path-index-submodule
@@ -220,12 +220,9 @@
         (set-module-path-index-resolved! mpi mod-name)
         mod-name)))
 
-(define (module-path-index-unresolve mpi)
-  (cond
-   [(module-path-index-resolved mpi)
-    (define-values (path base) (module-path-index-split mpi))
-    (module-path-index-join path base)]
-   [else mpi]))
+(define (module-path-index-fresh mpi)
+  (define-values (path base) (module-path-index-split mpi))
+  (module-path-index-join path base))
 
 (define/who (module-path-index-join mod-path base [submod #f])
   (check who #:or-false module-path? mod-path)

@@ -118,7 +118,7 @@
                      #:get-all-variables [get-all-variables (lambda () null)]) ; ok to omit exported
   (module source-name
           self
-          (unresolve-requires requires)
+          (fresh-requires requires)
           provides
           #f ; access
           language-info
@@ -570,13 +570,14 @@
 
 ;; ----------------------------------------
 
-;; ensure that each module path index is unresolved, so that resolving
-;; on instantiation will trigger module loads
-(define (unresolve-requires requires)
+;; ensure that each module path index is unresolved and does not share
+;; with oter instances, so that resolving on instantiation will
+;; trigger module loads
+(define (fresh-requires requires)
   (for/list ([phase+mpis (in-list requires)])
     (cons (car phase+mpis)
           (for/list ([req-mpi (in-list (cdr phase+mpis))])
-            (module-path-index-unresolve req-mpi)))))
+            (module-path-index-fresh req-mpi)))))
 
 ;; ----------------------------------------
 
