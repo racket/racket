@@ -745,8 +745,8 @@
            ;; Trigger lazy conversion of code from bytevector, but
            ;; beware that multiple thread might try to do that at once
            (let-values ([(prep code) (with-interrupts-disabled
-                                      (values (linklet-code linklet)
-                                              (linklet-preparation linklet)))])
+                                      (values (linklet-preparation linklet)
+                                              (linklet-code linklet)))])
              (when (eq? 'lazy prep)
                (let ([code (eval-from-bytevector code
                                                  (extract-literals (linklet-literals linklet))
