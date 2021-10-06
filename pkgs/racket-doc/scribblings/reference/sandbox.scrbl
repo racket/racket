@@ -275,6 +275,14 @@ comparisons or printing operations. To safely handle an unknown value
 produced by a sandbox, manipulate it within the sandbox, possibly
 using @racket[call-in-sandbox-context].
 
+An evaluator can be used only by one thread at a time, and detected
+concurrent use triggers an exception. Beware of using an evaluator in
+a non-main thread, because the default value of
+@racket[sandbox-make-plumber] registers a callback in the current
+plumber to flush the evaluator's plumber, and that means a flush of
+the current plumber (such as when the Racket process is about to exit)
+implies a use of the evaluator.
+
 @history[#:changed "1.2" @elem{Added the @racket[#:readers] and
          @racket[#:allow-syntactic-require] arguments.}]}
 
@@ -285,8 +293,7 @@ using @racket[call-in-sandbox-context].
 
 A predicate and accessor for exceptions that are raised when a sandbox
 is terminated.  Once a sandbox raises such an exception, it will
-continue to raise it on further evaluation attempts.
-}
+continue to raise it on further evaluation attempts.}
 
 @; ----------------------------------------------------------------------
 

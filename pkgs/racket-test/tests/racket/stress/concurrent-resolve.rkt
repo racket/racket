@@ -14,8 +14,8 @@
 (sandbox-eval-limits #f)
 (sandbox-memory-limit #f)
 
-(let loop ([i 20])
-  (unless (= i 0)
+(define threads
+  (for/list ([i (in-range 20)])
     (semaphore-wait s)
     (thread
      (lambda ()
@@ -31,6 +31,6 @@
                                1
                                (* n (fact (sub1 n))))))])
            (printf "Finished ~a~n" (evalor '(fact 5)))
-           (semaphore-post s)))))
-    (loop (sub1 i))))
+           (semaphore-post s)))))))
 
+(for-each thread-wait threads)
