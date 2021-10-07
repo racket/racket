@@ -15,7 +15,7 @@
 @defmodule[racket/fixnum]
 
 The @racketmodname[racket/fixnum] library provides operations like
-@racket[fx+] that consume and produce only fixnums. The operations in
+@racket[fx+] that consume and produce only @tech{fixnums}. The operations in
 this library are meant to be safe versions of unsafe operations like
 @racket[unsafe-fx+]. These safe operations are generally no faster
 than using generic primitives like @racket[+].
