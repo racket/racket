@@ -762,7 +762,7 @@
   (unless (memq file-mode '(binary text))
     (raise-argument-error who "(or/c 'binary 'text)" file-mode)))
 
-(define (file->x who f file-mode read-x x-append)
+(define (file->x who f file-mode read-x x-append empty-val)
   (check-path who f)
   (check-file-mode who file-mode)
   (let ([sz (with-handlers ([exn:fail:filesystem? (lambda (_) 0)])
@@ -771,17 +771,21 @@
       (lambda (in)
         ;; There's a good chance that `file-size' gets all the data:
         (let ([s (read-x sz in)])
-          ;; ... but double-check:
-          (let ([more (let loop ()
-                        (let ([l (read-x 4096 in)])
-                          (if (eof-object? l) null (cons l (loop)))))])
-            (if (null? more) s (apply x-append (cons s more)))))))))
+          (if (eof-object? s)
+              ;; the file was truncated to size 0 _after_ we got the
+              ;; file size
+              empty-val
+              ;; ... check for more data past the initial file-size amt
+              (let ([more (let loop ()
+                            (let ([l (read-x 4096 in)])
+                              (if (eof-object? l) null (cons l (loop)))))])
+                (if (null? more) s (apply x-append (cons s more))))))))))
 
 (define (file->string f #:mode [mode 'binary])
-  (file->x 'file->string f mode read-string string-append))
+  (file->x 'file->string f mode read-string string-append ""))
 
 (define (file->bytes f #:mode [mode 'binary])
-  (file->x 'file->bytes f mode read-bytes bytes-append))
+  (file->x 'file->bytes f mode read-bytes bytes-append #""))
 
 (define (file->value f #:mode [file-mode 'binary])
   (check-path 'file->value f)
