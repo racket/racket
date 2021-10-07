@@ -16,6 +16,7 @@ AC_ARG_ENABLE(shared,     [  --enable-shared         create shared libraries (no
 AC_ARG_ENABLE(standalone, [  --enable-standalone     create a standalone shared library])
 AC_ARG_ENABLE(pthread,    [  --enable-pthread        link with pthreads (usually auto-enabled if needed)])
 AC_ARG_ENABLE(iconv,      [  --enable-iconv          use iconv (usually auto-enabled)])
+AC_ARG_ENABLE(curses,     [  --enable-curses         use curses (usually auto-enabled)])
 AC_ARG_ENABLE(wpo,        [  --enable-wpo            agressively optimize Racket core (enabled by default)])
 AC_ARG_ENABLE(compress,   [  --enable-compress       compress compiled code (enabled by default)])
 AC_ARG_ENABLE(compressmore, [  --enable-compressmore   compress compiled code even more])
@@ -85,6 +86,10 @@ show_explicitly_set "${enable_target}" "cross-build machine type"
 m4_include(../ac/natipkg_show.m4)
 show_explicitly_enabled "${enable_libz}" "Installed libz"
 show_explicitly_enabled "${enable_liblz4}" "Installed liblz4"
+show_explicitly_enabled "${enable_iconv}" "iconv"
+show_explicitly_disabled "${enable_iconv}" "iconv"
+show_explicitly_enabled "${enable_curses}" "iconv"
+show_explicitly_disabled "${enable_curses}" "iconv"
 
 m4_include(../ac/vm.m4)
 
@@ -94,6 +99,10 @@ m4_include(../ac/strip_show.m4)
 
 if test "${enable_iconv}" = "" ; then
   enable_iconv=yes
+fi
+
+if test "${enable_curses}" = "" ; then
+  enable_curses=yes
 fi
 
 if test "${enable_xonx}" == "" ; then
@@ -129,6 +138,7 @@ m4_include(../ac/path.m4)
 ############## init variables ################
 
 skip_iconv_check=no
+skip_curses_check=no
 use_flag_pthread=yes
 use_flag_posix_pthread=no
 
@@ -212,7 +222,6 @@ WINDRES=windres
 
 MACH_HOST_CPU="${host_cpu}"
 extra_scheme_config_args=
-disable_curses_arg=--disable-curses
 
 case "$host_os" in
   solaris2*)
@@ -251,6 +260,8 @@ case "$host_os" in
     LIBS="${LIBS} -lm -lpthread"
     LINK_DYNAMIC="-rdynamic"
     add_iconv_lib="/usr/lib/i18n/libiconv_std.a"
+    skip_curses_check=yes
+    add_curses_lib="/usr/pkg/lib/libncurses.a"
     POST_LINKER="paxctl +m"
     ;;
   irix*)
@@ -272,6 +283,7 @@ case "$host_os" in
     ;;
   *mingw*)
     skip_iconv_check=yes
+    skip_curses_check=yes
     use_flag_pthread=no
     MACH_OS=nt
     LIBS="${LIBS} -lshell32 -luser32 -lole32 -lrpcrt4 -luuid -lws2_32 -ladvapi32 -lwinmm"
@@ -291,7 +303,7 @@ case "$host_os" in
   darwin*)
     PREFLAGS="$PREFLAGS -DOS_X"
     MACH_OS=osx
-    LIBS="${LIBS} -lncurses -framework CoreFoundation"
+    LIBS="${LIBS} -framework CoreFoundation"
     LDFLAGS="${LDFLAGS} -Wl,-headerpad_max_install_names"
     if test "${enable_xonx}" == "no" ; then
       INCLUDEDEP="-include"
@@ -336,8 +348,8 @@ case "$host_os" in
     use_flag_pthread=no
 
     # ncurses.h is always available, except on iOS
-    if test "${enable_ios}" == "" ; then
-      disable_curses_arg=""
+    if test "${enable_ios}" != "" ; then
+      enable_curses=no
     fi
     ;;
   nto-qnx*)
@@ -565,6 +577,8 @@ fi
 
 AC_LANG_C
 
+############## iconv ################
+
 m4_include(../ac/iconv.m4)
 if test "${enable_iconv}" = "no" ; then
   AC_DEFINE(RKTIO_NO_ICONV,1,[Do not use iconv])
@@ -584,6 +598,20 @@ fi
 
 if test "${add_iconv_lib}" != "" ; then
     LIBS="${LIBS} ${add_iconv_lib}"
+fi
+
+############## curses ################
+
+m4_include(../ac/curses.m4)
+if test "${enable_curses}" = "no" ; then
+  add_curses_lib=
+  disable_curses_arg=--disable-curses
+else
+  disable_curses_arg=
+fi
+
+if test "${add_curses_lib}" != "" ; then
+    LIBS="${LIBS} ${add_curses_lib}"
 fi
 
 ############### pthread ###################
