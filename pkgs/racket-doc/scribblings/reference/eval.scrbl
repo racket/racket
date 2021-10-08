@@ -505,7 +505,7 @@ blocks.}
 
 A @tech{parameter} that determines the current @deftech{read interaction
 handler}, which is procedure that takes an arbitrary value and an
-input port and returns an expression read from the input port. 
+input port and returns an expression read from the input port.
 
 The default read interaction handler accepts @racket[_src] and
 @racket[_in] and returns
@@ -513,8 +513,34 @@ The default read interaction handler accepts @racket[_src] and
 @racketblock[
 (parameterize ([read-accept-reader #t]
                [read-accept-lang #f])
-  (read-syntax _src _in))
-]}
+  (discard-line-terminators (read-syntax _src _in) _in))
+]
+
+where @racket[discard-line-terminators] is defined as
+
+@racketblock[
+(define (discard-line-terminators stx in)
+  (when (not (eof-object? stx))
+    (cond [(eqv? (peek-char in) #\return)
+           (read-char in)
+           (when (eqv? (peek-char in) #\newline)
+             (read-char in))]
+          [(eqv? (peek-char in) #\newline)
+           (read-char in)]
+          [else
+           (void)]))
+  stx)
+]
+
+@history[#:changed "8.3.0.1" @elem{Added the call to
+@racket[discard-line-terminators] in the default read interaction
+handler. Previously, no whitespace was peeked for or discarded,
+meaning that interactive use of @racket[read-line] and
+@racket[read-char] could have surprising results. See discussion in
+@hyperlink["https://github.com/racket/racket/pull/4007"]{GitHub issue
+#4007} and
+@hyperlink["https://groups.google.com/g/racket-users/c/qUIFqWkkvFs/m/AERXYmfGBgAJ"]{on
+the racket-users mailing list}.}]}
 
 
 @defparam[current-print proc (any/c -> any)]{

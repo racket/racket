@@ -39202,6 +39202,17 @@
           p_0))
        p_0))
    'current-print))
+(define discard-line-terminators
+  (lambda (stx_0 in_0)
+    (begin
+      (if (not (eof-object? stx_0))
+        (if (eqv? (peek-char in_0) '#\xd)
+          (begin
+            (read-char in_0)
+            (if (eqv? (peek-char in_0) '#\xa) (read-char in_0) (void)))
+          (if (eqv? (peek-char in_0) '#\xa) (read-char in_0) (void)))
+        (void))
+      stx_0)))
 (define 1/current-read-interaction
   (make-parameter
    (lambda (src_0 in_0)
@@ -39216,7 +39227,9 @@
            #t
            installed-read-accept-lang
            #f)))
-      (|#%app| installed-read-syntax src_0 in_0)))
+      (discard-line-terminators
+       (|#%app| installed-read-syntax src_0 in_0)
+       in_0)))
    (lambda (p_0)
      (begin
        (if (if (procedure? p_0) (procedure-arity-includes? p_0 2) #f)
