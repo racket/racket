@@ -532,7 +532,7 @@ where @racket[discard-line-terminators] is defined as
   stx)
 ]
 
-@history[#:changed "8.2.0.8" @elem{Added the call to
+@history[#:changed "8.3.0.1" @elem{Added the call to
 @racket[discard-line-terminators] in the default read interaction
 handler. Previously, no whitespace was peeked for or discarded,
 meaning that interactive use of @racket[read-line] and
