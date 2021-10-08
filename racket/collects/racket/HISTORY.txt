@@ -1,7 +1,18 @@
-Version 8.3
-Removed syntax arming and disarming in favor of a simpler system of
- protected syntax operations
-Added `require` and `provide` support for binding spaces
+Version 8.3, October 2021
+Expander: remove syntax arming and disarming in favor of a simpler
+ system of protected syntax operations
+Expander: change internal-definition contexts to have an
+ outside-edge scope and track their own use-site scopes
+Expander: add `require` and `provide` support for binding spaces
+Expander: don't propagate "original" from macro input to output,
+ which restores the intended behavior as it worked before v7.0
+Windows: repair single-instance executable mode
+Windows: fix path handling to treat `*` and `?` as special
+Change `unzip` to report errors for ill-formed archives, instead
+ of silently ignoring certain errors
+Add `error-syntax->string-handler`
+Places: use `current-directory` value in created place
+Other bug repairs and other changes noted in the documentation
 
 Version 8.2, July 2021
 CS: faster exact-rational arithmetic
