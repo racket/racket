@@ -101,10 +101,6 @@ if test "${enable_iconv}" = "" ; then
   enable_iconv=yes
 fi
 
-if test "${enable_curses}" = "" ; then
-  enable_curses=yes
-fi
-
 if test "${enable_xonx}" == "" ; then
   enable_xonx=no
 fi
@@ -276,6 +272,9 @@ case "$host_os" in
         ;;
     esac
     LINK_DYNAMIC="-rdynamic"
+    if test "${enable_curses}" = "" ; then
+      enable_curses=no
+    fi
     ;;
   osf1*)
     ;;
@@ -364,6 +363,10 @@ if test "${enable_pthread}" = "" ; then
   if test "${enable_pthread_by_default}" = "yes" ; then
     enable_pthread=yes
   fi
+fi
+
+if test "${enable_curses}" = "" ; then
+  enable_curses=yes
 fi
 
 ############## machine type ################
