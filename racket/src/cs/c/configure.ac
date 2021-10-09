@@ -17,6 +17,7 @@ AC_ARG_ENABLE(standalone, [  --enable-standalone     create a standalone shared 
 AC_ARG_ENABLE(pthread,    [  --enable-pthread        link with pthreads (usually auto-enabled if needed)])
 AC_ARG_ENABLE(iconv,      [  --enable-iconv          use iconv (usually auto-enabled)])
 AC_ARG_ENABLE(curses,     [  --enable-curses         use curses (usually auto-enabled)])
+AC_ARG_ENABLE(curseslib,  [  --enable-curseslib=<libs> use <libs> for linking to curses library])
 AC_ARG_ENABLE(wpo,        [  --enable-wpo            agressively optimize Racket core (enabled by default)])
 AC_ARG_ENABLE(compress,   [  --enable-compress       compress compiled code (enabled by default)])
 AC_ARG_ENABLE(compressmore, [  --enable-compressmore   compress compiled code even more])
@@ -88,8 +89,8 @@ show_explicitly_enabled "${enable_libz}" "Installed libz"
 show_explicitly_enabled "${enable_liblz4}" "Installed liblz4"
 show_explicitly_enabled "${enable_iconv}" "iconv"
 show_explicitly_disabled "${enable_iconv}" "iconv"
-show_explicitly_enabled "${enable_curses}" "iconv"
-show_explicitly_disabled "${enable_curses}" "iconv"
+show_explicitly_enabled "${enable_curses}" "curses"
+show_explicitly_disabled "${enable_curses}" "curses"
 
 m4_include(../ac/vm.m4)
 
@@ -272,9 +273,6 @@ case "$host_os" in
         ;;
     esac
     LINK_DYNAMIC="-rdynamic"
-    if test "${enable_curses}" = "" ; then
-      enable_curses=no
-    fi
     ;;
   osf1*)
     ;;
@@ -604,6 +602,12 @@ if test "${add_iconv_lib}" != "" ; then
 fi
 
 ############## curses ################
+
+if test "${enable_curses}" != "no" ; then
+  if test "${enable_curseslib}" != "" ; then
+    LIBS="${LIBS} ${enable_curseslib}"
+  fi
+fi
 
 m4_include(../ac/curses.m4)
 if test "${enable_curses}" = "no" ; then

@@ -782,6 +782,7 @@ enable_standalone
 enable_pthread
 enable_iconv
 enable_curses
+enable_curseslib
 enable_wpo
 enable_compress
 enable_compressmore
@@ -1433,6 +1434,7 @@ Optional Features:
   --enable-pthread        link with pthreads (usually auto-enabled if needed)
   --enable-iconv          use iconv (usually auto-enabled)
   --enable-curses         use curses (usually auto-enabled)
+  --enable-curseslib=<libs> use <libs> for linking to curses library
   --enable-wpo            agressively optimize Racket core (enabled by default)
   --enable-compress       compress compiled code (enabled by default)
   --enable-compressmore   compress compiled code even more
@@ -2549,6 +2551,11 @@ if test "${enable_curses+set}" = set; then :
   enableval=$enable_curses;
 fi
 
+# Check whether --enable-curseslib was given.
+if test "${enable_curseslib+set}" = set; then :
+  enableval=$enable_curseslib;
+fi
+
 # Check whether --enable-wpo was given.
 if test "${enable_wpo+set}" = set; then :
   enableval=$enable_wpo;
@@ -2851,8 +2858,8 @@ show_explicitly_enabled "${enable_libz}" "Installed libz"
 show_explicitly_enabled "${enable_liblz4}" "Installed liblz4"
 show_explicitly_enabled "${enable_iconv}" "iconv"
 show_explicitly_disabled "${enable_iconv}" "iconv"
-show_explicitly_enabled "${enable_curses}" "iconv"
-show_explicitly_disabled "${enable_curses}" "iconv"
+show_explicitly_enabled "${enable_curses}" "curses"
+show_explicitly_disabled "${enable_curses}" "curses"
 
 if test "${enable_bconly}" = "yes" ; then
    if test "${enable_csonly}" = "yes" ; then
@@ -4395,9 +4402,6 @@ case "$host_os" in
         ;;
     esac
     LINK_DYNAMIC="-rdynamic"
-    if test "${enable_curses}" = "" ; then
-      enable_curses=no
-    fi
     ;;
   osf1*)
     ;;
@@ -5481,6 +5485,12 @@ if test "${add_iconv_lib}" != "" ; then
 fi
 
 ############## curses ################
+
+if test "${enable_curses}" != "no" ; then
+  if test "${enable_curseslib}" != "" ; then
+    LIBS="${LIBS} ${enable_curseslib}"
+  fi
+fi
 
 curses_lib_flag=""
 if test "${skip_curses_check}" = "no" ; then
