@@ -83,6 +83,14 @@
                        (fd-evt fd RKTIO_POLL_READ this))]
        [else n]))]
 
+  [byte-ready/inner
+   (lambda (work-done!)
+     (cond
+       [(eqv? (rktio_poll_read_ready rktio fd) RKTIO_POLL_READY)
+        #t]
+       [else (or (fd-semaphore-update! fd 'read)
+                 (fd-evt fd RKTIO_POLL_READ this))]))]
+
   [close
    (lambda ()
      (send fd-input-port this on-close)
