@@ -2546,6 +2546,7 @@ if test "${enable_iconv+set}" = set; then :
   enableval=$enable_iconv;
 fi
 
+
 # Check whether --enable-curses was given.
 if test "${enable_curses+set}" = set; then :
   enableval=$enable_curses;
@@ -2555,6 +2556,7 @@ fi
 if test "${enable_curseslib+set}" = set; then :
   enableval=$enable_curseslib;
 fi
+
 
 # Check whether --enable-wpo was given.
 if test "${enable_wpo+set}" = set; then :
@@ -5589,6 +5591,7 @@ fi
 if test "${add_curses_lib}" != "" ; then
     LIBS="${LIBS} ${add_curses_lib}"
 fi
+
 
 ############### pthread ###################
 

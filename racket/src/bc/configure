@@ -825,6 +825,8 @@ enable_dynlib
 enable_lt
 enable_libs
 enable_libffi
+enable_curses
+enable_curseslib
 enable_sdk
 enable_xonx
 enable_macprefix
@@ -1486,6 +1488,8 @@ Optional Features:
   --enable-lt=<prog>      use <prog> instead of libtool; disable to use bundled
   --enable-libs           install static libraries (enabled by default for Unix)
   --enable-libffi         use installed libffi (enabled by default for Unix)
+  --enable-curses         use curses (usually auto-enabled)
+  --enable-curseslib=<libs> use <libs> for linking to curses library
   --enable-sdk=<path>     use Mac OS 10.4 SDK directory
   --enable-sdk5=<path>    use Mac OS 10.5 SDK directory
   --enable-sdk6=<path>    use Mac OS 10.6 SDK directory
@@ -2757,6 +2761,18 @@ else
 fi
 
 
+# Check whether --enable-curses was given.
+if test "${enable_curses+set}" = set; then :
+  enableval=$enable_curses;
+fi
+
+# Check whether --enable-curseslib was given.
+if test "${enable_curseslib+set}" = set; then :
+  enableval=$enable_curseslib;
+fi
+
+
+
 # Check whether --enable-sdk was given.
 if test "${enable_sdk+set}" = set; then :
   enableval=$enable_sdk;
@@ -3361,6 +3377,9 @@ show_explicitly_enabled "${enable_ffipoll}" "ffipoll"
 show_explicitly_enabled "${enable_oskit}" "OSKit"
 show_explicitly_enabled "${enable_smalloskit}" "OSKit small mode"
 
+show_explicitly_enabled "${enable_curses}" "curses"
+show_explicitly_disabled "${enable_curses}" "curses"
+
 show_explicitly_enabled "${enable_gprof}" "gprof"
 show_explicitly_enabled "${enable_gcov}" "gcov"
 
@@ -3527,6 +3546,7 @@ use_flag_pthread=yes
 use_flag_posix_pthread=no
 mzrt_needs_pthread=yes
 skip_iconv_check=no
+skip_curses_check=no
 check_page_size=yes
 try_no_nullability_completeness=no
 check_for_unwind=no
@@ -4957,6 +4977,8 @@ case "$host_os" in
     ;;
   netbsd*)
     LIBS="$LIBS -rdynamic"
+    skip_curses_check=yes
+    add_curses_lib="/usr/pkg/lib/libncurses.a"
     POST_LINKER="paxctl +m"
     ;;
   irix*)
@@ -5021,6 +5043,7 @@ case "$host_os" in
     enable_parallel_by_default=yes
     mzrt_needs_pthread=no
     use_flag_pthread=no
+    skip_curses_check=yes
     MZOPTIONS="$MZOPTIONS -fno-omit-frame-pointer" # to make JIT backtraces work
     MINGW=""
     NOT_MINGW=".other"
@@ -5209,6 +5232,10 @@ $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
       LIBS="$LIBS -framework CoreFoundation"
       strip_needs_dash_s=yes
     fi
+    # ncurses.h is always available, except on iOS
+    if test "${enable_ios}" != "" ; then
+      enable_curses=no
+    fi
     ;;
   nto-qnx*)
     use_flag_pthread=no
@@ -5229,6 +5256,10 @@ case "$host_cpu" in
   *)
     ;;
 esac
+
+if test "${enable_curses}" = "" ; then
+  enable_curses=yes
+fi
 
 ############## GC variant ################
 
@@ -5864,6 +5895,116 @@ $as_echo_n "checking $msg... " >&6; }
 $as_echo "$iconv_usage_result" >&6; }
 fi
 
+
+if test "${enable_curses}" != "no" ; then
+  if test "${enable_curseslib}" != "" ; then
+    LIBS="${LIBS} ${enable_curseslib}"
+  fi
+fi
+
+curses_lib_flag=""
+if test "${skip_curses_check}" = "no" ; then
+ if test "${enable_curses}" = "yes" ; then
+  ac_fn_c_check_header_mongrel "$LINENO" "curses.h" "ac_cv_header_curses_h" "$ac_includes_default"
+if test "x$ac_cv_header_curses_h" = xyes; then :
+  enable_curses=yes
+else
+  enable_curses=no
+fi
+
+
+  if test "${enable_curses}" = "yes" ; then
+    ac_fn_c_check_header_mongrel "$LINENO" "term.h" "ac_cv_header_term_h" "$ac_includes_default"
+if test "x$ac_cv_header_term_h" = xyes; then :
+  enable_curses=yes
+else
+  enable_curses=no
+fi
+
+
+    if test "${enable_curses}" = "yes" ; then
+      # Does it all work, now?
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <curses.h>
+      #include <term.h>
+int
+main ()
+{
+      int errret;
+      setupterm("", 0, &errret);
+       return 0;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  enable_curses=yes
+else
+  enable_curses=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      if test "${enable_curses}" = "no" ; then
+        # Try adding -lncurses
+        ORIG_LIBS="$LIBS"
+        LIBS="$LIBS -lncurses"
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <curses.h>
+        #include <term.h>
+int
+main ()
+{
+        int errret;
+        setupterm("", 0, &errret);
+         return 0;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  enable_curses=yes
+else
+  enable_curses=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+        if test "${enable_curses}" = "no" ; then
+          LIBS="$ORIG_LIBS"
+        else
+          curses_lib_flag=" -lncurses"
+        fi
+      fi
+    fi
+  fi
+ fi
+  msg="curses is usable"
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking $msg" >&5
+$as_echo_n "checking $msg... " >&6; }
+ curses_usage_result="$enable_curses$curses_lib_flag"
+ { $as_echo "$as_me:${as_lineno-$LINENO}: result: $curses_usage_result" >&5
+$as_echo "$curses_usage_result" >&6; }
+fi
+
+if test "${enable_curses}" = "no" ; then
+  add_curses_lib=
+  disable_curses_arg=--disable-curses
+else
+  disable_curses_arg=
+fi
+
+if test "${add_curses_lib}" != "" ; then
+    LIBS="${LIBS} ${add_curses_lib}"
+fi
+
+if test "${enable_curses}" != "no" ; then
+
+$as_echo "#define MZ_TERMINAL_SUPPORT 1" >>confdefs.h
+
+fi
 
 if test "${check_for_mprotect}" = "yes" ; then
    msg="for mmap and mprotect"

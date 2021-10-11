@@ -202,7 +202,8 @@
                              #:namespace ns
                              #:protected? (or (eq? name '#%foreign)
                                               (eq? name '#%futures)
-                                              (eq? name '#%unsafe))))
+                                              (eq? name '#%unsafe)
+                                              (eq? name '#%terminal))))
      (declare-reexporting-module! '#%builtin (list* '#%place-struct
                                                     '#%utils
                                                     '#%boot

@@ -540,6 +540,8 @@
   (include "include.ss")
   (include-generated "io.scm")
 
+  (include "io/terminal.ss")
+
   ;; Initialize:
   (set-log-system-message! (lambda (level str)
                              (1/log-message (|#%app| 1/current-logger) level str #f)))

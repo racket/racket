@@ -7019,3 +7019,282 @@ static void register_traversers(void)
 END_XFORM_SKIP;
 
 #endif
+
+#ifdef MZ_TERMINAL_SUPPORT
+# define EXPEDITOR_EXTERNAL_USE
+# include "../../ChezScheme/c/version.h"
+/* GETPAGESIZE is set for a recognized platform */
+#endif
+
+#if defined(MZ_TERMINAL_SUPPORT) && defined(GETPAGESIZE)
+
+#define FEATURE_EXPEDITOR
+
+typedef Scheme_Object *ptr;
+typedef intptr_t iptr;
+typedef int IBOOL;
+typedef int I32;
+typedef unsigned int U32;
+typedef int INT;
+#define Strue scheme_true
+#define Sfalse scheme_false
+#define Seof_object scheme_eof
+#define Svoid scheme_void
+#define Schar scheme_make_character
+#define Scons scheme_make_pair
+#define Sinteger scheme_make_integer
+#define Sstring_length SCHEME_CHAR_STRLEN_VAL
+#define Sstring_ref(s, i) (SCHEME_CHAR_STR_VAL(s)[i])
+#define Sstring_set(s, i, c) ((SCHEME_CHAR_STR_VAL(s)[i]) = c)
+#define S_string(null, n) scheme_alloc_char_string(n, 0)
+#define S_strerror(errno) NULL
+#define S_error1(who, msg, val) scheme_signal_error(msg)
+#define S_error(who, msg) scheme_signal_error(msg)
+
+#ifdef WIN32
+static char *Swide_to_utf8(const wchar_t *arg) {
+  int len;
+  char* arg8;
+  len = WideCharToMultiByte(CP_UTF8, 0, arg, -1, NULL, 0, NULL, NULL);
+  if (0 == len) return NULL;
+  arg8 = (char*)malloc(len * sizeof(char));
+  if (0 == WideCharToMultiByte(CP_UTF8, 0, arg, -1, arg8, len, NULL, NULL)) {
+    free(arg8);
+    return NULL;
+  }
+  return arg8;
+}
+
+Scheme_Object *Sstring_utf8(const char *s, int len) {
+  return scheme_make_sized_utf8_string(s, len);
+}
+#endif
+
+static void S_expeditor_init(void);
+
+static struct {
+  Scheme_Object *null_string;
+} S_G;
+
+static void Sforeign_symbol(const char *name, void *val) {
+}
+
+#ifdef MZ_XFORM
+START_XFORM_SUSPEND;
+#endif
+
+#include "../../ChezScheme/c/expeditor.c"
+
+#ifdef MZ_XFORM
+END_XFORM_SUSPEND;
+#endif
+
+# define MZ_EXPR_EDIT 1
+ROSYM static Scheme_Object *up_symbol, *down_symbol, *left_symbol, *right_symbol;
+ROSYM static Scheme_Object *eol_symbol, *eos_symbol, *screen_symbol;
+
+#else
+
+# define MZ_EXPR_EDIT 0
+
+#endif
+
+static Scheme_Object *terminal_init_term(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  return s_ee_init_term() ? scheme_true : scheme_false;
+#else
+  return scheme_false;
+#endif
+}
+
+static Scheme_Object *terminal_read_char(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  return s_ee_read_char(SCHEME_TRUEP(argv[0]));
+#else
+  return scheme_false;
+#endif
+}
+
+static Scheme_Object *terminal_write_char(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  s_ee_write_char(SCHEME_CHAR_VAL(argv[0]));
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_flush(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  s_ee_flush();
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_get_screen_size(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  return s_ee_get_screen_size();  
+#else
+  return scheme_false;
+#endif
+}
+
+static Scheme_Object *terminal_raw_mode(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  if (SCHEME_TRUEP(argv[0]))
+    s_ee_raw();
+  else
+    s_ee_noraw();
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_postoutput_mode(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  if (SCHEME_TRUEP(argv[0]))
+    s_ee_postoutput();
+  else
+    s_ee_nopostoutput();
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_automargin_mode(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  if (SCHEME_TRUEP(argv[0]))
+    s_ee_enter_am_mode();
+  else
+    s_ee_exit_am_mode();
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_nanosleep(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  s_ee_nanosleep(SCHEME_INT_VAL(argv[0]), SCHEME_INT_VAL(argv[1]));
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_pause(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  s_ee_pause();
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_get_clipboard(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  Scheme_Object *r;
+  scheme_enable_garbage_collection(0);
+  r = s_ee_get_clipboard();
+  scheme_enable_garbage_collection(1);
+  return r;
+#else
+  return scheme_false;
+#endif
+}
+
+static Scheme_Object *terminal_move_cursor(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  Scheme_Object *s = argv[0];
+  intptr_t n = SCHEME_INT_VAL(argv[1]);
+  if (SAME_OBJ(s, up_symbol))
+    s_ee_up(n);
+  else if (SAME_OBJ(s, down_symbol))
+    s_ee_down(n);
+  else if (SAME_OBJ(s, left_symbol))
+    s_ee_left(n);
+  else if (SAME_OBJ(s, right_symbol))
+    s_ee_right(n);
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_clear(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  Scheme_Object *s = argv[0];
+  if (SAME_OBJ(s, eol_symbol))
+    s_ee_clear_eol();
+  else if (SAME_OBJ(s, eos_symbol))
+    s_ee_clear_eos();
+  else if (SAME_OBJ(s, screen_symbol))
+    s_ee_clear_screen();
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_scroll_reverse(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  s_ee_scroll_reverse(SCHEME_INT_VAL(argv[0]));
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_bell(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  s_ee_bell();
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_carriage_return(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  s_ee_carriage_return();
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_line_feed(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  s_ee_line_feed();
+#endif
+  return scheme_void;
+}
+
+void scheme_init_terminal(Scheme_Startup_Env *env) {
+#if MZ_EXPR_EDIT
+  REGISTER_SO(up_symbol);
+  REGISTER_SO(down_symbol);
+  REGISTER_SO(left_symbol);
+  REGISTER_SO(right_symbol);
+  REGISTER_SO(eol_symbol);
+  REGISTER_SO(eos_symbol);
+  REGISTER_SO(screen_symbol);
+
+  up_symbol = scheme_intern_symbol("up");
+  down_symbol = scheme_intern_symbol("down");
+  left_symbol = scheme_intern_symbol("left");
+  right_symbol = scheme_intern_symbol("right");
+
+  eol_symbol = scheme_intern_symbol("eol");
+  eos_symbol = scheme_intern_symbol("eos");
+  screen_symbol = scheme_intern_symbol("screen");
+
+  REGISTER_SO(S_G.null_string);
+  S_G.null_string = scheme_make_utf8_string("");
+
+  S_expeditor_init();
+#endif
+
+# define ADDTO_EE(name, proc, args)                                     \
+  scheme_addto_prim_instance(name,                                      \
+                             scheme_make_prim_w_arity(proc, name, args, args), \
+                             env)
+
+  ADDTO_EE("terminal-init", terminal_init_term, 0);
+  ADDTO_EE("terminal-read-char", terminal_read_char, 1);
+  ADDTO_EE("terminal-write-char", terminal_write_char, 1);
+  ADDTO_EE("terminal-flush", terminal_flush, 0);
+  ADDTO_EE("terminal-get-screen-size", terminal_get_screen_size, 0);
+  ADDTO_EE("terminal-raw-mode", terminal_raw_mode, 1);
+  ADDTO_EE("terminal-postoutput-mode", terminal_postoutput_mode, 1);
+  ADDTO_EE("terminal-automargin-mode", terminal_automargin_mode, 1);
+  ADDTO_EE("terminal-nanosleep", terminal_nanosleep, 2);
+  ADDTO_EE("terminal-pause", terminal_pause, 0);
+  ADDTO_EE("terminal-get-clipboard", terminal_get_clipboard, 0);
+  ADDTO_EE("terminal-move-cursor", terminal_move_cursor, 2);
+  ADDTO_EE("terminal-clear", terminal_clear, 1);
+  ADDTO_EE("terminal-scroll-reverse", terminal_scroll_reverse, 1);
+  ADDTO_EE("terminal-bell", terminal_bell, 0);
+  ADDTO_EE("terminal-carriage-return", terminal_carriage_return, 0);
+  ADDTO_EE("terminal-line-feed", terminal_line_feed, 0);
+}

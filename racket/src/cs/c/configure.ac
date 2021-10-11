@@ -16,8 +16,7 @@ AC_ARG_ENABLE(shared,     [  --enable-shared         create shared libraries (no
 AC_ARG_ENABLE(standalone, [  --enable-standalone     create a standalone shared library])
 AC_ARG_ENABLE(pthread,    [  --enable-pthread        link with pthreads (usually auto-enabled if needed)])
 AC_ARG_ENABLE(iconv,      [  --enable-iconv          use iconv (usually auto-enabled)])
-AC_ARG_ENABLE(curses,     [  --enable-curses         use curses (usually auto-enabled)])
-AC_ARG_ENABLE(curseslib,  [  --enable-curseslib=<libs> use <libs> for linking to curses library])
+m4_include(../ac/curses_arg.m4)
 AC_ARG_ENABLE(wpo,        [  --enable-wpo            agressively optimize Racket core (enabled by default)])
 AC_ARG_ENABLE(compress,   [  --enable-compress       compress compiled code (enabled by default)])
 AC_ARG_ENABLE(compressmore, [  --enable-compressmore   compress compiled code even more])
@@ -603,23 +602,7 @@ fi
 
 ############## curses ################
 
-if test "${enable_curses}" != "no" ; then
-  if test "${enable_curseslib}" != "" ; then
-    LIBS="${LIBS} ${enable_curseslib}"
-  fi
-fi
-
 m4_include(../ac/curses.m4)
-if test "${enable_curses}" = "no" ; then
-  add_curses_lib=
-  disable_curses_arg=--disable-curses
-else
-  disable_curses_arg=
-fi
-
-if test "${add_curses_lib}" != "" ; then
-    LIBS="${LIBS} ${add_curses_lib}"
-fi
 
 ############### pthread ###################
 

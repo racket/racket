@@ -48,6 +48,7 @@ AC_ARG_ENABLE(lt,      [  --enable-lt=<prog>      use <prog> instead of libtool;
 m4_include(../ac/instlib_arg.m4)
 
 AC_ARG_ENABLE(libffi,  [  --enable-libffi         use installed libffi (enabled by default for Unix)], , enable_libffi=default)
+m4_include(../ac/curses_arg.m4)
 
 m4_include(../ac/sdk_arg.m4)
 
@@ -212,6 +213,9 @@ show_explicitly_enabled "${enable_ffipoll}" "ffipoll"
 show_explicitly_enabled "${enable_oskit}" "OSKit"
 show_explicitly_enabled "${enable_smalloskit}" "OSKit small mode"
 
+show_explicitly_enabled "${enable_curses}" "curses"
+show_explicitly_disabled "${enable_curses}" "curses"
+
 show_explicitly_enabled "${enable_gprof}" "gprof"
 show_explicitly_enabled "${enable_gcov}" "gcov"
 
@@ -297,6 +301,7 @@ use_flag_pthread=yes
 use_flag_posix_pthread=no
 mzrt_needs_pthread=yes
 skip_iconv_check=no
+skip_curses_check=no
 check_page_size=yes
 try_no_nullability_completeness=no
 check_for_unwind=no
@@ -549,6 +554,8 @@ case "$host_os" in
     ;;
   netbsd*)
     LIBS="$LIBS -rdynamic"
+    skip_curses_check=yes
+    add_curses_lib="/usr/pkg/lib/libncurses.a"
     POST_LINKER="paxctl +m"
     ;;
   irix*)
@@ -613,6 +620,7 @@ case "$host_os" in
     enable_parallel_by_default=yes
     mzrt_needs_pthread=no
     use_flag_pthread=no
+    skip_curses_check=yes
     MZOPTIONS="$MZOPTIONS -fno-omit-frame-pointer" # to make JIT backtraces work
     MINGW=""
     NOT_MINGW=".other"
@@ -722,6 +730,10 @@ case "$host_os" in
       LIBS="$LIBS -framework CoreFoundation"
       strip_needs_dash_s=yes
     fi
+    # ncurses.h is always available, except on iOS
+    if test "${enable_ios}" != "" ; then
+      enable_curses=no
+    fi
     ;;
   nto-qnx*)
     use_flag_pthread=no
@@ -742,6 +754,10 @@ case "$host_cpu" in
   *)
     ;;
 esac
+
+if test "${enable_curses}" = "" ; then
+  enable_curses=yes
+fi
 
 ############## GC variant ################
 
@@ -835,6 +851,11 @@ AC_MSG_RESULT($using_gnu_cpp)
 # Although rktio takes care of iconv, we need to know whether
 # to link to it
 m4_include(../ac/iconv.m4)
+
+m4_include(../ac/curses.m4)
+if test "${enable_curses}" != "no" ; then
+  AC_DEFINE(MZ_TERMINAL_SUPPORT,1,[Terminal support available])
+fi
 
 if test "${check_for_mprotect}" = "yes" ; then
   [ msg="for mmap and mprotect" ]
