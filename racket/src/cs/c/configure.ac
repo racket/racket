@@ -26,6 +26,7 @@ AC_ARG_ENABLE(racket,     [  --enable-racket=<path>  use <path> as Racket for bu
 AC_ARG_ENABLE(scheme,     [  --enable-scheme=<path>  use <path> as host's build directory for cross])
 AC_ARG_ENABLE(mach,       [  --enable-mach=<mach>    use Chez Scheme machine type <mach>])
 AC_ARG_ENABLE(target,     [  --enable-target=<mach>  cross-build for Chez Scheme machine type <mach>])
+m4_include(../ac/portable_arg.m4)
 m4_include(../ac/natipkg_arg.m4)
 m4_include(../ac/sdk_arg.m4)
 m4_include(../ac/instlib_arg.m4)
@@ -83,6 +84,7 @@ show_explicitly_set "${enable_racket}" "Racket"
 show_explicitly_set "${enable_scheme}" "Chez Scheme build directory"
 show_explicitly_set "${enable_mach}" "machine type"
 show_explicitly_set "${enable_target}" "cross-build machine type"
+m4_include(../ac/portable_show.m4)
 m4_include(../ac/natipkg_show.m4)
 show_explicitly_enabled "${enable_libz}" "Installed libz"
 show_explicitly_enabled "${enable_liblz4}" "Installed liblz4"
@@ -272,6 +274,7 @@ case "$host_os" in
         ;;
     esac
     LINK_DYNAMIC="-rdynamic"
+    curses_portable_link="/usr/lib/${host_cpu}-${host_os}/libncurses.a /usr/lib/${host_cpu}-${host_os}/libtermcap.a"
     ;;
   osf1*)
     ;;

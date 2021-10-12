@@ -40,6 +40,7 @@ AC_ARG_ENABLE(racket,  [  --enable-racket=<path>  use <path> as Racket to build;
 PREFIX_PATH_RELATIVE=/..
 m4_include(../ac/path_arg.m4)
 
+m4_include(../ac/portable_arg.m4)
 m4_include(../ac/natipkg_arg.m4)
 
 AC_ARG_ENABLE(shared,  [  --enable-shared         create shared libraries (ok, but not recommended)])
@@ -172,6 +173,7 @@ m4_include(../ac/vm.m4)
 
 show_explicitly_disabled "${enable_docs}" "Documentation build"
 show_explicitly_enabled "${enable_usersetup}" "User-specific setup on install"
+m4_include(../ac/portable_show.m4)
 m4_include(../ac/natipkg_show.m4)
 
 show_explicitly_enabled "${enable_xonx}" "Unix style"
@@ -569,6 +571,7 @@ case "$host_os" in
   linux*)
     LIBS="$LIBS -ldl -lm -lrt -rdynamic"
     DYN_CFLAGS="-fPIC"
+    curses_portable_link="/usr/lib/${host_cpu}-${host_os}/libncurses.a /usr/lib/${host_cpu}-${host_os}/libtermcap.a"
     case "$host_cpu" in
       #Required for CentOS 4.6
       x86_64)
@@ -1156,6 +1159,12 @@ fi
 
 if test "${enable_libffi}" = "yes" ; then
    complain_if_libffi_fails=yes
+fi
+
+if test "${enable_libffi}" = "default" ; then
+  if test "${enable_portable}" = "yes" ; then
+    enable_libffi=no
+  fi
 fi
 
 if test "${enable_libffi}" = "default" ; then

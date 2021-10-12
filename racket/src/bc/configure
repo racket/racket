@@ -819,6 +819,7 @@ enable_useprefix
 enable_pkgscope
 enable_docs
 enable_usersetup
+enable_portable
 enable_natipkg
 enable_shared
 enable_dynlib
@@ -1482,6 +1483,7 @@ Optional Features:
   --enable-pkgscope=<s>   set `raco pkg' default: installation, user, or shared
   --enable-docs           build docs on install (enabled by default)
   --enable-usersetup      setup user-specific files on install
+  --enable-portable       prefer portable to host-specific
   --enable-natipkg        add "-natipkg" to library subpath
   --enable-shared         create shared libraries (ok, but not recommended)
   --enable-dynlib         same as --enable-shared
@@ -2722,6 +2724,13 @@ fi
 
 
 
+
+# Check whether --enable-portable was given.
+if test "${enable_portable+set}" = set; then :
+  enableval=$enable_portable;
+fi
+
+
 # Check whether --enable-natipkg was given.
 if test "${enable_natipkg+set}" = set; then :
   enableval=$enable_natipkg;
@@ -3334,6 +3343,8 @@ show_explicitly_enabled "${enable_cgcdefault}" "CGC as default" "Note that this 
 
 show_explicitly_disabled "${enable_docs}" "Documentation build"
 show_explicitly_enabled "${enable_usersetup}" "User-specific setup on install"
+show_explicitly_enabled "${enable_portable}" "portable"
+
 show_explicitly_enabled "${enable_natipkg}" "Adding \"-natipkg\" suffix to library subpath"
 
 
@@ -4992,6 +5003,7 @@ case "$host_os" in
   linux*)
     LIBS="$LIBS -ldl -lm -lrt -rdynamic"
     DYN_CFLAGS="-fPIC"
+    curses_portable_link="/usr/lib/${host_cpu}-${host_os}/libncurses.a /usr/lib/${host_cpu}-${host_os}/libtermcap.a"
     case "$host_cpu" in
       #Required for CentOS 4.6
       x86_64)
@@ -5947,9 +5959,46 @@ fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
       if test "${enable_curses}" = "no" ; then
+        if test "${enable_portable}" = "yes" ; then
+          if test "${curses_portable_link}" != "" ; then
+            # Try adding portabel link flags
+            ORIG_LIBS="$LIBS"
+            curses_lib_flag=" ${curses_portable_link}"
+            LIBS="$LIBS $curses_lib_flag"
+            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <curses.h>
+            #include <term.h>
+int
+main ()
+{
+            int errret;
+            setupterm("", 0, &errret);
+             return 0;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  enable_curses=yes
+else
+  enable_curses=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+            if test "${enable_curses}" = "no" ; then
+              LIBS="$ORIG_LIBS"
+              curses_lib_flag=""
+            fi
+          fi
+        fi
+      fi
+      if test "${enable_curses}" = "no" ; then
         # Try adding -lncurses
         ORIG_LIBS="$LIBS"
-        LIBS="$LIBS -lncurses"
+        curses_lib_flag=" -lncurses"
+        LIBS="$LIBS $curses_lib_flag"
         cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <curses.h>
@@ -5974,8 +6023,7 @@ rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
         if test "${enable_curses}" = "no" ; then
           LIBS="$ORIG_LIBS"
-        else
-          curses_lib_flag=" -lncurses"
+          curses_lib_flag=""
         fi
       fi
     fi
@@ -5996,6 +6044,8 @@ else
   disable_curses_arg=
 fi
 
+# when `add_curses_lib` is set, then `skip_curses_check`
+# normaly should be set to `yes`
 if test "${add_curses_lib}" != "" ; then
     LIBS="${LIBS} ${add_curses_lib}"
 fi
@@ -6985,6 +7035,12 @@ fi
 
 if test "${enable_libffi}" = "yes" ; then
    complain_if_libffi_fails=yes
+fi
+
+if test "${enable_libffi}" = "default" ; then
+  if test "${enable_portable}" = "yes" ; then
+    enable_libffi=no
+  fi
 fi
 
 if test "${enable_libffi}" = "default" ; then
