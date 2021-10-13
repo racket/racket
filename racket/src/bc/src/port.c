@@ -7022,6 +7022,7 @@ END_XFORM_SKIP;
 
 #ifdef MZ_TERMINAL_SUPPORT
 # define EXPEDITOR_EXTERNAL_USE
+# define DISABLE_X11
 # include "../../ChezScheme/c/version.h"
 /* GETPAGESIZE is set for a recognized platform */
 #endif
@@ -7048,7 +7049,7 @@ typedef int INT;
 #define Sstring_set(s, i, c) ((SCHEME_CHAR_STR_VAL(s)[i]) = c)
 #define S_string(null, n) scheme_alloc_char_string(n, 0)
 #define S_strerror(errno) NULL
-#define S_error1(who, msg, val) scheme_signal_error(msg)
+#define S_error1(who, msg, val) scheme_signal_error(msg, val)
 #define S_error(who, msg) scheme_signal_error(msg)
 
 #ifdef WIN32
