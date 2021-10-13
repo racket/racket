@@ -3,7 +3,8 @@
 (define collection 'multi)
 
 (define deps
-  '(("racket-win32-i386-3" #:platform "win32\\i386")
+  '("base"
+    ("racket-win32-i386-3" #:platform "win32\\i386")
     ("racket-win32-x86_64-3" #:platform "win32\\x86_64")
     ("racket-x86_64-linux-natipkg-3" #:platform "x86_64-linux-natipkg")
     ("racket-x86_64-macosx-3" #:platform "x86_64-macosx")

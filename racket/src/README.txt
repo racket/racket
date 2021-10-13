@@ -106,9 +106,10 @@ Quick instructions:
  requires GNU Make if no installed "libffi" is detected. If the build
  fails with another variant of `make`, please try using GNU Make.
 
- After `make install`, the Racket installation is still more "minimal"
- than a "Minimal Racket" distribution, because it does not have the
- "racket-lib" package installed. Consider adding that package with
+ When building from a Git clone, after `make install`, the Racket
+ installation is still more "minimal" than a "Minimal Racket"
+ distribution, because it does not have the "racket-lib" package
+ installed. Consider adding that package with
 
    raco pkg install -i racket-lib
 
