@@ -7066,8 +7066,12 @@ static char *Swide_to_utf8(const wchar_t *arg) {
   return arg8;
 }
 
-Scheme_Object *Sstring_utf8(const char *s, int len) {
+static Scheme_Object *Sstring_utf8(const char *s, int len) {
   return scheme_make_sized_utf8_string(s, len);
+}
+
+static Scheme_Object *S_LastErrorString() {
+  return scheme_make_utf8_string("[unknown]");
 }
 #endif
 
