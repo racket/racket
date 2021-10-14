@@ -288,21 +288,22 @@
     (one-mz-test "embed-me40.rkt" "#t\n" #f #:only-via-path? #t))
 
   ;; Try unicode expr and cmdline:
-  (prepare dest "unicode")
-  (make-embedding-executable 
-   dest mred? #f
-   '((#t scheme/base))
-   null
-   (base-compile
-    '(begin 
-       (require scheme/base)
-       (eval '(define (out s)
-                (with-output-to-file (build-path (find-system-path 'temp-dir) "stdout")
-                  (lambda () (printf s))
-                  #:exists 'append)))
-       (out "\uA9, \u7238, and \U1D670\n")))
-   `(,(flags "ne") "(out \"\u7237...\U1D671\n\")"))
-  (try-exe dest "\uA9, \u7238, and \U1D670\n\u7237...\U1D671\n" mred?))
+  (when (equal? (locale-string-encoding) "UTF-8")
+    (prepare dest "unicode")
+    (make-embedding-executable 
+     dest mred? #f
+     '((#t scheme/base))
+     null
+     (base-compile
+      '(begin 
+         (require scheme/base)
+         (eval '(define (out s)
+                  (with-output-to-file (build-path (find-system-path 'temp-dir) "stdout")
+                    (lambda () (printf s))
+                    #:exists 'append)))
+         (out "\uA9, \u7238, and \U1D670\n")))
+     `(,(flags "ne") "(out \"\u7237...\U1D671\n\")"))
+    (try-exe dest "\uA9, \u7238, and \U1D670\n\u7237...\U1D671\n" mred?)))
 
 (define (try-basic)
   (mz-tests #f)
