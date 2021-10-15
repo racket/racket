@@ -552,5 +552,23 @@
     (err/rt-test (eval attack-2) exn:fail:syntax?)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; make sure that re-exporting a protected binding is allowed consistently
+
+(module provides-a-protected-binding-to-reexport racket/base
+  (define binding (gensym))
+  (provide (protect-out binding)))
+
+(parameterize ([current-code-inspector (make-inspector)])
+  (test #t syntax? (expand '(module module-that-reexports-protected '#%kernel
+                              (#%require 'provides-a-protected-binding-to-reexport)
+                              (#%provide binding))))
+  (test #t syntax? (expand '(module module-that-reexports-protected racket/base
+                              (require 'provides-a-protected-binding-to-reexport)
+                              (provide binding))))
+  (test #t syntax? (expand '(module module-that-reexports-protected racket/base
+                              (require 'provides-a-protected-binding-to-reexport)
+                              (provide (all-from-out 'provides-a-protected-binding-to-reexport))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
 (report-errs)

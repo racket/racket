@@ -27,5 +27,5 @@
     ;; binding is a transformer or variable binding
     (namespace-visit-available-modules! ns (+ at-phase (module-binding-phase b)))
     (define-values (val primitive? insp protected?)
-      (binding-lookup b empty-env null ns at-phase id))
+      (binding-lookup b empty-env null ns at-phase id #:check-access? #f))
     (not (variable? val))]))
