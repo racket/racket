@@ -10154,9 +10154,13 @@ scheme_default_read_handler(int argc, Scheme_Object *argv[])
                           argv);
 
   config = scheme_current_config();
-  // FIXME
-  // config = scheme_extend_config(config, MZCONFIG_CAN_READ_READER, scheme_true);
-  // config = scheme_extend_config(config, MZCONFIG_CAN_READ_LANG, scheme_false);
+
+  /* Used to have:
+       config = scheme_extend_config(config, MZCONFIG_CAN_READ_READER, scheme_true);
+       config = scheme_extend_config(config, MZCONFIG_CAN_READ_LANG, scheme_false);
+     But those parameters have moved to the expander/reader layer, and that
+     layer also installs a replacement handler. So, this handler shouldn't be called
+     at all, and it's only here for historial reasons. */
 
   scheme_push_continuation_frame(&cframe);
   scheme_install_config(config);

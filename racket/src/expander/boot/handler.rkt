@@ -729,12 +729,17 @@
 (define (get-original-parameterization)
   orig-paramz)
 
+(define (default-current-read-interaction?)
+  (eq? (current-read-interaction) default-read-interaction))
+
 ;; ----------------------------------------
-;; For historical uses of '#%boot
+;; Mostly for historical uses of '#%boot
 
 (define boot-primitives
   (hash 'boot boot
         'seal seal
         ;; Historically, exported a `orig-paramz` after place
         ;; initialization, but we now need an indirection
-        'get-original-parameterization get-original-parameterization))
+        'get-original-parameterization get-original-parameterization
+        ;; Used to enable alternate reader interaction:
+        'default-current-read-interaction? default-current-read-interaction?))

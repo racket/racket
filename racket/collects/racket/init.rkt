@@ -1,6 +1,7 @@
 #lang racket
 (require racket/enter
-         racket/help)
+         racket/help
+         racket/interaction-info)
 
 ;; Set the printer:
 (current-print (let ([pretty-printer
