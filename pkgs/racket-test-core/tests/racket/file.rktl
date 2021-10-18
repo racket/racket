@@ -2645,4 +2645,11 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; file-or-directory-identity
+
+(test #t number? (file-or-directory-identity (current-directory)))
+(test #t = (file-or-directory-identity (current-directory)) (file-or-directory-identity (current-directory)))
+(err/rt-test (file-or-directory-identity "thisDoesNotExistAtAll") exn:fail:filesystem?)
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)
