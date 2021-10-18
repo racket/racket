@@ -26636,8 +26636,8 @@
                            (string-append
                             "error obtaining identity for path\n"
                             "  path: ~a")))
-                      (format app_0 (host-> host-path1_0)))
-                    (format
+                      (1/format app_0 (host-> host-path1_0)))
+                    (1/format
                      (string-append
                       "error obtaining identity for port\n"
                       "  port: ~v")
