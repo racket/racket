@@ -7106,7 +7106,10 @@ ROSYM static Scheme_Object *eol_symbol, *eos_symbol, *screen_symbol;
 
 static Scheme_Object *terminal_init_term(int argc, Scheme_Object **argv) {
 #if MZ_EXPR_EDIT
-  return s_ee_init_term() ? scheme_true : scheme_false;
+  intptr_t in, out;
+  scheme_get_int_val(argv[0], &in);
+  scheme_get_int_val(argv[1], &out);
+  return s_ee_init_term(in, out) ? scheme_true : scheme_false;
 #else
   return scheme_false;
 #endif
@@ -7123,6 +7126,13 @@ static Scheme_Object *terminal_read_char(int argc, Scheme_Object **argv) {
 static Scheme_Object *terminal_write_char(int argc, Scheme_Object **argv) {
 #if MZ_EXPR_EDIT
   s_ee_write_char(SCHEME_CHAR_VAL(argv[0]));
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_set_color(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  s_ee_set_color(SCHEME_INT_VAL(argv[0]), SCHEME_TRUEP(argv[1]));
 #endif
   return scheme_void;
 }
@@ -7285,9 +7295,10 @@ void scheme_init_terminal(Scheme_Startup_Env *env) {
                              scheme_make_prim_w_arity(proc, name, args, args), \
                              env)
 
-  ADDTO_EE("terminal-init", terminal_init_term, 0);
+  ADDTO_EE("terminal-init", terminal_init_term, 2);
   ADDTO_EE("terminal-read-char", terminal_read_char, 1);
   ADDTO_EE("terminal-write-char", terminal_write_char, 1);
+  ADDTO_EE("terminal-set-color", terminal_set_color, 1);
   ADDTO_EE("terminal-flush", terminal_flush, 0);
   ADDTO_EE("terminal-get-screen-size", terminal_get_screen_size, 0);
   ADDTO_EE("terminal-raw-mode", terminal_raw_mode, 1);
