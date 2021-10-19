@@ -9,6 +9,7 @@
  terminal-raw-mode
  terminal-postoutput-mode
  terminal-automargin-mode
+ terminal-signal-mode
  terminal-nanosleep
  terminal-pause
  terminal-get-clipboard
@@ -43,6 +44,15 @@
       (if on?
           (postoutput-mode)
           (no-postoutput-mode)))))
+
+(define terminal-signal-mode
+  (let ()
+    (define signal-mode (foreign-procedure "(cs)ee_signal" () void))
+    (define no-signal-mode (foreign-procedure "(cs)ee_nosignal" () void))
+    (lambda (on?)
+      (if on?
+          (signal-mode)
+          (no-signal-mode)))))
 
 (define terminal-automargin-mode
   (let ()

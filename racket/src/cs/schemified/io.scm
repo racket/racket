@@ -38,6 +38,7 @@
                 (1/current-error-port current-error-port)
                 (1/current-force-delete-permissions
                  current-force-delete-permissions)
+                (current-get-interaction-evt current-get-interaction-evt)
                 (1/current-get-interaction-input-port
                  current-get-interaction-input-port)
                 (1/current-input-port current-input-port)
@@ -39307,6 +39308,19 @@
           p_0))
        p_0))
    'current-get-interaction-input-port))
+(define current-get-interaction-evt
+  (make-parameter
+   (lambda () never-evt)
+   (lambda (p_0)
+     (begin
+       (if (if (procedure? p_0) (procedure-arity-includes? p_0 0) #f)
+         (void)
+         (raise-argument-error
+          'current-get-interaction-evt
+          "(procedure-arity-includes/c 0)"
+          p_0))
+       p_0))
+   'current-get-interaction-evt))
 (define cell.1$1 (unsafe-make-place-local hash2610))
 (define 1/cache-configuration
   (|#%name|

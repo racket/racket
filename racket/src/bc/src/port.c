@@ -7172,6 +7172,16 @@ static Scheme_Object *terminal_postoutput_mode(int argc, Scheme_Object **argv) {
   return scheme_void;
 }
 
+static Scheme_Object *terminal_signal_mode(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  if (SCHEME_TRUEP(argv[0]))
+    s_ee_signal();
+  else
+    s_ee_nosignal();
+#endif
+  return scheme_void;
+}
+
 static Scheme_Object *terminal_automargin_mode(int argc, Scheme_Object **argv) {
 #if MZ_EXPR_EDIT
   if (SCHEME_TRUEP(argv[0]))
@@ -7303,6 +7313,7 @@ void scheme_init_terminal(Scheme_Startup_Env *env) {
   ADDTO_EE("terminal-get-screen-size", terminal_get_screen_size, 0);
   ADDTO_EE("terminal-raw-mode", terminal_raw_mode, 1);
   ADDTO_EE("terminal-postoutput-mode", terminal_postoutput_mode, 1);
+  ADDTO_EE("terminal-signal-mode", terminal_signal_mode, 1);
   ADDTO_EE("terminal-automargin-mode", terminal_automargin_mode, 1);
   ADDTO_EE("terminal-nanosleep", terminal_nanosleep, 2);
   ADDTO_EE("terminal-pause", terminal_pause, 0);

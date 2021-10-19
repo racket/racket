@@ -213,6 +213,7 @@
   [current-evt-pseudo-random-generator (known-procedure/single-valued 3)]
   [current-force-delete-permissions (known-procedure/single-valued 3)]
   [current-gc-milliseconds (known-procedure/no-prompt 1)]
+  [current-get-interaction-evt (known-procedure/single-valued 3)]
   [current-get-interaction-input-port (known-procedure/single-valued 3)]
   [current-inexact-milliseconds (known-procedure/no-prompt 1)]
   [current-inexact-monotonic-milliseconds (known-procedure/no-prompt 1)]

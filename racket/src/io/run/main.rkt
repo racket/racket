@@ -12,6 +12,7 @@
          current-read-interaction
          current-prompt-read
          current-get-interaction-input-port
+         current-get-interaction-evt
          cache-configuration)
 
 (define/who executable-yield-handler
@@ -64,6 +65,13 @@
                     (check who (procedure-arity-includes/c 0) p)
                     p)
                   'current-get-interaction-input-port))
+
+(define/who current-get-interaction-evt
+  (make-parameter (lambda () never-evt)
+                  (lambda (p)
+                    (check who (procedure-arity-includes/c 0) p)
+                    p)
+                  'current-get-interaction-evt))
 
 ;; ----------------------------------------
 

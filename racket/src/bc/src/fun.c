@@ -148,6 +148,7 @@ static Scheme_Object *current_print(int argc, Scheme_Object **argv);
 static Scheme_Object *current_prompt_read(int, Scheme_Object **);
 static Scheme_Object *current_read(int, Scheme_Object **);
 static Scheme_Object *current_get_read_input_port(int, Scheme_Object **);
+static Scheme_Object *current_get_interaction_evt(int, Scheme_Object **);
 
 static Scheme_Object *chaperone_wrap_cc_guard(Scheme_Object *obj, Scheme_Object *proc);
 static Scheme_Object *do_cc_guard(Scheme_Object *v, Scheme_Object *cc_guard, Scheme_Object *chaperone);
@@ -650,6 +651,12 @@ scheme_init_fun (Scheme_Startup_Env *env)
 			     scheme_register_parameter(current_get_read_input_port,
 						       "current-get-interaction-input-port",
 						       MZCONFIG_READ_INPUT_PORT_HANDLER),
+			     env);
+
+  scheme_addto_prim_instance("current-get-interaction-evt",
+			     scheme_register_parameter(current_get_interaction_evt,
+						       "current-get-interaction-evt",
+						       MZCONFIG_READ_GET_EVT),
 			     env);
 
   REGISTER_SO(certify_mode_symbol);
@@ -10049,6 +10056,15 @@ current_get_read_input_port(int argc, Scheme_Object **argv)
 			     0, NULL, NULL, 0);
 }
 
+static Scheme_Object *
+current_get_interaction_evt(int argc, Scheme_Object **argv)
+{
+  return scheme_param_config("current-get-interaction-evt",
+			     scheme_make_integer(MZCONFIG_READ_GET_EVT),
+			     argc, argv,
+			     0, NULL, NULL, 0);
+}
+
 Scheme_Object *
 scheme_default_print_handler(int argc, Scheme_Object *argv[])
 {
@@ -10082,6 +10098,12 @@ scheme_default_read_input_port_handler(int argc, Scheme_Object *argv[])
     scheme_flush_orig_outputs();
 
   return inport;
+}
+
+Scheme_Object *
+scheme_default_read_get_evt(int argc, Scheme_Object *argv[])
+{
+  return scheme_never_ready_evt;
 }
 
 Scheme_Object *

@@ -2134,6 +2134,7 @@ Scheme_Object *scheme_poll_evt(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_do_chaperone_evt(const char*, int, int, Scheme_Object *argv[]);
 
 extern Scheme_Object *scheme_always_ready_evt;
+extern Scheme_Object *scheme_never_ready_evt;
 
 void scheme_get_outof_line(Scheme_Channel_Syncer *ch_w);
 void scheme_get_back_into_line(Scheme_Channel_Syncer *ch_w);
@@ -2677,6 +2678,7 @@ XFORM_NONGCING int scheme_strncmp(const char *a, const char *b, int len);
 Scheme_Object *scheme_default_print_handler(int, Scheme_Object *[]);
 Scheme_Object *scheme_default_prompt_read_handler(int, Scheme_Object *[]);
 Scheme_Object *scheme_default_read_input_port_handler(int argc, Scheme_Object *[]);
+Scheme_Object *scheme_default_read_get_evt(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_default_read_handler(int argc, Scheme_Object *[]);
 
 extern Scheme_Object *scheme_eof_object_p_proc;

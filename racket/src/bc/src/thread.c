@@ -8158,6 +8158,11 @@ static void make_initial_config(Scheme_Thread *p)
                                   0, 0);
     init_param(cells, paramz, MZCONFIG_READ_INPUT_PORT_HANDLER, ph);
 
+    ph = scheme_make_prim_w_arity(scheme_default_read_get_evt,
+                                  "default-get-interaction-evt",
+                                  0, 0);
+    init_param(cells, paramz, MZCONFIG_READ_GET_EVT, ph);
+
     ph = scheme_make_prim_w_arity(scheme_default_read_handler,
                                   "default-read-interaction-handler",
                                   2, 2);

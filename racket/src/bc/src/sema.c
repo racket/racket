@@ -3,6 +3,7 @@
 #ifndef NO_SCHEME_THREADS
 
 READ_ONLY Scheme_Object *scheme_always_ready_evt;
+READ_ONLY Scheme_Object *scheme_never_ready_evt;
 THREAD_LOCAL_DECL(Scheme_Object *scheme_system_idle_channel);
 
 static Scheme_Object *make_sema(int n, Scheme_Object **p);
@@ -189,9 +190,10 @@ void scheme_init_sema(Scheme_Startup_Env *env)
   scheme_always_ready_evt->type = scheme_always_evt_type;
   scheme_addto_prim_instance("always-evt", scheme_always_ready_evt, env);
 
-  o = scheme_alloc_small_object();
-  o->type = scheme_never_evt_type;
-  scheme_addto_prim_instance("never-evt", o, env);
+  REGISTER_SO(scheme_never_ready_evt);
+  scheme_never_ready_evt = scheme_alloc_small_object();
+  scheme_never_ready_evt->type = scheme_never_evt_type;
+  scheme_addto_prim_instance("never-evt", scheme_never_ready_evt, env);
 
   REGISTER_SO(thread_recv_evt);
   o = scheme_alloc_small_object();
