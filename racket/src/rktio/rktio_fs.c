@@ -711,8 +711,11 @@ rktio_stat_t *rktio_file_or_directory_stat(
   stat_buf = (struct stat *) malloc(sizeof(struct stat));
   rktio_stat_buf = (struct rktio_stat_t *) malloc(sizeof(struct rktio_stat_t));
 
-  /* TODO: Select `stat` / `lstat` depending on `follow_links`. */
-  stat_result = lstat(path, stat_buf);
+  if (follow_links) {
+    stat_result = stat(path, stat_buf);
+  } else {
+    stat_result = lstat(path, stat_buf);
+  }
   if (stat_result) {
     /* TODO: error handling, including clean-up if necessary */
   } else {

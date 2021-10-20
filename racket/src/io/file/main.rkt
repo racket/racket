@@ -293,7 +293,7 @@
   (check who path-string? p)
   (define host-path (->host p who '(exists)))
   (start-atomic)
-  (define r0 (rktio_file_or_directory_stat rktio host-path #f))
+  (define r0 (rktio_file_or_directory_stat rktio host-path (not as-link?)))
   (define r (if (rktio-error? r0)
                 r0
                 (begin0
