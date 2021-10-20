@@ -592,8 +592,8 @@ Notes:
    nanoseconds since the epoch}
  @item{@racketvalfont{'modify-time-nanoseconds} : last modification time in
    nanoseconds since the epoch}
- @item{@racketvalfont{'change-time-nanoseconds} : last change time in nanoseconds
-   since the epoch}
+ @item{@racketvalfont{'change-time-nanoseconds} : last status change time in
+   nanoseconds since the epoch}
 ]
 
 If @racket[as-link?] is a true value, then if @racket[path] refers to a
