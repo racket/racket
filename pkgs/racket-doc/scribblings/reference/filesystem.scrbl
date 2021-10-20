@@ -566,8 +566,6 @@ Notes:
 @itemlist[
  @item{@racketvalfont{'device-id} : device id}
  @item{@racketvalfont{'inode} : inode number}
- @item{@racketvalfont{'permissions} : permission list as returned by
-   @racket[(file-or-directory-permissions path)]}
  @item{@racketvalfont{'permission-bits} : permissions bits as returned by
    @racket[(file-or-directory-permissions path 'bits)]}
  @item{@racketvalfont{'type} : one of @racketvalfont{'socket},

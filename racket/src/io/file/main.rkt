@@ -326,8 +326,6 @@
      (hash 'device-id (vector-ref r 0)
            'inode (vector-ref r 1)
            'permission-bits (vector-ref r 2)
-           ; TODO: Include permission list. Refactor with
-           ; `file-or-directory-permissions` to avoid code duplication.
            'hardlink-count (vector-ref r 3)
            'user-id (vector-ref r 4)
            'group-id (vector-ref r 5)
