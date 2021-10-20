@@ -570,26 +570,39 @@ with the following order (earlier bullets before later):
 @history[#:changed "6.3" @elem{Added the @racket[try-order?] argument.}
          #:changed "7.1.0.7" @elem{Added guarantees for @racket[try-order?].}]}
 
-@defproc[(hash-keys [hash hash?])
+@defproc[(hash-keys [hash hash?] [try-order? any/c #f])
          (listof any/c)]{
 Returns a list of the keys of @racket[hash] in an unspecified order.
 
-See @racket[hash-map] for information about modifying @racket[hash]
-during @racket[hash-keys]. @see-also-concurrency-caveat[]}
+If @racket[try-order?] is true, then the order of keys is normalized under
+certain circumstances.  See @racket[hash-map] for further explanations on
+@racket[try-order?] and on information about modifying @racket[hash] during
+@racket[hash-keys]. @see-also-concurrency-caveat[]
 
-@defproc[(hash-values [hash hash?])
+@history[#:changed "8.3.0.11" @elem{Added the @racket[_try-order?] argument.}]}
+
+@defproc[(hash-values [hash hash?] [try-order? any/c #f])
          (listof any/c)]{
 Returns a list of the values of @racket[hash] in an unspecified order.
 
-See @racket[hash-map] for information about modifying @racket[hash]
-during @racket[hash-values]. @see-also-concurrency-caveat[]}
+If @racket[try-order?] is true, then the order of values is normalized under
+certain circumstances, based on the ordering of the associated keys.
+See @racket[hash-map] for further explanations on @racket[try-order?] and on
+information about modifying @racket[hash] during
+@racket[hash-values]. @see-also-concurrency-caveat[]
 
-@defproc[(hash->list [hash hash?])
+@history[#:changed "8.3.0.11" @elem{Added the @racket[_try-order?] argument.}]}
+
+@defproc[(hash->list [hash hash?] [try-order? any/c #f])
          (listof (cons/c any/c any/c))]{
 Returns a list of the key--value pairs of @racket[hash] in an unspecified order.
 
-See @racket[hash-map] for information about modifying @racket[hash]
-during @racket[hash->list]. @see-also-concurrency-caveat[]}
+If @racket[try-order?] is true, then the order of keys and values is normalized
+under certain circumstances. See @racket[hash-map] for further explanations on
+@racket[try-order?] and on information about modifying @racket[hash] during
+@racket[hash->list]. @see-also-concurrency-caveat[]
+
+@history[#:changed "8.3.0.11" @elem{Added the @racket[_try-order?] argument.}]}
 
 @defproc[(hash-keys-subset? [hash1 hash?] [hash2 hash?])
          boolean?]{
