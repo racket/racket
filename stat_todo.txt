@@ -5,6 +5,8 @@
   (which is something completely different)?
 - Windows support
 - Potentially: `fstat` support (file handle instead of path)
+- Add masks to `racket/src/io/file/main.rkt` and document them at the
+  end of `pkgs/racket-doc/scribblings/reference/filesystem.scrbl`.
 
 Tests
 
