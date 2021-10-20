@@ -42,7 +42,7 @@
 
 #define jit_notify_freed_code() /* empty */
 
-#if TARGET_OS_IPHONE
+#if defined(TARGET_OS_IPHONE)
 void sys_icache_invalidate(void *start, size_t len);
 # define CLEAR_ICACHE(s, e) sys_icache_invalidate(s, ((char *)e) - ((char *)s));
 #else

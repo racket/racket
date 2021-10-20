@@ -13,7 +13,7 @@ struct rktio_envvars_t {
 # define SETENV_DROPS_LEADING_EQUAL_SIGN
 #endif
 
-#if defined(OS_X) && !TARGET_OS_IPHONE
+#if defined(OS_X) && !defined(TARGET_OS_IPHONE)
 # include <crt_externs.h>
 # define GET_ENVIRON_ARRAY *_NSGetEnviron()
 #endif
