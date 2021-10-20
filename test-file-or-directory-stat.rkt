@@ -16,7 +16,9 @@
         (display-to-file TEST-STRING temp-file-path #:exists 'truncate)
         (define stat-result (file-or-directory-stat temp-file-path))
         (define (stat-ref symbol) (hash-ref stat-result symbol))
+        ; Check size, inode, hardlink count and device id.
         (check-equal? (stat-ref 'size) (string-length TEST-STRING))
+        (check-equal? (stat-ref 'hardlink-count) 1)
         (define (positive-fixnum? n) (and (positive-integer? n) (fixnum? n)))
         (check-pred positive-fixnum? (stat-ref 'inode))
         (check-pred positive-fixnum? (stat-ref 'device-id))
@@ -33,6 +35,10 @@
                       (stat-ref 'modify-time-nanoseconds))
         (check-true (>= (stat-ref 'access-time-nanoseconds)
                         (stat-ref 'modify-time-nanoseconds)))
+        ; Check stat data that corresponds to mode bits.
+        ;  Read/write/execute
+        (check-equal? (bitwise-and (stat-ref 'permission-bits) #o777) #o664)
+        ; (check-equal? (sort (stat-ref 'permissions)) '(read write))
         ; TODO: Make sure the file is removed even if `file-or-directory-stat`
         ; raises an exception.
         (delete-file temp-file-path))

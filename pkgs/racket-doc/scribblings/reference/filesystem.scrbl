@@ -566,14 +566,10 @@ Notes:
 @itemlist[
  @item{@racketvalfont{'device-id} : device id}
  @item{@racketvalfont{'inode} : inode number}
- @item{@racketvalfont{'permissions} : permissions as returned by
-   @racket[file-or-directory-permissions]}
- @item{@racketvalfont{'group-id-bit?} : whether the filesystem entry has the
-   group id bit set}
- @item{@racketvalfont{'user-id-bit?} : whether the filesystem entry has the
-   user id bit set}
- @item{@racketvalfont{'sticky-bit?} : whether the filesystem entry has the
-   sticky bit set}
+ @item{@racketvalfont{'permissions} : permission list as returned by
+   @racket[(file-or-directory-permissions path)]}
+ @item{@racketvalfont{'permission-bits} : permissions bits as returned by
+   @racket[(file-or-directory-permissions path 'bits)]}
  @item{@racketvalfont{'type} : one of @racketvalfont{'socket},
    @racketvalfont{'symbolic-link}, @racketvalfont{'file}, @racketvalfont{'directory},
    @racketvalfont{'block-device}, @racketvalfont{'character-device} or

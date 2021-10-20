@@ -325,7 +325,9 @@
           (vector-ref r (add1 seconds-index))))
      (hash 'device-id (vector-ref r 0)
            'inode (vector-ref r 1)
-           ; TODO: Convert mode (index 2) to individual key/values (see docs).
+           'permission-bits (vector-ref r 2)
+           ; TODO: Include permission list. Refactor with
+           ; `file-or-directory-permissions` to avoid code duplication.
            'hardlink-count (vector-ref r 3)
            'user-id (vector-ref r 4)
            'group-id (vector-ref r 5)
