@@ -642,7 +642,7 @@
 
 # if defined(XONX)
 #  define SCHEME_OS "darwin"
-# elif TARGET_OS_IPHONE
+# elif defined(TARGET_OS_IPHONE)
 #  define SCHEME_OS "ios"
 # else
 #  define SCHEME_OS "macosx"
