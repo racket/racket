@@ -215,7 +215,7 @@
         (vector
          (ftype-ref rktio_stat_t (device_id) p)
          (ftype-ref rktio_stat_t (inode) p)
-         (ftype-ref rktio_stat_t (mode) p)
+         (ftype-ref rktio_stat_t (permission_bits) p)
          (ftype-ref rktio_stat_t (hardlink_count) p)
          (ftype-ref rktio_stat_t (user_id) p)
          (ftype-ref rktio_stat_t (group_id) p)

@@ -718,7 +718,7 @@ rktio_stat_t *rktio_file_or_directory_stat(
   } else {
     rktio_stat_buf->device_id = stat_buf->st_dev;
     rktio_stat_buf->inode = stat_buf->st_ino;
-    rktio_stat_buf->mode = stat_buf->st_mode;
+    rktio_stat_buf->permission_bits = stat_buf->st_mode;
     rktio_stat_buf->hardlink_count = stat_buf->st_nlink;
     rktio_stat_buf->user_id = stat_buf->st_uid;
     rktio_stat_buf->group_id = stat_buf->st_gid;
