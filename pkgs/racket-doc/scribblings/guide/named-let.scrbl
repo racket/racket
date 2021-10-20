@@ -30,8 +30,8 @@ function with the values of some initial expressions.
   (let dup ([i 0]
             [lst lst])
    (cond
-    [(= i pos) (cons (car lst) lst)]
-    [else (cons (car lst) (dup (+ i 1) (cdr lst)))])))
+     [(= i pos) (cons (car lst) lst)]
+     [else (cons (car lst) (dup (+ i 1) (cdr lst)))])))
 (duplicate 1 (list "apple" "cheese burger!" "banana"))
 ]
 
