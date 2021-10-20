@@ -29680,7 +29680,7 @@
                             rktio_file_or_directory_stat
                             (unsafe-place-local-ref cell.1)
                             host-path_0
-                            #f)))
+                            (not as-link?9_0))))
                       (let ((r_0
                              (if (vector? r0_0)
                                r0_0
@@ -29722,45 +29722,52 @@
                                             (add1 seconds-index_0)))))))))
                               (let ((app_0 (vector-ref r_0 0)))
                                 (let ((app_1 (vector-ref r_0 1)))
-                                  (let ((app_2 (vector-ref r_0 3)))
-                                    (let ((app_3 (vector-ref r_0 4)))
-                                      (let ((app_4 (vector-ref r_0 5)))
-                                        (let ((app_5 (vector-ref r_0 6)))
-                                          (let ((app_6 (vector-ref r_0 7)))
-                                            (let ((app_7
-                                                   (combined-nanoseconds_0 7)))
-                                              (let ((app_8 (vector-ref r_0 9)))
-                                                (let ((app_9
-                                                       (combined-nanoseconds_0
-                                                        9)))
-                                                  (let ((app_10
-                                                         (vector-ref r_0 11)))
-                                                    (hash
-                                                     'device-id
-                                                     app_0
-                                                     'inode
-                                                     app_1
-                                                     'hardlink-count
-                                                     app_2
-                                                     'user-id
-                                                     app_3
-                                                     'group-id
-                                                     app_4
-                                                     'size
-                                                     app_5
-                                                     'access-time-seconds
-                                                     app_6
-                                                     'access-time-nanoseconds
-                                                     app_7
-                                                     'modify-time-seconds
-                                                     app_8
-                                                     'modify-time-nanoseconds
-                                                     app_9
-                                                     'change-time-seconds
-                                                     app_10
-                                                     'change-time-nanoseconds
+                                  (let ((app_2 (vector-ref r_0 2)))
+                                    (let ((app_3 (vector-ref r_0 3)))
+                                      (let ((app_4 (vector-ref r_0 4)))
+                                        (let ((app_5 (vector-ref r_0 5)))
+                                          (let ((app_6 (vector-ref r_0 6)))
+                                            (let ((app_7 (vector-ref r_0 7)))
+                                              (let ((app_8
                                                      (combined-nanoseconds_0
-                                                      11))))))))))))))))))))))))))
+                                                      7)))
+                                                (let ((app_9
+                                                       (vector-ref r_0 9)))
+                                                  (let ((app_10
+                                                         (combined-nanoseconds_0
+                                                          9)))
+                                                    (let ((app_11
+                                                           (vector-ref
+                                                            r_0
+                                                            11)))
+                                                      (hash
+                                                       'device-id
+                                                       app_0
+                                                       'inode
+                                                       app_1
+                                                       'permission-bits
+                                                       app_2
+                                                       'hardlink-count
+                                                       app_3
+                                                       'user-id
+                                                       app_4
+                                                       'group-id
+                                                       app_5
+                                                       'size
+                                                       app_6
+                                                       'access-time-seconds
+                                                       app_7
+                                                       'access-time-nanoseconds
+                                                       app_8
+                                                       'modify-time-seconds
+                                                       app_9
+                                                       'modify-time-nanoseconds
+                                                       app_10
+                                                       'change-time-seconds
+                                                       app_11
+                                                       'change-time-nanoseconds
+                                                       (combined-nanoseconds_0
+                                                        11)))))))))))))))))))))))))))
     (|#%name|
      file-or-directory-stat
      (case-lambda
@@ -34632,11 +34639,11 @@
                 'subprocess
                 "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                 stderr_0))
-             (let ((lr1341 unsafe-undefined)
+             (let ((lr1342 unsafe-undefined)
                    (group_0 unsafe-undefined)
                    (command_0 unsafe-undefined)
                    (exact/args_0 unsafe-undefined))
-               (set! lr1341
+               (set! lr1342
                  (call-with-values
                   (lambda ()
                     (if (path-string? group/command_0)
@@ -34691,9 +34698,9 @@
                    ((group_1 command_1 exact/args_1)
                     (vector group_1 command_1 exact/args_1))
                    (args (raise-binding-result-arity-error 3 args)))))
-               (set! group_0 (unsafe-vector*-ref lr1341 0))
-               (set! command_0 (unsafe-vector*-ref lr1341 1))
-               (set! exact/args_0 (unsafe-vector*-ref lr1341 2))
+               (set! group_0 (unsafe-vector*-ref lr1342 0))
+               (set! command_0 (unsafe-vector*-ref lr1342 1))
+               (set! exact/args_0 (unsafe-vector*-ref lr1342 2))
                (call-with-values
                 (lambda ()
                   (if (if (pair? exact/args_0)
