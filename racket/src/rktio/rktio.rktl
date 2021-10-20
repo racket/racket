@@ -1127,7 +1127,7 @@
  NULL
  ()
  (ref rktio_stat_t)
- rktio_stat
+ rktio_file_or_directory_stat
  (((ref rktio_t) rktio)
   (rktio_const_string_t path)
   (rktio_bool_t follow_links)))

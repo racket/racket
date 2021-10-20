@@ -145,7 +145,7 @@ Sforeign_symbol("rktio_make_link", (void *)rktio_make_link);
 Sforeign_symbol("rktio_file_size", (void *)rktio_file_size);
 Sforeign_symbol("rktio_get_file_modify_seconds", (void *)rktio_get_file_modify_seconds);
 Sforeign_symbol("rktio_set_file_modify_seconds", (void *)rktio_set_file_modify_seconds);
-Sforeign_symbol("rktio_stat", (void *)rktio_stat);
+Sforeign_symbol("rktio_file_or_directory_stat", (void *)rktio_file_or_directory_stat);
 Sforeign_symbol("rktio_fd_identity", (void *)rktio_fd_identity);
 Sforeign_symbol("rktio_path_identity", (void *)rktio_path_identity);
 Sforeign_symbol("rktio_get_file_or_directory_permissions", (void *)rktio_get_file_or_directory_permissions);

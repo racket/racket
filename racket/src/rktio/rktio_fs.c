@@ -701,7 +701,8 @@ rktio_ok_t rktio_set_current_directory(rktio_t *rktio, const char *path)
   return !err;
 }
 
-rktio_stat_t *rktio_stat(rktio_t *rktio, rktio_const_string_t path, rktio_bool_t follow_links)
+rktio_stat_t *rktio_file_or_directory_stat(
+  rktio_t *rktio, rktio_const_string_t path, rktio_bool_t follow_links)
 {
   struct stat *stat_buf;
   struct rktio_stat_t *rktio_stat_buf;
