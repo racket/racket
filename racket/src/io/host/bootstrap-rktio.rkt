@@ -109,7 +109,7 @@
     (vector
      (Rrktio_stat_t-device_id p)
      (Rrktio_stat_t-inode p)
-     (Rrktio_stat_t-mode p)
+     (Rrktio_stat_t-permission_bits p)
      (Rrktio_stat_t-hardlink_count p)
      (Rrktio_stat_t-user_id p)
      (Rrktio_stat_t-group_id p)

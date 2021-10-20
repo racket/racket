@@ -882,7 +882,7 @@ RKTIO_EXTERN rktio_ok_t rktio_set_file_modify_seconds(rktio_t *rktio, rktio_cons
 typedef struct rktio_stat_t {
   /* TODO: Currently limited for testing */
   /* Eventually, this should use `int64_t`, available in C99 and up */
-  uintptr_t device_id, inode, mode, hardlink_count, user_id, group_id, size,
+  uintptr_t device_id, inode, permission_bits, hardlink_count, user_id, group_id, size,
             access_time_seconds, access_time_nanoseconds,
             modify_time_seconds, modify_time_nanoseconds,
             change_time_seconds, change_time_nanoseconds;

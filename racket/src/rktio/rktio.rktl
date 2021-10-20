@@ -180,7 +180,7 @@
  rktio_stat_t
  ((uintptr_t device_id)
   (uintptr_t inode)
-  (uintptr_t mode)
+  (uintptr_t permission_bits)
   (uintptr_t hardlink_count)
   (uintptr_t user_id)
   (uintptr_t group_id)
