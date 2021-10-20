@@ -3206,7 +3206,8 @@
   (begin-unsafe (hash-ref rktio-table 'rktio_get_file_modify_seconds)))
 (define rktio_set_file_modify_seconds
   (begin-unsafe (hash-ref rktio-table 'rktio_set_file_modify_seconds)))
-(define rktio_stat (begin-unsafe (hash-ref rktio-table 'rktio_stat)))
+(define rktio_file_or_directory_stat
+  (begin-unsafe (hash-ref rktio-table 'rktio_file_or_directory_stat)))
 (define rktio_fd_identity
   (begin-unsafe (hash-ref rktio-table 'rktio_fd_identity)))
 (define rktio_path_identity
@@ -29676,7 +29677,7 @@
                     (unsafe-start-atomic)
                     (let ((r0_0
                            (|#%app|
-                            rktio_stat
+                            rktio_file_or_directory_stat
                             (unsafe-place-local-ref cell.1)
                             host-path_0
                             #f)))
@@ -34631,11 +34632,11 @@
                 'subprocess
                 "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                 stderr_0))
-             (let ((lr1327 unsafe-undefined)
+             (let ((lr1341 unsafe-undefined)
                    (group_0 unsafe-undefined)
                    (command_0 unsafe-undefined)
                    (exact/args_0 unsafe-undefined))
-               (set! lr1327
+               (set! lr1341
                  (call-with-values
                   (lambda ()
                     (if (path-string? group/command_0)
@@ -34690,9 +34691,9 @@
                    ((group_1 command_1 exact/args_1)
                     (vector group_1 command_1 exact/args_1))
                    (args (raise-binding-result-arity-error 3 args)))))
-               (set! group_0 (unsafe-vector*-ref lr1327 0))
-               (set! command_0 (unsafe-vector*-ref lr1327 1))
-               (set! exact/args_0 (unsafe-vector*-ref lr1327 2))
+               (set! group_0 (unsafe-vector*-ref lr1341 0))
+               (set! command_0 (unsafe-vector*-ref lr1341 1))
+               (set! exact/args_0 (unsafe-vector*-ref lr1341 2))
                (call-with-values
                 (lambda ()
                   (if (if (pair? exact/args_0)
