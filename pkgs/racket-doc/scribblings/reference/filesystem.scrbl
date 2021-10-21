@@ -557,6 +557,8 @@ Notes:
  @item{@racketvalfont{'group-id} : group id of owner}
  @item{@racketvalfont{'device-id-for-special-file} : device id (if special file)}
  @item{@racketvalfont{'size} : size of file or link in bytes}
+ @item{@racketvalfont{'block-size} : size of file system blocks}
+ @item{@racketvalfont{'block-count} : number of used file system blocks}
  @item{@racketvalfont{'access-time-seconds} : last access time in seconds since the epoch}
  @item{@racketvalfont{'modify-time-seconds} : last modification time in
    seconds since the epoch}

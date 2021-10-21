@@ -730,7 +730,10 @@ rktio_stat_t *rktio_file_or_directory_stat(
     rktio_stat_buf->hardlink_count = stat_buf->st_nlink;
     rktio_stat_buf->user_id = stat_buf->st_uid;
     rktio_stat_buf->group_id = stat_buf->st_gid;
+    rktio_stat_buf->device_id_for_special_file = stat_buf->st_rdev;
     rktio_stat_buf->size = stat_buf->st_size;
+    rktio_stat_buf->block_size = stat_buf->st_blksize;
+    rktio_stat_buf->block_count = stat_buf->st_blocks;
     /* The `tv_nsec` fields are only the fractional part of the seconds.
        (The value is always lower than 1_000_000_000.) */
     rktio_stat_buf->access_time_seconds = stat_buf->st_atim.tv_sec;
