@@ -57,5 +57,25 @@
         ; TODO: Make sure the file is removed even if `file-or-directory-stat`
         ; raises an exception.
         (delete-file temp-file-path))
+
+      (test-case "Link traversal"
+        (define temp-file-path (path->string (make-temporary-file)))
+        (define TEST-STRING "stat test")
+        (display-to-file TEST-STRING temp-file-path #:exists 'truncate)
+        (define link-file-path (string-append temp-file-path "_link"))
+        (make-file-or-directory-link temp-file-path link-file-path)
+        ; Link target
+        (define stat-result (file-or-directory-stat link-file-path))
+        (define (stat-ref symbol) (hash-ref stat-result symbol))
+        (check-equal? (stat-ref 'size) (string-length TEST-STRING))
+        (check-equal? (bitwise-and (stat-ref 'permission-bits) #o777) #o664)
+        ; Link itself
+        (define stat-result-link (file-or-directory-stat link-file-path #t))
+        (define (stat-ref-link symbol) (hash-ref stat-result-link symbol))
+        (check-equal? (stat-ref-link 'size) (string-length temp-file-path))
+        (check-equal? (bitwise-and (stat-ref-link 'permission-bits) #o777) #o777)
+        ; TODO: Make sure the file is removed even if `file-or-directory-stat`
+        ; raises an exception.
+        (delete-file temp-file-path))
   ))
 )
