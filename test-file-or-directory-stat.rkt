@@ -63,6 +63,11 @@
           (check-true (and (<= 1 user-id) (< user-id 65536))))
         (let ([group-id (stat-ref 'group-id)])
           (check-true (and (<= 1 group-id) (< group-id 65536))))
+        (check-equal? (stat-ref 'device-id-for-special-file) 0)
+        (check-pred positive-fixnum? (stat-ref 'block-size))
+        ; On my system, I had expected 1 block, but it's actually 8. This number
+        ; is supported by the `stat` command line tool.
+        (check-pred positive-fixnum? (stat-ref 'block-count))
         ; Check timestamps.
         (check-equal? (quotient (stat-ref 'modify-time-nanoseconds) #e1e9)
                       (stat-ref 'modify-time-seconds))
