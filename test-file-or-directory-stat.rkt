@@ -40,6 +40,12 @@
       (stat-and-stat-ref temp-file-path as-link?))
     (values temp-file-path stat-result stat-ref))
 
+  ;; XXX: Expected bitmasks of #o664 depend on the OS being Posix and the umask
+  ;; being set to 002.
+  ;;
+  ;; TODO: Put files and links inside a temporary directory and remove the
+  ;; directory at the end of each test case.
+
   (run-tests
     (test-suite "Reading stat info"
       (test-case "Writing temporary file and reading stat"
