@@ -7,15 +7,27 @@
     rackunit
     rackunit/text-ui)
 
+  (define TEST-STRING "stat test")
+
+  (define (stat-and-stat-ref path as-link?)
+    (define stat-result
+      (if (eq? as-link? 'do-not-use)
+          (file-or-directory-stat path)
+          (file-or-directory-stat path as-link?)))
+    (define (stat-ref symbol) (hash-ref stat-result symbol))
+    (values stat-result stat-ref))
+
+  (define (make-temp-file as-link?)
+    (define temp-file-path (path->string (make-temporary-file)))
+    (display-to-file TEST-STRING temp-file-path #:exists 'truncate)
+    (define-values (stat-result stat-ref)
+      (stat-and-stat-ref temp-file-path as-link?))
+    (values temp-file-path stat-result stat-ref))
+
   (run-tests
     (test-suite "Reading stat info"
       (test-case "Writing temporary file and reading stat"
-        (define start-time-milliseconds (current-inexact-milliseconds))
-        (define temp-file-path (make-temporary-file))
-        (define TEST-STRING "stat test")
-        (display-to-file TEST-STRING temp-file-path #:exists 'truncate)
-        (define stat-result (file-or-directory-stat temp-file-path))
-        (define (stat-ref symbol) (hash-ref stat-result symbol))
+        (define-values (temp-file-path stat-result stat-ref) (make-temp-file 'do-not-use))
         ; Check size, inode, hardlink count and device id.
         (check-equal? (stat-ref 'size) (string-length TEST-STRING))
         (check-equal? (stat-ref 'hardlink-count) 1)
@@ -43,12 +55,7 @@
         (delete-file temp-file-path))
 
       (test-case "Comparison with other Racket functions"
-        (define start-time-milliseconds (current-inexact-milliseconds))
-        (define temp-file-path (make-temporary-file))
-        (define TEST-STRING "stat test")
-        (display-to-file TEST-STRING temp-file-path #:exists 'truncate)
-        (define stat-result (file-or-directory-stat temp-file-path))
-        (define (stat-ref symbol) (hash-ref stat-result symbol))
+        (define-values (temp-file-path stat-result stat-ref) (make-temp-file 'do-not-use))
         (check-equal? (stat-ref 'size) (file-size temp-file-path))
         (check-equal? (stat-ref 'modify-time-seconds)
                       (file-or-directory-modify-seconds temp-file-path))
@@ -59,21 +66,20 @@
         (delete-file temp-file-path))
 
       (test-case "Link traversal"
-        (define temp-file-path (path->string (make-temporary-file)))
-        (define TEST-STRING "stat test")
-        (display-to-file TEST-STRING temp-file-path #:exists 'truncate)
+        (define-values (temp-file-path stat-result stat-ref) (make-temp-file 'do-not-use))
         (define link-file-path (string-append temp-file-path "_link"))
         (make-file-or-directory-link temp-file-path link-file-path)
-        ; Link target
-        (define stat-result (file-or-directory-stat link-file-path))
-        (define (stat-ref symbol) (hash-ref stat-result symbol))
-        (check-equal? (stat-ref 'size) (string-length TEST-STRING))
-        (check-equal? (bitwise-and (stat-ref 'permission-bits) #o777) #o664)
-        ; Link itself
-        (define stat-result-link (file-or-directory-stat link-file-path #t))
-        (define (stat-ref-link symbol) (hash-ref stat-result-link symbol))
-        (check-equal? (stat-ref-link 'size) (string-length temp-file-path))
-        (check-equal? (bitwise-and (stat-ref-link 'permission-bits) #o777) #o777)
+        (for ([test-data `((do-not-use ,(string-length TEST-STRING) #o664)
+                           (#f         ,(string-length TEST-STRING) #o664)
+                           (#t         ,(string-length temp-file-path) #o777))])
+          (let ([as-link?                 (car test-data)]
+                [expected-size            (cadr test-data)]
+                [expected-permission-bits (caddr test-data)])
+            (define-values (stat-result stat-ref)
+              (stat-and-stat-ref link-file-path as-link?))
+            (check-equal? (stat-ref 'size) expected-size)
+            (check-equal? (bitwise-and (stat-ref 'permission-bits) #o777)
+                          expected-permission-bits)))
         ; TODO: Make sure the file is removed even if `file-or-directory-stat`
         ; raises an exception.
         (delete-file temp-file-path))
