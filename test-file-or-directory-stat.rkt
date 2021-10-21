@@ -9,6 +9,14 @@
 
   (define TEST-STRING "stat test")
 
+  ;; String [Symbol | Boolean] -> [Values Hash Procedure]
+  ;;
+  ;; Given a path string and a value for the `as-link?` flag, create a stat
+  ;; result for the path and return the stat result and a helper procedure to
+  ;; access the stat result by key (without specifying the stat result itself).
+  ;; As a special case, if `as-link?` is the symbol `'do-not-use`, the value
+  ;; isn't passed to `file-or-directory-stat`. This is used to check if the
+  ;; correct default value is used.
   (define (stat-and-stat-ref path as-link?)
     (define stat-result
       (if (eq? as-link? 'do-not-use)
@@ -17,6 +25,14 @@
     (define (stat-ref symbol) (hash-ref stat-result symbol))
     (values stat-result stat-ref))
 
+  ;; [Symbol | Boolean] -> [Values String Hash Procedure]
+  ;;
+  ;; Given a value for the `file-or-directory-stat` argument `as-link?`, create
+  ;; a temporary file and return a stat result for it and a helper procedure to
+  ;; access the stat result by key (without specifying the stat result itself).
+  ;; As a special case, if `as-link?` is the symbol `'do-not-use`, the value
+  ;; isn't passed to `file-or-directory-stat`. This is used to check if the
+  ;; correct default value is used.
   (define (make-temp-file as-link?)
     (define temp-file-path (path->string (make-temporary-file)))
     (display-to-file TEST-STRING temp-file-path #:exists 'truncate)
