@@ -711,13 +711,18 @@ rktio_stat_t *rktio_file_or_directory_stat(
   stat_buf = (struct stat *) malloc(sizeof(struct stat));
   rktio_stat_buf = (struct rktio_stat_t *) malloc(sizeof(struct rktio_stat_t));
 
-  if (follow_links) {
-    stat_result = stat(path, stat_buf);
-  } else {
-    stat_result = lstat(path, stat_buf);
-  }
+  do {
+    if (follow_links) {
+      stat_result = stat(path, stat_buf);
+    } else {
+      stat_result = lstat(path, stat_buf);
+    }
+  } while ((stat_result == -1) && (errno == EINTR));
   if (stat_result) {
-    /* TODO: error handling, including clean-up if necessary */
+    get_posix_error();
+    free(stat_buf);
+    free(rktio_stat_buf);
+    return NULL;
   } else {
     rktio_stat_buf->device_id = stat_buf->st_dev;
     rktio_stat_buf->inode = stat_buf->st_ino;

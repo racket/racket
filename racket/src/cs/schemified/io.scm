@@ -29693,17 +29693,11 @@
                             (raise-filesystem-error
                              'file-or-directory-stat
                              r_0
-                             (if host-path_0
-                               (let ((app_0
-                                      (string-append
-                                       "error obtaining identity for path\n"
-                                       "  path: ~a")))
-                                 (1/format app_0 (host-> host-path_0)))
-                               (1/format
-                                (string-append
-                                 "error obtaining identity for port\n"
-                                 "  port: ~v")
-                                #f)))
+                             (let ((app_0
+                                    (string-append
+                                     "error obtaining stat result for path\n"
+                                     "  path: ~a")))
+                               (1/format app_0 (host-> host-path_0))))
                             (let ((combined-nanoseconds_0
                                    (|#%name|
                                     combined-nanoseconds

@@ -304,18 +304,10 @@
     [(rktio-error? r0)
      (raise-filesystem-error who
                              r
-                             (if host-path
-                                 ; TODO: Adapt error messages.
-                                 (format (string-append
-                                          "error obtaining identity for path\n"
-                                          "  path: ~a")
-                                         (host-> host-path))
-                                 (format (string-append
-                                          "error obtaining identity for port\n"
-                                          "  port: ~v")
-                                         ; TODO
-                                         ; Used to be `port`, but support this later.
-                                         #f)))]
+                             (format (string-append
+                                      "error obtaining stat result for path\n"
+                                      "  path: ~a")
+                                     (host-> host-path)))]
     [else
      ; The nanosecond struct fields are only the fractional seconds part, i. e.
      ; they're below 1_000_000_000. Thus combine them with the seconds parts to
