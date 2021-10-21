@@ -57,6 +57,12 @@
         (define (positive-fixnum? n) (and (positive-integer? n) (fixnum? n)))
         (check-pred positive-fixnum? (stat-ref 'inode))
         (check-pred positive-fixnum? (stat-ref 'device-id))
+        ; Check user and group id. Assuming the tests don't run as root, this
+        ; is probably all we can sensibly do.
+        (let ([user-id (stat-ref 'user-id)])
+          (check-true (and (<= 1 user-id) (< user-id 65536))))
+        (let ([group-id (stat-ref 'group-id)])
+          (check-true (and (<= 1 group-id) (< group-id 65536))))
         ; Check timestamps.
         (check-equal? (quotient (stat-ref 'modify-time-nanoseconds) #e1e9)
                       (stat-ref 'modify-time-seconds))
