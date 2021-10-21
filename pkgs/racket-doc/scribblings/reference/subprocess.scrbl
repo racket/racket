@@ -97,13 +97,13 @@ The @racket[subprocess] procedure returns four values:
  @item{a @deftech{subprocess} value representing the created process;}
 
  @item{an input port piped from the process's standard output, or
- @racket[#f] if @racket[stdout-output-port] was a port;}
+ @racket[#f] if @racket[stdout] was a port;}
 
  @item{an output port piped to the process's standard input, or
- @racket[#f] if @racket[stdin-input-port] was a port;}
+ @racket[#f] if @racket[stdin] was a port;}
 
  @item{an input port piped from the process's standard error, or
- @racket[#f] if @racket[stderr-output-port] was a port or @racket['stdout].}
+ @racket[#f] if @racket[stderr] was a port or @racket['stdout].}
 
 ]
 
