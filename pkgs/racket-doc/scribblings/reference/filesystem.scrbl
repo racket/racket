@@ -568,10 +568,12 @@ Notes:
  @item{@racketvalfont{'inode} : inode number}
  @item{@racketvalfont{'permission-bits} : permissions bits as returned by
    @racket[(file-or-directory-permissions path 'bits)]}
+ @;{
  @item{@racketvalfont{'type} : one of @racketvalfont{'socket},
    @racketvalfont{'symbolic-link}, @racketvalfont{'file}, @racketvalfont{'directory},
    @racketvalfont{'block-device}, @racketvalfont{'character-device} or
    @racketvalfont{'fifo}}
+ }
  @item{@racketvalfont{'hardlink-count} : number of hard links}
  @item{@racketvalfont{'user-id} : user id of owner}
  @item{@racketvalfont{'group-id} : group id of owner}
