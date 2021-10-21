@@ -209,6 +209,7 @@ static Scheme_Object *subprocess_wait(int c, Scheme_Object *args[]);
 static Scheme_Object *sch_shell_execute(int c, Scheme_Object *args[]);
 static Scheme_Object *current_subproc_cust_mode (int, Scheme_Object *[]);
 static Scheme_Object *subproc_group_on (int, Scheme_Object *[]);
+static Scheme_Object *current_subproc_keep_file_descriptors (int, Scheme_Object *[]);
 static void register_subprocess_wait();
 
 static void block_timer_signals(int block);
@@ -257,6 +258,7 @@ ROSYM static Scheme_Object *must_truncate_symbol;
 
 ROSYM Scheme_Object *scheme_none_symbol, *scheme_line_symbol, *scheme_block_symbol;
 
+ROSYM static Scheme_Object *inherited_symbol, *all_symbol;
 ROSYM static Scheme_Object *exact_symbol, *new_symbol;
 
 #define READ_STRING_BYTE_BUFFER_SIZE 1024
@@ -319,6 +321,12 @@ scheme_init_port (Scheme_Startup_Env *env)
   exact_symbol = scheme_intern_symbol("exact");
   new_symbol = scheme_intern_symbol("new");
 
+  REGISTER_SO(inherited_symbol);
+  REGISTER_SO(all_symbol);
+
+  inherited_symbol = scheme_intern_symbol("inherited");
+  all_symbol = scheme_intern_symbol("all");
+
   REGISTER_SO(fd_input_port_type);
   REGISTER_SO(fd_output_port_type);
   REGISTER_SO(file_input_port_type);
@@ -373,6 +381,7 @@ scheme_init_port (Scheme_Startup_Env *env)
 
   ADD_PARAMETER("subprocess-group-enabled", subproc_group_on, MZCONFIG_SUBPROC_GROUP_ENABLED, env);
   ADD_PARAMETER("current-subprocess-custodian-mode", current_subproc_cust_mode, MZCONFIG_SUBPROC_CUSTODIAN_MODE, env);
+  ADD_PARAMETER("current-subprocess-keep-file-descriptors", current_subproc_keep_file_descriptors, MZCONFIG_SUBPROC_KEEP_FDS, env);
 
   scheme_addto_prim_instance("shell-execute", scheme_make_prim_w_arity(sch_shell_execute, "shell-execute", 5, 5), env);
 }
@@ -6133,6 +6142,23 @@ static Scheme_Object *subproc_group_on (int argc, Scheme_Object *argv[])
                              -1, NULL, NULL, 1);
 }
 
+static Scheme_Object *subproc_keep_fd_p(int argc, Scheme_Object **argv)
+{
+  if (SCHEME_NULLP(argv[0])
+      || SAME_OBJ(argv[0], inherited_symbol)
+      || SAME_OBJ(argv[0], all_symbol))
+    return argv[0];
+
+  return NULL;
+}
+
+static Scheme_Object *current_subproc_keep_file_descriptors (int argc, Scheme_Object **argv)
+{
+  return scheme_param_config("current-subprocess-keep-file-descriptors", scheme_make_integer(MZCONFIG_SUBPROC_KEEP_FDS),
+                             argc, argv, 
+                             -1, subproc_keep_fd_p, "(or/c '() 'inherited 'all)", 1);
+}
+
 static Scheme_Object *subprocess(int c, Scheme_Object *args[])
      /* subprocess(out, in, err, exe, arg ...) */
 {
@@ -6142,7 +6168,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   Scheme_Object *errport;
   Scheme_Object *a[4];
   Scheme_Subprocess *subproc;
-  Scheme_Object *cust_mode, *current_dir, *group;
+  Scheme_Object *cust_mode, *current_dir, *group, *keep_fds;
   int flags = 0;
   rktio_fd_t *stdout_fd = NULL;
   rktio_fd_t *stdin_fd = NULL;
@@ -6344,6 +6370,12 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
       && !strcmp(SCHEME_SYM_VAL(cust_mode), "kill")
       && (rktio_process_allowed_flags(scheme_rktio) & RKTIO_PROCESS_WINDOWS_CHAIN_TERMINATION))
     flags |= RKTIO_PROCESS_WINDOWS_CHAIN_TERMINATION;
+
+  keep_fds = scheme_get_param(config, MZCONFIG_SUBPROC_KEEP_FDS);
+  if (SAME_OBJ(keep_fds, all_symbol))
+    flags |= RKTIO_PROCESS_NO_CLOSE_FDS;
+  else if (SCHEME_NULLP(keep_fds))
+    flags |= RKTIO_PROCESS_NO_INHERIT_FDS;
 
   current_dir = scheme_get_param(config, MZCONFIG_CURRENT_DIRECTORY);
 

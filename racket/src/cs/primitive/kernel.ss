@@ -236,6 +236,7 @@
   [current-seconds (known-procedure/no-prompt 1)]
   [current-security-guard (known-procedure/single-valued 3)]
   [current-subprocess-custodian-mode (known-procedure/single-valued 3)]
+  [current-subprocess-keep-file-descriptors (known-procedure/single-valued 3)]
   [current-thread (known-procedure/no-prompt 1)]
   [current-thread-group (known-procedure/single-valued 3)]
   [current-thread-initial-stack-size (known-procedure/single-valued 3)]

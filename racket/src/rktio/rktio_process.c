@@ -1072,14 +1072,16 @@ static intptr_t do_spawnv(rktio_t *rktio,
                           const char *command, int argc, const char * const *argv,
 			  int exact_cmdline, intptr_t sin, intptr_t sout, intptr_t serr, int *pid,
 			  int new_process_group, int chain_termination_here_to_child,
-                          void *env, const char *wd)
+                          void *env, const char *wd,
+                          int disable_inherit)
 {
-  intptr_t i, l, len = 0;
+  intptr_t i, l, len = 0, retval;
   int use_jo;
   intptr_t cr_flag;
   char *cmdline;
   wchar_t *cmdline_w, *wd_w, *command_w;
-  STARTUPINFOW startup;
+  STARTUPINFOEXW startupx;
+  STARTUPINFOW *startup;
   PROCESS_INFORMATION info;
 
   if (exact_cmdline) {
@@ -1102,18 +1104,19 @@ static intptr_t do_spawnv(rktio_t *rktio,
     cmdline[len] = 0;
   }
 
-  memset(&startup, 0, sizeof(startup));
-  startup.cb = sizeof(startup);
-  startup.dwFlags = STARTF_USESTDHANDLES;
-  startup.hStdInput = (HANDLE)sin;
-  startup.hStdOutput = (HANDLE)sout;
-  startup.hStdError = (HANDLE)serr;
+  memset(&startupx, 0, sizeof(startupx));
+  startup = &startupx.StartupInfo;
+  startup->cb = sizeof(*startup);
+  startup->dwFlags = STARTF_USESTDHANDLES;
+  startup->hStdInput = (HANDLE)sin;
+  startup->hStdOutput = (HANDLE)sout;
+  startup->hStdError = (HANDLE)serr;
 
   /* If none of the stdio handles are consoles, specifically
      create the subprocess without a console: */
-  if (!rktio_system_fd_is_terminal(rktio, (intptr_t)startup.hStdInput)
-      && !rktio_system_fd_is_terminal(rktio, (intptr_t)startup.hStdOutput)
-      && !rktio_system_fd_is_terminal(rktio, (intptr_t)startup.hStdError))
+  if (!rktio_system_fd_is_terminal(rktio, (intptr_t)startup->hStdInput)
+      && !rktio_system_fd_is_terminal(rktio, (intptr_t)startup->hStdOutput)
+      && !rktio_system_fd_is_terminal(rktio, (intptr_t)startup->hStdError))
     cr_flag = CREATE_NO_WINDOW;
   else
     cr_flag = 0;
@@ -1146,25 +1149,55 @@ static intptr_t do_spawnv(rktio_t *rktio,
   wd_w = WIDE_PATH_copy(wd);
   command_w = WIDE_PATH_temp(command);
 
+  if (disable_inherit) {
+    /* don't just set the `bInherit` argument to `CreateProcessW` to
+       false, because that disables sharing for
+       stdin.stdout/stderr. */
+    LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList = NULL;
+    SIZE_T size = 0;
+    HANDLE handles_to_inherit[3];
+    InitializeProcThreadAttributeList(NULL, 1, 0, &size);
+    lpAttributeList = HeapAlloc(GetProcessHeap(), 0, size);
+    InitializeProcThreadAttributeList(lpAttributeList, 1, 0, &size);
+    handles_to_inherit[0] = startup->hStdInput;
+    handles_to_inherit[1] = startup->hStdOutput;
+    handles_to_inherit[2] = startup->hStdError;
+    UpdateProcThreadAttribute(lpAttributeList,
+                              0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
+                              handles_to_inherit,
+                              sizeof(handles_to_inherit), NULL, NULL);
+    startupx.lpAttributeList = lpAttributeList;
+    startup->cb = sizeof(startupx);
+    cr_flag |= EXTENDED_STARTUPINFO_PRESENT;
+  }
+
   if (cmdline_w
       && wd_w
       && command_w
       && CreateProcessW(command_w, cmdline_w, 
                         NULL, NULL, 1 /*inherit*/,
                         cr_flag, env, wd_w,
-                        &startup, &info)) {
+                        startup, &info)) {
     if (use_jo)
       AssignProcessToJobObject(rktio->process_job_object, info.hProcess);
     CloseHandle(info.hThread);
     *pid = info.dwProcessId;
     free(cmdline_w);
     free(wd_w);
-    return (intptr_t)info.hProcess;
+    retval = (intptr_t)info.hProcess;
   } else {
     if (cmdline_w) free(cmdline_w);
     if (wd_w) free(wd_w);
-    return -1;
+    retval = -1;
   }
+
+  if (disable_inherit) {
+    LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList = startupx.lpAttributeList;
+    DeleteProcThreadAttributeList(lpAttributeList);
+    HeapFree(GetProcessHeap(), 0, lpAttributeList);
+  }
+
+ return retval;
 }
 
 static void CopyFileHandleForSubprocess(intptr_t *hs, int pos)
@@ -1333,7 +1366,8 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
 			     &pid,
                              new_process_group,
                              windows_chain_termination_to_child,
-                             env, current_directory);
+                             env, current_directory,
+                             flags & RKTIO_PROCESS_NO_INHERIT_FDS);
 
     if (!windows_exact_cmdline) {
       for (i = 0; i < argc; i++) {
@@ -1367,7 +1401,10 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
     init_sigchld(rktio);
 #endif
 
-    close_after_len = rktio_close_fds_len();
+    if (flags & RKTIO_PROCESS_NO_CLOSE_FDS)
+      close_after_len = 0;
+    else
+      close_after_len = rktio_close_fds_len();
 
     /* add a NULL terminator */
     {

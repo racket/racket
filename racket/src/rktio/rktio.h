@@ -616,6 +616,8 @@ RKTIO_EXTERN rktio_process_result_t *rktio_process(rktio_t *rktio,
 #define RKTIO_PROCESS_STDOUT_AS_STDERR          (1<<1)
 #define RKTIO_PROCESS_WINDOWS_EXACT_CMDLINE     (1<<2)
 #define RKTIO_PROCESS_WINDOWS_CHAIN_TERMINATION (1<<3)
+#define RKTIO_PROCESS_NO_CLOSE_FDS              (1<<4)
+#define RKTIO_PROCESS_NO_INHERIT_FDS            (1<<5)
 
 RKTIO_EXTERN_NOERR int rktio_process_allowed_flags(rktio_t *rktio);
 /* Reports the flags that are accepted by `rktio_process` on the

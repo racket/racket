@@ -26,6 +26,7 @@
          subprocess-pid
          current-subprocess-custodian-mode
          subprocess-group-enabled
+         current-subprocess-keep-file-descriptors
          shell-execute)
 
 (struct subprocess ([process #:mutable]
@@ -118,7 +119,11 @@
                              (positive? (bitwise-and (rktio_process_allowed_flags rktio)
                                                      RKTIO_PROCESS_WINDOWS_CHAIN_TERMINATION)))
                         (bitwise-ior flags RKTIO_PROCESS_WINDOWS_CHAIN_TERMINATION)
-                        flags)])
+                        flags)]
+             [flags (case (current-subprocess-keep-file-descriptors)
+                      [(all) (bitwise-ior flags RKTIO_PROCESS_NO_CLOSE_FDS)]
+                      [(inherited) flags]
+                      [else (bitwise-ior flags RKTIO_PROCESS_NO_INHERIT_FDS)])])
         
         (define command-bstr (->host (->path command) who '(execute)))
 
@@ -278,6 +283,14 @@
 
 (define subprocess-group-enabled
   (make-parameter #f (lambda (v) (and v #t)) 'subprocess-group-enabled))
+
+(define/who current-subprocess-keep-file-descriptors
+  (make-parameter 'inherited
+                  (lambda (v)
+                    (unless (or (null? v) (eq? v 'all) (eq? v 'inherited))
+                      (raise-argument-error who "(or/c '() 'uninherited 'all)" v))
+                    v)
+                  'current-subprocess-keep-file-descriptors))
 
 ;; ----------------------------------------
 

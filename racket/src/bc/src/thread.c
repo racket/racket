@@ -8202,6 +8202,8 @@ static void make_initial_config(Scheme_Thread *p)
   
   init_param(cells, paramz, MZCONFIG_THREAD_INIT_STACK_SIZE, scheme_make_integer(DEFAULT_INIT_STACK_SIZE));
 
+  init_param(cells, paramz, MZCONFIG_SUBPROC_KEEP_FDS, scheme_intern_symbol("inherited"));
+
   {
     int i;
     for (i = 0; i < max_configs; i++) {

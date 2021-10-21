@@ -42,6 +42,8 @@
 (define-constant RKTIO_PROCESS_STDOUT_AS_STDERR (<< 1 1))
 (define-constant RKTIO_PROCESS_WINDOWS_EXACT_CMDLINE (<< 1 2))
 (define-constant RKTIO_PROCESS_WINDOWS_CHAIN_TERMINATION (<< 1 3))
+(define-constant RKTIO_PROCESS_NO_CLOSE_FDS (<< 1 4))
+(define-constant RKTIO_PROCESS_NO_INHERIT_FDS (<< 1 5))
 (define-constant RKTIO_PROCESS_ERROR -2)
 (define-constant RKTIO_PROCESS_DONE 1)
 (define-constant RKTIO_PROCESS_RUNNING 0)
