@@ -7,7 +7,7 @@
     rackunit
     rackunit/text-ui)
 
-  (define TEST-STRING "stat test")
+  (define TEST-CONTENT "stat test")
 
   ;; String [Symbol | Boolean] -> [Values Hash Procedure]
   ;;
@@ -35,7 +35,7 @@
   ;; correct default value is used.
   (define (make-temp-file as-link?)
     (define temp-file-path (path->string (make-temporary-file)))
-    (display-to-file TEST-STRING temp-file-path #:exists 'truncate)
+    (display-to-file TEST-CONTENT temp-file-path #:exists 'truncate)
     (define-values (stat-result stat-ref)
       (stat-and-stat-ref temp-file-path as-link?))
     (values temp-file-path stat-result stat-ref))
@@ -45,7 +45,7 @@
       (test-case "Writing temporary file and reading stat"
         (define-values (temp-file-path stat-result stat-ref) (make-temp-file 'do-not-use))
         ; Check size, inode, hardlink count and device id.
-        (check-equal? (stat-ref 'size) (string-length TEST-STRING))
+        (check-equal? (stat-ref 'size) (string-length TEST-CONTENT))
         (check-equal? (stat-ref 'hardlink-count) 1)
         (define (positive-fixnum? n) (and (positive-integer? n) (fixnum? n)))
         (check-pred positive-fixnum? (stat-ref 'inode))
@@ -85,8 +85,8 @@
         (define-values (temp-file-path stat-result stat-ref) (make-temp-file 'do-not-use))
         (define link-file-path (string-append temp-file-path "_link"))
         (make-file-or-directory-link temp-file-path link-file-path)
-        (for ([test-data `((do-not-use ,(string-length TEST-STRING) #o664)
-                           (#f         ,(string-length TEST-STRING) #o664)
+        (for ([test-data `((do-not-use ,(string-length TEST-CONTENT) #o664)
+                           (#f         ,(string-length TEST-CONTENT) #o664)
                            (#t         ,(string-length temp-file-path) #o777))])
           (let ([as-link?                 (car test-data)]
                 [expected-size            (cadr test-data)]
