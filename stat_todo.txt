@@ -1,6 +1,5 @@
 - Convert `intptr_t` to `int64_t` (C99)
 - Add error handling (missing file etc.)
-- Handle symlinks (`as-link?` argument)
 - Use other name than `rktio_stat_t` to avoid confusion with `rktio_status_t`
   (which is something completely different)?
 - Windows support
