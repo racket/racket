@@ -709,8 +709,6 @@ rktio_stat_t *rktio_file_or_directory_stat(
   int stat_result;
 
   stat_buf = (struct stat *) malloc(sizeof(struct stat));
-  rktio_stat_buf = (struct rktio_stat_t *) malloc(sizeof(struct rktio_stat_t));
-
   do {
     if (follow_links) {
       stat_result = stat(path, stat_buf);
@@ -718,12 +716,13 @@ rktio_stat_t *rktio_file_or_directory_stat(
       stat_result = lstat(path, stat_buf);
     }
   } while ((stat_result == -1) && (errno == EINTR));
+
   if (stat_result) {
     get_posix_error();
     free(stat_buf);
-    free(rktio_stat_buf);
     return NULL;
   } else {
+    rktio_stat_buf = (struct rktio_stat_t *) malloc(sizeof(struct rktio_stat_t));
     rktio_stat_buf->device_id = stat_buf->st_dev;
     rktio_stat_buf->inode = stat_buf->st_ino;
     rktio_stat_buf->permission_bits = stat_buf->st_mode;
@@ -742,12 +741,11 @@ rktio_stat_t *rktio_file_or_directory_stat(
     rktio_stat_buf->modify_time_nanoseconds = stat_buf->st_mtim.tv_nsec;
     rktio_stat_buf->change_time_seconds = stat_buf->st_ctim.tv_sec;
     rktio_stat_buf->change_time_nanoseconds = stat_buf->st_ctim.tv_nsec;
+    /* We don't need this anymore since everything we need has been copied to
+       `rktio_stat_buf`. */
+    free(stat_buf);
+    return rktio_stat_buf;
   }
-
-  /* We don't need this anymore since everything we need has been copied to
-     `rktio_stat_buf`. */
-  free(stat_buf);
-  return rktio_stat_buf;
 }
 
 static rktio_identity_t *get_identity(rktio_t *rktio, rktio_fd_t *fd, const char *path, int follow_links)
