@@ -517,23 +517,9 @@ Notes:
 - Describe what a "device id" is.
 - What's the difference between `st_dev` and `st_rdev`? -> See `man 7 inode`
 - Explain `mode`, refer to other parts of the documentation where it makes sense.
-- Do we need to explain user id and group id? If someone wants/needs these values,
-  they probably know how to interpret them.
 - How to explain `device-id-for-special-file`? Also: give examples? See `man 7 inode`
 - Check if we should include `st_blksize` and `st_blocks`. Are these available on
   Windows and Mac OS X? Do they cost extra time to determine?
-- We may not need all of `atime`, `mtime` and `ctime`. Anyway, they may not be
-  available on Windows or for certain file systems.
-- Although it would be nice to reuse the semantics of
-  `file-or-directory-modify-seconds` or `file-or-directory-permissions`, this
-  has some problems/limitations:
-  - Users might want the full precision for the timestamps (possibly down to
-    nanoseconds). This can, for example, be important for debugging to see in
-    which order files were modified.
-  - The `mode` contains more than permissions. For Posix, it contains the file
-    type (socket/symbolic link/regular file/block device/directory/character
-    device/FIFO) and set user/group id bits and sticky bit (see `man 7 inode`).
-  - Idea: Split `mode` into permissions, type and special bits.
 - The special bits (user id, group id, sticky) could be future extensions, but
   in that case should we provide the "raw" mode, so that users can still
   retrieve the information without waiting for an enhanced Racket version?
@@ -544,18 +530,10 @@ Notes:
   precision.)
 - On Windows, how are junctions reflected in the file type? Can we get this
   information without an extra file system call?
-- Order of itemization items below? Possibilities:
-  - order them alphabetically
-  - follow the same order as in the `stat` man page
-  - try to group the items differently, perhaps to match other Racket
-    APIs/concepts
-- Terminology: "dangling link" or "dead link" or something else? We can't just
-  say the path must end in a file or directory because it might be a socket or
-  FIFO, for example.
 - How to handle Windows junctions? Should they be treated as like symbolic
   links or something else? Check what I wrote in the ticket.
 - Does `stat` (and the corresponding Windows function) itself check for link
-  loops or do we need to handle this ourselves?
+  loops or do we need to handle this ourselves? It's checked on Posix, it seems.
 }
 @defproc[(file-or-directory-stat [path path-string?]
                                  [as-link? boolean? #f])
