@@ -3,6 +3,7 @@
 (module+ test
   (require
     racket/file
+    racket/function
     racket/math
     rackunit
     rackunit/text-ui)
@@ -105,5 +106,28 @@
         ; TODO: Make sure the file is removed even if `file-or-directory-stat`
         ; raises an exception.
         (delete-file temp-file-path))
+
+      (test-case "Non-existent path"
+        (check-exn exn:fail:filesystem?
+                   (thunk (file-or-directory-stat "/nonexistent")))
+        (check-exn (regexp
+                     (string-append
+                       "file-or-directory-stat: error obtaining stat result for path\n"
+                       "  path: /nonexistent\n"
+                       "  system error: No such file or directory; errno=2"))
+                   (thunk (file-or-directory-stat "/nonexistent"))))
+
+      (test-case "Dangling link"
+        (define temp-file-path (path->string (make-temporary-file)))
+        (define link-file-path (string-append temp-file-path "_link"))
+        (make-file-or-directory-link "/nonexistent_target" link-file-path)
+        (check-exn exn:fail:filesystem?
+                   (thunk (file-or-directory-stat link-file-path)))
+        (check-exn (regexp
+                     (string-append
+                       "file-or-directory-stat: error obtaining stat result for path\n"
+                       "  path: .*_link\n"
+                       "  system error: No such file or directory; errno=2"))
+                   (thunk (file-or-directory-stat link-file-path))))
   ))
 )
