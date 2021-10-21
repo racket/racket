@@ -51,7 +51,7 @@
     (test-suite "Reading stat info"
       (test-case "Writing temporary file and reading stat"
         (define-values (temp-file-path stat-result stat-ref) (make-temp-file 'do-not-use))
-        ; Check size, inode, hardlink count and device id.
+        ; Check size, hardlink count, inode and device id.
         (check-equal? (stat-ref 'size) (string-length TEST-CONTENT))
         (check-equal? (stat-ref 'hardlink-count) 1)
         (define (positive-fixnum? n) (and (positive-integer? n) (fixnum? n)))
@@ -59,10 +59,9 @@
         (check-pred positive-fixnum? (stat-ref 'device-id))
         ; Check user and group id. Assuming the tests don't run as root, this
         ; is probably all we can sensibly do.
-        (let ([user-id (stat-ref 'user-id)])
-          (check-true (and (<= 1 user-id) (< user-id 65536))))
-        (let ([group-id (stat-ref 'group-id)])
-          (check-true (and (<= 1 group-id) (< group-id 65536))))
+        (check-pred positive-fixnum? (stat-ref 'user-id))
+        (check-pred positive-fixnum? (stat-ref 'group-id))
+        ;
         (check-equal? (stat-ref 'device-id-for-special-file) 0)
         (check-pred positive-fixnum? (stat-ref 'block-size))
         ; On my system, I had expected 1 block, but it's actually 8. This number
