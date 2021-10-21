@@ -41,5 +41,21 @@
         ; TODO: Make sure the file is removed even if `file-or-directory-stat`
         ; raises an exception.
         (delete-file temp-file-path))
+
+      (test-case "Comparison with other Racket functions"
+        (define start-time-milliseconds (current-inexact-milliseconds))
+        (define temp-file-path (make-temporary-file))
+        (define TEST-STRING "stat test")
+        (display-to-file TEST-STRING temp-file-path #:exists 'truncate)
+        (define stat-result (file-or-directory-stat temp-file-path))
+        (define (stat-ref symbol) (hash-ref stat-result symbol))
+        (check-equal? (stat-ref 'size) (file-size temp-file-path))
+        (check-equal? (stat-ref 'modify-time-seconds)
+                      (file-or-directory-modify-seconds temp-file-path))
+        (check-equal? (bitwise-and (stat-ref 'permission-bits) #o777)
+                      (file-or-directory-permissions temp-file-path 'bits))
+        ; TODO: Make sure the file is removed even if `file-or-directory-stat`
+        ; raises an exception.
+        (delete-file temp-file-path))
   ))
 )
