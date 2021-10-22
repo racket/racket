@@ -704,46 +704,43 @@ rktio_ok_t rktio_set_current_directory(rktio_t *rktio, const char *path)
 rktio_stat_t *rktio_file_or_directory_stat(
   rktio_t *rktio, rktio_const_string_t path, rktio_bool_t follow_links)
 {
-  struct stat *stat_buf;
+  struct stat stat_buf;
   struct rktio_stat_t *rktio_stat_buf;
   int stat_result;
 
-  stat_buf = (struct stat *) malloc(sizeof(struct stat));
   do {
     if (follow_links) {
-      stat_result = stat(path, stat_buf);
+      stat_result = stat(path, &stat_buf);
     } else {
-      stat_result = lstat(path, stat_buf);
+      stat_result = lstat(path, &stat_buf);
     }
   } while ((stat_result == -1) && (errno == EINTR));
 
   if (stat_result) {
     get_posix_error();
-    free(stat_buf);
     return NULL;
   } else {
     rktio_stat_buf = (struct rktio_stat_t *) malloc(sizeof(struct rktio_stat_t));
-    rktio_stat_buf->device_id = stat_buf->st_dev;
-    rktio_stat_buf->inode = stat_buf->st_ino;
-    rktio_stat_buf->permission_bits = stat_buf->st_mode;
-    rktio_stat_buf->hardlink_count = stat_buf->st_nlink;
-    rktio_stat_buf->user_id = stat_buf->st_uid;
-    rktio_stat_buf->group_id = stat_buf->st_gid;
-    rktio_stat_buf->device_id_for_special_file = stat_buf->st_rdev;
-    rktio_stat_buf->size = stat_buf->st_size;
-    rktio_stat_buf->block_size = stat_buf->st_blksize;
-    rktio_stat_buf->block_count = stat_buf->st_blocks;
+    rktio_stat_buf->device_id = stat_buf.st_dev;
+    rktio_stat_buf->inode = stat_buf.st_ino;
+    rktio_stat_buf->permission_bits = stat_buf.st_mode;
+    rktio_stat_buf->hardlink_count = stat_buf.st_nlink;
+    rktio_stat_buf->user_id = stat_buf.st_uid;
+    rktio_stat_buf->group_id = stat_buf.st_gid;
+    rktio_stat_buf->device_id_for_special_file = stat_buf.st_rdev;
+    rktio_stat_buf->size = stat_buf.st_size;
+    rktio_stat_buf->block_size = stat_buf.st_blksize;
+    rktio_stat_buf->block_count = stat_buf.st_blocks;
     /* The `tv_nsec` fields are only the fractional part of the seconds.
        (The value is always lower than 1_000_000_000.) */
-    rktio_stat_buf->access_time_seconds = stat_buf->st_atim.tv_sec;
-    rktio_stat_buf->access_time_nanoseconds = stat_buf->st_atim.tv_nsec;
-    rktio_stat_buf->modify_time_seconds = stat_buf->st_mtim.tv_sec;
-    rktio_stat_buf->modify_time_nanoseconds = stat_buf->st_mtim.tv_nsec;
-    rktio_stat_buf->change_time_seconds = stat_buf->st_ctim.tv_sec;
-    rktio_stat_buf->change_time_nanoseconds = stat_buf->st_ctim.tv_nsec;
+    rktio_stat_buf->access_time_seconds = stat_buf.st_atim.tv_sec;
+    rktio_stat_buf->access_time_nanoseconds = stat_buf.st_atim.tv_nsec;
+    rktio_stat_buf->modify_time_seconds = stat_buf.st_mtim.tv_sec;
+    rktio_stat_buf->modify_time_nanoseconds = stat_buf.st_mtim.tv_nsec;
+    rktio_stat_buf->change_time_seconds = stat_buf.st_ctim.tv_sec;
+    rktio_stat_buf->change_time_nanoseconds = stat_buf.st_ctim.tv_nsec;
     /* We don't need this anymore since everything we need has been copied to
        `rktio_stat_buf`. */
-    free(stat_buf);
     return rktio_stat_buf;
   }
 }
