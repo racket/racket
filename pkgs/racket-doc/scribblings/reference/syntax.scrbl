@@ -2099,7 +2099,7 @@ must be distinct according to @racket[bound-identifier=?].
     (list y x)))
 ]
 
-The second form evaluates the @racket[init-expr]s; the resulting
+The second form, usually known as @deftech{named @racket[let]}, evaluates the @racket[init-expr]s; the resulting
 values become arguments in an application of a procedure
 @racket[(lambda (id ...) body ...+)], where @racket[proc-id] is bound
 within the @racket[body]s to the procedure itself.}

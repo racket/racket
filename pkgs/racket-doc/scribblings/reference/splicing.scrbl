@@ -24,7 +24,7 @@
 @defidform[splicing-parameterize]
 )]{
 
-Like @racket[let], @racket[letrec], @racket[let-values],
+Like @racket[let] (not @tech{named @racket[let]}), @racket[letrec], @racket[let-values],
 @racket[letrec-values], @racket[let-syntax], @racket[letrec-syntax],
 @racket[let-syntaxes], @racket[letrec-syntaxes],
 @racket[letrec-syntaxes+values], @racket[local], and
