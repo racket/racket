@@ -7167,5 +7167,20 @@
 (test '() dynamic-require ''uses-imported-variable-before-modify 'old-X)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; regression test for detecting obviously incompatible record types
+
+(let ()
+  (struct a (n1) #:prefab)
+  (struct b a (n2) #:prefab)
+
+  (define val #s((b a 1) 0 1))
+
+  (unless (b? val)
+    (+ "unreachable 1"))
+
+  (unless (a? val)
+    (+ "unreachable 2")))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
