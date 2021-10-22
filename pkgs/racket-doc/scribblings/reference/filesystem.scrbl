@@ -578,13 +578,14 @@ returned instead of the stat information of the referenced file system item.
 The mode bits are the bits for permissions and other data, as returned from the
 Posix @tt{stat}/@tt{lstat} functions. On Windows, @racket[file-or-directory-stat]
 tries to map the corresponding Windows information to the corresponding bit
-pattern as on Posix. You can select portions of the bit pattern with the constants
-@racket[user-read-bit] etc.
+pattern as used on Posix. To select portions of the bit pattern, see the
+constants @racket[user-read-bit] etc.
 
 Depending on the operating system and file system, the "nanoseconds" timestamps
-may have less than nanoseconds precision. For example, in one environment you
-may get @racketvalfont{1234567891234567891} (nanoseconds precision) and in
-another environment @racketvalfont{1234567891000000000} (seconds precision).
+may have less than nanoseconds precision. For example, in one environment a
+timestamp may be @racketvalfont{1234567891234567891} (nanoseconds precision)
+and in another environment @racketvalfont{1234567891000000000} (seconds
+precision).
 
 If @racket[as-link?] is @racketvalfont{#f} and @racket[path] isn't accessible,
 the @exnraise[exn:fail:filesystem]. This exception is also raised if
