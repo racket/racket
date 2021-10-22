@@ -950,7 +950,7 @@ char *rktio_readlink(rktio_t *rktio, const char *fullfilename)
 #endif
 }
 
-int rktio_make_directory(rktio_t *rktio, const char *filename)
+int rktio_make_directory_with_permissions(rktio_t *rktio, const char *filename, int perm_bits)
 {
 #ifdef NO_MKDIR
   set_racket_error(RKTIO_ERROR_UNSUPPORTED);
@@ -971,10 +971,13 @@ int rktio_make_directory(rktio_t *rktio, const char *filename)
 
   while (1) {
     wp = MSC_WIDE_PATH_temp(filename);
-    if (!wp) return 0;
+    if (!wp) {
+      if (copied) free(copied);
+      return 0;
+    }
     if (!MSC_W_IZE(mkdir)(wp
 # ifndef MKDIR_NO_MODE_FLAG
-			  , 0777
+			  , perm_bits
 # endif
 			  )) {
       if (copied) free(copied);
@@ -991,6 +994,11 @@ int rktio_make_directory(rktio_t *rktio, const char *filename)
   if (copied) free(copied);
 
   return 0;
+}
+
+int rktio_make_directory(rktio_t *rktio, const char *filename)
+{
+  return rktio_make_directory_with_permissions(rktio, filename, RKTIO_DEFAULT_DIRECTORY_PERM_BITS);
 }
 
 int rktio_delete_directory(rktio_t *rktio, const char *filename, const char *current_directory, int enable_write_on_fail)

@@ -2885,6 +2885,7 @@
 (define RKTIO_FILE_TYPE_DIRECTORY 2)
 (define RKTIO_FILE_TYPE_LINK 3)
 (define RKTIO_FILE_TYPE_DIRECTORY_LINK 4)
+(define RKTIO_DEFAULT_DIRECTORY_PERM_BITS 511)
 (define RKTIO_PERMISSION_READ 4)
 (define RKTIO_PERMISSION_WRITE 2)
 (define RKTIO_PERMISSION_EXEC 1)
@@ -3193,6 +3194,8 @@
   (begin-unsafe (hash-ref rktio-table 'rktio_set_current_directory)))
 (define rktio_make_directory
   (begin-unsafe (hash-ref rktio-table 'rktio_make_directory)))
+(define rktio_make_directory_with_permissions
+  (begin-unsafe (hash-ref rktio-table 'rktio_make_directory_with_permissions)))
 (define rktio_delete_directory
   (begin-unsafe (hash-ref rktio-table 'rktio_delete_directory)))
 (define rktio_readlink (begin-unsafe (hash-ref rktio-table 'rktio_readlink)))
@@ -26040,6 +26043,9 @@
                    'windows)))))
           p_0))
       p_0)))
+(define permissions?
+  (lambda (perms_0) (if (exact-integer? perms_0) (<= 0 perms_0 65535) #f)))
+(define permissions-desc "(integer-in 0 65535)")
 (define none$1 (gensym))
 (define 1/open-input-file
   (let ((open-input-file_0
@@ -26127,9 +26133,6 @@
       ((path_0 mode1_0 mode22_0) (open-input-file_0 path_0 mode1_0 mode22_0))
       ((path_0 mode11_0)
        (open-input-file_0 path_0 mode11_0 unsafe-undefined))))))
-(define permissions?
-  (lambda (perms_0) (if (exact-integer? perms_0) (<= 0 perms_0 65535) #f)))
-(define permissions-desc "(integer-in 0 65535)")
 (define do-open-output-file.1
   (|#%name|
    do-open-output-file
@@ -29195,34 +29198,50 @@
       ((p_0) (begin (file-or-directory-type_0 p_0 #f)))
       ((p_0 must-exist?1_0) (file-or-directory-type_0 p_0 must-exist?1_0))))))
 (define 1/make-directory
-  (|#%name|
-   make-directory
-   (lambda (p_0)
-     (begin
-       (begin
-         (if (path-string? p_0)
-           (void)
-           (raise-argument-error 'make-directory "path-string?" p_0))
-         (let ((host-path_0 (->host p_0 'make-directory '(write))))
-           (let ((r_0
-                  (|#%app|
-                   rktio_make_directory
-                   (unsafe-place-local-ref cell.1)
-                   host-path_0)))
-             (if (vector? r_0)
-               (raise-filesystem-error
-                'make-directory
-                r_0
-                (let ((app_0
-                       (string-append
-                        "cannot make directory~a\n"
-                        "  path: ~a")))
-                  (let ((app_1
-                         (if (racket-error? r_0 4)
-                           ";\n the path already exists"
-                           "")))
-                    (1/format app_0 app_1 (host-> host-path_0)))))
-               (void)))))))))
+  (let ((make-directory_0
+         (|#%name|
+          make-directory
+          (lambda (p4_0 perms3_0)
+            (begin
+              (let ((perms_0
+                     (if (eq? perms3_0 unsafe-undefined) 511 perms3_0)))
+                (begin
+                  (if (path-string? p4_0)
+                    (void)
+                    (raise-argument-error 'make-directory "path-string?" p4_0))
+                  (begin
+                    (if (permissions? perms_0)
+                      (void)
+                      (raise-argument-error
+                       'make-directory
+                       permissions-desc
+                       perms_0))
+                    (let ((host-path_0 (->host p4_0 'make-directory '(write))))
+                      (let ((r_0
+                             (|#%app|
+                              rktio_make_directory_with_permissions
+                              (unsafe-place-local-ref cell.1)
+                              host-path_0
+                              perms_0)))
+                        (if (vector? r_0)
+                          (raise-filesystem-error
+                           'make-directory
+                           r_0
+                           (let ((app_0
+                                  (string-append
+                                   "cannot make directory~a\n"
+                                   "  path: ~a")))
+                             (let ((app_1
+                                    (if (racket-error? r_0 4)
+                                      ";\n the path already exists"
+                                      "")))
+                               (1/format app_0 app_1 (host-> host-path_0)))))
+                          (void))))))))))))
+    (|#%name|
+     make-directory
+     (case-lambda
+      ((p_0) (begin (make-directory_0 p_0 unsafe-undefined)))
+      ((p_0 perms3_0) (make-directory_0 p_0 perms3_0))))))
 (define simplify-path/dl (lambda (p_0) p_0))
 (define set-simplify-path-for-directory-list!
   (lambda (proc_0) (set! simplify-path/dl proc_0)))
@@ -29230,12 +29249,12 @@
   (let ((directory-list_0
          (|#%name|
           directory-list
-          (lambda (p3_0)
+          (lambda (p5_0)
             (begin
               (let ((p_0
-                     (if (eq? p3_0 unsafe-undefined)
+                     (if (eq? p5_0 unsafe-undefined)
                        (current-directory$1)
-                       p3_0)))
+                       p5_0)))
                 (begin
                   (if (path-string? p_0)
                     (void)
@@ -29319,7 +29338,7 @@
      directory-list
      (case-lambda
       (() (begin (directory-list_0 unsafe-undefined)))
-      ((p3_0) (directory-list_0 p3_0))))))
+      ((p5_0) (directory-list_0 p5_0))))))
 (define 1/delete-file
   (|#%name|
    delete-file
@@ -29376,33 +29395,33 @@
   (let ((rename-file-or-directory_0
          (|#%name|
           rename-file-or-directory
-          (lambda (old5_0 new6_0 exists-ok?4_0)
+          (lambda (old7_0 new8_0 exists-ok?6_0)
             (begin
               (begin
-                (if (path-string? old5_0)
+                (if (path-string? old7_0)
                   (void)
                   (raise-argument-error
                    'rename-file-or-directory
                    "path-string?"
-                   old5_0))
+                   old7_0))
                 (begin
-                  (if (path-string? new6_0)
+                  (if (path-string? new8_0)
                     (void)
                     (raise-argument-error
                      'rename-file-or-directory
                      "path-string?"
-                     new6_0))
+                     new8_0))
                   (let ((host-old_0
-                         (->host old5_0 'rename-file-or-directory '(read))))
+                         (->host old7_0 'rename-file-or-directory '(read))))
                     (let ((host-new_0
-                           (->host new6_0 'rename-file-or-directory '(write))))
+                           (->host new8_0 'rename-file-or-directory '(write))))
                       (let ((r_0
                              (|#%app|
                               rktio_rename_file
                               (unsafe-place-local-ref cell.1)
                               host-new_0
                               host-old_0
-                              exists-ok?4_0)))
+                              exists-ok?6_0)))
                         (if (vector? r_0)
                           (raise-filesystem-error
                            'rename-file-or-directory
@@ -29427,8 +29446,8 @@
      rename-file-or-directory
      (case-lambda
       ((old_0 new_0) (begin (rename-file-or-directory_0 old_0 new_0 #f)))
-      ((old_0 new_0 exists-ok?4_0)
-       (rename-file-or-directory_0 old_0 new_0 exists-ok?4_0))))))
+      ((old_0 new_0 exists-ok?6_0)
+       (rename-file-or-directory_0 old_0 new_0 exists-ok?6_0))))))
 (define 1/file-or-directory-modify-seconds
   (|#%name|
    file-or-directory-modify-seconds
@@ -29543,47 +29562,47 @@
   (let ((file-or-directory-permissions_0
          (|#%name|
           file-or-directory-permissions
-          (lambda (p8_0 mode7_0)
+          (lambda (p10_0 mode9_0)
             (begin
               (begin
-                (if (path-string? p8_0)
+                (if (path-string? p10_0)
                   (void)
                   (raise-argument-error
                    'file-or-directory-permissions
                    "path-string?"
-                   p8_0))
+                   p10_0))
                 (begin
-                  (if (let ((or-part_0 (not mode7_0)))
+                  (if (let ((or-part_0 (not mode9_0)))
                         (if or-part_0
                           or-part_0
-                          (let ((or-part_1 (eq? mode7_0 'bits)))
+                          (let ((or-part_1 (eq? mode9_0 'bits)))
                             (if or-part_1
                               or-part_1
-                              (if (exact-integer? mode7_0)
-                                (<= 0 mode7_0 65535)
+                              (if (exact-integer? mode9_0)
+                                (<= 0 mode9_0 65535)
                                 #f)))))
                     (void)
                     (raise-argument-error
                      'file-or-directory-permissions
                      "(or/c #f 'bits (integer-in 0 65535))"
-                     mode7_0))
+                     mode9_0))
                   (let ((host-path_0
                          (->host
-                          p8_0
+                          p10_0
                           'file-or-directory-permissions
-                          (if (integer? mode7_0) '(write) '(read)))))
+                          (if (integer? mode9_0) '(write) '(read)))))
                     (let ((r_0
-                           (if (integer? mode7_0)
+                           (if (integer? mode9_0)
                              (|#%app|
                               rktio_set_file_or_directory_permissions
                               (unsafe-place-local-ref cell.1)
                               host-path_0
-                              mode7_0)
+                              mode9_0)
                              (|#%app|
                               rktio_get_file_or_directory_permissions
                               (unsafe-place-local-ref cell.1)
                               host-path_0
-                              (eq? mode7_0 'bits)))))
+                              (eq? mode9_0 'bits)))))
                       (begin
                         (if (vector? r_0)
                           (raise-filesystem-error
@@ -29594,7 +29613,7 @@
                                    "~a failed~a\n"
                                    "  path: ~a~a")))
                              (let ((app_1
-                                    (if (integer? mode7_0) "update" "access")))
+                                    (if (integer? mode9_0) "update" "access")))
                                (let ((app_2
                                       (if (racket-error? r_0 4)
                                         ";\n unsupported bit combination"
@@ -29608,12 +29627,12 @@
                                     (if (racket-error? r_0 4)
                                       (1/format
                                        "\n  permission value: ~a"
-                                       mode7_0)
+                                       mode9_0)
                                       "")))))))
                           (void))
-                        (if (integer? mode7_0)
+                        (if (integer? mode9_0)
                           (void)
-                          (if (eq? 'bits mode7_0)
+                          (if (eq? 'bits mode9_0)
                             r_0
                             (let ((set?_0
                                    (|#%name|
@@ -29633,26 +29652,26 @@
      file-or-directory-permissions
      (case-lambda
       ((p_0) (begin (file-or-directory-permissions_0 p_0 #f)))
-      ((p_0 mode7_0) (file-or-directory-permissions_0 p_0 mode7_0))))))
+      ((p_0 mode9_0) (file-or-directory-permissions_0 p_0 mode9_0))))))
 (define 1/file-or-directory-identity
   (let ((file-or-directory-identity_0
          (|#%name|
           file-or-directory-identity
-          (lambda (p10_0 as-link?9_0)
+          (lambda (p12_0 as-link?11_0)
             (begin
               (begin
-                (if (path-string? p10_0)
+                (if (path-string? p12_0)
                   (void)
                   (raise-argument-error
                    'file-or-directory-identity
                    "path-string?"
-                   p10_0))
+                   p12_0))
                 (let ((host-path_0
-                       (->host p10_0 'file-or-directory-identity '(exists))))
+                       (->host p12_0 'file-or-directory-identity '(exists))))
                   (begin
                     (unsafe-start-atomic)
                     (path-or-fd-identity.1
-                     as-link?9_0
+                     as-link?11_0
                      #f
                      host-path_0
                      #f
@@ -29662,7 +29681,7 @@
      file-or-directory-identity
      (case-lambda
       ((p_0) (begin (file-or-directory-identity_0 p_0 #f)))
-      ((p_0 as-link?9_0) (file-or-directory-identity_0 p_0 as-link?9_0))))))
+      ((p_0 as-link?11_0) (file-or-directory-identity_0 p_0 as-link?11_0))))))
 (define 1/file-size
   (|#%name|
    file-size
@@ -29700,19 +29719,19 @@
   (let ((copy-file_0
          (|#%name|
           copy-file
-          (lambda (src12_0 dest13_0 exists-ok?11_0)
+          (lambda (src14_0 dest15_0 exists-ok?13_0)
             (begin
               (begin
-                (if (path-string? src12_0)
+                (if (path-string? src14_0)
                   (void)
-                  (raise-argument-error 'copy-file "path-string?" src12_0))
+                  (raise-argument-error 'copy-file "path-string?" src14_0))
                 (begin
-                  (if (path-string? dest13_0)
+                  (if (path-string? dest15_0)
                     (void)
-                    (raise-argument-error 'copy-file "path-string?" dest13_0))
-                  (let ((src-host_0 (->host src12_0 'copy-file '(read))))
+                    (raise-argument-error 'copy-file "path-string?" dest15_0))
+                  (let ((src-host_0 (->host src14_0 'copy-file '(read))))
                     (let ((dest-host_0
-                           (->host dest13_0 'copy-file '(write delete))))
+                           (->host dest15_0 'copy-file '(write delete))))
                       (let ((report-error_0
                              (|#%name|
                               report-error
@@ -29741,7 +29760,7 @@
                                   (unsafe-place-local-ref cell.1)
                                   dest-host_0
                                   src-host_0
-                                  exists-ok?11_0)))
+                                  exists-ok?13_0)))
                             (if (vector? cp_0)
                               (begin (unsafe-end-atomic) (report-error_0 cp_0))
                               (begin
@@ -29802,8 +29821,8 @@
      copy-file
      (case-lambda
       ((src_0 dest_0) (begin (copy-file_0 src_0 dest_0 #f)))
-      ((src_0 dest_0 exists-ok?11_0)
-       (copy-file_0 src_0 dest_0 exists-ok?11_0))))))
+      ((src_0 dest_0 exists-ok?13_0)
+       (copy-file_0 src_0 dest_0 exists-ok?13_0))))))
 (define 1/make-file-or-directory-link
   (|#%name|
    make-file-or-directory-link
@@ -34500,11 +34519,11 @@
                 'subprocess
                 "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                 stderr_0))
-             (let ((lr1326 unsafe-undefined)
+             (let ((lr1327 unsafe-undefined)
                    (group_0 unsafe-undefined)
                    (command_0 unsafe-undefined)
                    (exact/args_0 unsafe-undefined))
-               (set! lr1326
+               (set! lr1327
                  (call-with-values
                   (lambda ()
                     (if (path-string? group/command_0)
@@ -34559,9 +34578,9 @@
                    ((group_1 command_1 exact/args_1)
                     (vector group_1 command_1 exact/args_1))
                    (args (raise-binding-result-arity-error 3 args)))))
-               (set! group_0 (unsafe-vector*-ref lr1326 0))
-               (set! command_0 (unsafe-vector*-ref lr1326 1))
-               (set! exact/args_0 (unsafe-vector*-ref lr1326 2))
+               (set! group_0 (unsafe-vector*-ref lr1327 0))
+               (set! command_0 (unsafe-vector*-ref lr1327 1))
+               (set! exact/args_0 (unsafe-vector*-ref lr1327 2))
                (call-with-values
                 (lambda ()
                   (if (if (pair? exact/args_0)

@@ -138,6 +138,7 @@ rktio_rename_file
 rktio_get_current_directory
 rktio_set_current_directory
 rktio_make_directory
+rktio_make_directory_with_permissions
 rktio_delete_directory
 rktio_readlink
 rktio_make_link

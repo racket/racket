@@ -849,6 +849,10 @@ RKTIO_EXTERN rktio_ok_t rktio_set_current_directory(rktio_t *rktio, rktio_const_
 RKTIO_EXTERN rktio_ok_t rktio_make_directory(rktio_t *rktio, rktio_const_string_t filename);
 /* Can report `RKTIO_ERROR_EXISTS`. */
 
+RKTIO_EXTERN rktio_ok_t rktio_make_directory_with_permissions(rktio_t *rktio, rktio_const_string_t filename, int perm_bits);
+/* Can report `RKTIO_ERROR_EXISTS`. */
+#define RKTIO_DEFAULT_DIRECTORY_PERM_BITS 0777
+
 RKTIO_EXTERN rktio_ok_t rktio_delete_directory(rktio_t *rktio, rktio_const_string_t filename, rktio_const_string_t current_directory,
                                                rktio_bool_t enable_write_on_fail);
 /* The `current_directory` argument is used on Windows to avoid being

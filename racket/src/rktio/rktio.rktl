@@ -71,6 +71,7 @@
 (define-constant RKTIO_FILE_TYPE_LINK 3)
 (define-constant RKTIO_FILE_TYPE_DIRECTORY_LINK 4)
 (define-constant RKTIO_FILE_TYPE_ERROR -1)
+(define-constant RKTIO_DEFAULT_DIRECTORY_PERM_BITS 511)
 (define-constant RKTIO_PERMISSION_READ 4)
 (define-constant RKTIO_PERMISSION_WRITE 2)
 (define-constant RKTIO_PERMISSION_EXEC 1)
@@ -1059,6 +1060,12 @@
  rktio_ok_t
  rktio_make_directory
  (((ref rktio_t) rktio) (rktio_const_string_t filename)))
+(define-function/errno
+ #f
+ ()
+ rktio_ok_t
+ rktio_make_directory_with_permissions
+ (((ref rktio_t) rktio) (rktio_const_string_t filename) (int perm_bits)))
 (define-function/errno
  #f
  ()

@@ -1614,6 +1614,18 @@
   (tcp-close l))
 
 ;;----------------------------------------------------------------------
+;; Directory and permissions
+
+(unless (eq? 'windows (system-type))
+  (let ([dir (make-temporary-file "perms~a" 'directory)])
+    (define d2 (build-path dir "created"))
+    (make-directory d2 #o500)
+    (test #o500 file-or-directory-permissions d2 'bits)
+    (delete-directory/files dir)))
+(err/rt-test (make-directory "would-be-new" 'a))
+(err/rt-test (make-directory "would-be-new" -1))
+
+;;----------------------------------------------------------------------
 ;; Filesystem-change events
 
 (test #f filesystem-change-evt? 'evt)

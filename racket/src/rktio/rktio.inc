@@ -138,6 +138,7 @@ Sforeign_symbol("rktio_rename_file", (void *)rktio_rename_file);
 Sforeign_symbol("rktio_get_current_directory", (void *)rktio_get_current_directory);
 Sforeign_symbol("rktio_set_current_directory", (void *)rktio_set_current_directory);
 Sforeign_symbol("rktio_make_directory", (void *)rktio_make_directory);
+Sforeign_symbol("rktio_make_directory_with_permissions", (void *)rktio_make_directory_with_permissions);
 Sforeign_symbol("rktio_delete_directory", (void *)rktio_delete_directory);
 Sforeign_symbol("rktio_readlink", (void *)rktio_readlink);
 Sforeign_symbol("rktio_make_link", (void *)rktio_make_link);

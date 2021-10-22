@@ -381,7 +381,7 @@ void scheme_init_file(Scheme_Startup_Env *env)
   scheme_addto_prim_instance("make-directory",
 			     scheme_make_prim_w_arity(make_directory,
 						      "make-directory",
-						      1, 1), 
+						      1, 2), 
 			     env);
   scheme_addto_prim_instance("delete-directory",
 			     scheme_make_prim_w_arity(delete_directory,
@@ -4590,16 +4590,25 @@ static Scheme_Object *make_directory(int argc, Scheme_Object *argv[])
 {
   char *filename;
   int copied;
+  int perms = RKTIO_DEFAULT_DIRECTORY_PERM_BITS;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
     scheme_wrong_contract("make-directory", "path-string?", 0, argc, argv);
+  if (argc > 1) {
+    if (SCHEME_INTP(argv[1])
+        && (SCHEME_INT_VAL(argv[1]) >= 0)
+        && (SCHEME_INT_VAL(argv[1]) <= 65535)) {
+      perms = SCHEME_INT_VAL(argv[1]);
+    } else
+      scheme_wrong_contract("make-directory", "(or/c symbol? (integer-in 0 65535))", 1, argc, argv);
+  }
 
   filename = scheme_expand_string_filename(argv[0],
 					   "make-directory",
 					   &copied,
 					   SCHEME_GUARD_FILE_WRITE);
 
-  if (!rktio_make_directory(scheme_rktio, filename)) {
+  if (!rktio_make_directory_with_permissions(scheme_rktio, filename, perms)) {
     if (scheme_last_error_is_racket(RKTIO_ERROR_EXISTS)) {
       scheme_raise_exn(MZEXN_FAIL_FILESYSTEM_EXISTS,
                        "make-directory: cannot make directory;\n"

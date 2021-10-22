@@ -15,6 +15,7 @@
          "host.rkt"
          "identity.rkt"
          "error.rkt"
+         "permissions.rkt"
          (only-in "error.rkt"
                   set-maybe-raise-missing-module!))
 
@@ -84,10 +85,11 @@
                                               "  path: ~a")
                                              (host-> host-path))))])]))
 
-(define/who (make-directory p)
+(define/who (make-directory p [perms RKTIO_DEFAULT_DIRECTORY_PERM_BITS])
   (check who path-string? p)
+  (check who permissions? #:contract permissions-desc perms)
   (define host-path (->host p who '(write)))
-  (define r (rktio_make_directory rktio host-path))
+  (define r (rktio_make_directory_with_permissions rktio host-path perms))
   (when (rktio-error? r)
     (raise-filesystem-error who
                             r

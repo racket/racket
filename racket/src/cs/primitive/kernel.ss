@@ -506,7 +506,7 @@
   [make-custodian (known-procedure/no-prompt 3)]
   [make-custodian-box (known-procedure/no-prompt 4)]
   [make-derived-parameter (known-procedure/single-valued 8)]
-  [make-directory (known-procedure/no-prompt 2)]
+  [make-directory (known-procedure/no-prompt 6)]
   [make-environment-variables (known-procedure/no-prompt -1)]
   [make-ephemeron (known-procedure/allocates 4)]
   [make-ephemeron-hash (known-procedure/single-valued 3)]

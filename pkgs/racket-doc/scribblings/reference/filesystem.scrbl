@@ -632,10 +632,20 @@ of the current directory.}
 Returns @racket[#t] if @racket[path] refers to a directory,
 @racket[#f] otherwise.}
 
-@defproc[(make-directory [path path-string?]) void?]{
+@defproc[(make-directory [path path-string?]
+                         [permissions (integer-in 0 65535) @#,racketvalfont{#o777}])
+         void?]{
 
 Creates a new directory with the path @racket[path].  If the directory
-is not created successfully, the @exnraise[exn:fail:filesystem].}
+is not created successfully, the @exnraise[exn:fail:filesystem].
+
+The @racket[permissions] argument specifies the permissions of the
+created directory, where an integer representation of permissions is
+treated the same as for @racket[file-or-directory-permissions]. On
+Unix and Mac OS, these permissions bits are combined with the
+process's umask. On Windows, @racket[permissions] is not used.
+
+@history[#:changed "8.3.0.5" @elem{Added the @racket[permissions] argument.}]}
 
 
 @defproc[(delete-directory [path path-string?]) void?]{
