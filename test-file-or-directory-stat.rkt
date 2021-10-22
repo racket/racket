@@ -82,7 +82,7 @@
                         (stat-ref 'modify-time-nanoseconds)))
         ; Check stat data that corresponds to mode bits.
         ;  Read/write/execute
-        (check-equal? (bitwise-and (stat-ref 'permission-bits) #o777) #o664)
+        (check-equal? (bitwise-and (stat-ref 'mode) #o777) #o664)
         ; TODO: Make sure the file is removed even if `file-or-directory-stat`
         ; raises an exception.
         (delete-file temp-file-path))
@@ -92,7 +92,7 @@
         (check-equal? (stat-ref 'size) (file-size temp-file-path))
         (check-equal? (stat-ref 'modify-time-seconds)
                       (file-or-directory-modify-seconds temp-file-path))
-        (check-equal? (bitwise-and (stat-ref 'permission-bits) #o777)
+        (check-equal? (bitwise-and (stat-ref 'mode) #o777)
                       (file-or-directory-permissions temp-file-path 'bits))
         ; TODO: Make sure the file is removed even if `file-or-directory-stat`
         ; raises an exception.
@@ -105,14 +105,13 @@
         (for ([test-data `((do-not-use ,(string-length TEST-CONTENT) #o664)
                            (#f         ,(string-length TEST-CONTENT) #o664)
                            (#t         ,(string-length temp-file-path) #o777))])
-          (let ([as-link?                 (car test-data)]
-                [expected-size            (cadr test-data)]
-                [expected-permission-bits (caddr test-data)])
+          (let ([as-link?      (car test-data)]
+                [expected-size (cadr test-data)]
+                [expected-mode (caddr test-data)])
             (define-values (stat-result stat-ref)
               (stat-and-stat-ref link-file-path as-link?))
             (check-equal? (stat-ref 'size) expected-size)
-            (check-equal? (bitwise-and (stat-ref 'permission-bits) #o777)
-                          expected-permission-bits)))
+            (check-equal? (bitwise-and (stat-ref 'mode) #o777) expected-mode)))
         ; TODO: Make sure the file is removed even if `file-or-directory-stat`
         ; raises an exception.
         (delete-file temp-file-path))

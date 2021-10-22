@@ -317,7 +317,7 @@
           (vector-ref r (add1 seconds-index))))
      (hash 'device-id (vector-ref r 0)
            'inode (vector-ref r 1)
-           'permission-bits (vector-ref r 2)
+           'mode (vector-ref r 2)
            'hardlink-count (vector-ref r 3)
            'user-id (vector-ref r 4)
            'group-id (vector-ref r 5)
