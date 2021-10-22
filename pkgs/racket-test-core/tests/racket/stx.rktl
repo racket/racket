@@ -32,6 +32,7 @@
   (test loc syntax-srcloc (datum->syntax #f 'x loc))
   (test #f syntax-srcloc (datum->syntax #f 'x #f))
   (test #f syntax-srcloc (datum->syntax #f 'y (datum->syntax #f 'x #f))))
+(err/rt-test (syntax-srcloc 1))
 
 (err/rt-test (datum->syntax #f 10 10))
 (err/rt-test (datum->syntax #f 10 '(10)))
