@@ -3,6 +3,7 @@
          "../common/phase+space.rkt"
          "../common/module-path.rkt"
          (rename-in "syntax.rkt"
+                    [syntax-srcloc raw:syntax-srcloc]
                     [syntax->datum raw:syntax->datum]
                     [datum->syntax raw:datum->syntax])
          "property.rkt"
@@ -36,6 +37,7 @@
 
 (provide syntax?
          syntax-e
+         syntax-srcloc
          syntax-property
          syntax-property-remove
          syntax-property-preserved?
@@ -68,6 +70,10 @@
 (define/who (syntax-e s)
   (check who syntax? s)
   (raw:syntax-e s))
+
+(define/who (syntax-srcloc s)
+  (check who syntax? s)
+  (raw:syntax-srcloc s))
 
 (define/who (syntax->datum s)
   (check who syntax? s)

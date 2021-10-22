@@ -1,8 +1,7 @@
 #lang racket/base
 (require "syntax.rkt")
 
-(provide syntax-srcloc
-         syntax-source
+(provide syntax-source
          syntax-line
          syntax-column
          syntax-position
