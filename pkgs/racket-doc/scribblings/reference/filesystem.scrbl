@@ -544,8 +544,7 @@ Notes:
 @itemlist[
  @item{@racketvalfont{'device-id} : device id}
  @item{@racketvalfont{'inode} : inode number}
- @item{@racketvalfont{'permission-bits} : permissions bits as returned by
-   @racket[(file-or-directory-permissions path 'bits)]}
+ @item{@racketvalfont{'mode} : mode bits (see below)}
  @;{
  @item{@racketvalfont{'type} : one of @racketvalfont{'socket},
    @racketvalfont{'symbolic-link}, @racketvalfont{'file}, @racketvalfont{'directory},
@@ -573,8 +572,14 @@ Notes:
 ]
 
 If @racket[as-link?] is a true value, then if @racket[path] refers to a
-symbolic link [what about junctions?], the stat information of the link is
+symbolic link, @;{ what about junctions? } the stat information of the link is
 returned instead of the stat information of the referenced file system item.
+
+The mode bits are the bits for permissions and other data, as returned from the
+Posix @tt{stat}/@tt{lstat} functions. On Windows, @racket[file-or-directory-stat]
+tries to map the corresponding Windows information to the corresponding bit
+pattern as on Posix. You can select portions of the bit pattern with the constants
+@racket[user-read-bit] etc.
 
 Depending on the operating system and file system, the "nanoseconds" timestamps
 may have less than nanoseconds precision. For example, in one environment you

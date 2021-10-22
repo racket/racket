@@ -29746,7 +29746,7 @@
                                                              app_0
                                                              'inode
                                                              app_1
-                                                             'permission-bits
+                                                             'mode
                                                              app_2
                                                              'hardlink-count
                                                              app_3
