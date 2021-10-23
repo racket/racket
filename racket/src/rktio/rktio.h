@@ -885,7 +885,10 @@ typedef struct rktio_stat_t {
             device_id_for_special_file, size, block_size, block_count,
             access_time_seconds, access_time_nanoseconds,
             modify_time_seconds, modify_time_nanoseconds,
-            change_time_seconds, change_time_nanoseconds;
+            ctime_seconds, ctime_nanoseconds;
+  /* The `st_ctime` field is status change time for Posix and creation time
+     for Windows. */
+  rktio_bool_t ctime_is_change_time;
 } rktio_stat_t;
 
 RKTIO_EXTERN rktio_stat_t *rktio_file_or_directory_stat(

@@ -121,8 +121,9 @@
      (Rrktio_stat_t-access_time_nanoseconds p)
      (Rrktio_stat_t-modify_time_seconds p)
      (Rrktio_stat_t-modify_time_nanoseconds p)
-     (Rrktio_stat_t-change_time_seconds p)
-     (Rrktio_stat_t-change_time_nanoseconds p))))
+     (Rrktio_stat_t-ctime_seconds p)
+     (Rrktio_stat_t-ctime_nanoseconds p)
+     (Rrktio_stat_t-ctime_is_change_time p))))
 
 (define (rktio_identity_to_vector p)
   (let ([p (cast p _pointer _Rrktio_identity_t-pointer)])

@@ -227,8 +227,9 @@
          (ftype-ref rktio_stat_t (access_time_nanoseconds) p)
          (ftype-ref rktio_stat_t (modify_time_seconds) p)
          (ftype-ref rktio_stat_t (modify_time_nanoseconds) p)
-         (ftype-ref rktio_stat_t (change_time_seconds) p)
-         (ftype-ref rktio_stat_t (change_time_nanoseconds) p))))
+         (ftype-ref rktio_stat_t (ctime_seconds) p)
+         (ftype-ref rktio_stat_t (ctime_nanoseconds) p)
+         (ftype-ref rktio_stat_t (ctime_is_change_time) p))))
 
     (define (rktio_identity_to_vector p)
       (let ([p (make-ftype-pointer rktio_identity_t (ptr->address p))])

@@ -192,8 +192,9 @@
   (uintptr_t access_time_nanoseconds)
   (uintptr_t modify_time_seconds)
   (uintptr_t modify_time_nanoseconds)
-  (uintptr_t change_time_seconds)
-  (uintptr_t change_time_nanoseconds)))
+  (uintptr_t ctime_seconds)
+  (uintptr_t ctime_nanoseconds)
+  (rktio_bool_t ctime_is_change_time)))
 (define-struct-type
  rktio_identity_t
  ((uintptr_t a)
