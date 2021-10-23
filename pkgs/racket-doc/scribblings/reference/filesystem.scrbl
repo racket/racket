@@ -1719,20 +1719,35 @@ Creates a lock filename by prepending @racket["_LOCK"] on Windows
   (make-lock-file-name "/home/george/project/important-file")]}
 
 @deftogether[(
-@defthing[user-read-bit     @#,racketvalfont{#o400}]
-@defthing[user-write-bit    @#,racketvalfont{#o200}]
-@defthing[user-execute-bit  @#,racketvalfont{#o100}]
-@defthing[group-read-bit    @#,racketvalfont{#o040}]
-@defthing[group-write-bit   @#,racketvalfont{#o020}]
-@defthing[group-execute-bit @#,racketvalfont{#o010}]
-@defthing[other-read-bit    @#,racketvalfont{#o004}]
-@defthing[other-write-bit   @#,racketvalfont{#o002}]
-@defthing[other-execute-bit @#,racketvalfont{#o001}]
+; See https://en.wikibooks.org/wiki/C_Programming/POSIX_Reference/sys/stat.h
+@defthing[file-type-bits             @#,racketvalfont{#o170000}]
+@defthing[socket-type-bits           @#,racketvalfont{#o140000}]
+@defthing[symbolic-link-type-bits    @#,racketvalfont{#o120000}]
+@defthing[regular-file-type-bits     @#,racketvalfont{#o100000}]
+@defthing[block-device-type-bits     @#,racketvalfont{#o060000}]
+@defthing[directory-type-bits        @#,racketvalfont{#o040000}]
+@defthing[character-device-type-bits @#,racketvalfont{#o020000}]
+@defthing[fifo-type-bits             @#,racketvalfont{#o010000}]
+@defthing[set-user-id-bit            @#,racketvalfont{#o004000}]
+@defthing[set-group-id-bit           @#,racketvalfont{#o002000}]
+@defthing[sticky-bit                 @#,racketvalfont{#o001000}]
+@defthing[user-permission-bits       @#,racketvalfont{#o000700}]
+@defthing[user-read-bit              @#,racketvalfont{#o000400}]
+@defthing[user-write-bit             @#,racketvalfont{#o000200}]
+@defthing[user-execute-bit           @#,racketvalfont{#o000100}]
+@defthing[group-permission-bits      @#,racketvalfont{#o000070}]
+@defthing[group-read-bit             @#,racketvalfont{#o000040}]
+@defthing[group-write-bit            @#,racketvalfont{#o000020}]
+@defthing[group-execute-bit          @#,racketvalfont{#o000010}]
+@defthing[other-permission-bits      @#,racketvalfont{#o000007}]
+@defthing[other-read-bit             @#,racketvalfont{#o000004}]
+@defthing[other-write-bit            @#,racketvalfont{#o000002}]
+@defthing[other-execute-bit          @#,racketvalfont{#o000001}]
 )]{
 
-Constants that are useful with @racket[file-or-directory-permissions]
-and bitwise operations such as @racket[bitwise-ior], and
-@racket[bitwise-and].}
+Constants that are useful with @racket[file-or-directory-permissions],
+@racket[file-or-directory-stat] and bitwise operations such as
+@racket[bitwise-ior], and @racket[bitwise-and].}
 
 
 @examples[#:hidden #:eval file-eval
