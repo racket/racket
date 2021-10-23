@@ -739,8 +739,6 @@ rktio_stat_t *rktio_file_or_directory_stat(
     rktio_stat_buf->modify_time_nanoseconds = stat_buf.st_mtim.tv_nsec;
     rktio_stat_buf->change_time_seconds = stat_buf.st_ctim.tv_sec;
     rktio_stat_buf->change_time_nanoseconds = stat_buf.st_ctim.tv_nsec;
-    /* We don't need this anymore since everything we need has been copied to
-       `rktio_stat_buf`. */
     return rktio_stat_buf;
   }
 }
