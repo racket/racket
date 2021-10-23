@@ -2060,6 +2060,9 @@
 (define check-list
   (lambda (l_0)
     (if (list? l_0) (void) (raise-argument-error 'in-list "list?" l_0))))
+(define check-in-hash
+  (lambda (ht_0)
+    (if (hash? ht_0) (void) (raise-argument-error 'in-hash "hash?" ht_0))))
 (define check-in-hash-keys
   (lambda (ht_0)
     (if (hash? ht_0)
@@ -29714,67 +29717,126 @@
                                            (vector-ref
                                             r_0
                                             (add1 seconds-index_0)))))))))
-                              (let ((app_0 (vector-ref r_0 0)))
-                                (let ((app_1 (vector-ref r_0 1)))
-                                  (let ((app_2 (vector-ref r_0 2)))
-                                    (let ((app_3 (vector-ref r_0 3)))
-                                      (let ((app_4 (vector-ref r_0 4)))
-                                        (let ((app_5 (vector-ref r_0 5)))
-                                          (let ((app_6 (vector-ref r_0 6)))
-                                            (let ((app_7 (vector-ref r_0 7)))
-                                              (let ((app_8 (vector-ref r_0 8)))
-                                                (let ((app_9
-                                                       (vector-ref r_0 9)))
-                                                  (let ((app_10
-                                                         (vector-ref r_0 10)))
-                                                    (let ((app_11
-                                                           (combined-nanoseconds_0
-                                                            10)))
-                                                      (let ((app_12
-                                                             (vector-ref
-                                                              r_0
-                                                              12)))
-                                                        (let ((app_13
-                                                               (combined-nanoseconds_0
-                                                                12)))
-                                                          (let ((app_14
-                                                                 (vector-ref
-                                                                  r_0
-                                                                  14)))
-                                                            (hash
-                                                             'device-id
-                                                             app_0
-                                                             'inode
-                                                             app_1
-                                                             'mode
-                                                             app_2
-                                                             'hardlink-count
-                                                             app_3
-                                                             'user-id
-                                                             app_4
-                                                             'group-id
-                                                             app_5
-                                                             'device-id-for-special-file
-                                                             app_6
-                                                             'size
-                                                             app_7
-                                                             'block-size
-                                                             app_8
-                                                             'block-count
-                                                             app_9
-                                                             'access-time-seconds
-                                                             app_10
-                                                             'access-time-nanoseconds
-                                                             app_11
-                                                             'modify-time-seconds
-                                                             app_12
-                                                             'modify-time-nanoseconds
-                                                             app_13
-                                                             'change-time-seconds
-                                                             app_14
-                                                             'change-time-nanoseconds
-                                                             (combined-nanoseconds_0
-                                                              14))))))))))))))))))))))))))))))
+                              (let ((main-hash_0
+                                     (let ((app_0 (vector-ref r_0 0)))
+                                       (let ((app_1 (vector-ref r_0 1)))
+                                         (let ((app_2 (vector-ref r_0 2)))
+                                           (let ((app_3 (vector-ref r_0 3)))
+                                             (let ((app_4 (vector-ref r_0 4)))
+                                               (let ((app_5
+                                                      (vector-ref r_0 5)))
+                                                 (let ((app_6
+                                                        (vector-ref r_0 6)))
+                                                   (let ((app_7
+                                                          (vector-ref r_0 7)))
+                                                     (let ((app_8
+                                                            (vector-ref
+                                                             r_0
+                                                             8)))
+                                                       (let ((app_9
+                                                              (vector-ref
+                                                               r_0
+                                                               9)))
+                                                         (let ((app_10
+                                                                (vector-ref
+                                                                 r_0
+                                                                 10)))
+                                                           (let ((app_11
+                                                                  (combined-nanoseconds_0
+                                                                   10)))
+                                                             (let ((app_12
+                                                                    (vector-ref
+                                                                     r_0
+                                                                     12)))
+                                                               (hash
+                                                                'device-id
+                                                                app_0
+                                                                'inode
+                                                                app_1
+                                                                'mode
+                                                                app_2
+                                                                'hardlink-count
+                                                                app_3
+                                                                'user-id
+                                                                app_4
+                                                                'group-id
+                                                                app_5
+                                                                'device-id-for-special-file
+                                                                app_6
+                                                                'size
+                                                                app_7
+                                                                'block-size
+                                                                app_8
+                                                                'block-count
+                                                                app_9
+                                                                'access-time-seconds
+                                                                app_10
+                                                                'access-time-nanoseconds
+                                                                app_11
+                                                                'modify-time-seconds
+                                                                app_12
+                                                                'modify-time-nanoseconds
+                                                                (combined-nanoseconds_0
+                                                                 12)))))))))))))))))
+                                (let ((ctime-hash_0
+                                       (if (vector-ref r_0 15)
+                                         (let ((app_0 (vector-ref r_0 14)))
+                                           (hash
+                                            'change-time-seconds
+                                            app_0
+                                            'change-time-nanoseconds
+                                            (combined-nanoseconds_0 14)
+                                            'creation-time-seconds
+                                            0
+                                            'creation-time-nanoseconds
+                                            0))
+                                         (let ((app_0 (vector-ref r_0 14)))
+                                           (hash
+                                            'change-time-seconds
+                                            0
+                                            'change-time-nanoseconds
+                                            0
+                                            'creation-time-seconds
+                                            app_0
+                                            'creation-time-nanoseconds
+                                            (combined-nanoseconds_0 14))))))
+                                  (begin
+                                    (letrec*
+                                     ((for-loop_0
+                                       (|#%name|
+                                        for-loop
+                                        (lambda (new-hash_0 i_0)
+                                          (begin
+                                            (if i_0
+                                              (call-with-values
+                                               (lambda ()
+                                                 (hash-iterate-key+value
+                                                  ctime-hash_0
+                                                  i_0))
+                                               (case-lambda
+                                                ((key_0 value_0)
+                                                 (let ((new-hash_1
+                                                        (let ((new-hash_1
+                                                               (hash-set
+                                                                new-hash_0
+                                                                key_0
+                                                                value_0)))
+                                                          (values
+                                                           new-hash_1))))
+                                                   (for-loop_0
+                                                    new-hash_1
+                                                    (hash-iterate-next
+                                                     ctime-hash_0
+                                                     i_0))))
+                                                (args
+                                                 (raise-binding-result-arity-error
+                                                  2
+                                                  args))))
+                                              new-hash_0))))))
+                                     (for-loop_0
+                                      main-hash_0
+                                      (hash-iterate-first
+                                       ctime-hash_0)))))))))))))))))))
     (|#%name|
      file-or-directory-stat
      (case-lambda

@@ -737,8 +737,9 @@ rktio_stat_t *rktio_file_or_directory_stat(
     rktio_stat_buf->access_time_nanoseconds = stat_buf.st_atim.tv_nsec;
     rktio_stat_buf->modify_time_seconds = stat_buf.st_mtim.tv_sec;
     rktio_stat_buf->modify_time_nanoseconds = stat_buf.st_mtim.tv_nsec;
-    rktio_stat_buf->change_time_seconds = stat_buf.st_ctim.tv_sec;
-    rktio_stat_buf->change_time_nanoseconds = stat_buf.st_ctim.tv_nsec;
+    rktio_stat_buf->ctime_seconds = stat_buf.st_ctim.tv_sec;
+    rktio_stat_buf->ctime_nanoseconds = stat_buf.st_ctim.tv_nsec;
+    rktio_stat_buf->ctime_is_change_time = 1;
     return rktio_stat_buf;
   }
 }

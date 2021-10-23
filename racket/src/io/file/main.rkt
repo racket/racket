@@ -315,22 +315,39 @@
      (define (combined-nanoseconds seconds-index)
        (+ (* #e1e9 (vector-ref r seconds-index))
           (vector-ref r (add1 seconds-index))))
-     (hash 'device-id (vector-ref r 0)
-           'inode (vector-ref r 1)
-           'mode (vector-ref r 2)
-           'hardlink-count (vector-ref r 3)
-           'user-id (vector-ref r 4)
-           'group-id (vector-ref r 5)
-           'device-id-for-special-file (vector-ref r 6)
-           'size (vector-ref r 7)
-           'block-size (vector-ref r 8)
-           'block-count (vector-ref r 9)
-           'access-time-seconds (vector-ref r 10)
-           'access-time-nanoseconds (combined-nanoseconds 10)
-           'modify-time-seconds (vector-ref r 12)
-           'modify-time-nanoseconds (combined-nanoseconds 12)
-           'change-time-seconds (vector-ref r 14)
-           'change-time-nanoseconds (combined-nanoseconds 14))]))
+     (define main-hash
+       (hash 'device-id (vector-ref r 0)
+             'inode (vector-ref r 1)
+             'mode (vector-ref r 2)
+             'hardlink-count (vector-ref r 3)
+             'user-id (vector-ref r 4)
+             'group-id (vector-ref r 5)
+             'device-id-for-special-file (vector-ref r 6)
+             'size (vector-ref r 7)
+             'block-size (vector-ref r 8)
+             'block-count (vector-ref r 9)
+             'access-time-seconds (vector-ref r 10)
+             'access-time-nanoseconds (combined-nanoseconds 10)
+             'modify-time-seconds (vector-ref r 12)
+             'modify-time-nanoseconds (combined-nanoseconds 12)))
+     ; TODO: Most likely, Windows will set creation time to 0 if it's not
+     ; supported by a file system. If that's actually the case, use 0 instead
+     ; of `#f` so that we don't have two sorts of "undefined" values.
+     (define ctime-hash
+       (if (vector-ref r 15)
+           (hash 'change-time-seconds (vector-ref r 14)
+                 'change-time-nanoseconds (combined-nanoseconds 14)
+                 'creation-time-seconds 0
+                 'creation-time-nanoseconds 0)
+           (hash 'change-time-seconds 0
+                 'change-time-nanoseconds 0
+                 'creation-time-seconds (vector-ref r 14)
+                 'creation-time-nanoseconds (combined-nanoseconds 14))))
+     ; We can't use `hash-union` (from `racket/hash`) in the kernel code, so
+     ; simulate the function.
+     (for/fold ([new-hash main-hash])
+               ([(key value) (in-hash ctime-hash)])
+        (hash-set new-hash key value))]))
 
 (define/who (file-or-directory-identity p [as-link? #f])
   (check who path-string? p)

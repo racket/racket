@@ -532,6 +532,14 @@ Notes:
   information without an extra file system call?
 - How to handle Windows junctions? Should they be treated as like symbolic
   links or something else? Check what I wrote in the ticket.
+- On Posix, the stat `ctime` field is the last status change time whereas on
+  Windows, `ctime` is the creation time (if available).
+- If a field isn't supported, say, `change-time-seconds` on Windows, should the
+  value in the hash be `#f` or 0? Normally I'd say `#f`, but I assumed Windows
+  itself will set the value to 0 if the information isn't available, for example
+  for FAT file systems. I don't think we should have two different ways
+  (`#f`/0) of saying that some information isn't available, so instead I'd
+  settle on 0.
 - Does `stat` (and the corresponding Windows function) itself check for link
   loops or do we need to handle this ourselves? It's checked on Posix, it seems.
 }
@@ -563,11 +571,15 @@ Notes:
    seconds since the epoch}
  @item{@racketvalfont{'change-time-seconds} : last change time in seconds since
    the epoch}
+ @item{@racketvalfont{'creation-time-seconds} : creation time in seconds since
+   the epoch}
  @item{@racketvalfont{'access-time-nanoseconds} : last access time in
    nanoseconds since the epoch}
  @item{@racketvalfont{'modify-time-nanoseconds} : last modification time in
    nanoseconds since the epoch}
  @item{@racketvalfont{'change-time-nanoseconds} : last status change time in
+   nanoseconds since the epoch}
+ @item{@racketvalfont{'creation-time-nanoseconds} : creation time in
    nanoseconds since the epoch}
 ]
 
@@ -586,6 +598,9 @@ may have less than nanoseconds precision. For example, in one environment a
 timestamp may be @racketvalfont{1234567891234567891} (nanoseconds precision)
 and in another environment @racketvalfont{1234567891000000000} (seconds
 precision).
+
+Values that aren't available for a platform/filesystem combination may be set
+to @racketvalfont{0}.
 
 If @racket[as-link?] is @racketvalfont{#f} and @racket[path] isn't accessible,
 the @exnraise[exn:fail:filesystem]. This exception is also raised if
