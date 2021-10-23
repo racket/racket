@@ -556,8 +556,8 @@ Notes:
  @item{@racketvalfont{'group-id} : group id of owner}
  @item{@racketvalfont{'device-id-for-special-file} : device id (if special file)}
  @item{@racketvalfont{'size} : size of file or link in bytes}
- @item{@racketvalfont{'block-size} : size of file system blocks}
- @item{@racketvalfont{'block-count} : number of used file system blocks}
+ @item{@racketvalfont{'block-size} : size of filesystem blocks}
+ @item{@racketvalfont{'block-count} : number of used filesystem blocks}
  @item{@racketvalfont{'access-time-seconds} : last access time in seconds since the epoch}
  @item{@racketvalfont{'modify-time-seconds} : last modification time in
    seconds since the epoch}
@@ -573,7 +573,7 @@ Notes:
 
 If @racket[as-link?] is a true value, then if @racket[path] refers to a
 symbolic link, @;{ what about junctions? } the stat information of the link is
-returned instead of the stat information of the referenced file system item.
+returned instead of the stat information of the referenced filesystem item.
 
 The mode bits are the bits for permissions and other data, as returned from the
 Posix @tt{stat}/@tt{lstat} functions. On Windows, @racket[file-or-directory-stat]
@@ -581,7 +581,7 @@ tries to map the corresponding Windows information to the corresponding bit
 pattern as used on Posix. To select portions of the bit pattern, see the
 constants @racket[user-read-bit] etc.
 
-Depending on the operating system and file system, the "nanoseconds" timestamps
+Depending on the operating system and filesystem, the "nanoseconds" timestamps
 may have less than nanoseconds precision. For example, in one environment a
 timestamp may be @racketvalfont{1234567891234567891} (nanoseconds precision)
 and in another environment @racketvalfont{1234567891000000000} (seconds
