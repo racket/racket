@@ -7340,7 +7340,7 @@ void scheme_init_terminal(Scheme_Startup_Env *env) {
   ADDTO_EE("terminal-init", terminal_init_term, 2);
   ADDTO_EE("terminal-read-char", terminal_read_char, 1);
   ADDTO_EE("terminal-write-char", terminal_write_char, 1);
-  ADDTO_EE("terminal-set-color", terminal_set_color, 1);
+  ADDTO_EE("terminal-set-color", terminal_set_color, 2);
   ADDTO_EE("terminal-flush", terminal_flush, 0);
   ADDTO_EE("terminal-get-screen-size", terminal_get_screen_size, 0);
   ADDTO_EE("terminal-raw-mode", terminal_raw_mode, 1);
