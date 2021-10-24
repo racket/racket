@@ -2,7 +2,8 @@
 (load-relative "loadtest.rktl")
 (require ffi/file
          ffi/unsafe
-         compiler/find-exe)
+         compiler/find-exe
+         racket/file)
 
 (Section 'file)
 
@@ -2036,8 +2037,6 @@
 (test #f port-waiting-peer? (open-input-bytes #""))
 (err/rt-test (port-waiting-peer? 10))
 
-(delete-directory work-dir)
-
 ;; Network - - - - - - - - - - - - - - - - - - - - - -
 
 (define (net-reject? who host port what)
@@ -2662,6 +2661,9 @@
 (test #t number? (file-or-directory-identity (current-directory)))
 (test #t = (file-or-directory-identity (current-directory)) (file-or-directory-identity (current-directory)))
 (err/rt-test (file-or-directory-identity "thisDoesNotExistAtAll") exn:fail:filesystem?)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(delete-directory/files work-dir)
 
 (report-errs)
