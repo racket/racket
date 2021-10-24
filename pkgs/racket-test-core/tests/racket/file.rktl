@@ -2664,6 +2664,49 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; file-or-directory-stat
+
+; Write file and check stat data.
+;  XXX: Possibly define different `let`s for Posix vs. Windows for all tests
+;  where the two platforms differ.
+(let ()
+  (define temp-file-path (build-path work-dir "stat-test"))
+  (displayln temp-file-path)
+  (define TEST-CONTENT "stat test content")
+  (display-to-file TEST-CONTENT temp-file-path #:exists 'truncate)
+  (define stat-result (file-or-directory-stat temp-file-path))
+  (define (stat-ref key) (hash-ref stat-result key))
+  ;
+  (test #t = (stat-ref 'size) (string-length TEST-CONTENT))
+  (test #t = (stat-ref 'hardlink-count) 1)
+  ; TODO: Compare against sensible values for Posix and Windows.
+  (define (positive-fixnum? n) (and (positive-integer? n) (fixnum? n)))
+  (test #t positive-fixnum? (stat-ref 'inode))
+  (test #t positive-fixnum? (stat-ref 'device-id))
+  (when (eq? (system-type) 'windows)
+    ; Windows doesn't provide a user and group id and sets both values to 0.
+    (test #t = (stat-ref 'user-id) 0)
+    (test #t = (stat-ref 'group-id) 0))
+  (unless (eq? (system-type) 'windows)
+    ; Check user and group id. Assuming the tests don't run as root, this is
+    ; probably all we can sensibly do.
+    (test #t positive-fixnum? (stat-ref 'user-id))
+    (test #t positive-fixnum? (stat-ref 'group-id)))
+  (test #t = (stat-ref 'device-id-for-special-file) 0)
+  (test #t positive-fixnum? (stat-ref 'block-size))
+  ; On my system, I had expected 1 block, but it's actually 8. This number
+  ; is supported by the `stat` command line tool.
+  (test #t positive-fixnum? (stat-ref 'block-count))
+  (test #t >= (stat-ref 'access-time-nanoseconds)
+              (stat-ref 'modify-time-nanoseconds))
+  ; Only true for Poxis, since Windows doesn't provide the status change time.
+  (test #t = (stat-ref 'change-time-nanoseconds)
+             (stat-ref 'modify-time-nanoseconds)))
+
+(err/rt-test (file-or-directory-stat "thisDoesNotExistAtAll") exn:fail:filesystem?)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (delete-directory/files work-dir)
 
 (report-errs)
