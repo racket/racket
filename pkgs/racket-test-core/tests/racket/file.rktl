@@ -2666,12 +2666,13 @@
 
 ;; file-or-directory-stat
 
+(arity-test file-or-directory-stat 1 2)
+
 ; Write file and check stat data.
 ;  XXX: Possibly define different `let`s for Posix vs. Windows for all tests
 ;  where the two platforms differ.
 (let ()
   (define temp-file-path (build-path work-dir "stat-test"))
-  (displayln temp-file-path)
   (define TEST-CONTENT "stat test content")
   (display-to-file TEST-CONTENT temp-file-path #:exists 'truncate)
   (define stat-result (file-or-directory-stat temp-file-path))
@@ -2701,9 +2702,17 @@
               (stat-ref 'modify-time-nanoseconds))
   ; Only true for Poxis, since Windows doesn't provide the status change time.
   (test #t = (stat-ref 'change-time-nanoseconds)
-             (stat-ref 'modify-time-nanoseconds)))
+             (stat-ref 'modify-time-nanoseconds))
+  (delete-file temp-file-path))
 
 (err/rt-test (file-or-directory-stat "thisDoesNotExistAtAll") exn:fail:filesystem?)
+
+; Test that stat'ing a dangling link causes a filesystem exception.
+(let ()
+  (define link-file-path (build-path work-dir "stat-test-dangling-link"))
+  (make-file-or-directory-link "/nonexistent_target" link-file-path)
+  (err/rt-test (file-or-directory-stat link-file-path) exn:fail:filesystem?)
+  (delete-file link-file-path))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
