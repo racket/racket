@@ -2714,6 +2714,15 @@
   (err/rt-test (file-or-directory-stat link-file-path) exn:fail:filesystem?)
   (delete-file link-file-path))
 
+; On the other hand, stat'ing the link itself should work.
+(let ()
+  (define link-file-path (build-path work-dir "stat-test-dangling-link"))
+  (define link-target "/nonexistent_target")
+  (make-file-or-directory-link link-target link-file-path)
+  (define stat-result (file-or-directory-stat link-file-path #t))
+  (test #t = (hash-ref stat-result 'size) (string-length link-target))
+  (delete-file link-file-path))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (delete-directory/files work-dir)
