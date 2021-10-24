@@ -5555,8 +5555,12 @@ rm -f core conftest.err conftest.$ac_objext \
           if test "${curses_portable_link}" != "" ; then
             # Try adding portabel link flags
             ORIG_LIBS="$LIBS"
+            ORIG_CPPFLAGS="$CPPFLAGS"
+            ORIG_PREFLAGS="$PREFLAGS"
             curses_lib_flag=" ${curses_portable_link}"
             LIBS="$LIBS $curses_lib_flag"
+            CPPFLAGS="$CPPFLAGS -DSCHEME_PORTABLE_TERM"
+            PREFLAGS="$PREFLAGS -DSCHEME_PORTABLE_TERM"
             cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <curses.h>
@@ -5581,6 +5585,8 @@ rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
             if test "${enable_curses}" = "no" ; then
               LIBS="$ORIG_LIBS"
+              CPPFLAGS="$ORIG_CPPFLAGS"
+              PREFLAGS="$ORIG_PREFLAGS"
               curses_lib_flag=""
             fi
           fi
