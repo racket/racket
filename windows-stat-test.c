@@ -30,6 +30,11 @@ int main(void) {
     stat_result = _stat64("stat-test.c", &stat_buf);
   } while ((stat_result == -1) && (errno == EINTR));
 
+  if (stat_result) {
+    printf("errno %d, exiting", errno);
+    return 1;
+  }
+
   rktio_stat_buf = (struct rktio_stat_t *) malloc(sizeof(struct rktio_stat_t));
   /* Corresponds to drive on Windows. 0 = A:, 1 = B: etc. */
   rktio_stat_buf->device_id = stat_buf.st_dev;
