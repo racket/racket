@@ -32,7 +32,7 @@
     (error 'check-same "not: ~e ~e" a b)))
 
 (define (round-up-page v machine-type)
-<  (if (eqv? machine-type aarch64-machine-type)
+  (if (eqv? machine-type aarch64-machine-type)
       (bitwise-and #xFFFFC000 (+ v #x3FFF))
       (bitwise-and #xFFFFF000 (+ v #xFFF))))
 
