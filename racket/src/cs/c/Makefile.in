@@ -34,6 +34,9 @@ STRIP_LIB_DEBUG = @STRIP_LIB_DEBUG@
 STRIP_SIGNATURE = @STRIP_SIGNATURE@
 RESTORE_SIGNATURE = @RESTORE_SIGNATURE@ "${srcdir}/../../mac/entitlements.plist"
 
+STRIP_SIGNATURE_VIA_RACKET = $(BOOTSTRAP_RACKET) "${srcdir}/../../mac/codesign.rkt" --remove-signature
+RESTORE_SIGNATURE_VIA_RACKET = $(BOOTSTRAP_RACKET) "${srcdir}/../../mac/codesign.rkt" -s - --entitlements
+
 ICP=@ICP@
 ICP_LIB=@ICP_LIB@
 

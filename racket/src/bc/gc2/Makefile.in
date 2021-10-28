@@ -49,6 +49,10 @@ XSRCDIR = xsrc
 XFORM = env XFORM_USE_PRECOMP=$(XSRCDIR)/precomp.h $(XFORM_NOPRECOMP)
 SRCDIR = $(srcdir)/../src
 
+STRIP_SIGNATURE_VIA_RACKET = $(BOOTSTRAP_RACKET) "${srcdir}/../../mac/codesign.rkt" --remove-signature
+RESTORE_SIGNATURE_VIA_RACKET = $(BOOTSTRAP_RACKET) "${srcdir}/../../mac/codesign.rkt" -s - --entitlements
+BOOTSTRAP_RACKET = @RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) $(SETUP_BOOT) ignored ignored.d
+
 FOREIGN_USED_OBJ = foreign.@LTO@
 FOREIGN_NOT_USED_OBJ = $(FOREIGN_USED_OBJ)
 
