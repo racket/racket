@@ -93,12 +93,14 @@ is reported only when @racket[gtk_rc_parse] is called.}
 
 @history[#:changed "6.9.0.5" @elem{Added @racket[#:make-c-id] parameter.}]
 
-@defproc[(make-not-available [name symbol?]) (#:rest list? -> any/c)]{
+@defproc[(make-not-available [name symbol?]) procedure?]{
 
-Returns a procedure that takes any number of arguments and reports an
+Returns a procedure that takes any number of arguments, including keyword arguments, and reports an
 error message from @racket[name]. This function is intended for using
 with @racket[#:make-fail] or @racket[#:default-make-fail] in
-@racket[define-ffi-definer]}
+@racket[define-ffi-definer]
+
+@history[#:changed "8.3.0.5" @elem{Added support for keyword arguments.}]}
 
 @defform[(provide-protected provide-spec ...)]{
 

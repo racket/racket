@@ -10,19 +10,30 @@
 
 (define (make-not-available id)
   (lambda ()
-    (lambda args
-      (error id "implementation not found; ~a"
-             (if (null? args)
-                 "no arguments provided"
-                 (apply
-                  string-append
-                  "arguments:"
-                  (let loop ([args args])
-                    (if (null? args)
-                        null
-                        (cons (format " ~e"
-                                      (car args))
-                              (loop (cdr args)))))))))))
+    (make-keyword-procedure
+     (lambda (kws kw-args . args)
+       (error id
+              (string-append
+               "implementation not found"
+               (if (null? args)
+                   ";\n no arguments provided"
+                   (apply
+                    string-append
+                    "\n  arguments...:"
+                    (append
+                     (let loop ([kws kws] [kw-args kw-args])
+                       (if (null? kws)
+                           null
+                           (cons (format "\n   ~a ~e"
+                                         (car kws)
+                                         (car kw-args))
+                                 (loop (cdr kws) (cdr kw-args)))))
+                     (let loop ([args args])
+                       (if (null? args)
+                           null
+                           (cons (format "\n   ~e"
+                                         (car args))
+                                 (loop (cdr args))))))))))))))
 
 (define-syntax-rule (provide-protected p ...)
   (provide (protect-out p ...)))
