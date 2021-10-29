@@ -1368,8 +1368,17 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
 
   if (envvars)
     env = rktio_envvars_to_block(rktio, envvars);
-  else
+  else {
+#ifdef RKTIO_USE_PTHREADS
+    {
+      rktio_envvars_t *current_envvars = rktio_envvars(rktio);
+      env = rktio_envvars_to_block(rktio, current_envvars);
+      rktio_envvars_free(rktio, current_envvars);
+    }
+#else
     env = NULL;
+#endif
+  }
 
 #if defined(RKTIO_SYSTEM_WINDOWS)
 

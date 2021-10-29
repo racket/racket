@@ -410,8 +410,11 @@ rktio_date_t *rktio_seconds_to_date(rktio_t *rktio, rktio_timestamp_t seconds, i
 #else
     if (get_gmt)
       success = (gmtime_r(&now, &localTime) != NULL);
-    else
+    else {
+      rktio_getenv_lock();
       success = (localtime_r(&now, &localTime) != NULL);
+      rktio_getenv_unlock();
+    }
 #endif
 
     if (success) {

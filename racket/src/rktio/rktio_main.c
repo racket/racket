@@ -14,6 +14,11 @@ rktio_t *rktio_init(void)
   rktio = malloc(sizeof(rktio_t));
   memset(rktio, 0, sizeof(rktio_t));
 
+  if (!rktio_environ_init(rktio)) {
+    rktio_destroy(rktio);
+    return NULL;
+  }
+
   rktio_alloc_global_poll_set(rktio);
   if (!rktio_initialize_signal(rktio)) {
     rktio_destroy(rktio);
@@ -31,7 +36,7 @@ rktio_t *rktio_init(void)
     return NULL;
   }
 #endif
-  
+
   rktio_init_time(rktio);
   rktio_init_wide(rktio);
   rktio_init_cpu(rktio);
