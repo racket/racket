@@ -34,12 +34,26 @@
          write-to-file
          display-lines-to-file
 
+         file-type-bits
+         socket-type-bits
+         symbolic-link-type-bits
+         regular-file-type-bits
+         block-device-type-bits
+         directory-type-bits
+         character-device-type-bits
+         fifo-type-bits
+         set-user-id-bit
+         set-group-id-bit
+         sticky-bit
+         user-permission-bits
          user-read-bit
          user-write-bit
          user-execute-bit
+         group-permission-bits
          group-read-bit
          group-write-bit
          group-execute-bit
+         other-permission-bits
          other-read-bit
          other-write-bit
          other-execute-bit)
