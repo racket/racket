@@ -2668,7 +2668,7 @@
 
 (arity-test file-or-directory-stat 1 2)
 
-; Write file and check stat data.
+; Write regular file and check stat data.
 (let ()
   (define temp-file-path (build-path work-dir "stat-test"))
   (define TEST-CONTENT "stat test content")
@@ -2681,6 +2681,12 @@
   (define (positive-fixnum? n) (and (positive-integer? n) (fixnum? n)))
   (test #t positive-fixnum? (stat-ref 'inode))
   (test #t positive-fixnum? (stat-ref 'device-id))
+  (define stat-mode (stat-ref 'mode))
+  (test #t = (bitwise-and stat-mode file-type-bits) regular-file-type-bits)
+  (test #f = (bitwise-and stat-mode file-type-bits) directory-type-bits)
+  (test #f = (bitwise-and stat-mode file-type-bits) fifo-type-bits)
+  (test #f = (bitwise-and stat-mode file-type-bits) symbolic-link-type-bits)
+  (test #f = (bitwise-and stat-mode file-type-bits) socket-type-bits)
   (when (eq? (system-type) 'windows)
     ; Windows doesn't provide a user and group id and sets both values to 0.
     (test #t = (stat-ref 'user-id) 0)
@@ -2706,6 +2712,7 @@
 
 (err/rt-test (file-or-directory-stat "thisDoesNotExistAtAll") exn:fail:filesystem?)
 
+; Test symlink-related features.
 (unless (eq? (system-type) 'windows)
   ; Test that stat'ing a dangling link causes a filesystem exception.
   (let ()
@@ -2720,6 +2727,10 @@
     (define link-target "/nonexistent_target")
     (make-file-or-directory-link link-target link-file-path)
     (define stat-result (file-or-directory-stat link-file-path #t))
+    (define stat-mode (hash-ref stat-result 'mode))
+    (test #t = (bitwise-and stat-mode file-type-bits) symbolic-link-type-bits)
+    (test #f = (bitwise-and stat-mode file-type-bits) directory-type-bits)
+    (test #f = (bitwise-and stat-mode file-type-bits) regular-file-type-bits)
     (test #t = (hash-ref stat-result 'size) (string-length link-target))
     (delete-file link-file-path)))
 
