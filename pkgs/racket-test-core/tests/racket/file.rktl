@@ -2669,8 +2669,6 @@
 (arity-test file-or-directory-stat 1 2)
 
 ; Write file and check stat data.
-;  XXX: Possibly define different `let`s for Posix vs. Windows for all tests
-;  where the two platforms differ.
 (let ()
   (define temp-file-path (build-path work-dir "stat-test"))
   (define TEST-CONTENT "stat test content")
@@ -2680,7 +2678,6 @@
   ;
   (test #t = (stat-ref 'size) (string-length TEST-CONTENT))
   (test #t = (stat-ref 'hardlink-count) 1)
-  ; TODO: Compare against sensible values for Posix and Windows.
   (define (positive-fixnum? n) (and (positive-integer? n) (fixnum? n)))
   (test #t positive-fixnum? (stat-ref 'inode))
   (test #t positive-fixnum? (stat-ref 'device-id))
@@ -2700,28 +2697,31 @@
   (test #t positive-fixnum? (stat-ref 'block-count))
   (test #t >= (stat-ref 'access-time-nanoseconds)
               (stat-ref 'modify-time-nanoseconds))
-  ; Only true for Poxis, since Windows doesn't provide the status change time.
-  (test #t = (stat-ref 'change-time-nanoseconds)
-             (stat-ref 'modify-time-nanoseconds))
+  (unless (eq? (system-type) 'windows)
+    ; Only true for Poxis, since Windows doesn't provide the status change
+    ; time.
+    (test #t = (stat-ref 'change-time-nanoseconds)
+               (stat-ref 'modify-time-nanoseconds)))
   (delete-file temp-file-path))
 
 (err/rt-test (file-or-directory-stat "thisDoesNotExistAtAll") exn:fail:filesystem?)
 
-; Test that stat'ing a dangling link causes a filesystem exception.
-(let ()
-  (define link-file-path (build-path work-dir "stat-test-dangling-link"))
-  (make-file-or-directory-link "/nonexistent_target" link-file-path)
-  (err/rt-test (file-or-directory-stat link-file-path) exn:fail:filesystem?)
-  (delete-file link-file-path))
+(unless (eq? (system-type) 'windows)
+  ; Test that stat'ing a dangling link causes a filesystem exception.
+  (let ()
+    (define link-file-path (build-path work-dir "stat-test-dangling-link"))
+    (make-file-or-directory-link "/nonexistent_target" link-file-path)
+    (err/rt-test (file-or-directory-stat link-file-path) exn:fail:filesystem?)
+    (delete-file link-file-path))
 
-; On the other hand, stat'ing the link itself should work.
-(let ()
-  (define link-file-path (build-path work-dir "stat-test-dangling-link"))
-  (define link-target "/nonexistent_target")
-  (make-file-or-directory-link link-target link-file-path)
-  (define stat-result (file-or-directory-stat link-file-path #t))
-  (test #t = (hash-ref stat-result 'size) (string-length link-target))
-  (delete-file link-file-path))
+  ; On the other hand, stat'ing the link itself should work.
+  (let ()
+    (define link-file-path (build-path work-dir "stat-test-dangling-link"))
+    (define link-target "/nonexistent_target")
+    (make-file-or-directory-link link-target link-file-path)
+    (define stat-result (file-or-directory-stat link-file-path #t))
+    (test #t = (hash-ref stat-result 'size) (string-length link-target))
+    (delete-file link-file-path)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
