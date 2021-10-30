@@ -330,9 +330,6 @@
              'access-time-nanoseconds (combined-nanoseconds 10)
              'modify-time-seconds (vector-ref r 12)
              'modify-time-nanoseconds (combined-nanoseconds 12)))
-     ; TODO: Most likely, Windows will set creation time to 0 if it's not
-     ; supported by a file system. If that's actually the case, use 0 instead
-     ; of `#f` so that we don't have two sorts of "undefined" values.
      (define ctime-hash
        (if (vector-ref r 15)
            (hash 'change-time-seconds (vector-ref r 14)
