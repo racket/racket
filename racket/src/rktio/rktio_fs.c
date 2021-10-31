@@ -19,6 +19,7 @@
 # include <windows.h>
 # include <shlobj.h>
 # include <direct.h>
+# include <sys/types.h>
 # include <sys/stat.h>
 # include <sys/utime.h>
 # include <io.h>
@@ -704,9 +705,10 @@ rktio_ok_t rktio_set_current_directory(rktio_t *rktio, const char *path)
 rktio_stat_t *rktio_file_or_directory_stat(
   rktio_t *rktio, rktio_const_string_t path, rktio_bool_t follow_links)
 {
-  struct stat stat_buf;
-  struct rktio_stat_t *rktio_stat_buf;
   int stat_result;
+  struct rktio_stat_t *rktio_stat_buf;
+#ifdef RKTIO_SYSTEM_UNIX
+  struct stat stat_buf;
 
   do {
     if (follow_links) {
@@ -742,6 +744,50 @@ rktio_stat_t *rktio_file_or_directory_stat(
     rktio_stat_buf->ctime_is_change_time = 1;
     return rktio_stat_buf;
   }
+#endif
+#ifdef RKTIO_SYSTEM_WINDOWS
+  struct _wstat64 stat_buf;
+  const WIDE_PATH_t *wp;
+  wp = MSC_WIDE_PATH_temp(path);
+  if (!wp) {
+    return NULL;
+  }
+
+  do {
+    /* No stat/lstat distinction under Windows */
+    stat_result = _wstat64(wp, &stat_buf);
+  } while ((stat_result == -1) && (errno == EINTR));
+
+  if (stat_result) {
+    /* TODO: Error handling / integration with Racket side? */
+    return NULL;
+  }
+
+  rktio_stat_buf = (struct rktio_stat_t *) malloc(sizeof(struct rktio_stat_t));
+  /* Corresponds to drive on Windows. 0 = A:, 1 = B: etc. */
+  rktio_stat_buf->device_id = stat_buf.st_dev;
+  rktio_stat_buf->inode = stat_buf.st_ino;
+  rktio_stat_buf->mode = stat_buf.st_mode;
+  rktio_stat_buf->hardlink_count = stat_buf.st_nlink;
+  rktio_stat_buf->user_id = stat_buf.st_uid;
+  rktio_stat_buf->group_id = stat_buf.st_gid;
+  rktio_stat_buf->device_id_for_special_file = stat_buf.st_rdev;
+  rktio_stat_buf->size = stat_buf.st_size;
+  /* `st_blksize` and `st_blocks` don't exist under Windows,
+     so set them to an arbitrary integer, for example 0. */
+  rktio_stat_buf->block_size = 0;
+  rktio_stat_buf->block_count = 0;
+  /* The stat result under Windows doesn't contain nanoseconds
+     information, so set them to 0, corresponding to times in
+     whole seconds. */
+  rktio_stat_buf->access_time_seconds = stat_buf.st_atime;
+  rktio_stat_buf->access_time_nanoseconds = 0;
+  rktio_stat_buf->modify_time_seconds = stat_buf.st_mtime;
+  rktio_stat_buf->modify_time_nanoseconds = 0;
+  rktio_stat_buf->ctime_seconds = stat_buf.st_ctime;
+  rktio_stat_buf->ctime_nanoseconds = 0;
+  rktio_stat_buf->ctime_is_change_time = 0;
+#endif
 }
 
 static rktio_identity_t *get_identity(rktio_t *rktio, rktio_fd_t *fd, const char *path, int follow_links)
