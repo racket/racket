@@ -2,6 +2,7 @@
 #include <windows.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <fileapi.h>
 #include <errno.h>
 
 
@@ -20,10 +21,23 @@ typedef struct rktio_stat_t {
 } rktio_stat_t;
 
 
+long long int filetime_to_nanoseconds(FILETIME filetime) {
+  ULARGE_INTEGER hundred_ns_units;
+  hundred_ns_units.u.LowPart = filetime.dwLowDateTime;
+  hundred_ns_units.u.HighPart = filetime.dwHighDateTime;
+  /* Mask out full-seconds part. */
+  long long int hundred_ns_fraction = hundred_ns_units.QuadPart % 10000000; /* 10^7 */
+  return 100 * hundred_ns_fraction;
+}
+
 int main(void) {
   int stat_result;
   struct _stat64 stat_buf;
   struct rktio_stat_t *rktio_stat_buf;
+
+  HANDLE file_handle;
+  FILETIME creation_time, access_time, modify_time;
+  BOOL gft_result;
 
   do {
     /* No stat/lstat distinction under Windows */
@@ -59,6 +73,36 @@ int main(void) {
   rktio_stat_buf->ctime_seconds = stat_buf.st_ctime;
   rktio_stat_buf->ctime_nanoseconds = 0;
   rktio_stat_buf->ctime_is_change_time = 0;
+
+  /* _S_IFREG had more than one bit, so it's not enough to
+     check for a true value. */
+  if ((int) (stat_buf.st_mode & _S_IFREG) == (int) _S_IFREG) {
+    file_handle = CreateFileA("stat-test.c",
+                              GENERIC_READ,
+                              FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                              NULL,
+                              OPEN_EXISTING,
+                              FILE_ATTRIBUTE_NORMAL,
+                              NULL);
+    if (file_handle == INVALID_HANDLE_VALUE) {
+      // TODO: Error handling
+      printf("Invalid file handle\n");
+      abort();
+    }
+
+    gft_result = GetFileTime(file_handle, &creation_time, &access_time, &modify_time);
+    if (!gft_result) {
+      // TODO: Error handling
+      printf("Invalid GetFileTime result\n");
+      abort();
+    } else {
+      rktio_stat_buf->ctime_nanoseconds = filetime_to_nanoseconds(creation_time);
+      rktio_stat_buf->access_time_nanoseconds = filetime_to_nanoseconds(access_time);
+      rktio_stat_buf->modify_time_nanoseconds = filetime_to_nanoseconds(modify_time);
+    }
+  }
+
+  /* Use `GetFileTime` to get sub-second precision. */
 
   printf("device id: %lld\n", rktio_stat_buf->device_id);
   printf("inode: %lld\n", rktio_stat_buf->inode);
