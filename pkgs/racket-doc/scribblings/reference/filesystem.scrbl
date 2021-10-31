@@ -563,14 +563,14 @@ Notes:
  @item{@racketvalfont{'user-id} : user id of owner}
  @item{@racketvalfont{'group-id} : group id of owner}
  @item{@racketvalfont{'device-id-for-special-file} : device id (if special file)}
- @item{@racketvalfont{'size} : size of file or link in bytes}
+ @item{@racketvalfont{'size} : size of file or symbolic link in bytes}
  @item{@racketvalfont{'block-size} : size of filesystem blocks}
  @item{@racketvalfont{'block-count} : number of used filesystem blocks}
  @item{@racketvalfont{'access-time-seconds} : last access time in seconds since the epoch}
  @item{@racketvalfont{'modify-time-seconds} : last modification time in
    seconds since the epoch}
- @item{@racketvalfont{'change-time-seconds} : last change time in seconds since
-   the epoch}
+ @item{@racketvalfont{'change-time-seconds} : last status change time in
+   seconds since the epoch}
  @item{@racketvalfont{'creation-time-seconds} : creation time in seconds since
    the epoch}
  @item{@racketvalfont{'access-time-nanoseconds} : last access time in
@@ -584,14 +584,13 @@ Notes:
 ]
 
 If @racket[as-link?] is a true value, then if @racket[path] refers to a
-symbolic link, @;{ what about junctions? } the stat information of the link is
-returned instead of the stat information of the referenced filesystem item.
+symbolic link, the stat information of the link is returned instead of the stat
+information of the referenced filesystem item.
 
 The mode bits are the bits for permissions and other data, as returned from the
-Posix @tt{stat}/@tt{lstat} functions. On Windows, @racket[file-or-directory-stat]
-tries to map the corresponding Windows information to the corresponding bit
-pattern as used on Posix. To select portions of the bit pattern, see the
-constants @racket[user-read-bit] etc.
+Posix @tt{stat}/@tt{lstat} functions or the Windows @tt{_wstat64} function,
+respectively. To select portions of the bit pattern, use the constants
+@racket[user-read-bit] etc.
 
 Depending on the operating system and filesystem, the "nanoseconds" timestamps
 may have less than nanoseconds precision. For example, in one environment a
