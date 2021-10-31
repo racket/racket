@@ -29660,22 +29660,22 @@
      file-or-directory-permissions
      (case-lambda
       ((p_0) (begin (file-or-directory-permissions_0 p_0 #f)))
-      ((p_0 mode7_0) (file-or-directory-permissions_0 p_0 mode7_0))))))
+      ((p_0 mode9_0) (file-or-directory-permissions_0 p_0 mode9_0))))))
 (define 1/file-or-directory-stat
   (let ((file-or-directory-stat_0
          (|#%name|
           file-or-directory-stat
-          (lambda (p10_0 as-link?9_0)
+          (lambda (p12_0 as-link?11_0)
             (begin
               (begin
-                (if (path-string? p10_0)
+                (if (path-string? p12_0)
                   (void)
                   (raise-argument-error
                    'file-or-directory-stat
                    "path-string?"
-                   p10_0))
+                   p12_0))
                 (let ((host-path_0
-                       (->host p10_0 'file-or-directory-stat '(exists))))
+                       (->host p12_0 'file-or-directory-stat '(exists))))
                   (begin
                     (unsafe-start-atomic)
                     (let ((r0_0
@@ -29683,7 +29683,7 @@
                             rktio_file_or_directory_stat
                             (unsafe-place-local-ref cell.1)
                             host-path_0
-                            (not as-link?9_0))))
+                            (not as-link?11_0))))
                       (let ((r_0
                              (if (vector? r0_0)
                                r0_0
@@ -29841,26 +29841,26 @@
      file-or-directory-stat
      (case-lambda
       ((p_0) (begin (file-or-directory-stat_0 p_0 #f)))
-      ((p_0 as-link?9_0) (file-or-directory-stat_0 p_0 as-link?9_0))))))
+      ((p_0 as-link?11_0) (file-or-directory-stat_0 p_0 as-link?11_0))))))
 (define 1/file-or-directory-identity
   (let ((file-or-directory-identity_0
          (|#%name|
           file-or-directory-identity
-          (lambda (p12_0 as-link?11_0)
+          (lambda (p14_0 as-link?13_0)
             (begin
               (begin
-                (if (path-string? p12_0)
+                (if (path-string? p14_0)
                   (void)
                   (raise-argument-error
                    'file-or-directory-identity
                    "path-string?"
-                   p12_0))
+                   p14_0))
                 (let ((host-path_0
-                       (->host p12_0 'file-or-directory-identity '(exists))))
+                       (->host p14_0 'file-or-directory-identity '(exists))))
                   (begin
                     (unsafe-start-atomic)
                     (path-or-fd-identity.1
-                     as-link?11_0
+                     as-link?13_0
                      #f
                      host-path_0
                      #f
@@ -29870,7 +29870,7 @@
      file-or-directory-identity
      (case-lambda
       ((p_0) (begin (file-or-directory-identity_0 p_0 #f)))
-      ((p_0 as-link?11_0) (file-or-directory-identity_0 p_0 as-link?11_0))))))
+      ((p_0 as-link?13_0) (file-or-directory-identity_0 p_0 as-link?13_0))))))
 (define 1/file-size
   (|#%name|
    file-size
@@ -29908,19 +29908,19 @@
   (let ((copy-file_0
          (|#%name|
           copy-file
-          (lambda (src14_0 dest15_0 exists-ok?13_0)
+          (lambda (src16_0 dest17_0 exists-ok?15_0)
             (begin
               (begin
-                (if (path-string? src14_0)
+                (if (path-string? src16_0)
                   (void)
-                  (raise-argument-error 'copy-file "path-string?" src14_0))
+                  (raise-argument-error 'copy-file "path-string?" src16_0))
                 (begin
-                  (if (path-string? dest15_0)
+                  (if (path-string? dest17_0)
                     (void)
-                    (raise-argument-error 'copy-file "path-string?" dest15_0))
-                  (let ((src-host_0 (->host src14_0 'copy-file '(read))))
+                    (raise-argument-error 'copy-file "path-string?" dest17_0))
+                  (let ((src-host_0 (->host src16_0 'copy-file '(read))))
                     (let ((dest-host_0
-                           (->host dest15_0 'copy-file '(write delete))))
+                           (->host dest17_0 'copy-file '(write delete))))
                       (let ((report-error_0
                              (|#%name|
                               report-error
@@ -29949,7 +29949,7 @@
                                   (unsafe-place-local-ref cell.1)
                                   dest-host_0
                                   src-host_0
-                                  exists-ok?13_0)))
+                                  exists-ok?15_0)))
                             (if (vector? cp_0)
                               (begin (unsafe-end-atomic) (report-error_0 cp_0))
                               (begin
@@ -30010,8 +30010,8 @@
      copy-file
      (case-lambda
       ((src_0 dest_0) (begin (copy-file_0 src_0 dest_0 #f)))
-      ((src_0 dest_0 exists-ok?13_0)
-       (copy-file_0 src_0 dest_0 exists-ok?13_0))))))
+      ((src_0 dest_0 exists-ok?15_0)
+       (copy-file_0 src_0 dest_0 exists-ok?15_0))))))
 (define 1/make-file-or-directory-link
   (|#%name|
    make-file-or-directory-link
@@ -34708,11 +34708,11 @@
                 'subprocess
                 "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                 stderr_0))
-             (let ((lr1345 unsafe-undefined)
+             (let ((lr1346 unsafe-undefined)
                    (group_0 unsafe-undefined)
                    (command_0 unsafe-undefined)
                    (exact/args_0 unsafe-undefined))
-               (set! lr1345
+               (set! lr1346
                  (call-with-values
                   (lambda ()
                     (if (path-string? group/command_0)
@@ -34767,9 +34767,9 @@
                    ((group_1 command_1 exact/args_1)
                     (vector group_1 command_1 exact/args_1))
                    (args (raise-binding-result-arity-error 3 args)))))
-               (set! group_0 (unsafe-vector*-ref lr1345 0))
-               (set! command_0 (unsafe-vector*-ref lr1345 1))
-               (set! exact/args_0 (unsafe-vector*-ref lr1345 2))
+               (set! group_0 (unsafe-vector*-ref lr1346 0))
+               (set! command_0 (unsafe-vector*-ref lr1346 1))
+               (set! exact/args_0 (unsafe-vector*-ref lr1346 2))
                (call-with-values
                 (lambda ()
                   (if (if (pair? exact/args_0)
