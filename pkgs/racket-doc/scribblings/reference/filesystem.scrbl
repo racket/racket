@@ -512,37 +512,6 @@ In all modes, the @exnraise[exn:fail:filesystem] on error (e.g., if no
 such file exists).}
 
 
-@;{
-Notes:
-- Describe what a "device id" is.
-- What's the difference between `st_dev` and `st_rdev`? -> See `man 7 inode`
-- Explain `mode`, refer to other parts of the documentation where it makes sense.
-- How to explain `device-id-for-special-file`? Also: give examples? See `man 7 inode`
-- Check if we should include `st_blksize` and `st_blocks`. Are these available on
-  Windows and Mac OS X? Do they cost extra time to determine?
-- The special bits (user id, group id, sticky) could be future extensions, but
-  in that case should we provide the "raw" mode, so that users can still
-  retrieve the information without waiting for an enhanced Racket version?
-- Don't only distinguish OSs, but also think about "non-native" file systems.
-  For example, what should the call do for NTFS file systems mounted on Linux?
-  What about CIFS or NFS mounts? These should be abstracted by `stat`, but the
-  returned values may be different. (For example, timestamps may have less
-  precision.)
-- On Windows, how are junctions reflected in the file type? Can we get this
-  information without an extra file system call?
-- How to handle Windows junctions? Should they be treated as like symbolic
-  links or something else? Check what I wrote in the ticket.
-- On Posix, the stat `ctime` field is the last status change time whereas on
-  Windows, `ctime` is the creation time (if available).
-- If a field isn't supported, say, `change-time-seconds` on Windows, should the
-  value in the hash be `#f` or 0? Normally I'd say `#f`, but I assumed Windows
-  itself will set the value to 0 if the information isn't available, for example
-  for FAT file systems. I don't think we should have two different ways
-  (`#f`/0) of saying that some information isn't available, so instead I'd
-  settle on 0.
-- Does `stat` (and the corresponding Windows function) itself check for link
-  loops or do we need to handle this ourselves? It's checked on Posix, it seems.
-}
 @defproc[(file-or-directory-stat [path path-string?]
                                  [as-link? boolean? #f])
          (hash/c symbol? any/c)]{
