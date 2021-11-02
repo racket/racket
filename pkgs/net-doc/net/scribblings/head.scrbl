@@ -128,7 +128,7 @@ The BCC recipients do not actually appear in the header, but they're
 accepted anyway to complete the abstraction.}
 
 
-@defproc[(data-lines->data (listof string?)) string?]{
+@defproc[(data-lines->data [lines (listof string?)]) string?]{
 
 Merges multiple lines for a single field value into one string,
 adding CRLF-TAB separators.}
