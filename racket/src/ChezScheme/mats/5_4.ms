@@ -1,12 +1,12 @@
 ;;; 5-4.ms
 ;;; Copyright 1984-2017 Cisco Systems, Inc.
-;;; 
+;;;
 ;;; Licensed under the Apache License, Version 2.0 (the "License");
 ;;; you may not use this file except in compliance with the License.
 ;;; You may obtain a copy of the License at
-;;; 
+;;;
 ;;; http://www.apache.org/licenses/LICENSE-2.0
-;;; 
+;;;
 ;;; Unless required by applicable law or agreed to in writing, software
 ;;; distributed under the License is distributed on an "AS IS" BASIS,
 ;;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -1002,7 +1002,7 @@
           (cond
             [(= i n) (list (substring str 0 n))]
             [(char=? (string-ref str i) #\space)
-             (cons (substring str 0 i) 
+             (cons (substring str 0 i)
                    (split (substring str (+ i 1) n)))]
             [else (f (add1 i) n)]))))
 
@@ -1109,12 +1109,12 @@
   (test (char-downcase #\i) #\i)
   (test (char-titlecase #\i) #\I)
   (test (char-foldcase #\i) #\i)
-  
+
   (test (char-upcase #\xDF) #\xDF)
   (test (char-downcase #\xDF) #\xDF)
   (test (char-titlecase #\xDF) #\xDF)
   (test (char-foldcase #\xDF) #\xDF)
-  
+
   (test (char-upcase #\x3A3) #\x3A3)
   (test (char-downcase #\x3A3) #\x3C3)
   (test (char-titlecase #\x3A3) #\x3A3)
@@ -1180,7 +1180,7 @@
   (test (string-downcase "Stra\xDF;e") "stra\xDF;e")
   (test (string-foldcase "Stra\xDF;e") "strasse")
   (test (string-downcase "STRASSE")  "strasse")
-  
+
   (test (string-downcase "\x3A3;") "\x3C3;")
 
   (test (string-upcase "\x39E;\x391;\x39F;\x3A3;") "\x39E;\x391;\x39F;\x3A3;")
@@ -1188,8 +1188,8 @@
   (test (string-downcase "\x39E;\x391;\x39F;\x3A3;\x3A3;") "\x3BE;\x3B1;\x3BF;\x3C3;\x3C2;")
   (test (string-downcase "\x39E;\x391;\x39F;\x3A3; \x3A3;") "\x3BE;\x3B1;\x3BF;\x3C2; \x3C3;")
   (test (string-foldcase "\x39E;\x391;\x39F;\x3A3;") "\x3BE;\x3B1;\x3BF;\x3C3;")
-  (test (string-upcase "\x3BE;\x3B1;\x3BF;\x3C3;") "\x39E;\x391;\x39F;\x3A3;") 
-  (test (string-upcase "\x3BE;\x3B1;\x3BF;\x3C2;") "\x39E;\x391;\x39F;\x3A3;") 
+  (test (string-upcase "\x3BE;\x3B1;\x3BF;\x3C3;") "\x39E;\x391;\x39F;\x3A3;")
+  (test (string-upcase "\x3BE;\x3B1;\x3BF;\x3C2;") "\x39E;\x391;\x39F;\x3A3;")
 
   (test (string-titlecase "kNock KNoCK") "Knock Knock")
   (test (string-titlecase "who's there?") "Who's There?")
@@ -1316,13 +1316,16 @@
    ; #x17B4 #x17B5
     (define excluded-code-points-above-127
       '(
-    
+
      #x80 #x81 #x82 #x83 #x84 #x85 #x86 #x87 #x88 #x89
      #x8A #x8B #x8C #x8D #x8E #x8F #x90 #x91 #x92 #x93
      #x94 #x95 #x96 #x97 #x98 #x99 #x9A #x9B #x9C #x9D
      #x9E #x9F #xA0 #xAB #xAD #xBB #x600 #x601 #x602 #x603
      #x604 #x605 #x61C                                       ; Unicode 7.0
-     #x6DD #x70F #xF3A #xF3B #xF3C #xF3D #x1680 #x169B
+     #x6DD #x70F
+     #x890 #x891                                             ; Unicode 14.0
+     #x8E2                                                   ; Unicode 9.0
+     #xF3A #xF3B #xF3C #xF3D #x1680 #x169B
      #x169C
      #;#x17B4 #;#x17B5                                       ; Unicode 7.0
      #x180E #x2000 #x2001 #x2002 #x2003
@@ -1336,12 +1339,12 @@
      #x206A #x206B #x206C
      #x206D #x206E #x206F #x207D #x207E #x208D #x208E
      #x2308 #x2309 #x230A #x230B                             ; Unicode 7.0
-     #x2329 #x232A 
+     #x2329 #x232A
     ;       #x23B4 #x23B5 ; see note above for Unicode 5.0
                           #x2768 #x2769 #x276A #x276B #x276C
      #x276D #x276E #x276F #x2770 #x2771 #x2772 #x2773 #x2774
      #x2775 #x27C5 #x27C6 #x27E6 #x27E7 #x27E8 #x27E9 #x27EA
-     #x27EB 
+     #x27EB
      #x27EC #x27ED #x27EE #x27EF                             ; Unicode 5.1
      #x2983 #x2984 #x2985 #x2986 #x2987 #x2988 #x2989
      #x298A #x298B #x298C #x298D #x298E #x298F #x2990 #x2991
@@ -1351,6 +1354,7 @@
      #x2E20 #x2E21 #x2E22 #x2E23 #x2E24 #x2E25 #x2E26 #x2E27 ; Unicode 5.1
      #x2E28 #x2E29                                           ; Unicode 5.1
      #x2E42                                                  ; Unicode 7.0
+     #x2E55 #x2E56 #x2E57 #x2E58 #x2E59 #x2E5A #x2E5B #x2E5C ; Unicode 14.0
      #x3000
      #x3008 #x3009 #x300A #x300B #x300C #x300D #x300E #x300F
      #x3010 #x3011 #x3014 #x3015 #x3016 #x3017 #x3018 #x3019
@@ -1360,7 +1364,11 @@
      #xFE44 #xFE47 #xFE48 #xFE59 #xFE5A #xFE5B #xFE5C #xFE5D
      #xFE5E #xFEFF #xFF08 #xFF09 #xFF3B #xFF3D #xFF5B #xFF5D
      #xFF5F #xFF60 #xFF62 #xFF63 #xFFF9 #xFFFA #xFFFB
-     #x110BD #x1BCA0 #x1BCA1 #x1BCA2 #x1BCA3                 ; Unicode 7.0
+     #x110BD                                                 ; Unicode 7.0
+     #x110CD                                                 ; Unicode 11.0
+     #x13430 #x13431 #x13432 #x13433 #x13434 #x13435 #x13436 ; Unicode 12.0
+     #x13437 #x13438                                         ; Unicode 12.0
+     #x1BCA0 #x1BCA1 #x1BCA2 #x1BCA3                         ; Unicode 7.0
      #x1D173
      #x1D174 #x1D175 #x1D176 #x1D177 #x1D178 #x1D179 #x1D17A
      #xE0001 #xE0020 #xE0021 #xE0022 #xE0023 #xE0024 #xE0025

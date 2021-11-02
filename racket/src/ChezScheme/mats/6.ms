@@ -1,12 +1,12 @@
 ;;; 6.ms
 ;;; Copyright 1984-2017 Cisco Systems, Inc.
-;;; 
+;;;
 ;;; Licensed under the Apache License, Version 2.0 (the "License");
 ;;; you may not use this file except in compliance with the License.
 ;;; You may obtain a copy of the License at
-;;; 
+;;;
 ;;; http://www.apache.org/licenses/LICENSE-2.0
-;;; 
+;;;
 ;;; Unless required by applicable law or agreed to in writing, software
 ;;; distributed under the License is distributed on an "AS IS" BASIS,
 ;;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -77,7 +77,7 @@
    ; and write-char---and builds testfile.ss for the next test
    (equal? (call-with-values
              (lambda ()
-               (with-output-to-file "testfile.ss" 
+               (with-output-to-file "testfile.ss"
                  (lambda ()
                    (for-each (lambda (c) (write-char c))
                              (string->list "a b c d e"))
@@ -102,7 +102,7 @@
    ; and write-char---and builds testfile.ss for the next test
    (equal? (call-with-values
              (lambda ()
-               (call-with-output-file "testfile.ss" 
+               (call-with-output-file "testfile.ss"
                  (lambda (p)
                    (for-each (lambda (c) (write-char c p))
                              (string->list "a b c d e"))
@@ -1007,7 +1007,7 @@
   (error? (fasl-write 'any (let-values ([(o get) (open-bytevector-output-port)]) o) 10))
   (error? (fasl-read (open-bytevector-input-port #vu8()) 'load #f))
   (error? (fasl-read (open-bytevector-input-port #vu8()) 'load 10))
-  
+
   (let-values ([(o get) (open-bytevector-output-port)])
     (fasl-write '(apple (banana cream pie) (vector coconut banana cream)) o (lambda (v)
                                                                               (or (eq? v 'banana)
@@ -2376,25 +2376,29 @@
   "; Test error \"\x194D; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x194D;\n"
   "; Test error \"\x194E; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x194E;\n"
   "; Test error \"\x194F; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x194F;\n"
-  "; Test error \"\x19B0; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19B0;\n"
-  "; Test error \"\x19B1; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19B1;\n"
-  "; Test error \"\x19B2; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19B2;\n"
-  "; Test error \"\x19B3; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19B3;\n"
-  "; Test error \"\x19B4; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19B4;\n"
-  "; Test error \"\x19B5; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19B5;\n"
-  "; Test error \"\x19B6; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19B6;\n"
-  "; Test error \"\x19B7; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19B7;\n"
-  "; Test error \"\x19B8; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19B8;\n"
-  "; Test error \"\x19B9; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19B9;\n"
-  "; Test error \"\x19BA; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19BA;\n"
-  "; Test error \"\x19BB; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19BB;\n"
-  "; Test error \"\x19BC; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19BC;\n"
-  "; Test error \"\x19BD; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19BD;\n"
-  "; Test error \"\x19BE; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19BE;\n"
-  "; Test error \"\x19BF; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19BF;\n"
-  "; Test error \"\x19C0; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19C0;\n"
-  "; Test error \"\x19C8; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19C8;\n"
-  "; Test error \"\x19C9; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19C9;\n"
+
+  ;; Unicode 8.0 changed the encoding model for New Tai Lue, causing the following to
+  ;; change from Mc to Lo.
+  #;"; Test error \"\x19B0; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19B0;\n"
+  #;"; Test error \"\x19B1; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19B1;\n"
+  #;"; Test error \"\x19B2; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19B2;\n"
+  #;"; Test error \"\x19B3; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19B3;\n"
+  #;"; Test error \"\x19B4; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19B4;\n"
+  #;"; Test error \"\x19B5; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19B5;\n"
+  #;"; Test error \"\x19B6; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19B6;\n"
+  #;"; Test error \"\x19B7; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19B7;\n"
+  #;"; Test error \"\x19B8; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19B8;\n"
+  #;"; Test error \"\x19B9; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19B9;\n"
+  #;"; Test error \"\x19BA; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19BA;\n"
+  #;"; Test error \"\x19BB; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19BB;\n"
+  #;"; Test error \"\x19BC; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19BC;\n"
+  #;"; Test error \"\x19BD; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19BD;\n"
+  #;"; Test error \"\x19BE; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19BE;\n"
+  #;"; Test error \"\x19BF; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19BF;\n"
+  #;"; Test error \"\x19C0; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19C0;\n"
+  #;"; Test error \"\x19C8; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19C8;\n"
+  #;"; Test error \"\x19C9; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19C9;\n"
+
   "; Test error \"\x19D0; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19D0;\n"
   "; Test error \"\x19D1; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19D1;\n"
   "; Test error \"\x19D2; symbol syntax not allowed in #!r6rs mode\"\n\n#!r6rs \x19D2;\n"
@@ -2775,12 +2779,12 @@
       (load "fatfib.ss" compile))
     (procedure? fatfib))
   (equal? ((inspect/object fatfib) 'type) 'procedure)
-  (equal? 
+  (equal?
     (call-with-values
       (lambda () (((inspect/object fatfib) 'code) 'source-path))
       list)
     '("../examples/fatfib.ss" 16 4))
-  (equal? 
+  (equal?
     (parameterize ([source-directories '("." "../examples")])
       (call-with-values
         (lambda () (((inspect/object fatfib) 'code) 'source-path))

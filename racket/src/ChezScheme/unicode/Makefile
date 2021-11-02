@@ -18,4 +18,3 @@ unicode-charinfo.ss: \
  UNIDATA/UnicodeData.txt\
  UNIDATA/WordBreakProperty.txt\
  UNIDATA/PropList.txt
-

@@ -1,23 +1,23 @@
 ;;; Copyright (C) 2008  Abdulaziz Ghuloum, R. Kent Dybvig
 ;;; Copyright (C) 2006,2007  Abdulaziz Ghuloum
-;;; 
+;;;
 ;;; Permission is hereby granted, free of charge, to any person obtaining a
 ;;; copy of this software and associated documentation files (the "Software"),
 ;;; to deal in the Software without restriction, including without limitation
 ;;; the rights to use, copy, modify, merge, publish, distribute, sublicense,
 ;;; and/or sell copies of the Software, and to permit persons to whom the
 ;;; Software is furnished to do so, subject to the following conditions:
-;;; 
+;;;
 ;;; The above copyright notice and this permission notice shall be included in
 ;;; all copies or substantial portions of the Software.
-;;; 
+;;;
 ;;; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 ;;; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 ;;; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
 ;;; THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 ;;; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 ;;; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-;;; DEALINGS IN THE SOFTWARE. 
+;;; DEALINGS IN THE SOFTWARE.
 
 (import (scheme) (unicode-data))
 
@@ -32,7 +32,7 @@
 (define (string-suffix? str suffix)
   (let ([n (string-length str)] [m (string-length suffix)])
     (and (fx>= n m) (string=? (substring str (fx- n m) n) suffix))))
-       
+
 (define (extract-range str)
   (define (find-char c s)
     (let f ([i 0] [n (string-length s)])
@@ -121,15 +121,18 @@
     wb-newline-property
     ; UNICODE 7.0.0
     wb-double-quote-property wb-single-quote-property
-    wb-hebrew-letter-property wb-regional-indicator-property)
+    wb-hebrew-letter-property wb-regional-indicator-property
+    ; UNICODE 14.0.0
+    wb-zwj-property wb-wsegspace-property
+    )
   (integer combining-class 8))
 
 ;;; Uppercase = Lu + Other_Uppercase
 ;;; Lowercase = Ll + Other_Lowercase
 ;;; Titlecase = Lt
-;;; Alphabetic = Lu + Ll + Lt + Lm + Lo + Nl + Other_Alphabetic 
+;;; Alphabetic = Lu + Ll + Lt + Lm + Lo + Nl + Other_Alphabetic
 ;;; Numeric = ???
-;;; White_Space = 
+;;; White_Space =
 
 ;;; cased property:
 ;;;   D120: A character C is defined to be cased if and only if C has the
@@ -162,6 +165,8 @@
       [(Single_Quote) (fxior (fxsll wb-single-quote-property wbproperty-shift) case-ignorable-property)]
       [(Hebrew_Letter) (fxsll wb-hebrew-letter-property wbproperty-shift)]
       [(Regional_Indicator) (fxsll wb-regional-indicator-property wbproperty-shift)]
+      [(ZWJ) (fxsll wb-zwj-property wbproperty-shift)]
+      [(WSegSpace) (fxsll wb-wsegspace-property wbproperty-shift)]
       [else (error 'name->wbprop "unexpected property ~a" name)])))
 
 (define proplist-properties
@@ -273,10 +278,10 @@
             [name (list-ref x 1)])
         (cond
           [(assoc name proplist-properties) =>
-           (lambda (a) 
+           (lambda (a)
              (let ([n (cadr a)])
                (let f ([i (car range)] [j (cdr range)])
-                 (unless (> i j) 
+                 (unless (> i j)
                    (setprop i (fxlogor (getprop i) n))
                    (f (+ i 1) j)))))])))
     (get-unicode-data "UNIDATA/PropList.txt"))
@@ -286,7 +291,7 @@
     (setprop i (fxand (getprop i) (fxnot constituent-property))))
   (commonize* tbl)
   (with-output-to-file* "unicode-charinfo.ss"
-    (lambda () 
+    (lambda ()
       (parameterize ([print-graph #t] [print-vector-length #f])
         (pretty-print
           `(module ($char-constituent? $char-subsequent? $char-upper-case? $char-lower-case? $char-title-case? $char-alphabetic?
@@ -294,7 +299,9 @@
                     $wb-aletter? $wb-numeric? $wb-katakana? $wb-extend? $wb-format? $wb-midnum? $wb-midletter?
                     $wb-midnumlet? $wb-extendnumlet? $char-combining-class $char-dump
                     ; UNICODE 7.0.0
-                    $wb-hebrew-letter? $wb-single-quote? $wb-double-quote? $wb-regional-indicator?)
+                    $wb-hebrew-letter? $wb-single-quote? $wb-double-quote? $wb-regional-indicator?
+                    ; UNICODE 14.0.0
+                    $wb-wsegspace? $wb-zwj?)
              (define category-mask ,category-mask)
              (define unicode-category-table ',tbl)
              (define unicode-category-names
@@ -352,6 +359,8 @@
              (define $wb-double-quote? (wb ,wb-double-quote-property))
              (define $wb-single-quote? (wb ,wb-single-quote-property))
              (define $wb-regional-indicator? (wb ,wb-regional-indicator-property))
+             (define $wb-wsegspace? (wb ,wb-wsegspace-property))
+             (define $wb-zwj? (wb ,wb-zwj-property))
              (define $char-combining-class
                (lambda (c)
                  (fxand (fxsrl (getprop (char->integer c)) ,combining-class-shift)
