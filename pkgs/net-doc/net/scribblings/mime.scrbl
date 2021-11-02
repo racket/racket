@@ -37,7 +37,7 @@ The library was written by Francisco Solsona.}
 
 @section{Message Decoding}
 
-@defproc[(mime-analyze [message-in (or/c bytes? input-port)]
+@defproc[(mime-analyze [message-in (or/c bytes? input-port?)]
                        [part? any/c #f])
          message?]{
 
