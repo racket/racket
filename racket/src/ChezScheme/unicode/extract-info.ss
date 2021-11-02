@@ -121,7 +121,10 @@
     wb-newline-property
     ; UNICODE 7.0.0
     wb-double-quote-property wb-single-quote-property
-    wb-hebrew-letter-property wb-regional-indicator-property)
+    wb-hebrew-letter-property wb-regional-indicator-property
+    ; UNICODE 14.0.0
+    wb-zwj-property wb-wsegspace-property
+    )
   (integer combining-class 8))
 
 ;;; Uppercase = Lu + Other_Uppercase
@@ -162,6 +165,8 @@
       [(Single_Quote) (fxior (fxsll wb-single-quote-property wbproperty-shift) case-ignorable-property)]
       [(Hebrew_Letter) (fxsll wb-hebrew-letter-property wbproperty-shift)]
       [(Regional_Indicator) (fxsll wb-regional-indicator-property wbproperty-shift)]
+      [(ZWJ) (fxsll wb-zwj-property wbproperty-shift)]
+      [(WSegSpace) (fxsll wb-wsegspace-property wbproperty-shift)]
       [else (error 'name->wbprop "unexpected property ~a" name)])))
 
 (define proplist-properties

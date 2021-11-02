@@ -1322,7 +1322,10 @@
      #x94 #x95 #x96 #x97 #x98 #x99 #x9A #x9B #x9C #x9D
      #x9E #x9F #xA0 #xAB #xAD #xBB #x600 #x601 #x602 #x603
      #x604 #x605 #x61C                                       ; Unicode 7.0
-     #x6DD #x70F #xF3A #xF3B #xF3C #xF3D #x1680 #x169B
+     #x6DD #x70F
+     #x890 #x891                                             ; Unicode 14.0
+     #x8E2                                                   ; Unicode 9.0
+     #xF3A #xF3B #xF3C #xF3D #x1680 #x169B
      #x169C
      #;#x17B4 #;#x17B5                                       ; Unicode 7.0
      #x180E #x2000 #x2001 #x2002 #x2003
@@ -1351,6 +1354,7 @@
      #x2E20 #x2E21 #x2E22 #x2E23 #x2E24 #x2E25 #x2E26 #x2E27 ; Unicode 5.1
      #x2E28 #x2E29                                           ; Unicode 5.1
      #x2E42                                                  ; Unicode 7.0
+     #x2E55 #x2E56 #x2E57 #x2E58 #x2E59 #x2E5A #x2E5B #x2E5C ; Unicode 14.0
      #x3000
      #x3008 #x3009 #x300A #x300B #x300C #x300D #x300E #x300F
      #x3010 #x3011 #x3014 #x3015 #x3016 #x3017 #x3018 #x3019
@@ -1360,7 +1364,11 @@
      #xFE44 #xFE47 #xFE48 #xFE59 #xFE5A #xFE5B #xFE5C #xFE5D
      #xFE5E #xFEFF #xFF08 #xFF09 #xFF3B #xFF3D #xFF5B #xFF5D
      #xFF5F #xFF60 #xFF62 #xFF63 #xFFF9 #xFFFA #xFFFB
-     #x110BD #x1BCA0 #x1BCA1 #x1BCA2 #x1BCA3                 ; Unicode 7.0
+     #x110BD                                                 ; Unicode 7.0
+     #x110CD                                                 ; Unicode 11.0
+     #x13430 #x13431 #x13432 #x13433 #x13434 #x13435 #x13436 ; Unicode 12.0
+     #x13437 #x13438                                         ; Unicode 12.0
+     #x1BCA0 #x1BCA1 #x1BCA2 #x1BCA3                         ; Unicode 7.0
      #x1D173
      #x1D174 #x1D175 #x1D176 #x1D177 #x1D178 #x1D179 #x1D17A
      #xE0001 #xE0020 #xE0021 #xE0022 #xE0023 #xE0024 #xE0025
