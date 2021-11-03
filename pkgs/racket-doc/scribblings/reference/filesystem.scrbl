@@ -573,7 +573,7 @@ to @racket[0].
 
 If @racket[as-link?] is @racket[#f] and @racket[path] isn't accessible,
 the @exnraise[exn:fail:filesystem]. This exception is also raised if
-@racket[as-link?] is a true value and @racket[path] can't be resolved, i. e. is
+@racket[as-link?] is a true value and @racket[path] can't be resolved, i.e. is
 a dangling link.}
 
 
