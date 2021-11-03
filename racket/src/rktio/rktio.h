@@ -81,7 +81,6 @@ Thread and signal conventions:
 
 */
      
-#include <time.h>
 #include "rktio_config.h"
 
 #ifndef RKTIO_EXTERN
