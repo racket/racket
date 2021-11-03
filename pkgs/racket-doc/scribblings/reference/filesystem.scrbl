@@ -562,10 +562,10 @@ Posix @tt{stat}/@tt{lstat} functions or the Windows @tt{_wstat64} function,
 respectively. To select portions of the bit pattern, use the constants
 @indexed-racket[user-read-bit] etc.
 
-Depending on the operating system and filesystem, the "nanoseconds" timestamps
-may have less than nanoseconds precision. For example, in one environment a
-timestamp may be @racket[1234567891234567891] (nanoseconds precision)
-and in another environment @racket[1234567891000000000] (seconds
+Depending on the operating system and filesystem, the ``nanoseconds''
+timestamps may have less than nanoseconds precision. For example, in one
+environment a timestamp may be @racket[1234567891234567891] (nanoseconds
+precision) and in another environment @racket[1234567891000000000] (seconds
 precision).
 
 Values that aren't available for a platform/filesystem combination may be set
