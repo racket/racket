@@ -62,6 +62,7 @@
          shifted-multi-scope<?
 
          interned-scope-symbols
+         interned-scopes
 
          scope-place-init!)
 
@@ -330,6 +331,12 @@
   (call-as-atomic
    (lambda ()
      (hash-keys interned-scopes-table))))
+
+(define (interned-scopes)
+  (call-as-atomic
+   (lambda ()
+     (for/seteq ([s (in-hash-values interned-scopes-table)])
+       s))))
 
 (define (scope-place-init!)
   (set! interned-scopes-table (make-ephemeron-hasheq)))

@@ -2873,6 +2873,23 @@ case of module-leve bindings; it doesn't cover local bindings.
 (err/rt-test (make-interned-syntax-introducer 5))
 (err/rt-test (make-interned-syntax-introducer (gensym)))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; check that bulk bindings based on interned scopes are preserved,
+;; even if the scope is not otherwise referenced
+
+(let ([m '(module provides-x-with-tester-scope-bindings racket/base
+            (require (for-space tester (prefix-in t: racket/base)))
+            (provide x)
+            (define x #'x))])
+  (define o (open-output-bytes))
+  (write (compile m) o)
+  (eval (parameterize ([read-accept-compiled #t])
+          (read (open-input-bytes (get-output-bytes o))))))
+
+(test #t pair?
+      (identifier-binding ((make-interned-syntax-introducer 'tester)
+                           (datum->syntax (dynamic-require ''provides-x-with-tester-scope-bindings 'x) 't:cons))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Another example to check that re-expansion generates definition
 ;; names consistent with the previoud expansion.

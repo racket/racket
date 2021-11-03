@@ -49,7 +49,9 @@
          phase+space?-string
          phase+space-shift?-string
 
-         phase+space<?)
+         phase+space<?
+
+         has-default-space?)
 
 (define-place-local interned (make-weak-hash))
 
@@ -110,3 +112,6 @@
              (and space-b
                   (symbol<? space-a space-b)))]
         [else #f])))
+
+(define (has-default-space? p+s)
+  (not (pair? p+s)))
