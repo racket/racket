@@ -519,36 +519,37 @@ such file exists).}
 @index['("inode")]{Returns} a hash with the following keys and values:
 
 @itemlist[
- @item{@racketvalfont{'device-id} : device id}
- @item{@racketvalfont{'inode} : inode number}
- @item{@racketvalfont{'mode} : mode bits (see below)}
+ @item{@indexed-racket['device-id] : device id}
+ @item{@indexed-racket['inode] : inode number}
+ @item{@indexed-racket['mode] : mode bits (see below)}
  @;{
- @item{@racketvalfont{'type} : one of @racketvalfont{'socket},
-   @racketvalfont{'symbolic-link}, @racketvalfont{'file}, @racketvalfont{'directory},
-   @racketvalfont{'block-device}, @racketvalfont{'character-device} or
-   @racketvalfont{'fifo}}
+ @item{@indexed-racket['type] : one of @racket['socket],
+   @racket['symbolic-link], @racket['file], @racket['directory],
+   @racket['block-device], @racket['character-device] or
+   @racket['fifo]}
  }
- @item{@racketvalfont{'hardlink-count} : number of hard links}
- @item{@racketvalfont{'user-id} : user id of owner}
- @item{@racketvalfont{'group-id} : group id of owner}
- @item{@racketvalfont{'device-id-for-special-file} : device id (if special file)}
- @item{@racketvalfont{'size} : size of file or symbolic link in bytes}
- @item{@racketvalfont{'block-size} : size of filesystem blocks}
- @item{@racketvalfont{'block-count} : number of used filesystem blocks}
- @item{@racketvalfont{'access-time-seconds} : last access time in seconds since the epoch}
- @item{@racketvalfont{'modify-time-seconds} : last modification time in
+ @item{@indexed-racket['hardlink-count] : number of hard links}
+ @item{@indexed-racket['user-id] : user id of owner}
+ @item{@indexed-racket['group-id] : group id of owner}
+ @item{@indexed-racket['device-id-for-special-file] : device id (if special file)}
+ @item{@indexed-racket['size] : size of file or symbolic link in bytes}
+ @item{@indexed-racket['block-size] : size of filesystem blocks}
+ @item{@indexed-racket['block-count] : number of used filesystem blocks}
+ @item{@indexed-racket['access-time-seconds] : last access time in seconds
+   since the epoch}
+ @item{@indexed-racket['modify-time-seconds] : last modification time in
    seconds since the epoch}
- @item{@racketvalfont{'change-time-seconds} : last status change time in
+ @item{@indexed-racket['change-time-seconds] : last status change time in
    seconds since the epoch}
- @item{@racketvalfont{'creation-time-seconds} : creation time in seconds since
+ @item{@indexed-racket['creation-time-seconds] : creation time in seconds since
    the epoch}
- @item{@racketvalfont{'access-time-nanoseconds} : last access time in
+ @item{@indexed-racket['access-time-nanoseconds] : last access time in
    nanoseconds since the epoch}
- @item{@racketvalfont{'modify-time-nanoseconds} : last modification time in
+ @item{@indexed-racket['modify-time-nanoseconds] : last modification time in
    nanoseconds since the epoch}
- @item{@racketvalfont{'change-time-nanoseconds} : last status change time in
+ @item{@indexed-racket['change-time-nanoseconds] : last status change time in
    nanoseconds since the epoch}
- @item{@racketvalfont{'creation-time-nanoseconds} : creation time in
+ @item{@indexed-racket['creation-time-nanoseconds] : creation time in
    nanoseconds since the epoch}
 ]
 
@@ -559,18 +560,18 @@ information of the referenced filesystem item.
 The mode bits are the bits for permissions and other data, as returned from the
 Posix @tt{stat}/@tt{lstat} functions or the Windows @tt{_wstat64} function,
 respectively. To select portions of the bit pattern, use the constants
-@racket[user-read-bit] etc.
+@indexed-racket[user-read-bit] etc.
 
 Depending on the operating system and filesystem, the "nanoseconds" timestamps
 may have less than nanoseconds precision. For example, in one environment a
-timestamp may be @racketvalfont{1234567891234567891} (nanoseconds precision)
-and in another environment @racketvalfont{1234567891000000000} (seconds
+timestamp may be @racket[1234567891234567891] (nanoseconds precision)
+and in another environment @racket[1234567891000000000] (seconds
 precision).
 
 Values that aren't available for a platform/filesystem combination may be set
-to @racketvalfont{0}.
+to @racket[0].
 
-If @racket[as-link?] is @racketvalfont{#f} and @racket[path] isn't accessible,
+If @racket[as-link?] is @racket[#f] and @racket[path] isn't accessible,
 the @exnraise[exn:fail:filesystem]. This exception is also raised if
 @racket[as-link?] is a true value and @racket[path] can't be resolved, i. e. is
 a dangling link.}
