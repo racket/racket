@@ -377,7 +377,7 @@ insert strings directly into attribute positions of HTML.
          element?]{
 
 Some elements should not contain any text, only other tags, except
-they often contain whitespace for formating purposes.  Given a list of
+they often contain whitespace for formatting purposes.  Given a list of
 tag names as @racket[tag]s and the identity function as
 @racket[choose], @racket[eliminate-whitespace] produces a function
 that filters out PCDATA consisting solely of whitespace from those
