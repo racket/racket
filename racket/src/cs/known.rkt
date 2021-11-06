@@ -1,5 +1,9 @@
 #lang racket/base
 (require racket/include
+         racket/fixnum
+         racket/flonum
+         racket/unsafe/ops
+         racket/extflonum
          "../schemify/known.rkt")
 
 (provide get-prim-knowns
