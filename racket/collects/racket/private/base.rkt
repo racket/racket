@@ -3,6 +3,7 @@
   (#%require "hash.rkt"
              "list.rkt" ; shadows `reverse', `mem{q,v,ber}'
              "string.rkt"
+             "grapheme-breaking.rkt"
              "stxcase-scheme.rkt"
              "qqstx.rkt"
              "stx.rkt"
@@ -33,6 +34,12 @@
              (all-from "list.rkt")
              (all-from-except "string.rkt"
                               -regexp-replace*)
+             (all-from-except "grapheme-breaking.rkt"
+                              unsafe-string-next-grapheme-length
+                              unsafe-string-previous-grapheme-length
+                              unsafe-string-next-grapheme-boundary
+                              unsafe-string-previous-grapheme-boundary
+                              unsafe-string-grapheme-count)
              (rename -regexp-replace* regexp-replace*)
              identifier?
              (all-from-except "stxcase-scheme.rkt" datum datum-case with-datum)
