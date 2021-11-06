@@ -1,6 +1,5 @@
 #lang racket/base
-(require racket/cmdline
-         planet/private/command
+(require planet/private/command
          raco/command-name
          racket/function
          (for-syntax racket/base
@@ -12,8 +11,8 @@
 (define ((string->option what valid-options) str)
   (define s (string->symbol str))
   (unless (memq s valid-options)
-    (raise-user-error (string->symbol 
-                       (format "~a ~a" 
+    (raise-user-error (string->symbol
+                       (format "~a ~a"
                                (short-program+command-name)
                                (current-svn-style-command)))
                       "invalid <~a>: ~a\n  valid <~a>s are:~a"
@@ -28,8 +27,8 @@
 (define ((string->num what) str)
   (define n (string->number str))
   (unless (exact-nonnegative-integer? n)
-    (raise-user-error (string->symbol 
-                       (format "~a ~a" 
+    (raise-user-error (string->symbol
+                       (format "~a ~a"
                                (short-program+command-name)
                                (current-svn-style-command)))
                       "invalid <~a> number: ~a"
@@ -111,23 +110,23 @@
 
   (define-splicing-syntax-class arguments
     #:attributes (accum args (body 1) help-strs)
-    [pattern (~seq #:args args 
+    [pattern (~seq #:args args
                    body:expr ...)
              #:with accum #'ignored
-             #:with help-strs (with-syntax ([strs 
+             #:with help-strs (with-syntax ([strs
                                              (map symbol->string
                                                   (map syntax->datum
                                                        (let loop ([args #'args])
-                                                         (cond 
-                                                          [(stx-null? args) null]
-                                                          [(stx-pair? args)
-                                                           (cons (stx-car args)
-                                                                 (loop (stx-cdr args)))]
-                                                          [else
-                                                           (list args)]))))])
+                                                         (cond
+                                                           [(stx-null? args) null]
+                                                           [(stx-pair? args)
+                                                            (cons (stx-car args)
+                                                                  (loop (stx-cdr args)))]
+                                                           [else
+                                                            (list args)]))))])
                                 #`(list . strs))]
     [pattern (~seq #:handlers
-                   (lambda (accum . args) body:expr ...) 
+                   (lambda (accum . args) body:expr ...)
                    help-strs:expr)])
 
   (define-syntax-class command
@@ -171,22 +170,22 @@
   (syntax-parse stx
     [(_ main-doc:expr export-format:str c:command ...)
      (with-syntax ([(export-names ...)
-                    (map (λ (x) 
+                    (map (λ (x)
                            #`[#,x
                               #,(string->symbol (format (syntax-e #'export-format)
                                                         (syntax-e x)))])
                          (syntax->list #'(c.name ...)))])
-     (syntax/loc stx
-       (begin
-         c.extra-defs ... ...
-         c.function ...
-         (provide (rename-out export-names ...))
-         (module+ main
-           c.variables ...
-           (svn-style-command-line
-            #:program (short-program+command-name)
-            #:argv (current-command-line-arguments)
-            main-doc
-            c.command-line ...)))))]))
+       (syntax/loc stx
+         (begin
+           c.extra-defs ... ...
+           c.function ...
+           (provide (rename-out export-names ...))
+           (module+ main
+             c.variables ...
+             (svn-style-command-line
+              #:program (short-program+command-name)
+              #:argv (current-command-line-arguments)
+              main-doc
+              c.command-line ...)))))]))
 
 (provide commands)
