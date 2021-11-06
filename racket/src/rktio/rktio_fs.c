@@ -702,6 +702,16 @@ rktio_ok_t rktio_set_current_directory(rktio_t *rktio, const char *path)
   return !err;
 }
 
+#if defined(RKTIO_STAT_TIMESPEC_FIELD)
+# define rktio_st_atim st_atimespec
+# define rktio_st_mtim st_mtimespec
+# define rktio_st_ctim st_ctimespec
+#else
+# define rktio_st_atim st_atim
+# define rktio_st_mtim st_mtim
+# define rktio_st_ctim st_ctim
+#endif
+
 rktio_stat_t *rktio_file_or_directory_stat(
   rktio_t *rktio, rktio_const_string_t path, rktio_bool_t follow_links)
 {
@@ -735,18 +745,17 @@ rktio_stat_t *rktio_file_or_directory_stat(
     rktio_stat_buf->block_count = stat_buf.st_blocks;
     /* The `tv_nsec` fields are only the fractional part of the seconds.
        (The value is always lower than 1_000_000_000.) */
-    rktio_stat_buf->access_time_seconds = stat_buf.st_atim.tv_sec;
-    rktio_stat_buf->access_time_nanoseconds = stat_buf.st_atim.tv_nsec;
-    rktio_stat_buf->modify_time_seconds = stat_buf.st_mtim.tv_sec;
-    rktio_stat_buf->modify_time_nanoseconds = stat_buf.st_mtim.tv_nsec;
-    rktio_stat_buf->ctime_seconds = stat_buf.st_ctim.tv_sec;
-    rktio_stat_buf->ctime_nanoseconds = stat_buf.st_ctim.tv_nsec;
+    rktio_stat_buf->access_time_seconds = stat_buf.rktio_st_atim.tv_sec;
+    rktio_stat_buf->access_time_nanoseconds = stat_buf.rktio_st_atim.tv_nsec;
+    rktio_stat_buf->modify_time_seconds = stat_buf.rktio_st_mtim.tv_sec;
+    rktio_stat_buf->modify_time_nanoseconds = stat_buf.rktio_st_mtim.tv_nsec;
+    rktio_stat_buf->ctime_seconds = stat_buf.rktio_st_ctim.tv_sec;
+    rktio_stat_buf->ctime_nanoseconds = stat_buf.rktio_st_ctim.tv_nsec;
     rktio_stat_buf->ctime_is_change_time = 1;
-    return rktio_stat_buf;
   }
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
-  struct _wstat64 stat_buf;
+  struct __stat64 stat_buf;
   const WIDE_PATH_t *wp;
   wp = MSC_WIDE_PATH_temp(path);
   if (!wp) {
@@ -759,7 +768,7 @@ rktio_stat_t *rktio_file_or_directory_stat(
   } while ((stat_result == -1) && (errno == EINTR));
 
   if (stat_result) {
-    /* TODO: Error handling / integration with Racket side? */
+    get_posix_error();
     return NULL;
   }
 
@@ -771,7 +780,8 @@ rktio_stat_t *rktio_file_or_directory_stat(
   rktio_stat_buf->hardlink_count = stat_buf.st_nlink;
   rktio_stat_buf->user_id = stat_buf.st_uid;
   rktio_stat_buf->group_id = stat_buf.st_gid;
-  rktio_stat_buf->device_id_for_special_file = stat_buf.st_rdev;
+  /* `st_rdev` has the same value as `st_dev`, so don't use it */
+  rktio_stat_buf->device_id_for_special_file = 0;
   rktio_stat_buf->size = stat_buf.st_size;
   /* `st_blksize` and `st_blocks` don't exist under Windows,
      so set them to an arbitrary integer, for example 0. */
@@ -788,6 +798,8 @@ rktio_stat_t *rktio_file_or_directory_stat(
   rktio_stat_buf->ctime_nanoseconds = 0;
   rktio_stat_buf->ctime_is_change_time = 0;
 #endif
+
+  return rktio_stat_buf;
 }
 
 static rktio_identity_t *get_identity(rktio_t *rktio, rktio_fd_t *fd, const char *path, int follow_links)

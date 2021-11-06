@@ -29698,7 +29698,7 @@
                              r_0
                              (let ((app_0
                                     (string-append
-                                     "error obtaining stat result for path\n"
+                                     "cannot get stat result\n"
                                      "  path: ~a")))
                                (1/format app_0 (host-> host-path_0))))
                             (let ((combined-nanoseconds_0
@@ -29748,7 +29748,7 @@
                                                                     (vector-ref
                                                                      r_0
                                                                      12)))
-                                                               (hash
+                                                               (hasheq
                                                                 'device-id
                                                                 app_0
                                                                 'inode
@@ -29781,7 +29781,7 @@
                                 (let ((ctime-hash_0
                                        (if (vector-ref r_0 15)
                                          (let ((app_0 (vector-ref r_0 14)))
-                                           (hash
+                                           (hasheq
                                             'change-time-seconds
                                             app_0
                                             'change-time-nanoseconds
@@ -29791,7 +29791,7 @@
                                             'creation-time-nanoseconds
                                             0))
                                          (let ((app_0 (vector-ref r_0 14)))
-                                           (hash
+                                           (hasheq
                                             'change-time-seconds
                                             0
                                             'change-time-nanoseconds

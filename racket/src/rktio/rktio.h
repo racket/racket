@@ -890,8 +890,7 @@ typedef struct rktio_stat_t {
   rktio_bool_t ctime_is_change_time;
 } rktio_stat_t;
 
-RKTIO_EXTERN rktio_stat_t *rktio_file_or_directory_stat(
-  rktio_t *rktio, rktio_const_string_t path, rktio_bool_t follow_links);
+RKTIO_EXTERN rktio_stat_t *rktio_file_or_directory_stat(rktio_t *rktio, rktio_const_string_t path, rktio_bool_t follow_links);
 
 typedef struct rktio_identity_t {
   uintptr_t a, b, c;

@@ -2673,7 +2673,31 @@
   (define temp-file-path (build-path work-dir "stat-test"))
   (define TEST-CONTENT "stat test content")
   (display-to-file TEST-CONTENT temp-file-path #:exists 'truncate)
+  (void (call-with-input-file temp-file-path read-byte))
   (define stat-result (file-or-directory-stat temp-file-path))
+  (test #t hash-eq? stat-result)
+  (define expected-stat-keys '(device-id
+                               inode
+                               mode
+                               hardlink-count
+                               user-id
+                               group-id
+                               device-id-for-special-file
+                               size
+                               block-size
+                               block-count
+                               access-time-seconds
+                               modify-time-seconds
+                               change-time-seconds
+                               creation-time-seconds
+                               access-time-nanoseconds
+                               modify-time-nanoseconds
+                               change-time-nanoseconds
+                               creation-time-nanoseconds))
+  (test #t 'ok-stat-keys (for/and ([(k v) (in-hash stat-result)])
+                           (and (memq k expected-stat-keys)
+                                (exact-nonnegative-integer? v))))
+  (test (length expected-stat-keys) hash-count stat-result)
   (define (stat-ref key) (hash-ref stat-result key))
   ;
   (test #t = (stat-ref 'size) (string-length TEST-CONTENT))
@@ -2697,17 +2721,25 @@
     (test #t positive-fixnum? (stat-ref 'user-id))
     (test #t positive-fixnum? (stat-ref 'group-id)))
   (test #t = (stat-ref 'device-id-for-special-file) 0)
-  (test #t positive-fixnum? (stat-ref 'block-size))
-  ; On my system, I had expected 1 block, but it's actually 8. This number
-  ; is supported by the `stat` command line tool.
-  (test #t positive-fixnum? (stat-ref 'block-count))
+  (unless (eq? (system-type) 'windows)
+    (test #t positive-fixnum? (stat-ref 'block-size))
+    ; On my system, I had expected 1 block, but it's actually 8. This number
+    ; is supported by the `stat` command line tool.
+    (test #t positive-fixnum? (stat-ref 'block-count)))
+  (test #t >= (stat-ref 'access-time-seconds)
+              (stat-ref 'modify-time-seconds))
   (test #t >= (stat-ref 'access-time-nanoseconds)
               (stat-ref 'modify-time-nanoseconds))
   (unless (eq? (system-type) 'windows)
     ; Only true for Poxis, since Windows doesn't provide the status change
     ; time.
     (test #t = (stat-ref 'change-time-nanoseconds)
-               (stat-ref 'modify-time-nanoseconds)))
+          (stat-ref 'modify-time-nanoseconds)))
+  (define (nano->secs ns) (quotient ns #e1e9))
+  (test (stat-ref 'access-time-seconds) nano->secs (stat-ref 'access-time-nanoseconds))
+  (test (stat-ref 'modify-time-seconds) nano->secs (stat-ref 'modify-time-nanoseconds))
+  (test (stat-ref 'change-time-seconds) nano->secs (stat-ref 'change-time-nanoseconds))
+  (test (stat-ref 'creation-time-seconds) nano->secs (stat-ref 'creation-time-nanoseconds))
   (delete-file temp-file-path))
 
 (err/rt-test (file-or-directory-stat "thisDoesNotExistAtAll") exn:fail:filesystem?)

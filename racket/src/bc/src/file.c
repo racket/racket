@@ -96,6 +96,7 @@ static Scheme_Object *file_modify_seconds(int argc, Scheme_Object *argv[]);
 static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[]);
 static Scheme_Object *file_or_dir_type(int argc, Scheme_Object *argv[]);
 static Scheme_Object *file_identity(int argc, Scheme_Object *argv[]);
+static Scheme_Object *file_stat(int argc, Scheme_Object *argv[]);
 static Scheme_Object *file_size(int argc, Scheme_Object *argv[]);
 static Scheme_Object *find_system_path(int argc, Scheme_Object **argv);
 
@@ -137,6 +138,15 @@ READ_ONLY static Scheme_Object *windows_symbol, *unix_symbol;
 
 READ_ONLY static Scheme_Object *file_symbol, *directory_symbol, *link_symbol, *directory_link_symbol;
 
+READ_ONLY static Scheme_Object *device_id_symbol, *inode_symbol, *mode_symbol;
+READ_ONLY static Scheme_Object *hardlink_count_symbol, *user_id_symbol, *group_id_symbol;
+READ_ONLY static Scheme_Object *device_id_for_special_file_symbol;
+READ_ONLY static Scheme_Object *size_symbol, *block_size_symbol, *block_count_symbol;
+READ_ONLY static Scheme_Object *access_time_seconds_symbol, *access_time_nanoseconds_symbol;
+READ_ONLY static Scheme_Object *modify_time_seconds_symbol, *modify_time_nanoseconds_symbol;
+READ_ONLY static Scheme_Object *change_time_seconds_symbol, *change_time_nanoseconds_symbol;
+READ_ONLY static Scheme_Object *creation_time_seconds_symbol, *creation_time_nanoseconds_symbol;
+
 void scheme_init_file(Scheme_Startup_Env *env)
 {
   Scheme_Object *p;
@@ -175,6 +185,25 @@ void scheme_init_file(Scheme_Startup_Env *env)
   REGISTER_SO(link_symbol);
   REGISTER_SO(directory_link_symbol);
 
+  REGISTER_SO(device_id_symbol);
+  REGISTER_SO(inode_symbol);
+  REGISTER_SO(mode_symbol);
+  REGISTER_SO(hardlink_count_symbol);
+  REGISTER_SO(user_id_symbol);
+  REGISTER_SO(group_id_symbol);
+  REGISTER_SO(device_id_for_special_file_symbol);
+  REGISTER_SO(size_symbol);
+  REGISTER_SO(block_size_symbol);
+  REGISTER_SO(block_count_symbol);
+  REGISTER_SO(access_time_seconds_symbol);
+  REGISTER_SO(access_time_nanoseconds_symbol);
+  REGISTER_SO(modify_time_seconds_symbol);
+  REGISTER_SO(modify_time_nanoseconds_symbol);
+  REGISTER_SO(change_time_seconds_symbol);
+  REGISTER_SO(change_time_nanoseconds_symbol);
+  REGISTER_SO(creation_time_seconds_symbol);
+  REGISTER_SO(creation_time_nanoseconds_symbol);
+
   up_symbol = scheme_intern_symbol("up");
   relative_symbol = scheme_intern_symbol("relative");
   same_symbol = scheme_intern_symbol("same");
@@ -209,6 +238,25 @@ void scheme_init_file(Scheme_Startup_Env *env)
   directory_symbol = scheme_intern_symbol("directory");
   link_symbol = scheme_intern_symbol("link");
   directory_link_symbol = scheme_intern_symbol("directory-link");
+
+  device_id_symbol = scheme_intern_symbol("device-id");
+  inode_symbol = scheme_intern_symbol("inode");
+  mode_symbol = scheme_intern_symbol("mode");
+  hardlink_count_symbol = scheme_intern_symbol("hardlink-count");
+  user_id_symbol = scheme_intern_symbol("user-id");
+  group_id_symbol = scheme_intern_symbol("group-id");
+  device_id_for_special_file_symbol = scheme_intern_symbol("device-id-for-special-file");
+  size_symbol = scheme_intern_symbol("size");
+  block_size_symbol = scheme_intern_symbol("block-size");
+  block_count_symbol = scheme_intern_symbol("block-count");
+  access_time_seconds_symbol = scheme_intern_symbol("access-time-seconds");
+  access_time_nanoseconds_symbol = scheme_intern_symbol("access-time-nanoseconds");
+  modify_time_seconds_symbol = scheme_intern_symbol("modify-time-seconds");
+  modify_time_nanoseconds_symbol = scheme_intern_symbol("modify-time-nanoseconds");
+  change_time_seconds_symbol = scheme_intern_symbol("change-time-seconds");
+  change_time_nanoseconds_symbol = scheme_intern_symbol("change-time-nanoseconds");
+  creation_time_seconds_symbol = scheme_intern_symbol("creation-time-seconds");
+  creation_time_nanoseconds_symbol = scheme_intern_symbol("creation-time-nanoseconds");
 
   p = scheme_make_immed_prim(path_p, "path?", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
@@ -411,6 +459,11 @@ void scheme_init_file(Scheme_Startup_Env *env)
   scheme_addto_prim_instance("file-or-directory-identity",
 			     scheme_make_prim_w_arity(file_identity,
 						      "file-or-directory-identity",
+						      1, 2), 
+			     env);
+  scheme_addto_prim_instance("file-or-directory-stat",
+			     scheme_make_prim_w_arity(file_stat,
+						      "file-or-directory-stat",
 						      1, 2), 
 			     env);
   scheme_addto_prim_instance("file-size",
@@ -4918,6 +4971,75 @@ static Scheme_Object *file_identity(int argc, Scheme_Object *argv[])
     as_link = SCHEME_TRUEP(argv[1]);
 
   return scheme_get_fd_identity(NULL, as_link, filename, 0);
+}
+
+static Scheme_Object *make_nanoseconds(uintptr_t secs, uintptr_t nsecs) {
+  return scheme_bin_plus(scheme_bin_mult(scheme_make_integer_value_from_unsigned(secs),
+                                         scheme_make_integer(1000000000)),
+                         scheme_make_integer_value_from_unsigned(nsecs));
+}
+
+static Scheme_Object *file_stat(int argc, Scheme_Object *argv[])
+{
+  char *filename;
+  int as_link = 0;
+  rktio_stat_t *r;
+  Scheme_Hash_Tree *ht;
+
+  if (!SCHEME_PATH_STRINGP(argv[0]))
+    scheme_wrong_contract("file-or-directory-identity", "path-string?", 0, argc, argv);
+
+  filename = scheme_expand_string_filename(argv[0],
+					   "file-or-directory-identity",
+					   NULL,
+					   SCHEME_GUARD_FILE_EXISTS);
+
+  if (argc > 1)
+    as_link = SCHEME_TRUEP(argv[1]);
+
+  r = rktio_file_or_directory_stat(scheme_rktio, filename, !as_link);
+
+  if (!r) {
+    scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                     "file-or-directory-stat: cannot get stat result\n"
+                     "  path: %q\n"
+                     "  system error: %R",
+                     filename_for_error(argv[0]));
+    return NULL;
+  }
+
+  ht = scheme_make_hash_tree(0);
+
+  ht = scheme_hash_tree_set(ht, device_id_symbol, scheme_make_integer_value_from_unsigned(r->device_id));
+  ht = scheme_hash_tree_set(ht, inode_symbol, scheme_make_integer_value_from_unsigned(r->inode));
+  ht = scheme_hash_tree_set(ht, mode_symbol, scheme_make_integer_value_from_unsigned(r->mode));
+  ht = scheme_hash_tree_set(ht, hardlink_count_symbol, scheme_make_integer_value_from_unsigned(r->hardlink_count));
+  ht = scheme_hash_tree_set(ht, user_id_symbol, scheme_make_integer_value_from_unsigned(r->user_id));
+  ht = scheme_hash_tree_set(ht, group_id_symbol, scheme_make_integer_value_from_unsigned(r->group_id));
+  ht = scheme_hash_tree_set(ht, device_id_for_special_file_symbol, scheme_make_integer_value_from_unsigned(r->device_id_for_special_file));
+  ht = scheme_hash_tree_set(ht, size_symbol, scheme_make_integer_value_from_unsigned(r->size));
+  ht = scheme_hash_tree_set(ht, block_size_symbol, scheme_make_integer_value_from_unsigned(r->block_size));
+  ht = scheme_hash_tree_set(ht, block_count_symbol, scheme_make_integer_value_from_unsigned(r->block_count));
+  ht = scheme_hash_tree_set(ht, access_time_seconds_symbol, scheme_make_integer_value_from_unsigned(r->access_time_seconds));
+  ht = scheme_hash_tree_set(ht, access_time_nanoseconds_symbol, make_nanoseconds(r->access_time_seconds, r->access_time_nanoseconds));
+  ht = scheme_hash_tree_set(ht, modify_time_seconds_symbol, scheme_make_integer_value_from_unsigned(r->modify_time_seconds));
+  ht = scheme_hash_tree_set(ht, modify_time_nanoseconds_symbol, make_nanoseconds(r->modify_time_seconds, r->modify_time_nanoseconds));
+
+  if (r->ctime_is_change_time) {
+    ht = scheme_hash_tree_set(ht, change_time_seconds_symbol, scheme_make_integer_value_from_unsigned(r->ctime_seconds));
+    ht = scheme_hash_tree_set(ht, change_time_nanoseconds_symbol, make_nanoseconds(r->ctime_seconds, r->ctime_nanoseconds));
+    ht = scheme_hash_tree_set(ht, creation_time_seconds_symbol, scheme_make_integer(0));
+    ht = scheme_hash_tree_set(ht, creation_time_nanoseconds_symbol, scheme_make_integer(0));
+  } else {
+    ht = scheme_hash_tree_set(ht, creation_time_seconds_symbol, scheme_make_integer_value_from_unsigned(r->ctime_seconds));
+    ht = scheme_hash_tree_set(ht, creation_time_nanoseconds_symbol, make_nanoseconds(r->ctime_seconds, r->ctime_nanoseconds));
+    ht = scheme_hash_tree_set(ht, change_time_seconds_symbol, scheme_make_integer(0));
+    ht = scheme_hash_tree_set(ht, change_time_nanoseconds_symbol, scheme_make_integer(0));
+  }
+
+  rktio_free(r);
+  
+  return (Scheme_Object *)ht;
 }
 
 static Scheme_Object *file_size(int argc, Scheme_Object *argv[])

@@ -305,7 +305,7 @@
      (raise-filesystem-error who
                              r
                              (format (string-append
-                                      "error obtaining stat result for path\n"
+                                      "cannot get stat result\n"
                                       "  path: ~a")
                                      (host-> host-path)))]
     [else
@@ -316,30 +316,30 @@
        (+ (* #e1e9 (vector-ref r seconds-index))
           (vector-ref r (add1 seconds-index))))
      (define main-hash
-       (hash 'device-id (vector-ref r 0)
-             'inode (vector-ref r 1)
-             'mode (vector-ref r 2)
-             'hardlink-count (vector-ref r 3)
-             'user-id (vector-ref r 4)
-             'group-id (vector-ref r 5)
-             'device-id-for-special-file (vector-ref r 6)
-             'size (vector-ref r 7)
-             'block-size (vector-ref r 8)
-             'block-count (vector-ref r 9)
-             'access-time-seconds (vector-ref r 10)
-             'access-time-nanoseconds (combined-nanoseconds 10)
-             'modify-time-seconds (vector-ref r 12)
-             'modify-time-nanoseconds (combined-nanoseconds 12)))
+       (hasheq 'device-id (vector-ref r 0)
+               'inode (vector-ref r 1)
+               'mode (vector-ref r 2)
+               'hardlink-count (vector-ref r 3)
+               'user-id (vector-ref r 4)
+               'group-id (vector-ref r 5)
+               'device-id-for-special-file (vector-ref r 6)
+               'size (vector-ref r 7)
+               'block-size (vector-ref r 8)
+               'block-count (vector-ref r 9)
+               'access-time-seconds (vector-ref r 10)
+               'access-time-nanoseconds (combined-nanoseconds 10)
+               'modify-time-seconds (vector-ref r 12)
+               'modify-time-nanoseconds (combined-nanoseconds 12)))
      (define ctime-hash
        (if (vector-ref r 15)
-           (hash 'change-time-seconds (vector-ref r 14)
-                 'change-time-nanoseconds (combined-nanoseconds 14)
-                 'creation-time-seconds 0
-                 'creation-time-nanoseconds 0)
-           (hash 'change-time-seconds 0
-                 'change-time-nanoseconds 0
-                 'creation-time-seconds (vector-ref r 14)
-                 'creation-time-nanoseconds (combined-nanoseconds 14))))
+           (hasheq 'change-time-seconds (vector-ref r 14)
+                   'change-time-nanoseconds (combined-nanoseconds 14)
+                   'creation-time-seconds 0
+                   'creation-time-nanoseconds 0)
+           (hasheq 'change-time-seconds 0
+                   'change-time-nanoseconds 0
+                   'creation-time-seconds (vector-ref r 14)
+                   'creation-time-nanoseconds (combined-nanoseconds 14))))
      ; We can't use `hash-union` (from `racket/hash`) in the kernel code, so
      ; simulate the function.
      (for/fold ([new-hash main-hash])

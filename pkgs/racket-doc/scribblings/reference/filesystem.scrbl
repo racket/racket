@@ -454,7 +454,7 @@ duplicates files.}
 
 @index['("file modification date and time")]{Returns}
 the file or directory's last modification date in seconds
-since midnight UTC, January 1, 1970 (see also @secref["time"]) when
+since @tech{the epoch} (see also @secref["time"]) when
 @racket[secs-n] is not provided or is @racket[#f].
 
 For FAT filesystems on Windows, directories do not have modification
@@ -514,12 +514,13 @@ such file exists).}
 
 @defproc[(file-or-directory-stat [path path-string?]
                                  [as-link? boolean? #f])
-         (hash/c symbol? any/c)]{
+         (and/c (hash/c symbol? any/c) hash-eq?)]{
 
-@index['("inode")]{Returns} a hash with the following keys and values:
+@index['("inode")]{Returns} a hash with the following keys and values,
+where each value currently is a nonnegative exact integer:
 
 @itemlist[
- @item{@indexed-racket['device-id] : device id}
+ @item{@indexed-racket['device-id] : device ID}
  @item{@indexed-racket['inode] : inode number}
  @item{@indexed-racket['mode] : mode bits (see below)}
  @;{
@@ -529,28 +530,28 @@ such file exists).}
    @racket['fifo]}
  }
  @item{@indexed-racket['hardlink-count] : number of hard links}
- @item{@indexed-racket['user-id] : user id of owner}
- @item{@indexed-racket['group-id] : group id of owner}
- @item{@indexed-racket['device-id-for-special-file] : device id (if special file)}
+ @item{@indexed-racket['user-id] : user ID of owner}
+ @item{@indexed-racket['group-id] : group ID of owner}
+ @item{@indexed-racket['device-id-for-special-file] : device ID (if special file)}
  @item{@indexed-racket['size] : size of file or symbolic link in bytes}
  @item{@indexed-racket['block-size] : size of filesystem blocks}
  @item{@indexed-racket['block-count] : number of used filesystem blocks}
  @item{@indexed-racket['access-time-seconds] : last access time in seconds
-   since the epoch}
+   since @tech{the epoch}}
  @item{@indexed-racket['modify-time-seconds] : last modification time in
-   seconds since the epoch}
+   seconds since @tech{the epoch}}
  @item{@indexed-racket['change-time-seconds] : last status change time in
-   seconds since the epoch}
+   seconds since @tech{the epoch}}
  @item{@indexed-racket['creation-time-seconds] : creation time in seconds since
-   the epoch}
+   @tech{the epoch}}
  @item{@indexed-racket['access-time-nanoseconds] : last access time in
-   nanoseconds since the epoch}
+   nanoseconds since @tech{the epoch}}
  @item{@indexed-racket['modify-time-nanoseconds] : last modification time in
-   nanoseconds since the epoch}
+   nanoseconds since @tech{the epoch}}
  @item{@indexed-racket['change-time-nanoseconds] : last status change time in
-   nanoseconds since the epoch}
+   nanoseconds since @tech{the epoch}}
  @item{@indexed-racket['creation-time-nanoseconds] : creation time in
-   nanoseconds since the epoch}
+   nanoseconds since @tech{the epoch}}
 ]
 
 If @racket[as-link?] is a true value, then if @racket[path] refers to a
@@ -560,7 +561,7 @@ information of the referenced filesystem item.
 The mode bits are the bits for permissions and other data, as returned from the
 Posix @tt{stat}/@tt{lstat} functions or the Windows @tt{_wstat64} function,
 respectively. To select portions of the bit pattern, use the constants
-@indexed-racket[user-read-bit] etc.
+@indexed-racket[user-read-bit], etc.
 
 Depending on the operating system and filesystem, the ``nanoseconds''
 timestamps may have less than nanoseconds precision. For example, in one
@@ -573,8 +574,10 @@ to @racket[0].
 
 If @racket[as-link?] is @racket[#f] and @racket[path] isn't accessible,
 the @exnraise[exn:fail:filesystem]. This exception is also raised if
-@racket[as-link?] is a true value and @racket[path] can't be resolved, i.e. is
-a dangling link.}
+@racket[as-link?] is a true value and @racket[path] can't be resolved, i.e., is
+a dangling link.
+
+@history[#:added "8.3.0.7"]}
 
 
 @defproc[(file-or-directory-identity [path path-string?]
