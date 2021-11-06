@@ -1088,6 +1088,8 @@ typedef BOOL (*rktio_UpdateProcThreadAttribute_t)(void *lpAttributeList,
                                                   PVOID lpPreviousValue,
                                                   PSIZE_T lpReturnSize);
 static rktio_UpdateProcThreadAttribute_t rktio_UpdateProcThreadAttribute;
+typedef void (*rktio_DeleteProcThreadAttributeList_t)(void *lpAttributeList);
+static rktio_DeleteProcThreadAttributeList_t rktio_DeleteProcThreadAttributeList;
 static void init_thread_attr_procs()
 {
   if (!rktio_InitializeProcThreadAttributeList
@@ -1098,6 +1100,7 @@ static void init_thread_attr_procs()
 
     rktio_InitializeProcThreadAttributeList = (rktio_InitializeProcThreadAttributeList_t)GetProcAddress(hm, "InitializeProcThreadAttributeList");
     rktio_UpdateProcThreadAttribute = (rktio_UpdateProcThreadAttribute_t)GetProcAddress(hm, "UpdateProcThreadAttribute");
+    rktio_DeleteProcThreadAttributeList = (rktio_DeleteProcThreadAttributeList_t)GetProcAddress(hm, "DeleteProcThreadAttributeList");
 
     FreeLibrary(hm);
   }
@@ -1190,7 +1193,8 @@ static intptr_t do_spawnv(rktio_t *rktio,
        stdin.stdout/stderr. */
     init_thread_attr_procs();
     if (rktio_InitializeProcThreadAttributeList
-        && rktio_UpdateProcThreadAttribute) {   
+        && rktio_UpdateProcThreadAttribute
+        && rktio_DeleteProcThreadAttributeList) {
       LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList = NULL;
       SIZE_T size = 0;
       HANDLE handles_to_inherit[3];
@@ -1207,7 +1211,8 @@ static intptr_t do_spawnv(rktio_t *rktio,
       startupx.lpAttributeList = lpAttributeList;
       startup->cb = sizeof(startupx);
       cr_flag |= rktio_EXTENDED_STARTUPINFO_PRESENT;
-    }
+    } else
+      disable_inherit = 0;
   }
 
   if (cmdline_w
@@ -1231,8 +1236,8 @@ static intptr_t do_spawnv(rktio_t *rktio,
   }
 
   if (disable_inherit) {
-    LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList = startupx.lpAttributeList;
-    DeleteProcThreadAttributeList(lpAttributeList);
+    void *lpAttributeList = startupx.lpAttributeList;
+    rktio_DeleteProcThreadAttributeList(lpAttributeList);
     HeapFree(GetProcessHeap(), 0, lpAttributeList);
   }
 
