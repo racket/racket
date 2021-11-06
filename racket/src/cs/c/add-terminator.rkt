@@ -10,8 +10,8 @@
  (define terminator
    (cond
      [(equal? #"\0\0\0\0chez" (call-with-input-file*
-                               dest
-                               (lambda (i) (read-bytes 8 i))))
+                                  dest
+                                (lambda (i) (read-bytes 8 i))))
       ;; Not compressed
       #"\177"]
      [else

@@ -1,6 +1,5 @@
 #lang racket/base
 (require racket/file
-         racket/system
          file/gzip
          file/gunzip
          ffi/unsafe)
@@ -147,7 +146,7 @@
                 (write-bytes bstr out)]
                [else
                 (define d-size (or dest-size
-                                    (bytes-length bstr)))
+                                   (bytes-length bstr)))
                 (define c-bstr
                   (if compressed
                       bstr
@@ -172,10 +171,10 @@
                 (write-bytes c-bstr out)]))
            (loop #t)))]))
   (get-output-bytes out))
-       
+
 (module+ main
   (require racket/cmdline)
-      
+
   (command-line
    #:once-any
    [("--uncompressed") "Uncompress compiled code"
