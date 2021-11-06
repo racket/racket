@@ -1,9 +1,5 @@
 #lang racket/base
 (require racket/include
-         racket/fixnum
-         racket/flonum
-         racket/unsafe/ops
-         racket/extflonum
          "../schemify/known.rkt")
 
 (provide get-prim-knowns
@@ -73,4 +69,3 @@
      (define prim-knowns (get-prim-knowns))
      (define primitives (get-primitives))
      (check-known-values prim-knowns primitives))))
-

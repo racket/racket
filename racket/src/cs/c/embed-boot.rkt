@@ -13,14 +13,14 @@
 (command-line
  #:once-each
  [("--compress") "Leave compiled code files as compressed"
-  (enable-compress!)]
+                 (enable-compress!)]
  [("--target") machine "Select target machine"
-  (set! target machine)]
+               (set! target machine)]
  #:multi
  [("++exe") src dest "Select an alternative executable"
-  (set! alt-dests (cons (cons src dest) alt-dests))]
+            (set! alt-dests (cons (cons src dest) alt-dests))]
  [("++rewrite") from to "Add an arbitrary string replacement"
-  (set! rewrites (cons (cons from to) rewrites))]
+                (set! rewrites (cons (cons from to) rewrites))]
  #:args (src-file dest-file petite.boot scheme.boot racket.boot)
 
  ;; If `src-file` is "", then `dest-file` is used as the src, too
@@ -54,8 +54,8 @@
    (define pos
      (case (or target (path->string (system-library-subpath #f)))
        [("ta6osx" "ti3osx" "tarm64osx"
-         "x86_64-darwin" "i386-darwin" "aarch64-darwin"
-         "x86_64-macosx" "i386-macosx" "aarch64-macosx")
+                  "x86_64-darwin" "i386-darwin" "aarch64-darwin"
+                  "x86_64-macosx" "i386-macosx" "aarch64-macosx")
         ;; Mach-O
         (when (file-exists? dest-file)
           ;; explicit delete to avoid signature unhappiness
@@ -68,17 +68,17 @@
        [("ta6nt" "ti3nt" "win32\\x86_64" "win32\\i386")
         (copy-file use-src-file dest-file #t)
         (define-values (pe rsrcs) (call-with-input-file*
-                                   dest-file
-                                   read-pe+resources))
+                                      dest-file
+                                    read-pe+resources))
         (define new-rsrcs (resource-set rsrcs
                                         ;; Racket's "user-defined" type for boot:
                                         259
                                         1
                                         1033 ; U.S. English
                                         data))
-	(update-resources dest-file pe new-rsrcs)
-	;; Find resource at run time:
-	0]
+        	(update-resources dest-file pe new-rsrcs)
+                	;; Find resource at run time:
+                	0]
        [else
         ;; ELF?
         (define-values (start-pos end-pos any1 any2)
@@ -142,11 +142,11 @@
            (void (write-bytes (integer->integer-bytes pos 4 #t big-endian?) o))))))
 
    (cond
-    [(null? alt-dests)
-     (write-offsets dest-file)]
-    [else
-     (for ([alt (in-list alt-dests)])
-       (copy-file (car alt) (cdr alt) #t)
-       (write-offsets (cdr alt)))])
+     [(null? alt-dests)
+      (write-offsets dest-file)]
+     [else
+      (for ([alt (in-list alt-dests)])
+        (copy-file (car alt) (cdr alt) #t)
+        (write-offsets (cdr alt)))])
 
    (clean-src)))
