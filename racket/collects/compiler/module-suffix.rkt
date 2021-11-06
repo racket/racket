@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/list
+         racket/string
          setup/getinfo
          racket/contract/base)
 
