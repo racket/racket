@@ -530,8 +530,8 @@ where each value currently is a nonnegative exact integer:
    @racket['fifo]}
  }
  @item{@indexed-racket['hardlink-count] : number of hard links}
- @item{@indexed-racket['user-id] : user ID of owner}
- @item{@indexed-racket['group-id] : group ID of owner}
+ @item{@indexed-racket['user-id] : numeric user ID of owner}
+ @item{@indexed-racket['group-id] : numeric group ID of owner}
  @item{@indexed-racket['device-id-for-special-file] : device ID (if special file)}
  @item{@indexed-racket['size] : size of file or symbolic link in bytes}
  @item{@indexed-racket['block-size] : size of filesystem blocks}
