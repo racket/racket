@@ -135,13 +135,18 @@ jobs:
   build:
     name: "Build on Racket '${{ matrix.racket-version }}' (${{ matrix.racket-variant }})"
     runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental || false }}
     strategy:
+      fail-fast: false
       matrix:
         racket-version: ["stable", "current"]
         racket-variant: ["BC", "CS"]
+        include:
+          - racket-version: current
+            experimental: true
     steps:
       - uses: actions/checkout@v2
-      - uses: Bogdanp/setup-racket@v0.12
+      - uses: Bogdanp/setup-racket@v1.7
         with:
           architecture: x64
           distribution: full
