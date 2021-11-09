@@ -22,6 +22,8 @@
 (import (scheme) (unicode-data))
 
 (include "extract-common.ss")
+(include "bitfields.ss")
+(include "codepoint-range.ss")
 
 (define ptr-bytes 4)
 (define code-point-limit #x110000)
@@ -32,70 +34,12 @@
 (define (string-suffix? str suffix)
   (let ([n (string-length str)] [m (string-length suffix)])
     (and (fx>= n m) (string=? (substring str (fx- n m) n) suffix))))
-       
-(define (extract-range str)
-  (define (find-char c s)
-    (let f ([i 0] [n (string-length s)])
-      (cond
-        [(= i n) #f]
-        [(char=? (string-ref s i) c) i]
-        [else (f (+ i 1) n)])))
-  (cond
-    [(find-char #\. str) =>
-     (lambda (i)
-       (cons
-         (hex->num (substring str 0 i))
-         (hex->num (substring str (+ i 2) (string-length str)))))]
-    [else (let ([n (hex->num str)]) (cons n n))]))
 
 ; fixnum field laid out as follows:
 ;   bits 0-5: category number
 ;   bits 6-9: wordbreak property
 ;   bits 10-17: combining class
 ;   bits 18-29: case/type property bits
-
-(define-syntax define-bitfields
-  (lambda (x)
-    (define construct-name
-      (lambda (template-identifier . args)
-        (datum->syntax template-identifier
-          (string->symbol
-            (apply string-append
-                   (map (lambda (x) (format "~a" (syntax->datum x)))
-                        args))))))
-    (define extract
-      (lambda (fld* bit def*)
-        (assert (< bit (fixnum-width)))
-        (if (null? fld*)
-            def*
-            (syntax-case (car fld*) (flag enumeration integer)
-              [(flag name) (identifier? #'name)
-               (extract (cdr fld*) (+ bit 1)
-                 #`((define name #,(fxsll 1 bit)) #,@def*))]
-              [(enumeration name id ...)
-               (and (identifier? #'name) (for-all identifier? #'(id ...)))
-               (let ([width (bitwise-length (length #'(id ...)))])
-                 (with-syntax ([name-shift (construct-name #'name #'name "-shift")]
-                               [name-mask (construct-name #'name #'name "-mask")])
-                   (extract (cdr fld*) (+ bit width)
-                     #`((define name-shift #,bit)
-                        (define name-mask #,(fx- (fxsll 1 width) 1))
-                        #,@(map (lambda (id val) #`(define #,id #,val))
-                                #'(id ...)
-                                (enumerate #'(id ...)))
-                        #,@def*))))]
-              [(integer name width) (identifier? #'name)
-               (let ([width (syntax->datum #'width)])
-                 (with-syntax ([name-shift (construct-name #'name #'name "-shift")]
-                               [name-mask (construct-name #'name #'name "-mask")])
-                   (extract (cdr fld*) (+ bit width)
-                     #`((define name-shift #,bit)
-                        (define name-mask #,(fx- (fxsll 1 width) 1))
-                        #,@def*))))]))))
-    (syntax-case x ()
-      [(_ fld ...)
-       #`(begin #,@(extract #'(fld ...) 0 #'()))])))
-
 (define-bitfields
   (flag cased-property)
   (flag case-ignorable-property)

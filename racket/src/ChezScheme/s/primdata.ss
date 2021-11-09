@@ -820,6 +820,7 @@
   (char-lower-case? [sig [(char) -> (boolean)]] [flags pure mifoldable discard ieee r5rs])
   (char-title-case? [sig [(char) -> (boolean)]] [flags pure mifoldable discard])
   (char-general-category [sig [(char) -> (symbol)]] [flags pure mifoldable discard])
+  (char-grapheme-break-property [sig [(char) -> (symbol)]] [flags pure mifoldable discard])
   (string-upcase [sig [(string) -> (string)]] [flags mifoldable discard])
   (string-downcase [sig [(string) -> (string)]] [flags mifoldable discard])
   (string-titlecase [sig [(string) -> (string)]] [flags mifoldable discard])

@@ -155,6 +155,7 @@
   [char-downcase (known-procedure/folding 2)]
   [char-foldcase (known-procedure/folding 2)]
   [char-general-category (known-procedure/folding 2)]
+  [char-grapheme-break-property (known-procedure/folding 2)]
   [char-graphic? (known-procedure/folding 2)]
   [char-iso-control? (known-procedure/folding 2)]
   [char-lower-case? (known-procedure/folding 2)]

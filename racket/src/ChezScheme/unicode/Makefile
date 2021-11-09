@@ -1,12 +1,15 @@
 Scheme=../bin/scheme
 
-doit: unicode-char-cases.ss unicode-charinfo.ss
+doit: unicode-char-cases.ss unicode-charinfo.ss unicode-grapheme-info.ss
 
 unicode-char-cases.ss: extract-char-cases.ss unicode-data.ss
 	echo | $(Scheme) -q extract-char-cases.ss
 
 unicode-charinfo.ss: extract-info.ss unicode-data.ss
 	echo | $(Scheme) -q extract-info.ss
+
+unicode-grapheme-info.ss: extract-grapheme-info.ss unicode-data.ss
+	echo | $(Scheme) -q extract-grapheme-info.ss
 
 unicode-char-cases.ss: \
  UNIDATA/CompositionExclusions.txt\
@@ -18,4 +21,8 @@ unicode-charinfo.ss: \
  UNIDATA/UnicodeData.txt\
  UNIDATA/WordBreakProperty.txt\
  UNIDATA/PropList.txt
+
+unicode-grapheme-info.ss: \
+ UNIDATA/GraphemeBreakProperty.txt \
+ UNIDATA/emoji-data.txt
 

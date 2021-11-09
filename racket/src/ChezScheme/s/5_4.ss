@@ -226,6 +226,7 @@
 (let ()
   (include "../unicode/unicode-char-cases.ss")
   (include "../unicode/unicode-charinfo.ss")
+  (include "../unicode/unicode-grapheme-info.ss")
 
   (define char-error
     (lambda (who what)
@@ -258,6 +259,7 @@
     (define-char-op char-numeric? $char-numeric?)
     (define-char-op char-alphabetic? $char-alphabetic?)
     (define-char-op char-general-category $char-category)
+    (define-char-op char-grapheme-break-property $char-grapheme-break-property)
     (define-char-op $constituent? $char-constituent?)
     (define-char-op $subsequent? $char-subsequent?)
   )

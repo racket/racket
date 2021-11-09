@@ -522,6 +522,27 @@
     (eq? (char-general-category #\z) 'Ll)
  )
 
+(mat char-grapheme-break-property
+    (error? (char-grapheme-break-property))
+    (error? (char-grapheme-break-property #\a #\b))
+    (error? (char-grapheme-break-property 'a))
+    (eq? (char-grapheme-break-property #\A) 'other)
+    (eq? (char-grapheme-break-property #\x110BD) 'prepend)
+    (eq? (char-grapheme-break-property #\return) 'cr)
+    (eq? (char-grapheme-break-property #\linefeed) 'lf)
+    (eq? (char-grapheme-break-property #\xE0001) 'control)
+    (eq? (char-grapheme-break-property #\x0301) 'extend)
+    (eq? (char-grapheme-break-property #\x1F1E6) 'regional-indicator)
+    (eq? (char-grapheme-break-property #\x0Eb3) 'spacing-mark)
+    (eq? (char-grapheme-break-property #\x1101) 'l)
+    (eq? (char-grapheme-break-property #\xD7B2) 'v)
+    (eq? (char-grapheme-break-property #\x11A8) 't)
+    (eq? (char-grapheme-break-property #\xAD50) 'lv)
+    (eq? (char-grapheme-break-property #\xAFB9) 'lvt)
+    (eq? (char-grapheme-break-property #\x200D) 'zwj)
+    (eq? (char-grapheme-break-property #\x2733) 'extended-pictographic)
+ )
+
 (mat char-whitespace?
     (error? (char-whitespace?))
     (error? (char-whitespace? #\a #\b))

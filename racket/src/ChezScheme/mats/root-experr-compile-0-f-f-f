@@ -2039,6 +2039,9 @@ primvars.mo:Expected error in mat trace-output-port: "trace-output-port: #<input
 5_4.mo:Expected error in mat char-general-category: "incorrect argument count in call (char-general-category)".
 5_4.mo:Expected error in mat char-general-category: "incorrect argument count in call (char-general-category #\a #\b)".
 5_4.mo:Expected error in mat char-general-category: "char-general-category: a is not a character".
+5_4.mo:Expected error in mat char-grapheme-break-property: "incorrect argument count in call (char-grapheme-break-property)".
+5_4.mo:Expected error in mat char-grapheme-break-property: "incorrect argument count in call (char-grapheme-break-property #\a #\b)".
+5_4.mo:Expected error in mat char-grapheme-break-property: "char-grapheme-break-property: a is not a character".
 5_4.mo:Expected error in mat char-whitespace?: "incorrect argument count in call (char-whitespace?)".
 5_4.mo:Expected error in mat char-whitespace?: "incorrect argument count in call (char-whitespace? #\a #\b)".
 5_4.mo:Expected error in mat char-whitespace?: "char-whitespace?: a is not a character".
