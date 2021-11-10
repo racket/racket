@@ -3,8 +3,10 @@
 
 /* globals */
 #include "schuchar.inc"
+#include "schuchar_grapheme.inc"
 READ_ONLY Scheme_Object **scheme_char_constants;
 READ_ONLY static Scheme_Object *general_category_symbols[NUM_GENERAL_CATEGORIES];
+READ_ONLY static Scheme_Object *grapheme_break_property_symbols[NUM_GRAPHEME_BREAK_PROPERTY_VALUES];
 
 READ_ONLY Scheme_Object *scheme_char_p_proc;
 READ_ONLY Scheme_Object *scheme_interned_char_p_proc;
@@ -51,6 +53,7 @@ static Scheme_Object *char_downcase (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_titlecase (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_foldcase (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_general_category (int argc, Scheme_Object *argv[]);
+static Scheme_Object *char_grapheme_break_property (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_utf8_length (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_map_list (int argc, Scheme_Object *argv[]);
 
@@ -60,12 +63,18 @@ void scheme_init_portable_case(void)
   init_uchar_table();
 }
 
+void scheme_init_grapheme_breaking(void)
+{
+  init_uchar_grapheme_break_table();
+}
+
 void scheme_init_char_constants(void)
 {
   int i;
 
   REGISTER_SO(scheme_char_constants);
   REGISTER_SO(general_category_symbols);
+  REGISTER_SO(grapheme_break_property_symbols);
 
   scheme_char_constants = 
     (Scheme_Object **)scheme_malloc_eternal(256 * sizeof(Scheme_Object*));
@@ -83,6 +92,12 @@ void scheme_init_char_constants(void)
     Scheme_Object *s;
     s = scheme_intern_symbol(general_category_names[i]);
     general_category_symbols[i] = s;
+  }
+
+  for (i = 0; i < NUM_GRAPHEME_BREAK_PROPERTY_VALUES; i++) {
+    Scheme_Object *s;
+    s = scheme_intern_symbol(grapheme_break_property_values[i]);
+    grapheme_break_property_symbols[i] = s;
   }
 }
 
@@ -172,6 +187,7 @@ void scheme_init_char (Scheme_Startup_Env *env)
   ADD_FOLDING_PRIM("char-foldcase",         char_foldcase,         1, 1, 1, env);
   ADD_FOLDING_PRIM("char-general-category", char_general_category, 1, 1, 1, env);
   ADD_FOLDING_PRIM("char-utf-8-length",     char_utf8_length,      1, 1, 1, env);
+  ADD_FOLDING_PRIM("char-grapheme-break-property", char_grapheme_break_property, 1, 1, 1, env);
   ADD_IMMED_PRIM("make-known-char-range-list", char_map_list, 0, 0, env);
 }
 
@@ -419,6 +435,20 @@ static Scheme_Object *char_general_category (int argc, Scheme_Object *argv[])
   cat = scheme_general_category(c);
 
   return general_category_symbols[cat];
+}
+
+static Scheme_Object *char_grapheme_break_property (int argc, Scheme_Object *argv[])
+{
+  mzchar c;
+  int prop;
+
+  if (!SCHEME_CHARP(argv[0]))
+    scheme_wrong_contract("char-grapheme-break-property", "char?", 0, argc, argv);
+
+  c = SCHEME_CHAR_VAL(argv[0]);
+  prop = scheme_grapheme_break_property(c);
+
+  return grapheme_break_property_symbols[prop];
 }
 
 static Scheme_Object *char_utf8_length (int argc, Scheme_Object *argv[])

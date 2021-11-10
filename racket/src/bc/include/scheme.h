@@ -746,6 +746,10 @@ typedef struct Scheme_Offset_Cptr
 #define scheme_general_category(x) ((scheme_uchar_find(scheme_uchar_cats_table, x)) & 0x1F)
 /* Note: 3 bits available in the cats table */
 
+#define SCHEME_UCHAR_GB_SHIFT 8
+#define SCHEME_UCHAR_GB_MASK 0xFF
+#define scheme_grapheme_break_property(x) ((scheme_uchar_grapheme_break_table[(x >> 1) >> SCHEME_UCHAR_GB_SHIFT][(x >> 1) & SCHEME_UCHAR_GB_MASK] >> ((x & 1) << 2)) & 0xF)
+
 /*========================================================================*/
 /*                          procedure values                              */
 /*========================================================================*/

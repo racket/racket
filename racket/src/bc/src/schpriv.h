@@ -304,6 +304,7 @@ THREAD_LOCAL_DECL(extern int scheme_starting_up);
 typedef struct Scheme_Startup_Env Scheme_Startup_Env;
 
 void scheme_init_finalization(void);
+void scheme_init_grapheme_breaking(void);
 void scheme_init_portable_case(void);
 void scheme_init_stack_check(void);
 void scheme_init_overflow(void);
