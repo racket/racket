@@ -26525,67 +26525,46 @@
                                                                                                                 (if (let ((a_7
                                                                                                                            (car
                                                                                                                             p_6)))
-                                                                                                                      (begin-unsafe
-                                                                                                                       (let ((app_0
-                                                                                                                              (unwrap
-                                                                                                                               '...)))
-                                                                                                                         (eq?
-                                                                                                                          app_0
-                                                                                                                          (unwrap
-                                                                                                                           a_7)))))
+                                                                                                                      (let ((p_7
+                                                                                                                             (unwrap
+                                                                                                                              a_7)))
+                                                                                                                        (if (pair?
+                                                                                                                             p_7)
+                                                                                                                          (if (let ((a_8
+                                                                                                                                     (car
+                                                                                                                                      p_7)))
+                                                                                                                                (begin-unsafe
+                                                                                                                                 (let ((app_0
+                                                                                                                                        (unwrap
+                                                                                                                                         'values)))
+                                                                                                                                   (eq?
+                                                                                                                                    app_0
+                                                                                                                                    (unwrap
+                                                                                                                                     a_8)))))
+                                                                                                                            (let ((a_8
+                                                                                                                                   (cdr
+                                                                                                                                    p_7)))
+                                                                                                                              (begin-unsafe
+                                                                                                                               (let ((app_0
+                                                                                                                                      (unwrap
+                                                                                                                                       '())))
+                                                                                                                                 (eq?
+                                                                                                                                  app_0
+                                                                                                                                  (unwrap
+                                                                                                                                   a_8)))))
+                                                                                                                            #f)
+                                                                                                                          #f)))
                                                                                                                   (let ((a_7
                                                                                                                          (cdr
                                                                                                                           p_6)))
-                                                                                                                    (let ((p_7
-                                                                                                                           (unwrap
-                                                                                                                            a_7)))
-                                                                                                                      (if (pair?
-                                                                                                                           p_7)
-                                                                                                                        (if (let ((a_8
-                                                                                                                                   (car
-                                                                                                                                    p_7)))
-                                                                                                                              (let ((p_8
-                                                                                                                                     (unwrap
-                                                                                                                                      a_8)))
-                                                                                                                                (if (pair?
-                                                                                                                                     p_8)
-                                                                                                                                  (if (let ((a_9
-                                                                                                                                             (car
-                                                                                                                                              p_8)))
-                                                                                                                                        (begin-unsafe
-                                                                                                                                         (let ((app_0
-                                                                                                                                                (unwrap
-                                                                                                                                                 'values)))
-                                                                                                                                           (eq?
-                                                                                                                                            app_0
-                                                                                                                                            (unwrap
-                                                                                                                                             a_9)))))
-                                                                                                                                    (let ((a_9
-                                                                                                                                           (cdr
-                                                                                                                                            p_8)))
-                                                                                                                                      (begin-unsafe
-                                                                                                                                       (let ((app_0
-                                                                                                                                              (unwrap
-                                                                                                                                               '())))
-                                                                                                                                         (eq?
-                                                                                                                                          app_0
-                                                                                                                                          (unwrap
-                                                                                                                                           a_9)))))
-                                                                                                                                    #f)
-                                                                                                                                  #f)))
-                                                                                                                          (let ((a_8
-                                                                                                                                 (cdr
-                                                                                                                                  p_7)))
-                                                                                                                            (begin-unsafe
-                                                                                                                             (let ((app_0
-                                                                                                                                    (unwrap
-                                                                                                                                     '())))
-                                                                                                                               (eq?
-                                                                                                                                app_0
-                                                                                                                                (unwrap
-                                                                                                                                 a_8)))))
-                                                                                                                          #f)
-                                                                                                                        #f)))
+                                                                                                                    (begin-unsafe
+                                                                                                                     (let ((app_0
+                                                                                                                            (unwrap
+                                                                                                                             '())))
+                                                                                                                       (eq?
+                                                                                                                        app_0
+                                                                                                                        (unwrap
+                                                                                                                         a_7)))))
                                                                                                                   #f)
                                                                                                                 #f)))
                                                                                                           #f)))
@@ -26634,7 +26613,7 @@
                                                              (unwrap v_2))))
                                                        (let ((p_0
                                                               (unwrap d_0)))
-                                                         (let ((rhss_0
+                                                         (let ((rhs_0
                                                                 (let ((a_0
                                                                        (car
                                                                         p_0)))
@@ -26665,24 +26644,23 @@
                                                                           p_0)))
                                                                     (unwrap-list
                                                                      d_1))))
-                                                             (let ((rhss_1
-                                                                    rhss_0))
+                                                             (let ((rhs_1
+                                                                    rhs_0))
                                                                (values
-                                                                rhss_1
+                                                                rhs_1
                                                                 bodys_0)))))))
                                                    (case-lambda
-                                                    ((rhss_0 bodys_0)
-                                                     (list*
-                                                      'begin
-                                                      (let ((app_0
-                                                             (schemify-body_0
-                                                              rhss_0
-                                                              'fresh)))
-                                                        (qq-append
-                                                         app_0
-                                                         (schemify-body_0
-                                                          bodys_0
-                                                          wcm-state_2)))))
+                                                    ((rhs_0 bodys_0)
+                                                     (let ((app_0
+                                                            (schemify_0
+                                                             rhs_0
+                                                             'fresh)))
+                                                       (list*
+                                                        'begin
+                                                        app_0
+                                                        (schemify-body_0
+                                                         bodys_0
+                                                         wcm-state_2))))
                                                     (args
                                                      (raise-binding-result-arity-error
                                                       2
