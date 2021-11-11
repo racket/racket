@@ -52,6 +52,7 @@ static Scheme_Object *can_write_atomic(int argc, Scheme_Object *argv[]);
 static Scheme_Object *can_provide_progress_evt(int argc, Scheme_Object *argv[]);
 static Scheme_Object *can_write_special(int argc, Scheme_Object *argv[]);
 static Scheme_Object *peek_char (int, Scheme_Object *[]);
+static Scheme_Object *peek_char_with_length (int, Scheme_Object *[]);
 static Scheme_Object *peek_char_spec (int, Scheme_Object *[]);
 static Scheme_Object *peek_byte (int, Scheme_Object *[]);
 static Scheme_Object *peek_byte_spec (int, Scheme_Object *[]);
@@ -281,6 +282,7 @@ scheme_init_port_fun(Scheme_Startup_Env *env)
   ADD_NONCM_PRIM("write-special",                  scheme_write_special,           1, 2, env);
   ADD_NONCM_PRIM("write-special-avail*",           scheme_write_special_nonblock,  1, 2, env);
   ADD_NONCM_PRIM("peek-char",                      peek_char,                      0, 2, env);
+  ADD_NONCM_PRIM("peek-char/length",               peek_char_with_length,          0, 2, env);
   ADD_PRIM_W_ARITY2("peek-char-or-special",           peek_char_spec,              0, 4, 0, -1, env);
   ADD_NONCM_PRIM("peek-byte",                      peek_byte,                      0, 2, env);
   ADD_PRIM_W_ARITY2("peek-byte-or-special",           peek_byte_spec,              0, 5, 0, -1, env);
@@ -3066,6 +3068,39 @@ static Scheme_Object *
 peek_char (int argc, Scheme_Object *argv[])
 {
   return do_read_char("peek-char", argc, argv, 1, 0, 0);
+}
+
+static Scheme_Object *
+peek_char_with_length (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *port, *skip;
+  Scheme_Object *vals[2];
+  int ch, byte_len;
+
+  if (argc && !SCHEME_INPUT_PORTP(argv[0]))
+    scheme_wrong_contract("peek_char_with_length", "input-port?", 0, argc, argv);
+
+  if (argc)
+    port = argv[0];
+  else
+    port = CURRENT_INPUT_PORT(scheme_current_config());
+
+  if (argc > 1) {
+    skip = argv[1];
+    if (!(SCHEME_INTP(skip) && (SCHEME_INT_VAL(skip) >= 0))
+	&& !(SCHEME_BIGNUMP(skip) && SCHEME_BIGPOS(skip))) {
+      scheme_wrong_contract("peek_char_with_length", "exact-nonnegative-integer?", 1, argc, argv);
+      return NULL;
+    }
+  } else {
+    skip = NULL;
+  }
+
+  ch = scheme_peekc_skip_length(port, skip, &byte_len);
+  vals[0] = (ch == EOF) ? scheme_eof : _scheme_make_char(ch);
+  vals[1] = scheme_make_integer(byte_len);
+
+  return scheme_values(2, vals);
 }
 
 static Scheme_Object *

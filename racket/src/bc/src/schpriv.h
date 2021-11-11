@@ -3707,6 +3707,7 @@ int scheme_is_user_port(Scheme_Object *port);
 
 int scheme_byte_ready_or_user_port_ready(Scheme_Object *p, Scheme_Schedule_Info *sinfo);
 
+int scheme_peekc_skip_length(Scheme_Object *port, Scheme_Object *skip, int *byte_len);
 int scheme_pipe_char_count(Scheme_Object *p);
 Scheme_Object *scheme_port_name(Scheme_Object *p);
 intptr_t scheme_port_closed_p (Scheme_Object *port);

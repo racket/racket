@@ -2355,7 +2355,7 @@ scheme_peek_byte_special_ok_skip(Scheme_Object *port, Scheme_Object *skip, Schem
 }
 
 static int do_peekc_skip(Scheme_Object *port, Scheme_Object *skip, 
-			 int only_avail, int *unavail)
+			 int only_avail, int *unavail, int *byte_len)
 {
   char s[MAX_UTF8_CHAR_BYTES];
   unsigned int r[1];
@@ -2364,6 +2364,9 @@ static int do_peekc_skip(Scheme_Object *port, Scheme_Object *skip,
 
   if (unavail)
     *unavail = 0;
+
+  if (byte_len)
+    *byte_len = 0;
 
   while(1) {
     if (delta) {
@@ -2390,14 +2393,23 @@ static int do_peekc_skip(Scheme_Object *port, Scheme_Object *skip,
 	return v;
       else {
 	/* This counts as a decoding error, so return 0xFFFD */
+	if (byte_len)
+	  *byte_len = 1;
+
 	return 0xFFFD;
       }
     } else {
+      if (byte_len)
+	(*byte_len)++;
+
       v = scheme_utf8_decode_prefix((const unsigned char *)s, delta + 1, r, 0);
       if (v > 0)
 	return r[0];
       else if (v == -2) {
 	/* -2 => decoding error */
+	if (byte_len)
+	  *byte_len = 1;
+
 	return 0xFFFD;
       } else if (v == -1) {
 	/* In middle of sequence - keep getting bytes. */
@@ -2409,7 +2421,12 @@ static int do_peekc_skip(Scheme_Object *port, Scheme_Object *skip,
 
 int scheme_peekc_skip(Scheme_Object *port, Scheme_Object *skip)
 {
-  return do_peekc_skip(port, skip, 0, NULL);
+  return do_peekc_skip(port, skip, 0, NULL, NULL);
+}
+
+int scheme_peekc_skip_length(Scheme_Object *port, Scheme_Object *skip, int *byte_len)
+{
+  return do_peekc_skip(port, skip, 0, NULL, byte_len);
 }
 
 int scheme_peekc(Scheme_Object *port)
@@ -2640,7 +2657,7 @@ scheme_char_ready (Scheme_Object *port)
   if (!scheme_byte_ready(port))
     return 0;
 
-  do_peekc_skip(port, scheme_make_integer(0), 2, &unavail);
+  do_peekc_skip(port, scheme_make_integer(0), 2, &unavail, NULL);
   
   return !unavail;
 }
