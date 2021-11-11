@@ -2702,9 +2702,12 @@
   ;
   (test #t = (stat-ref 'size) (string-length TEST-CONTENT))
   (test #t = (stat-ref 'hardlink-count) 1)
-  (define (positive-fixnum? n) (and (positive-integer? n) (fixnum? n)))
-  (test #t positive-fixnum? (stat-ref 'inode))
-  (test #t positive-fixnum? (stat-ref 'device-id))
+  (define (positive-fixnum-key? key)
+    (define n (stat-ref key))
+    (and (positive-integer? n) (fixnum? n)))
+  (test #t positive-fixnum-key? 'inode)
+  (unless (eq? (system-type) 'windows)
+    (test #t positive-fixnum-key? 'device-id))
   (define stat-mode (stat-ref 'mode))
   (test #t = (bitwise-and stat-mode file-type-bits) regular-file-type-bits)
   (test #f = (bitwise-and stat-mode file-type-bits) directory-type-bits)
@@ -2718,14 +2721,14 @@
   (unless (eq? (system-type) 'windows)
     ; Check user and group id. Assuming the tests don't run as root, this is
     ; probably all we can sensibly do.
-    (test #t positive-fixnum? (stat-ref 'user-id))
-    (test #t positive-fixnum? (stat-ref 'group-id)))
+    (test #t positive-fixnum-key? 'user-id)
+    (test #t positive-fixnum-key? 'group-id))
   (test #t = (stat-ref 'device-id-for-special-file) 0)
   (unless (eq? (system-type) 'windows)
-    (test #t positive-fixnum? (stat-ref 'block-size))
+    (test #t positive-fixnum-key? 'block-size)
     ; On my system, I had expected 1 block, but it's actually 8. This number
     ; is supported by the `stat` command line tool.
-    (test #t positive-fixnum? (stat-ref 'block-count)))
+    (test #t positive-fixnum-key? 'block-count))
   (test #t >= (stat-ref 'access-time-seconds)
               (stat-ref 'modify-time-seconds))
   (test #t >= (stat-ref 'access-time-nanoseconds)
