@@ -613,6 +613,7 @@
   [peek-bytes-avail!* (known-procedure/single-valued 124)]
   [peek-bytes-avail!/enable-break (known-procedure/single-valued 124)]
   [peek-char (known-procedure/single-valued 7)]
+  [peek-char/length (known-procedure/no-prompt/multi 7)]
   [peek-char-or-special (known-procedure/single-valued 31)]
   [peek-string (known-procedure/single-valued 12)]
   [peek-string! (known-procedure/single-valued 60)]

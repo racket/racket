@@ -168,6 +168,7 @@
                  peek-bytes-avail!/enable-break)
                 (1/peek-char peek-char)
                 (1/peek-char-or-special peek-char-or-special)
+                (1/peek-char/length peek-char/length)
                 (1/peek-string peek-string)
                 (1/peek-string! peek-string!)
                 (1/pipe-content-length pipe-content-length)
@@ -12867,7 +12868,7 @@
                    (values 0 0)
                    (call-with-values
                     (lambda ()
-                      (let ((temp95_0 (+ start16_0 amt_0)))
+                      (let ((temp97_0 (+ start16_0 amt_0)))
                         (utf-8-decode!.1
                          'state
                          '#\xfffd
@@ -12877,7 +12878,7 @@
                          v_0
                          str15_0
                          start16_0
-                         temp95_0)))
+                         temp97_0)))
                     (case-lambda
                      ((used-bytes_0 got-chars_0 state_0)
                       (let ((actually-used-bytes_0
@@ -12923,32 +12924,32 @@
                                        (lambda ()
                                          (if (eq? v_1 0)
                                            (values 0 0 state_1)
-                                           (let ((temp108_0
+                                           (let ((temp110_0
                                                   (if (integer? v_1) v_1 0)))
-                                             (let ((temp111_0
+                                             (let ((temp113_0
                                                     (+ start_0 amt_1)))
-                                               (let ((temp113_0
+                                               (let ((temp115_0
                                                       (if (utf-8-state?
                                                            state_1)
                                                         state_1
                                                         #f)))
-                                                 (let ((temp114_0
+                                                 (let ((temp116_0
                                                         (if (integer? v_1)
                                                           'state
                                                           'error)))
-                                                   (let ((temp113_1 temp113_0)
-                                                         (temp111_1 temp111_0)
-                                                         (temp108_1 temp108_0))
+                                                   (let ((temp115_1 temp115_0)
+                                                         (temp113_1 temp113_0)
+                                                         (temp110_1 temp110_0))
                                                      (utf-8-decode!.1
-                                                      temp114_0
+                                                      temp116_0
                                                       '#\xfffd
-                                                      temp113_1
+                                                      temp115_1
                                                       bstr_0
                                                       0
-                                                      temp108_1
+                                                      temp110_1
                                                       str15_0
                                                       start_0
-                                                      temp111_1))))))))
+                                                      temp113_1))))))))
                                        (case-lambda
                                         ((used-bytes_1 got-chars_1 new-state_0)
                                          (if (zero? got-chars_1)
@@ -13091,23 +13092,23 @@
                       (begin
                         (call-with-values
                          (lambda ()
-                           (let ((temp126_0 (+ start28_0 got_0)))
-                             (let ((temp130_0
+                           (let ((temp128_0 (+ start28_0 got_0)))
+                             (let ((temp132_0
                                     (if just-peek?19_0
                                       (+ skip20_0 total-used-bytes_0)
                                       0)))
-                               (let ((temp126_1 temp126_0))
+                               (let ((temp128_1 temp128_0))
                                  (read-some-chars!.1
                                   0
                                   just-peek?19_0
                                   #t
-                                  temp130_0
+                                  temp132_0
                                   #f
                                   #f
                                   who25_0
                                   in26_0
                                   str27_0
-                                  temp126_1
+                                  temp128_1
                                   end29_0)))))
                          (case-lambda
                           ((v_1 used-bytes_1)
@@ -13351,61 +13352,123 @@
                      1
                      skip-k61_0)))
                (if (eq? v_0 1) (string-ref bstr_0 0) v_0)))))))))
-(define 1/peek-char
-  (let ((peek-char_0
+(define 1/peek-char/length
+  (let ((peek-char/length_0
          (|#%name|
-          peek-char
+          peek-char/length
           (lambda (in63_0 skip-k64_0)
             (begin
               (let ((in_0
                      (if (eq? in63_0 unsafe-undefined)
                        (1/current-input-port)
                        in63_0)))
-                (let ((in_1
-                       (->core-input-port.1 unsafe-undefined in_0 'peek-char)))
+                (let ((in*_0
+                       (->core-input-port.1
+                        unsafe-undefined
+                        in_0
+                        'peek-char/length)))
                   (begin
                     (if (exact-nonnegative-integer? skip-k64_0)
                       (void)
                       (raise-argument-error
-                       'peek-char
+                       'peek-char/length
                        "exact-nonnegative-integer?"
                        skip-k64_0))
-                    (peek-a-char.1 #f 'peek-char in_1 skip-k64_0)))))))))
+                    (let ((b_0
+                           (peek-a-byte.1
+                            #f
+                            'peek-char/length
+                            in*_0
+                            skip-k64_0)))
+                      (if (eof-object? b_0)
+                        (values b_0 0)
+                        (if (< b_0 128)
+                          (values (integer->char b_0) 1)
+                          (let ((str_0 (make-string 1)))
+                            (call-with-values
+                             (lambda ()
+                               (read-some-chars!.1
+                                0
+                                #t
+                                #f
+                                skip-k64_0
+                                #f
+                                #f
+                                'peek-char/length
+                                in*_0
+                                str_0
+                                0
+                                1))
+                             (case-lambda
+                              ((n-char_0 n-byte_0)
+                               (if (eof-object? n-char_0)
+                                 (values n-char_0 n-byte_0)
+                                 (values (string-ref str_0 0) n-byte_0)))
+                              (args
+                               (raise-binding-result-arity-error
+                                2
+                                args))))))))))))))))
     (|#%name|
-     peek-char
+     peek-char/length
      (case-lambda
-      (() (begin (peek-char_0 unsafe-undefined 0)))
-      ((in_0 skip-k64_0) (peek-char_0 in_0 skip-k64_0))
-      ((in63_0) (peek-char_0 in63_0 0))))))
-(define 1/peek-string
-  (let ((peek-string_0
+      (() (begin (peek-char/length_0 unsafe-undefined 0)))
+      ((in_0 skip-k64_0) (peek-char/length_0 in_0 skip-k64_0))
+      ((in63_0) (peek-char/length_0 in63_0 0))))))
+(define 1/peek-char
+  (let ((peek-char_0
          (|#%name|
-          peek-string
-          (lambda (amt66_0 skip-k67_0 in65_0)
+          peek-char
+          (lambda (in65_0 skip-k66_0)
             (begin
               (let ((in_0
                      (if (eq? in65_0 unsafe-undefined)
                        (1/current-input-port)
                        in65_0)))
+                (let ((in_1
+                       (->core-input-port.1 unsafe-undefined in_0 'peek-char)))
+                  (begin
+                    (if (exact-nonnegative-integer? skip-k66_0)
+                      (void)
+                      (raise-argument-error
+                       'peek-char
+                       "exact-nonnegative-integer?"
+                       skip-k66_0))
+                    (peek-a-char.1 #f 'peek-char in_1 skip-k66_0)))))))))
+    (|#%name|
+     peek-char
+     (case-lambda
+      (() (begin (peek-char_0 unsafe-undefined 0)))
+      ((in_0 skip-k66_0) (peek-char_0 in_0 skip-k66_0))
+      ((in65_0) (peek-char_0 in65_0 0))))))
+(define 1/peek-string
+  (let ((peek-string_0
+         (|#%name|
+          peek-string
+          (lambda (amt68_0 skip-k69_0 in67_0)
+            (begin
+              (let ((in_0
+                     (if (eq? in67_0 unsafe-undefined)
+                       (1/current-input-port)
+                       in67_0)))
                 (begin
-                  (if (exact-nonnegative-integer? amt66_0)
+                  (if (exact-nonnegative-integer? amt68_0)
                     (void)
                     (raise-argument-error
                      'peek-string
                      "exact-nonnegative-integer?"
-                     amt66_0))
-                  (if (exact-nonnegative-integer? skip-k67_0)
+                     amt68_0))
+                  (if (exact-nonnegative-integer? skip-k69_0)
                     (void)
                     (raise-argument-error
                      'peek-string
                      "exact-nonnegative-integer?"
-                     skip-k67_0))
+                     skip-k69_0))
                   (if (1/input-port? in_0)
                     (void)
                     (raise-argument-error 'peek-string "input-port?" in_0))
                   (maybe-flush-stdout in_0)
                   (let ((in_1 (->core-input-port.1 unsafe-undefined in_0 #f)))
-                    (let ((bstr_0 (make-string amt66_0)))
+                    (let ((bstr_0 (make-string amt68_0)))
                       (let ((v_0
                              (do-peek-string!.1
                               #f
@@ -13413,50 +13476,50 @@
                               in_1
                               bstr_0
                               0
-                              amt66_0
-                              skip-k67_0)))
+                              amt68_0
+                              skip-k69_0)))
                         (if (exact-integer? v_0)
-                          (if (= v_0 amt66_0) bstr_0 (substring bstr_0 0 v_0))
+                          (if (= v_0 amt68_0) bstr_0 (substring bstr_0 0 v_0))
                           v_0)))))))))))
     (|#%name|
      peek-string
      (case-lambda
       ((amt_0 skip-k_0)
        (begin (peek-string_0 amt_0 skip-k_0 unsafe-undefined)))
-      ((amt_0 skip-k_0 in65_0) (peek-string_0 amt_0 skip-k_0 in65_0))))))
+      ((amt_0 skip-k_0 in67_0) (peek-string_0 amt_0 skip-k_0 in67_0))))))
 (define 1/peek-string!
   (let ((peek-string!_0
          (|#%name|
           peek-string!
-          (lambda (str71_0 skip-k72_0 in68_0 start-pos69_0 end-pos70_0)
+          (lambda (str73_0 skip-k74_0 in70_0 start-pos71_0 end-pos72_0)
             (begin
               (let ((in_0
-                     (if (eq? in68_0 unsafe-undefined)
+                     (if (eq? in70_0 unsafe-undefined)
                        (1/current-input-port)
-                       in68_0)))
+                       in70_0)))
                 (let ((end-pos_0
-                       (if (eq? end-pos70_0 unsafe-undefined)
-                         (if (string? str71_0) (string-length str71_0) #f)
-                         end-pos70_0)))
+                       (if (eq? end-pos72_0 unsafe-undefined)
+                         (if (string? str73_0) (string-length str73_0) #f)
+                         end-pos72_0)))
                   (begin
-                    (if (string? str71_0)
+                    (if (string? str73_0)
                       (void)
-                      (raise-argument-error 'peek-string! "string?" str71_0))
-                    (if (exact-nonnegative-integer? skip-k72_0)
+                      (raise-argument-error 'peek-string! "string?" str73_0))
+                    (if (exact-nonnegative-integer? skip-k74_0)
                       (void)
                       (raise-argument-error
                        'peek-string!
                        "exact-nonnegative-integer?"
-                       skip-k72_0))
+                       skip-k74_0))
                     (if (1/input-port? in_0)
                       (void)
                       (raise-argument-error 'peek-string! "input-port?" in_0))
-                    (if (exact-nonnegative-integer? start-pos69_0)
+                    (if (exact-nonnegative-integer? start-pos71_0)
                       (void)
                       (raise-argument-error
                        'peek-string!
                        "exact-nonnegative-integer?"
-                       start-pos69_0))
+                       start-pos71_0))
                     (if (exact-nonnegative-integer? end-pos_0)
                       (void)
                       (raise-argument-error
@@ -13465,33 +13528,33 @@
                        end-pos_0))
                     (check-range$1
                      'peek-string!
-                     start-pos69_0
+                     start-pos71_0
                      end-pos_0
-                     (string-length str71_0)
-                     str71_0)
+                     (string-length str73_0)
+                     str73_0)
                     (maybe-flush-stdout in_0)
                     (let ((in_1
                            (->core-input-port.1 unsafe-undefined in_0 #f)))
                       (do-peek-string!.1
                        #f
                        'peek-string!
-                       str71_0
+                       str73_0
                        in_1
-                       start-pos69_0
+                       start-pos71_0
                        end-pos_0
-                       skip-k72_0))))))))))
+                       skip-k74_0))))))))))
     (|#%name|
      peek-string!
      (case-lambda
       ((str_0 skip-k_0)
        (begin
          (peek-string!_0 str_0 skip-k_0 unsafe-undefined 0 unsafe-undefined)))
-      ((str_0 skip-k_0 in_0 start-pos_0 end-pos70_0)
-       (peek-string!_0 str_0 skip-k_0 in_0 start-pos_0 end-pos70_0))
-      ((str_0 skip-k_0 in_0 start-pos69_0)
-       (peek-string!_0 str_0 skip-k_0 in_0 start-pos69_0 unsafe-undefined))
-      ((str_0 skip-k_0 in68_0)
-       (peek-string!_0 str_0 skip-k_0 in68_0 0 unsafe-undefined))))))
+      ((str_0 skip-k_0 in_0 start-pos_0 end-pos72_0)
+       (peek-string!_0 str_0 skip-k_0 in_0 start-pos_0 end-pos72_0))
+      ((str_0 skip-k_0 in_0 start-pos71_0)
+       (peek-string!_0 str_0 skip-k_0 in_0 start-pos71_0 unsafe-undefined))
+      ((str_0 skip-k_0 in70_0)
+       (peek-string!_0 str_0 skip-k_0 in70_0 0 unsafe-undefined))))))
 (define 1/read-byte-or-special
   (let ((read-byte-or-special_0
          (|#%name|

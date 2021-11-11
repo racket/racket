@@ -64,6 +64,7 @@
          read-string!
          
          peek-char
+         peek-char/length
          peek-string
          peek-string!
 

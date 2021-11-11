@@ -18,6 +18,7 @@
          read-string!
          
          peek-char
+         peek-char/length
          peek-string
          peek-string!
 
@@ -296,6 +297,28 @@
      (if (eq? v 1)
          (string-ref bstr 0)
          v)]))
+
+;; Returns (values (or eof-object? character?) fixnum?)
+;; where the fixnum is the number of bytes that would be consumed
+;; from the port if the first value were read.
+(define/who (peek-char/length [in (current-input-port)] [skip-k 0])
+  (define in* (->core-input-port in who))
+  (check who exact-nonnegative-integer? skip-k)
+
+  (define b (peek-a-byte who in* skip-k #:special-ok? #f))
+
+  (cond
+    [(eof-object? b) (values b 0)]
+    [(< b 128)       (values (integer->char b) 1)]
+    [else
+     (define str (make-string 1))
+     (define-values (n-char n-byte)
+       (read-some-chars! who in* str 0 1 #:just-peek? #t #:skip skip-k))
+
+     (cond
+       [(eof-object? n-char) (values n-char n-byte)]
+       [else                 (values (string-ref str 0) n-byte)])]))
+
 
 (define/who (peek-char [in (current-input-port)] [skip-k 0])
   (let ([in (->core-input-port in who)])
