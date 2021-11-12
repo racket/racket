@@ -256,7 +256,7 @@
             (if i
                 (loop (hash-remove ht (hash-iterate-key ht i)))
                 ht))))]
-   [else (raise-argument-error 'hash-clear! "(and/c hash? immutable?)" ht)]))
+   [else (raise-argument-error 'hash-clear "(and/c hash? immutable?)" ht)]))
 
 (define/who (unsafe-hash-seal! ht)
   (check who eq-mutable-hash? ht)
