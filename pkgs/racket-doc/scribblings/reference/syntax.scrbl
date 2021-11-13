@@ -1278,7 +1278,8 @@ multiple symbolic names.}
                                  (#,(racketidfont "for-syntax") raw-require-spec ...)
                                  (#,(racketidfont "for-template") raw-require-spec ...)
                                  (#,(racketidfont "for-label") raw-require-spec ...)
-                                 (#,(racketidfont "just-meta") phase-level raw-require-spec ...)]
+                                 (#,(racketidfont "just-meta") phase-level raw-require-spec ...)
+                                 (#,(racketidfont "portal") portal-id content)]
                [phase-level exact-integer
                             #f]
                [phaseless-spec spaceless-spec
@@ -1327,9 +1328,13 @@ formalized in the grammar above:
  @item{a @racketidfont{for-space} form cannot appear within a
        @racketidfont{for-space} form.}
 
+ @item{a @racketidfont{portal} form cannot appear within a
+       @racketidfont{just-meta} form.}
+
 ]
 
-Each @racket[raw-require-spec] corresponds to the obvious
+Except for the @racketidfont{portal} form, each
+@racket[raw-require-spec] corresponds to the obvious
 @racket[_require-spec], but the @racketidfont{rename} sub-form has the
 identifiers in reverse order compared to @racket[rename-in].
 
@@ -1345,8 +1350,14 @@ constructed expressions. They also appear naturally as arguments to
 functions such as @racket[namespace-require], with otherwise take a
 quoted @racket[raw-module-spec].
 
+The @racketidfont{portal} form provides a way to define @tech{portal
+syntax} at any phase level. A @racket[(#,(racketidfont "portal")
+portal-id content)], defines @racket[portal-id] to portal syntax with
+@racket[content] effectively quoted to serve as its content.
+
 @history[#:changed "8.2.0.3" @elem{Added @racketidfont{for-space}
-                                   and @racketidfont{just-space}.}]}
+                                   and @racketidfont{just-space}.}
+         #:changed "8.3.0.8" @elem{Added @racketidfont{portal}.}]}
 
 
 @defform/subs[(#%provide raw-provide-spec ...)

@@ -1678,3 +1678,65 @@
        (#%require 'fish-kettle)
        ,(in-space 'soup 'kettle ns #:introduce? #f)))
    "ambiguous"))
+
+;; ----------------------------------------
+;; Constant syntax
+
+(eval-module-declaration
+ '(module bread-and-butter '#%kernel
+    (#%require (for-syntax '#%kernel))
+    (#%provide bread butter jam has-jam)
+    (define-syntaxes (has-jam) (make-portal-syntax (quote-syntax jam)))
+    (define-values (bread) 'Bread)
+    (define-values (butter) 'Butter)
+    (define-values (jam) 'Jam)))
+
+(eval-module-declaration
+ '(module constant-syntax '#%kernel
+    (#%require 'bread-and-butter
+               (portal bread-and-butter (bread butter))
+               (for-meta 5 (portal bread-and-butter (bread butter))))
+    (#%provide result result5 result-j0 result-j bread-and-butter)
+    (define-values (result) (identifier-binding-portal-syntax
+                             (quote-syntax bread-and-butter)))
+    (define-values (result5) (identifier-binding-portal-syntax
+                              (quote-syntax bread-and-butter)
+                              5))
+    (define-values (result-j) jam)
+    (define-values (result-j0) (identifier-binding-portal-syntax
+                                (quote-syntax has-jam)))))
+
+(define bread-and-butter1 (parameterize ([current-namespace demo-ns])
+                            (dynamic-require ''constant-syntax 'result)))
+bread-and-butter1
+(identifier-binding (car (syntax-e bread-and-butter1)))
+(identifier-binding (cadr (syntax-e bread-and-butter1)))
+
+(define bread-and-butter5 (parameterize ([current-namespace demo-ns])
+                            (dynamic-require ''constant-syntax 'result5)))
+bread-and-butter5
+(identifier-binding (car (syntax-e bread-and-butter5)))
+(identifier-binding (cadr (syntax-e bread-and-butter5)))
+
+(parameterize ([current-namespace demo-ns])
+  (dynamic-require ''constant-syntax 'result-j))
+
+(parameterize ([current-namespace demo-ns])
+  (dynamic-require ''constant-syntax 'result-j0))
+
+(eval-module-declaration
+ '(module import-constant-syntax '#%kernel
+    (#%require 'constant-syntax)
+    (#%provide result)
+    (define-values (result) (identifier-binding-portal-syntax
+                             (quote-syntax bread-and-butter)))))
+
+(define bread-and-butter2 (parameterize ([current-namespace demo-ns])
+                            (dynamic-require ''import-constant-syntax 'result)))
+bread-and-butter2
+(identifier-binding (car (syntax-e bread-and-butter2)))
+(identifier-binding (cadr (syntax-e bread-and-butter2)))
+
+(eval-expression '(#%require (portal doorway1 hallway1)))
+(parameterize ([current-namespace demo-ns])
+  (eval-expression '(identifier-binding-portal-syntax (quote-syntax doorway1))))

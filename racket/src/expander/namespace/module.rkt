@@ -7,6 +7,7 @@
          "../common/module-path.rkt"
          "../compile/module-use.rkt"
          "../expand/root-expand-context.rkt"
+         "../expand/portal-syntax.rkt"
          "../host/linklet.rkt"
          "namespace.rkt"
          "provided.rkt"
@@ -51,6 +52,8 @@
          namespace-visit-available-modules!
          namespace-run-available-modules!
 
+         namespace-module-get-portal-syntax-lookup
+
          namespace-module-use->module+linklet-instances)
 
 (module+ for-module-reflect
@@ -77,7 +80,8 @@
                 inspector       ; declaration-time inspector
                 submodule-names ; associated submodules (i.e, when declared together)
                 supermodule-name ; associated supermodule (i.e, when declared together)
-                get-all-variables) ; for `module->indirect-exports`
+                get-all-variables ; for `module->indirect-exports`
+                get-portal-syntax-callback) ; for `identifier-binding-portal-syntax`
   #:authentic)
 
 ;; [*] Beware that tables in `provides` may map non-interned symbols
@@ -115,7 +119,8 @@
                      #:no-protected? [no-protected? #f]
                      #:submodule-names [submodule-names null]
                      #:supermodule-name [supermodule-name #f]
-                     #:get-all-variables [get-all-variables (lambda () null)]) ; ok to omit exported
+                     #:get-all-variables [get-all-variables (lambda () null)] ; ok to omit exported
+                     #:get-portal-syntax-callback [get-portal-syntax-callback (lambda (data-box phase sym) #f)])
   (module source-name
           self
           (fresh-requires requires)
@@ -134,7 +139,8 @@
           (current-code-inspector)
           submodule-names
           supermodule-name
-          get-all-variables))
+          get-all-variables
+          get-portal-syntax-callback))
 
 (struct module-instance (namespace
                          module                        ; can be #f for the module being expanded
@@ -142,17 +148,19 @@
                          phase-level-to-state          ; phase-level -> #f, 'available, or 'started
                          [made-available? #:mutable]   ; no #f in `phase-level-to-state`?
                          [attached? #:mutable]         ; whether the instance has been attached elsewhere
-                         data-box)                     ; for use by module implementation
+                         data-box                      ; for use by module implementation
+                         portal-syntaxes)              ; for a module being expanded 
   #:authentic)
 
-(define (make-module-instance m-ns m)
+(define (make-module-instance m-ns m portal-syntaxes)
   (module-instance m-ns           ; namespace
                    m              ; module
                    #f             ; shifted-requires (not yet computed)
                    (make-small-hasheqv) ; phase-level-to-state
                    #f             ; made-available?
                    #f             ; attached?
-                   (box #f)))     ; data-box
+                   (box #f)       ; data-box
+                   portal-syntaxes))
 
 ;; ----------------------------------------
 
@@ -160,7 +168,8 @@
 (define (make-module-namespace ns
                                #:mpi name-mpi
                                #:root-expand-context root-expand-ctx
-                               #:for-submodule? for-submodule?)
+                               #:for-submodule? for-submodule?
+                               #:portal-syntaxes portal-syntaxes)
   (define phase 0) ; always start at 0 when compiling a module
   (define name (module-path-index-resolve name-mpi))
   (define m-ns
@@ -183,7 +192,7 @@
   (small-hash-set! (namespace-phase-to-namespace m-ns) phase m-ns)
   (define at-phase (make-hasheq))
   (hash-set! (namespace-module-instances m-ns) phase at-phase)
-  (hash-set! at-phase name (make-module-instance m-ns #f))
+  (hash-set! at-phase name (make-module-instance m-ns #f portal-syntaxes))
   m-ns)
 
 ;; ----------------------------------------
@@ -222,7 +231,7 @@
     (define run? (eq? 'started (small-hash-ref states phase #f)))
 
     (define at-phase (hash-ref (namespace-module-instances ns) phase))
-    (hash-set! at-phase mod-name (make-module-instance m-ns m))
+    (hash-set! at-phase mod-name (make-module-instance m-ns m #f))
 
     (set-module-instance-shifted-requires! prior-mi #f)
 
@@ -295,7 +304,7 @@
                                                             (make-small-hasheqv))]
                             [declaration-inspector (module-inspector m)]
                             [inspector (namespace-inspector existing-m-ns)]))
-  (define mi (make-module-instance m-ns m))
+  (define mi (make-module-instance m-ns m #f))
   (set-module-instance-attached?! mi #t)
   (cond
    [(module-cross-phase-persistent? m)
@@ -337,7 +346,7 @@
                             [declaration-inspector (module-inspector m)]
                             [inspector (make-inspector (module-inspector m))]))
   (small-hash-set! (namespace-phase-to-namespace m-ns) 0-phase m-ns)
-  (define mi (make-module-instance m-ns m))
+  (define mi (make-module-instance m-ns m #f))
   (if (module-cross-phase-persistent? m)
       (hash-set! (namespace-module-instances ns) name mi)
       (let ([at-phase (or (hash-ref (namespace-module-instances ns) 0-phase #f)
@@ -413,6 +422,40 @@
 
 (define (namespace-module-make-available! ns mpi instance-phase #:visit-phase [visit-phase (namespace-phase ns)])
   (namespace-module-instantiate! ns mpi instance-phase #:run-phase (add1 visit-phase) #:skip-run? #t))
+
+(define (namespace-module-get-portal-syntax-lookup ns mpi phase-shift)
+  (define name (module-path-index-resolve mpi #t))
+  ;; Get or create a namespace for the module+phase combination:
+  (define ready-mi (namespace->module-instance ns name phase-shift))
+  (define (try-namespace-lookup ns phase sym)
+    (define v (namespace-get-transformer ns phase sym (lambda () #f)))
+    (and (portal-syntax? v)
+         (portal-syntax-content v)))
+  (cond
+    [(and ready-mi (module-instance-portal-syntaxes ready-mi))
+     => (lambda (portal-syntaxes)
+          (lambda (phase sym)
+            (hash-ref (hash-ref portal-syntaxes phase #hasheqv()) sym #f)))]
+    [(top-level-module-path-index? mpi)
+     (lambda (phase sym)
+       (try-namespace-lookup ns (phase+ phase phase-shift) sym))]
+    [else
+     (define mi (or ready-mi
+                    (let ([m (namespace->module ns name)])
+                      (unless m (raise-unknown-module-error 'identifier-binding-portal-syntax name))
+                      (namespace-create-module-instance! ns name phase-shift m mpi))))
+     (define m-ns (module-instance-namespace mi))
+     (define bulk-binding-registry (namespace-bulk-binding-registry m-ns))
+     (define m (module-instance-module mi))
+     (define insp (module-inspector m))
+     (define data-box (module-instance-data-box mi))
+     (define prep (module-prepare-instance m))
+     (prep data-box m-ns phase-shift mpi bulk-binding-registry insp)
+     (define get (module-get-portal-syntax-callback m))
+     (lambda (phase sym)
+       (or (get data-box phase sym)
+           ;; in case a top-level definition happened in the module's namespace:
+           (try-namespace-lookup m-ns phase sym)))]))
 
 ;; The `instance-phase` corresponds to the phase shift for the module
 ;; instances. The module may have content at different phase levels,

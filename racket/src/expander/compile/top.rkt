@@ -149,6 +149,7 @@
                        phase-to-link-module-uses
                        (current-code-inspector)
                        phase-to-link-extra-inspectorss
+                       #hasheqv()
                        (mpis-as-vector mpis)
                        (syntax-literals-as-vector syntax-literals)
                        null

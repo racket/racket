@@ -1738,4 +1738,40 @@ the value a pair of such values, and so on.}
 
 @; ----------------------------------------------------------------------
 
+@section[#:tag "portal-syntax"]{Portal Syntax Bindings}
+
+An identifier bound to @deftech{portal syntax} value created by
+@racket[make-portal-syntax] does not act as a transformer, but it
+encapsulates a syntax object that can be accessed in inspected even
+without instantiating the enclosing module. Portal syntax is also bound
+using the @racketidfont{portal} form of @racket[#%require].
+
+@defproc[(portal-syntax? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is a value created by
+@racket[make-portal-syntax], @racket[#f] otherwise.
+
+@history[#:added "8.3.0.8"]}
+
+@defproc[(make-portal-syntax [stx syntax?])
+         portal-syntax?]{
+
+Creates @tech{portal syntax} with the content @racket[stx].
+
+When @racket[define-syntax] or @racket[define-syntaxes] binds an
+identifier to portal syntax immediately in a module body, then in
+addition to being accessible via @racket[syntax-local-value] while
+expanding, the portal syntax content is accessible via
+@racket[identifier-binding-portal-syntax].
+
+@history[#:added "8.3.0.8"]}
+
+@defproc[(portal-syntax-content [portal portal-syntax?])
+         syntax?]{
+
+Returns the content of @tech{portal syntax} created with
+@racket[make-portal-syntax].
+
+@history[#:added "8.3.0.8"]}
+
 @close-eval[stx-eval]

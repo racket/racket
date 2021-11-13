@@ -10,10 +10,12 @@
          (except-in "../syntax/binding.rkt"
                     free-identifier=?
                     identifier-binding
-                    identifier-binding-symbol)
+                    identifier-binding-symbol
+                    identifier-distinct-binding)
          "../namespace/core.rkt"
          "../expand/set-bang-trans.rkt"
          "../expand/rename-trans.rkt"
+         "../expand/portal-syntax.rkt"
          "../expand/liberal-def-ctx.rkt"
          "../expand/syntax-local.rkt"
          "../expand/definition-context.rkt"
@@ -67,6 +69,8 @@
                       identifier-template-binding
                       identifier-label-binding
                       identifier-binding-symbol
+                      identifier-distinct-binding
+                      (protect identifier-binding-portal-syntax)
                       identifier-prune-lexical-context
                       syntax-debug-info
                       syntax-track-origin
@@ -191,6 +195,10 @@
                       prop:rename-transformer
                       make-rename-transformer
                       rename-transformer-target
+
+                      portal-syntax?
+                      make-portal-syntax
+                      portal-syntax-content
 
                       prop:liberal-define-context
                       liberal-define-context?

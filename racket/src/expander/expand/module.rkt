@@ -33,6 +33,7 @@
          "prepare.rkt"
          "log.rkt"
          "syntax-id-error.rkt"
+         "portal-syntax.rkt"
          "../compile/main.rkt"
          "../eval/top.rkt"
          "../eval/module.rkt"
@@ -146,12 +147,16 @@
    ;; A frame-id is used to determine when use-site scopes are needed
    (define frame-id (root-expand-context-frame-id root-ctx))
 
+   ;; Record portal syntax to be extracted without running the module
+   (define portal-syntaxes (make-hasheqv))
+
    ;; Make a namespace for module expansion
    (define (make-m-ns ns #:for-submodule? [for-submodule? (and enclosing-self #t)])
      (make-module-namespace ns
                             #:mpi self
                             #:root-expand-context root-ctx
-                            #:for-submodule? for-submodule?))
+                            #:for-submodule? for-submodule?
+                            #:portal-syntaxes portal-syntaxes))
    (define m-ns (make-m-ns (expand-context-namespace init-ctx)))
    
    ;; Initial context for all body expansions:
@@ -169,7 +174,7 @@
                    (m 'body)))
    
    ;; To keep track of all requires and provides
-   (define requires+provides (make-requires+provides self))
+   (define requires+provides (make-requires+provides self #:portal-syntaxes portal-syntaxes))
 
    ;; Table of symbols picked for each binding in this module:
    (define defined-syms (root-expand-context-defined-syms root-ctx)) ; phase -> sym -> id
@@ -352,6 +357,7 @@
                                    #:compiled-submodules compiled-submodules
                                    #:modules-being-compiled modules-being-compiled
                                    #:mpis-to-reset mpis-to-reset
+                                   #:portal-syntaxes portal-syntaxes
                                    #:loop pass-1-and-2-loop))
 
          ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -432,6 +438,7 @@
                                             #:root-ctx root-ctx
                                             #:ctx submod-ctx
                                             #:modules-being-compiled modules-being-compiled
+                                            #:portal-syntaxes portal-syntaxes
                                             #:fill compiled-module-box)))
      
      (define fully-expanded-bodys
@@ -539,6 +546,7 @@
                           (if (expanded+parsed? expanded-mb)
                               (expanded+parsed-parsed expanded-mb)
                               expanded-mb))
+                         portal-syntaxes
                          (unbox compiled-module-box)
                          compiled-submodules)))
    
@@ -714,6 +722,7 @@
                                 #:compiled-submodules compiled-submodules
                                 #:modules-being-compiled modules-being-compiled
                                 #:mpis-to-reset mpis-to-reset
+                                #:portal-syntaxes portal-syntaxes
                                 #:loop pass-1-and-2-loop)
   (namespace-visit-available-modules! m-ns phase)
   (let loop ([tail? #t] [bodys bodys])
@@ -830,6 +839,7 @@
                   [val (in-list vals)]
                   [id (in-list ids)])
               (maybe-install-free=id-in-context! val id phase partial-body-ctx)
+              (maybe-install-portal-syntax! val sym phase portal-syntaxes)
               (namespace-set-transformer! m-ns phase sym val)))
           ;; Expand and evaluate RHS:
           (define-values (exp-rhs parsed-rhs vals)
@@ -866,7 +876,22 @@
                                        m-ns phase #:run-phase phase
                                        requires+provides
                                        #:declared-submodule-names declared-submodule-names
-                                       #:who 'module)
+                                       #:who 'module
+                                       #:add-defined-portal
+                                       (lambda (id phase portal-stx orig-s)
+                                         (check-ids-unbound (list id) phase requires+provides #:in orig-s)
+                                         (define syms (select-defined-syms-and-bind! (list id) defined-syms
+                                                                                     self phase all-scopes-stx
+                                                                                     #:requires+provides requires+provides
+                                                                                     #:in orig-s
+                                                                                     #:frame-id frame-id
+                                                                                     #:as-transformer? #t))
+                                         (add-defined-syms! requires+provides syms phase #:as-transformer? #t)
+                                         (define sym (car syms))
+                                         (define t (portal-syntax portal-stx))
+                                         (namespace-set-transformer! m-ns phase sym t)
+                                         (add-portal-stx! portal-syntaxes t sym phase)
+                                         sym))
           (log-expand partial-body-ctx 'exit-case ready-body)
           (cons ready-body
                 (loop tail? rest-bodys))]
@@ -1166,6 +1191,7 @@
                                       #:root-ctx root-ctx
                                       #:ctx ctx
                                       #:modules-being-compiled modules-being-compiled
+                                      #:portal-syntaxes portal-syntaxes
                                       #:fill compiled-module-box)
   
   (define-values (requires provides) (extract-requires-and-provides requires+provides self self))
@@ -1180,6 +1206,7 @@
                    (requires+provides-all-bindings-simple? requires+provides)
                    (root-expand-context-encode-for-module root-ctx self self)
                    (parsed-only fully-expanded-bodys-except-post-submodules)
+                   portal-syntaxes
                    #f
                    (hasheq)))
 
@@ -1484,3 +1511,15 @@
 (define (lifted-defns-extract-syntax lifted-defns)
   (for/list ([lifted-defn (in-list lifted-defns)])
     (defn-extract-syntax lifted-defn)))
+
+;; ----------------------------------------
+
+(define (maybe-install-portal-syntax! val sym phase portal-syntaxes)
+  (when (portal-syntax? val)
+    (add-portal-stx! portal-syntaxes val sym phase)))
+
+(define (add-portal-stx! portal-syntaxes val sym phase)
+  (define ht (hash-ref portal-syntaxes phase #hasheq()))
+  (hash-set! portal-syntaxes
+             phase
+             (hash-set ht sym (portal-syntax-content val))))

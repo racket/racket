@@ -27,6 +27,7 @@
  same-binding-nominals?
  identifier-binding
  identifier-binding-symbol
+ identifier-distinct-binding
  
  maybe-install-free=id!
  binding-set-free=id
@@ -116,6 +117,15 @@
    [(local-binding? b)
     'lexical]
    [else #f]))
+
+(define (identifier-distinct-binding id other-id phase)
+  (define scs (resolve id phase #:get-scopes? #t))
+  (cond
+    [(not scs) #f]
+    [else
+     (define other-scs (syntax-scope-set other-id phase))
+     (and (not (subset? scs other-scs))
+          (identifier-binding id phase))]))
 
 ;; ----------------------------------------
 

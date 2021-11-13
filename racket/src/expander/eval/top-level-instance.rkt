@@ -10,7 +10,8 @@
          "../host/linklet.rkt"
          "../expand/env.rkt"
          "../expand/require.rkt"
-         "../expand/require+provide.rkt")
+         "../expand/require+provide.rkt"
+         "../expand/portal-syntax.rkt")
 
 ;; Run-time support for evaluating top-level forms
 (provide top-level-instance)
@@ -47,4 +48,10 @@
                                   #:who 'require
                                   ;; We don't need to check for conflicts
                                   ;; or adjust the requires+provides:
-                                  #:initial-require? #t))))
+                                  #:initial-require? #t
+                                  #:add-defined-portal
+                                  (lambda (id phase portal-stx orig-s)
+                                    (define sym (syntax-e id))
+                                    (define t (portal-syntax portal-stx))
+                                    (namespace-set-transformer! ns phase sym t)
+                                    sym)))))

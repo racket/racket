@@ -139,6 +139,7 @@
 
   (define self (decl 'self-mpi))
   (define phase-to-link-modules (decl 'phase-to-link-modules))
+  (define portal-stxes (decl 'portal-stxes))
 
   (define unsafe? (hash-ref orig-h 'unsafe? #f))
 
@@ -214,7 +215,8 @@
     (compile-linklet (generate-module-declaration-linklet mpis self 
                                                           (decl 'requires)
                                                           (decl 'provides)
-                                                          phase-to-link-module-uses-expr)
+                                                          phase-to-link-module-uses-expr
+                                                          portal-stxes)
                      'decl))
 
   (define new-bundle

@@ -257,6 +257,31 @@ Same as @racket[(identifier-binding id-stx #f)].
 @history[#:changed "8.2.0.3" @elem{Generalized phase results to phase--space combinations.}]}
 
 
+@defproc[(identifier-distinct-binding [id-stx identifier?]
+                                      [wrt-id-stx identifier?]
+                                      [phase-level (or/c exact-integer? #f)
+                                                   (syntax-local-phase-level)])
+         (or/c 'lexical
+               #f
+               (list/c module-path-index?
+                       symbol?
+                       module-path-index?
+                       symbol?
+                       exact-nonnegative-integer?
+                       phase+space-shift?
+                       phase+space?)
+               (list/c symbol?))]{
+
+Like @racket[(identifier-binding id-stx phase-level)], but the result
+is @racket[#f] if the binding for @racket[id-stx] has scopes that are
+a subset of the scopes for @racket[wrt-id-stx]. That is, if
+@racket[id-stx] and @racket[wrt-id-stx] have the same symbolic name, a
+binding for @racket[id-stx] is returned only if the binding does not
+also apply to @racket[wrt-id-stx].
+
+@history[#:added "8.3.0.8"]}
+
+
 @defproc[(identifier-binding-symbol [id-stx identifier?]
                                     [phase-level (or/c exact-integer? #f)
                                                  (syntax-local-phase-level)])
@@ -273,5 +298,19 @@ When @racket[identifier-binding] would produce a list, then the second
 element of that list is the result that
 @racket[identifier-binding-symbol] produces.}
 
+
+@defproc[(identifier-binding-portal-syntax [id-stx identifier?]
+                                           [phase-level (or/c exact-integer? #f)
+                                                        (syntax-local-phase-level)])
+         (or/c #f syntax?)]{
+
+If @racket[id-stx] is bound at @racket[phase-level] to @tech{portal
+syntax}, either via @racket[define-syntax] or @racket[#%require], then
+the portal syntax content is returned. The module that binds
+@racket[id-stx] must be declared, but it need not be instantiated at
+the relevant phase, and @racket[identifier-binding-portal-syntax] does
+not instantiate the module.
+
+@history[#:added "8.3.0.8"]}
 
 @close-eval[stx-eval]

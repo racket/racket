@@ -57,6 +57,7 @@
                            phase-to-defined-syms ; phase -> sym -> (or/c 'variable 'transformer)
                            also-required ; sym -> binding
                            spaces     ; sym -> #t to track all relevant spaces from requires
+                           portal-syntaxes ; phase -> sym -> syntax
                            [can-cross-phase-persistent? #:mutable]
                            [all-bindings-simple? #:mutable]) ; tracks whether bindings are easily reconstructed
   #:authentic)
@@ -74,7 +75,10 @@
   #:authentic)
 
 (define (make-requires+provides self
-                                #:copy-requires [copy-r+p #f])
+                                #:copy-requires [copy-r+p #f]
+                                #:portal-syntaxes [portal-syntaxes
+                                                   (and copy-r+p
+                                                        (hash-copy (requires+provides-portal-syntaxes copy-r+p)))])
   (requires+provides self
                      ;; require-mpis:
                      (if copy-r+p
@@ -89,6 +93,7 @@
                      (make-hasheqv) ; phase-to-defined-syms
                      (make-hasheq)  ; also-required
                      (make-hasheq)  ; spaces
+                     portal-syntaxes
                      #t
                      #t))
 
@@ -551,9 +556,10 @@
                     ;; identifier that remains, which means that it doesn't have a binding.
                     ;; The serializer and deserializer won't be able to handle that, and
                     ;; it's not relevant to further comparisons.
-                    (define plain-binding (if (binding-free=id binding)
-                                              (module-binding-update binding #:free=id #f)
-                                              binding))
+                    (define plain-binding
+                      (if (binding-free=id binding)
+                          (module-binding-update binding #:free=id #f)
+                          binding))
                     (hash-set at-phase sym (if (or as-protected? as-transformer?)
                                                (provided plain-binding as-protected? as-transformer?)
                                                plain-binding))]

@@ -3,6 +3,7 @@
          "../compile/serialize-state.rkt"
          "binding-table.rkt" ; defines `prop:bulk-binding`
          "binding.rkt"
+         "scope.rkt"
          "../common/module-path.rkt"
          "../common/phase+space.rkt"
          "../namespace/provided.rkt")
@@ -69,7 +70,7 @@
 ;; providing module should guard the use of the inspector attached to
 ;; the binding. For now, we approximate(!) that conditional use by
 ;; just dropping the extra inspector, which means that the original
-;; binding (bounding by te rename transformer) is accessible only if
+;; binding (bounding by the rename transformer) is accessible only if
 ;; the end user has access to the original binding directly.
 
 ;; ----------------------------------------

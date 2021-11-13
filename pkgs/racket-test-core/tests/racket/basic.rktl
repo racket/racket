@@ -159,6 +159,7 @@
 (when (run-unreliable-tests? 'timing)
   (define expected #f)
   (define (check-time thunk)
+    (collect-garbage)
     (define start (current-process-milliseconds))
     (thunk)
     (define duration (- (current-process-milliseconds) start))
