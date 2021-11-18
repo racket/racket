@@ -175,7 +175,7 @@
                   (.mpi-vector))
                 '((#f)
                   (#f))
-                '(self-mpi requires provides phase-to-link-modules)
+                '(self-mpi requires provides phase-to-link-modules portal-stxes)
                 '()
                 '()
                 #hasheq()
@@ -197,7 +197,9 @@
                    (make-phase-to-link-modules application
                                                (lambda (name prim) (primitive prim))
                                                (lambda (depth) (toplevel depth module-use-pos #f #f))
-                                               (lambda (depth) (toplevel depth mpi-vector-pos #f #f)))))
+                                               (lambda (depth) (toplevel depth mpi-vector-pos #f #f))))
+                 (def-values (list (toplevel 0 (+ exports-pos 4) #f #f)) ; portal-stxes
+                   (application (primitive hasheqv) null)))
                 (+ 32 (length import-keys))
                 #f))]
       [(s-exp)
