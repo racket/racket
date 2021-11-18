@@ -102,17 +102,40 @@
                                           prefix)])
       (and m
            ;; What happens if someone swipes our bytes before we can get them?
-           (let ([drop (caar m)])
+           (let ()
+             (define drop (caar m))
              ;; drop prefix before match:
-             (let ([s (read-bytes drop input-port)])
-               (when out (write-bytes s out)))
+             (define before-s (read-bytes drop input-port))
+             (when out (write-bytes before-s out))
              ;; Get the matching part, and shift matching indices
-             (let ([s (read-bytes (- (cdar m) drop) input-port)])
-               (cons s
-                     (map (lambda (p)
-                            (and p (subbytes s (- (car p) drop)
-                                               (- (cdr p) drop))))
-                          (cdr m))))))))
+             (define s (read-bytes (- (cdar m) drop) input-port))
+             (cons s
+                   (for/list ([p (in-list (cdr m))])
+                     (cond
+                       [(not p) #f]
+                       [else
+                        ;; through lookbehind or lookahead, matches
+                        ;; can be in the prefix (negative values) or
+                        ;; extend past the read bytes (values more
+                        ;; than drop+len)
+                        (define start (- (car p) drop))
+                        (define end (- (cdr p) drop))
+                        (define len (bytes-length s))
+                        (cond
+                          [(and (start . >= . 0)
+                                (end . <= . len))
+                           ;; normal case: within read region
+                           (subbytes s start end)]
+                          [else
+                           (define pre-len (bytes-length prefix))
+                           (define peek-amt (max 0 (- end len)))
+                           (bytes-append
+                            (subbytes prefix (min pre-len (+ pre-len drop start)) pre-len)
+                            (subbytes before-s (max 0 (min drop (+ drop start))) drop)
+                            (subbytes s (max 0 start) (max 0 (min end len)))
+                            (if (zero? peek-amt)
+                                #""
+                                (peek-bytes peek-amt 0 input-port)))])])))))))
 
   ;; Helper macro for the regexp functions below, with some utilities.
   (define (bstring-length s)
