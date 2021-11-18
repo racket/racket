@@ -43,6 +43,7 @@
                                      #:skip-variable-phase-level [skip-variable-phase-level #f]
                                      #:initial-require? [initial-require? #f]
                                      #:add-defined-portal [add-defined-portal #f]
+                                     #:all-scopes-stx [all-scopes-stx #f]
                                      #:who who)
   (let loop ([reqs reqs]
              [top-req #f]
@@ -220,7 +221,12 @@
          (unless (or (module-path? maybe-mp)
                      (resolved-module-path? maybe-mp))
            (raise-syntax-error #f "bad require spec" orig-s req))
-         (when (or adjust (not (eq? just-meta 'all)))
+         (when (and (requires+provides-all-bindings-simple? requires+provides)
+                    (or adjust
+                        (not (eq? just-meta 'all))
+                        (not (eq? space-level '#:none))
+                        (and all-scopes-stx
+                             (not (same-scopes? req all-scopes-stx)))))
            (set-requires+provides-all-bindings-simple?! requires+provides #f))
          (define mp (if (resolved-module-path? maybe-mp)
                         (resolved-module-path->module-path maybe-mp)
@@ -248,6 +254,11 @@
 (define (ids->sym-set ids)
   (for/set ([id (in-list ids)])
     (syntax-e id)))
+
+(define (same-scopes? a b)
+  ;; chocie of phase 0 is arbitrary:
+  (equal? (syntax-scope-set a 0)
+          (syntax-scope-set b 0)))
 
 ;; ----------------------------------------
 

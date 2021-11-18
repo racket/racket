@@ -2058,14 +2058,27 @@ case of module-leve bindings; it doesn't cover local bindings.
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check 'module-body-context-simple? and 'module-body-...context properties
 
-(define (check-module-body-context-properties with-kar?)
+(define (check-module-body-context-properties #:rename? [with-kar? #f]
+                                              #:intro [intro #f])
+  (define scope-intro
+    (if intro
+        (let ([scope-intro (if (eq? intro 'space)
+                               (make-interned-syntax-introducer 'racket-test-space)
+                               (make-syntax-introducer))])
+          (lambda (d) (scope-intro (datum->syntax #f d))))
+        (lambda (d) d)))
   (define m (expand `(module m racket/base
                       ,@(if with-kar?
                             `((require (rename-in racket/base [car kar])))
                             null)
+                      ,(if (eq? intro 'space)
+                           '(require (for-space racket-test-space racket/promise))
+                           (scope-intro '(require racket/promise)))
+                      (require (for-meta 2 racket/promise))
                       (define inside 7))))
 
-  (test (not with-kar?) syntax-property m 'module-body-context-simple?)
+  (test (and (not with-kar?) (not intro))
+        syntax-property m 'module-body-context-simple?)
 
   (define i (syntax-property m 'module-body-context))
   (define o (syntax-property m 'module-body-inside-context))
@@ -2079,10 +2092,16 @@ case of module-leve bindings; it doesn't cover local bindings.
   (test (if with-kar? 'car #f)
         'kar-binding
         (let ([v (identifier-binding (datum->syntax i 'kar))])
-          (and v (cadr v)))))
+          (and v (cadr v))))
 
-(check-module-body-context-properties #f)
-(check-module-body-context-properties #t)
+  (test (and intro #t) not (identifier-binding (datum->syntax i 'force)))
+  (test 'force cadr (identifier-binding (scope-intro (datum->syntax i 'force)))))
+
+(check-module-body-context-properties)
+(check-module-body-context-properties #:rename? #t)
+(check-module-body-context-properties #:intro 'scope)
+(check-module-body-context-properties #:intro 'space)
+(check-module-body-context-properties #:rename? #t #:intro 'scope)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that nesting `module+` under multiple `begin-for-syntax`

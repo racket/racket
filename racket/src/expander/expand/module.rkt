@@ -877,6 +877,7 @@
                                        requires+provides
                                        #:declared-submodule-names declared-submodule-names
                                        #:who 'module
+                                       #:all-scopes-stx all-scopes-stx
                                        #:add-defined-portal
                                        (lambda (id phase portal-stx orig-s)
                                          (check-ids-unbound (list id) phase requires+provides #:in orig-s)
@@ -1499,7 +1500,8 @@
                                  m-ns phase #:run-phase phase
                                  requires+provides
                                  #:declared-submodule-names declared-submodule-names
-                                 #:who 'require)))
+                                 #:who 'require)
+    (set-requires+provides-all-bindings-simple?! requires+provides #f)))
 
 ;; ----------------------------------------
 
