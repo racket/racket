@@ -890,7 +890,8 @@
                                          (add-defined-syms! requires+provides syms phase #:as-transformer? #t)
                                          (define sym (car syms))
                                          (define t (portal-syntax portal-stx))
-                                         (namespace-set-transformer! m-ns phase sym t)
+                                         (when phase
+                                           (namespace-set-transformer! m-ns phase sym t))
                                          (add-portal-stx! portal-syntaxes t sym phase)
                                          sym))
           (log-expand partial-body-ctx 'exit-case ready-body)

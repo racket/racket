@@ -52,6 +52,7 @@
                                   #:add-defined-portal
                                   (lambda (id phase portal-stx orig-s)
                                     (define sym (syntax-e id))
-                                    (define t (portal-syntax portal-stx))
-                                    (namespace-set-transformer! ns phase sym t)
+                                    (when phase
+                                      (define t (portal-syntax portal-stx))
+                                      (namespace-set-transformer! ns phase sym t))
                                     sym)))))

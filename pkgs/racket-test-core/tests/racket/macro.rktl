@@ -827,6 +827,11 @@
   (eval '(#%require (portal check-entered (inside))))
   (test '(inside) syntax->datum (identifier-binding-portal-syntax (eval '(quote-syntax check-entered)))))
 
+(#%require (for-meta #f (portal check-top-level-portal (yes ok #f))))
+
+(module bins-bread-and-butter-for-label racket/base
+  (#%require (for-meta #f (portal check-top-level-portal (yes ok #f)))))
+  
 ;; ----------------------------------------
 
 (module distinct-binding-tests racket/base
