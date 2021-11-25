@@ -357,7 +357,7 @@ void centralized_done_with_process_id(int pid, int in_group)
         if (keep_unused) {
           st->next_unused = unused_pid_statuses;
           unused_pid_statuses = st;
-          if (st->signal_fd)
+          if (st->signal_fd && st->in_group)
             remove_group_signal_fd(st->signal_fd);
         } else
           st->unneeded = 1;
