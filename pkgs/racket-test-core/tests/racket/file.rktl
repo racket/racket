@@ -2705,8 +2705,8 @@
   (define (positive-fixnum-key? key)
     (define n (stat-ref key))
     (and (positive-integer? n) (fixnum? n)))
-  (test #t positive-fixnum-key? 'inode)
   (unless (eq? (system-type) 'windows)
+    (test #t positive-fixnum-key? 'inode)
     (test #t positive-fixnum-key? 'device-id))
   (define stat-mode (stat-ref 'mode))
   (test #t = (bitwise-and stat-mode file-type-bits) regular-file-type-bits)
@@ -2721,8 +2721,10 @@
   (unless (eq? (system-type) 'windows)
     ; Check user and group id. Assuming the tests don't run as root, this is
     ; probably all we can sensibly do.
-    (test #t positive-fixnum-key? 'user-id)
-    (test #t positive-fixnum-key? 'group-id))
+    ; ... but the tests do run as root in some CI configuration, so disabled
+    (when #f
+      (test #t positive-fixnum-key? 'user-id)
+      (test #t positive-fixnum-key? 'group-id)))
   (test #t = (stat-ref 'device-id-for-special-file) 0)
   (unless (eq? (system-type) 'windows)
     (test #t positive-fixnum-key? 'block-size)
