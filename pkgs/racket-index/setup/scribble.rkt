@@ -564,14 +564,16 @@
           ;; report missing links.
           (let ([not-found
                  (lambda (k)
-                   (unless (or all? all-main? all-user?)
-                     (unless one?
-                       (setup-printf
-                        "WARNING" "undefined tag in ~a:"
-                        (path->relative-string/setup
-                         (doc-src-file (info-doc info))))
-                       (set! one? #t))
-                     (setup-printf #f " ~s" k)))])
+                   ;; if the key starts with #f, then suppress a complaint
+                   (unless (and (pair? k) (not (car k)))
+                     (unless (or all? all-main? all-user?)
+                       (unless one?
+                         (setup-printf
+                          "WARNING" "undefined tag in ~a:"
+                          (path->relative-string/setup
+                           (doc-src-file (info-doc info))))
+                         (set! one? #t))
+                       (setup-printf #f " ~s" k))))])
             (let* ([filename (sxref-path latex-dest (info-doc info) "in.sxref")]
                    [as-user? (and (not (main-doc? (info-doc info)))
                                   (not (equal? main-db user-db)))]
