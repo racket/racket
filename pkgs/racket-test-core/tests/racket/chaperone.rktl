@@ -32,6 +32,7 @@
 (test #t chaperone-of?/impersonator '(10) '(10))
 (test #t chaperone-of?/impersonator '#(1 2 3) '#(1 2 3))
 (test #t chaperone-of?/impersonator '#&(1 2 3) '#&(1 2 3))
+(test #f chaperone-of?/impersonator (mcons 1 2) (mcons 1 2))
 
 (test #f chaperone-of?/impersonator (make-string 1 #\x) (make-string 1 #\x))
 (test #t chaperone-of?/impersonator 

@@ -101,6 +101,7 @@
                                      (equal? a b ctx)))))))]
            [(mpair? a)
             (and (mpair? b)
+                 (not (eq? mode 'chaperone-of?))
                  (or (check-union-find ctx a b)
                      (if eql?
                          (and (eql? (mcar a) (mcar b))
