@@ -307,13 +307,15 @@ with timeouts that have not yet expired. The system-idle event's
 ]}
 
 
-@defproc[(alarm-evt [msecs real?]) evt?]{
+@defproc[(alarm-evt [msecs real?] [monotonic? boolean? #f]) evt?]{
 
 Returns a @tech{synchronizable event} that is not @tech{ready for synchronization} when
-@racket[(current-inexact-milliseconds)] would return a value that is
+@racket[(_milliseconds)] would return a value that is
 less than @racket[msecs], and it is @tech{ready for synchronization} when
-@racket[(current-inexact-milliseconds)] would return a value that is
-more than @racket[msecs]. @ResultItself{alarm event}.
+@racket[(_milliseconds)] would return a value that is
+more than @racket[msecs]. The value of @racket[_milliseconds] is
+@racket[current-inexact-milliseconds] when @racket[monotonic?] is @racket[#f],
+or @racket[current-inexact-monotonic-milliseconds] otherwise. @ResultItself{alarm event}.
 
 @examples[#:eval evt-eval
   (define alarm (alarm-evt (+ (current-inexact-milliseconds) 100)))

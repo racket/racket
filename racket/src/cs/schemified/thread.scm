@@ -1699,7 +1699,7 @@
        0.0
        (/
         (let ((app_0 (if timeout-at_0 timeout-at_0 (|#%app| distant-future))))
-          (- app_0 (current-inexact-milliseconds)))
+          (- app_0 (current-inexact-monotonic-milliseconds)))
         1000.0))))
    (lambda (wakeup_0)
      (if (let ((t_0 (unsafe-place-local-ref cell.3$1)))
@@ -1709,7 +1709,7 @@
         (lambda () (min-key+value (unsafe-place-local-ref cell.3$1)))
         (case-lambda
          ((timeout-at_0 threads_0)
-          (if (<= timeout-at_0 (current-inexact-milliseconds))
+          (if (<= timeout-at_0 (current-inexact-monotonic-milliseconds))
             (if (null? threads_0)
               (void)
               (begin
@@ -1787,7 +1787,7 @@
 (define effect_2775
   (begin (void (current-sandman the-default-sandman)) (void)))
 (define distant-future
-  (lambda () (+ (current-inexact-milliseconds) 31536000000.0)))
+  (lambda () (+ (current-inexact-monotonic-milliseconds) 31536000000.0)))
 (define current-atomic (make-pthread-parameter 0))
 (define current-thread/in-atomic (make-pthread-parameter #f))
 (define current-future$1 (make-pthread-parameter #f))
@@ -7746,7 +7746,9 @@
                   (thread-yield #f)
                   (let ((until-msecs_0
                          (let ((app_0 (* secs20_0 1000.0)))
-                           (+ app_0 (current-inexact-milliseconds)))))
+                           (+
+                            app_0
+                            (current-inexact-monotonic-milliseconds)))))
                     (letrec*
                      ((loop_0
                        (|#%name|
@@ -9546,7 +9548,7 @@
                                            (let ((app_0 (* timeout10_0 1000)))
                                              (+
                                               app_0
-                                              (current-inexact-milliseconds)))
+                                              (current-inexact-monotonic-milliseconds)))
                                            #f)))
                                     (letrec*
                                      ((loop_0
@@ -9558,7 +9560,7 @@
                                                   (if timeout10_0
                                                     (<=
                                                      timeout-at_0
-                                                     (current-inexact-milliseconds))
+                                                     (current-inexact-monotonic-milliseconds))
                                                     #f)
                                                   #f)
                                               (begin
@@ -12676,10 +12678,10 @@
 (define check-place-activity void)
 (define set-check-place-activity!
   (lambda (proc_0) (set! check-place-activity proc_0)))
-(define finish_2685
+(define finish_2553
   (make-struct-type-install-properties
    '(alarm-evt)
-   1
+   2
    0
    #f
    (list
@@ -12688,16 +12690,24 @@
      (poller2.1
       (lambda (e_0 ctx_0)
         (let ((msecs_0 (alarm-evt-msecs e_0)))
-          (if (>= (current-inexact-milliseconds) msecs_0)
-            (values (list e_0) #f)
-            (begin
-              (schedule-info-add-timeout-at!
-               (poll-ctx-sched-info ctx_0)
-               msecs_0)
-              (values #f e_0))))))))
+          (let ((monotonic?_0 (alarm-evt-monotonic e_0)))
+            (let ((current-ms_0
+                   (if monotonic?_0
+                     current-inexact-monotonic-milliseconds
+                     current-inexact-milliseconds)))
+              (if (>= (|#%app| current-ms_0) msecs_0)
+                (values (list e_0) #f)
+                (begin
+                  (schedule-info-add-timeout-at!
+                   (poll-ctx-sched-info ctx_0)
+                   (if monotonic?_0
+                     msecs_0
+                     (let ((app_0 (current-inexact-monotonic-milliseconds)))
+                       (+ app_0 (- msecs_0 (current-inexact-milliseconds))))))
+                  (values #f e_0))))))))))
    (current-inspector)
    #f
-   '(0)
+   '(0 1)
    #f
    'alarm-evt))
 (define struct:alarm-evt
@@ -12707,9 +12717,9 @@
    (|#%nongenerative-uid| alarm-evt)
    #f
    #f
-   1
+   2
    0))
-(define effect_2822 (finish_2685 struct:alarm-evt))
+(define effect_2822 (finish_2553 struct:alarm-evt))
 (define alarm-evt1.1
   (|#%name|
    alarm-evt
@@ -12741,13 +12751,36 @@
          s
          'alarm-evt
          'msecs))))))
+(define alarm-evt-monotonic_2115
+  (|#%name| alarm-evt-monotonic (record-accessor struct:alarm-evt 1)))
+(define alarm-evt-monotonic
+  (|#%name|
+   alarm-evt-monotonic
+   (lambda (s)
+     (if (alarm-evt?_2440 s)
+       (alarm-evt-monotonic_2115 s)
+       ($value
+        (impersonate-ref
+         alarm-evt-monotonic_2115
+         struct:alarm-evt
+         1
+         s
+         'alarm-evt
+         'monotonic))))))
 (define create-alarm-evt
-  (lambda (msecs_0)
-    (begin
-      (if (real? msecs_0)
-        (void)
-        (raise-argument-error 'create-alarm-evt "real?" msecs_0))
-      (alarm-evt1.1 msecs_0))))
+  (let ((create-alarm-evt_0
+         (|#%name|
+          create-alarm-evt
+          (lambda (msecs3_0 monotonic?2_0)
+            (begin
+              (begin
+                (if (real? msecs3_0)
+                  (void)
+                  (raise-argument-error 'create-alarm-evt "real?" msecs3_0))
+                (alarm-evt1.1 msecs3_0 monotonic?2_0)))))))
+    (case-lambda
+     ((msecs_0) (create-alarm-evt_0 msecs_0 #f))
+     ((msecs_0 monotonic?2_0) (create-alarm-evt_0 msecs_0 monotonic?2_0)))))
 (define 1/call-in-nested-thread
   (let ((call-in-nested-thread_0
          (|#%name|
