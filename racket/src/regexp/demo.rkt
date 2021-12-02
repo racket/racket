@@ -165,21 +165,21 @@
 ;; ----------------------------------------
 
 (define (check rx in N [M (max 1 (quotient N 10))])
-  (define c-start (current-inexact-milliseconds))
+  (define c-start (current-inexact-monotonic-milliseconds))
   (define orig-rx
     (if (bytes? rx)
         (for/fold ([r #f]) ([i (in-range M)])
           (byte-pregexp rx))
         (for/fold ([r #f]) ([i (in-range M)])
           (pregexp rx))))
-  (define c-after-orig (current-inexact-milliseconds))
+  (define c-after-orig (current-inexact-monotonic-milliseconds))
   (define new-rx
     (if (bytes? rx)
         (for/fold ([r #f]) ([i (in-range M)])
           (rx:byte-pregexp rx))
         (for/fold ([r #f]) ([i (in-range M)])
           (rx:pregexp rx))))
-  (define c-after-new (current-inexact-milliseconds))
+  (define c-after-new (current-inexact-monotonic-milliseconds))
 
   (define orig-v (regexp-match orig-rx in))
   (define new-v (rx:regexp-match new-rx in))
@@ -188,14 +188,14 @@
            "failed\n  pattern: ~s\n  input: ~s\n  expected: ~s\n  got: ~s"
            rx in orig-v new-v))
 
-  (define start (current-inexact-milliseconds))
+  (define start (current-inexact-monotonic-milliseconds))
   (for/fold ([r #f]) ([i (in-range N)])
     (regexp-match? orig-rx in))
-  (define after-orig (current-inexact-milliseconds))
+  (define after-orig (current-inexact-monotonic-milliseconds))
   (for/fold ([r #f]) ([i (in-range N)])
     (rx:regexp-match? new-rx in))
-  (define after-new (current-inexact-milliseconds))
-  
+  (define after-new (current-inexact-monotonic-milliseconds))
+
   (define orig-c-msec (- c-after-orig c-start))
   (define new-c-msec (- c-after-new c-after-orig))
   (define orig-msec (- after-orig start))

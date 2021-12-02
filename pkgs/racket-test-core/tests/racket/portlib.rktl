@@ -985,7 +985,7 @@
      (object-name p)
      (lambda (bstr)
        (if (zero? (random 2))
-           (wrap-evt (alarm-evt (+ (current-inexact-milliseconds) 5))
+           (wrap-evt (alarm-evt (+ (current-inexact-monotonic-milliseconds) 5) #t)
                      (lambda (v) 0))
            (read-bytes-avail! bstr p)))
      #f
@@ -1327,7 +1327,7 @@
     (define PORT 5999)
 
     (define (make-alarm-e)
-      (alarm-evt (+ (current-inexact-milliseconds) 5)))
+      (alarm-evt (+ (current-inexact-monotonic-milliseconds) 5) #t))
 
     (define ((connection-handler in out with-alarm?))
       (let loop ((alarm-e (make-alarm-e))

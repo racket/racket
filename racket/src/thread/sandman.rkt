@@ -108,13 +108,13 @@
   (sandman
    ;; sleep
    (lambda (timeout-at)
-     (host:sleep (max 0.0 (/ (- (or timeout-at (distant-future)) (current-inexact-milliseconds)) 1000.0))))
+     (host:sleep (max 0.0 (/ (- (or timeout-at (distant-future)) (current-inexact-monotonic-milliseconds)) 1000.0))))
 
    ;; poll
    (lambda (wakeup)
      (unless (tree-empty? sleeping-threads)
        (define-values (timeout-at threads) (tree-min sleeping-threads))
-       (when (timeout-at . <= . (current-inexact-milliseconds))
+       (when (timeout-at . <= . (current-inexact-monotonic-milliseconds))
          (unless (null? threads)
            (for ([t (in-hash-keys threads)])
              (wakeup t))))))
@@ -174,5 +174,5 @@
 
 ;; Compute an approximation to infinity:
 (define (distant-future)
-  (+ (current-inexact-milliseconds)
+  (+ (current-inexact-monotonic-milliseconds)
      (* 1000.0 60 60 24 365)))

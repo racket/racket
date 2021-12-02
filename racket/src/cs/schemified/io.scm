@@ -3629,7 +3629,7 @@
     (begin
       (unsafe-place-local-set! cell.1$10 sleep_0)
       (unsafe-place-local-set! cell.2$3 fd_0))))
-(define effect_2807
+(define effect_2319
   (begin
     (void
      (|#%app|
@@ -3661,7 +3661,9 @@
                    (let ((sleep-secs_0
                           (if timeout-at_0
                             (/
-                             (- timeout-at_0 (current-inexact-milliseconds))
+                             (-
+                              timeout-at_0
+                              (current-inexact-monotonic-milliseconds))
                              1000.0)
                             #f)))
                      (begin
@@ -36042,7 +36044,7 @@
    #f
    2
    3))
-(define effect_2319 (finish_3124 struct:connect-progress))
+(define effect_2320 (finish_3124 struct:connect-progress))
 (define connect-progress1.1
   (|#%name|
    connect-progress
@@ -39237,7 +39239,7 @@
                         (if vals_1
                           (sandman-poll-ctx-merge-timeout
                            poll-ctx_0
-                           (current-inexact-milliseconds))
+                           (current-inexact-monotonic-milliseconds))
                           (void))
                         (values #f self_0)))
                      (args (raise-binding-result-arity-error 2 args))))

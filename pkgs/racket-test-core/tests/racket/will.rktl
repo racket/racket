@@ -496,9 +496,9 @@
     (define ITERS 5)
     (define msecs
       (/ (for/fold ([t 0]) ([i (in-range ITERS)])
-           (define start (current-inexact-milliseconds))
+           (define start (current-inexact-monotonic-milliseconds))
            (collect-garbage)
-           (+ t (- (current-inexact-milliseconds) start)))
+           (+ t (- (current-inexact-monotonic-milliseconds) start)))
          ITERS))
     ;; Keep `key` and `es` live:
     (if (zero? (random 1))

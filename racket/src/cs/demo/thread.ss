@@ -92,31 +92,31 @@
      (check 'ok (sync (nack-guard-evt (lambda (n) (set! nack n) (make-semaphore))) ok-evt))
      (unless nack (loop)))
    (check (void) (sync/timeout 0 nack))
-   
+
    (semaphore-post s)
    (check #f (sync/timeout 0 ch (channel-put-evt ch 'oops)))
    (check sp (sync/timeout #f ch (channel-put-evt ch 'oops) sp))
 
-   (define now1 (current-inexact-milliseconds))
+   (define now1 (current-inexact-monotonic-milliseconds))
    (sleep 0.1)
-   (check #t (>= (current-inexact-milliseconds) (+ now1 0.1)))
+   (check #t (>= (current-inexact-monotonic-milliseconds) (+ now1 0.1)))
 
-   (define now2 (current-inexact-milliseconds))
+   (define now2 (current-inexact-monotonic-milliseconds))
    (define ts (thread (lambda () (sleep 0.1))))
    (check ts (sync ts))
-   (check #t (>= (current-inexact-milliseconds) (+ now2 0.1)))
+   (check #t (>= (current-inexact-monotonic-milliseconds) (+ now2 0.1)))
 
    (define v 0)
    (thread (lambda () (set! v (add1 v))))
    (sync (system-idle-evt))
    (check 1 v)
-   
+
    (define tinf (thread (lambda () (let loop () (loop)))))
    (break-thread tinf)
    (check tinf (sync tinf))
    (printf "[That break was from a thread, and it's expected]\n")
 
-   (define now3 (current-inexact-milliseconds))
+   (define now3 (current-inexact-monotonic-milliseconds))
    (define tdelay (with-continuation-mark
                       break-enabled-key
                     (make-thread-cell #f #t)
@@ -131,7 +131,7 @@
    (break-thread tdelay)
    (check tdelay (sync tdelay))
    (printf "[That break was from a thread, and it's expected]\n")
-   (check #t (>= (current-inexact-milliseconds) (+ now3 0.1)))
+   (check #t (>= (current-inexact-monotonic-milliseconds) (+ now3 0.1)))
 
    (define got-here? #f)
    (define break-self (thread (lambda ()
@@ -268,14 +268,14 @@
    #;
    (let ([t1 (thread (lambda () (let loop () (loop))))]
          [t2 (thread (lambda () (let loop ()
-                             (define n (current-inexact-milliseconds))
+                             (define n (current-inexact-monotonic-milliseconds))
                              (sleep)
-                             (fprintf (current-error-port) "~a\n" (- (current-inexact-milliseconds) n))
+                             (fprintf (current-error-port) "~a\n" (- (current-inexact-monotonic-milliseconds) n))
                              (loop))))])
      (sleep 0.5)
      (break-thread t1)
      (break-thread t2))
-   
+
    (time
     (let ([s1 (make-semaphore)]
           [s2 (make-semaphore)])

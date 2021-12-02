@@ -18,7 +18,7 @@
   [absolute-path? (known-procedure/no-prompt 2)]
   [acos (known-procedure/folding 2)]
   [add1 (known-procedure/folding 2)]
-  [alarm-evt (known-procedure/no-prompt 2)]
+  [alarm-evt (known-procedure/no-prompt 6)]
   [always-evt (known-authentic)]
   [andmap (known-procedure -4)]
   [angle (known-procedure/folding 2)]

@@ -472,8 +472,9 @@
     (make-custodian me))
   (define timeout-evt
     (handle-evt
-     (alarm-evt (+ (current-inexact-milliseconds)
-                   (* 1000 secs)))
+     (alarm-evt (+ (current-inexact-monotonic-milliseconds)
+                   (* 1000 secs))
+                #t)
      (λ (a) #f)))
 
   (define results null)

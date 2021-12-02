@@ -733,7 +733,7 @@
      (thread-yield #f)]
     [else
      (define until-msecs (+ (* secs 1000.0)
-                            (current-inexact-milliseconds)))
+                            (current-inexact-monotonic-milliseconds)))
      (let loop ()
        ((thread-deschedule! (current-thread)
                             until-msecs
