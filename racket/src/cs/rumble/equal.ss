@@ -51,7 +51,7 @@
               (loop a (impersonator-next b))])]
            [(#%vector? a)
             (and (#%vector? b)
-                 (or (not (eq? mode 'chaperone-of?))
+                 (or (not (or (eq? mode 'chaperone-of?) (eq? mode 'equal-always?)))
                      (and (immutable-vector? a)
                           (immutable-vector? b)))
                  (let ([len (#%vector-length a)])
@@ -82,7 +82,7 @@
                             (equal? (cdr a) (cdr b) ctx))))))]
            [(#%box? a)
             (and (#%box? b)
-                 (or (not (eq? mode 'chaperone-of?))
+                 (or (not (or (eq? mode 'chaperone-of?) (eq? mode 'equal-always?)))
                      (and (immutable-box? a)
                           (immutable-box? b)))
                  (or (check-union-find ctx a b)
@@ -93,7 +93,7 @@
                            (equal? (unbox orig-a) (unbox orig-b) ctx)))))]
            [(authentic-hash? a)
             (and (authentic-hash? b)
-                 (or (not (eq? mode 'chaperone-of?))
+                 (or (not (or (eq? mode 'chaperone-of?) (eq? mode 'equal-always?)))
                      (and (intmap? a)   ; authentic immutable hash
                           (intmap? b)))
                  (or (check-union-find ctx a b)
@@ -104,7 +104,7 @@
                                      (equal? a b ctx)))))))]
            [(mpair? a)
             (and (mpair? b)
-                 (not (eq? mode 'chaperone-of?))
+                 (not (or (eq? mode 'chaperone-of?) (eq? mode 'equal-always?)))
                  (or (check-union-find ctx a b)
                      (if eql?
                          (and (eql? (mcar a) (mcar b))
@@ -119,7 +119,7 @@
                  ;; Check for `prop:impersonator-of`
                  (let ([a2 (and (not (eq? mode 'chaperone-of?))
                                 (extract-impersonator-of mode a))]
-                       [b2 (and (eq? mode 'equal?)
+                       [b2 (and (or (eq? mode 'equal?) (eq? mode 'equal-always?))
                                 (extract-impersonator-of mode b))])
                    (cond
                     [(or a2 b2)
@@ -128,7 +128,7 @@
                      (or (check-union-find ctx a b)
                          (let ([ctx (deeper-context ctx)])
                            (equal? (or a2 a) (or b2 b) ctx)))]
-                    [(and (not (eq? mode 'equal?))
+                    [(and (not (or (eq? mode 'equal?) (eq? mode 'equal-always?)))
                           (extract-impersonator-of mode b))
                      ;; Second argument is an impersonator, so
                      ;; `impersonator-of?` or `chaperone-of?` fails
@@ -144,21 +144,21 @@
                                   (rec-equal? orig-a orig-b (lambda (a b)
                                                               ;; Make sure record sees only booleans:
                                                               (and (eql? a b) #t)))]
-                                 [(and (eq? mode 'chaperone-of?)
+                                 [(and (or (eq? mode 'chaperone-of?) (eq? mode 'equal-always?))
                                        (let ([rtd (record-rtd a)])
                                          (and (not (eq? 0 (struct-type-mpm rtd)))
                                               (if (struct-type-prefab? rtd)
                                                   (with-global-lock* (hashtable-contains? rtd-mutables rtd))
                                                   #t))))
-                                  ;; Mutable records must be `eq?` for `chaperone-of?`
+                                  ;; Mutable records must be `eq?` for `chaperone-of?` and `equal-always?`
                                   #f]
                                  [else
                                   (let ([ctx (deeper-context ctx)])
                                     (rec-equal? orig-a orig-b
                                                 (lambda (a b)
                                                   (equal? a b ctx))))]))))])))]
-           [(and (eq? mode 'chaperone-of?)
-                 ;; Mutable strings and bytevectors must be `eq?` for `chaperone-of?`
+           [(and (or (eq? mode 'chaperone-of?) (eq? mode 'equal-always?))
+                 ;; Mutable strings and bytevectors must be `eq?` for `chaperone-of?` and `equal-always?`
                  (or (mutable-string? a)
                      (mutable-string? b)
                      (mutable-bytevector? a)
@@ -170,10 +170,15 @@
 (define (equal? a b) (do-equal? a b 'equal? #f))
 (define (impersonator-of? a b) (do-equal? a b 'impersonator-of? #f))
 (define (chaperone-of? a b) (do-equal? a b 'chaperone-of? #f))
+(define (equal-always? a b) (do-equal? a b 'equal-always? #f))
 
 (define/who (equal?/recur a b eql?)
   (check who (procedure-arity-includes/c 2) eql?)
   (do-equal? a b 'equal? eql?))
+
+(define/who (equal-always?/recur a b eql?)
+  (check who (procedure-arity-includes/c 2) eql?)
+  (do-equal? a b 'equal-always? eql?))
 
 ;; ----------------------------------------
 

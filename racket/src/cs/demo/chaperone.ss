@@ -130,6 +130,9 @@
 (check (chaperone-of? fi fc) #f)
 (check (chaperone-of? fc fi) #f)
 
+(check (equal-always? fi fc) #t)
+(check (equal-always? fc fi) #t)
+
 (define fc2 (chaperone-procedure f
                                  (lambda (x y)
                                    (values (chaperone-vector

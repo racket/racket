@@ -136,9 +136,32 @@
 (test #t equal? (integer->char 1024) (integer->char 1024))
 (test #f equal? (integer->char 1024) (integer->char 1025))
 
+(test #t equal-always? 'a 'a)
+(test #t equal-always? '("a") '("a"))
+(test #t equal-always? '(a) '(a))
+(test #t equal-always? '(a (b) c) '(a (b) c))
+(test #t equal-always? '("a" ("b") "c") '("a" ("b") "c"))
+(test #t equal-always? "abc" "abc")
+(test #t equal-always? 2 2)
+; immutable versions of these are equal-always
+(test #t equal-always? (vector-immutable 5 'a) (vector-immutable 5 'a))
+(test #t equal-always? (box-immutable "a") (box-immutable "a"))
+(test #t equal-always? (hash 'a 1) (hash 'a 1))
+(test #t equal-always? (cons 'a '()) (cons 'a '()))
+(test #t equal-always? (string->immutable-string (string #\a)) (string->immutable-string (string #\a)))
+(test #f equal-always? "" (string #\null))
+
+; but mutable versions are not equal-always
+(test #f equal-always? (make-vector 5 'a) (make-vector 5 'a))
+(test #f equal-always? (box "a") (box "a"))
+(test #f equal-always? (make-hash '((a . 1))) (make-hash '((a . 1))))
+(test #f equal-always? (mcons 'a '()) (mcons 'a '()))
+(test #f equal-always? (string #\a) (string #\a))
+
 (arity-test eq? 2 2)
 (arity-test eqv? 2 2)
 (arity-test equal? 2 2)
+(arity-test equal-always? 2 2)
 
 (err/rt-test (set-mcdr! (list 1 2) 4))
 

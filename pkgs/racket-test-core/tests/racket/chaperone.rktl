@@ -33,9 +33,14 @@
 (test #t chaperone-of?/impersonator '#(1 2 3) '#(1 2 3))
 (test #t chaperone-of?/impersonator '#&(1 2 3) '#&(1 2 3))
 (test #f chaperone-of?/impersonator (mcons 1 2) (mcons 1 2))
+(test #f equal-always? (mcons 1 2) (mcons 1 2))
 
 (test #f chaperone-of?/impersonator (make-string 1 #\x) (make-string 1 #\x))
-(test #t chaperone-of?/impersonator 
+(test #t chaperone-of?/impersonator
+      (string->immutable-string (make-string 1 #\x))
+      (string->immutable-string (make-string 1 #\x)))
+(test #f equal-always? (make-string 1 #\x) (make-string 1 #\x))
+(test #t equal-always?
       (string->immutable-string (make-string 1 #\x))
       (string->immutable-string (make-string 1 #\x)))
 
@@ -74,6 +79,9 @@
   (define h (make-hash '((a . 1))))
   (test #t chaperone-of?/impersonator h h)
   (test #f chaperone-of? (make-hash '((a . 1))) (make-hash '((a . 1)))))
+
+(test #t equal-always? (hash 'a 1) (hash 'a 1))
+(test #f equal-always? (make-hash '((a . 1))) (make-hash '((a . 1))))
 
 (let ()
   (define-struct o (a b))
@@ -2184,11 +2192,18 @@
 
  (define ht0 (chaperone ht))
  (define ht1 (chaperone ht0))
+ (define ht2 (chaperone ht))
 
  (test #t chaperone-of? ht1 ht)
  (test #t chaperone-of? ht1 ht0)
  (test #f chaperone-of? ht ht1)
  (test #f chaperone-of? ht0 ht1)
+ (test #t equal-always? ht ht1)
+ (test #t equal-always? ht0 ht1)
+ (test #t equal-always? ht1 ht2)
+ (test #t equal-always? ht2 ht1)
+ (test #f chaperone-of? ht1 ht2)
+ (test #f chaperone-of? ht2 ht1)
  (hash-set! ht1 (make-hash '((a . b))) 'ok)
  (test 'ok hash-ref ht1 (make-hash '((a . b)))))
 
@@ -2651,6 +2666,7 @@
 (test #t chaperone-of?/impersonator (chaperone-evt always-evt void) always-evt)
 (test #f chaperone-of? (chaperone-evt always-evt void) (chaperone-evt always-evt void))
 (test #t chaperone-of?/impersonator (chaperone-evt (chaperone-evt always-evt void) void) always-evt)
+(test #t equal-always? (chaperone-evt always-evt void) (chaperone-evt always-evt void))
 (test always-evt sync (chaperone-evt always-evt (lambda (e) (values e values))))
 (test #f sync/timeout 0 (chaperone-evt never-evt (lambda (e) (values e (lambda (v) (error "bad"))))))
 
@@ -2912,6 +2928,7 @@
   (test #t chaperone-of? g2 f2)
   (test #t chaperone-of? g3 f2)
   (test #f chaperone-of? g3 g2)
+  (test #t equal-always? g3 g2)
 
   (test #t chaperone-of? g1 (chaperone-procedure g1 #f prop:blue 'color))
   (test #t chaperone-of? g2 (chaperone-procedure g2 #f prop:blue 'color))
@@ -3311,8 +3328,12 @@
   (test #f chaperone-of? f3i f)
   (test #f chaperone-of? f3 f2)
   (test #f chaperone-of? f2 f3)
+  (test #t equal-always? f2 f3)
 
   (test #f chaperone-of?
+        (unsafe-chaperone-procedure f f)
+        (unsafe-chaperone-procedure f f))
+  (test #t equal-always?
         (unsafe-chaperone-procedure f f)
         (unsafe-chaperone-procedure f f))
 
@@ -3546,6 +3567,7 @@
     (test #t chaperone-of? ch h2)
     (test #f chaperone-of? h ch)
     (test #f chaperone-of? h2 ch)
+    (test #t equal-always? h2 ch)
     (test #t impersonator-of? ch h)
     (test #t impersonator-of? ch h2)
     (test #f impersonator-of? h ch)
