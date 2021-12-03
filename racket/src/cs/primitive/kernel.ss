@@ -299,6 +299,8 @@
   [equal-secondary-hash-code (known-procedure/single-valued 2)]
   [equal? (known-procedure/single-valued 4)]
   [equal?/recur (known-procedure/single-valued 8)]
+  [equal-always? (known-procedure/single-valued 4)]
+  [equal-always?/recur (known-procedure/single-valued 8)]
   [eqv-hash-code (known-procedure/no-prompt 2)]
   [eqv? (known-procedure/pure/folding 4)]
   [error (known-procedure/no-return -2)]

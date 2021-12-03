@@ -1100,6 +1100,7 @@ XFORM_NONGCING MZ_EXTERN int scheme_is_subinspector(Scheme_Object *i, Scheme_Obj
 XFORM_NONGCING MZ_EXTERN int scheme_eq(Scheme_Object *obj1, Scheme_Object *obj2);
 XFORM_NONGCING MZ_EXTERN int scheme_eqv(Scheme_Object *obj1, Scheme_Object *obj2);
 MZ_EXTERN int scheme_equal(Scheme_Object *obj1, Scheme_Object *obj2);
+// MZ_EXTERN int scheme_equal_always(Scheme_Object *obj1, Scheme_Object *obj2);
 MZ_EXTERN int scheme_chaperone_of(Scheme_Object *obj1, Scheme_Object *obj2);
 MZ_EXTERN int scheme_impersonator_of(Scheme_Object *obj1, Scheme_Object *obj2);
 
@@ -1118,6 +1119,7 @@ MZ_EXTERN void scheme_set_type_equality(Scheme_Type type,
                                         Scheme_Primary_Hash_Proc hash1,
                                         Scheme_Secondary_Hash_Proc hash2);
 MZ_EXTERN int scheme_recur_equal(Scheme_Object *obj1, Scheme_Object *obj2, void *cycle_info);
+// MZ_EXTERN int scheme_recur_equal_always(Scheme_Object *obj1, Scheme_Object *obj2, void *cycle_info);
 
 MZ_EXTERN Scheme_Object *scheme_build_list(int argc, Scheme_Object **argv);
 MZ_EXTERN Scheme_Object *scheme_build_list_offset(int argc, Scheme_Object **argv, int delta);

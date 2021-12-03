@@ -24,6 +24,10 @@ static Scheme_Object *eq_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *eqv_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *equal_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *equalish_prim (int argc, Scheme_Object *argv[]);
+/*
+static Scheme_Object *equal_always_prim (int argc, Scheme_Object *argv[]);
+static Scheme_Object *equal_always_recur_prim (int argc, Scheme_Object *argv[]);
+*/
 static Scheme_Object *chaperone_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *impersonator_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_impersonator_star_p (int argc, Scheme_Object *argv[]);
@@ -108,9 +112,18 @@ void scheme_init_bool (Scheme_Startup_Env *env)
   scheme_equal_proc = p;
   scheme_addto_prim_instance("equal?", scheme_equal_proc, env);
 
-  scheme_addto_prim_instance("equal?/recur", 
-                             scheme_make_prim_w_arity(equalish_prim, "equal?/recur", 3, 3), 
+  scheme_addto_prim_instance("equal?/recur",
+                             scheme_make_prim_w_arity(equalish_prim, "equal?/recur", 3, 3),
                              env);
+
+  /*
+  scheme_addto_prim_instance("equal-always?",
+                             scheme_make_prim_w_arity(equal_always, "equal-always?/recur", 2, 2),
+                             env);
+  scheme_addto_prim_instance("equal-always?/recur",
+                             scheme_make_prim_w_arity(equal_always_recur, "equal-always?/recur", 3, 3),
+                             env);
+  */
 
   p = scheme_make_immed_prim(chaperone_p, "chaperone?", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED

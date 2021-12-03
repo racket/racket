@@ -178,6 +178,8 @@
 
           equal?
           equal?/recur
+          equal-always?
+          equal-always?/recur
 
           impersonator?
           chaperone?
