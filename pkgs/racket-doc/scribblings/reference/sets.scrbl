@@ -277,6 +277,8 @@ named by the @racket[sym]s.
  @racket[lazy?] is @racket[#f], and @racket[kind] is @racket['immutable].
  The result will be a @tech{chaperone contract} when @racket[elem/c] is a
  @tech{chaperone contract}.
+
+ @history[#:changed "8.3.0.9" @elem{Added support for random generation.}]
 }
 
 @section{Generic Set Interface}

@@ -2,6 +2,7 @@
 
 (require racket/contract/base
          racket/contract/combinator
+         racket/contract/private/generate
          "private/set.rkt"
          "private/set-types.rkt"
          racket/generic
@@ -380,6 +381,49 @@
         (proj e neg-party))
       x)))
 
+(define (set-generate ctc)
+  (define elem/c (set-contract-elem/c ctc))
+  (define maker (set-maker ctc))
+  (λ (fuel)
+    (define gen (contract-random-generate/choose (listof elem/c) fuel))
+    (λ ()
+      (if gen (apply maker (gen)) (maker)))))
+
+(define (set-maker ctc)
+  (define cmp (set-contract-cmp ctc))
+  (define kind (set-contract-kind ctc))
+  (define mutable? (or (eq? kind 'mutable-or-weak) (eq? kind 'mutable)))
+  (define weak? (eq? kind 'weak))
+  (cond
+    [(eq? cmp 'eqv)
+     (cond
+       [mutable? mutable-seteqv]
+       [weak? weak-seteqv]
+       [else seteqv])]
+    [(eq? cmp 'eq)
+     (cond
+       [mutable? mutable-seteq]
+       [weak? weak-seteq]
+       [else seteq])]
+    [else
+     (cond
+       [mutable? mutable-set]
+       [weak? weak-set]
+       [else set])]))
+
+(define (set-exercise ctc)
+  (define env (contract-random-generate-get-current-environment))
+  (define elem/c (set-contract-elem/c ctc))
+  (λ (fuel)
+    (define-values (exercise ctcs)
+      ((contract-struct-exercise elem/c) fuel))
+    (values
+     (λ (s)
+       (for ([v (in-set s)])
+         (exercise v)
+         (contract-random-generate-stash env elem/c v)))
+     (cons elem/c ctcs))))
+
 (define (set-contract-stronger this that)
   #f)
 
@@ -387,6 +431,7 @@
   #:property prop:flat-contract
   (build-flat-contract-property
     #:name set-contract-name
+    #:generate set-generate
     #:stronger set-contract-stronger
     #:first-order flat-set-contract-first-order
     #:late-neg-projection flat-set-contract-late-neg-projection))
@@ -395,6 +440,8 @@
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
     #:name set-contract-name
+    #:generate set-generate
+    #:exercise set-exercise
     #:stronger set-contract-stronger
     #:first-order set-contract-first-order
     #:late-neg-projection (set-contract-late-neg-projection #t)))
@@ -403,6 +450,8 @@
   #:property prop:contract
   (build-contract-property
     #:name set-contract-name
+    #:generate set-generate
+    #:exercise set-exercise
     #:stronger set-contract-stronger
     #:first-order set-contract-first-order
     #:late-neg-projection (set-contract-late-neg-projection #f)))
