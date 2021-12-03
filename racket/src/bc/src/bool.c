@@ -819,6 +819,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
           obj2 = scheme_unbox(orig_obj2);
         goto top;
       }
+    /* normal mutable hash table */
     case scheme_hash_table_type:
       {
 #   include "mzeqchk.inc"
@@ -830,6 +831,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
                                            (Scheme_Hash_Table *)obj2, orig_obj2,
                                            eql);
       }
+    /* functional hash tables */
     case scheme_hash_tree_type:
     case scheme_eq_hash_tree_type:
     case scheme_eqv_hash_tree_type:
@@ -841,7 +843,8 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
         return scheme_hash_tree_equal_rec((Scheme_Hash_Tree *)obj1, orig_obj1,
                                           (Scheme_Hash_Tree *)obj2, orig_obj2,
                                           eql);
-      } 
+      }
+    /* old-style hash table, with buckets, mutable */
     case scheme_bucket_table_type:
       {
 #   include "mzeqchk.inc"
