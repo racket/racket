@@ -1,3 +1,7 @@
+Version 8.4, January 2022
+Change `set/c` to support random generation
+Other bug repairs and other changes noted in the documentation
+
 Version 8.3, October 2021
 Expander: remove syntax arming and disarming in favor of a simpler
  system of protected syntax operations
