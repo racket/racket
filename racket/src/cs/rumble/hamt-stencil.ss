@@ -31,6 +31,7 @@
 ;; A "cnode" collision node is an association list. It's never a root
 ;; node, but it can be a child at any non-root depth.
 
+;; authentic immutable hash
 (define (intmap? x) (stencil-vector? x))
 
 ;; log of node size:

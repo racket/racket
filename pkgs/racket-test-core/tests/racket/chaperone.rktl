@@ -52,6 +52,29 @@
       '#&17
       (box 17))
 
+;; immutable hash chaperone-of? structural equality:
+(test #t chaperone-of?/impersonator '#hash(("0" . 0) ("1" . 1) ("2" . 2)) '#hash(("0" . 0) ("1" . 1) ("2" . 2)))
+(test #t chaperone-of?/impersonator '#hasheq((z . 0) (o . 1) (t . 2)) '#hasheq((z . 0) (o . 1) (t . 2)))
+(test #t chaperone-of?/impersonator '#hasheqv((0 . "0") (1 . "1") (2 . "2")) '#hasheqv((0 . "0") (1 . "1") (2 . "2")))
+(test #t chaperone-of?/impersonator (hash 'a 1) (hash 'a 1))
+(test #t chaperone-of?/impersonator (hasheq 'a 1) (hasheq 'a 1))
+(test #t chaperone-of?/impersonator (hasheqv 'a 1) (hasheqv 'a 1))
+(test #f chaperone-of? (hash 'a 1) (hash 'a 2))
+(let ()
+  ;; mutable strings as keys make these different:
+  (test #f chaperone-of? (hasheq (string #\a) 1) (hasheq (string #\a) 1))
+  ;; but if the mutable strings are eq it's fine:
+  (define a (string #\a))
+  (test #t chaperone-of?/impersonator (hasheq a 1) (hasheq a 1)))
+
+;; mutable hash chaperone-of? intensional equality:
+(for ([make-hash (in-list (list make-hash make-hasheq make-hasheqv
+                                make-weak-hash make-weak-hasheq make-weak-hasheqv
+                                make-ephemeron-hash make-ephemeron-hasheq make-ephemeron-hasheqv))])
+  (define h (make-hash '((a . 1))))
+  (test #t chaperone-of?/impersonator h h)
+  (test #f chaperone-of? (make-hash '((a . 1))) (make-hash '((a . 1)))))
+
 (let ()
   (define-struct o (a b))
   (define-struct p (x y) #:transparent)
