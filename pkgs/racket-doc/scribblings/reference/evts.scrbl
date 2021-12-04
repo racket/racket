@@ -307,7 +307,7 @@ with timeouts that have not yet expired. The system-idle event's
 ]}
 
 
-@defproc[(alarm-evt [msecs real?] [monotonic? boolean? #f]) evt?]{
+@defproc[(alarm-evt [msecs real?] [monotonic? any/c #f]) evt?]{
 
 Returns a @tech{synchronizable event} that is not @tech{ready for synchronization} when
 @racket[(_milliseconds)] would return a value that is
@@ -320,7 +320,9 @@ or @racket[current-inexact-monotonic-milliseconds] otherwise. @ResultItself{alar
 @examples[#:eval evt-eval
   (define alarm (alarm-evt (+ (current-inexact-milliseconds) 100)))
   (sync alarm)
-]}
+]
+
+@history[#:changed "8.3.0.9" @elem{Added the @racket[monotonic?] argument.}]}
 
 
 @defproc[(handle-evt? [evt evt?]) boolean?]{
