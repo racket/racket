@@ -170,7 +170,7 @@ mach-make:
 CHOST_HACK-cross = env "CHOST=hack-do-not-use"
 CHOST_HACK =
 
-SCHEME_CONFIG_VARS = CC="$(CC)" CFLAGS="$(BASE_CFLAGS)" LDFLAGS="$(LDFLAGS)" LIBS="$(LIBS)" \
+SCHEME_CONFIG_VARS = CC="$(CC)" CFLAGS="$(BASE_CFLAGS)" LDFLAGS="$(LDFLAGS) $(LINK_DYNAMIC)" LIBS="$(LIBS)" \
                      AR="$(AR)" ARFLAGS="$(ARFLAGS)" RANLIB="$(RANLIB)" \
                      WINDRES="$(WINDRES)"
 CONFIG_SCHEME_MODE =
