@@ -478,8 +478,9 @@
    (define m-ns (module-instance-namespace mi))
    (define instance-phase (namespace-0-phase m-ns))
    (define run-phase-level (phase- run-phase instance-phase))
-   (define inspector (module-inspector (module-instance-module mi)))
-   (when minimum-inspector
+   (define m (module-instance-module mi))
+   (define inspector (and m (module-inspector m)))
+   (when (and minimum-inspector inspector)
      (unless (or (eq? inspector minimum-inspector)
                  (inspector-superior? inspector minimum-inspector))
        (error 'require

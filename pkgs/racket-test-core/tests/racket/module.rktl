@@ -3071,7 +3071,8 @@ case of module-leve bindings; it doesn't cover local bindings.
      (module use (submod ".." mb)
        (module* m racket/base)
        (require (submod "." m "..")))))
- exn:fail?)
+ exn:fail?
+ #rx"cycle detected")
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; If `local-expand` creates a macro binding, and if
