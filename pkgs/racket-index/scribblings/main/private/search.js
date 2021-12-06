@@ -413,6 +413,16 @@ function UrlToManual(url) {
 // mostly for context queries.
 
 function CompileTerm(term) {
+  function regularMaker() {
+    var compare_words = CompileWordCompare(term);
+    return function(x) {
+      var r = Compare(term,x[0]);
+      // only bindings can be used for rexact matches
+      if (r >= C_rexact) return (x[3] ? r : C_exact);
+      if (r > C_words3) return r;
+      else return compare_words(x[0]);
+    };
+  }
   var op = ((term.search(/^[NLMHRTQ]:/) == 0) && term.substring(0,1));
   if (op) term = term.substring(2);
   term = term.toLowerCase();
@@ -454,14 +464,16 @@ function CompileTerm(term) {
     };
   /* a case for "Q" is not needed -- same as the default case below */
   default:
-    var compare_words = CompileWordCompare(term);
-    return function(x) {
-      var r = Compare(term,x[0]);
-      // only bindings can be used for rexact matches
-      if (r >= C_rexact) return (x[3] ? r : C_exact);
-      if (r > C_words3) return r;
-      else return compare_words(x[0]);
-    };
+    return CompileOrTerms([
+      regularMaker(),
+      function(x) {
+        if (x[1].search(/\/index\.html$/) > 0) {
+          return Compare(term,UrlToManual(x[1]));
+        } else {
+          return C_fail;
+        }
+      }
+    ]);
   }
 }
 
