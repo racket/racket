@@ -2438,6 +2438,30 @@
 
 ;; ----------------------------------------
 
+;; Check chaparone violation message:
+
+(let ()
+  (define h
+    (chaperone-hash (make-hash '((a . 0)))
+                    (λ (h k) (values k (λ (h k v) (add1 v))))
+                    (λ (h k v) (values k (add1 v)))
+                    (λ (h k) k)
+                    (λ (h k) k)))
+  (err/rt-test (hash-ref h 'a)
+               exn:fail:contract?
+               (string-append
+                "hash-ref: non-chaperone result; received a value that is not a chaperone of the original value\n"
+                "  original: 0\n"
+                "  received: 1"))
+  (err/rt-test (hash-set! h 'a 5)
+               exn:fail:contract?
+               (string-append
+                "hash-set!: non-chaperone result; received a value that is not a chaperone of the original value\n"
+                "  original: 5\n"
+                "  received: 6")))
+
+;; ----------------------------------------
+
 ;; Check broken key impersonator:
 
 (let ([check
