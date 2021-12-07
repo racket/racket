@@ -231,7 +231,10 @@ each element in the sequence.
 
 
 @defproc[(in-mlist [mlst mlist?]) sequence?]{
-  Returns a sequence equivalent to @racket[mlst].
+  Returns a sequence equivalent to @racket[mlst]. Although the
+  expectation is that @racket[mlst] is @tech{mutable list}, @racket[in-mlist]
+  initially checks only whether @racket[mlst] is a @tech{mutable pair} or @racket[null],
+  since it could change during iteration.
   @info-on-seq["mpairs" "mutable lists"]
   @speed[in-mlist "mutable list"]
 
