@@ -2450,13 +2450,13 @@
   (err/rt-test (hash-ref h 'a)
                exn:fail:contract?
                (string-append
-                "hash-ref: non-chaperone result; received a value that is not a chaperone of the original value\n"
+                "hash-ref: non-chaperone result;\n? received a [a-z]* that is not a chaperone of the original [a-z]*\n"
                 "  original: 0\n"
                 "  received: 1"))
   (err/rt-test (hash-set! h 'a 5)
                exn:fail:contract?
                (string-append
-                "hash-set!: non-chaperone result; received a value that is not a chaperone of the original value\n"
+                "hash-set!: non-chaperone result;\n? received a [a-z]* that is not a chaperone of the original [a-z]*\n"
                 "  original: 5\n"
                 "  received: 6")))
 
