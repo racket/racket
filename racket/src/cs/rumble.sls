@@ -285,6 +285,8 @@
           eqv-hash-code
           equal-hash-code
           equal-secondary-hash-code
+          equal-always-hash-code
+          equal-always-secondary-hash-code
 
           hash hasheqv hasheq
           make-hash make-hasheqv make-hasheq

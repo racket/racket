@@ -145,11 +145,7 @@
                                                               ;; Make sure record sees only booleans:
                                                               (and (eql? a b) #t)))]
                                  [(and (or (eq? mode 'chaperone-of?) (eq? mode 'equal-always?))
-                                       (let ([rtd (record-rtd a)])
-                                         (and (not (eq? 0 (struct-type-mpm rtd)))
-                                              (if (struct-type-prefab? rtd)
-                                                  (with-global-lock* (hashtable-contains? rtd-mutables rtd))
-                                                  #t))))
+                                       (struct-type-mutable? (record-rtd a)))
                                   ;; Mutable records must be `eq?` for `chaperone-of?` and `equal-always?`
                                   #f]
                                  [else

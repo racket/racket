@@ -143,6 +143,9 @@
    (test #t equal? b b2)
    (test #f chaperone-of? b b2)
    (test #t chaperone-of? b2 b)
+   (test #t equal-always? b b2)
+   (test (equal-always-hash-code b) equal-always-hash-code b2)
+   (test (equal-always-secondary-hash-code b) equal-always-secondary-hash-code b2)
    (err/rt-test (set-box! b2 'bad) (lambda (exn)
                                      (test "bad set" exn-message exn)))
    (test (void) set-box! b 'bad)
@@ -235,6 +238,8 @@
    (test #t equal? b b2)
    (test #f chaperone-of? b b2)
    (test #t chaperone-of? b2 b)
+   (test #t equal-always? b b2)
+   (test (equal-always-hash-code b) equal-always-hash-code b2)
    (err/rt-test (vector-set! b2 2 'bad) (lambda (exn)
                                           (test "bad set" exn-message exn)))
    (test 3 vector-ref b 2)
@@ -3814,7 +3819,8 @@
 
   (struct b a (x))
 
-  (test #t integer? (equal-hash-code (chaperone-struct (b 0) b-x (lambda (b v) v)))))
+  (test #t integer? (equal-hash-code (chaperone-struct (b 0) b-x (lambda (b v) v))))
+  (test #t integer? (equal-always-hash-code (chaperone-struct (b 0) b-x (lambda (b v) v)))))
 
 ;; ----------------------------------------
 ;; regression test to make sure hash-ref-key

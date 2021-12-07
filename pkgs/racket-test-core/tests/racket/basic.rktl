@@ -2421,6 +2421,8 @@
       (test #t eq? (eqv-hash-code l) (eqv-hash-code l))
       (test #t eq? (equal-hash-code l) (equal-hash-code l))
       (test #t eq? (equal-hash-code l) (equal-hash-code (list 1 2 3)))
+      (test #t eq? (equal-always-hash-code l) (equal-always-hash-code l))
+      (test #t eq? (equal-always-hash-code l) (equal-always-hash-code (list 1 2 3)))
       (hash-set! h1 l 'ok)
       (test 'ok hash-ref h1 l)
       (err/rt-test (hash-ref h1 'nonesuch (lambda (x) 'bad-proc)) exn:fail:contract:arity? "hash-ref")
@@ -2761,7 +2763,8 @@
 (let ([a (expt 2 500)]
       [b (expt (read (open-input-string "2")) 500)])
   (test #t equal? (eqv-hash-code a) (eqv-hash-code b))
-  (test #t equal? (equal-hash-code a) (equal-hash-code b)))
+  (test #t equal? (equal-hash-code a) (equal-hash-code b))
+  (test #t equal? (equal-always-hash-code a) (equal-always-hash-code b)))
 
 ;; Check for proper clearing of weak hash tables
 ;; (internally, value should get cleared along with key):
@@ -3079,7 +3082,9 @@
         [ht2 (for/hash ([i (in-list l2)])
                (values (a i) (a (a i))))])
     (test (equal-hash-code ht) values (equal-hash-code ht2))
-    (test (equal-secondary-hash-code ht) values (equal-secondary-hash-code ht2)))
+    (test (equal-secondary-hash-code ht) values (equal-secondary-hash-code ht2))
+    (test (equal-always-hash-code ht) values (equal-always-hash-code ht2))
+    (test (equal-always-secondary-hash-code ht) values (equal-always-secondary-hash-code ht2)))
 
   ;; make sure `key's is retained until here:
   (when (positive? (random 1))
@@ -3106,7 +3111,9 @@
   (hash-set! ht 'b ht)
   (eq-hash-code ht)
   (equal-hash-code ht)
-  (equal-secondary-hash-code ht))
+  (equal-secondary-hash-code ht)
+  (equal-always-hash-code ht)
+  (equal-always-secondary-hash-code ht))
 
 ;; Check that an equal hash code on an
 ;;  mutable, opaque structure does not
@@ -3115,15 +3122,29 @@
   (struct a (x [y #:mutable]))
   (define an-a (a 1 2))
   (define v (equal-hash-code an-a))
+  (define v2 (equal-always-hash-code an-a))
   (set-a-y! an-a 8)
-  (test v equal-hash-code an-a))
+  (test v equal-hash-code an-a)
+  (test v2 equal-always-hash-code an-a))
+
+;; Check that an equal-always hash code on a
+;;  mutable, transparent structure does not
+;;  see mutation.
+(let ()
+  (struct a (x [y #:mutable]) #:transparent)
+  (define an-a (a 1 2))
+  (define v (equal-always-hash-code an-a))
+  (set-a-y! an-a 8)
+  (test v equal-always-hash-code an-a))
 
 ;; Check that `equal-hash-code` is consistent for interned symbols:
 (let ()
   (define v (random))
   (define k (equal-hash-code (string->symbol (format "sym:~a" v))))
+  (define k2 (equal-always-hash-code (string->symbol (format "sym:~a" v))))
   (collect-garbage 'minor)
-  (test k equal-hash-code (string->symbol (format "sym:~a" v))))
+  (test k equal-hash-code (string->symbol (format "sym:~a" v)))
+  (test k2 equal-always-hash-code (string->symbol (format "sym:~a" v))))
 
 ;; Try to build a hash table whose indexes don't fit in 32 bits:
 (let ()

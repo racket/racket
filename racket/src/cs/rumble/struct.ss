@@ -1270,6 +1270,15 @@
 (define-values (prop:sealed sealed? sealed-ref)
   (make-struct-type-property 'sealed (lambda (val info) #t)))
 
+;; Whether the struct type is considered mutable for the purposes of:
+;;  - `chaperone-of?`
+;;  - `equal-always?` and associated hash codes
+(define (struct-type-mutable? rtd)
+  (and (not (eq? 0 (struct-type-mpm rtd)))
+       (if (struct-type-prefab? rtd)
+           (with-global-lock* (hashtable-contains? rtd-mutables rtd))
+           #t)))
+
 (define (struct-type-immediate-transparent? rtd)
   (let ([insp (inspector-ref rtd)])
     (and (not (eq? insp none))
