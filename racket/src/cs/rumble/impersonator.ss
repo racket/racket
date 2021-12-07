@@ -14,13 +14,15 @@
       (impersonator-val v)
       v))
 
-(define (raise-chaperone-error who what e e2)
+;; different arg order: (chaperone-of? new  orig)
+;; vs. (raise-chaperone-error who what orig new)
+(define (raise-chaperone-error who what orig naya)
   (raise-arguments-error
    who
    (string-append "non-chaperone result; received a" (if (equal? what "argument") "n" "") " " what
                   " that is not a chaperone of the original " what)
-   "original" e
-   "received" e2))
+   "original" orig
+   "received" naya))
 
 (define (hash-ref2 ht key1 key2 default)
   (let ([ht/val (intmap-ref ht key1 #f)])

@@ -1078,10 +1078,10 @@
                 ;; In `set` mode, `new-v-or-wrap` is a replacement value.
                 (when chaperone?
                   (unless (or (not chaperone?) (chaperone-of? new-k k))
-                    (raise-chaperone-error who "key" new-k k))
+                    (raise-chaperone-error who "key" k new-k))
                   (when set?
                     (unless (or (not chaperone?) (chaperone-of? new-v-or-wrap v))
-                      (raise-chaperone-error who "value" new-v-or-wrap v))))
+                      (raise-chaperone-error who "value" v new-v-or-wrap))))
                 ;; Recur...
                 (let ([r (loop next-ht get-k new-k (if set? new-v-or-wrap none))])
                   ;; In `ref` mode, `r` is the result value (hash-ref) or key (hash-ref-key).
@@ -1100,7 +1100,7 @@
                     (let ([new-r (new-v-or-wrap next-ht new-k r)])
                       (when chaperone?
                         (unless (chaperone-of? new-r r)
-                          (raise-chaperone-error who what-r new-r r)))
+                          (raise-chaperone-error who what-r r new-r)))
                       new-r)]))]
                [args
                 (raise-arguments-error who
@@ -1132,7 +1132,7 @@
     (let* ([k (get-k k)]
            [new-k (|#%app| (hash-procs-equal-key procs) next-ht k)])
       (unless (or (not chaperone?) (chaperone-of? new-k k))
-        (raise-chaperone-error who "key" new-k k))
+        (raise-chaperone-error who "key" k new-k))
       new-k)))
 
 (define (impersonate-hash-clear ht mutable?)
@@ -1239,7 +1239,7 @@
         (let* ([k (loop ht)]
                [new-k (|#%app| (hash-procs-key procs) ht k)])
           (unless (chaperone-of? new-k k)
-            (raise-chaperone-error who "key" new-k k))
+            (raise-chaperone-error who "key" k new-k))
           new-k))]
      [(impersonator? ht)
       (loop (impersonator-next ht))]
