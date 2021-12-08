@@ -243,6 +243,7 @@
   (test-name '(and/c real? (not/c positive?)) (and/c real? (not/c positive?)))
   (test-name '(and/c real? negative?) (and/c real? negative?))
   (test-name '(and/c real? (not/c negative?)) (and/c real? (not/c negative?)))
+  (test-name 'and/c and/c) ;; technically, this tests the `object-name` of `and/c`
   (test-name '(>/c 0) (>/c 0))
   (test-name '(<=/c 0) (<=/c 0))
   (test-name '(</c 0) (</c 0))
