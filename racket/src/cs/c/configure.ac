@@ -213,6 +213,8 @@ fi
 
 WINDRES=windres
 
+m4_include(../ac/install_name.m4)
+
 ############## platform tests ################
 
 # At first, `MACH` means the target that we're building for. In
@@ -850,6 +852,7 @@ AC_SUBST(INSTALL_SETUP_FLAGS)
 AC_SUBST(INSTALL_SETUP_RACKET_FLAGS)
 AC_SUBST(INSTALL_LIBS_ENABLE)
 AC_SUBST(PLT_CS_SLSP_SUFFIX)
+AC_SUBST(INSTALL_NAME_TOOL)
 
 makefiles="Makefile"
 

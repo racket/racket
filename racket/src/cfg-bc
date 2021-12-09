@@ -1310,6 +1310,7 @@ Optional Features:
   --enable-sdk5=<path>    use Mac OS 10.5 SDK directory
   --enable-sdk6=<path>    use Mac OS 10.6 SDK directory
   --enable-sdk9=<path>    use Mac OS 10.9 SDK directory
+  --enable-sdk11=<path>   use Mac OS 11.0 SDK directory
   --enable-ios=<path>     use iOS SDK directory
   --enable-sysroot=<path> use sysroot directory (e.g., for Android)
   --enable-xonx           use Unix style (e.g., use Gtk) for Mac OS
@@ -1931,6 +1932,11 @@ if test "${enable_usersetup+set}" = set; then :
   enableval=$enable_usersetup;
 fi
 
+
+# Check whether --enable-sdk was given.
+if test "${enable_sdk+set}" = set; then :
+  enableval=$enable_sdk;
+fi
 
 # Check whether --enable-sdk was given.
 if test "${enable_sdk+set}" = set; then :

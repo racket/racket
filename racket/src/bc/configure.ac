@@ -508,6 +508,8 @@ if test "${enable_jit}" = "yes" ; then
   check_for_mprotect=yes
 fi
 
+m4_include(../ac/install_name.m4)
+
 ############## platform tests ################
 
 # for flags we don't want to use in config tests:
@@ -1509,6 +1511,8 @@ AC_SUBST(STARTUP_AS_C)
 AC_SUBST(STARTUP_AS_AUTO)
 
 AC_SUBST(CROSS_COMPILE_TARGET_KIND)
+
+AC_SUBST(INSTALL_NAME_TOOL)
 
 mk_needed_dir()
 {

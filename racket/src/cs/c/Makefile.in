@@ -37,6 +37,8 @@ RESTORE_SIGNATURE = @RESTORE_SIGNATURE@ "${srcdir}/../../mac/entitlements.plist"
 STRIP_SIGNATURE_VIA_RACKET = $(BOOTSTRAP_RACKET) "${srcdir}/../../mac/codesign.rkt" --remove-signature
 RESTORE_SIGNATURE_VIA_RACKET = $(BOOTSTRAP_RACKET) "${srcdir}/../../mac/codesign.rkt" -s - --entitlements
 
+INSTALL_NAME_TOOL_VIA_RACKET = $(BOOTSTRAP_RACKET) "${srcdir}/../../mac/install_name_tool.rkt"
+
 ICP=@ICP@
 ICP_LIB=@ICP_LIB@
 
@@ -264,7 +266,7 @@ racketcs@OSX@: raw_racketcs
 	$(MAKE) link-fw-bootfiles-@MACLIBRKT_LINK_MODE@
 	$(MAKE) adjust-framework-boot-compress
 	$(MAKE) mac-embed-boot-@MACLIBRKT_LINK_MODE@ EMBED_SRC=raw_racketcs EMBED_DEST=racketcs
-	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@executable_path/Racket.framework/Versions/$(FWVERSION)_CS/Racket" racketcs
+	@INSTALL_NAME_TOOL@ -change "Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@executable_path/Racket.framework/Versions/$(FWVERSION)_CS/Racket" racketcs
 	$(RESTORE_SIGNATURE) racketcs
 
 raw_racketcs@OSX@: main.o $(RKTFW)
@@ -278,7 +280,7 @@ gracketcs@OSX@:
 $(GRACKET_BIN): grmain.o $(RKTFW) $(GRAPPSKEL)
 	$(CC) $(CFLAGS) -o $(GRACKET_BIN)_raw grmain.o $(MACLIBRKT_LINK_@MACLIBRKT_LINK_MODE@)
 	$(MAKE) mac-embed-boot-@MACLIBRKT_LINK_MODE@ EMBED_SRC=$(GRACKET_BIN)_raw EMBED_DEST=$(GRACKET_BIN)
-	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@executable_path/../../../Racket.framework/Versions/$(FWVERSION)_CS/Racket" $(GRACKET_BIN)
+	@INSTALL_NAME_TOOL@ -change "Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@executable_path/../../../Racket.framework/Versions/$(FWVERSION)_CS/Racket" $(GRACKET_BIN)
 	rm $(GRACKET_BIN)_raw
 	$(RESTORE_SIGNATURE) $(GRACKET_BIN)
 
@@ -312,7 +314,7 @@ mac-embed-boot-static:
 	rm -f $(EMBED_DEST)
 	cp $(EMBED_SRC) $(EMBED_DEST)
 	$(STRIP_SIGNATURE) $(EMBED_DEST)
-	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @BOOT_COMPRESS_COMP@ $(EMBED_SRC) $(EMBED_DEST) $(FW_BOOT_DESTS)
+	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @BOOT_COMPRESS_COMP@ "" $(EMBED_DEST) $(FW_BOOT_DESTS)
 
 link-fw-bootfiles-fw:
 	$(NOOP)
@@ -592,7 +594,7 @@ macos-install:
 	cp $(RKTFWDIR)/boot/racket.boot $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS/boot/
 	$(STRIP_SIGNATURE) "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)"
 	$(BOOTSTRAP_RACKET) $(START_COLLECTS_PATH) "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
-	/usr/bin/install_name_tool -change "@executable_path/Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)_CS/Racket" $(DESTDIR)"$(bindir)/racket$(CS_INSTALLED)"
+	@INSTALL_NAME_TOOL@ -change "@executable_path/Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)_CS/Racket" $(DESTDIR)"$(bindir)/racket$(CS_INSTALLED)"
 	$(RESTORE_SIGNATURE) "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)"
 	$(MAKE) macos-install-gracket CS_GR_INSTALLED="`echo $(CS_INSTALLED) | tr a-z A-Z`"
 	$(MAKE) macos-@INSTALL_LIBS_ENABLE@-libs
@@ -607,7 +609,7 @@ macos-install-gracket:
 	rm -rf $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app"
 	$(ICP) -r "GRacketCS.app" $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app"
 	$(BOOTSTRAP_RACKET) "$(srcdir)/../../mac/rename-app.rkt" $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app" "GRacketCS" "GRacket$(CS_GR_INSTALLED)" no-up
-	/usr/bin/install_name_tool -change "@executable_path/../../../../bc/Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)_CS/Racket" $(GRACKET_INSTALLED)
+	@INSTALL_NAME_TOOL@ -change "@executable_path/../../../../bc/Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)_CS/Racket" $(GRACKET_INSTALLED)
 	$(STRIP_SIGNATURE) $(GRACKET_INSTALLED)
 	$(BOOTSTRAP_RACKET) $(START_COLLECTS_PATH) $(GRACKET_INSTALLED) ../../../../collects ../../../../etc
 	$(STRIP_DEBUG) $(GRACKET_INSTALLED)

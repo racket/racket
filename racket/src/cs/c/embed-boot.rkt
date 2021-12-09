@@ -121,7 +121,7 @@
      (define-values (i o) (open-input-output-file dest-file #:exists 'update))
      (define m (regexp-match-positions #rx"BooT FilE OffsetS:" i))
      (unless m
-       (error 'embed-boot "cannot file boot-file offset tag"))
+       (error 'embed-boot "cannot find boot-file offset tag"))
 
      (define terminator-len (bytes-length terminator))
 
