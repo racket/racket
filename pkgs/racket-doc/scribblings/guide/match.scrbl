@@ -123,7 +123,7 @@ To match against a value bound to an identifier, use @racket[==].
   [_ 'this-branch-is-evaluated])
 (match (list 43)
   [(list val)
-   ;; without ==, val is a pattern variable
+   (code:comment @#,t{without @racket[==], @racket[val] is a pattern variable})
    (format "match binds val to ~a" val)])
 ]
 
