@@ -330,6 +330,9 @@
       (equal? method-bss "HEAD")
       (equal? method-bss 'HEAD)))
 
+(define (no-content? status)
+  (regexp-match? #rx#"^HTTP.... (1..|204|304) " status))
+
 (define (http-conn-recv! hc
                          #:method [method-bss #"GET"]
                          #:content-decode [decodes '(gzip deflate)]
@@ -344,7 +347,9 @@
     (http-conn-abandon! hc))
   (define-values (raw-response-port wait-for-close?)
     (cond
-      [(head? method-bss) (values (open-input-bytes #"") #f)]
+      [(or (head? method-bss)
+           (no-content? status))
+       (values (open-input-bytes #"") #f)]
       [(regexp-member #rx#"^(?i:Transfer-Encoding: +chunked)$" headers)
        (values (http-conn-response-port/chunked! hc #:close? #t)
                #t)]
@@ -379,7 +384,9 @@
                 (close-output-port out)))
              in)])
       (cond
-        [(head? method-bss) raw-response-port]
+        [(or (head? method-bss)
+             (no-content? status))
+         raw-response-port]
         [(and (memq 'gzip decodes)
               (regexp-member #rx#"^(?i:Content-Encoding: +gzip)$" headers)
               (not (eof-object? (peek-byte raw-response-port))))
