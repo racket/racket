@@ -327,7 +327,7 @@
     '()
     #""])
 
-  ;; Content-less keep alive tests.
+  ;; Body-less keep alive tests.
   ;; https://datatracker.ietf.org/doc/html/rfc2616#section-10.1
   ;; https://datatracker.ietf.org/doc/html/rfc2616#section-10.2.5
   ;; https://datatracker.ietf.org/doc/html/rfc2616#section-10.3.5
