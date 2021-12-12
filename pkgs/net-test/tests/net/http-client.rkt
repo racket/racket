@@ -359,8 +359,9 @@
            (for ([expected-status '(#"HTTP/1.1 104 Not Real"
                                     #"HTTP/1.1 204 No Content"
                                     #"HTTP/1.1 304 Not Modified")])
-             (let-values ([(status _heads _port) (hc:http-conn-sendrecv! hc "/")])
-               (check-equal? status expected-status)))))
+             (let-values ([(status _heads port) (hc:http-conn-sendrecv! hc "/")])
+               (check-equal? status expected-status)
+               (close-input-port port)))))
         (handle-evt
          (alarm-evt (+ (current-inexact-milliseconds) 5000))
          (lambda (_)
