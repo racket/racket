@@ -219,7 +219,7 @@ identifiers:
 
 @itemlist[
 
- @item{@racket[timeout] --- a real number to override the default
+ @item{@racket[timeout] --- a real number in seconds to override the default
        timeout for the test, which applies only when timeouts are
        enabled.}
 
@@ -307,7 +307,7 @@ The following @filepath{info.rkt} fields are recognized:
 
  @item{@racket[test-timeouts] --- a list of @racket[(list
        _module-path-string _real-number)] to override the default
-       timeout for @racket[_module-path-string].}
+       timeout in seconds for @racket[_module-path-string].}
 
  @item{@racket[test-responsibles] --- a list of @racket[(list
        _module-path-string _party)] or @racket[(list 'all _party)] to
