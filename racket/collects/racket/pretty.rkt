@@ -692,7 +692,9 @@
                      'hasheq
                      (if (hash-eqv? obj)
                          'hasheqv
-                         'hash)))
+                         (if (hash-equal-always? obj)
+                             'hashequalw
+                             'hash))))
                 (apply append l))
           l)))
   
@@ -933,7 +935,9 @@
                               "#hasheq"
                               (if (hash-eqv? obj)
                                   "#hasheqv"
-                                  "#hash"))))
+                                  (if (hash-equal-always? obj)
+                                      "#hashequalw"
+                                      "#hash")))))
                    (wr-lst (convert-hash obj expr?)
                            #f depth
                            pair? car cdr "(" ")" qd))))
@@ -1141,7 +1145,9 @@
                                      "#hasheq"
                                      (if (hash-eqv? obj)
                                          "#hasheqv"
-                                         "#hash"))))
+                                         (if (hash-equal-always? obj)
+                                             "#hashequalw"
+                                             "#hash")))))
                           (pp-list (convert-hash obj expr?) extra pp-expr #f depth
                                    pair? car cdr pair-open pair-close
                                    qd))]

@@ -84,6 +84,16 @@
              (reader-error in config
                            "bad syntax `~a`"
                            (accum-string-get! accum-str config)))]
+        [(#\u #\U)
+         (accum-string-add! accum-str c)
+         (get-next! #\a #\A)
+         (get-next! #\l #\L)
+         (get-next! #\w #\W)
+         (if (eq? mode 'eq)
+             (loop 'equal-always)
+             (reader-error in config
+                           "bad syntax `~a`"
+                           (accum-string-get! accum-str config)))]
         [else
          (when (char? c)
            (accum-string-add! accum-str c))
@@ -107,7 +117,11 @@
           [(eqv)
            (if graph?
                (make-hasheqv-placeholder content)
-               (make-immutable-hasheqv content))])
+               (make-immutable-hasheqv content))]
+          [(equal-always)
+           (if graph?
+               (make-hashequalw-placeholder content)
+               (make-immutable-hashequalw content))])
         in
         config
         opener))

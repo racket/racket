@@ -33,6 +33,7 @@
              for/hash for*/hash
              for/hasheq for*/hasheq
              for/hasheqv for*/hasheqv
+             for/hashequalw for*/hashequalw
 
              for/fold/derived for*/fold/derived
              for/foldr/derived for*/foldr/derived
@@ -2132,6 +2133,15 @@
 
   (define-for-variants (for/hasheqv for*/hasheqv)
     ([table #hasheqv()])
+    (lambda (x) x)
+    (lambda (rhs) rhs)
+    (lambda (x)
+      #`(let-values ([(key val) #,x])
+          (hash-set table key val)))
+    #f)
+
+  (define-for-variants (for/hashequalw for*/hashequalw)
+    ([table (hashequalw)])
     (lambda (x) x)
     (lambda (rhs) rhs)
     (lambda (x)
