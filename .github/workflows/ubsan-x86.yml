@@ -72,7 +72,7 @@ jobs:
       run: raco test -c tests/xml | tee logs/xml.log
     - name: Run tests/future
       continue-on-error: true
-      run: raco test --timeout 90 -c tests/future | tee logs/future.log
+      run: raco test --timeout 300 -c tests/future | tee logs/future.log
     - name: Run tests/stxparse
       continue-on-error: true
       run: raco test -c tests/stxparse | tee logs/stxparse.log
@@ -154,7 +154,7 @@ jobs:
       run: raco test -c tests/xml | tee logs/xml.log
     - name: Run tests/future
       continue-on-error: true
-      run: raco test --timeout 90 -c tests/future | tee logs/future.log
+      run: raco test --timeout 300 -c tests/future | tee logs/future.log
     - name: Run tests/stxparse
       continue-on-error: true
       run: raco test -c tests/stxparse | tee logs/stxparse.log
