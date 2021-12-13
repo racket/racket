@@ -237,6 +237,15 @@ For a more Vim-like set of key-mappings, pair either of @itemlist[
 with @hyperlink["https://github.com/tpope/vim-sexp-mappings-for-regular-people"]{tpope/vim-sexp-mappings-for-regular-people}.
 The experience is on par with paredit, but more comfortable for the fingers.
 
+@subsection{REPLs}
+
+There are many general-purpose Vim + REPL plugins out there. Here are a few that
+support Racket out of the box: @itemlist[
+    @item{@hyperlink["https://github.com/rhysd/reply.vim"]{rhysd/reply.vim}}
+    @item{@hyperlink["https://github.com/kovisoft/slimv"]{kovisoft/slimv}, if you are using the @tt{scheme} filetype}
+    @item{@hyperlink["https://github.com/benknoble/vim-simpl"]{benknoble/vim-simpl}}
+]
+
 @subsection{Scribble}
 
 Vim support for writing scribble documents is provided by @itemlist[
