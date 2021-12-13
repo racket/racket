@@ -27,20 +27,20 @@
          in-weak-set
          set-implements/c
 
-         set seteq seteqv
-         weak-set weak-seteq weak-seteqv
-         mutable-set mutable-seteq mutable-seteqv
-         list->set list->seteq list->seteqv
-         list->weak-set list->weak-seteq list->weak-seteqv
-         list->mutable-set list->mutable-seteq list->mutable-seteqv
-         set-eq? set-eqv? set-equal?
+         set seteq seteqv setequalw
+         weak-set weak-seteq weak-seteqv weak-setequalw
+         mutable-set mutable-seteq mutable-seteqv mutable-setequalw
+         list->set list->seteq list->seteqv list->setequalw
+         list->weak-set list->weak-seteq list->weak-seteqv list->weak-setequalw
+         list->mutable-set list->mutable-seteq list->mutable-seteqv list->mutable-setequalw
+         set-eq? set-eqv? set-equal? set-equal-always?
          set-weak? set-mutable? set?
-         for/set for/seteq for/seteqv
-         for*/set for*/seteq for*/seteqv
-         for/weak-set for/weak-seteq for/weak-seteqv
-         for*/weak-set for*/weak-seteq for*/weak-seteqv
-         for/mutable-set for/mutable-seteq for/mutable-seteqv
-         for*/mutable-set for*/mutable-seteq for*/mutable-seteqv
+         for/set for/seteq for/seteqv for/setequalw
+         for*/set for*/seteq for*/seteqv for*/setequalw
+         for/weak-set for/weak-seteq for/weak-seteqv for/weak-setequalw
+         for*/weak-set for*/weak-seteq for*/weak-seteqv for*/weak-setequalw
+         for/mutable-set for/mutable-seteq for/mutable-seteqv for/mutable-setequalw
+         for*/mutable-set for*/mutable-seteq for*/mutable-seteqv for*/mutable-setequalw
 
          define-custom-set-types
          make-custom-set-types
@@ -66,6 +66,7 @@
     (case cmp
       [(dont-care) any/c]
       [(equal) set-equal?]
+      [(equal-always) set-equal-always?]
       [(eqv) set-eqv?]
       [(eq) set-eq?]
       [else (raise-arguments-error 'set/c
@@ -133,6 +134,7 @@
     (case cmp
       [(dont-care) (lambda (x) #t)]
       [(equal) set-equal?]
+      [(equal-always) set-equal-always?]
       [(eqv) set-eqv?]
       [(eq) set-eq?]))
   (define kind?
@@ -152,6 +154,9 @@
     [(equal)
      (unless (set-equal? x)
        (raise-blame-error b #:missing-party neg-party x "expected an equal?-based set"))]
+    [(equal-always)
+     (unless (set-equal-always? x)
+       (raise-blame-error b #:missing-party neg-party x "expected an equal-always?-based set"))]
     [(eqv)
      (unless (set-eqv? x)
        (raise-blame-error b #:missing-party neg-party x "expected an eqv?-based set"))]
@@ -405,6 +410,11 @@
        [mutable? mutable-seteq]
        [weak? weak-seteq]
        [else seteq])]
+    [(eq? cmp 'equal-always)
+     (cond
+       [mutable? mutable-setequalw]
+       [weak? weak-setequalw]
+       [else setequalw])]
     [else
      (cond
        [mutable? mutable-set]
