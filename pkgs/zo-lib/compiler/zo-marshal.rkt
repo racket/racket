@@ -753,7 +753,8 @@
         (out-number (cond
                       [(hash-eqv? v) 2]
                       [(hash-eq? v) 0]
-                      [(hash-equal? v) 1])
+                      [(hash-equal? v) 1]
+                      [(hash-equal-always? v) 3])
                     out)
         (out-number (hash-count v) out)
         (for ([(k v) (in-hash v)])

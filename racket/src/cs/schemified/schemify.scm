@@ -40009,6 +40009,7 @@
 (define fasl-hash-eq-variant 0)
 (define fasl-hash-equal-variant 1)
 (define fasl-hash-eqv-variant 2)
+(define fasl-hash-equal-always-variant 3)
 (define s-exp->fasl.1
   (|#%name|
    s-exp->fasl
@@ -40850,7 +40851,10 @@
                                                                                                              (if (hash-eqv?
                                                                                                                   v_0)
                                                                                                                2
-                                                                                                               1))))
+                                                                                                               (if (hash-equal-always?
+                                                                                                                    v_0)
+                                                                                                                 3
+                                                                                                                 1)))))
                                                                                                       (begin-unsafe
                                                                                                        (write-byte
                                                                                                         byte_0
@@ -41551,7 +41555,9 @@
                                                             (make-hasheq)
                                                             (if (eq? tmp_0 2)
                                                               (make-hasheqv)
-                                                              (make-hash))))))
+                                                              (if (eq? tmp_0 3)
+                                                                (make-hashequalw)
+                                                                (make-hash)))))))
                                                    (let ((len_1
                                                           (|#%app|
                                                            read-fasl-integer
@@ -41591,7 +41597,9 @@
                                                             hash2610
                                                             (if (eq? tmp_0 2)
                                                               hash2589
-                                                              hash2725)))))
+                                                              (if (eq? tmp_0 3)
+                                                                (hashequalw)
+                                                                hash2725))))))
                                                    (let ((len_1
                                                           (|#%app|
                                                            read-fasl-integer

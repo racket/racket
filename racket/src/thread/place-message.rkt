@@ -154,6 +154,9 @@
                [(hash-eqv? v)
                 (for/hasheqv ([(k v) (in-hash v)])
                   (values (loop k) (loop v)))]
+               [(hash-equal-always? v)
+                (for/hashequalw ([(k v) (in-hash v)])
+                  (values (loop k) (loop v)))]
                [else
                 (for/hash ([(k v) (in-hash v)])
                   (values (loop k) (loop v)))]))]
@@ -208,6 +211,9 @@
             (values (loop k) (loop v)))]
          [(hash-eqv? v)
           (for/hasheqv ([(k v) (in-hash v)])
+            (values (loop k) (loop v)))]
+         [(hash-equal-always? v)
+          (for/hashequalw ([(k v) (in-hash v)])
             (values (loop k) (loop v)))]
          [else
           (for/hash ([(k v) (in-hash v)])

@@ -75,11 +75,13 @@
      [(immutable? table)
       (cond
        [(hash-equal? table) (hash)]
+       [(hash-equal-always? table) (hashequalw)]
        [(hash-eqv? table) (hasheqv)]
        [(hash-eq? table) (hasheq)])]
      [(hash-weak? table)
       (cond
        [(hash-equal? table) (make-weak-hash)]
+       [(hash-equal-always? table) (make-weak-hashequalw)]
        [(hash-eqv? table) (make-weak-hasheqv)]
        [(hash-eq? table) (make-weak-hasheq)])]
      [(hash-ephemeron? table)
@@ -90,6 +92,7 @@
      [else
       (cond
        [(hash-equal? table) (make-hash)]
+       [(hash-equal-always? table) (make-hashequalw)]
        [(hash-eqv? table) (make-hasheqv)]
        [(hash-eq? table) (make-hasheq)])]))
 

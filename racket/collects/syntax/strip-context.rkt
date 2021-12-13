@@ -35,6 +35,10 @@
        (for/hasheqv ([(k v) (in-hash e)])
          (values (replace-context ctx k)
                  (replace-context ctx v)))]
+      [(hash-equal-always? e)
+       (for/hashequalw ([(k v) (in-hash e)])
+         (values (replace-context ctx k)
+                 (replace-context ctx v)))]
       [else
        (for/hash ([(k v) (in-hash e)])
          (values (replace-context ctx k)

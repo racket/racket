@@ -281,6 +281,7 @@
          (flonum? . #t)
          (handle-evt? . #t)
          (hash-eq? . #t)
+         (hash-equal-always? . #t)
          (hash-equal? . #t)
          (hash-eqv? . #t)
          (hash-placeholder? . #t)

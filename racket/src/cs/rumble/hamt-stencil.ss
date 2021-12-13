@@ -54,7 +54,8 @@
 (define HAMT-EQTYPE-EQ 0)
 (define HAMT-EQTYPE-EQV 1)
 (define HAMT-EQTYPE-EQUAL 2)
-(define HAMT-EQTYPE-MASK (fx- (fxsll 1 (integer-length HAMT-EQTYPE-EQUAL)) 1))
+(define HAMT-EQTYPE-EQUAL-ALWAYS 3)
+(define HAMT-EQTYPE-MASK (fx- (fxsll 1 (integer-length HAMT-EQTYPE-EQUAL-ALWAYS)) 1))
 
 (define HAMT-COUNT-OFFSET (integer-length HAMT-EQTYPE-MASK))
 (define ONE-COUNT-IN-COUNT+EQTYPE (fxsll 1 HAMT-COUNT-OFFSET))
@@ -75,13 +76,14 @@
 
 ;; to dispatch on a bnode's equality type:
 (define-syntax eqtype-case
-  (syntax-rules (eq eqv else)
-    [(_ h [(eq) a] [(eqv) b] [else c])
+  (syntax-rules (eq eqv equal-always else)
+    [(_ h [(eq) a] [(eqv) b] [(equal-always) c] [else d])
      (let ([eqt (hamt-eqtype h)])
        (cond
         [(fx= eqt HAMT-EQTYPE-EQ) a]
         [(fx= eqt HAMT-EQTYPE-EQV) b]
-        [else c]))]))
+        [(fx= eqt HAMT-EQTYPE-EQUAL-ALWAYS) c]
+        [else d]))]))
 
 ;; Child, key, and value bits in the stencil-vector mask:
 (define HAMT-CHILD-OFFSET HAMT-STATIC-FIELD-COUNT)
@@ -412,6 +414,8 @@
 (define empty-hasheq (make-empty-bnode HAMT-EQTYPE-EQ))
 (define empty-hasheqv (make-empty-bnode HAMT-EQTYPE-EQV))
 (define empty-hash (make-empty-bnode HAMT-EQTYPE-EQUAL))
+;; equalw is short for EQUal ALWays, first 3 letters of each word
+(define empty-hashequalw (make-empty-bnode HAMT-EQTYPE-EQUAL-ALWAYS))
 
 (define intmap-shell-falses (let loop ([n (fx* 2 HAMT-WIDTH)])
                               (if (fx= n 0)
@@ -426,6 +430,7 @@
         [eqtype (case eqtype-sym
                   [(eq)  HAMT-EQTYPE-EQ]
                   [(eqv) HAMT-EQTYPE-EQV]
+                  [(equal-always) HAMT-EQTYPE-EQUAL-ALWAYS]
                   [else  HAMT-EQTYPE-EQUAL])])
     (#%apply stencil-vector mask eqtype intmap-shell-falses)))
 
@@ -445,6 +450,9 @@
 
 (define (intmap-equal? h)
   (eq? (hamt-eqtype h) HAMT-EQTYPE-EQUAL))
+
+(define (intmap-equal-always? h)
+  (eq? (hamt-eqtype h) HAMT-EQTYPE-EQUAL-ALWAYS))
 
 (define (intmap-count h)
   (hamt-count h))
@@ -477,13 +485,16 @@
                            [_ e])])))])
        (with-syntax ([eq:e (prefix 'eq: #'e)]
                      [eqv:e (prefix 'eqv: #'e)]
-                     [equal:e (prefix 'equal: #'e)])
+                     [equal:e (prefix 'equal: #'e)]
+                     [equal-always:e (prefix 'equal-always: #'e)])
          #'(let ([et (hamt-eqtype h)])
              (cond
               [(fx= et HAMT-EQTYPE-EQ)
                eq:e]
               [(fx= et HAMT-EQTYPE-EQV)
                eqv:e]
+              [(fx= et HAMT-EQTYPE-EQUAL-ALWAYS)
+               equal-always:e]
               [else
                equal:e]))))]
     [(_ h (f arg ...))
@@ -507,6 +518,8 @@
           (eq:bnode-ref h key (eq:bnode-key-hash-code key) 0 default)]
          [(fx= eqtype HAMT-EQTYPE-EQV)
           (eqv:bnode-ref h key (eqv:bnode-key-hash-code key) 0 default)]
+         [(fx= eqtype HAMT-EQTYPE-EQUAL-ALWAYS)
+          (equal-always:bnode-ref h key (equal-always:bnode-key-hash-code key) 0 default)]
          [else
           (equal:bnode-ref h key (equal:bnode-key-hash-code key) 0 default)]))])))
 
@@ -821,6 +834,7 @@
                    node
                    [(eq)  empty-hasheq]
                    [(eqv) empty-hasheqv]
+                   [(equal-always) empty-hashequalw]
                    [else  empty-hash])]
                  [else
                   (bnode-remove-key node bit)]))]
@@ -1320,3 +1334,49 @@
   hamt-wrapped-key=? equal:hamt-wrapped-key=?
   hamt-key-hash-code equal:hamt-key-hash-code
   hamt-wrapped-key-hash-code equal:hamt-wrapped-key-hash-code)
+
+(define equal-always:hamt-wrap-key equal:hamt-wrap-key)
+(define equal-always:hamt-unwrap-key equal:hamt-unwrap-key)
+
+;; second key is wrapped
+(define (equal-always:hamt-key=? k1 k1-hash wrapped-k2)
+  (if (pair? wrapped-k2)
+      (and (fx= k1-hash (car wrapped-k2))
+           (key-equal-always? k1 (cdr wrapped-k2)))
+      (key-equal-always? k1 wrapped-k2)))
+
+(define (equal-always:hamt-unwrapped-key=? k1 k2)
+  (key-equal-always? k1 k2))
+
+(define (equal-always:hamt-wrapped-key=? k1 k2)
+  (cond
+   [(pair? k1)
+    (cond
+     [(pair? k2)
+      (and (fx= (car k1) (car k2))
+           (key-equal-always? (cdr k1) (cdr k2)))]
+     [else (key-equal-always? (cdr k1) k2)])]
+   [else
+    (cond
+     [(pair? k2)
+      (key-equal-always? k1 (cdr k2))]
+     [else (key-equal-always? k1 k2)])]))
+
+(define (equal-always:hamt-key-hash-code k)
+  (key-equal-always-hash-code k))
+
+(define (equal-always:hamt-wrapped-key-hash-code n k)
+  (if (pair? k)
+      (car k)
+      (key-equal-always-hash-code k)))
+
+(define-prefixed-bnode-for-eqtype
+  equal-always:
+  hamt-key-eqtype HAMT-EQTYPE-EQUAL-ALWAYS
+  hamt-wrap-key equal-always:hamt-wrap-key
+  hamt-unwrap-key equal-always:hamt-unwrap-key
+  hamt-key=? equal-always:hamt-key=?
+  hamt-unwrapped-key=? equal-always:hamt-unwrapped-key=?
+  hamt-wrapped-key=? equal-always:hamt-wrapped-key=?
+  hamt-key-hash-code equal-always:hamt-key-hash-code
+  hamt-wrapped-key-hash-code equal-always:hamt-wrapped-key-hash-code)

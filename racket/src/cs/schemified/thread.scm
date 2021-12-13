@@ -3539,61 +3539,120 @@
                                                             hash2589
                                                             (hash-iterate-first
                                                              v_1))))
-                                                        (begin
-                                                          (letrec*
-                                                           ((for-loop_0
-                                                             (|#%name|
-                                                              for-loop
-                                                              (lambda (table_0
-                                                                       i_0)
-                                                                (begin
-                                                                  (if i_0
-                                                                    (call-with-values
-                                                                     (lambda ()
-                                                                       (hash-iterate-key+value
-                                                                        v_1
-                                                                        i_0))
-                                                                     (case-lambda
-                                                                      ((k_0
-                                                                        v_2)
-                                                                       (let ((table_1
-                                                                              (let ((table_1
-                                                                                     (call-with-values
-                                                                                      (lambda ()
-                                                                                        (let ((app_0
-                                                                                               (loop_0
-                                                                                                k_0)))
-                                                                                          (values
-                                                                                           app_0
-                                                                                           (loop_0
-                                                                                            v_2))))
-                                                                                      (case-lambda
-                                                                                       ((key_0
-                                                                                         val_0)
-                                                                                        (hash-set
-                                                                                         table_0
-                                                                                         key_0
-                                                                                         val_0))
-                                                                                       (args
-                                                                                        (raise-binding-result-arity-error
-                                                                                         2
-                                                                                         args))))))
-                                                                                (values
-                                                                                 table_1))))
-                                                                         (for-loop_0
-                                                                          table_1
-                                                                          (hash-iterate-next
-                                                                           v_1
-                                                                           i_0))))
-                                                                      (args
-                                                                       (raise-binding-result-arity-error
-                                                                        2
-                                                                        args))))
-                                                                    table_0))))))
-                                                           (for-loop_0
-                                                            hash2725
-                                                            (hash-iterate-first
-                                                             v_1)))))))))
+                                                        (if (hash-equal-always?
+                                                             v_1)
+                                                          (begin
+                                                            (letrec*
+                                                             ((for-loop_0
+                                                               (|#%name|
+                                                                for-loop
+                                                                (lambda (table_0
+                                                                         i_0)
+                                                                  (begin
+                                                                    (if i_0
+                                                                      (call-with-values
+                                                                       (lambda ()
+                                                                         (hash-iterate-key+value
+                                                                          v_1
+                                                                          i_0))
+                                                                       (case-lambda
+                                                                        ((k_0
+                                                                          v_2)
+                                                                         (let ((table_1
+                                                                                (let ((table_1
+                                                                                       (call-with-values
+                                                                                        (lambda ()
+                                                                                          (let ((app_0
+                                                                                                 (loop_0
+                                                                                                  k_0)))
+                                                                                            (values
+                                                                                             app_0
+                                                                                             (loop_0
+                                                                                              v_2))))
+                                                                                        (case-lambda
+                                                                                         ((key_0
+                                                                                           val_0)
+                                                                                          (hash-set
+                                                                                           table_0
+                                                                                           key_0
+                                                                                           val_0))
+                                                                                         (args
+                                                                                          (raise-binding-result-arity-error
+                                                                                           2
+                                                                                           args))))))
+                                                                                  (values
+                                                                                   table_1))))
+                                                                           (for-loop_0
+                                                                            table_1
+                                                                            (hash-iterate-next
+                                                                             v_1
+                                                                             i_0))))
+                                                                        (args
+                                                                         (raise-binding-result-arity-error
+                                                                          2
+                                                                          args))))
+                                                                      table_0))))))
+                                                             (let ((app_0
+                                                                    (hashequalw)))
+                                                               (for-loop_0
+                                                                app_0
+                                                                (hash-iterate-first
+                                                                 v_1)))))
+                                                          (begin
+                                                            (letrec*
+                                                             ((for-loop_0
+                                                               (|#%name|
+                                                                for-loop
+                                                                (lambda (table_0
+                                                                         i_0)
+                                                                  (begin
+                                                                    (if i_0
+                                                                      (call-with-values
+                                                                       (lambda ()
+                                                                         (hash-iterate-key+value
+                                                                          v_1
+                                                                          i_0))
+                                                                       (case-lambda
+                                                                        ((k_0
+                                                                          v_2)
+                                                                         (let ((table_1
+                                                                                (let ((table_1
+                                                                                       (call-with-values
+                                                                                        (lambda ()
+                                                                                          (let ((app_0
+                                                                                                 (loop_0
+                                                                                                  k_0)))
+                                                                                            (values
+                                                                                             app_0
+                                                                                             (loop_0
+                                                                                              v_2))))
+                                                                                        (case-lambda
+                                                                                         ((key_0
+                                                                                           val_0)
+                                                                                          (hash-set
+                                                                                           table_0
+                                                                                           key_0
+                                                                                           val_0))
+                                                                                         (args
+                                                                                          (raise-binding-result-arity-error
+                                                                                           2
+                                                                                           args))))))
+                                                                                  (values
+                                                                                   table_1))))
+                                                                           (for-loop_0
+                                                                            table_1
+                                                                            (hash-iterate-next
+                                                                             v_1
+                                                                             i_0))))
+                                                                        (args
+                                                                         (raise-binding-result-arity-error
+                                                                          2
+                                                                          args))))
+                                                                      table_0))))))
+                                                             (for-loop_0
+                                                              hash2725
+                                                              (hash-iterate-first
+                                                               v_1))))))))))
                                                (if (cpointer? v_1)
                                                  (ptr-add v_1 0)
                                                  (if (if (let ((or-part_0
@@ -3848,52 +3907,108 @@
                                  (for-loop_0
                                   hash2589
                                   (hash-iterate-first v_1))))
-                              (begin
-                                (letrec*
-                                 ((for-loop_0
-                                   (|#%name|
-                                    for-loop
-                                    (lambda (table_0 i_0)
-                                      (begin
-                                        (if i_0
-                                          (call-with-values
-                                           (lambda ()
-                                             (hash-iterate-key+value v_1 i_0))
-                                           (case-lambda
-                                            ((k_0 v_2)
-                                             (let ((table_1
-                                                    (let ((table_1
-                                                           (call-with-values
-                                                            (lambda ()
-                                                              (let ((app_0
-                                                                     (loop_0
-                                                                      k_0)))
-                                                                (values
-                                                                 app_0
-                                                                 (loop_0
-                                                                  v_2))))
-                                                            (case-lambda
-                                                             ((key_0 val_0)
-                                                              (hash-set
-                                                               table_0
-                                                               key_0
-                                                               val_0))
-                                                             (args
-                                                              (raise-binding-result-arity-error
-                                                               2
-                                                               args))))))
-                                                      (values table_1))))
-                                               (for-loop_0
-                                                table_1
-                                                (hash-iterate-next v_1 i_0))))
-                                            (args
-                                             (raise-binding-result-arity-error
-                                              2
-                                              args))))
-                                          table_0))))))
-                                 (for-loop_0
-                                  hash2725
-                                  (hash-iterate-first v_1))))))
+                              (if (hash-equal-always? v_1)
+                                (begin
+                                  (letrec*
+                                   ((for-loop_0
+                                     (|#%name|
+                                      for-loop
+                                      (lambda (table_0 i_0)
+                                        (begin
+                                          (if i_0
+                                            (call-with-values
+                                             (lambda ()
+                                               (hash-iterate-key+value
+                                                v_1
+                                                i_0))
+                                             (case-lambda
+                                              ((k_0 v_2)
+                                               (let ((table_1
+                                                      (let ((table_1
+                                                             (call-with-values
+                                                              (lambda ()
+                                                                (let ((app_0
+                                                                       (loop_0
+                                                                        k_0)))
+                                                                  (values
+                                                                   app_0
+                                                                   (loop_0
+                                                                    v_2))))
+                                                              (case-lambda
+                                                               ((key_0 val_0)
+                                                                (hash-set
+                                                                 table_0
+                                                                 key_0
+                                                                 val_0))
+                                                               (args
+                                                                (raise-binding-result-arity-error
+                                                                 2
+                                                                 args))))))
+                                                        (values table_1))))
+                                                 (for-loop_0
+                                                  table_1
+                                                  (hash-iterate-next
+                                                   v_1
+                                                   i_0))))
+                                              (args
+                                               (raise-binding-result-arity-error
+                                                2
+                                                args))))
+                                            table_0))))))
+                                   (let ((app_0 (hashequalw)))
+                                     (for-loop_0
+                                      app_0
+                                      (hash-iterate-first v_1)))))
+                                (begin
+                                  (letrec*
+                                   ((for-loop_0
+                                     (|#%name|
+                                      for-loop
+                                      (lambda (table_0 i_0)
+                                        (begin
+                                          (if i_0
+                                            (call-with-values
+                                             (lambda ()
+                                               (hash-iterate-key+value
+                                                v_1
+                                                i_0))
+                                             (case-lambda
+                                              ((k_0 v_2)
+                                               (let ((table_1
+                                                      (let ((table_1
+                                                             (call-with-values
+                                                              (lambda ()
+                                                                (let ((app_0
+                                                                       (loop_0
+                                                                        k_0)))
+                                                                  (values
+                                                                   app_0
+                                                                   (loop_0
+                                                                    v_2))))
+                                                              (case-lambda
+                                                               ((key_0 val_0)
+                                                                (hash-set
+                                                                 table_0
+                                                                 key_0
+                                                                 val_0))
+                                                               (args
+                                                                (raise-binding-result-arity-error
+                                                                 2
+                                                                 args))))))
+                                                        (values table_1))))
+                                                 (for-loop_0
+                                                  table_1
+                                                  (hash-iterate-next
+                                                   v_1
+                                                   i_0))))
+                                              (args
+                                               (raise-binding-result-arity-error
+                                                2
+                                                args))))
+                                            table_0))))))
+                                   (for-loop_0
+                                    hash2725
+                                    (hash-iterate-first v_1)))))))
                           (if (if (cpointer? v_1)
                                 (if v_1 (not (bytes? v_1)) #f)
                                 #f)

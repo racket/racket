@@ -288,11 +288,11 @@
           equal-always-hash-code
           equal-always-secondary-hash-code
 
-          hash hasheqv hasheq
-          make-hash make-hasheqv make-hasheq
-          make-immutable-hash make-immutable-hasheqv make-immutable-hasheq
-          make-weak-hash make-weak-hasheq make-weak-hasheqv
-          make-ephemeron-hash make-ephemeron-hasheq make-ephemeron-hasheqv
+          hash hasheqv hasheq hashequalw
+          make-hash make-hasheqv make-hasheq make-hashequalw
+          make-immutable-hash make-immutable-hasheqv make-immutable-hasheq make-immutable-hashequalw
+          make-weak-hash make-weak-hasheq make-weak-hasheqv make-weak-hashequalw
+          make-ephemeron-hash make-ephemeron-hasheq make-ephemeron-hasheqv make-ephemeron-hashequalw
           hash-ref hash-ref-key hash-set hash-set! hash-remove hash-remove!
           hash-for-each hash-map hash-copy hash-clear hash-clear!
           hash-iterate-first hash-iterate-next
@@ -312,7 +312,7 @@
           unsafe-ephemeron-hash-iterate-key+value unsafe-ephemeron-hash-iterate-pair
           unsafe-hash-seal!    ; not exported to racket
 
-          hash? hash-eq? hash-equal? hash-eqv? hash-strong? hash-weak? hash-ephemeron?
+          hash? hash-eq? hash-equal? hash-eqv? hash-equal-always? hash-strong? hash-weak? hash-ephemeron?
           hash-count
           hash-keys-subset?
           eq-hashtable->hash   ; not exported to racket
@@ -496,6 +496,7 @@
           make-hash-placeholder
           make-hasheq-placeholder
           make-hasheqv-placeholder
+          make-hashequalw-placeholder
 
           time-apply
           current-inexact-milliseconds

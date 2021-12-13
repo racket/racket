@@ -251,6 +251,22 @@
           (equal? (get-k k1) (get-k k2)))
         (equal? k1 k2))))
 
+(define (key-equal-always-hash-code k)
+  (let ([get-k (and (fx> (unbox key-equality-maybe-redirect) 0)
+                    (continuation-mark-set-first #f key-equality-wrap-key))])
+    (if get-k
+        (with-continuation-mark key-equality-wrap-key #f
+          (equal-always-hash-code (get-k k)))
+        (equal-always-hash-code k))))
+
+(define (key-equal-always? k1 k2)
+  (let ([get-k (and (fx> (unbox key-equality-maybe-redirect) 0)
+                    (continuation-mark-set-first #f key-equality-wrap-key))])
+    (if get-k
+        (with-continuation-mark key-equality-wrap-key #f
+          (equal-always? (get-k k1) (get-k k2)))
+        (equal-always? k1 k2))))
+
 (define (call-with-equality-wrap get-k key thunk)
   (unsafe-box*-cas+! key-equality-maybe-redirect 1)
   (let ([get-k
