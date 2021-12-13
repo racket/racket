@@ -327,6 +327,45 @@
     '()
     #""])
 
+  ;; Body-less keep alive tests.
+  ;; https://datatracker.ietf.org/doc/html/rfc2616#section-10.1
+  ;; https://datatracker.ietf.org/doc/html/rfc2616#section-10.2.5
+  ;; https://datatracker.ietf.org/doc/html/rfc2616#section-10.3.5
+  (let ()
+    (define l (tcp-listen 0 128 #t "127.0.0.1"))
+    (define-values (_host1 port _host2 _port2)
+      (tcp-addresses l #t))
+    (with-handlers ([exn:fail? (lambda (e)
+                                 (tcp-close l)
+                                 (raise e))])
+      (thread
+       (lambda ()
+         (define-values (in out)
+           (tcp-accept l))
+         (for ([response '("HTTP/1.1 104 Not Real\r\nConnection: keep-alive\r\n"
+                           "HTTP/1.1 204 No Content\r\nConnection: keep-alive\r\n"
+                           "HTTP/1.1 304 Not Modified\r\nConnection: keep-alive\r\n")])
+           (void (read-request in))
+           (display response out)
+           (fprintf out "\r\n")
+           (flush-output out))
+         (close-input-port in)
+         (close-output-port out)))
+      (define hc (hc:http-conn-open "127.0.0.1" #:port port))
+      (void
+       (sync
+        (thread
+         (lambda ()
+           (for ([expected-status '(#"HTTP/1.1 104 Not Real"
+                                    #"HTTP/1.1 204 No Content"
+                                    #"HTTP/1.1 304 Not Modified")])
+             (let-values ([(status _heads port) (hc:http-conn-sendrecv! hc "/")])
+               (check-equal? status expected-status)
+               (close-input-port port)))))
+        (handle-evt
+         (alarm-evt (+ (current-inexact-milliseconds) 5000))
+         (lambda (_)
+           (fail "timed out")))))))
 
   (require (prefix-in es: "http-proxy/echo-server.rkt")
            (prefix-in ps: "http-proxy/proxy-server.rkt"))
@@ -349,23 +388,23 @@
     "MONKEYS")
 
   (let ([c (hc:http-conn)])
-    (check-equal? #f (hc:http-conn-live? c))
-    (check-equal? #f (hc:http-conn-liveable? c))
+    (check-false (hc:http-conn-live? c))
+    (check-false (hc:http-conn-liveable? c))
 
     (hc:http-conn-open! c "localhost"
                         #:port es:port
                         #:ssl? #f
                         #:auto-reconnect? #t)
-    (check-equal? #t (hc:http-conn-live? c))
-    (check-equal? #t (hc:http-conn-liveable? c))
+    (check-true (hc:http-conn-live? c))
+    (check-true (hc:http-conn-liveable? c))
 
     (let-values ([(status headers content-port)
                   (hc:http-conn-sendrecv! c
                                           "/"
                                           #:close? #t
                                           #:data #"BANANAS")])
-      (check-equal? #f (hc:http-conn-live? c))
-      (check-equal? #t (hc:http-conn-liveable? c))
+      (check-false (hc:http-conn-live? c))
+      (check-true (hc:http-conn-liveable? c))
       (check-equal? (port->bytes content-port) #"BANANAS"))
 
     (let-values ([(status headers content-port)
@@ -373,8 +412,8 @@
                                           "/"
                                           #:close? #t
                                           #:data #"MONKEYS")])
-      (check-equal? #f (hc:http-conn-live? c))
-      (check-equal? #t (hc:http-conn-liveable? c))
+      (check-false (hc:http-conn-live? c))
+      (check-true (hc:http-conn-liveable? c))
       (check-equal? (port->bytes content-port) #"MONKEYS")))
 
   (ps:shutdown-server)
