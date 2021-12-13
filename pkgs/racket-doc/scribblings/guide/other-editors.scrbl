@@ -138,7 +138,7 @@ popular among Racketeers as well.
 
 Many distributions of Vim ship with support for Scheme, which will mostly work
 for Racket. As of @hyperlink["https://github.com/vim/vim/commit/1aeaf8c0e0421f34e51ef674f0c9a182debe77ae"]{version 7.3.518},
-vim detects files with the extension @tt{.rkt} as having the
+Vim detects files with the extension @tt{.rkt} as having the
 @tt{scheme} filetype. @hyperlink["https://github.com/vim/vim/commit/9cd91a1e8816d727fbdbf0b3062288e15abc5f4d"]{Version 8.2.3368}
 added support for @tt{.rktd} and @tt{.rktl}.
 
@@ -151,7 +151,7 @@ if has("autocmd")
 endif
 }|
 
-If your vim supports the ftdetect system, in which case it's likely new enough
+If your Vim supports the ftdetect system, in which case it's likely new enough
 to support Racket already, you can nevertheless put the following in
 @filepath{~/.vim/ftdetect/racket.vim}
 (@filepath{$HOME/vimfiles/ftdetect/racket.vim} on MS-Windows; see @tt{:help runtimepath}).
@@ -218,8 +218,8 @@ available on the website.
 @subsection{Highlighting}
 
 The @hyperlink["http://www.vim.org/scripts/script.php?script_id=1230"]{Rainbow
-Parenthesis} script for vim can be useful for more visible parenthesis
-matching. Syntax highlighting for Scheme is shipped with vim on many platforms,
+Parenthesis} script for Vim can be useful for more visible parenthesis
+matching. Syntax highlighting for Scheme is shipped with Vim on many platforms,
 which will work for the most part with Racket. The vim-racket script
 provides good default highlighting settings for you.
 
@@ -227,10 +227,10 @@ provides good default highlighting settings for you.
 
 The @hyperlink["http://www.vim.org/scripts/script.php?script_id=2531"]{Slimv}
 plugin has a paredit mode that works like paredit in Emacs. However, the plugin
-is not aware of Racket. You can either set vim to treat Racket as Scheme files
+is not aware of Racket. You can either set Vim to treat Racket as Scheme files
 or you can modify the paredit script to load on @filepath{.rkt} files.
 
-For a more vim-like set of key-mappings, pair either of @itemlist[
+For a more Vim-like set of key-mappings, pair either of @itemlist[
     @item{@hyperlink["https://github.com/guns/vim-sexp"]{guns/vim-sexp}}
     @item{@hyperlink["https://github.com/benknoble/vim-sexp"]{benknoble/vim-sexp}}
 ]@margin-note{The @tt{benknoble/vim-sexp} fork is slightly more modern vimscript.}
@@ -247,7 +247,7 @@ is somewhat more modern.}
 
 @subsection{Miscellaneous}
 
-If you are installing many vim plugins (not necessary specific to Racket), we
+If you are installing many Vim plugins (not necessary specific to Racket), we
 recommend using a plugin that will make loading other plugins easier. There are
 many plugin managers.
 
@@ -256,12 +256,12 @@ does this; using it, you can install new plugins by extracting them to
 subdirectories in the @filepath{bundle} folder of your personal Vim files
 (@filepath{~/.vim} on Unix, @filepath{$HOME/vimfiles} on MS-Windows).
 
-With newer vim versions, you can use the package system (@tt{:help packages}).
+With newer Vim versions, you can use the package system (@tt{:help packages}).
 
 One relatively up-to-date reference on the various managers is
 @hyperlink["https://vi.stackexchange.com/q/388/10604"]{What are the differences between the vim plugin managers?}.
 The same site, @hyperlink["https://vi.stackexchange.com"]{Vi & Vim} is a great
-place to get help from vimmers.
+place to get help from Vimmers.
 
 @; ------------------------------------------------------------
 
