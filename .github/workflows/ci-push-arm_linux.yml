@@ -270,7 +270,7 @@ jobs:
       - name: Run tests/xml
         run: raco test -c tests/xml
       - name: Run tests/future
-        run: raco test -c tests/future
+        run: raco test --timeout 90 -c tests/future
       - name: Run tests/stxparse
         run: raco test -c tests/stxparse
       - name: Install db tests dependency
@@ -343,7 +343,7 @@ jobs:
       - name: Run tests/xml
         run: raco test -c tests/xml
       - name: Run tests/future
-        run: raco test -c tests/future
+        run: raco test --timeout 90 -c tests/future
       - name: Run tests/stxparse
         run: raco test -c tests/stxparse
       - name: Install db tests dependency

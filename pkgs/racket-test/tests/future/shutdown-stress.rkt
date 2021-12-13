@@ -5,6 +5,8 @@
 ;; Check shutdown of future threads by exiting a place and via
 ;; `custodian-shutdown-all`.
 
+;; Since this test may hang on failure, run with a `--timeout` argument on `raco test`.
+
 (define (go)
   (place pch (run)))
 
@@ -31,6 +33,7 @@
 (module+ main
   (for ([i 30])
     (printf "ok ~a\n" (current-seconds))
+    (flush-output)
     (place-wait (go))))
 
 (module+ test
