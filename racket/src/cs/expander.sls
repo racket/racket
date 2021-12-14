@@ -22,6 +22,12 @@
                   [datum->correlated datum->syntax]
                   [correlated-property syntax-property]
                   [correlated-property-symbol-keys syntax-property-symbol-keys]
+                  [raise-argument-error raise-argument-error/primitive]
+                  [raise-argument-error/user raise-argument-error]
+                  [raise-arguments-error raise-arguments-error/primitive]
+                  [raise-arguments-error/user raise-arguments-error]
+                  [raise-range-error raise-range-error/primitive]
+                  [raise-range-error/user raise-range-error]
                   ;; Remapped to place-local register operations:
                   [unsafe-place-local-ref rumble:unsafe-place-local-ref]
                   [unsafe-place-local-set! rumble:unsafe-place-local-set!])

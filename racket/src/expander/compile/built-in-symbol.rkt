@@ -91,6 +91,8 @@
                #%struct-field-accessor
                #%struct-field-mutator
                #%nongenerative-uid
+               #%struct-ref-error
+               #%struct-set!-error
                unsafe-struct?
                unsafe-sealed-struct?
                unsafe-struct

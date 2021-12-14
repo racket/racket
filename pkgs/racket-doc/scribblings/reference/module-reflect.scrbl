@@ -524,8 +524,17 @@ See also @racket[module->language-info] and
           [compiled-module-code compiled-module-expression?])
          boolean?]{
 
-Return @racket[#t] if @racket[compiled-module-code] represents a
+Returns @racket[#t] if @racket[compiled-module-code] represents a
 @tech{cross-phase persistent} module, @racket[#f] otherwise.}
+
+
+@defproc[(module-compiled-realm [compiled-module-code compiled-module-expression?])
+         symbol?]{
+
+Returns the @tech{realm} of the module represented by
+@racket[compiled-module-code].
+
+@history[#:added "8.4.0.2"]}
 
 @;------------------------------------------------------------------------
 @section[#:tag "dynreq"]{Dynamic Module Access}
@@ -757,6 +766,20 @@ A module can be @tech{declare}d by using @racket[dynamic-require].
           (module->indirect-exports ''banana)]
 
 @history[#:added "6.5.0.5"]}
+
+
+@defproc[(module->realm 
+          [mod (or/c module-path? module-path-index?
+                     resolved-module-path?)])
+         symbol?]{
+
+ Like @racket[module-compiled-realm], but produces the
+ exports of @racket[mod], which must be @tech{declare}d (but
+ not necessarily @tech{instantiate}d or @tech{visit}ed) in
+ the current namespace.
+
+@history[#:added "8.4.0.2"]}
+
 
 @defproc[(module-predefined?
           [mod (or/c module-path? module-path-index?

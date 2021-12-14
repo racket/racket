@@ -4,8 +4,8 @@
 ;; something like `continuation->trace`).
 
 (define-record-type code-info
-  (fields (immutable src) (immutable sexpr) (immutable free) (immutable live) (immutable rpis))
-  (nongenerative #{code-info gr886ae7iuw4wt9ft4vxym-2})
+  (fields (immutable src) (immutable realm) (immutable sexpr) (immutable free) (immutable live) (immutable rpis))
+  (nongenerative #{code-info let7gjkji5i3z5a2rnityfvf6-0})
   (sealed #t))
 
 (define-record-type rp-info

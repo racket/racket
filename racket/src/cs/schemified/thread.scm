@@ -271,7 +271,11 @@
                   (procedure-keywords (|#%app| a_0 p_0))
                   (values null null)))))
           (values null null))
-        (raise-argument-error 'procedure-keywords "procedure?" p_0)))))
+        (raise-argument-error*
+         'procedure-keywords
+         'racket/primitive
+         "procedure?"
+         p_0)))))
 (define reverse$1
   (|#%name|
    reverse
@@ -407,10 +411,11 @@
 (define check-ranges
   (lambda (who_0 type-name_0 vec_0 start_0 stop_0 step_0 len_0)
     (begin
-      (if (if (exact-nonnegative-integer? start_0)
-            (let ((or-part_0 (< start_0 len_0)))
-              (if or-part_0 or-part_0 (= len_0 start_0 stop_0)))
-            #f)
+      (if (exact-nonnegative-integer? start_0)
+        (void)
+        (raise-argument-error who_0 "exact-nonnegative-integer?" start_0))
+      (if (let ((or-part_0 (< start_0 len_0)))
+            (if or-part_0 or-part_0 (= len_0 start_0 stop_0)))
         (void)
         (raise-range-error
          who_0
@@ -420,9 +425,10 @@
          vec_0
          0
          (sub1 len_0)))
-      (if (if (exact-integer? stop_0)
-            (if (<= -1 stop_0) (<= stop_0 len_0) #f)
-            #f)
+      (if (exact-integer? stop_0)
+        (void)
+        (raise-argument-error who_0 "exact-integer?" stop_0))
+      (if (if (<= -1 stop_0) (<= stop_0 len_0) #f)
         (void)
         (raise-range-error
          who_0
@@ -1220,8 +1226,7 @@
    (lambda (s)
      (if (node?$1_2258 s)
        (node-key_2296 s)
-       ($value
-        (impersonate-ref node-key_2296 struct:node$1 0 s 'node 'key))))))
+       ($value (impersonate-ref node-key_2296 struct:node$1 0 s 'key))))))
 (define node-val_2531 (|#%name| node-val (record-accessor struct:node$1 1)))
 (define node-val
   (|#%name|
@@ -1229,8 +1234,7 @@
    (lambda (s)
      (if (node?$1_2258 s)
        (node-val_2531 s)
-       ($value
-        (impersonate-ref node-val_2531 struct:node$1 1 s 'node 'val))))))
+       ($value (impersonate-ref node-val_2531 struct:node$1 1 s 'val))))))
 (define node-height_2814
   (|#%name| node-height (record-accessor struct:node$1 2)))
 (define node-height
@@ -1240,7 +1244,7 @@
      (if (node?$1_2258 s)
        (node-height_2814 s)
        ($value
-        (impersonate-ref node-height_2814 struct:node$1 2 s 'node 'height))))))
+        (impersonate-ref node-height_2814 struct:node$1 2 s 'height))))))
 (define node-left_2332 (|#%name| node-left (record-accessor struct:node$1 3)))
 (define node-left
   (|#%name|
@@ -1248,8 +1252,7 @@
    (lambda (s)
      (if (node?$1_2258 s)
        (node-left_2332 s)
-       ($value
-        (impersonate-ref node-left_2332 struct:node$1 3 s 'node 'left))))))
+       ($value (impersonate-ref node-left_2332 struct:node$1 3 s 'left))))))
 (define node-right_2584
   (|#%name| node-right (record-accessor struct:node$1 4)))
 (define node-right
@@ -1258,8 +1261,7 @@
    (lambda (s)
      (if (node?$1_2258 s)
        (node-right_2584 s)
-       ($value
-        (impersonate-ref node-right_2584 struct:node$1 4 s 'node 'right))))))
+       ($value (impersonate-ref node-right_2584 struct:node$1 4 s 'right))))))
 (define empty-tree #f)
 (define is-empty? (lambda (t_0) (not t_0)))
 (define tree-height (lambda (t_0) (if (not t_0) 0 (node-height t_0))))
@@ -1506,7 +1508,6 @@
          struct:sandman
          0
          s
-         'sandman
          'do-sleep))))))
 (define sandman-do-poll_2411
   (|#%name| sandman-do-poll (record-accessor struct:sandman 1)))
@@ -1517,13 +1518,7 @@
      (if (sandman?_2599 s)
        (sandman-do-poll_2411 s)
        ($value
-        (impersonate-ref
-         sandman-do-poll_2411
-         struct:sandman
-         1
-         s
-         'sandman
-         'do-poll))))))
+        (impersonate-ref sandman-do-poll_2411 struct:sandman 1 s 'do-poll))))))
 (define sandman-do-get-wakeup_3028
   (|#%name| sandman-do-get-wakeup (record-accessor struct:sandman 2)))
 (define sandman-do-get-wakeup
@@ -1538,7 +1533,6 @@
          struct:sandman
          2
          s
-         'sandman
          'do-get-wakeup))))))
 (define sandman-do-wakeup_2562
   (|#%name| sandman-do-wakeup (record-accessor struct:sandman 3)))
@@ -1554,7 +1548,6 @@
          struct:sandman
          3
          s
-         'sandman
          'do-wakeup))))))
 (define sandman-do-any-sleepers?_2376
   (|#%name| sandman-do-any-sleepers? (record-accessor struct:sandman 4)))
@@ -1570,7 +1563,6 @@
          struct:sandman
          4
          s
-         'sandman
          'do-any-sleepers?))))))
 (define sandman-do-sleepers-external-events_2747
   (|#%name|
@@ -1588,7 +1580,6 @@
          struct:sandman
          5
          s
-         'sandman
          'do-sleepers-external-events))))))
 (define sandman-do-add-thread!_3210
   (|#%name| sandman-do-add-thread! (record-accessor struct:sandman 6)))
@@ -1604,7 +1595,6 @@
          struct:sandman
          6
          s
-         'sandman
          'do-add-thread!))))))
 (define sandman-do-remove-thread!_2183
   (|#%name| sandman-do-remove-thread! (record-accessor struct:sandman 7)))
@@ -1620,7 +1610,6 @@
          struct:sandman
          7
          s
-         'sandman
          'do-remove-thread!))))))
 (define sandman-do-merge-external-event-sets_2575
   (|#%name|
@@ -1638,7 +1627,6 @@
          struct:sandman
          8
          s
-         'sandman
          'do-merge-external-event-sets))))))
 (define sandman-do-merge-timeout_2100
   (|#%name| sandman-do-merge-timeout (record-accessor struct:sandman 9)))
@@ -1654,7 +1642,6 @@
          struct:sandman
          9
          s
-         'sandman
          'do-merge-timeout))))))
 (define sandman-do-extract-timeout_2311
   (|#%name| sandman-do-extract-timeout (record-accessor struct:sandman 10)))
@@ -1670,7 +1657,6 @@
          struct:sandman
          10
          s
-         'sandman
          'do-extract-timeout))))))
 (define the-sandman #f)
 (define current-sandman
@@ -2196,7 +2182,7 @@
      (if (wrap-evt?_2747 s)
        (wrap-evt-evt_2872 s)
        ($value
-        (impersonate-ref wrap-evt-evt_2872 struct:wrap-evt 0 s 'evt 'evt))))))
+        (impersonate-ref wrap-evt-evt_2872 struct:wrap-evt 0 s 'evt))))))
 (define wrap-evt-wrap_3005
   (|#%name| evt-wrap (record-accessor struct:wrap-evt 1)))
 (define wrap-evt-wrap
@@ -2206,13 +2192,7 @@
      (if (wrap-evt?_2747 s)
        (wrap-evt-wrap_3005 s)
        ($value
-        (impersonate-ref
-         wrap-evt-wrap_3005
-         struct:wrap-evt
-         1
-         s
-         'evt
-         'wrap))))))
+        (impersonate-ref wrap-evt-wrap_3005 struct:wrap-evt 1 s 'wrap))))))
 (define finish_2655
   (make-struct-type-install-properties
    '(handle-evt)
@@ -2310,7 +2290,6 @@
          struct:control-state-evt
          0
          s
-         'control-state-evt
          'evt))))))
 (define control-state-evt-wrap-proc_2332
   (|#%name|
@@ -2328,7 +2307,6 @@
          struct:control-state-evt
          1
          s
-         'control-state-evt
          'wrap-proc))))))
 (define control-state-evt-interrupt-proc_2271
   (|#%name|
@@ -2346,7 +2324,6 @@
          struct:control-state-evt
          2
          s
-         'control-state-evt
          'interrupt-proc))))))
 (define control-state-evt-abandon-proc_2780
   (|#%name|
@@ -2364,7 +2341,6 @@
          struct:control-state-evt
          3
          s
-         'control-state-evt
          'abandon-proc))))))
 (define control-state-evt-retry-proc_2119
   (|#%name|
@@ -2382,7 +2358,6 @@
          struct:control-state-evt
          4
          s
-         'control-state-evt
          'retry-proc))))))
 (define finish_2343
   (make-struct-type-install-properties
@@ -2433,7 +2408,6 @@
          struct:poll-guard-evt
          0
          s
-         'evt
          'proc))))))
 (define finish_2902
   (make-struct-type-install-properties
@@ -2476,13 +2450,7 @@
      (if (choice-evt?_3069 s)
        (choice-evt-evts_2883 s)
        ($value
-        (impersonate-ref
-         choice-evt-evts_2883
-         struct:choice-evt
-         0
-         s
-         'evt
-         'evts))))))
+        (impersonate-ref choice-evt-evts_2883 struct:choice-evt 0 s 'evts))))))
 (define-values
  (impersonator-prop:evt evt-impersonator? evt-impersonator-ref)
  (make-impersonator-property 'evt-impersonator))
@@ -2596,7 +2564,6 @@
          struct:poller-evt
          0
          s
-         'poller-evt
          'poller))))))
 (define-values
  (prop:waiter waiter? waiter-ref)
@@ -2706,7 +2673,6 @@
          struct:select-waiter
          0
          s
-         'select-waiter
          'proc))))))
 (define finish_2379
   (make-struct-type-install-properties
@@ -4099,6 +4065,13 @@
                    (for-loop_0 lst_0))))
               (void)))))
       (void))))
+(define error-message->string
+  (lambda (who_0 msg_0)
+    (error-message->adjusted-string
+     who_0
+     'racket/primitive
+     msg_0
+     'racket/primitive)))
 (define finish_2797
   (make-struct-type-install-properties
    '(semaphore)
@@ -4200,7 +4173,6 @@
          struct:semaphore-peek-evt
          0
          s
-         'semaphore-peek-evt
          'sema))))))
 (define finish_2668
   (make-struct-type-install-properties
@@ -4263,10 +4235,17 @@
                   (void)
                   (raise
                    (let ((app_0
-                          (string-append
-                           "make-semaphore: starting value "
-                           (number->string init4_0)
-                           " is too large")))
+                          (let ((msg_0
+                                 (string-append
+                                  "starting value "
+                                  (number->string init4_0)
+                                  " is too large")))
+                            (begin-unsafe
+                             (error-message->adjusted-string
+                              'make-semaphore
+                              'racket/primitive
+                              msg_0
+                              'racket/primitive)))))
                      (|#%app| exn:fail app_0 (current-continuation-marks)))))
                 (semaphore1.1 #f #f init4_0)))))))
     (|#%name|
@@ -4705,7 +4684,6 @@
          struct:schedule-info
          0
          s
-         'schedule-info
          'did-work?))))))
 (define schedule-info-exts_2787
   (|#%name| schedule-info-exts (record-accessor struct:schedule-info 1)))
@@ -4721,7 +4699,6 @@
          struct:schedule-info
          1
          s
-         'schedule-info
          'exts))))))
 (define set-schedule-info-did-work?!_2489
   (|#%name|
@@ -4741,7 +4718,6 @@
          0
          s
          v
-         'schedule-info
          'did-work?))))))
 (define set-schedule-info-exts!_2592
   (|#%name| set-schedule-info-exts! (record-mutator struct:schedule-info 1)))
@@ -4759,7 +4735,6 @@
          1
          s
          v
-         'schedule-info
          'exts))))))
 (define make-schedule-info.1
   (|#%name|
@@ -4892,7 +4867,6 @@
          struct:plumber-flush-handle
          0
          s
-         'plumber-flush-handle
          'plumber))))))
 (define plumber-flush-handle-proc_2551
   (|#%name|
@@ -4910,7 +4884,6 @@
          struct:plumber-flush-handle
          1
          s
-         'plumber-flush-handle
          'proc))))))
 (define 1/plumber-add-flush!
   (let ((plumber-add-flush!_0
@@ -5936,10 +5909,18 @@
             "custodian?"
             stop-cust_0))
          (raise
-          (|#%app|
-           exn:fail:unsupported
-           "custodian-require-memory: unsupported"
-           (current-continuation-marks))))))))
+          (let ((app_0
+                 (let ((msg_0 "unsupported"))
+                   (begin-unsafe
+                    (error-message->adjusted-string
+                     'custodian-require-memory
+                     'racket/primitive
+                     msg_0
+                     'racket/primitive)))))
+            (|#%app|
+             exn:fail:unsupported
+             app_0
+             (current-continuation-marks)))))))))
 (define 1/custodian-limit-memory
   (let ((custodian-limit-memory_0
          (|#%name|
@@ -6537,10 +6518,18 @@
                     (begin
                       (if (if limit_0 (>= n_0 limit_0) #f)
                         (raise
-                         (|#%app|
-                          exn:fail:out-of-memory
-                          "out of memory"
-                          (current-continuation-marks)))
+                         (let ((app_0
+                                (let ((msg_0 "out of memory"))
+                                  (begin-unsafe
+                                   (error-message->adjusted-string
+                                    #f
+                                    'racket/primitive
+                                    msg_0
+                                    'racket/primitive)))))
+                           (|#%app|
+                            exn:fail:out-of-memory
+                            app_0
+                            (current-continuation-marks))))
                         (void))
                       (loop_0 (custodian-parent-reference c_0))))
                   (void)))
@@ -7112,13 +7101,7 @@
      (if (dead-evt?_2047 s)
        (dead-evt-sema_2516 s)
        ($value
-        (impersonate-ref
-         dead-evt-sema_2516
-         struct:dead-evt
-         0
-         s
-         'thread-dead-evt
-         'sema))))))
+        (impersonate-ref dead-evt-sema_2516 struct:dead-evt 0 s 'sema))))))
 (define thread-dead-evt? (lambda (v_0) (dead-evt? v_0)))
 (define get-thread-dead-evt
   (|#%name|
@@ -7600,7 +7583,6 @@
          struct:suspend-resume-evt
          0
          s
-         'suspend-resume-evt
          'sema))))))
 (define suspend-resume-evt-thread_2163
   (|#%name|
@@ -7618,7 +7600,6 @@
          struct:suspend-resume-evt
          1
          s
-         'suspend-resume-evt
          'thread))))))
 (define set-suspend-resume-evt-thread!_3086
   (|#%name|
@@ -7638,7 +7619,6 @@
          1
          s
          v
-         'suspend-resume-evt
          'thread))))))
 (define finish_2344
   (make-struct-type-install-properties
@@ -7878,11 +7858,19 @@
                           (call-with-escape-continuation
                            (lambda (k_0)
                              (raise
-                              (|#%app|
-                               exn:break*_0
-                               "user break"
-                               (current-continuation-marks)
-                               k_0)))))))
+                              (let ((app_0
+                                     (let ((msg_0 "user break"))
+                                       (begin-unsafe
+                                        (error-message->adjusted-string
+                                         #f
+                                         'racket/primitive
+                                         msg_0
+                                         'racket/primitive)))))
+                                (|#%app|
+                                 exn:break*_0
+                                 app_0
+                                 (current-continuation-marks)
+                                 k_0))))))))
                     void)
                   (end-atomic))))
              (void))))))))
@@ -8292,7 +8280,6 @@
          struct:channel
          0
          s
-         'channel
          'get-queue))))))
 (define channel-put-queue_2027
   (|#%name| channel-put-queue (record-accessor struct:channel 1)))
@@ -8308,7 +8295,6 @@
          struct:channel
          1
          s
-         'channel
          'put-queue))))))
 (define finish_1979
   (make-struct-type-install-properties
@@ -8373,7 +8359,6 @@
          struct:channel-put-evt*
          0
          s
-         'channel-put-evt
          'ch))))))
 (define channel-put-evt*-v_2260
   (|#%name| channel-put-evt-v (record-accessor struct:channel-put-evt* 1)))
@@ -8389,7 +8374,6 @@
          struct:channel-put-evt*
          1
          s
-         'channel-put-evt
          'v))))))
 (define finish_2400
   (make-struct-type-install-properties
@@ -8448,7 +8432,6 @@
          struct:channel-select-waiter
          0
          s
-         'channel-select-waiter
          'thread))))))
 (define 1/make-channel
   (|#%name|
@@ -8737,21 +8720,32 @@
                         (void)
                         (raise
                          (let ((app_0
-                                (let ((app_0
-                                       (if chaperone?_0
-                                         "chaperone"
-                                         "impersonator")))
-                                  (let ((app_1 (number->string (length rs_0))))
-                                    (string-append
-                                     what_0
-                                     " "
-                                     app_0
-                                     ": result wrapper returned wrong number of values\n"
-                                     "  expected count: "
-                                     app_1
-                                     "\n"
-                                     "  returned count: "
-                                     (number->string (length new-rs_0)))))))
+                                (let ((who_1
+                                       (string-append
+                                        what_0
+                                        " "
+                                        (if chaperone?_0
+                                          "chaperone"
+                                          "impersonator"))))
+                                  (let ((msg_0
+                                         (let ((app_0
+                                                (number->string
+                                                 (length rs_0))))
+                                           (string-append
+                                            "result wrapper returned wrong number of values\n"
+                                            "  expected count: "
+                                            app_0
+                                            "\n"
+                                            "  returned count: "
+                                            (number->string
+                                             (length new-rs_0))))))
+                                    (let ((who_2 who_1))
+                                      (begin-unsafe
+                                       (error-message->adjusted-string
+                                        who_2
+                                        'racket/primitive
+                                        msg_0
+                                        'racket/primitive)))))))
                            (|#%app|
                             exn:fail:contract:arity
                             app_0
@@ -8784,15 +8778,24 @@
            (args_1
             (raise
              (let ((app_0
-                    (let ((app_0 (if chaperone?_0 "chaperone" "impersonator")))
-                      (string-append
-                       what_0
-                       " "
-                       app_0
-                       ": returned wrong number of values\n"
-                       "  expected count: 2\n"
-                       "  returned count: "
-                       (number->string (length args_1))))))
+                    (let ((who_1
+                           (string-append
+                            what_0
+                            " "
+                            (if chaperone?_0 "chaperone" "impersonator"))))
+                      (let ((msg_0
+                             (string-append
+                              "returned wrong number of values\n"
+                              "  expected count: 2\n"
+                              "  returned count: "
+                              (number->string (length args_1)))))
+                        (let ((who_2 who_1))
+                          (begin-unsafe
+                           (error-message->adjusted-string
+                            who_2
+                            'racket/primitive
+                            msg_0
+                            'racket/primitive)))))))
                (|#%app|
                 exn:fail:contract:arity
                 app_0
@@ -8955,7 +8958,6 @@
          struct:syncing
          0
          s
-         'syncing
          'selected))))))
 (define syncing-syncers_2564
   (|#%name| syncing-syncers (record-accessor struct:syncing 1)))
@@ -8966,13 +8968,7 @@
      (if (syncing?_2448 s)
        (syncing-syncers_2564 s)
        ($value
-        (impersonate-ref
-         syncing-syncers_2564
-         struct:syncing
-         1
-         s
-         'syncing
-         'syncers))))))
+        (impersonate-ref syncing-syncers_2564 struct:syncing 1 s 'syncers))))))
 (define syncing-wakeup_2421
   (|#%name| syncing-wakeup (record-accessor struct:syncing 2)))
 (define syncing-wakeup
@@ -8982,13 +8978,7 @@
      (if (syncing?_2448 s)
        (syncing-wakeup_2421 s)
        ($value
-        (impersonate-ref
-         syncing-wakeup_2421
-         struct:syncing
-         2
-         s
-         'syncing
-         'wakeup))))))
+        (impersonate-ref syncing-wakeup_2421 struct:syncing 2 s 'wakeup))))))
 (define syncing-disable-break_2747
   (|#%name| syncing-disable-break (record-accessor struct:syncing 3)))
 (define syncing-disable-break
@@ -9003,7 +8993,6 @@
          struct:syncing
          3
          s
-         'syncing
          'disable-break))))))
 (define syncing-need-retry?_2343
   (|#%name| syncing-need-retry? (record-accessor struct:syncing 4)))
@@ -9019,7 +9008,6 @@
          struct:syncing
          4
          s
-         'syncing
          'need-retry?))))))
 (define set-syncing-selected!_2425
   (|#%name| set-syncing-selected! (record-mutator struct:syncing 0)))
@@ -9037,7 +9025,6 @@
          0
          s
          v
-         'syncing
          'selected))))))
 (define set-syncing-syncers!_2653
   (|#%name| set-syncing-syncers! (record-mutator struct:syncing 1)))
@@ -9055,7 +9042,6 @@
          1
          s
          v
-         'syncing
          'syncers))))))
 (define set-syncing-wakeup!_2835
   (|#%name| set-syncing-wakeup! (record-mutator struct:syncing 2)))
@@ -9073,7 +9059,6 @@
          2
          s
          v
-         'syncing
          'wakeup))))))
 (define set-syncing-disable-break!_2672
   (|#%name| set-syncing-disable-break! (record-mutator struct:syncing 3)))
@@ -9091,7 +9076,6 @@
          3
          s
          v
-         'syncing
          'disable-break))))))
 (define set-syncing-need-retry?!_2470
   (|#%name| set-syncing-need-retry?! (record-mutator struct:syncing 4)))
@@ -9109,7 +9093,6 @@
          4
          s
          v
-         'syncing
          'need-retry?))))))
 (define finish_2341
   (make-struct-type-install-properties
@@ -9155,8 +9138,7 @@
    (lambda (s)
      (if (syncer?_2220 s)
        (syncer-evt_2678 s)
-       ($value
-        (impersonate-ref syncer-evt_2678 struct:syncer 0 s 'syncer 'evt))))))
+       ($value (impersonate-ref syncer-evt_2678 struct:syncer 0 s 'evt))))))
 (define syncer-wraps_2709
   (|#%name| syncer-wraps (record-accessor struct:syncer 1)))
 (define syncer-wraps
@@ -9166,13 +9148,7 @@
      (if (syncer?_2220 s)
        (syncer-wraps_2709 s)
        ($value
-        (impersonate-ref
-         syncer-wraps_2709
-         struct:syncer
-         1
-         s
-         'syncer
-         'wraps))))))
+        (impersonate-ref syncer-wraps_2709 struct:syncer 1 s 'wraps))))))
 (define syncer-commits_2120
   (|#%name| syncer-commits (record-accessor struct:syncer 2)))
 (define syncer-commits
@@ -9182,13 +9158,7 @@
      (if (syncer?_2220 s)
        (syncer-commits_2120 s)
        ($value
-        (impersonate-ref
-         syncer-commits_2120
-         struct:syncer
-         2
-         s
-         'syncer
-         'commits))))))
+        (impersonate-ref syncer-commits_2120 struct:syncer 2 s 'commits))))))
 (define syncer-interrupted?_2265
   (|#%name| syncer-interrupted? (record-accessor struct:syncer 3)))
 (define syncer-interrupted?
@@ -9203,7 +9173,6 @@
          struct:syncer
          3
          s
-         'syncer
          'interrupted?))))))
 (define syncer-interrupt_2546
   (|#%name| syncer-interrupt (record-accessor struct:syncer 4)))
@@ -9219,7 +9188,6 @@
          struct:syncer
          4
          s
-         'syncer
          'interrupt))))))
 (define syncer-abandons_1792
   (|#%name| syncer-abandons (record-accessor struct:syncer 5)))
@@ -9230,13 +9198,7 @@
      (if (syncer?_2220 s)
        (syncer-abandons_1792 s)
        ($value
-        (impersonate-ref
-         syncer-abandons_1792
-         struct:syncer
-         5
-         s
-         'syncer
-         'abandons))))))
+        (impersonate-ref syncer-abandons_1792 struct:syncer 5 s 'abandons))))))
 (define syncer-retry_2570
   (|#%name| syncer-retry (record-accessor struct:syncer 6)))
 (define syncer-retry
@@ -9246,13 +9208,7 @@
      (if (syncer?_2220 s)
        (syncer-retry_2570 s)
        ($value
-        (impersonate-ref
-         syncer-retry_2570
-         struct:syncer
-         6
-         s
-         'syncer
-         'retry))))))
+        (impersonate-ref syncer-retry_2570 struct:syncer 6 s 'retry))))))
 (define syncer-prev_3082
   (|#%name| syncer-prev (record-accessor struct:syncer 7)))
 (define syncer-prev
@@ -9261,8 +9217,7 @@
    (lambda (s)
      (if (syncer?_2220 s)
        (syncer-prev_3082 s)
-       ($value
-        (impersonate-ref syncer-prev_3082 struct:syncer 7 s 'syncer 'prev))))))
+       ($value (impersonate-ref syncer-prev_3082 struct:syncer 7 s 'prev))))))
 (define syncer-next_2299
   (|#%name| syncer-next (record-accessor struct:syncer 8)))
 (define syncer-next
@@ -9271,8 +9226,7 @@
    (lambda (s)
      (if (syncer?_2220 s)
        (syncer-next_2299 s)
-       ($value
-        (impersonate-ref syncer-next_2299 struct:syncer 8 s 'syncer 'next))))))
+       ($value (impersonate-ref syncer-next_2299 struct:syncer 8 s 'next))))))
 (define set-syncer-evt!_2722
   (|#%name| set-syncer-evt! (record-mutator struct:syncer 0)))
 (define set-syncer-evt!
@@ -9282,15 +9236,7 @@
      (if (syncer?_2220 s)
        (set-syncer-evt!_2722 s v)
        ($value
-        (impersonate-set!
-         set-syncer-evt!_2722
-         struct:syncer
-         0
-         0
-         s
-         v
-         'syncer
-         'evt))))))
+        (impersonate-set! set-syncer-evt!_2722 struct:syncer 0 0 s v 'evt))))))
 (define set-syncer-wraps!_2694
   (|#%name| set-syncer-wraps! (record-mutator struct:syncer 1)))
 (define set-syncer-wraps!
@@ -9307,7 +9253,6 @@
          1
          s
          v
-         'syncer
          'wraps))))))
 (define set-syncer-commits!_2064
   (|#%name| set-syncer-commits! (record-mutator struct:syncer 2)))
@@ -9325,7 +9270,6 @@
          2
          s
          v
-         'syncer
          'commits))))))
 (define set-syncer-interrupted?!_1948
   (|#%name| set-syncer-interrupted?! (record-mutator struct:syncer 3)))
@@ -9343,7 +9287,6 @@
          3
          s
          v
-         'syncer
          'interrupted?))))))
 (define set-syncer-interrupt!_2374
   (|#%name| set-syncer-interrupt! (record-mutator struct:syncer 4)))
@@ -9361,7 +9304,6 @@
          4
          s
          v
-         'syncer
          'interrupt))))))
 (define set-syncer-abandons!_1983
   (|#%name| set-syncer-abandons! (record-mutator struct:syncer 5)))
@@ -9379,7 +9321,6 @@
          5
          s
          v
-         'syncer
          'abandons))))))
 (define set-syncer-retry!_2583
   (|#%name| set-syncer-retry! (record-mutator struct:syncer 6)))
@@ -9397,7 +9338,6 @@
          6
          s
          v
-         'syncer
          'retry))))))
 (define set-syncer-prev!_2849
   (|#%name| set-syncer-prev! (record-mutator struct:syncer 7)))
@@ -9415,7 +9355,6 @@
          7
          s
          v
-         'syncer
          'prev))))))
 (define set-syncer-next!_2406
   (|#%name| set-syncer-next! (record-mutator struct:syncer 8)))
@@ -9433,7 +9372,6 @@
          8
          s
          v
-         'syncer
          'next))))))
 (define make-syncer
   (lambda (evt_0 wraps_0 prev_0)
@@ -10691,7 +10629,6 @@
          struct:replacing-evt
          0
          s
-         'evt
          'guard))))))
 (define finish_2391
   (make-struct-type-install-properties
@@ -10742,7 +10679,6 @@
          struct:nested-sync-evt
          0
          s
-         'evt
          's))))))
 (define nested-sync-evt-next_2802
   (|#%name| evt-next (record-accessor struct:nested-sync-evt 1)))
@@ -10758,7 +10694,6 @@
          struct:nested-sync-evt
          1
          s
-         'evt
          'next))))))
 (define nested-sync-evt-orig-evt_2620
   (|#%name| evt-orig-evt (record-accessor struct:nested-sync-evt 2)))
@@ -10774,7 +10709,6 @@
          struct:nested-sync-evt
          2
          s
-         'evt
          'orig-evt))))))
 (define 1/replace-evt
   (|#%name|
@@ -11127,7 +11061,6 @@
          struct:future-event
          0
          s
-         'future-event
          'future-id))))))
 (define future-event-proc-id_3059
   (|#%name| future-event-proc-id (record-accessor struct:future-event 1)))
@@ -11143,7 +11076,6 @@
          struct:future-event
          1
          s
-         'future-event
          'proc-id))))))
 (define future-event-action_1972
   (|#%name| future-event-action (record-accessor struct:future-event 2)))
@@ -11159,7 +11091,6 @@
          struct:future-event
          2
          s
-         'future-event
          'action))))))
 (define future-event-time_3029
   (|#%name| future-event-time (record-accessor struct:future-event 3)))
@@ -11175,7 +11106,6 @@
          struct:future-event
          3
          s
-         'future-event
          'time))))))
 (define future-event-prim-name_2605
   (|#%name| future-event-prim-name (record-accessor struct:future-event 4)))
@@ -11191,7 +11121,6 @@
          struct:future-event
          4
          s
-         'future-event
          'prim-name))))))
 (define future-event-user-data_2504
   (|#%name| future-event-user-data (record-accessor struct:future-event 5)))
@@ -11207,7 +11136,6 @@
          struct:future-event
          5
          s
-         'future-event
          'user-data))))))
 (define cell.1$4 (unsafe-make-place-local (box null)))
 (define init-future-logging-place!
@@ -11431,7 +11359,6 @@
          struct:future-evt
          0
          s
-         'future-evt
          'future))))))
 (define create-future
   (lambda (thunk_0 cust_0 would-be?_0)
@@ -11660,10 +11587,15 @@
                  (begin
                    (lock-release-both f_0)
                    (raise
-                    (|#%app|
-                     exn:fail
-                     "touch: future previously aborted"
-                     (current-continuation-marks))))
+                    (let ((app_0
+                           (let ((msg_0 "future previously aborted"))
+                             (begin-unsafe
+                              (error-message->adjusted-string
+                               'touch
+                               'racket/primitive
+                               msg_0
+                               'racket/primitive)))))
+                      (|#%app| exn:fail app_0 (current-continuation-marks)))))
                  (if (eq? s_0 'blocked)
                    (if (current-future$1)
                      (dependent-on-future f_0)
@@ -12785,13 +12717,7 @@
      (if (alarm-evt?_2440 s)
        (alarm-evt-msecs_2883 s)
        ($value
-        (impersonate-ref
-         alarm-evt-msecs_2883
-         struct:alarm-evt
-         0
-         s
-         'alarm-evt
-         'msecs))))))
+        (impersonate-ref alarm-evt-msecs_2883 struct:alarm-evt 0 s 'msecs))))))
 (define alarm-evt-monotonic_2115
   (|#%name| alarm-evt-monotonic (record-accessor struct:alarm-evt 1)))
 (define alarm-evt-monotonic
@@ -12806,7 +12732,6 @@
          struct:alarm-evt
          1
          s
-         'alarm-evt
          'monotonic))))))
 (define create-alarm-evt
   (let ((create-alarm-evt_0
@@ -13701,13 +13626,7 @@
      (if (place-event?_2380 s)
        (place-event-id_2098 s)
        ($value
-        (impersonate-ref
-         place-event-id_2098
-         struct:place-event
-         0
-         s
-         'place-event
-         'id))))))
+        (impersonate-ref place-event-id_2098 struct:place-event 0 s 'id))))))
 (define place-event-action_2875
   (|#%name| place-event-action (record-accessor struct:place-event 1)))
 (define place-event-action
@@ -13722,7 +13641,6 @@
          struct:place-event
          1
          s
-         'place-event
          'action))))))
 (define place-event-data_2440
   (|#%name| place-event-data (record-accessor struct:place-event 2)))
@@ -13738,7 +13656,6 @@
          struct:place-event
          2
          s
-         'place-event
          'data))))))
 (define place-event-time_2569
   (|#%name| place-event-time (record-accessor struct:place-event 3)))
@@ -13754,7 +13671,6 @@
          struct:place-event
          3
          s
-         'place-event
          'time))))))
 (define log-place.1
   (|#%name|
@@ -14422,7 +14338,6 @@
          struct:place-done-evt
          0
          s
-         'place-dead-evt
          'p))))))
 (define place-done-evt-get-result?_2601
   (|#%name|
@@ -14440,7 +14355,6 @@
          struct:place-done-evt
          1
          s
-         'place-dead-evt
          'get-result?))))))
 (define 1/place-dead-evt
   (|#%name|
@@ -14677,7 +14591,6 @@
          struct:pchannel
          0
          s
-         'place-channel
          'in-mq-e))))))
 (define pchannel-out-mq-e_2865
   (|#%name| place-channel-out-mq-e (record-accessor struct:pchannel 1)))
@@ -14693,7 +14606,6 @@
          struct:pchannel
          1
          s
-         'place-channel
          'out-mq-e))))))
 (define pchannel-reader-key_2908
   (|#%name| place-channel-reader-key (record-accessor struct:pchannel 2)))
@@ -14709,7 +14621,6 @@
          struct:pchannel
          2
          s
-         'place-channel
          'reader-key))))))
 (define pchannel-writer-key_2620
   (|#%name| place-channel-writer-key (record-accessor struct:pchannel 3)))
@@ -14725,7 +14636,6 @@
          struct:pchannel
          3
          s
-         'place-channel
          'writer-key))))))
 (define pchannel-in-key-box_2626
   (|#%name| place-channel-in-key-box (record-accessor struct:pchannel 4)))
@@ -14741,7 +14651,6 @@
          struct:pchannel
          4
          s
-         'place-channel
          'in-key-box))))))
 (define pchannel-out-key-box_2914
   (|#%name| place-channel-out-key-box (record-accessor struct:pchannel 5)))
@@ -14757,7 +14666,6 @@
          struct:pchannel
          5
          s
-         'place-channel
          'out-key-box))))))
 (define 1/place-channel?
   (|#%name|
@@ -15000,7 +14908,6 @@
          struct:fsemaphore-box-evt
          0
          s
-         'fsemaphore-box-evt
          'b))))))
 (define 1/make-fsemaphore
   (|#%name|
@@ -15244,7 +15151,11 @@
   (lambda (who_0)
     (raise
      (let ((app_0
-            (string-append
-             (symbol->string who_0)
-             ": unsupported on this platform")))
+            (let ((msg_0 "unsupported on this platform"))
+              (begin-unsafe
+               (error-message->adjusted-string
+                who_0
+                'racket/primitive
+                msg_0
+                'racket/primitive)))))
        (|#%app| exn:fail:unsupported app_0 (current-continuation-marks))))))

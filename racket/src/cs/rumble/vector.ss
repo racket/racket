@@ -197,7 +197,7 @@
     (unless (#%vector? vec)
       (raise-argument-error who "(and/c vector? (not impersonator?))" vec))])
   (check who exact-nonnegative-integer? idx)
-  (check-range who "vector" vec idx #f (fx- (#%vector-length vec) 1)))
+  (check-range who "vector" vec idx 'none (fx- (#%vector-length vec) 1)))
 
 (define (impersonate-vector-ref orig idx)
   (if (and (impersonator? orig)

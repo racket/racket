@@ -410,6 +410,9 @@ ICP=@ICP@
 ICP_LIB=@ICP_LIB@
 ICP_STATIC_LIB=@ICP_STATIC_LIB@
 
+plain-install:
+	$(MAKE) install
+
 install:
 	$(MAKE) install-@MAIN_VARIANT@
 

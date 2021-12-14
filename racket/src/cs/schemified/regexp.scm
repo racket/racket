@@ -195,7 +195,11 @@
                   (procedure-keywords (|#%app| a_0 p_0))
                   (values null null)))))
           (values null null))
-        (raise-argument-error 'procedure-keywords "procedure?" p_0)))))
+        (raise-argument-error*
+         'procedure-keywords
+         'racket/primitive
+         "procedure?"
+         p_0)))))
 (define reverse$1
   (|#%name|
    reverse
@@ -336,10 +340,11 @@
 (define check-ranges
   (lambda (who_0 type-name_0 vec_0 start_0 stop_0 step_0 len_0)
     (begin
-      (if (if (exact-nonnegative-integer? start_0)
-            (let ((or-part_0 (< start_0 len_0)))
-              (if or-part_0 or-part_0 (= len_0 start_0 stop_0)))
-            #f)
+      (if (exact-nonnegative-integer? start_0)
+        (void)
+        (raise-argument-error who_0 "exact-nonnegative-integer?" start_0))
+      (if (let ((or-part_0 (< start_0 len_0)))
+            (if or-part_0 or-part_0 (= len_0 start_0 stop_0)))
         (void)
         (raise-range-error
          who_0
@@ -349,9 +354,10 @@
          vec_0
          0
          (sub1 len_0)))
-      (if (if (exact-integer? stop_0)
-            (if (<= -1 stop_0) (<= stop_0 len_0) #f)
-            #f)
+      (if (exact-integer? stop_0)
+        (void)
+        (raise-argument-error who_0 "exact-integer?" stop_0))
+      (if (if (<= -1 stop_0) (<= stop_0 len_0) #f)
         (void)
         (raise-range-error
          who_0
@@ -915,24 +921,22 @@
         (if (impersonator? v) (rx:alts?_2576 (impersonator-val v)) #f))))))
 (define rx:alts-rx_2530
   (|#%name| rx:alts-rx1 (record-accessor struct:rx:alts 0)))
-(define rx:alts-rx_1874
+(define rx:alts-rx_2265
   (|#%name|
    rx:alts-rx1
    (lambda (s)
      (if (rx:alts?_2576 s)
        (rx:alts-rx_2530 s)
-       ($value
-        (impersonate-ref rx:alts-rx_2530 struct:rx:alts 0 s 'rx:alts 'rx1))))))
+       ($value (impersonate-ref rx:alts-rx_2530 struct:rx:alts 0 s 'rx1))))))
 (define rx:alts-rx_2917
   (|#%name| rx:alts-rx2 (record-accessor struct:rx:alts 1)))
-(define rx:alts-rx_2761
+(define rx:alts-rx_1912
   (|#%name|
    rx:alts-rx2
    (lambda (s)
      (if (rx:alts?_2576 s)
        (rx:alts-rx_2917 s)
-       ($value
-        (impersonate-ref rx:alts-rx_2917 struct:rx:alts 1 s 'rx:alts 'rx2))))))
+       ($value (impersonate-ref rx:alts-rx_2917 struct:rx:alts 1 s 'rx2))))))
 (define finish_2732
   (make-struct-type-install-properties
    '(rx:sequence)
@@ -979,13 +983,7 @@
      (if (rx:sequence?_3213 s)
        (rx:sequence-rxs_2380 s)
        ($value
-        (impersonate-ref
-         rx:sequence-rxs_2380
-         struct:rx:sequence
-         0
-         s
-         'rx:sequence
-         'rxs))))))
+        (impersonate-ref rx:sequence-rxs_2380 struct:rx:sequence 0 s 'rxs))))))
 (define rx:sequence-needs-backtrack?_2458
   (|#%name|
    rx:sequence-needs-backtrack?
@@ -1002,7 +1000,6 @@
          struct:rx:sequence
          1
          s
-         'rx:sequence
          'needs-backtrack?))))))
 (define finish_2954
   (make-struct-type-install-properties
@@ -1048,14 +1045,7 @@
    (lambda (s)
      (if (rx:group?_3085 s)
        (rx:group-rx_2903 s)
-       ($value
-        (impersonate-ref
-         rx:group-rx_2903
-         struct:rx:group
-         0
-         s
-         'rx:group
-         'rx))))))
+       ($value (impersonate-ref rx:group-rx_2903 struct:rx:group 0 s 'rx))))))
 (define rx:group-number_2715
   (|#%name| rx:group-number (record-accessor struct:rx:group 1)))
 (define rx:group-number
@@ -1065,13 +1055,7 @@
      (if (rx:group?_3085 s)
        (rx:group-number_2715 s)
        ($value
-        (impersonate-ref
-         rx:group-number_2715
-         struct:rx:group
-         1
-         s
-         'rx:group
-         'number))))))
+        (impersonate-ref rx:group-number_2715 struct:rx:group 1 s 'number))))))
 (define finish_1837
   (make-struct-type-install-properties
    '(rx:repeat)
@@ -1118,13 +1102,7 @@
      (if (rx:repeat?_2609 s)
        (rx:repeat-rx_2269 s)
        ($value
-        (impersonate-ref
-         rx:repeat-rx_2269
-         struct:rx:repeat
-         0
-         s
-         'rx:repeat
-         'rx))))))
+        (impersonate-ref rx:repeat-rx_2269 struct:rx:repeat 0 s 'rx))))))
 (define rx:repeat-min_2947
   (|#%name| rx:repeat-min (record-accessor struct:rx:repeat 1)))
 (define rx:repeat-min
@@ -1134,13 +1112,7 @@
      (if (rx:repeat?_2609 s)
        (rx:repeat-min_2947 s)
        ($value
-        (impersonate-ref
-         rx:repeat-min_2947
-         struct:rx:repeat
-         1
-         s
-         'rx:repeat
-         'min))))))
+        (impersonate-ref rx:repeat-min_2947 struct:rx:repeat 1 s 'min))))))
 (define rx:repeat-max_2564
   (|#%name| rx:repeat-max (record-accessor struct:rx:repeat 2)))
 (define rx:repeat-max
@@ -1150,13 +1122,7 @@
      (if (rx:repeat?_2609 s)
        (rx:repeat-max_2564 s)
        ($value
-        (impersonate-ref
-         rx:repeat-max_2564
-         struct:rx:repeat
-         2
-         s
-         'rx:repeat
-         'max))))))
+        (impersonate-ref rx:repeat-max_2564 struct:rx:repeat 2 s 'max))))))
 (define rx:repeat-non-greedy?_2609
   (|#%name| rx:repeat-non-greedy? (record-accessor struct:rx:repeat 3)))
 (define rx:repeat-non-greedy?
@@ -1171,7 +1137,6 @@
          struct:rx:repeat
          3
          s
-         'rx:repeat
          'non-greedy?))))))
 (define finish_3260
   (make-struct-type-install-properties
@@ -1217,14 +1182,7 @@
    (lambda (s)
      (if (rx:maybe?_2766 s)
        (rx:maybe-rx_2762 s)
-       ($value
-        (impersonate-ref
-         rx:maybe-rx_2762
-         struct:rx:maybe
-         0
-         s
-         'rx:maybe
-         'rx))))))
+       ($value (impersonate-ref rx:maybe-rx_2762 struct:rx:maybe 0 s 'rx))))))
 (define rx:maybe-non-greedy?_2749
   (|#%name| rx:maybe-non-greedy? (record-accessor struct:rx:maybe 1)))
 (define rx:maybe-non-greedy?
@@ -1239,7 +1197,6 @@
          struct:rx:maybe
          1
          s
-         'rx:maybe
          'non-greedy?))))))
 (define finish_2500
   (make-struct-type-install-properties
@@ -1294,11 +1251,10 @@
          struct:rx:conditional
          0
          s
-         'rx:conditional
          'tst))))))
 (define rx:conditional-rx_2590
   (|#%name| rx:conditional-rx1 (record-accessor struct:rx:conditional 1)))
-(define rx:conditional-rx_2013
+(define rx:conditional-rx_2162
   (|#%name|
    rx:conditional-rx1
    (lambda (s)
@@ -1310,11 +1266,10 @@
          struct:rx:conditional
          1
          s
-         'rx:conditional
          'rx1))))))
 (define rx:conditional-rx_3084
   (|#%name| rx:conditional-rx2 (record-accessor struct:rx:conditional 2)))
-(define rx:conditional-rx_2094
+(define rx:conditional-rx_2328
   (|#%name|
    rx:conditional-rx2
    (lambda (s)
@@ -1326,7 +1281,6 @@
          struct:rx:conditional
          2
          s
-         'rx:conditional
          'rx2))))))
 (define rx:conditional-n-start_1886
   (|#%name| rx:conditional-n-start (record-accessor struct:rx:conditional 3)))
@@ -1342,7 +1296,6 @@
          struct:rx:conditional
          3
          s
-         'rx:conditional
          'n-start))))))
 (define rx:conditional-num-n_2530
   (|#%name| rx:conditional-num-n (record-accessor struct:rx:conditional 4)))
@@ -1358,7 +1311,6 @@
          struct:rx:conditional
          4
          s
-         'rx:conditional
          'num-n))))))
 (define rx:conditional-needs-backtrack?_2562
   (|#%name|
@@ -1376,7 +1328,6 @@
          struct:rx:conditional
          5
          s
-         'rx:conditional
          'needs-backtrack?))))))
 (define finish_2488
   (make-struct-type-install-properties
@@ -1426,13 +1377,7 @@
      (if (rx:lookahead?_3136 s)
        (rx:lookahead-rx_2682 s)
        ($value
-        (impersonate-ref
-         rx:lookahead-rx_2682
-         struct:rx:lookahead
-         0
-         s
-         'rx:lookahead
-         'rx))))))
+        (impersonate-ref rx:lookahead-rx_2682 struct:rx:lookahead 0 s 'rx))))))
 (define rx:lookahead-match?_1967
   (|#%name| rx:lookahead-match? (record-accessor struct:rx:lookahead 1)))
 (define rx:lookahead-match?
@@ -1447,7 +1392,6 @@
          struct:rx:lookahead
          1
          s
-         'rx:lookahead
          'match?))))))
 (define rx:lookahead-n-start_2202
   (|#%name| rx:lookahead-n-start (record-accessor struct:rx:lookahead 2)))
@@ -1463,7 +1407,6 @@
          struct:rx:lookahead
          2
          s
-         'rx:lookahead
          'n-start))))))
 (define rx:lookahead-num-n_2643
   (|#%name| rx:lookahead-num-n (record-accessor struct:rx:lookahead 3)))
@@ -1479,7 +1422,6 @@
          struct:rx:lookahead
          3
          s
-         'rx:lookahead
          'num-n))))))
 (define finish_3095
   (make-struct-type-install-properties
@@ -1534,7 +1476,6 @@
          struct:rx:lookbehind
          0
          s
-         'rx:lookbehind
          'rx))))))
 (define rx:lookbehind-match?_2428
   (|#%name| rx:lookbehind-match? (record-accessor struct:rx:lookbehind 1)))
@@ -1550,7 +1491,6 @@
          struct:rx:lookbehind
          1
          s
-         'rx:lookbehind
          'match?))))))
 (define rx:lookbehind-lb-min_2372
   (|#%name| rx:lookbehind-lb-min (record-accessor struct:rx:lookbehind 2)))
@@ -1566,7 +1506,6 @@
          struct:rx:lookbehind
          2
          s
-         'rx:lookbehind
          'lb-min))))))
 (define rx:lookbehind-lb-max_3076
   (|#%name| rx:lookbehind-lb-max (record-accessor struct:rx:lookbehind 3)))
@@ -1582,7 +1521,6 @@
          struct:rx:lookbehind
          3
          s
-         'rx:lookbehind
          'lb-max))))))
 (define rx:lookbehind-n-start_2946
   (|#%name| rx:lookbehind-n-start (record-accessor struct:rx:lookbehind 4)))
@@ -1598,7 +1536,6 @@
          struct:rx:lookbehind
          4
          s
-         'rx:lookbehind
          'n-start))))))
 (define rx:lookbehind-num-n_2613
   (|#%name| rx:lookbehind-num-n (record-accessor struct:rx:lookbehind 5)))
@@ -1614,7 +1551,6 @@
          struct:rx:lookbehind
          5
          s
-         'rx:lookbehind
          'num-n))))))
 (define set-rx:lookbehind-lb-min!_2809
   (|#%name| set-rx:lookbehind-lb-min! (record-mutator struct:rx:lookbehind 2)))
@@ -1632,7 +1568,6 @@
          2
          s
          v
-         'rx:lookbehind
          'lb-min))))))
 (define set-rx:lookbehind-lb-max!_2352
   (|#%name| set-rx:lookbehind-lb-max! (record-mutator struct:rx:lookbehind 3)))
@@ -1650,7 +1585,6 @@
          3
          s
          v
-         'rx:lookbehind
          'lb-max))))))
 (define finish_2346
   (make-struct-type-install-properties
@@ -1695,8 +1629,7 @@
    (lambda (s)
      (if (rx:cut?_2453 s)
        (rx:cut-rx_2624 s)
-       ($value
-        (impersonate-ref rx:cut-rx_2624 struct:rx:cut 0 s 'rx:cut 'rx))))))
+       ($value (impersonate-ref rx:cut-rx_2624 struct:rx:cut 0 s 'rx))))))
 (define rx:cut-n-start_2924
   (|#%name| rx:cut-n-start (record-accessor struct:rx:cut 1)))
 (define rx:cut-n-start
@@ -1706,13 +1639,7 @@
      (if (rx:cut?_2453 s)
        (rx:cut-n-start_2924 s)
        ($value
-        (impersonate-ref
-         rx:cut-n-start_2924
-         struct:rx:cut
-         1
-         s
-         'rx:cut
-         'n-start))))))
+        (impersonate-ref rx:cut-n-start_2924 struct:rx:cut 1 s 'n-start))))))
 (define rx:cut-num-n_2085
   (|#%name| rx:cut-num-n (record-accessor struct:rx:cut 2)))
 (define rx:cut-num-n
@@ -1722,13 +1649,7 @@
      (if (rx:cut?_2453 s)
        (rx:cut-num-n_2085 s)
        ($value
-        (impersonate-ref
-         rx:cut-num-n_2085
-         struct:rx:cut
-         2
-         s
-         'rx:cut
-         'num-n))))))
+        (impersonate-ref rx:cut-num-n_2085 struct:rx:cut 2 s 'num-n))))))
 (define rx:cut-needs-backtrack?_2736
   (|#%name| rx:cut-needs-backtrack? (record-accessor struct:rx:cut 3)))
 (define rx:cut-needs-backtrack?
@@ -1743,7 +1664,6 @@
          struct:rx:cut
          3
          s
-         'rx:cut
          'needs-backtrack?))))))
 (define finish_1921
   (make-struct-type-install-properties
@@ -1793,13 +1713,7 @@
      (if (rx:reference?_2938 s)
        (rx:reference-n_2302 s)
        ($value
-        (impersonate-ref
-         rx:reference-n_2302
-         struct:rx:reference
-         0
-         s
-         'rx:reference
-         'n))))))
+        (impersonate-ref rx:reference-n_2302 struct:rx:reference 0 s 'n))))))
 (define rx:reference-case-sensitive?_2306
   (|#%name|
    rx:reference-case-sensitive?
@@ -1816,7 +1730,6 @@
          struct:rx:reference
          1
          s
-         'rx:reference
          'case-sensitive?))))))
 (define finish_2471
   (make-struct-type-install-properties
@@ -1863,13 +1776,7 @@
      (if (rx:range?_1948 s)
        (rx:range-range_2664 s)
        ($value
-        (impersonate-ref
-         rx:range-range_2664
-         struct:rx:range
-         0
-         s
-         'rx:range
-         'range))))))
+        (impersonate-ref rx:range-range_2664 struct:rx:range 0 s 'range))))))
 (define finish_2339
   (make-struct-type-install-properties
    '(rx:unicode-categories)
@@ -1927,7 +1834,6 @@
          struct:rx:unicode-categories
          0
          s
-         'rx:unicode-categories
          'symlist))))))
 (define rx:unicode-categories-match?_2521
   (|#%name|
@@ -1945,7 +1851,6 @@
          struct:rx:unicode-categories
          1
          s
-         'rx:unicode-categories
          'match?))))))
 (define needs-backtrack?
   (lambda (rx_0)
@@ -2116,10 +2021,10 @@
              (range-union app_0 (rx:range-range rx2_0)))
            limit-c_0)
           (if (if (rx:range? rx1_0)
-                (if (rx:alts? rx2_0) (rx:range? (rx:alts-rx_1874 rx2_0)) #f)
+                (if (rx:alts? rx2_0) (rx:range? (rx:alts-rx_2265 rx2_0)) #f)
                 #f)
-            (let ((app_0 (rx-alts rx1_0 (rx:alts-rx_1874 rx2_0) limit-c_0)))
-              (rx-alts app_0 (rx:alts-rx_2761 rx2_0) limit-c_0))
+            (let ((app_0 (rx-alts rx1_0 (rx:alts-rx_2265 rx2_0) limit-c_0)))
+              (rx-alts app_0 (rx:alts-rx_1912 rx2_0) limit-c_0))
             (if (if (rx:range? rx1_0) (integer? rx2_0) #f)
               (rx-range (range-add (rx:range-range rx1_0) rx2_0) limit-c_0)
               (if (if (rx:range? rx2_0) (integer? rx1_0) #f)
@@ -2194,7 +2099,6 @@
          struct:parse-config
          0
          s
-         'parse-config
          'who))))))
 (define parse-config-px?_2965
   (|#%name| parse-config-px? (record-accessor struct:parse-config 1)))
@@ -2210,7 +2114,6 @@
          struct:parse-config
          1
          s
-         'parse-config
          'px?))))))
 (define parse-config-case-sensitive?_2517
   (|#%name|
@@ -2228,7 +2131,6 @@
          struct:parse-config
          2
          s
-         'parse-config
          'case-sensitive?))))))
 (define parse-config-multi-line?_2034
   (|#%name| parse-config-multi-line? (record-accessor struct:parse-config 3)))
@@ -2244,7 +2146,6 @@
          struct:parse-config
          3
          s
-         'parse-config
          'multi-line?))))))
 (define parse-config-group-number-box_2275
   (|#%name|
@@ -2262,7 +2163,6 @@
          struct:parse-config
          4
          s
-         'parse-config
          'group-number-box))))))
 (define parse-config-references?-box_2624
   (|#%name|
@@ -2280,7 +2180,6 @@
          struct:parse-config
          5
          s
-         'parse-config
          'references?-box))))))
 (define parse-config-error-handler?_2788
   (|#%name|
@@ -2298,7 +2197,6 @@
          struct:parse-config
          6
          s
-         'parse-config
          'error-handler?))))))
 (define make-parse-config.1
   (|#%name|
@@ -3747,12 +3645,12 @@
                                    (if (rx:alts? rx_1)
                                      (call-with-values
                                       (lambda ()
-                                        (validate_0 (rx:alts-rx_1874 rx_1)))
+                                        (validate_0 (rx:alts-rx_2265 rx_1)))
                                       (case-lambda
                                        ((min1_0 max1_0 lb1_0)
                                         (call-with-values
                                          (lambda ()
-                                           (validate_0 (rx:alts-rx_2761 rx_1)))
+                                           (validate_0 (rx:alts-rx_1912 rx_1)))
                                          (case-lambda
                                           ((min2_0 max2_0 lb2_0)
                                            (let ((app_0 (min min1_0 min2_0)))
@@ -3929,14 +3827,14 @@
                                                   (call-with-values
                                                    (lambda ()
                                                      (validate_0
-                                                      (rx:conditional-rx_2013
+                                                      (rx:conditional-rx_2162
                                                        rx_1)))
                                                    (case-lambda
                                                     ((min1_0 max1_0 lb1_0)
                                                      (call-with-values
                                                       (lambda ()
                                                         (validate_0
-                                                         (rx:conditional-rx_2094
+                                                         (rx:conditional-rx_2328
                                                           rx_1)))
                                                       (case-lambda
                                                        ((min2_0 max2_0 lb2_0)
@@ -4112,8 +4010,8 @@
             (if (string? rx_0)
               (string->bytes/utf-8 rx_0)
               (if (rx:alts? rx_0)
-                (let ((app_0 (convert (rx:alts-rx_1874 rx_0))))
-                  (rx-alts app_0 (convert (rx:alts-rx_2761 rx_0)) 255))
+                (let ((app_0 (convert (rx:alts-rx_2265 rx_0))))
+                  (rx-alts app_0 (convert (rx:alts-rx_1912 rx_0)) 255))
                 (if (rx:sequence? rx_0)
                   (if (rx:sequence? rx_0)
                     (let ((rxs1_0
@@ -4169,10 +4067,10 @@
                           (if (rx:conditional? rx_0)
                             (let ((tst5_0 (convert (rx:conditional-tst rx_0))))
                               (let ((rx16_0
-                                     (convert (rx:conditional-rx_2013 rx_0))))
+                                     (convert (rx:conditional-rx_2162 rx_0))))
                                 (let ((rx27_0
                                        (convert
-                                        (rx:conditional-rx_2094 rx_0))))
+                                        (rx:conditional-rx_2328 rx_0))))
                                   (let ((rx16_1 rx16_0) (tst5_1 tst5_0))
                                     (let ((app_0
                                            (rx:conditional-n-start rx_0)))
@@ -4445,12 +4343,12 @@
                       (anchored? (car rxs_0))))))))))
          (loop_0 (rx:sequence-rxs rx_0)))
         (if (rx:alts? rx_0)
-          (if (anchored? (rx:alts-rx_1874 rx_0))
-            (anchored? (rx:alts-rx_2761 rx_0))
+          (if (anchored? (rx:alts-rx_2265 rx_0))
+            (anchored? (rx:alts-rx_1912 rx_0))
             #f)
           (if (rx:conditional? rx_0)
-            (if (anchored? (rx:conditional-rx_2013 rx_0))
-              (anchored? (rx:conditional-rx_2094 rx_0))
+            (if (anchored? (rx:conditional-rx_2162 rx_0))
+              (anchored? (rx:conditional-rx_2328 rx_0))
               #f)
             (if (rx:group? rx_0)
               (anchored? (rx:group-rx rx_0))
@@ -4501,10 +4399,10 @@
                (for-loop_0 #f lst_0))))
           (if (rx:conditional? rx_0)
             (let ((or-part_0
-                   (something-expensive? (rx:conditional-rx_2013 rx_0))))
+                   (something-expensive? (rx:conditional-rx_2162 rx_0))))
               (if or-part_0
                 or-part_0
-                (something-expensive? (rx:conditional-rx_2094 rx_0))))
+                (something-expensive? (rx:conditional-rx_2328 rx_0))))
             (if (rx:group? rx_0)
               (something-expensive? (rx:group-rx rx_0))
               (if (rx:cut? rx_0)
@@ -4669,11 +4567,11 @@
                         (start-range rx_1)))))))))
            (loop_0 (rx:sequence-rxs rx_0)))
           (if (rx:alts? rx_0)
-            (let ((app_0 (start-range (rx:alts-rx_1874 rx_0))))
-              (union app_0 (start-range (rx:alts-rx_2761 rx_0))))
+            (let ((app_0 (start-range (rx:alts-rx_2265 rx_0))))
+              (union app_0 (start-range (rx:alts-rx_1912 rx_0))))
             (if (rx:conditional? rx_0)
-              (let ((app_0 (start-range (rx:conditional-rx_2013 rx_0))))
-                (union app_0 (start-range (rx:conditional-rx_2094 rx_0))))
+              (let ((app_0 (start-range (rx:conditional-rx_2162 rx_0))))
+                (union app_0 (start-range (rx:conditional-rx_2328 rx_0))))
               (if (rx:group? rx_0)
                 (start-range (rx:group-rx rx_0))
                 (if (rx:cut? rx_0)
@@ -4762,13 +4660,7 @@
      (if (lazy-bytes?_2654 s)
        (lazy-bytes-bstr_2345 s)
        ($value
-        (impersonate-ref
-         lazy-bytes-bstr_2345
-         struct:lazy-bytes
-         0
-         s
-         'lazy-bytes
-         'bstr))))))
+        (impersonate-ref lazy-bytes-bstr_2345 struct:lazy-bytes 0 s 'bstr))))))
 (define lazy-bytes-end_2914
   (|#%name| lazy-bytes-end (record-accessor struct:lazy-bytes 1)))
 (define lazy-bytes-end
@@ -4778,13 +4670,7 @@
      (if (lazy-bytes?_2654 s)
        (lazy-bytes-end_2914 s)
        ($value
-        (impersonate-ref
-         lazy-bytes-end_2914
-         struct:lazy-bytes
-         1
-         s
-         'lazy-bytes
-         'end))))))
+        (impersonate-ref lazy-bytes-end_2914 struct:lazy-bytes 1 s 'end))))))
 (define lazy-bytes-in_2568
   (|#%name| lazy-bytes-in (record-accessor struct:lazy-bytes 2)))
 (define lazy-bytes-in
@@ -4794,13 +4680,7 @@
      (if (lazy-bytes?_2654 s)
        (lazy-bytes-in_2568 s)
        ($value
-        (impersonate-ref
-         lazy-bytes-in_2568
-         struct:lazy-bytes
-         2
-         s
-         'lazy-bytes
-         'in))))))
+        (impersonate-ref lazy-bytes-in_2568 struct:lazy-bytes 2 s 'in))))))
 (define lazy-bytes-skip-amt_2649
   (|#%name| lazy-bytes-skip-amt (record-accessor struct:lazy-bytes 3)))
 (define lazy-bytes-skip-amt
@@ -4815,7 +4695,6 @@
          struct:lazy-bytes
          3
          s
-         'lazy-bytes
          'skip-amt))))))
 (define lazy-bytes-prefix-len_2565
   (|#%name| lazy-bytes-prefix-len (record-accessor struct:lazy-bytes 4)))
@@ -4831,7 +4710,6 @@
          struct:lazy-bytes
          4
          s
-         'lazy-bytes
          'prefix-len))))))
 (define lazy-bytes-peek?_2174
   (|#%name| lazy-bytes-peek? (record-accessor struct:lazy-bytes 5)))
@@ -4847,7 +4725,6 @@
          struct:lazy-bytes
          5
          s
-         'lazy-bytes
          'peek?))))))
 (define lazy-bytes-immediate-only?_2496
   (|#%name| lazy-bytes-immediate-only? (record-accessor struct:lazy-bytes 6)))
@@ -4863,7 +4740,6 @@
          struct:lazy-bytes
          6
          s
-         'lazy-bytes
          'immediate-only?))))))
 (define lazy-bytes-progress-evt_2923
   (|#%name| lazy-bytes-progress-evt (record-accessor struct:lazy-bytes 7)))
@@ -4879,7 +4755,6 @@
          struct:lazy-bytes
          7
          s
-         'lazy-bytes
          'progress-evt))))))
 (define lazy-bytes-out_2340
   (|#%name| lazy-bytes-out (record-accessor struct:lazy-bytes 8)))
@@ -4890,13 +4765,7 @@
      (if (lazy-bytes?_2654 s)
        (lazy-bytes-out_2340 s)
        ($value
-        (impersonate-ref
-         lazy-bytes-out_2340
-         struct:lazy-bytes
-         8
-         s
-         'lazy-bytes
-         'out))))))
+        (impersonate-ref lazy-bytes-out_2340 struct:lazy-bytes 8 s 'out))))))
 (define lazy-bytes-max-lookbehind_2217
   (|#%name| lazy-bytes-max-lookbehind (record-accessor struct:lazy-bytes 9)))
 (define lazy-bytes-max-lookbehind
@@ -4911,7 +4780,6 @@
          struct:lazy-bytes
          9
          s
-         'lazy-bytes
          'max-lookbehind))))))
 (define lazy-bytes-failed?_2073
   (|#%name| lazy-bytes-failed? (record-accessor struct:lazy-bytes 10)))
@@ -4927,7 +4795,6 @@
          struct:lazy-bytes
          10
          s
-         'lazy-bytes
          'failed?))))))
 (define lazy-bytes-discarded-count_3290
   (|#%name| lazy-bytes-discarded-count (record-accessor struct:lazy-bytes 11)))
@@ -4943,7 +4810,6 @@
          struct:lazy-bytes
          11
          s
-         'lazy-bytes
          'discarded-count))))))
 (define lazy-bytes-max-peek_2492
   (|#%name| lazy-bytes-max-peek (record-accessor struct:lazy-bytes 12)))
@@ -4959,7 +4825,6 @@
          struct:lazy-bytes
          12
          s
-         'lazy-bytes
          'max-peek))))))
 (define set-lazy-bytes-bstr!_2695
   (|#%name| set-lazy-bytes-bstr! (record-mutator struct:lazy-bytes 0)))
@@ -4977,7 +4842,6 @@
          0
          s
          v
-         'lazy-bytes
          'bstr))))))
 (define set-lazy-bytes-end!_2897
   (|#%name| set-lazy-bytes-end! (record-mutator struct:lazy-bytes 1)))
@@ -4995,7 +4859,6 @@
          1
          s
          v
-         'lazy-bytes
          'end))))))
 (define set-lazy-bytes-failed?!_2421
   (|#%name| set-lazy-bytes-failed?! (record-mutator struct:lazy-bytes 10)))
@@ -5013,7 +4876,6 @@
          10
          s
          v
-         'lazy-bytes
          'failed?))))))
 (define set-lazy-bytes-discarded-count!_2738
   (|#%name|
@@ -5033,7 +4895,6 @@
          11
          s
          v
-         'lazy-bytes
          'discarded-count))))))
 (define make-lazy-bytes
   (lambda (in_0
@@ -6999,12 +6860,12 @@
                                          (if (rx:alts? rx_1)
                                            (let ((app_0
                                                   (compile_0
-                                                   (rx:alts-rx_1874 rx_1)
+                                                   (rx:alts-rx_2265 rx_1)
                                                    next-m_0)))
                                              (alts-matcher
                                               app_0
                                               (compile_0
-                                               (rx:alts-rx_2761 rx_1)
+                                               (rx:alts-rx_1912 rx_1)
                                                next-m_0)))
                                            (if (rx:maybe? rx_1)
                                              (if (rx:maybe-non-greedy? rx_1)
@@ -7156,12 +7017,12 @@
                                                                rx_1)))
                                                          (let ((m1_0
                                                                 (compile_0
-                                                                 (rx:conditional-rx_2013
+                                                                 (rx:conditional-rx_2162
                                                                   rx_1)
                                                                  next-m_0)))
                                                            (let ((m2_0
                                                                   (compile_0
-                                                                   (rx:conditional-rx_2094
+                                                                   (rx:conditional-rx_2328
                                                                     rx_1)
                                                                    next-m_0)))
                                                              (if (rx:reference?
@@ -7328,7 +7189,6 @@
          struct:rx:regexp
          0
          s
-         'regexp
          'bytes?))))))
 (define rx:regexp-px?_2839
   (|#%name| regexp-px? (record-accessor struct:rx:regexp 1)))
@@ -7339,13 +7199,7 @@
      (if (rx:regexp?_2382 s)
        (rx:regexp-px?_2839 s)
        ($value
-        (impersonate-ref
-         rx:regexp-px?_2839
-         struct:rx:regexp
-         1
-         s
-         'regexp
-         'px?))))))
+        (impersonate-ref rx:regexp-px?_2839 struct:rx:regexp 1 s 'px?))))))
 (define rx:regexp-source_2786
   (|#%name| regexp-source (record-accessor struct:rx:regexp 2)))
 (define rx:regexp-source
@@ -7360,7 +7214,6 @@
          struct:rx:regexp
          2
          s
-         'regexp
          'source))))))
 (define rx:regexp-matcher_2640
   (|#%name| regexp-matcher (record-accessor struct:rx:regexp 3)))
@@ -7376,7 +7229,6 @@
          struct:rx:regexp
          3
          s
-         'regexp
          'matcher))))))
 (define rx:regexp-num-groups_2013
   (|#%name| regexp-num-groups (record-accessor struct:rx:regexp 4)))
@@ -7392,7 +7244,6 @@
          struct:rx:regexp
          4
          s
-         'regexp
          'num-groups))))))
 (define rx:regexp-references?_2683
   (|#%name| regexp-references? (record-accessor struct:rx:regexp 5)))
@@ -7408,7 +7259,6 @@
          struct:rx:regexp
          5
          s
-         'regexp
          'references?))))))
 (define rx:regexp-max-lookbehind_2091
   (|#%name| regexp-max-lookbehind (record-accessor struct:rx:regexp 6)))
@@ -7424,7 +7274,6 @@
          struct:rx:regexp
          6
          s
-         'regexp
          'max-lookbehind))))))
 (define rx:regexp-anchored?_2381
   (|#%name| regexp-anchored? (record-accessor struct:rx:regexp 7)))
@@ -7440,7 +7289,6 @@
          struct:rx:regexp
          7
          s
-         'regexp
          'anchored?))))))
 (define rx:regexp-must-string_2180
   (|#%name| regexp-must-string (record-accessor struct:rx:regexp 8)))
@@ -7456,7 +7304,6 @@
          struct:rx:regexp
          8
          s
-         'regexp
          'must-string))))))
 (define rx:regexp-start-range_2644
   (|#%name| regexp-start-range (record-accessor struct:rx:regexp 9)))
@@ -7472,7 +7319,6 @@
          struct:rx:regexp
          9
          s
-         'regexp
          'start-range))))))
 (define make-regexp
   (lambda (who_0 orig-p_0 px?_0 as-bytes?_0 handler_0)

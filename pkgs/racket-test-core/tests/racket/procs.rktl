@@ -192,6 +192,30 @@
                     (test 0-ok? procedure-arity-includes? (car p) 0 #t)
                     ;; While we're here test renaming, etc.:
                     (test 'other object-name (procedure-rename (car p) 'other))
+                    (test 'racket procedure-realm (procedure-rename (car p) 'other))
+                    (test 'elsewhere procedure-realm (procedure-rename (car p) 'other 'elsewhere))
+                    (test 'racket procedure-realm (procedure-rename (procedure-rename (car p) 'other 'elsewhere) 'again))
+                    (test 'home procedure-realm (procedure-rename (procedure-rename (car p) 'other 'elsewhere) 'again 'home))
+                    (let-values ([(required allowed) (procedure-keywords (car p))])
+                      (when (null? required)
+                        (test 'elsewhere procedure-realm (procedure-reduce-arity (procedure-rename (car p) 'other 'elsewhere)
+                                                                                 (procedure-arity (car p))))
+                        (test 'elsewhere procedure-realm (procedure-reduce-arity (car p)
+                                                                                 (procedure-arity (car p))
+                                                                                 'other
+                                                                                 'elsewhere)))
+                      (test 'elsewhere procedure-realm (procedure-reduce-keyword-arity
+                                                        (procedure-rename (car p) 'other 'elsewhere)
+                                                        (procedure-arity (car p))
+                                                        required
+                                                        allowed))
+                      (test 'elsewhere procedure-realm (procedure-reduce-keyword-arity
+                                                        (car p)
+                                                        (procedure-arity (car p))
+                                                        required
+                                                        allowed
+                                                        'other
+                                                        'elsewhere)))
                     (test (procedure-arity (car p)) procedure-arity (procedure-rename (car p) 'other))
                     (test (procedure-arity (car p)) procedure-arity (procedure->method (car p)))
                     (check-arity-error (car p) 10 (if method? 9 10))
@@ -358,6 +382,7 @@
                                              (not (memq '#:b req)))))
                                     procs))))))
   (try-combos procs values)
+  #;
   (let ([add-chaperone (lambda (p)
                          (cons
                           (chaperone-procedure
@@ -407,7 +432,7 @@
 
 (run-procedure-tests procedure-arity procedure-reduce-arity)
 (run-procedure-tests (lambda (p) (mask->arity (procedure-arity-mask p)))
-                     (lambda (p a [name #f]) (procedure-reduce-arity-mask p (arity->mask a) name)))
+                     (lambda (p a [name #f] [realm 'racket]) (procedure-reduce-arity-mask p (arity->mask a) name realm)))
 
 ;; ------------------------------------------------------------
 ;; Check arity reporting for methods.

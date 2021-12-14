@@ -689,6 +689,14 @@ reports the running Racket's native target machine.
 @history[#:added "7.1.0.6"]}
 
 
+@defparam[current-compile-realm realm symbol?]{
+
+Determines the @tech{realm} that is assigned to modules and procedures
+when they are compiled.
+
+@history[#:added "8.4.0.2"]}
+
+
 @defboolparam[eval-jit-enabled on?]{
 
 @guidealso["JIT"]

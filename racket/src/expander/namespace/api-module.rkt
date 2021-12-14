@@ -17,6 +17,7 @@
          module->indirect-exports
          module-provide-protected?
          module->namespace
+         module->realm
          namespace-unprotect-module)
 
 ;; ----------------------------------------
@@ -56,17 +57,22 @@
                                (check-provides-verbosity who verbosity))))
   (provides->api-provides provides self verbosity))
 
-(define (module->indirect-exports mod)
+(define/who (module->indirect-exports mod)
   (module-> (lambda (m)
               (variables->api-nonprovides (module-provides m)
                                           ((module-get-all-variables m))))
-            'module->indirect-exports mod))
+            who mod))
 
-(define (module-provide-protected? mod sym)
+(define/who (module-provide-protected? mod sym)
   (module-> (lambda (m)
               (define b/p (hash-ref (module-provides m) sym #f))
               (or (not b/p) (provided-as-protected? b/p)))
-            'module-provide-protected? mod))
+            who mod))
+
+(define/who (module->realm mod)
+  (module-> (lambda (m)
+              (module-realm m))
+            who mod))
 
 (define/who (module->namespace mod [ns (current-namespace)])
   (check who module-reference? #:contract module-reference-str mod)

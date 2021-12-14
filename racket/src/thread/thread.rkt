@@ -14,7 +14,8 @@
          "schedule-info.rkt"
          "custodian.rkt"
          "custodian-object.rkt"
-         "exit.rkt")
+         "exit.rkt"
+         "error.rkt")
 
 (provide (rename-out [make-thread thread])
          thread/suspend-to-kill
@@ -836,7 +837,7 @@
              (call-with-escape-continuation
               (lambda (k)
                 (raise (exn:break*
-                        "user break"
+                        (error-message->string #f "user break")
                         (current-continuation-marks)
                         k)))))]
           [else void]))))))

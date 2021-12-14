@@ -194,6 +194,7 @@ static Scheme_Object *use_jit(int argc, Scheme_Object **argv);
 static Scheme_Object *disallow_inline(int argc, Scheme_Object **argv);
 static Scheme_Object *compile_target_machine(int argc, Scheme_Object **argv);
 static Scheme_Object *compile_is_target_machine(int argc, Scheme_Object **argv);
+static Scheme_Object *compile_realm(int argc, Scheme_Object **argv);
 
 void scheme_escape_to_continuation(Scheme_Object *obj, int num_rands, Scheme_Object **rands, Scheme_Object *alt_full);
 
@@ -243,7 +244,8 @@ scheme_init_eval (Scheme_Startup_Env *env)
   ADD_PARAMETER("compile-enforce-module-constants",  compile_module_constants, MZCONFIG_COMPILE_MODULE_CONSTS, env);
   ADD_PARAMETER("eval-jit-enabled",                  use_jit,                  MZCONFIG_USE_JIT,               env);
   ADD_PARAMETER("compile-context-preservation-enabled", disallow_inline,       MZCONFIG_DISALLOW_INLINE,       env);
-  ADD_PARAMETER("current-compile-target-machine",    compile_target_machine,  MZCONFIG_COMPILE_TARGET_MACHINE, env);
+  ADD_PARAMETER("current-compile-target-machine",    compile_target_machine,   MZCONFIG_COMPILE_TARGET_MACHINE, env);
+  ADD_PARAMETER("current-compile-realm",             compile_realm,            MZCONFIG_COMPILE_REALM, env);
 
   ADD_PRIM_W_ARITY("compile-target-machine?",        compile_is_target_machine,                       1, 1, env);
 }
@@ -3924,6 +3926,20 @@ static Scheme_Object *compile_is_target_machine(int argc, Scheme_Object **argv)
   if (!SCHEME_SYMBOLP(argv[0]))
     scheme_wrong_contract("compile-target-machine?", "symbol?", 0, argc, argv);
   return scheme_compile_target_check(argc, argv);
+}
+
+static Scheme_Object *compile_realm_check(int argc, Scheme_Object **argv)
+{
+  return SCHEME_SYMBOLP(argv[0]) ? scheme_true : scheme_false;
+}
+
+static Scheme_Object *compile_realm(int argc, Scheme_Object **argv)
+{
+  return scheme_param_config2("current-compile-realm", 
+                              scheme_make_integer(MZCONFIG_COMPILE_REALM),
+                              argc, argv,
+                              -1, compile_realm_check, 
+                              "symbol?", 0);
 }
 
 static Scheme_Object *

@@ -774,13 +774,13 @@
              #rx"expected\\: vector")
 (err/rt-test (for ([x (in-vector (vector 1 2) -1)]) x)
              exn:fail:contract?
-             #rx"starting index is out of range")
+             #rx"expected\\: exact-nonnegative-integer\\?")
 (err/rt-test (for ([x (in-vector (vector 1 2) 10)]) x)
              exn:fail:contract?
              #rx"starting index is out of range")
 (err/rt-test (for ([x (in-vector (vector 1 2) 1.1)]) x)
              exn:fail:contract?
-             #rx"expected\\: exact-integer\\?")
+             #rx"expected\\: exact-nonnegative-integer\\?")
 (err/rt-test (for ([x (in-vector (vector 1 2) 0 1.1)]) x)
              exn:fail:contract?
              #rx"expected\\: exact-integer\\?")
@@ -826,7 +826,7 @@
              #rx"starting index is out of range")
 (err/rt-test (for/sum ([x (in-vector (vector) -1 -1 -1)]) x)
              exn:fail:contract?
-             #rx"starting index is out of range")
+             #rx"expected: exact-nonnegative-integer?")
 (err/rt-test (for/sum ([x (in-vector (vector) 1 1 1)]) x)
              exn:fail:contract?
              #rx"starting index is out of range")

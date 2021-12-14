@@ -35,6 +35,9 @@ THREAD_LOCAL_DECL(static Scheme_Logger *scheme_gc_logger);
 THREAD_LOCAL_DECL(static Scheme_Logger *scheme_future_logger);
 THREAD_LOCAL_DECL(static Scheme_Logger *scheme_place_logger);
 
+ROSYM Scheme_Object *scheme_default_realm;
+ROSYM Scheme_Object *scheme_primitive_realm;
+
 /* readonly globals */
 ROSYM static Scheme_Object *none_symbol;
 ROSYM static Scheme_Object *fatal_symbol;
@@ -45,10 +48,18 @@ ROSYM static Scheme_Object *debug_symbol;
 ROSYM static Scheme_Object *posix_symbol;
 ROSYM static Scheme_Object *windows_symbol;
 ROSYM static Scheme_Object *gai_symbol;
+ROSYM static Scheme_Object *local_realm_symbol;
+ROSYM static Scheme_Object *name_symbol;
+ROSYM static Scheme_Object *message_symbol;
+ROSYM static Scheme_Object *contract_symbol;
 ROSYM static Scheme_Object *arity_property;
 ROSYM static Scheme_Object *def_err_val_proc;
 ROSYM static Scheme_Object *def_err_stx_proc;
 ROSYM static Scheme_Object *def_error_esc_proc;
+ROSYM static Scheme_Object *def_err_msg_adjust_proc;
+ROSYM static Scheme_Object *def_err_msg_adjust_name_proc;
+ROSYM static Scheme_Object *def_err_msg_adjust_message_proc;
+ROSYM static Scheme_Object *def_err_msg_adjust_contract_proc;
 ROSYM static Scheme_Object *default_display_handler;
 ROSYM static Scheme_Object *emergency_display_handler;
 ROSYM static Scheme_Object *def_exe_yield_proc;
@@ -77,27 +88,41 @@ static Scheme_Object *assert_unreachable(int argc, Scheme_Object* argv[]);
 static Scheme_Object *raise_user_error(int argc, Scheme_Object *argv[]);
 static Scheme_Object *raise_type_error(int argc, Scheme_Object *argv[]);
 static Scheme_Object *raise_argument_error(int argc, Scheme_Object *argv[]);
+static Scheme_Object *raise_argument_error_star(int argc, Scheme_Object *argv[]);
 static Scheme_Object *raise_result_error(int argc, Scheme_Object *argv[]);
+static Scheme_Object *raise_result_error_star(int argc, Scheme_Object *argv[]);
 static Scheme_Object *raise_mismatch_error(int argc, Scheme_Object *argv[]);
 static Scheme_Object *raise_arguments_error(int argc, Scheme_Object *argv[]);
+static Scheme_Object *raise_arguments_error_star(int argc, Scheme_Object *argv[]);
 static Scheme_Object *raise_range_error(int argc, Scheme_Object *argv[]);
+static Scheme_Object *raise_range_error_star(int argc, Scheme_Object *argv[]);
 static Scheme_Object *raise_arity_error(int argc, Scheme_Object *argv[]);
+static Scheme_Object *raise_arity_error_star(int argc, Scheme_Object *argv[]);
 static Scheme_Object *raise_arity_mask_error(int argc, Scheme_Object *argv[]);
+static Scheme_Object *raise_arity_mask_error_star(int argc, Scheme_Object *argv[]);
 static Scheme_Object *raise_result_arity_error(int argc, Scheme_Object *argv[]);
+static Scheme_Object *raise_result_arity_error_star(int argc, Scheme_Object *argv[]);
 static Scheme_Object *error_escape_handler(int, Scheme_Object *[]);
 static Scheme_Object *error_display_handler(int, Scheme_Object *[]);
 static Scheme_Object *error_value_string_handler(int, Scheme_Object *[]);
 static Scheme_Object *error_syntax_string_handler(int, Scheme_Object *[]);
+static Scheme_Object *current_error_message_adjuster(int, Scheme_Object *[]);
 static Scheme_Object *exit_handler(int, Scheme_Object *[]);
 static Scheme_Object *exe_yield_handler(int, Scheme_Object *[]);
 static Scheme_Object *error_print_width(int, Scheme_Object *[]);
 static Scheme_Object *error_print_context_length(int, Scheme_Object *[]);
 static Scheme_Object *error_print_srcloc(int, Scheme_Object *[]);
+static Scheme_Object *error_message_to_adjusted_string(int, Scheme_Object *[]);
+static Scheme_Object *error_contract_to_adjusted_string(int, Scheme_Object *[]);
 static MZ_NORETURN void def_error_escape_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_error_display_proc(int, Scheme_Object *[]);
 static Scheme_Object *emergency_error_display_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_error_value_string_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_error_syntax_string_proc(int, Scheme_Object *[]);
+static Scheme_Object *def_error_message_adjust_proc(int, Scheme_Object *[]);
+static Scheme_Object *def_error_message_adjust_name_proc(int, Scheme_Object *[]);
+static Scheme_Object *def_error_message_adjust_message_proc(int, Scheme_Object *[]);
+static Scheme_Object *def_error_message_adjust_contract_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_exit_handler_proc(int, Scheme_Object *[]);
 static Scheme_Object *default_yield_handler(int, Scheme_Object *[]);
 static Scheme_Object *srcloc_to_string(int argc, Scheme_Object **argv);
@@ -798,25 +823,36 @@ void scheme_init_error(Scheme_Startup_Env *env)
   ESCAPING_NONCM_PRIM("raise-user-error",           raise_user_error,      1, -1, env);
   ESCAPING_NONCM_PRIM("raise-type-error",           raise_type_error,      3, -1, env);
   ESCAPING_NONCM_PRIM("raise-argument-error",       raise_argument_error,  3, -1, env);
+  ESCAPING_NONCM_PRIM("raise-argument-error*",      raise_argument_error_star, 4, -1, env);
   ESCAPING_NONCM_PRIM("raise-result-error",         raise_result_error,    3, -1, env);
+  ESCAPING_NONCM_PRIM("raise-result-error*",        raise_result_error_star, 4, -1, env);
   ESCAPING_NONCM_PRIM("raise-arguments-error",      raise_arguments_error, 2, -1, env);
+  ESCAPING_NONCM_PRIM("raise-arguments-error*",     raise_arguments_error_star, 3, -1, env);
   ESCAPING_NONCM_PRIM("raise-mismatch-error",       raise_mismatch_error,  3, -1, env);
   ESCAPING_NONCM_PRIM("raise-range-error",          raise_range_error,     7, 8, env);
+  ESCAPING_NONCM_PRIM("raise-range-error*",         raise_range_error_star, 8, 9, env);
 
   scheme_raise_arity_error_proc =                  scheme_make_noncm_prim(raise_arity_error, "raise-arity-error", 2, -1);
   scheme_addto_prim_instance("raise-arity-error",  scheme_raise_arity_error_proc, env);
+  ESCAPING_NONCM_PRIM("raise-arity-error*",        raise_arity_error_star, 3, -1, env);
   ESCAPING_NONCM_PRIM("raise-arity-mask-error",     raise_arity_mask_error, 2, -1, env);
+  ESCAPING_NONCM_PRIM("raise-arity-mask-error*",    raise_arity_mask_error_star, 3, -1, env);
   ESCAPING_NONCM_PRIM("raise-result-arity-error",   raise_result_arity_error, 3, -1, env);
+  ESCAPING_NONCM_PRIM("raise-result-arity-error*",  raise_result_arity_error_star, 4, -1, env);
 
   ADD_PARAMETER("error-display-handler",       error_display_handler,      MZCONFIG_ERROR_DISPLAY_HANDLER,       env);
   ADD_PARAMETER("error-value->string-handler", error_value_string_handler, MZCONFIG_ERROR_PRINT_VALUE_HANDLER,   env);
   ADD_PARAMETER("error-syntax->string-handler", error_syntax_string_handler, MZCONFIG_ERROR_PRINT_SYNTAX_HANDLER, env);
+  ADD_PARAMETER("current-error-message-adjuster", current_error_message_adjuster, MZCONFIG_ERROR_MESSAGE_ADJUSTER, env);
   ADD_PARAMETER("error-escape-handler",        error_escape_handler,       MZCONFIG_ERROR_ESCAPE_HANDLER,        env);
   ADD_PARAMETER("exit-handler",                exit_handler,               MZCONFIG_EXIT_HANDLER,                env);
   ADD_PARAMETER("executable-yield-handler",    exe_yield_handler,          MZCONFIG_EXE_YIELD_HANDLER,           env);
   ADD_PARAMETER("error-print-width",           error_print_width,          MZCONFIG_ERROR_PRINT_WIDTH,           env);
   ADD_PARAMETER("error-print-context-length",  error_print_context_length, MZCONFIG_ERROR_PRINT_CONTEXT_LENGTH,  env);
   ADD_PARAMETER("error-print-source-location", error_print_srcloc,         MZCONFIG_ERROR_PRINT_SRCLOC,          env);
+
+  ADD_PRIM_W_ARITY("error-message->adjusted-string",  error_message_to_adjusted_string, 4, 4, env);
+  ADD_PRIM_W_ARITY("error-contract->adjusted-string", error_contract_to_adjusted_string, 2, 2, env);
 
   ADD_NONCM_PRIM("exit",              scheme_do_exit,  0, 1, env);
 
@@ -857,6 +893,19 @@ void scheme_init_error(Scheme_Startup_Env *env)
   REGISTER_SO(def_err_stx_proc);
   def_err_stx_proc = scheme_make_prim_w_arity(def_error_syntax_string_proc, "default-error-syntax->string-handler", 2, 2);
 
+  REGISTER_SO(def_err_msg_adjust_proc);
+  REGISTER_SO(def_err_msg_adjust_name_proc);
+  REGISTER_SO(def_err_msg_adjust_message_proc);
+  REGISTER_SO(def_err_msg_adjust_contract_proc);
+  def_err_msg_adjust_proc = scheme_make_prim_w_arity(def_error_message_adjust_proc,
+                                                     "default-error-message-adjuster", 1, 1);
+  def_err_msg_adjust_name_proc = scheme_make_prim_w_arity2(def_error_message_adjust_name_proc,
+                                                           "default-error-message-adjuster/name-mode", 2, 2, 2, 2);
+  def_err_msg_adjust_message_proc = scheme_make_prim_w_arity2(def_error_message_adjust_message_proc,
+                                                              "default-error-message-adjuster/message-mode", 4, 4, 4, 4);
+  def_err_msg_adjust_contract_proc = scheme_make_prim_w_arity2(def_error_message_adjust_contract_proc,
+                                                               "default-error-message-adjuster/contract-mode", 2, 2, 2, 2);
+
   REGISTER_SO(none_symbol);
   REGISTER_SO(fatal_symbol);
   REGISTER_SO(error_symbol);
@@ -877,6 +926,13 @@ void scheme_init_error(Scheme_Startup_Env *env)
   windows_symbol  = scheme_intern_symbol("windows");
   gai_symbol      = scheme_intern_symbol("gai");
 
+  REGISTER_SO(name_symbol);
+  REGISTER_SO(message_symbol);
+  REGISTER_SO(contract_symbol);
+  name_symbol = scheme_intern_symbol("name");
+  message_symbol = scheme_intern_symbol("message");
+  contract_symbol = scheme_intern_symbol("contract");
+
   REGISTER_SO(arity_property);
   {
     Scheme_Object *guard;
@@ -890,6 +946,20 @@ void scheme_init_error(Scheme_Startup_Env *env)
   def_exe_yield_proc = scheme_make_prim_w_arity(default_yield_handler,
                                                 "default-executable-yield-handler",
                                                 1, 1);
+
+  REGISTER_SO(scheme_error_message_adjuster_key);
+  scheme_error_message_adjuster_key = scheme_make_symbol("err-adjust");
+  scheme_addto_prim_instance("error-message-adjuster-key", scheme_error_message_adjuster_key, env);
+}
+
+void scheme_init_realm()
+{
+  REGISTER_SO(scheme_default_realm);
+  REGISTER_SO(scheme_primitive_realm);
+  REGISTER_SO(local_realm_symbol);
+  scheme_default_realm = scheme_intern_symbol("racket");
+  scheme_primitive_realm = scheme_intern_symbol("racket/primitive");
+  local_realm_symbol = scheme_intern_symbol("local");
 }
 
 void scheme_init_logger_wait()
@@ -937,6 +1007,7 @@ void scheme_init_error_config(void)
   scheme_set_root_param(MZCONFIG_ERROR_DISPLAY_HANDLER, default_display_handler);
   scheme_set_root_param(MZCONFIG_ERROR_PRINT_VALUE_HANDLER, def_err_val_proc);
   scheme_set_root_param(MZCONFIG_ERROR_PRINT_SYNTAX_HANDLER, def_err_val_proc);
+  scheme_set_root_param(MZCONFIG_ERROR_MESSAGE_ADJUSTER, def_err_msg_adjust_proc);
   scheme_set_root_param(MZCONFIG_EXE_YIELD_HANDLER, def_exe_yield_proc);
 }
 
@@ -1247,6 +1318,7 @@ static Scheme_Object *check_arity_property_value_ok(int argc, Scheme_Object *arg
 }
 
 static char *make_arity_expect_string(const char *name, int namelen,
+                                      int *_namelen, Scheme_Object **_name_realm,
 				      int minc, int maxc,
 				      int argc, Scheme_Object **argv,
 				      intptr_t *_len, int is_method,
@@ -1259,6 +1331,7 @@ static char *make_arity_expect_string(const char *name, int namelen,
   char *s, *arity_str = NULL;
   const char *prefix_msg1, *prefix_msg2, *suffix_msg;
   int arity_len = 0;
+  Scheme_Object *name_realm = scheme_default_realm;
 
   s = init_buf(&len, &slen);
 
@@ -1284,6 +1357,7 @@ static char *make_arity_expect_string(const char *name, int namelen,
           arity_len = SCHEME_BYTE_STRLEN_VAL(v);
           if (arity_len > len)
             arity_len = len;
+          name_realm = scheme_get_proc_realm((Scheme_Object *)name);
           name = scheme_get_proc_name((Scheme_Object *)name, &namelen, 1);
           if (!name) {
             name = "#<procedure>";
@@ -1300,7 +1374,7 @@ static char *make_arity_expect_string(const char *name, int namelen,
           v = SCHEME_CHAPERONE_VAL(v);
         if (scheme_is_struct_instance(scheme_reduced_procedure_struct, v))
           v = NULL; /* hide any wider type that a nested structure might report */
-        else
+        else          
           v = scheme_extract_struct_procedure(v, -1, NULL, &is_method);
         if (!v || is_method || !SCHEME_CHAPERONE_PROC_STRUCTP(v))
           break;
@@ -1318,6 +1392,7 @@ static char *make_arity_expect_string(const char *name, int namelen,
       if (SCHEME_INTP(arity)) {
         minc = maxc = SCHEME_INT_VAL(arity);
         xmaxc = xminc = minc - (is_method ? 1 : 0);
+        name_realm = scheme_get_proc_realm((Scheme_Object *)name);
         name = scheme_get_proc_name((Scheme_Object *)name, &namelen, 1);
         if (!name) {
           name = "#<procedure>";
@@ -1341,6 +1416,11 @@ static char *make_arity_expect_string(const char *name, int namelen,
                   " the expected number of arguments does not match the given number");
   }
 
+  if (namelen == -1)
+    namelen = strlen(name);
+  
+  *_namelen = namelen + strlen(prefix_msg1);
+
   if (arity_str) {
     pos = scheme_sprintf(s, slen, 
                          "%s%s%t%s\n"
@@ -1357,14 +1437,18 @@ static char *make_arity_expect_string(const char *name, int namelen,
     if (minc == -2) {
       n = name;
       nlen = (namelen < 0 ? strlen(n) : namelen);
-    } else
+    } else {
+      name_realm = scheme_get_proc_realm((Scheme_Object *)name);
       n = scheme_get_proc_name((Scheme_Object *)name, &nlen, 1);
+    }
 
     if (!n) {
       n = "#<case-lambda-procedure>";
       nlen = strlen(n);
     }
 
+    *_namelen = nlen + strlen(prefix_msg1);
+      
     pos = scheme_sprintf(s, slen, 
                          "%s%s%t%s\n"
                          "  given: %d",
@@ -1437,16 +1521,20 @@ static char *make_arity_expect_string(const char *name, int namelen,
 
   *_len = pos;
 
+  if (_name_realm)
+    *_name_realm = name_realm;
+
   return s;
 }
 
-void scheme_wrong_count_m(const char *name, int minc, int maxc,
-			  int argc, Scheme_Object **argv, int is_method)
+static MZ_NORETURN void wrong_count_for_realm(const char *name, Scheme_Object *realm, int minc, int maxc,
+                                              int argc, Scheme_Object **argv, int is_method)
 /* minc == -1 => name is really a proc.
    minc == -2 => use generic "no matching clause" message */
 {
   char *s;
   intptr_t len;
+  int name_len;
   Scheme_Thread *p = scheme_current_thread;
 
   if (argv == p->tail_buffer) {
@@ -1461,6 +1549,7 @@ void scheme_wrong_count_m(const char *name, int minc, int maxc,
     if (SAME_TYPE(SCHEME_TYPE((Scheme_Object *)name), scheme_closure_type)) {
       Scheme_Lambda *data;
       data = SCHEME_CLOSURE_CODE((Scheme_Object *)name);
+      realm = scheme_get_proc_realm((Scheme_Object *)name);
       name = scheme_get_proc_name((Scheme_Object *)name, NULL, 1);
       
       minc = data->num_params;
@@ -1495,6 +1584,7 @@ void scheme_wrong_count_m(const char *name, int minc, int maxc,
 	  maxc = -1;
 	} else
 	  maxc = minc;
+        realm = scheme_get_proc_realm((Scheme_Object *)name);
 	name = scheme_get_proc_name((Scheme_Object *)name, NULL, 1);
       } else if (SCHEME_STRUCTP(pa)) {
 	/* This happens when a non-case-lambda is not yet JITted.
@@ -1502,6 +1592,7 @@ void scheme_wrong_count_m(const char *name, int minc, int maxc,
 	pa = ((Scheme_Structure *)pa)->slots[0];
 	minc = SCHEME_INT_VAL(pa);
 	maxc = -1;
+        realm = scheme_get_proc_realm((Scheme_Object *)name);
 	name = scheme_get_proc_name((Scheme_Object *)name, NULL, 1);
       } else {
 	/* complex; use "no matching case" msg */
@@ -1517,9 +1608,18 @@ void scheme_wrong_count_m(const char *name, int minc, int maxc,
   if (maxc > SCHEME_MAX_ARGS)
     maxc = -1;
 
-  s = make_arity_expect_string(name, -1, minc, maxc, argc, argv, &len, is_method, NULL);
+  s = make_arity_expect_string(name, -1, &name_len, NULL, minc, maxc, argc, argv, &len, is_method, NULL);
 
-  scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY, "%t", s, len);
+  scheme_raise_realm_exn(MZEXN_FAIL_CONTRACT_ARITY,
+                         name_len, realm, scheme_primitive_realm,
+                         "%t", s, len);
+}
+
+void scheme_wrong_count_m(const char *name, int minc, int maxc,
+			  int argc, Scheme_Object **argv, int is_method)
+{
+  /* don't allocate here, in case rands == p->tail_buffer */
+  wrong_count_for_realm(name, scheme_primitive_realm, minc, maxc, argc, argv, is_method);
 }
 
 void scheme_wrong_count(const char *name, int minc, int maxc, int argc,
@@ -1536,14 +1636,18 @@ void scheme_case_lambda_wrong_count(const char *name,
 {
   char *s;
   intptr_t len;
-
+  int name_len;
+  Scheme_Object *name_realm;
+ 
   /* Watch out for impossible is_method claims: */
   if (!argc)
     is_method = 0;
 
-  s = make_arity_expect_string(name, -1, -2, 0, argc, argv, &len, is_method, NULL);
+  s = make_arity_expect_string(name, -1, &name_len, &name_realm, -2, 0, argc, argv, &len, is_method, NULL);
 
-  scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY, "%t", s, len);
+  scheme_raise_realm_exn(MZEXN_FAIL_CONTRACT_ARITY,
+                         name_len, name_realm, scheme_primitive_realm,
+                         "%t", s, len);
 }
 
 char *scheme_make_arity_expect_string(const char *map_name,
@@ -1552,8 +1656,9 @@ char *scheme_make_arity_expect_string(const char *map_name,
 				      intptr_t *_slen)
 {
   const char *name;
+  char *result;
   int namelen = -1;
-  int mina, maxa;
+  int mina, maxa, actual_name_len;
 
   if (SCHEME_CHAPERONEP(proc)) {
     proc = SCHEME_CHAPERONE_VAL(proc);
@@ -1622,7 +1727,10 @@ char *scheme_make_arity_expect_string(const char *map_name,
     name = scheme_get_proc_name(proc, &namelen, 1);
   }
 
-  return make_arity_expect_string(name, namelen, mina, maxa, argc, argv, _slen, 0, map_name);
+  result = make_arity_expect_string(name, namelen, &actual_name_len, NULL,
+                                    mina, maxa, argc, argv, _slen, 0, map_name);
+
+  return result;
 }
 
 char *scheme_make_args_string(const char *s, int which, int argc, Scheme_Object **argv, intptr_t *_olen)
@@ -1730,9 +1838,10 @@ const char *scheme_number_suffix(int which)
 	  && ((which % 10) < 3)) ? ending[which % 10] : "th";
 }
 
-void scheme_wrong_type(const char *name, const char *expected,
-		       int which, int argc,
-		       Scheme_Object **argv)
+static MZ_NORETURN void wrong_type_for_realm(const char *name, Scheme_Object *realm,
+                                             const char *expected,
+                                             int which, int argc,
+                                             Scheme_Object **argv)
 {
   Scheme_Object *o;
   char *s;
@@ -1740,7 +1849,7 @@ void scheme_wrong_type(const char *name, const char *expected,
   int isres = 0;
   GC_CAN_IGNORE char *isress = "argument";
   GC_CAN_IGNORE char *isgiven = "given";
-
+ 
   o = argv[which < 0 ? 0 : which];
   if (argc < 0) {
     argc = -argc;
@@ -1755,15 +1864,16 @@ void scheme_wrong_type(const char *name, const char *expected,
 
   s = scheme_make_provided_string(o, 1, &slen);
 
-  if ((which < 0) || (argc == 1))
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		     "%s: expect%s %s of type <%s>; "
-		     "%s: %t",
-		     name, 
-		     (which < 0) ? "ed" : "s",
-		     isress, expected, isgiven,
-                     s, slen);
-  else {
+  if ((which < 0) || (argc == 1)) {
+    scheme_raise_realm_exn(MZEXN_FAIL_CONTRACT,
+                           strlen(name), realm, realm,
+                           "%s: expect%s %s of type <%s>; "
+                           "%s: %t",
+                           name, 
+                           (which < 0) ? "ed" : "s",
+                           isress, expected, isgiven,
+                           s, slen);
+  } else {
     char *other;
     intptr_t olen;
 
@@ -1776,14 +1886,22 @@ void scheme_wrong_type(const char *name, const char *expected,
       olen = 0;
     }
 
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		     "%s: expects type <%s> as %d%s %s, "
-		     "given: %t%t",
-		     name, expected, which + 1,
-		     scheme_number_suffix(which + 1),
-		     isress,
-		     s, slen, other, olen);
+    scheme_raise_realm_exn(MZEXN_FAIL_CONTRACT,
+                           strlen(name), realm, realm,
+                           "%s: expects type <%s> as %d%s %s, "
+                           "given: %t%t",
+                           name, expected, which + 1,
+                           scheme_number_suffix(which + 1),
+                           isress,
+                           s, slen, other, olen);
   }
+}
+
+void scheme_wrong_type(const char *name, const char *expected,
+		       int which, int argc,
+		       Scheme_Object **argv)
+{
+  wrong_type_for_realm(name, scheme_default_realm, expected, which, argc, argv);
 }
 
 static const char *indent_lines(const char *s, intptr_t *_len, int initial_indent, int amt)
@@ -1833,15 +1951,18 @@ static const char *indent_lines(const char *s, intptr_t *_len, int initial_inden
   return s;
 }
 
-void scheme_wrong_contract(const char *name, const char *expected,
-                           int which, int argc,
-                           Scheme_Object **argv)
+static MZ_NORETURN void wrong_contract_for_realm(const char *name, Scheme_Object *realm,
+                                                 const char *expected,
+                                                 int which, int argc,
+                                                 Scheme_Object **argv)
 {
   Scheme_Object *o;
   char *s;
   intptr_t slen;
   int isres = 0;
   GC_CAN_IGNORE char *isgiven = "given", *kind = "argument";
+
+  expected = scheme_contract_realm_adjust(expected, realm);
 
   o = argv[which < 0 ? 0 : which];
   if (argc < 0) {
@@ -1859,32 +1980,48 @@ void scheme_wrong_contract(const char *name, const char *expected,
 
   s = scheme_make_provided_string(o, 1, &slen);
 
-  if ((which < 0) || (argc <= 1))
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		     "%s: contract violation\n"
-                     "  expected: %s\n"
-                     "  %s: %t",
-		     name,
-		     indent_lines(expected, NULL, 1, 3),
-                     isgiven, s, slen);
-  else {
+  if ((which < 0) || (argc <= 1)) {
+    scheme_raise_realm_exn(MZEXN_FAIL_CONTRACT,
+                           strlen(name), realm, realm,
+                           "%s: contract violation\n"
+                           "  expected: %s\n"
+                           "  %s: %t",
+                           name,
+                           indent_lines(expected, NULL, 1, 3),
+                           isgiven, s, slen);
+  } else {
     char *other;
     intptr_t olen;
 
     other = scheme_make_arg_lines_string("   ", which, argc, argv, &olen);
 
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                     "%s: contract violation\n"
-                     "  expected: %s\n"
-                     "  %s: %t\n"
-                     "  %s position: %d%s\n"
-                     "  other %s...:%s",
-		     name, 
-                     indent_lines(expected, NULL, 1, 3),
-		     isgiven, s, slen, 
-                     kind, which + 1, scheme_number_suffix(which + 1),
-                     (!isres ? "arguments" : "results"), other, olen);
+    scheme_raise_realm_exn(MZEXN_FAIL_CONTRACT,
+                           strlen(name), realm, realm,
+                           "%s: contract violation\n"
+                           "  expected: %s\n"
+                           "  %s: %t\n"
+                           "  %s position: %d%s\n"
+                           "  other %s...:%s",
+                           name, 
+                           indent_lines(expected, NULL, 1, 3),
+                           isgiven, s, slen, 
+                           kind, which + 1, scheme_number_suffix(which + 1),
+                           (!isres ? "arguments" : "results"), other, olen);
   }
+}
+
+void scheme_wrong_contract(const char *name, const char *expected,
+                           int which, int argc,
+                           Scheme_Object **argv)
+{
+  wrong_contract_for_realm(name, scheme_primitive_realm, expected, which, argc, argv);
+}
+
+void scheme_wrong_contract_for_realm(const char *name, Scheme_Object *realm, const char *expected,
+                                     int which, int argc,
+                                     Scheme_Object **argv)
+{
+  wrong_contract_for_realm(name, realm, expected, which, argc, argv);
 }
 
 void scheme_wrong_field_type(Scheme_Object *c_name,
@@ -1909,11 +2046,11 @@ void scheme_wrong_field_contract(Scheme_Object *c_name,
   scheme_wrong_contract(s, expected, -1, 0, a);
 }
 
-void scheme_arg_mismatch(const char *name, const char *msg, Scheme_Object *o)
+static MZ_NORETURN void arg_mismatch_at_realm(const char *name, Scheme_Object *realm, const char *msg, Scheme_Object *o)
 {
   char *s;
   intptr_t slen;
-  
+
   if (o)
     s = scheme_make_provided_string(o, 1, &slen);
   else {
@@ -1921,15 +2058,21 @@ void scheme_arg_mismatch(const char *name, const char *msg, Scheme_Object *o)
     slen = 0;
   }
 
-  scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		   "%s: %s%t",
-		   name, msg, s, slen);
+  scheme_raise_realm_exn(MZEXN_FAIL_CONTRACT,
+                         strlen(name), realm, realm,
+                         "%s: %s%t",
+                         name, msg, s, slen);
 }
 
-static void do_out_of_range(const char *name, const char *type, const char *which,
-                            int ending,
-                            Scheme_Object *i, Scheme_Object *s,
-                            Scheme_Object *low_bound, Scheme_Object *sstart, Scheme_Object *slen)
+void scheme_arg_mismatch(const char *name, const char *msg, Scheme_Object *o)
+{
+  arg_mismatch_at_realm(name, scheme_default_realm, msg, o);
+}
+
+static MZ_NORETURN void do_out_of_range(const char *name, Scheme_Object *realm, const char *type, const char *which,
+                                        int ending,
+                                        Scheme_Object *i, Scheme_Object *s,
+                                        Scheme_Object *low_bound, Scheme_Object *sstart, Scheme_Object *slen)
 {
   if (!type) {
     type = (SCHEME_BYTE_STRINGP(s) ? "byte string" : "string");
@@ -1937,7 +2080,7 @@ static void do_out_of_range(const char *name, const char *type, const char *whic
   
   if (!scheme_bin_lt(slen, sstart)) {
     char *sstr;
-    intptr_t strlen;
+    intptr_t sstrlen;
     int small_end = 0;
 
     if (ending) {
@@ -1946,24 +2089,26 @@ static void do_out_of_range(const char *name, const char *type, const char *whic
         small_end = 1;
     }
 
-    sstr = scheme_make_provided_string(s, 2, &strlen);
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		     "%s: %sindex is %s\n  %sindex: %s\n  %s%V%s%V]\n  %s: %t",
-		     name, which, 
-                     small_end ? "smaller than starting index" : "out of range",
-		     which, scheme_make_provided_string(i, 2, NULL),
-                     ending ? "starting index: " : "valid range: [",
-		     sstart, 
-                     ending ? "\n  valid range: [0, " : ", ",
-                     slen,
-		     type,
-		     sstr, strlen);
+    sstr = scheme_make_provided_string(s, 2, &sstrlen);
+    scheme_raise_realm_exn(MZEXN_FAIL_CONTRACT,
+                           strlen(name), realm, realm,
+                           "%s: %sindex is %s\n  %sindex: %s\n  %s%V%s%V]\n  %s: %t",
+                           name, which, 
+                           small_end ? "smaller than starting index" : "out of range",
+                           which, scheme_make_provided_string(i, 2, NULL),
+                           ending ? "starting index: " : "valid range: [",
+                           sstart, 
+                           ending ? "\n  valid range: [0, " : ", ",
+                           slen,
+                           type,
+                           sstr, sstrlen);
   } else {
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		     "%s: %sindex is out of range for empty %s\n  %sindex: %s",
-		     name, which,
-		     type, 
-                     which, scheme_make_provided_string(i, 0, NULL));
+    scheme_raise_realm_exn(MZEXN_FAIL_CONTRACT,
+                           strlen(name), realm, realm,
+                           "%s: %sindex is out of range for empty %s\n  %sindex: %s",
+                           name, which,
+                           type, 
+                           which, scheme_make_provided_string(i, 0, NULL));
   }
 }
 
@@ -1976,35 +2121,41 @@ void scheme_out_of_range(const char *name, const char *type, const char *which,
     len = len - 1;
   }
 
-  do_out_of_range(name, type, which, !strcmp(which, "ending "),
+  do_out_of_range(name, scheme_primitive_realm, type, which, !strcmp(which, "ending "),
                   i, s, scheme_make_integer(0), scheme_make_integer(start), scheme_make_integer(len));
 }
 
-static Scheme_Object *raise_range_error(int argc, Scheme_Object *argv[])
+static Scheme_Object *do_raise_range_error(const char *who, int argc, Scheme_Object *argv[], int use_realm)
 {
-  Scheme_Object *type, *desc;
+  Scheme_Object *type, *desc, *realm = scheme_default_realm;
 
   if (!SCHEME_SYMBOLP(argv[0]))
-    scheme_wrong_contract("raise-range-error", "symbol?", 0, argc, argv);
-  if (!SCHEME_CHAR_STRINGP(argv[1]))
-    scheme_wrong_contract("raise-range-error", "string?", 1, argc, argv);
-  if (!SCHEME_CHAR_STRINGP(argv[2]))
-    scheme_wrong_contract("raise-range-error", "string?", 2, argc, argv);
-  if (!SCHEME_INTP(argv[3]) && !SCHEME_BIGNUMP(argv[3]))
-    scheme_wrong_contract("raise-range-error", "exact-integer?", 3, argc, argv);
-  if (!SCHEME_INTP(argv[5]) && !SCHEME_BIGNUMP(argv[5]))
-    scheme_wrong_contract("raise-range-error", "exact-integer?", 5, argc, argv);
-  if (!SCHEME_INTP(argv[6]) && !SCHEME_BIGNUMP(argv[6]))
-    scheme_wrong_contract("raise-range-error", "exact-integer?", 6, argc, argv);
-  if (argc > 7) {
-    if (!SCHEME_FALSEP(argv[7]) && !SCHEME_INTP(argv[7]) && !SCHEME_BIGNUMP(argv[7]))
-      scheme_wrong_contract("raise-range-error", "(or/c exact-integer? #f)", 7, argc, argv);
+    scheme_wrong_contract(who, "symbol?", 0, argc, argv);
+  if (use_realm) {
+    realm = argv[1];
+    if (!SCHEME_SYMBOLP(realm))
+      scheme_wrong_contract(who, "symbol?", 1, argc, argv);
+  }
+  if (!SCHEME_CHAR_STRINGP(argv[1+use_realm]))
+    scheme_wrong_contract(who, "string?", 1+use_realm, argc, argv);
+  if (!SCHEME_CHAR_STRINGP(argv[2+use_realm]))
+    scheme_wrong_contract(who, "string?", 2+use_realm, argc, argv);
+  if (!SCHEME_INTP(argv[3+use_realm]) && !SCHEME_BIGNUMP(argv[3+use_realm]))
+    scheme_wrong_contract(who, "exact-integer?", 3+use_realm, argc, argv);
+  if (!SCHEME_INTP(argv[5+use_realm]) && !SCHEME_BIGNUMP(argv[5+use_realm]))
+    scheme_wrong_contract(who, "exact-integer?", 5+use_realm, argc, argv);
+  if (!SCHEME_INTP(argv[6+use_realm]) && !SCHEME_BIGNUMP(argv[6+use_realm]))
+    scheme_wrong_contract(who, "exact-integer?", 6+use_realm, argc, argv);
+  if (argc > (7+use_realm)) {
+    if (!SCHEME_FALSEP(argv[7+use_realm]) && !SCHEME_INTP(argv[7+use_realm]) && !SCHEME_BIGNUMP(argv[7]))
+      scheme_wrong_contract(who, "(or/c exact-integer? #f)", 7+use_realm, argc, argv);
   }
   
   type = scheme_char_string_to_byte_string(argv[1]);
   desc = scheme_char_string_to_byte_string(argv[2]);
 
-  do_out_of_range(scheme_symbol_val(argv[0]), 
+  do_out_of_range(scheme_symbol_val(argv[0]),
+                  realm,
                   SCHEME_BYTE_STR_VAL(type), /* type */
                   SCHEME_BYTE_STR_VAL(desc), /* index description */
                   ((argc > 7) && SCHEME_TRUEP(argv[7])),
@@ -2017,21 +2168,38 @@ static Scheme_Object *raise_range_error(int argc, Scheme_Object *argv[])
   return scheme_void;
 }
 
+static Scheme_Object *raise_range_error(int argc, Scheme_Object *argv[])
+{
+  return do_raise_range_error("raise-range-error", argc, argv, 0);
+}
+
+static Scheme_Object *raise_range_error_star(int argc, Scheme_Object *argv[])
+{
+  return do_raise_range_error("raise-range-error*", argc, argv, 1);
+}
+
 #define MAX_MISMATCH_EXTRAS 5
 
 void scheme_contract_error(const char *name, const char *msg, ...)
 {
   GC_CAN_IGNORE va_list args;
   int i, cnt = 0, kind;
-  intptr_t len = 0, nlen, mlen, seplen;
+  intptr_t len = 0, nlen, mlen, seplen, vlen;
   const char *strs[MAX_MISMATCH_EXTRAS], *str, *sep;
   Scheme_Object *vs[MAX_MISMATCH_EXTRAS], *v;
   const char *v_strs[MAX_MISMATCH_EXTRAS], *v_str;
   intptr_t v_str_lens[MAX_MISMATCH_EXTRAS], v_str_len;
   char *s;
+  Scheme_Object *realm = scheme_primitive_realm;
 
   HIDE_FROM_XFORM(va_start(args, msg));
-  while (1) {
+
+  if (name == SCHEME_NAME_PLUS_REALM_ARGUMENTS) {
+    name = mzVA_ARG(args, const char *);
+    realm = mzVA_ARG(args, Scheme_Object *);
+  }
+  
+  while (cnt < MAX_MISMATCH_EXTRAS) {
     str = mzVA_ARG(args, const char *);
     if (!str) break;
     strs[cnt] = str;
@@ -2077,9 +2245,9 @@ void scheme_contract_error(const char *name, const char *msg, ...)
   for (i = 0; i < cnt; i++) {
     memcpy(s + len, "\n  ", 3);
     len += 3;
-    nlen = strlen(strs[i]);
-    memcpy(s + len, strs[i], nlen);
-    len += nlen;
+    vlen = strlen(strs[i]);
+    memcpy(s + len, strs[i], vlen);
+    len += vlen;
     memcpy(s + len, ": ", 2);
     len += 2;
     memcpy(s + len, v_strs[i], v_str_lens[i]);
@@ -2087,9 +2255,10 @@ void scheme_contract_error(const char *name, const char *msg, ...)
   }
   s[len] = 0;
 
-  scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		   "%t",
-                   s, len);
+  scheme_raise_realm_exn(MZEXN_FAIL_CONTRACT,
+                         nlen, realm, realm,
+                         "%t",
+                         s, len);
 }
 
 void scheme_wrong_chaperoned(const char *who, const char *what, Scheme_Object *orig, Scheme_Object *naya)
@@ -2110,18 +2279,20 @@ void scheme_wrong_chaperoned(const char *who, const char *what, Scheme_Object *o
 
 void scheme_system_error(const char *name, const char *what, int errid)
 {
-  scheme_raise_exn(MZEXN_FAIL, 
-                   "%s: %s failed\n"
-                   "  system error: %e", 
-                   name, what, errid);
+  scheme_raise_realm_exn(MZEXN_FAIL,
+                         strlen(name), scheme_primitive_realm, scheme_primitive_realm,
+                         "%s: %s failed\n"
+                         "  system error: %e", 
+                         name, what, errid);
 }
 
 void scheme_rktio_error(const char *name, const char *what)
 {
-  scheme_raise_exn(MZEXN_FAIL, 
-                   "%s: %s failed\n"
-                   "  system error: %R", 
-                   name, what);
+  scheme_raise_realm_exn(MZEXN_FAIL,
+                         strlen(name), scheme_primitive_realm, scheme_primitive_realm,
+                         "%s: %s failed\n"
+                         "  system error: %R", 
+                         name, what);
 }
 
 #define MZERR_MAX_SRC_LEN 100
@@ -2270,9 +2441,9 @@ void scheme_read_err(Scheme_Object *port,
     fn = NULL;
 
   if (fn)
-    scheme_raise_exn(MZEXN_FAIL_READ, scheme_null, "%t\n  in: %s", s, slen, fn);
+    scheme_raise_realm_exn(MZEXN_FAIL_READ, -1, NULL, NULL, scheme_null, "%t\n  in: %s", s, slen, fn);
   else
-    scheme_raise_exn(MZEXN_FAIL_READ, scheme_null, "%t", s, slen);
+    scheme_raise_realm_exn(MZEXN_FAIL_READ, -1, NULL, NULL, scheme_null, "%t", s, slen);
 }
 
 Scheme_Object *scheme_numr_err(Scheme_Object *complain, const char *detail, ...)
@@ -2418,8 +2589,9 @@ static void do_wrong_syntax(const char *where,
                           where,
                           s, slen);
 
-  scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		   "%t", buffer, blen);
+  scheme_raise_realm_exn(MZEXN_FAIL_CONTRACT,
+                         -1, NULL, NULL,
+                         "%t", buffer, blen);
 }
 
 void scheme_wrong_syntax(const char *where,
@@ -2452,40 +2624,27 @@ void scheme_wrong_rator(Scheme_Object *rator, int argc, Scheme_Object **argv)
   r = scheme_make_provided_string(rator, 1, &rlen);
 
   s = scheme_make_arg_lines_string("   ", -1, argc, argv, &slen);
-    
-  scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                   "application: not a procedure;\n"
-                   " expected a procedure that can be applied to arguments\n"
-                   "  given: %t\n"
-                   "  arguments...:%t",
-                   r, rlen, s, slen);
+
+  scheme_raise_realm_exn(MZEXN_FAIL_CONTRACT,
+                         strlen("application"), scheme_primitive_realm, scheme_primitive_realm,
+                         "%s: not a procedure;\n"
+                         " expected a procedure that can be applied to arguments\n"
+                         "  given: %t\n"
+                         "  arguments...:%t",
+                         "application",
+                         r, rlen, s, slen);
 }
 
-void scheme_wrong_return_arity(const char *where,
-			       int expected, int got,
-			       Scheme_Object **argv,
-			       const char *detail, ...)
+static MZ_NORETURN void wrong_return_arity_for_realm(const char *where,
+                                                     Scheme_Object *realm,
+                                                     int expected, int got,
+                                                     Scheme_Object **argv,
+                                                     const char *s, int slen)
 {
-  intptr_t slen, vlen, blen;
-  char *s, *buffer;
-  char *v;
-
-  if ((got != 1) && SAME_OBJ(scheme_current_thread->ku.multiple.array,
-			     scheme_current_thread->values_buffer))
-    scheme_current_thread->values_buffer = NULL;
-  scheme_current_thread->ku.multiple.array = NULL;
-
-  if (!detail) {
-    s = NULL;
-    slen = 0;
-  } else {
-    GC_CAN_IGNORE va_list args;
-
-    HIDE_FROM_XFORM(va_start(args, detail));
-    slen = sch_vsprintf(NULL, 0, detail, args, &s, NULL, NULL);
-    HIDE_FROM_XFORM(va_end(args));
-  }
-
+  char *buffer, *v;
+  intptr_t vlen, blen;
+  int name_len;
+  
   buffer = init_buf(NULL, &blen);
 
   if (!got || !argv) {
@@ -2514,9 +2673,45 @@ void scheme_wrong_return_arity(const char *where,
 			s, slen,
 			v, vlen);
 
-  scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
-		   "%t",
-		   buffer, blen);
+  if (where)
+    name_len = strlen(where);
+  else
+    name_len = -1;
+
+  scheme_raise_realm_exn(MZEXN_FAIL_CONTRACT_ARITY,
+                         name_len, realm, scheme_primitive_realm,
+                         "%t",
+                         buffer, blen);
+}
+
+void scheme_wrong_return_arity(const char *where,
+			       int expected, int got,
+			       Scheme_Object **argv,
+			       const char *detail, ...)
+{
+  intptr_t slen;
+  char *s;
+
+  if ((got != 1) && SAME_OBJ(scheme_current_thread->ku.multiple.array,
+			     scheme_current_thread->values_buffer))
+    scheme_current_thread->values_buffer = NULL;
+  scheme_current_thread->ku.multiple.array = NULL;
+
+  if (!detail) {
+    s = NULL;
+    slen = 0;
+  } else {
+    GC_CAN_IGNORE va_list args;
+
+    HIDE_FROM_XFORM(va_start(args, detail));
+    slen = sch_vsprintf(NULL, 0, detail, args, &s, NULL, NULL);
+    HIDE_FROM_XFORM(va_end(args));
+  }
+
+  wrong_return_arity_for_realm(where, scheme_primitive_realm,
+                               expected, got,
+                               argv,
+                               s, slen);
 }
 
 void scheme_non_fixnum_result(const char *name, Scheme_Object *o)
@@ -2530,7 +2725,7 @@ void scheme_non_fixnum_result(const char *name, Scheme_Object *o)
 void scheme_raise_out_of_memory(const char *where, const char *msg, ...)
 {
   char *s;
-  intptr_t slen;
+  intptr_t slen, name_len;
 
   if (!msg) {
     s = "";
@@ -2543,11 +2738,17 @@ void scheme_raise_out_of_memory(const char *where, const char *msg, ...)
     HIDE_FROM_XFORM(va_end(args));
   }
 
-  scheme_raise_exn(MZEXN_FAIL_OUT_OF_MEMORY,
-		   "%s%sout of memory %t",
-		   where ? where : "",
-		   where ? ": " : "",
-		   s, slen);
+  if (where)
+    name_len = strlen(where)+2;
+  else
+    name_len = -1;
+  
+  scheme_raise_realm_exn(MZEXN_FAIL_OUT_OF_MEMORY,
+                         name_len, scheme_primitive_realm, scheme_primitive_realm,
+                         "%s%sout of memory %t",
+                         where ? where : "",
+                         where ? ": " : "",
+                         s, slen);
 }
 
 void scheme_unbound_global(Scheme_Bucket *b)
@@ -2579,18 +2780,20 @@ void scheme_unbound_global(Scheme_Bucket *b)
       errmsg = ("%S: undefined;\n"
                 " cannot reference an identifier before its definition%_%_");
 
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE,
-		     name,
-		     errmsg,
-		     src_name,
-		     home->name,
-                     name);
+    scheme_raise_realm_exn(MZEXN_FAIL_CONTRACT_VARIABLE,
+                           SCHEME_SYM_LEN(src_name), local_realm_symbol, scheme_primitive_realm,
+                           name,
+                           errmsg,
+                           src_name,
+                           home->name,
+                           name);
   } else {
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE,
-		     name,
-		     "%S: undefined;\n"
-                     " cannot reference undefined identifier",
-		     name);
+    scheme_raise_realm_exn(MZEXN_FAIL_CONTRACT_VARIABLE,
+                           SCHEME_SYM_LEN(name), local_realm_symbol, scheme_primitive_realm,
+                           name,
+                           "%S: undefined;\n"
+                           " cannot reference undefined identifier",
+                           name);
   }
 }
 
@@ -2736,65 +2939,71 @@ static Scheme_Object *raise_user_error(int argc, Scheme_Object *argv[])
   return do_error("raise-user-error", MZEXN_FAIL_USER, argc, argv);
 }
 
-typedef void (*wrong_proc_t)(const char *name, const char *expected,
+typedef void (*wrong_proc_t)(const char *name, Scheme_Object *realm, const char *expected,
                              int which, int argc,
                              Scheme_Object **argv);
 
-static Scheme_Object *do_raise_type_error(const char *name, int argc, Scheme_Object *argv[], int mode)
+static Scheme_Object *do_raise_type_error(const char *name, int argc, Scheme_Object *argv[], int mode, int realm_arg)
 {
   wrong_proc_t wrong;
   int negate = 0;
+  Scheme_Object *realm = scheme_default_realm;
 
   if (!SCHEME_SYMBOLP(argv[0]))
     scheme_wrong_contract(name, "symbol?", 0, argc, argv);
-  if (!SCHEME_CHAR_STRINGP(argv[1]))
-    scheme_wrong_contract(name, "string?", 1, argc, argv);
+  if (realm_arg) {
+    realm = argv[1];
+    if (!SCHEME_SYMBOLP(realm))
+      scheme_wrong_contract(name, "symbol?", 1, argc, argv);
+  }
+  if (!SCHEME_CHAR_STRINGP(argv[1 + realm_arg]))
+    scheme_wrong_contract(name, "string?", 1 + realm_arg, argc, argv);
 
   switch (mode) {
-  case 0: wrong = scheme_wrong_type; break;
-  case 1: wrong = scheme_wrong_contract; break;
-  case 2: wrong = scheme_wrong_contract; negate = 1; break;
+  case 0: wrong = wrong_type_for_realm; break;
+  case 1: wrong = wrong_contract_for_realm; break;
+  case 2: wrong = wrong_contract_for_realm; negate = 1; break;
   default: wrong = NULL; break;
   }
 
-  if (argc == 3) {
+  if (argc == (3 + realm_arg)) {
     Scheme_Object *v, *s;
-    v = argv[2];
-    s = scheme_char_string_to_byte_string(argv[1]);
-    wrong(scheme_symbol_val(argv[0]),
+    v = argv[2+realm_arg];
+    s = scheme_char_string_to_byte_string(argv[1+realm_arg]);
+    wrong(scheme_symbol_val(argv[0]), realm,
           SCHEME_BYTE_STR_VAL(s),
           negate ? -2 : -1, 0, &v);
   } else {
     Scheme_Object **args, *s;
     int i;
 
-    if (!(SCHEME_INTP(argv[2]) && (SCHEME_INT_VAL(argv[2]) >= 0))
-	&& !(SCHEME_BIGNUMP(argv[2]) && SCHEME_BIGPOS(argv[2])))
-      scheme_wrong_contract(name, "exact-nonnegative-integer?", 2, argc, argv);
+    if (!(SCHEME_INTP(argv[2+realm_arg]) && (SCHEME_INT_VAL(argv[2+realm_arg]) >= 0))
+	&& !(SCHEME_BIGNUMP(argv[2+realm_arg]) && SCHEME_BIGPOS(argv[2+realm_arg])))
+      scheme_wrong_contract(name, "exact-nonnegative-integer?", 2+realm_arg, argc, argv);
 
-    if ((SCHEME_INTP(argv[2]) && (SCHEME_INT_VAL(argv[2]) >= argc - 3))
-	|| SCHEME_BIGNUMP(argv[2]))
+    if ((SCHEME_INTP(argv[2+realm_arg]) && (SCHEME_INT_VAL(argv[2+realm_arg]) >= argc - (3+realm_arg)))
+	|| SCHEME_BIGNUMP(argv[2+realm_arg]))
       scheme_contract_error(name,
                             (negate
                              ? "position index >= provided result count"
                              : "position index >= provided argument count"),
-                            "position index", 1, argv[2],
+                            "position index", 1, argv[2+realm_arg],
                             (negate ? "provided result count" : "provided argument count"), 
                             1, 
-                            scheme_make_integer(argc - 3),
+                            scheme_make_integer(argc - (3+realm_arg)),
                             NULL);
 
-    args = MALLOC_N(Scheme_Object *, argc - 3);
-    for (i = 3; i < argc; i++) {
-      args[i - 3] = argv[i];
+    args = MALLOC_N(Scheme_Object *, argc - (3+realm_arg));
+    for (i = 3+realm_arg; i < argc; i++) {
+      args[i - (3+realm_arg)] = argv[i];
     }
 
-    s = scheme_char_string_to_byte_string(argv[1]);
+    s = scheme_char_string_to_byte_string(argv[1+realm_arg]);
 
-    wrong(scheme_symbol_val(argv[0]),
+    wrong(scheme_symbol_val(argv[0]), realm,
           SCHEME_BYTE_STR_VAL(s),
-          SCHEME_INT_VAL(argv[2]),
-          negate ? (3 - argc) : (argc - 3), args);
+          SCHEME_INT_VAL(argv[2+realm_arg]),
+          negate ? (3+realm_arg - argc) : (argc - (3+realm_arg)), args);
   }
 
   return NULL;
@@ -2802,38 +3011,55 @@ static Scheme_Object *do_raise_type_error(const char *name, int argc, Scheme_Obj
 
 static Scheme_Object *raise_type_error(int argc, Scheme_Object *argv[])
 {
-  return do_raise_type_error("raise-type-error", argc, argv, 0);
+  return do_raise_type_error("raise-type-error", argc, argv, 0, 0);
 }
 
 static Scheme_Object *raise_argument_error(int argc, Scheme_Object *argv[])
 {
-  return do_raise_type_error("raise-argument-error", argc, argv, 1);
+  return do_raise_type_error("raise-argument-error", argc, argv, 1, 0);
+}
+
+static Scheme_Object *raise_argument_error_star(int argc, Scheme_Object *argv[])
+{
+  return do_raise_type_error("raise-argument-error*", argc, argv, 1, 1);
 }
 
 static Scheme_Object *raise_result_error(int argc, Scheme_Object *argv[])
 {
-  return do_raise_type_error("raise-result-error", argc, argv, 2);
+  return do_raise_type_error("raise-result-error", argc, argv, 2, 0);
 }
 
-static Scheme_Object *do_raise_mismatch_error(const char *who, int mismatch, int argc, Scheme_Object *argv[])
+static Scheme_Object *raise_result_error_star(int argc, Scheme_Object *argv[])
+{
+  return do_raise_type_error("raise-result-error*", argc, argv, 2, 1);
+}
+
+static Scheme_Object *do_raise_mismatch_error(const char *who, int mismatch, int argc, Scheme_Object *argv[],
+                                              int use_realm)
 {
   Scheme_Object *s;
   int i;
   char *s2;
   intptr_t l2;
+  Scheme_Object *realm = scheme_default_realm;
 
   if (!SCHEME_SYMBOLP(argv[0]))
     scheme_wrong_contract(who, "symbol?", 0, argc, argv);
-  if (!SCHEME_CHAR_STRINGP(argv[1]))
-    scheme_wrong_contract(who, "string?", 1, argc, argv);
+  if (use_realm) {
+    realm = argv[1];
+    if (!SCHEME_SYMBOLP(realm))
+      scheme_wrong_contract(who, "symbol?", 1, argc, argv);
+  }
+  if (!SCHEME_CHAR_STRINGP(argv[1+use_realm]))
+    scheme_wrong_contract(who, "string?", 1+use_realm, argc, argv);
 
   /* additional arguments: alternate ones must be strings */
-  for (i = 2 + mismatch; i < argc; i += 2) {
+  for (i = 2+use_realm + mismatch; i < argc; i += 2) {
     if (!SCHEME_CHAR_STRINGP(argv[i]))
       scheme_wrong_contract(who, "string?", i, argc, argv);
   }
 
-  if (!mismatch && (argc & 1)) {
+  if (!mismatch && ((argc+use_realm) & 1)) {
     scheme_contract_error(who,
                           "missing value after field string",
                           "field string", 1, argv[argc-1],
@@ -2842,30 +3068,36 @@ static Scheme_Object *do_raise_mismatch_error(const char *who, int mismatch, int
 
   if (!mismatch && (argc == 2)) {
     /* Simple case: one string & value: */
-    s = scheme_char_string_to_byte_string(argv[1]);
+    char *name;
     
-    scheme_contract_error(scheme_symbol_val(argv[0]),
-                          SCHEME_BYTE_STR_VAL(s),
-                          NULL);
+    s = scheme_char_string_to_byte_string(argv[1+use_realm]);
+
+    name = scheme_symbol_val(argv[0]);
+    scheme_raise_realm_exn(MZEXN_FAIL_CONTRACT,
+                           strlen(name), realm, realm,
+                           "%s: %T",
+                           name,
+                           s);
   } else if (mismatch && (argc == 3)) {
     /* Simple case: one string & value: */
-    s = scheme_char_string_to_byte_string(argv[1]);
+    s = scheme_char_string_to_byte_string(argv[1+use_realm]);
     
-    scheme_arg_mismatch(scheme_symbol_val(argv[0]),
-                        SCHEME_BYTE_STR_VAL(s),
-                        argv[2]);
+    arg_mismatch_at_realm(scheme_symbol_val(argv[0]),
+                          realm,
+                          SCHEME_BYTE_STR_VAL(s),
+                          argv[2+use_realm]);
   } else {
     /* Multiple strings & values: */
-    char *st, **ss;
+    char *st, **ss, *name;
     intptr_t slen, *slens, total = 0;
     int offset = (mismatch ? 0 : 1);
-    int scount = argc - 1 - offset;
+    int scount = argc - (1+use_realm) - offset;
 
     ss = (char **)MALLOC_N(char*, scount);
     slens = (intptr_t *)MALLOC_N_ATOMIC(intptr_t, scount);
 
-    for (i = 1; (i + offset) < argc; i++) {
-      if (i & 1) {
+    for (i = 1+use_realm; (i + offset) < argc; i++) {
+      if ((i+use_realm) & 1) {
         s = scheme_char_string_to_byte_string(argv[i+offset]);
         st = SCHEME_BYTE_STR_VAL(s);
         slen = SCHEME_BYTE_STRLEN_VAL(s);
@@ -2883,8 +3115,8 @@ static Scheme_Object *do_raise_mismatch_error(const char *who, int mismatch, int
         }
       }
       total += slen;
-      ss[i-1] = st;
-      slens[i-1] = slen;
+      ss[i-(1+use_realm)] = st;
+      slens[i-(1+use_realm)] = slen;
     }
     st = (char *)scheme_malloc_atomic(total + 1);
 
@@ -2904,7 +3136,7 @@ static Scheme_Object *do_raise_mismatch_error(const char *who, int mismatch, int
     }
     st[total] = 0;
 
-    s = scheme_char_string_to_byte_string(argv[1]);
+    s = scheme_char_string_to_byte_string(argv[1+use_realm]);
     if (mismatch) {
       s2 = "";
       l2 = 0;
@@ -2912,12 +3144,15 @@ static Scheme_Object *do_raise_mismatch_error(const char *who, int mismatch, int
       s2 = SCHEME_BYTE_STR_VAL(s);
       l2 = SCHEME_BYTE_STRLEN_VAL(s);
     }
-    
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                     "%s: %t%t",
-                     scheme_symbol_val(argv[0]), 
-                     s2, l2,
-                     st, total);
+
+    name = scheme_symbol_val(argv[0]);
+
+    scheme_raise_realm_exn(MZEXN_FAIL_CONTRACT,
+                           strlen(name), realm, realm,
+                           "%s: %t%t",
+                           name, 
+                           s2, l2,
+                           st, total);
   }
 
   return NULL;
@@ -2925,12 +3160,17 @@ static Scheme_Object *do_raise_mismatch_error(const char *who, int mismatch, int
 
 static Scheme_Object *raise_mismatch_error(int argc, Scheme_Object *argv[])
 {
-  return do_raise_mismatch_error("raise-mismatch-error", 1, argc, argv);
+  return do_raise_mismatch_error("raise-mismatch-error", 1, argc, argv, 0);
 }
 
 static Scheme_Object *raise_arguments_error(int argc, Scheme_Object *argv[])
 {
-  return do_raise_mismatch_error("raise-arguments-error", 0, argc, argv);
+  return do_raise_mismatch_error("raise-arguments-error", 0, argc, argv, 0);
+}
+
+static Scheme_Object *raise_arguments_error_star(int argc, Scheme_Object *argv[])
+{
+  return do_raise_mismatch_error("raise-arguments-error*", 0, argc, argv, 1);
 }
 
 
@@ -2959,38 +3199,45 @@ static int is_arity_list(Scheme_Object *l)
   return 1;
 }
 
-static Scheme_Object *do_raise_arity_error(const char *who, int argc, Scheme_Object *argv[], int as_arity)
+static Scheme_Object *do_raise_arity_error(const char *who, int argc, Scheme_Object *argv[], int as_arity, int use_realm)
 {
-  Scheme_Object **args, *arity;
+  Scheme_Object **args, *arity, *realm = scheme_default_realm;
   const char *name;
   int minc, maxc;
 
   if (!SCHEME_SYMBOLP(argv[0]) && !SCHEME_PROCP(argv[0]))
     scheme_wrong_contract(who, "(or/c symbol? procedure?)", 0, argc, argv);
+  if (use_realm) {
+    realm = argv[1];
+    if (!SCHEME_SYMBOLP(realm))
+      scheme_wrong_contract(who, "symbol?", 1, argc, argv);
+  }
   if (as_arity) {
-    arity = argv[1];
+    arity = argv[1+use_realm];
     if (!scheme_nonneg_exact_p(arity) 
         && !is_arity_at_least(arity)
         && !is_arity_list(arity))
       scheme_wrong_contract(who,
                             "(or/c exact-nonnegative-integer? arity-at-least? (listof (or/c exact-nonnegative-integer? arity-at-least?)))", 
-                            1, argc, argv);
+                            1+use_realm, argc, argv);
   } else {
-    if (!scheme_exact_p(argv[1]))
+    if (!scheme_exact_p(argv[1+use_realm]))
       scheme_wrong_contract(who,
                             "exact-integer?", 
-                            1, argc, argv);
-    arity = scheme_arity_mask_to_arity(argv[1], -1);
+                            1+use_realm, argc, argv);
+    arity = scheme_arity_mask_to_arity(argv[1+use_realm], -1);
   }
 
-  args = MALLOC_N(Scheme_Object*, argc - 2);
-  memcpy(args, argv + 2, sizeof(Scheme_Object*) * (argc - 2));
+  args = MALLOC_N(Scheme_Object*, argc - (2+use_realm));
+  memcpy(args, argv + 2+use_realm, sizeof(Scheme_Object*) * (argc - (2+use_realm)));
 
   if (SCHEME_SYMBOLP(argv[0]))
     name = scheme_symbol_val(argv[0]);
   else {
     int len;
     name = scheme_get_proc_name(argv[0], &len, 1);
+    if (!use_realm && SCHEME_PROCP(argv[1]))
+      realm = scheme_get_proc_realm(argv[1]);
   }
 
   if (SCHEME_INTP(arity)) {
@@ -3010,25 +3257,35 @@ static Scheme_Object *do_raise_arity_error(const char *who, int argc, Scheme_Obj
     maxc = 0;
   }
 
-  scheme_wrong_count_m(name, minc, maxc, argc - 2, args, 0);
+  wrong_count_for_realm(name, realm, minc, maxc, argc - 2, args, 0);
 
   return NULL;
 }
 
 static Scheme_Object *raise_arity_error(int argc, Scheme_Object *argv[])
 {
-  return do_raise_arity_error("raise-arity-error", argc, argv, 1);
+  return do_raise_arity_error("raise-arity-error", argc, argv, 1, 0);
 }
 
 static Scheme_Object *raise_arity_mask_error(int argc, Scheme_Object *argv[])
 {
-  return do_raise_arity_error("raise-arity-mask-error", argc, argv, 0);
+  return do_raise_arity_error("raise-arity-mask-error", argc, argv, 0, 0);
 }
 
-static Scheme_Object *raise_result_arity_error(int argc, Scheme_Object *argv[])
+static Scheme_Object *raise_arity_error_star(int argc, Scheme_Object *argv[])
+{
+  return do_raise_arity_error("raise-arity-error*", argc, argv, 1, 1);
+}
+
+static Scheme_Object *raise_arity_mask_error_star(int argc, Scheme_Object *argv[])
+{
+  return do_raise_arity_error("raise-arity-mask-error*", argc, argv, 0, 1);
+}
+
+static Scheme_Object *do_raise_result_arity_error(const char *who, int argc, Scheme_Object *argv[], int use_realm)
 {
   const char *where = NULL, *detail = NULL;
-  Scheme_Object **got_argv;
+  Scheme_Object **got_argv, *realm = scheme_default_realm;
   int i, expected;
   
   if (SCHEME_FALSEP(argv[0]))
@@ -3036,37 +3293,52 @@ static Scheme_Object *raise_result_arity_error(int argc, Scheme_Object *argv[])
   else if (SCHEME_SYMBOLP(argv[0]))
     where = scheme_symbol_val(argv[0]);
   else
-    scheme_wrong_contract("raise-result-arity-error", "(or/c symbol? #f)", 0, argc, argv);
+    scheme_wrong_contract(who, "(or/c symbol? #f)", 0, argc, argv);
 
-  if (SCHEME_INTP(argv[1])) {
-    expected = SCHEME_INT_VAL(argv[1]);
-  } else if (SCHEME_BIGNUMP(argv[1]) && SCHEME_BIGPOS(argv[1]))
+  if (use_realm) {
+    realm = argv[1];
+    if (!SCHEME_SYMBOLP(realm))
+      scheme_wrong_contract(who, "symbol?", 1, argc, argv);
+  }
+
+  if (SCHEME_INTP(argv[1+use_realm])) {
+    expected = SCHEME_INT_VAL(argv[1+use_realm]);
+  } else if (SCHEME_BIGNUMP(argv[1+use_realm]) && SCHEME_BIGPOS(argv[1+use_realm]))
     expected = (int)(((unsigned)-1) >> 1); /* not right, but as big as we can report */
   else
     expected = -1;
   if (expected < 0)
-    scheme_wrong_contract("raise-result-arity-error", "exact-nonnegative-integer?", 1, argc, argv);
+    scheme_wrong_contract(who, "exact-nonnegative-integer?", 1+use_realm, argc, argv);
 
-  if (SCHEME_FALSEP(argv[2]))
+  if (SCHEME_FALSEP(argv[2+use_realm]))
     detail = NULL;
-  else if (SCHEME_CHAR_STRINGP(argv[2])) {
+  else if (SCHEME_CHAR_STRINGP(argv[2+use_realm])) {
     Scheme_Object *bstr;
-    bstr = scheme_char_string_to_byte_string(argv[2]);
+    bstr = scheme_char_string_to_byte_string(argv[2+use_realm]);
     detail = SCHEME_BYTE_STR_VAL(bstr);
   } else
-    scheme_wrong_contract("raise-result-arity-error", "(or/c string? #f)", 2, argc, argv);
+    scheme_wrong_contract(who, "(or/c string? #f)", 2+use_realm, argc, argv);
 
-  got_argv = MALLOC_N(Scheme_Object*, argc-3);
-  for (i = 3; i < argc; i++) {
-    got_argv[i-3] = argv[i];
+  got_argv = MALLOC_N(Scheme_Object*, argc-(3+use_realm));
+  for (i = 3+use_realm; i < argc; i++) {
+    got_argv[i-(3+use_realm)] = argv[i];
   }
 
-  scheme_wrong_return_arity(where, expected,
-                            argc-3, got_argv,
-                            (detail ? "%s" : NULL), detail,
-                            NULL);
+  wrong_return_arity_for_realm(where, realm, expected,
+                               argc-(3+use_realm), got_argv,
+                               detail, detail ? strlen(detail) : 0);
 
   return scheme_void;
+}
+
+static Scheme_Object *raise_result_arity_error(int argc, Scheme_Object *argv[])
+{
+  return do_raise_result_arity_error("raise-result-arity-error", argc, argv, 0);
+}
+
+static Scheme_Object *raise_result_arity_error_star(int argc, Scheme_Object *argv[])
+{
+  return do_raise_result_arity_error("raise-result-arity-error*", argc, argv, 1);
 }
 
 static Scheme_Object *good_print_width(int c, Scheme_Object **argv)
@@ -3231,7 +3503,7 @@ def_error_display_proc(int argc, Scheme_Object *argv[])
       prev_name = NULL;
       repeats = 0;
 
-      l = scheme_get_stack_trace(scheme_struct_ref(argv[1], 1));
+      l = scheme_get_stack_trace(scheme_struct_ref(argv[1], 1), 0);
       while (!SCHEME_NULLP(l)) {
         if (!max_cnt) {
           scheme_write_byte_string("\n   ...", 7, port);
@@ -3437,6 +3709,15 @@ error_escape_handler(int argc, Scheme_Object *argv[])
 			     scheme_make_integer(MZCONFIG_ERROR_ESCAPE_HANDLER),
 			     argc, argv,
 			     0, NULL, NULL, 0);
+}
+
+static Scheme_Object *
+current_error_message_adjuster(int argc, Scheme_Object *argv[])
+{
+  return scheme_param_config("current-error-message-adjuster",
+			     scheme_make_integer(MZCONFIG_ERROR_MESSAGE_ADJUSTER),
+			     argc, argv,
+			     1, NULL, NULL, 0);
 }
 
 static Scheme_Object *
@@ -4440,11 +4721,296 @@ static int log_reader_get(Scheme_Object *_lr, Scheme_Schedule_Info *sinfo)
 
 /***********************************************************************/
 
+static Scheme_Object *
+def_error_message_adjust_proc(int argc, Scheme_Object *argv[])
+{
+  if (SAME_OBJ(argv[0], name_symbol))
+    return def_err_msg_adjust_name_proc;
+  else if (SAME_OBJ(argv[0], message_symbol))
+    return def_err_msg_adjust_message_proc;
+  else if (SAME_OBJ(argv[0], contract_symbol))
+    return def_err_msg_adjust_contract_proc;
+  else {
+    if (!SCHEME_SYMBOLP(argv[0]))
+      scheme_wrong_contract("default-error-message-adjuster", "symbol?", 0, argc, argv);
+    return scheme_false;
+  }
+}
+
+static Scheme_Object *def_error_message_adjust_name_proc(int argc, Scheme_Object *argv[])
+{
+  if (!SCHEME_SYMBOLP(argv[0]))
+    scheme_wrong_contract("default-error-message-adjuster/name-mode", "symbol?", 0, argc, argv);
+  if (!SCHEME_SYMBOLP(argv[1]))
+    scheme_wrong_contract("default-error-message-adjuster/name-mode", "symbol?", 1, argc, argv);
+
+  return scheme_values(2, argv);
+}
+
+static Scheme_Object *def_error_message_adjust_message_proc(int argc, Scheme_Object *argv[])
+{
+  if (SCHEME_TRUEP(argv[0]) && !SCHEME_SYMBOLP(argv[0]))
+    scheme_wrong_contract("default-error-message-adjuster/name-mode", "(or/c symbol? #f)", 0, argc, argv);
+  if (!SCHEME_SYMBOLP(argv[1]))
+    scheme_wrong_contract("default-error-message-adjuster/name-mode", "symbol?", 1, argc, argv);
+  if (!SCHEME_CHAR_STRINGP(argv[2]))
+    scheme_wrong_contract("default-error-message-adjuster/name-mode", "string?", 2, argc, argv);
+  if (!SCHEME_SYMBOLP(argv[3]))
+    scheme_wrong_contract("default-error-message-adjuster/name-mode", "symbol?", 3, argc, argv);
+
+  return scheme_values(4, argv);
+}
+
+static Scheme_Object *def_error_message_adjust_contract_proc(int argc, Scheme_Object *argv[])
+{
+  if (!SCHEME_CHAR_STRINGP(argv[0]))
+    scheme_wrong_contract("default-error-message-adjuster/name-mode", "string?", 0, argc, argv);
+  if (!SCHEME_SYMBOLP(argv[1]))
+    scheme_wrong_contract("default-error-message-adjuster/name-mode", "symbol?", 1, argc, argv);
+
+  return scheme_values(2, argv);
+}
+
+#define adjust_CONTRACT_MODE 0
+#define adjust_MESSAGE_MODE  1
+#define adjust_NAME_MODE     2
+
+static void apply_one_adjuster(Scheme_Object *adjr,
+                               Scheme_Object **_v1, Scheme_Object **_realm1,
+                               Scheme_Object **_v2, Scheme_Object **_realm2,
+                               int mode) {
+  const char *who;
+  Scheme_Object *proc, *a[4], *r, **vals;
+  Scheme_Thread *p;
+  int n, rn;
+
+  a[0] = ((mode == adjust_CONTRACT_MODE) ? contract_symbol : message_symbol);
+  proc = scheme_apply(adjr, 1, a);
+  if (SCHEME_FALSEP(proc)) {
+    if ((mode == adjust_MESSAGE_MODE) && !SCHEME_FALSEP(*_v1)) {
+      mode = adjust_NAME_MODE;
+      a[0] = name_symbol;
+      proc = scheme_apply(adjr, 1, a);
+    }
+    if (SCHEME_FALSEP(proc))
+      return;
+  }
+
+  if (mode == adjust_CONTRACT_MODE)
+    who = "current-error-message-adjuster for contract";
+  else if (mode == adjust_MESSAGE_MODE)
+    who = "current-error-message-adjuster for message";
+  else
+    who = "current-error-message-adjuster for name";
+  
+  if (mode == adjust_MESSAGE_MODE)
+    n = 4;
+  else
+    n = 2;
+
+  if (!scheme_check_proc_arity(NULL, n, -1, 0, &proc)) {
+    scheme_wrong_contract(who,
+                          ((n == 2)
+                           ? "(procedure-arity-includes/c 2)"
+                           : "(procedure-arity-includes/c 4)"),
+                          -1, 0, &proc);
+  }
+
+  a[0] = *_v1;
+  a[1] = *_realm1;
+  a[2] = *_v2;
+  a[3] = *_realm2;
+
+  r = scheme_apply_multi(proc, n, a);
+
+  p = scheme_current_thread;
+  if (SAME_OBJ(r, SCHEME_MULTIPLE_VALUES)) {
+    rn = p->ku.multiple.count;
+    if (rn <= 4) {
+      int i;
+      for (i = 0; i < rn; i++) {
+        a[i] = p->ku.multiple.array[i];
+      }
+      vals = a;
+    } else {
+      if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
+        p->values_buffer = NULL;
+      vals = p->ku.multiple.array;
+    }
+    p->ku.multiple.array = NULL;
+  } else {
+    rn = 1;
+    a[0] = r;
+    vals = a;
+  }
+
+  if (n != rn)
+    scheme_wrong_return_arity(who, n, rn, vals, NULL);
+
+  if (mode == adjust_MESSAGE_MODE) {
+    if (SCHEME_TRUEP(vals[0]) && !SCHEME_SYMBOLP(vals[0]))
+      scheme_wrong_contract(who, "(or/c symbol? #f)", -1, -1, &(vals[0]));
+  } else if (mode == adjust_NAME_MODE) {
+    if (!SCHEME_SYMBOLP(vals[0]))
+      scheme_wrong_contract(who, "symbol?", -1, -1, &(vals[0]));
+  } else {
+    if (!SCHEME_CHAR_STRINGP(vals[0]))
+      scheme_wrong_contract(who, "string?", -1, -1, &(vals[0]));
+  }
+  if (!SCHEME_SYMBOLP(vals[1]))
+    scheme_wrong_contract(who, "symbol?", -1, -1, &(vals[1]));
+  if (mode == adjust_MESSAGE_MODE) {
+    if (!SCHEME_CHAR_STRINGP(vals[2]))
+      scheme_wrong_contract(who, "string?", -1, -1, &(vals[2]));
+    if (!SCHEME_SYMBOLP(vals[3]))
+      scheme_wrong_contract(who, "symbol?", -1, -1, &(vals[3]));
+  }
+
+  *_v1 = vals[0];
+  *_realm1 = vals[1];
+  if (mode == adjust_MESSAGE_MODE) {
+    *_v2 = vals[2];
+    *_realm2 = vals[3];
+  }
+}
+
+static Scheme_Object *apply_adjusters(Scheme_Object *v1, Scheme_Object *realm1,
+                                      Scheme_Object *v2, Scheme_Object *realm2,
+                                      Scheme_Object *base_adjr,
+                                      int mode) {
+  if (scheme_extract_one_cc_mark(NULL, scheme_error_message_adjuster_key)) {
+    Scheme_Object *l;
+    l = scheme_extract_cc_mark_list(NULL, scheme_error_message_adjuster_key, scheme_root_prompt_tag);
+    while (SCHEME_PAIRP(l)) {
+      Scheme_Object *a = SCHEME_CAR(l);
+      if (scheme_check_proc_arity(NULL, 1, -1, 0, &a))
+        apply_one_adjuster(a, &v1, &realm1, &v2, &realm2, mode);
+      l = SCHEME_CDR(l);
+    }
+  }
+
+  apply_one_adjuster(base_adjr, &v1, &realm1, &v2, &realm2, mode);
+
+  if (mode == adjust_CONTRACT_MODE)
+    return v1;
+  else {
+    if (SCHEME_FALSEP(v1))
+      return v2;
+    else {
+      v1 = scheme_append_char_string(scheme_make_utf8_string(scheme_symbol_val(v1)),
+                                     scheme_make_utf8_string(": "));
+      return scheme_append_char_string(v1, v2);
+    }
+  }
+}
+
+const char *scheme_contract_realm_adjust(const char *contract, Scheme_Object *realm)
+{
+  Scheme_Object *base_adjr, *ctc;
+
+  base_adjr = scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_MESSAGE_ADJUSTER);
+  if (!scheme_extract_one_cc_mark(NULL, scheme_error_message_adjuster_key)
+      && SAME_OBJ(base_adjr, def_err_msg_adjust_proc))
+    return contract;
+
+  ctc = scheme_make_utf8_string(contract);
+  ctc = apply_adjusters(ctc, realm, NULL, NULL, base_adjr, adjust_CONTRACT_MODE);
+
+  return SCHEME_BYTE_STR_VAL(scheme_char_string_to_byte_string(ctc));
+}
+
+static Scheme_Object *error_message_adjust(char *buffer, intptr_t alen, intptr_t namelen, Scheme_Object *name_realm, Scheme_Object *msg_realm)
+{
+  Scheme_Object *base_adjr, *name, *msg;
+  intptr_t delta;
+
+  base_adjr = scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_MESSAGE_ADJUSTER);
+  if (!scheme_extract_one_cc_mark(NULL, scheme_error_message_adjuster_key)
+      && SAME_OBJ(base_adjr, def_err_msg_adjust_proc))
+    return scheme_make_immutable_sized_utf8_string(buffer, alen);
+
+  if (namelen < 0)
+    name = scheme_false;
+  else
+    name = scheme_intern_exact_symbol(buffer, namelen);
+
+  delta = ((namelen < 0) ? 0 : (namelen + 2));
+  msg = scheme_make_sized_offset_utf8_string(buffer, delta, alen - delta);
+
+  return apply_adjusters(name, name_realm, msg, msg_realm, base_adjr, adjust_MESSAGE_MODE);
+}
+
+static Scheme_Object *error_message_to_adjusted_string(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *base_adjr;
+
+  if (SCHEME_TRUEP(argv[0]) && !SCHEME_SYMBOLP(argv[0]))
+    scheme_wrong_contract("error-message->adjusted-string", "(or/c symbol? #f)", 0, argc, argv);
+  if (!SCHEME_SYMBOLP(argv[1]))
+    scheme_wrong_contract("error-message->adjusted-string", "symbol?", 1, argc, argv);
+  if (!SCHEME_CHAR_STRINGP(argv[2]))
+    scheme_wrong_contract("error-message->adjusted-string", "string?", 2, argc, argv);
+  if (!SCHEME_SYMBOLP(argv[3]))
+    scheme_wrong_contract("error-message->adjusted-string", "symbol?", 3, argc, argv);
+
+  base_adjr = scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_MESSAGE_ADJUSTER);
+
+  return apply_adjusters(argv[0], argv[1], argv[2], argv[3], base_adjr, adjust_MESSAGE_MODE);
+}
+
+static Scheme_Object *error_contract_to_adjusted_string(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *base_adjr;
+
+  if (!SCHEME_CHAR_STRINGP(argv[0]))
+    scheme_wrong_contract("error-contract->adjusted-string", "string?", 0, argc, argv);
+  if (!SCHEME_SYMBOLP(argv[1]))
+    scheme_wrong_contract("error-contract->adjusted-string", "symbol?", 1, argc, argv);
+
+  base_adjr = scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_MESSAGE_ADJUSTER);
+
+  return apply_adjusters(argv[0], argv[1], NULL, NULL, base_adjr, adjust_CONTRACT_MODE);
+}
+
+/***********************************************************************/
+
+static MZ_NORETURN void finish_raise_exn(int id, int c, Scheme_Object **eargs,
+                                         intptr_t namelen, Scheme_Object *name_realm, Scheme_Object *msg_realm,
+                                         char *buffer, intptr_t alen,
+                                         Scheme_Object *errno_val, int unsupported)
+{
+  Scheme_Object *msg;
+
+  msg = error_message_adjust(buffer, alen, namelen, name_realm, msg_realm);
+  eargs[0] = msg;
+
+  eargs[1] = TMP_CMARK_VALUE;
+  if (errno_val) {
+    if (id == MZEXN_FAIL_FILESYSTEM) {
+      id = MZEXN_FAIL_FILESYSTEM_ERRNO;
+      eargs[2] = errno_val;
+      c++;
+    } else if (id == MZEXN_FAIL_NETWORK) {
+      id = MZEXN_FAIL_NETWORK_ERRNO;
+      eargs[2] = errno_val;
+      c++;
+    }
+  } else if (unsupported) {
+    if (id == MZEXN_FAIL)
+      id = MZEXN_FAIL_UNSUPPORTED;
+  }
+
+  do_raise(scheme_make_struct_instance(exn_table[id].type,
+				       c, eargs),
+	   1,
+           1);
+}
+
 void
 scheme_raise_exn(int id, ...)
 {
   GC_CAN_IGNORE va_list args;
-  intptr_t alen;
+  intptr_t alen, namelen;
   char *msg;
   int i, c, unsupported = 0;
   Scheme_Object *eargs[MZEXN_MAXARGS], *errno_val = NULL;
@@ -4469,27 +5035,51 @@ scheme_raise_exn(int id, ...)
   alen = sch_vsprintf(NULL, 0, msg, args, &buffer, &errno_val, &unsupported);
   HIDE_FROM_XFORM(va_end(args));
 
-  eargs[0] = scheme_make_immutable_sized_utf8_string(buffer, alen);
-  eargs[1] = TMP_CMARK_VALUE;
-  if (errno_val) {
-    if (id == MZEXN_FAIL_FILESYSTEM) {
-      id = MZEXN_FAIL_FILESYSTEM_ERRNO;
-      eargs[2] = errno_val;
-      c++;
-    } else if (id == MZEXN_FAIL_NETWORK) {
-      id = MZEXN_FAIL_NETWORK_ERRNO;
-      eargs[2] = errno_val;
-      c++;
+  namelen = -1;
+  for (i = 0; i < alen; i++) {
+    if (buffer[i] == ':') {
+      namelen = i;
+      break;
     }
-  } else if (unsupported) {
-    if (id == MZEXN_FAIL)
-      id = MZEXN_FAIL_UNSUPPORTED;
   }
 
-  do_raise(scheme_make_struct_instance(exn_table[id].type,
-				       c, eargs),
-	   1,
-           1);
+  finish_raise_exn(id, c, eargs, namelen, scheme_primitive_realm, scheme_primitive_realm,
+                   buffer, alen, errno_val, unsupported);
+}
+
+void
+scheme_raise_realm_exn(int id,
+                       intptr_t name_len, Scheme_Object *name_realm, Scheme_Object *msg_realm,
+                       ...)
+{
+  GC_CAN_IGNORE va_list args;
+  intptr_t alen;
+  char *msg;
+  int i, c, unsupported = 0;
+  Scheme_Object *eargs[MZEXN_MAXARGS], *errno_val = NULL;
+  char *buffer;
+
+  rktio_remap_last_error(scheme_rktio);
+
+  /* Precise GC: Don't allocate before getting hidden args off stack */
+  HIDE_FROM_XFORM(va_start(args, msg_realm));
+
+  if (id == MZEXN_OTHER)
+    c = 3;
+  else
+    c = exn_table[id].args;
+
+  for (i = 2; i < c; i++) {
+    eargs[i] = mzVA_ARG(args, Scheme_Object*);
+  }
+
+  msg = mzVA_ARG(args, char*);
+
+  alen = sch_vsprintf(NULL, 0, msg, args, &buffer, &errno_val, &unsupported);
+  HIDE_FROM_XFORM(va_end(args));
+
+  finish_raise_exn(id, c, eargs, name_len, name_realm, msg_realm,
+                   buffer, alen, errno_val, unsupported);
 }
 
 static MZ_NORETURN void

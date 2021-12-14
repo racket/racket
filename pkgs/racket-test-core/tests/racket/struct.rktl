@@ -7,7 +7,9 @@
 	     [(prop:p2 p2? p2-ref) (make-struct-type-property 'prop2)]
 	     [(insp1) (make-inspector)]
 	     [(insp2) (make-inspector)])
-  (arity-test make-struct-type-property 1 4)
+  (test 'prop-accessor object-name p-ref)
+  (test 'racket procedure-realm p-ref)
+  (arity-test make-struct-type-property 1 7)
   (arity-test struct-type-property-accessor-procedure? 1 1)
   (arity-test struct-type-property-predicate-procedure? 1 2)
   (test 3 primitive-result-arity make-struct-type-property)
@@ -70,6 +72,16 @@
       (test #f struct-accessor-procedure? set1)
       (err/rt-test (make-struct-field-accessor sel 3) exn:application:mismatch?)
       (test 'make-a object-name (struct-type-make-constructor type))
+      (test 'a-field2 object-name sel2)
+      (test 'racket procedure-realm sel2)
+      (test 'set-a-field2! object-name set2)
+      (test 'racket procedure-realm set2)
+      (let ([sel2x (make-struct-field-accessor sel 2 'x)]
+            [set2x (make-struct-field-mutator set 2 'x)])
+        (test 'a-x object-name sel2x)
+        (test 'racket procedure-realm sel2x)
+        (test 'set-a-x! object-name set2x)
+        (test 'racket procedure-realm set2x))
       (let ([new-ctor (struct-type-make-constructor type 'some-other-name)])
         (test 'some-other-name object-name new-ctor)
         (test #t struct-constructor-procedure? new-ctor))
@@ -1666,6 +1678,90 @@
         ?_3
         (make-struct-field-accessor -ref_4 0 'z))))
    5))
+
+;; ----------------------------------------
+;; names and realms
+
+(let ()
+  (define-values (struct:cat make-cat cat? cat-ref cat-set!)
+    (make-struct-type 'cat #f 2 2 'auto))
+  (define c1 (make-cat 1 2))
+  (define cat-paw1 (make-struct-field-accessor cat-ref 0 'cat-paw1 "gato?" 'elsewhere))
+  (define set-cat-paw1! (make-struct-field-mutator cat-set! 0 'set-cat-paw1! "gato!?" 'elsewhere!))
+  (define cat-paw4 (make-struct-field-accessor cat-ref 3 'cat-paw4 "gato?" 'elsewhere))
+  (define set-cat-paw4! (make-struct-field-mutator cat-set! 3 'set-cat-paw4! "gato!?" 'elsewhere!))
+  (test 'cat-paw1 object-name cat-paw1)
+  (test 'elsewhere procedure-realm cat-paw1)
+  (test 'set-cat-paw1! object-name set-cat-paw1!)
+  (test 'elsewhere! procedure-realm set-cat-paw1!)
+  (test 'cat-paw4 object-name cat-paw4)
+  (test 'elsewhere procedure-realm cat-paw4)
+  (test 'set-cat-paw4! object-name set-cat-paw4!)
+  (test 'elsewhere! procedure-realm set-cat-paw4!)
+  (err/rt-test (cat-paw1 "apple") exn:fail:contract? #rx"cat-paw1: .*gato[?]")
+  (err/rt-test (set-cat-paw1! "apple" 0) exn:fail:contract? #rx"set-cat-paw1!: .*gato![?]")
+  (err/rt-test (cat-paw4 "apple") exn:fail:contract? #rx"cat-paw4: .*gato[?]")
+  (err/rt-test (set-cat-paw4! "apple" 0) exn:fail:contract? #rx"set-cat-paw4!: .*gato![?]")
+  (let ()
+    (define-values (struct:xcat make-xcat xcat? xcat-ref xcat-set!)
+      (make-struct-type 'cat #f 0 0))
+    (err/rt-test (cat-paw1 (make-xcat)) exn:fail:contract? #rx"cat-paw1: .*gato[?]")
+    (err/rt-test (set-cat-paw1! (make-xcat) 0) exn:fail:contract? #rx"set-cat-paw1!: .*gato![?]"))
+  (define (adjuster mode)
+    (case mode
+      [(name) (lambda (name realm)
+                (cond
+                  [(and (eq? name 'cat-paw1) (eq? realm 'elsewhere))
+                   (values 'kitty-paw-one 'here)]
+                  [(and (eq? name 'set-cat-paw1!) (eq? realm 'elsewhere!))
+                   (values 'set-kitty-paw-one! 'here)]
+                  [else (values name realm)]))]
+      [(contract) (lambda (ctc realm)
+                    (cond
+                      [(and (equal? ctc "gato?") (eq? realm 'elsewhere))
+                       (values "is-kitty?" 'here)]
+                      [(and (equal? ctc "gato!?") (eq? realm 'elsewhere!))
+                       (values "is-kitty!?" 'here)]
+                      [else (values ctc realm)]))]
+      [else #f]))
+  (err/rt-test (with-continuation-mark
+                error-message-adjuster-key adjuster
+                (cat-paw1 "apple"))
+               exn:fail:contract?
+               #rx"kitty-paw-one: .*is-kitty[?]")
+  (err/rt-test (with-continuation-mark
+                error-message-adjuster-key adjuster
+                (set-cat-paw1! "apple" 0))
+               exn:fail:contract?
+               #rx"set-kitty-paw-one!: .*is-kitty![?]")
+  (let ()
+    (define-values (struct:xcat make-xcat xcat? xcat-ref xcat-set!)
+      (make-struct-type 'cat #f 0 0))
+    (err/rt-test (with-continuation-mark
+                  error-message-adjuster-key adjuster
+                  (cat-paw1 (make-xcat)))
+                 exn:fail:contract?
+                 #rx"kitty-paw-one: .*is-kitty[?]")
+    (err/rt-test (with-continuation-mark
+                  error-message-adjuster-key adjuster
+                  (set-cat-paw1! (make-xcat) 0))
+                 exn:fail:contract?
+                 #rx"set-kitty-paw-one!: .*is-kitty![?]"))
+  (void))
+
+(let ()
+  (define-values (prop:animal animal? animal-ref)
+    (make-struct-type-property 'animal
+                               #f
+                               null
+                               #t
+                               'animal-get
+                               "is-animal?"
+                               'elsewhere))
+  (test 'animal-get object-name animal-ref)
+  (test 'elsewhere procedure-realm animal-ref)
+  (err/rt-test (animal-ref 10) exn:fail:contract?
+               #rx"animal-get: .*is-animal[?]"))
 
 ;; ----------------------------------------
 

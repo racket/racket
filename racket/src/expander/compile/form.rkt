@@ -49,7 +49,8 @@
                        #:module-prompt? [module-prompt? #f]
                        #:to-correlated-linklet? [to-correlated-linklet? #f]
                        #:optimize-linklet? [optimize-linklet? #t]
-                       #:unsafe?-box [unsafe?-box #f])
+                       #:unsafe?-box [unsafe?-box #f]
+                       #:realm [realm (current-compile-realm)])
   (define phase (compile-context-phase cctx))
   (define self (compile-context-self cctx))
   
@@ -283,7 +284,8 @@
                                    #:optimize-linklet? optimize-linklet?
                                    #:unsafe? (and unsafe?-box (unbox unsafe?-box))
                                    #:load-modules? #f
-                                   #:namespace (compile-context-namespace cctx))]))
+                                   #:namespace (compile-context-namespace cctx)
+                                   #:realm realm)]))
       (values phase (cons linklet new-module-use*s))))
   
   (define body-linklets
@@ -404,23 +406,25 @@
                                 #:optimize-linklet? optimize-linklet?
                                 #:unsafe? unsafe?
                                 #:load-modules? load-modules?
-                                #:namespace namespace)
+                                #:namespace namespace
+                                #:realm realm)
   (define-values (linklet new-module-use*s)
     (performance-region
      ['compile '_ 'linklet]
      ((lambda (l name keys getter)
-        (compile-linklet l name keys getter (let ([flags (if serializable?
-                                                             (if module-prompt?
-                                                                 '(serializable use-prompt)
-                                                                 '(serializable))
-                                                             (if module-prompt?
-                                                                 '(use-prompt)
-                                                                 (if optimize-linklet?
-                                                                     '()
-                                                                     '(quick))))])
-                                              (if unsafe?
-                                                  (cons 'unsafe flags)
-                                                  flags))))
+        (parameterize ([current-compile-realm realm])
+          (compile-linklet l name keys getter (let ([flags (if serializable?
+                                                               (if module-prompt?
+                                                                   '(serializable use-prompt)
+                                                                   '(serializable))
+                                                               (if module-prompt?
+                                                                   '(use-prompt)
+                                                                   (if optimize-linklet?
+                                                                       '()
+                                                                       '(quick))))])
+                                                (if unsafe?
+                                                    (cons 'unsafe flags)
+                                                    flags)))))
       body-linklet
       'module
       ;; Support for cross-module optimization starts with a vector

@@ -113,7 +113,7 @@
      (Rrktio_stat_t-hardlink_count p)
      (Rrktio_stat_t-user_id p)
      (Rrktio_stat_t-group_id p)
-     (Rrktio_stat_t-device_for_special_file p)
+     (Rrktio_stat_t-device_id_for_special_file p)
      (Rrktio_stat_t-size p)
      (Rrktio_stat_t-block_size p)
      (Rrktio_stat_t-block_count p)
@@ -284,6 +284,7 @@
                                           'rktio_is_timestamp rktio_is_timestamp
                                           'rktio_recv_length_ref rktio_recv_length_ref
                                           'rktio_recv_address_ref rktio_recv_address_ref
+                                          'rktio_stat_to_vector rktio_stat_to_vector
                                           'rktio_identity_to_vector rktio_identity_to_vector
                                           'rktio_seconds_to_date* rktio_seconds_to_date*
                                           'rktio_convert_result_to_vector rktio_convert_result_to_vector

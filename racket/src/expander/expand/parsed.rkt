@@ -37,7 +37,7 @@
 (struct parsed-#%declare parsed () #:authentic)
 (struct parsed-require parsed () #:authentic)
 
-(struct parsed-#%module-begin parsed (body) #:authentic)
+(struct parsed-#%module-begin parsed (body realm) #:authentic)
 (struct parsed-module parsed (star?
                               name-id
                               self
@@ -46,6 +46,7 @@
                               root-ctx-simple?
                               encoded-root-ctx
                               body
+                              realm
                               portal-syntaxes       ; phase -> symbol -> syntax-object
                               compiled-module       ; #f or already-compiled module
                               compiled-submodules)  ; already-compiled submodules

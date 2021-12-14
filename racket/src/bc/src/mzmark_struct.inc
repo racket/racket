@@ -212,6 +212,8 @@ static int mark_struct_property_MARK(void *p, struct NewGC *gc) {
   gcMARK2(i->name, gc);
   gcMARK2(i->guard, gc);
   gcMARK2(i->supers, gc);
+  gcMARK2(i->contract_name, gc);
+  gcMARK2(i->realm, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
 # else
@@ -227,6 +229,8 @@ static int mark_struct_property_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(i->name, gc);
   gcFIXUP2(i->guard, gc);
   gcFIXUP2(i->supers, gc);
+  gcFIXUP2(i->contract_name, gc);
+  gcFIXUP2(i->realm, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
 # else

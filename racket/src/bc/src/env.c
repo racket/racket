@@ -262,6 +262,7 @@ static void init_startup_env(void)
   /* The ordering of the first few init calls is important, so add to
      the end of the list, not the beginning. */
   MZTIMEIT(symbol-type, scheme_init_symbol_type(env));
+  MZTIMEIT(realm, scheme_init_realm());
   MZTIMEIT(fun, scheme_init_fun(env));
   MZTIMEIT(symbol, scheme_init_symbol(env));
   MZTIMEIT(list, scheme_init_list(env));

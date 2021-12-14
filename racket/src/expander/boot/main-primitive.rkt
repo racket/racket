@@ -58,6 +58,8 @@
           'module-compiled-imports module-compiled-imports
           'module-compiled-exports module-compiled-exports
           'module-compiled-indirect-exports module-compiled-indirect-exports
+          'module-compiled-cross-phase-persistent? module-compiled-cross-phase-persistent?
+          'module-compiled-realm module-compiled-realm
 
           'compiled-expression-recompile compiled-expression-recompile
 
@@ -86,7 +88,7 @@
           'module->imports module->imports
           'module->exports module->exports
           'module->indirect-exports module->indirect-exports
-          'module-compiled-cross-phase-persistent? module-compiled-cross-phase-persistent?
+          'module->realm module->realm
           'module-provide-protected? module-provide-protected?
           'module->namespace module->namespace
           'namespace-unprotect-module namespace-unprotect-module))

@@ -8,7 +8,8 @@
          "parameter.rkt"
          "waiter.rkt"
          "evt.rkt"
-         "pre-poll.rkt")
+         "pre-poll.rkt"
+         "error.rkt")
 
 (provide make-semaphore
          semaphore?
@@ -54,10 +55,11 @@
   (check who exact-nonnegative-integer? init)
   (unless (fixnum? init)
     (raise
-     (exn:fail (string-append
-                "make-semaphore: starting value "
-                (number->string init)
-                " is too large")
+     (exn:fail (error-message->string
+                who
+                (string-append "starting value "
+                               (number->string init)
+                               " is too large"))
                (current-continuation-marks))))
   (semaphore #f #f init))
 

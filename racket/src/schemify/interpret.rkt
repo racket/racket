@@ -39,7 +39,7 @@
 (define variable-ref/no-check (lambda (var) (unbox var)))
 (define variable-set! (lambda (var v) (set-box! var v)))
 (define variable-set!/define (lambda (var v) (set-box! var v)))
-(define make-interp-procedure* (lambda (proc mask name) proc))
+(define make-interp-procedure* (lambda (proc mask name+realm) proc))
 
 (define (interpreter-link! prims
                            strip
@@ -56,7 +56,7 @@
   (set! variable-set!/define var-set!/def)
   (set! make-interp-procedure* make-proc))
 
-(define (interpretable-jitified-linklet linklet-e serializable?)
+(define (interpretable-jitified-linklet linklet-e serializable? realm)
   ;; Return a compiled linklet as an expression for the linklet body.
   
   ;; Conceptually, the run-time environment is implemented as a list,
@@ -207,7 +207,7 @@
        (define rev-cmap (for/hasheq ([(i pos) (in-hash cmap)]) (values (- -1 pos) i)))
        (vector 'lambda
                (count->mask count rest?)
-               (extract-procedure-wrap-data e)
+               (extract-procedure-wrap-data e realm)
                (for/vector #:length (hash-count cmap) ([i (in-range (hash-count cmap))])
                  (stack->pos (hash-ref rev-cmap i) stk-i))
                (add-boxes/remove-unused new-body ids mutated body-env body-stk-i))]
@@ -217,7 +217,7 @@
                       (compile-expr `(lambda ,ids . ,body) env stack-depth stk-i tail? mutated)))
        (define mask (for/fold ([mask 0]) ([lam (in-list lams)])
                       (bitwise-ior mask (interp-match lam [#(lambda ,mask) mask]))))
-       (list->vector (list* 'case-lambda mask (extract-procedure-wrap-data e) lams))]
+       (list->vector (list* 'case-lambda mask (extract-procedure-wrap-data e realm) lams))]
       [`(let ([,ids ,rhss] ...) . ,body)
        (define len (length ids))
        (define body-env
@@ -579,7 +579,7 @@
          [else
           (vector 'enbox pos e)])]))
 
-  (define (extract-procedure-wrap-data e)
+  (define (extract-procedure-wrap-data e realm)
     ;; Get name and method-arity information
     (define encoded-name (wrap-property e 'inferred-name))
     (define name
@@ -597,9 +597,10 @@
                (string->symbol (substring s 1 (string-length s)))]
               [else encoded-name])])]
         [else encoded-name]))
+    (define name+realm (if realm (cons name realm) name))
     (if (wrap-property e 'method-arity-error)
-        (box name)
-        name))
+        (box name+realm)
+        name+realm))
 
   (define (begins->list e)
     ;; Convert an expression to a list of expressions, trying to

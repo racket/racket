@@ -1642,7 +1642,8 @@
                         (when lock (mutex-release lock))
                         (c->s out-type r))))])
                arity-mask
-               name))))]
+               name
+               default-realm))))]
        [else
         (lambda (to-wrap)
           (let* ([proc-p (unwrap-cpointer 'ffi-call to-wrap)]
@@ -1706,7 +1707,8 @@
                                  (go))))])
                  (c->s out-type r)))
              (fxsll 1 (length in-types))
-             name)))])]
+             name
+             default-realm)))])]
      [else ; callable
       (lambda (to-wrap)
         (gen-proc (lambda args ; if ret-id, includes an extra initial argument to receive the result

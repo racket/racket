@@ -4232,7 +4232,7 @@ extfl_to_exact (int argc, Scheme_Object *argv[])
   CHECK_MZ_LONG_DOUBLE_UNSUPPORTED("extfl->exact");
 
   if (!SCHEME_LONG_DBLP(o))
-    scheme_wrong_type("extfl->exact", "extflonum", 0, argc, argv);
+    scheme_wrong_contract("extfl->exact", "extflonum?", 0, argc, argv);
 
   d = SCHEME_LONG_DBL_VAL(o);
 
@@ -4262,7 +4262,7 @@ extfl_to_inexact (int argc, Scheme_Object *argv[])
   CHECK_MZ_LONG_DOUBLE_UNSUPPORTED("extfl->inexact");
 
   if (!SCHEME_LONG_DBLP(o))
-    scheme_wrong_type("extfl->inexact", "extflonum", 0, argc, argv);
+    scheme_wrong_contract("extfl->inexact", "extflonum?", 0, argc, argv);
 
   return scheme_make_double(double_from_long_double(SCHEME_LONG_DBL_VAL(o)));
 #else

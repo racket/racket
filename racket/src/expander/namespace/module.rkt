@@ -41,6 +41,7 @@
          module-get-all-variables
          module-access
          module-compute-access!
+         module-realm
          
          module-instance-namespace
          module-instance-module
@@ -67,6 +68,7 @@
                 provides        ; phase-level -> sym -> binding or (provided binding bool bool); see [*] below
                 [access #:mutable] ; phase-level -> sym -> 'provided or 'protected; computed on demand from `provides`
                 language-info   ; #f or vector
+                realm           ; symbol
                 min-phase-level ; phase-level
                 max-phase-level ; phase-level
                 phase-level-linklet-info-callback ; phase-level namespace -> module-linklet-info-or-#f
@@ -113,6 +115,7 @@
                      #:phase-level-linklet-info-callback [phase-level-linklet-info-callback
                                                           (lambda (phase-level ns insp) #f)]
                      #:language-info [language-info #f]
+                     #:realm [realm 'racket]
                      #:primitive? [primitive? #f]
                      #:predefined? [predefined? #f]
                      #:cross-phase-persistent? [cross-phase-persistent? primitive?]
@@ -127,6 +130,7 @@
           provides
           #f ; access
           language-info
+          realm
           min-phase-level max-phase-level
           phase-level-linklet-info-callback
           force-bulk-binding

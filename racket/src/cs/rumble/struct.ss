@@ -29,11 +29,22 @@
 
 (define/who make-struct-type-property
   (case-lambda
-    [(name) (make-struct-type-property name #f '() #f)]
-    [(name guard) (make-struct-type-property name guard '() #f)]
-    [(name guard supers) (make-struct-type-property name guard supers #f)]
+    [(name) (make-struct-type-property name #f '() #f #f #f default-realm)]
+    [(name guard) (make-struct-type-property name guard '() #f #f #f default-realm)]
+    [(name guard supers) (make-struct-type-property name guard supers #f #f #f default-realm)]
     [(name guard supers can-impersonate?)
+     (make-struct-type-property name guard supers can-impersonate? #f #f default-realm)]
+    [(name guard supers can-impersonate? accessor-name)
+     (make-struct-type-property name guard supers can-impersonate? accessor-name #f default-realm)]
+    [(name guard supers can-impersonate? accessor-name contract)
+     (make-struct-type-property name guard supers can-impersonate? accessor-name contract default-realm)]
+    [(name guard supers can-impersonate? accessor-name contract realm)
      (check who symbol? name)
+     (check who symbol? :or-false accessor-name)
+     (check who (lambda (x) (or (symbol? x) (string? x) (not x)))
+           :contract "(or/c symbol? string? #f)"
+           contract)
+     (check who symbol? realm)
      (unless (or (not guard)
                  (eq? guard 'can-impersonate)
                  (and (#%procedure? guard) ; avoid `procedure?` until it's defined
@@ -47,13 +58,14 @@
                                    (struct-type-property? (car p))
                                    (procedure? (cdr p))
                                    (procedure-arity-includes? (cdr p) 1)))
-                            supers))<
+                            supers))
        (raise-argument-error who "(listof (cons/c struct-type-property? (procedure-arity-includes/c 1)))" supers))
      (let* ([can-impersonate? (and (or can-impersonate? (eq? guard 'can-impersonate)) #t)]
             [st (make-struct-type-prop name (and (not (eq? guard 'can-impersonate)) guard) supers)]
-            [accessor-name (string->symbol (string-append
-                                            (symbol->string name)
-                                            "-ref"))]
+            [accessor-name (or accessor-name
+                               (string->symbol (string-append
+                                                (symbol->string name)
+                                                "-accessor")))]
             [predicate-name (string->symbol
                              (string-append
                               (symbol->string name)
@@ -68,7 +80,8 @@
                           (and rtd
                                (not (eq? none (struct-property-ref st rtd none))))))
                       2
-                      predicate-name)])
+                      predicate-name
+                      realm)])
        (letrec ([acc
                  (procedure-rename*
                   (case-lambda
@@ -84,16 +97,20 @@
                         (cond
                          [(eq? fail none)
                           (raise-argument-error accessor-name
-                                                (symbol->string predicate-name)
+                                                (cond
+                                                  [(not contract) (symbol->immutable-string predicate-name)]
+                                                  [(string? contract) contract]
+                                                  [else (symbol->immutable-string contract)])
                                                 v)]
                          [(procedure? fail) (|#%app| fail)]
                          [else fail])]
                        [(impersonator? v)
-                        (impersonate-struct-or-property-ref val #f #|key1:|# acc #|key2:|# #f v #f #f)]
+                        (impersonate-struct-or-property-ref val #f #|key1:|# acc #|key2:|# #f v #f #f #f)]
                        [else val]))]
                    [(v) (acc v none)])
                   6
-                  accessor-name)])
+                  accessor-name
+                  realm)])
          (add-to-table! property-accessors
                         acc
                         (cons pred can-impersonate?))
@@ -136,10 +153,10 @@
 
 ;; Must be consistent with `procedure-rename` in "procedure.ss",
 ;; but needed before that one is defined:
-(define (procedure-rename* proc mask name)
+(define (procedure-rename* proc mask name realm)
   (make-arity-wrapper-procedure proc
                                 mask
-                                (vector name proc)))
+                                (vector name realm proc)))
 
 ;; ----------------------------------------
 
@@ -458,10 +475,10 @@
 
 (define (position-based-accessor-name f)
   (let ([rtd (position-based-accessor-rtd f)])
-    (string->symbol (string-append (symbol->string (record-type-name rtd)) "-ref"))))
+    (string->symbol (string-append-immutable (symbol->immutable-string (record-type-name rtd)) "-ref"))))
 (define (position-based-mutator-name f)
   (let ([rtd (position-based-mutator-rtd f)])
-    (string->symbol (string-append (symbol->string (record-type-name rtd)) "-set!"))))
+    (string->symbol (string-append-immutable (symbol->immutable-string (record-type-name rtd)) "-set!"))))
 
 (define (add-to-table! table key val)
   (if (eq-hashtable-try-atomic-cell table key val)
@@ -518,7 +535,7 @@
     (or (position-based-mutator? v)
         (and (wrapper-procedure? v)
              (let ([d (wrapper-procedure-data v)])
-             <  (and (pair? d)
+               (and (pair? d)
                     (record-type-descriptor? (cdr d))))))))
 
 (define (struct-accessor-procedure-rtd+pos v)
@@ -537,6 +554,71 @@
   (syntax-case stx ()
     [(_ name) #`(quote #,(datum->syntax #'name ((current-generate-id) (datum name))))]
     [else #'#f]))
+
+(define |#%struct-ref-error|
+  (case-lambda
+   [(v record-name field-name)
+    (#%$app/no-return struct-ref-error v record-name field-name)]
+   [(v proc-name contract/rtd realm)
+    (#%$app/no-return struct-ref-error v proc-name contract/rtd realm)]))
+
+(define |#%struct-set!-error|
+  (case-lambda
+   [(v record-name field-name)
+    (#%$app/no-return struct-set!-error v record-name field-name)]
+   [(v proc-name contract/rtd realm)
+    (#%$app/no-return struct-set!-error v proc-name contract/rtd realm)]))
+
+(define struct-ref-error
+  (case-lambda
+   [(v record-name field-name)
+    (raise-argument-error* (if field-name
+                               (make-struct-accessor-name record-name field-name)
+                               'accessor)
+                           default-realm
+                           (record-name->contract-string record-name)
+                           v)]
+   [(v proc-name contract/rtd realm)
+    (raise-argument-error* proc-name realm (struct-contract->string contract/rtd) v)]))
+
+(define struct-set!-error
+  (case-lambda
+   [(v record-name field-name)
+    (raise-argument-error* (if field-name
+                               (make-struct-mutator-name record-name field-name)
+                               'mutator)
+                           default-realm
+                           (record-name->contract-string record-name)
+                           v)]
+   [(v proc-name contract/rtd realm)
+    (raise-argument-error* proc-name realm (struct-contract->string contract/rtd) v)]))
+
+(define (make-struct-accessor-name rec-name field-name)
+  (string->symbol (string-append-immutable
+                   (symbol->immutable-string rec-name)
+                   "-"
+                   (if (symbol? field-name)
+                       (symbol->immutable-string field-name)
+                       field-name))))
+
+(define (make-struct-mutator-name rec-name field-name)
+  (string->symbol (string-append-immutable
+                   "set-"
+                   (symbol->immutable-string rec-name)
+                   "-"
+                   (if (symbol? field-name)
+                       (symbol->immutable-string field-name)
+                       field-name)
+                   "!")))
+
+(define (struct-contract->string contract/rtd)
+  (cond
+    [(string? contract/rtd) contract/rtd]
+    [(symbol? contract/rtd) (symbol->immutable-string contract/rtd)]
+    [else (record-name->contract-string (record-type-name contract/rtd))]))
+
+(define (record-name->contract-string record-name)
+  (string-append-immutable (symbol->immutable-string record-name) "?"))
 
 ;; ----------------------------------------
 
@@ -729,53 +811,70 @@
 
 (define/who make-struct-field-accessor
   (case-lambda
-   [(pba pos name)
+   [(pba pos name contract realm)
     (check who position-based-accessor?
            :contract "(and/c struct-accessor-procedure? (procedure-arity-includes/c 2))"
            pba)
     (check who exact-nonnegative-integer? pos)
     (check who symbol? :or-false name)
+    (check who (lambda (x) (or (symbol? x) (string? x) (not x)))
+           :contract "(or/c symbol? string? #f)"
+           contract)
+    (check who symbol? realm)
     (let ([rtd (position-based-accessor-rtd pba)])
       (check-accessor-or-mutator-index who rtd pos)
       (let* ([p (record-field-accessor rtd
                                        (+ pos (position-based-accessor-offset pba)))]
              [rec-name (record-type-name rtd)]
+             [proc-name (if (and contract name)
+                            name
+                            (if name
+                                (make-struct-accessor-name rec-name name)
+                                'accessor))]
+             [field/proc-name (if contract proc-name name)]
              [wrap-p
               (procedure-rename
                 (lambda (v)
                   ($value
                    (if (record? v rtd)
                        (p v)
-                       (impersonate-ref p rtd pos v rec-name (or name 'field)))))
-                (string->symbol (string-append (symbol->string rec-name)
-                                               "-"
-                                               (if name
-                                                   (symbol->string name)
-                                                   (string-append "field" (number->string pos))))))])
+                       (impersonate-ref p rtd pos v field/proc-name contract realm))))
+                proc-name
+                realm)])
         (|#%struct-field-accessor| wrap-p rtd pos)))]
+   [(pba pos name contract)
+    (make-struct-field-accessor pba pos name contract default-realm)]
+   [(pba pos name)
+    (make-struct-field-accessor pba pos name #f default-realm)]
    [(pba pos)
-    (make-struct-field-accessor pba pos #f)]))
+    (let ([name (string->symbol
+                 (string-append-immutable "field" (if (exact-nonnegative-integer? pos)
+                                                      (number->string pos)
+                                                      "")))])
+      (make-struct-field-accessor pba pos name #f default-realm))]))
 
 (define/who make-struct-field-mutator
   (case-lambda
-   [(pbm pos name)
+   [(pbm pos name contract realm)
     (check who position-based-mutator?
            :contract "(and/c struct-mutator-procedure? (procedure-arity-includes/c 3))"
            pbm)
     (check who exact-nonnegative-integer? pos)
     (check who symbol? :or-false name)
+    (check who (lambda (x) (or (symbol? x) (string? x) (not x)))
+           :contract "(or/c symbol? string? #f)"
+           contract)
+    (check who symbol? realm)
     (let ([rtd (position-based-mutator-rtd pbm)])
       (check-accessor-or-mutator-index who rtd pos)
       (let* ([abs-pos (+ pos (position-based-mutator-offset pbm))]
              [rec-name (record-type-name rtd)]
-             [mut-name (string->symbol
-                        (string-append "set-"
-                                       (symbol->string rec-name)
-                                       "-"
-                                       (if name
-                                           (symbol->string name)
-                                           (string-append "field" (number->string pos)))
-                                       "!"))]
+             [mut-name (if (and contract name)
+                           name
+                           (if name
+                               (make-struct-mutator-name rec-name name)
+                               'mutator))]
+             [field/proc-name (if contract mut-name name)]
              [wrap-p
               (procedure-rename
                (if (struct-type-field-mutable? rtd pos)
@@ -783,13 +882,22 @@
 		     (lambda (v a)
 		       (if (record? v rtd)
 			   (p v a)
-			   (impersonate-set! p rtd pos abs-pos v a rec-name name))))
+			   (impersonate-set! p rtd pos abs-pos v a field/proc-name contract realm))))
                    (lambda (v a)
                      (cannot-modify-by-pos-error mut-name v pos)))
-               mut-name)])
+               mut-name
+               realm)])
         (|#%struct-field-mutator| wrap-p rtd pos)))]
+   [(pbm pos name contract)
+    (make-struct-field-mutator pbm pos name contract default-realm)]
+   [(pbm pos name)
+    (make-struct-field-mutator pbm pos name #f default-realm)]
    [(pbm pos)
-    (make-struct-field-mutator pbm pos #f)]))
+    (let ([name (string->symbol
+                 (string-append-immutable "field" (if (exact-nonnegative-integer? pos)
+                                                      (number->string pos)
+                                                      "")))])
+      (make-struct-field-mutator pbm pos name #f default-realm))]))
 
 (define (cannot-modify-by-pos-error name v pos)
   (raise-arguments-error name
@@ -1117,7 +1225,7 @@
       (let loop ([rtd* (record-rtd (impersonator-val s))])
         (let ([pos (- i (struct-type-parent-total*-count rtd*))])
           (if (fx>= pos 0)
-              (impersonate-ref (record-field-accessor rtd* i) rtd* pos s #f #f)
+              (impersonate-ref (record-field-accessor rtd* i) rtd* pos s #f #f #f)
               (loop (record-type-parent rtd*)))))
       (unsafe-struct*-ref s i)))
 
@@ -1126,7 +1234,7 @@
       (let loop ([rtd* (record-rtd (impersonator-val s))])
         (let* ([pos (- i (struct-type-parent-total*-count rtd*))])
           (if (fx>= pos 0)
-              (impersonate-set! (record-field-mutator rtd* i) rtd* pos i s v #f #f)
+              (impersonate-set! (record-field-mutator rtd* i) rtd* pos i s v #f #f #f)
               (loop (record-type-parent rtd*)))))
       (unsafe-struct*-set! s i v)))
 
@@ -1333,7 +1441,7 @@
                        (lambda (v)
                          (if (authentic-name? v)
                              (name-field v)
-                             (pariah (impersonate-ref name-field struct:name field-index v 'name 'field)))))
+                             (pariah (impersonate-ref name-field struct:name field-index v 'field #f primitive-realm)))))
                       struct:name
                       field-index)))
                  ...

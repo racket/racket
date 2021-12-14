@@ -6487,7 +6487,12 @@ static Scheme_Object *sch_shell_execute(int c, Scheme_Object *argv[])
     mzseCMP(SW_SHOWNORMAL, "sw_shownormal");
 
     if (!show_set)
-      scheme_wrong_type("shell-execute", "show-mode symbol", 4, c, argv);
+      scheme_wrong_contract("shell-execute",
+                            "(or/c 'sw_hide 'sw_maximize 'sw_minimize 'sw_restore\n"
+                            "      'sw_show 'sw_showdefault 'sw_showmaximized\n"
+                            "      'sw_showminimized 'sw_showminnoactive 'sw_snowna\n"
+                            "      'sw_shownoactivate 'sw_shownormal)",
+                            4, c, argv);
   }
 
   dir = scheme_expand_string_filename(argv[3],
