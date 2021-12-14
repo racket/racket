@@ -1003,7 +1003,7 @@ static Scheme_Object *prop_pred(int argc, Scheme_Object **args, Scheme_Object *p
       Scheme_Object *procs;
       procs = scheme_struct_type_property_ref(scheme_impersonator_of_property, v);
       if (procs) {
-        v = scheme_apply_impersonator_of(0, procs, v);
+        v = scheme_apply_impersonator_of(0, procs, v); /* mode 0: 'equal? */
         if (!v)
           return scheme_false;
       } else
@@ -1157,7 +1157,7 @@ static Scheme_Object *do_chaperone_prop_accessor(const char *who, Scheme_Object 
         Scheme_Object *procs;
         procs = scheme_struct_type_property_ref(scheme_impersonator_of_property, arg);
         if (procs) {
-          arg = scheme_apply_impersonator_of(0, procs, arg);
+          arg = scheme_apply_impersonator_of(0, procs, arg); /* mode 0: 'equal? */
           if (!arg)
             return NULL;
           /* loop to try again */
