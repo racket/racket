@@ -66,6 +66,11 @@
        [(hash-equal? table) (make-weak-hash)]
        [(hash-eqv? table) (make-weak-hasheqv)]
        [(hash-eq? table) (make-weak-hasheq)])]
+     [(hash-ephemeron? table)
+      (cond
+        [(hash-equal? table) (make-ephemeron-hash)]
+        [(hash-eqv? table) (make-ephemeron-hasheqv)]
+        [(hash-eq? table) (make-ephemeron-hasheq)])]
      [else
       (cond
        [(hash-equal? table) (make-hash)]
