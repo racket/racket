@@ -790,4 +790,18 @@
 
 ;; ----------------------------------------
 
+(test #t hash-ephemeron? (hash-copy-clear (make-ephemeron-hash)))
+(test #t hash-ephemeron? (hash-copy-clear (make-ephemeron-hasheq)))
+(test #t hash-ephemeron? (hash-copy-clear (make-ephemeron-hasheqv)))
+
+(test #f hash-ephemeron? (hash-copy-clear (make-hash)))
+(test #f hash-ephemeron? (hash-copy-clear (make-hasheq)))
+(test #f hash-ephemeron? (hash-copy-clear (make-hasheqv)))
+
+(test #t hash-equal? (hash-copy-clear (make-ephemeron-hash)))
+(test #t hash-eq? (hash-copy-clear (make-ephemeron-hasheq)))
+(test #t hash-eqv? (hash-copy-clear (make-ephemeron-hasheqv)))
+
+;; ----------------------------------------
+
 (report-errs)
