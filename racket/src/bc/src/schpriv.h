@@ -1320,7 +1320,12 @@ Scheme_Object *scheme_chaperone_not_undefined(Scheme_Object *orig_val);
 
 int scheme_is_noninterposing_chaperone(Scheme_Object *obj);
 
-Scheme_Object *scheme_apply_impersonator_of(int for_chaperone, Scheme_Object *procs, Scheme_Object *obj);
+/* mode
+   0: 'equal?
+   1: 'chaperone-of?
+   3: 'impersonator-of?
+   5: 'equal-always? */
+Scheme_Object *scheme_apply_impersonator_of(int mode, Scheme_Object *procs, Scheme_Object *obj);
 
 /*========================================================================*/
 /*                         syntax objects                                 */
