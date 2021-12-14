@@ -91,12 +91,17 @@
                                                 s)))
             null)]
    [(equal? str "~s is not a pair")
-    (format-error-values "contract violation\n  expected: pair?\n  given: ~s"
+    (format-error-values (string-append
+                          "contract violation\n  expected: "
+                          (error-contract->adjusted-string "pair?" primitive-realm)
+                          "\n  given: ~s")
                          irritants)]
    [(and (equal? str "incorrect list structure ~s")
          (cxr->contract who))
     => (lambda (ctc)
-         (format-error-values (string-append "contract violation\n  expected: " ctc "\n  given: ~s")
+         (format-error-values (string-append "contract violation\n  expected: "
+                                             (error-contract->adjusted-string ctc primitive-realm)
+                                             "\n  given: ~s")
                               irritants))]
    [(and (or (eq? who 'list-ref) (eq? who 'list-tail))
          (equal? str "index ~s is out of range for list ~s"))
@@ -146,7 +151,9 @@
          (equal? (substring str 0 (string-length is-not-a-str)) is-not-a-str)
          (= 1 (length irritants)))
     (let ([ctc (desc->contract (substring str (string-length is-not-a-str) (string-length str)))])
-      (format-error-values (string-append "contract violation\n  expected: " ctc "\n  given: ~s")
+      (format-error-values (string-append "contract violation\n  expected: "
+                                          (error-contract->adjusted-string ctc primitive-realm)
+                                          "\n  given: ~s")
                            irritants))]
    [(equal? str "cannot extend sealed record type ~s as ~s")
     (format-error-values (string-append "cannot make a subtype of a sealed type\n"

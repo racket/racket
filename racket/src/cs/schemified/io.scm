@@ -514,7 +514,11 @@
                   (procedure-keywords (|#%app| a_0 p_0))
                   (values null null)))))
           (values null null))
-        (raise-argument-error 'procedure-keywords "procedure?" p_0)))))
+        (raise-argument-error*
+         'procedure-keywords
+         'racket/primitive
+         "procedure?"
+         p_0)))))
 (define 1/reverse
   (|#%name|
    reverse
@@ -2071,10 +2075,11 @@
 (define check-ranges
   (lambda (who_0 type-name_0 vec_0 start_0 stop_0 step_0 len_0)
     (begin
-      (if (if (exact-nonnegative-integer? start_0)
-            (let ((or-part_0 (< start_0 len_0)))
-              (if or-part_0 or-part_0 (= len_0 start_0 stop_0)))
-            #f)
+      (if (exact-nonnegative-integer? start_0)
+        (void)
+        (raise-argument-error who_0 "exact-nonnegative-integer?" start_0))
+      (if (let ((or-part_0 (< start_0 len_0)))
+            (if or-part_0 or-part_0 (= len_0 start_0 stop_0)))
         (void)
         (raise-range-error
          who_0
@@ -2084,9 +2089,10 @@
          vec_0
          0
          (sub1 len_0)))
-      (if (if (exact-integer? stop_0)
-            (if (<= -1 stop_0) (<= stop_0 len_0) #f)
-            #f)
+      (if (exact-integer? stop_0)
+        (void)
+        (raise-argument-error who_0 "exact-integer?" stop_0))
+      (if (if (<= -1 stop_0) (<= stop_0 len_0) #f)
         (void)
         (raise-range-error
          who_0
@@ -2587,7 +2593,6 @@
          struct:sandman
          0
          s
-         'sandman
          'do-sleep))))))
 (define sandman-do-poll_2411
   (|#%name| sandman-do-poll (record-accessor struct:sandman 1)))
@@ -2598,13 +2603,7 @@
      (if (sandman?_2599 s)
        (sandman-do-poll_2411 s)
        ($value
-        (impersonate-ref
-         sandman-do-poll_2411
-         struct:sandman
-         1
-         s
-         'sandman
-         'do-poll))))))
+        (impersonate-ref sandman-do-poll_2411 struct:sandman 1 s 'do-poll))))))
 (define sandman-do-get-wakeup_3028
   (|#%name| sandman-do-get-wakeup (record-accessor struct:sandman 2)))
 (define sandman-do-get-wakeup
@@ -2619,7 +2618,6 @@
          struct:sandman
          2
          s
-         'sandman
          'do-get-wakeup))))))
 (define sandman-do-wakeup_2562
   (|#%name| sandman-do-wakeup (record-accessor struct:sandman 3)))
@@ -2635,7 +2633,6 @@
          struct:sandman
          3
          s
-         'sandman
          'do-wakeup))))))
 (define sandman-do-any-sleepers?_2376
   (|#%name| sandman-do-any-sleepers? (record-accessor struct:sandman 4)))
@@ -2651,7 +2648,6 @@
          struct:sandman
          4
          s
-         'sandman
          'do-any-sleepers?))))))
 (define sandman-do-sleepers-external-events_2747
   (|#%name|
@@ -2669,7 +2665,6 @@
          struct:sandman
          5
          s
-         'sandman
          'do-sleepers-external-events))))))
 (define sandman-do-add-thread!_3210
   (|#%name| sandman-do-add-thread! (record-accessor struct:sandman 6)))
@@ -2685,7 +2680,6 @@
          struct:sandman
          6
          s
-         'sandman
          'do-add-thread!))))))
 (define sandman-do-remove-thread!_2183
   (|#%name| sandman-do-remove-thread! (record-accessor struct:sandman 7)))
@@ -2701,7 +2695,6 @@
          struct:sandman
          7
          s
-         'sandman
          'do-remove-thread!))))))
 (define sandman-do-merge-external-event-sets_2575
   (|#%name|
@@ -2719,7 +2712,6 @@
          struct:sandman
          8
          s
-         'sandman
          'do-merge-external-event-sets))))))
 (define sandman-do-merge-timeout_2100
   (|#%name| sandman-do-merge-timeout (record-accessor struct:sandman 9)))
@@ -2735,7 +2727,6 @@
          struct:sandman
          9
          s
-         'sandman
          'do-merge-timeout))))))
 (define sandman-do-extract-timeout_2311
   (|#%name| sandman-do-extract-timeout (record-accessor struct:sandman 10)))
@@ -2751,7 +2742,6 @@
          struct:sandman
          10
          s
-         'sandman
          'do-extract-timeout))))))
 (define table
   (let ((or-part_0 (primitive-table '|#%thread|)))
@@ -3567,13 +3557,7 @@
      (if (exts?_3457 s)
        (exts-timeout-at_2133 s)
        ($value
-        (impersonate-ref
-         exts-timeout-at_2133
-         struct:exts
-         0
-         s
-         'exts
-         'timeout-at))))))
+        (impersonate-ref exts-timeout-at_2133 struct:exts 0 s 'timeout-at))))))
 (define exts-fd-adders_2889
   (|#%name| exts-fd-adders (record-accessor struct:exts 1)))
 (define exts-fd-adders
@@ -3583,13 +3567,7 @@
      (if (exts?_3457 s)
        (exts-fd-adders_2889 s)
        ($value
-        (impersonate-ref
-         exts-fd-adders_2889
-         struct:exts
-         1
-         s
-         'exts
-         'fd-adders))))))
+        (impersonate-ref exts-fd-adders_2889 struct:exts 1 s 'fd-adders))))))
 (define sandman-add-poll-set-adder
   (lambda (old-exts_0 adder_0)
     (let ((app_0 (if old-exts_0 (exts-timeout-at old-exts_0) #f)))
@@ -3929,7 +3907,6 @@
          struct:core-port-methods.1
          0
          s
-         'core-port-methods
          'close))))))
 (define core-port-methods-count-lines!.1_2484
   (|#%name|
@@ -3947,7 +3924,6 @@
          struct:core-port-methods.1
          1
          s
-         'core-port-methods
          'count-lines!))))))
 (define core-port-methods-get-location.1_2923
   (|#%name|
@@ -3965,7 +3941,6 @@
          struct:core-port-methods.1
          2
          s
-         'core-port-methods
          'get-location))))))
 (define core-port-methods-file-position.1_2707
   (|#%name|
@@ -3983,7 +3958,6 @@
          struct:core-port-methods.1
          3
          s
-         'core-port-methods
          'file-position))))))
 (define core-port-methods-buffer-mode.1_2291
   (|#%name|
@@ -4001,7 +3975,6 @@
          struct:core-port-methods.1
          4
          s
-         'core-port-methods
          'buffer-mode))))))
 (define core-port-vtable.1
   (core-port-methods1.1
@@ -4289,7 +4262,6 @@
          struct:core-input-port-methods.1
          0
          s
-         'core-input-port-methods
          'prepare-change))))))
 (define core-input-port-methods-read-in.1_2920
   (|#%name|
@@ -4307,7 +4279,6 @@
          struct:core-input-port-methods.1
          1
          s
-         'core-input-port-methods
          'read-in))))))
 (define core-input-port-methods-peek-in.1_2905
   (|#%name|
@@ -4325,7 +4296,6 @@
          struct:core-input-port-methods.1
          2
          s
-         'core-input-port-methods
          'peek-in))))))
 (define core-input-port-methods-byte-ready.1_2198
   (|#%name|
@@ -4343,7 +4313,6 @@
          struct:core-input-port-methods.1
          3
          s
-         'core-input-port-methods
          'byte-ready))))))
 (define core-input-port-methods-get-progress-evt.1_2402
   (|#%name|
@@ -4361,7 +4330,6 @@
          struct:core-input-port-methods.1
          4
          s
-         'core-input-port-methods
          'get-progress-evt))))))
 (define core-input-port-methods-commit.1_2988
   (|#%name|
@@ -4379,7 +4347,6 @@
          struct:core-input-port-methods.1
          5
          s
-         'core-input-port-methods
          'commit))))))
 (define core-input-port-vtable.1
   (let ((app_0 (core-port-methods-close.1 core-port-vtable.1)))
@@ -4609,7 +4576,6 @@
          struct:core-output-port-methods.1
          0
          s
-         'core-output-port-methods
          'write-out))))))
 (define core-output-port-methods-write-out-special.1_1911
   (|#%name|
@@ -4627,7 +4593,6 @@
          struct:core-output-port-methods.1
          1
          s
-         'core-output-port-methods
          'write-out-special))))))
 (define core-output-port-methods-get-write-evt.1_2434
   (|#%name|
@@ -4645,7 +4610,6 @@
          struct:core-output-port-methods.1
          2
          s
-         'core-output-port-methods
          'get-write-evt))))))
 (define core-output-port-methods-get-write-special-evt.1_3014
   (|#%name|
@@ -4663,7 +4627,6 @@
          struct:core-output-port-methods.1
          3
          s
-         'core-output-port-methods
          'get-write-special-evt))))))
 (define core-output-port-vtable.1
   (let ((app_0 (core-port-methods-close.1 core-port-vtable.1)))
@@ -4772,13 +4735,7 @@
      (if (write-evt?_2870 s)
        (write-evt-proc_2583 s)
        ($value
-        (impersonate-ref
-         write-evt-proc_2583
-         struct:write-evt
-         0
-         s
-         'write-evt
-         'proc))))))
+        (impersonate-ref write-evt-proc_2583 struct:write-evt 0 s 'proc))))))
 (define empty-output-port
   (create-core-output-port
    core-output-port-vtable.1
@@ -4843,7 +4800,6 @@
          struct:utf-8-state
          0
          s
-         'utf-8-state
          'accum))))))
 (define utf-8-state-remaining_2167
   (|#%name| utf-8-state-remaining (record-accessor struct:utf-8-state 1)))
@@ -4859,7 +4815,6 @@
          struct:utf-8-state
          1
          s
-         'utf-8-state
          'remaining))))))
 (define utf-8-state-pending-amt_2017
   (|#%name| utf-8-state-pending-amt (record-accessor struct:utf-8-state 2)))
@@ -4875,7 +4830,6 @@
          struct:utf-8-state
          2
          s
-         'utf-8-state
          'pending-amt))))))
 (define utf-8-decode!.1
   (|#%name|
@@ -5864,6 +5818,13 @@
            (if (<= n_0 127)
              1
              (if (<= n_0 2047) 2 (if (<= n_0 65535) 3 4)))))))))
+(define error-message->string
+  (lambda (who_0 msg_0)
+    (error-message->adjusted-string
+     who_0
+     'racket/primitive
+     msg_0
+     'racket/primitive)))
 (define remap-rktio-error
   (lambda (err_0)
     (begin
@@ -5888,14 +5849,17 @@
               (begin (unsafe-end-atomic) (vector errkind_0 errno_0)))))))))
 (define format-rktio-message
   (lambda (who_0 err_0 base-msg_0)
-    (let ((app_0 (if who_0 (symbol->string who_0) "")))
-      (let ((app_1 (if who_0 ": " "")))
-        (string-append
-         app_0
-         app_1
-         base-msg_0
-         "\n  system error: "
-         (format-rktio-system-error-message err_0))))))
+    (let ((msg_0
+           (string-append
+            base-msg_0
+            "\n  system error: "
+            (format-rktio-system-error-message err_0))))
+      (begin-unsafe
+       (error-message->adjusted-string
+        who_0
+        'racket/primitive
+        msg_0
+        'racket/primitive)))))
 (define format-rktio-system-error-message
   (lambda (err_0)
     (begin
@@ -5927,7 +5891,19 @@
 (define raise-rktio-error
   (lambda (who_0 err_0 base-msg_0)
     (raise
-     (let ((app_0 (format-rktio-message who_0 err_0 base-msg_0)))
+     (let ((app_0
+            (begin-unsafe
+             (let ((msg_0
+                    (string-append
+                     base-msg_0
+                     "\n  system error: "
+                     (format-rktio-system-error-message err_0))))
+               (begin-unsafe
+                (error-message->adjusted-string
+                 who_0
+                 'racket/primitive
+                 msg_0
+                 'racket/primitive))))))
        (|#%app| exn:fail app_0 (current-continuation-marks))))))
 (define check-rktio-error
   (lambda (v_0 base-msg_0)
@@ -5935,7 +5911,19 @@
       (if (vector? v_0)
         (begin-unsafe
          (raise
-          (let ((app_0 (format-rktio-message #f v_0 base-msg_0)))
+          (let ((app_0
+                 (begin-unsafe
+                  (let ((msg_0
+                         (string-append
+                          base-msg_0
+                          "\n  system error: "
+                          (format-rktio-system-error-message v_0))))
+                    (begin-unsafe
+                     (error-message->adjusted-string
+                      #f
+                      'racket/primitive
+                      msg_0
+                      'racket/primitive))))))
             (|#%app| exn:fail app_0 (current-continuation-marks)))))
         (void))
       v_0)))
@@ -5947,10 +5935,24 @@
              (remap-rktio-error orig-err_0))))
       (let ((msg_0
              (if (racket-error? err_0 4)
-               (if who_0
-                 (string-append (symbol->string who_0) ": " base-msg_0)
-                 base-msg_0)
-               (format-rktio-message who_0 err_0 base-msg_0))))
+               (begin-unsafe
+                (error-message->adjusted-string
+                 who_0
+                 'racket/primitive
+                 base-msg_0
+                 'racket/primitive))
+               (begin-unsafe
+                (let ((msg_0
+                       (string-append
+                        base-msg_0
+                        "\n  system error: "
+                        (format-rktio-system-error-message err_0))))
+                  (begin-unsafe
+                   (error-message->adjusted-string
+                    who_0
+                    'racket/primitive
+                    msg_0
+                    'racket/primitive)))))))
         (raise
          (if (racket-error? err_0 4)
            (|#%app|
@@ -6092,21 +6094,27 @@
         (let ((input?_0 (core-input-port? cp_0)))
           (raise
            (let ((app_0
-                  (let ((app_0 (symbol->string who_0)))
-                    (let ((app_1
-                           (if input?_0
-                             "input port is closed"
-                             "output port is closed")))
-                      (let ((app_2
-                             (if input?_0 "input port: " "output port: ")))
-                        (string-append
-                         app_0
-                         ": "
-                         app_1
-                         "\n  "
-                         app_2
-                         (let ((app_3 (error-value->string-handler)))
-                           (|#%app| app_3 cp_0 (error-print-width)))))))))
+                  (let ((msg_0
+                         (let ((app_0
+                                (if input?_0
+                                  "input port is closed"
+                                  "output port is closed")))
+                           (let ((app_1
+                                  (if input?_0
+                                    "input port: "
+                                    "output port: ")))
+                             (string-append
+                              app_0
+                              "\n  "
+                              app_1
+                              (let ((app_2 (error-value->string-handler)))
+                                (|#%app| app_2 cp_0 (error-print-width))))))))
+                    (begin-unsafe
+                     (error-message->adjusted-string
+                      who_0
+                      'racket/primitive
+                      msg_0
+                      'racket/primitive)))))
              (|#%app| exn:fail app_0 (current-continuation-marks))))))
       (void))))
 (define 1/file-position
@@ -6121,10 +6129,17 @@
         (lambda ()
           (raise
            (let ((app_0
-                  (string-append
-                   "file-position: the port's current position is not known\n port: "
-                   (let ((app_0 (error-value->string-handler)))
-                     (|#%app| app_0 p_0 (error-print-width))))))
+                  (let ((msg_0
+                         (string-append
+                          "the port's current position is not known\n port: "
+                          (let ((app_0 (error-value->string-handler)))
+                            (|#%app| app_0 p_0 (error-print-width))))))
+                    (begin-unsafe
+                     (error-message->adjusted-string
+                      'file-position
+                      'racket/primitive
+                      msg_0
+                      'racket/primitive)))))
              (|#%app|
               exn:fail:filesystem
               app_0
@@ -6691,7 +6706,6 @@
          struct:commit-manager
          0
          s
-         'commit-manager
          'pause-channel))))))
 (define commit-manager-commit-channel_2862
   (|#%name|
@@ -6709,7 +6723,6 @@
          struct:commit-manager
          1
          s
-         'commit-manager
          'commit-channel))))))
 (define commit-manager-thread_2564
   (|#%name| commit-manager-thread (record-accessor struct:commit-manager 2)))
@@ -6725,7 +6738,6 @@
          struct:commit-manager
          2
          s
-         'commit-manager
          'thread))))))
 (define finish_2581
   (make-struct-type-install-properties
@@ -6780,7 +6792,6 @@
          struct:commit-request
          0
          s
-         'commit-request
          'ext-evt))))))
 (define commit-request-progress-evt_2907
   (|#%name|
@@ -6798,7 +6809,6 @@
          struct:commit-request
          1
          s
-         'commit-request
          'progress-evt))))))
 (define commit-request-abandon-evt_2705
   (|#%name|
@@ -6816,7 +6826,6 @@
          struct:commit-request
          2
          s
-         'commit-request
          'abandon-evt))))))
 (define commit-request-finish_2610
   (|#%name| commit-request-finish (record-accessor struct:commit-request 3)))
@@ -6832,7 +6841,6 @@
          struct:commit-request
          3
          s
-         'commit-request
          'finish))))))
 (define commit-request-result-ch_2336
   (|#%name|
@@ -6850,7 +6858,6 @@
          struct:commit-request
          4
          s
-         'commit-request
          'result-ch))))))
 (define finish_2113
   (make-struct-type-install-properties
@@ -6907,7 +6914,6 @@
          struct:commit-response
          0
          s
-         'commit-response
          'abandon-evt))))))
 (define commit-response-result-put-evt_2135
   (|#%name|
@@ -6925,7 +6931,6 @@
          struct:commit-response
          1
          s
-         'commit-response
          'result-put-evt))))))
 (define make-commit-manager
   (lambda ()
@@ -8733,7 +8738,6 @@
          struct:pipe-write-poller
          0
          s
-         'pipe-write-poller
          'd))))))
 (define finish_2669
   (make-struct-type-install-properties
@@ -8818,7 +8822,6 @@
          struct:pipe-read-poller
          0
          s
-         'pipe-read-poller
          'd))))))
 (define finish_2316
   (make-struct-type-install-properties
@@ -8954,7 +8957,6 @@
          struct:peek-via-read-input-port-methods.1
          0
          s
-         'peek-via-read-input-port-methods
          'read-in/inner))))))
 (define peek-via-read-input-port-methods-byte-ready/inner.1_2519
   (|#%name|
@@ -8972,7 +8974,6 @@
          struct:peek-via-read-input-port-methods.1
          1
          s
-         'peek-via-read-input-port-methods
          'byte-ready/inner))))))
 (define peek-via-read-input-port-vtable.1
   (let ((app_0 (core-port-methods-count-lines!.1 commit-input-port-vtable.1)))
@@ -9652,7 +9653,20 @@
                    (let ((base-msg_0 "error closing stream port"))
                      (begin-unsafe
                       (raise
-                       (let ((app_0 (format-rktio-message #f v_0 base-msg_0)))
+                       (let ((app_0
+                              (begin-unsafe
+                               (let ((msg_0
+                                      (string-append
+                                       base-msg_0
+                                       "\n  system error: "
+                                       (format-rktio-system-error-message
+                                        v_0))))
+                                 (begin-unsafe
+                                  (error-message->adjusted-string
+                                   #f
+                                   'racket/primitive
+                                   msg_0
+                                   'racket/primitive))))))
                          (|#%app|
                           exn:fail
                           app_0
@@ -9781,7 +9795,6 @@
          struct:fd-input-port-methods.1
          0
          s
-         'fd-input-port-methods
          'on-close))))))
 (define fd-input-port-methods-raise-read-error.1_2306
   (|#%name|
@@ -9799,7 +9812,6 @@
          struct:fd-input-port-methods.1
          1
          s
-         'fd-input-port-methods
          'raise-read-error))))))
 (define fd-input-port-vtable.1
   (let ((app_0
@@ -10048,7 +10060,7 @@
                 p16_0
                 (register-fd-close cust_0 fd_0 fd-refcount_0 #f p16_0))
                (finish-port/count p16_0)))))))))
-(define finish_2363
+(define finish_2128
   (make-struct-type-install-properties
    '(fd-output-port)
    8
@@ -10077,10 +10089,19 @@
                  (begin-unsafe
                   (raise
                    (let ((app_0
-                          (format-rktio-message
-                           'file-truncate
-                           result_0
-                           base-msg_0)))
+                          (begin-unsafe
+                           (let ((msg_0
+                                  (string-append
+                                   base-msg_0
+                                   "\n  system error: "
+                                   (format-rktio-system-error-message
+                                    result_0))))
+                             (begin-unsafe
+                              (error-message->adjusted-string
+                               'file-truncate
+                               'racket/primitive
+                               msg_0
+                               'racket/primitive))))))
                      (|#%app| exn:fail app_0 (current-continuation-marks)))))))
              (void))))))
     (cons prop:file-stream (lambda (p_0) (fd-output-port-fd p_0))))
@@ -10098,7 +10119,7 @@
    #f
    8
    255))
-(define effect_2896 (finish_2363 struct:fd-output-port))
+(define effect_2896 (finish_2128 struct:fd-output-port))
 (define create-fd-output-port
   (|#%name|
    create-fd-output-port
@@ -10220,7 +10241,6 @@
          struct:fd-output-port-methods.1
          0
          s
-         'fd-output-port-methods
          'on-close))))))
 (define fd-output-port-methods-raise-write-error.1_2502
   (|#%name|
@@ -10238,7 +10258,6 @@
          struct:fd-output-port-methods.1
          1
          s
-         'fd-output-port-methods
          'raise-write-error))))))
 (define fd-output-port-vtable.1
   (let ((app_0 (core-port-methods-count-lines!.1 core-output-port-vtable.1)))
@@ -10758,7 +10777,18 @@
             (begin-unsafe
              (raise
               (let ((app_0
-                     (format-rktio-message 'file-position r_0 base-msg_0)))
+                     (begin-unsafe
+                      (let ((msg_0
+                             (string-append
+                              base-msg_0
+                              "\n  system error: "
+                              (format-rktio-system-error-message r_0))))
+                        (begin-unsafe
+                         (error-message->adjusted-string
+                          'file-position
+                          'racket/primitive
+                          msg_0
+                          'racket/primitive))))))
                 (|#%app| exn:fail app_0 (current-continuation-marks)))))))
         (void)))))
 (define finish_2118
@@ -10854,8 +10884,7 @@
    (lambda (s)
      (if (fd-evt?_2860 s)
        (fd-evt-fd_2964 s)
-       ($value
-        (impersonate-ref fd-evt-fd_2964 struct:fd-evt 0 s 'fd-evt 'fd))))))
+       ($value (impersonate-ref fd-evt-fd_2964 struct:fd-evt 0 s 'fd))))))
 (define fd-evt-mode_2993
   (|#%name| fd-evt-mode (record-accessor struct:fd-evt 1)))
 (define fd-evt-mode
@@ -10864,8 +10893,7 @@
    (lambda (s)
      (if (fd-evt?_2860 s)
        (fd-evt-mode_2993 s)
-       ($value
-        (impersonate-ref fd-evt-mode_2993 struct:fd-evt 1 s 'fd-evt 'mode))))))
+       ($value (impersonate-ref fd-evt-mode_2993 struct:fd-evt 1 s 'mode))))))
 (define fd-evt-closed_2690
   (|#%name| fd-evt-closed (record-accessor struct:fd-evt 2)))
 (define fd-evt-closed
@@ -10875,13 +10903,7 @@
      (if (fd-evt?_2860 s)
        (fd-evt-closed_2690 s)
        ($value
-        (impersonate-ref
-         fd-evt-closed_2690
-         struct:fd-evt
-         2
-         s
-         'fd-evt
-         'closed))))))
+        (impersonate-ref fd-evt-closed_2690 struct:fd-evt 2 s 'closed))))))
 (define set-fd-evt-closed!_2161
   (|#%name| set-fd-evt-closed! (record-mutator struct:fd-evt 2)))
 (define set-fd-evt-closed!
@@ -10898,7 +10920,6 @@
          2
          s
          v
-         'fd-evt
          'closed))))))
 (define finish_2932
   (make-struct-type-install-properties
@@ -10981,7 +11002,6 @@
          struct:rktio-fd-flushed-evt
          0
          s
-         'rktio-fd-flushed-evt
          'p))))))
 (define register-fd-close
   (lambda (custodian_0 fd_0 fd-refcount_0 flush-handle_0 port_0)
@@ -11066,10 +11086,19 @@
                 (begin-unsafe
                  (raise
                   (let ((app_0
-                         (format-rktio-message
-                          'place-channel-put
-                          new-fd_0
-                          base-msg_0)))
+                         (begin-unsafe
+                          (let ((msg_0
+                                 (string-append
+                                  base-msg_0
+                                  "\n  system error: "
+                                  (format-rktio-system-error-message
+                                   new-fd_0))))
+                            (begin-unsafe
+                             (error-message->adjusted-string
+                              'place-channel-put
+                              'racket/primitive
+                              msg_0
+                              'racket/primitive))))))
                     (|#%app| exn:fail app_0 (current-continuation-marks)))))))
             (void))
           (let ((fd-dup_0
@@ -11748,7 +11777,6 @@
          struct:progress-evt
          0
          s
-         'progress-evt
          'port))))))
 (define progress-evt-evt_1640
   (|#%name| progress-evt-evt (record-accessor struct:progress-evt 1)))
@@ -11764,7 +11792,6 @@
          struct:progress-evt
          1
          s
-         'progress-evt
          'evt))))))
 (define progress-evt?*
   (|#%name|
@@ -14974,10 +15001,18 @@
                 (begin-unsafe
                  (raise
                   (let ((app_0
-                         (format-rktio-message
-                          'locale-string-encoding
-                          e_0
-                          base-msg_0)))
+                         (begin-unsafe
+                          (let ((msg_0
+                                 (string-append
+                                  base-msg_0
+                                  "\n  system error: "
+                                  (format-rktio-system-error-message e_0))))
+                            (begin-unsafe
+                             (error-message->adjusted-string
+                              'locale-string-encoding
+                              'racket/primitive
+                              msg_0
+                              'racket/primitive))))))
                     (|#%app| exn:fail app_0 (current-continuation-marks)))))))
             (begin0
               (|#%app| rktio_to_bytes e_0)
@@ -15011,10 +15046,18 @@
                  (begin-unsafe
                   (raise
                    (let ((app_0
-                          (format-rktio-message
-                           'system-language+country
-                           c_0
-                           base-msg_0)))
+                          (begin-unsafe
+                           (let ((msg_0
+                                  (string-append
+                                   base-msg_0
+                                   "\n  system error: "
+                                   (format-rktio-system-error-message c_0))))
+                             (begin-unsafe
+                              (error-message->adjusted-string
+                               'system-language+country
+                               'racket/primitive
+                               msg_0
+                               'racket/primitive))))))
                      (|#%app| exn:fail app_0 (current-continuation-marks)))))))
              (begin0
                (|#%app| rktio_to_bytes c_0)
@@ -15088,7 +15131,6 @@
          struct:utf-8-converter
          0
          s
-         'utf-8-converter
          'from))))))
 (define utf-8-converter-to_2267
   (|#%name| utf-8-converter-to (record-accessor struct:utf-8-converter 1)))
@@ -15104,7 +15146,6 @@
          struct:utf-8-converter
          1
          s
-         'utf-8-converter
          'to))))))
 (define big-endian?$1 (system-big-endian?))
 (define utf-8-convert-in
@@ -16034,7 +16075,6 @@
          struct:bytes-converter
          0
          s
-         'bytes-converter
          'c))))))
 (define bytes-converter-custodian-reference_2648
   (|#%name|
@@ -16052,7 +16092,6 @@
          struct:bytes-converter
          1
          s
-         'bytes-converter
          'custodian-reference))))))
 (define set-bytes-converter-c!_2380
   (|#%name| set-bytes-converter-c! (record-mutator struct:bytes-converter 0)))
@@ -16070,7 +16109,6 @@
          0
          s
          v
-         'bytes-converter
          'c))))))
 (define set-bytes-converter-custodian-reference!_2613
   (|#%name|
@@ -16090,7 +16128,6 @@
          1
          s
          v
-         'bytes-converter
          'custodian-reference))))))
 (define windows? (eq? 'windows (system-type)))
 (define platform-utf-8 (if windows? 'wtf-8 'utf-8))
@@ -17303,8 +17340,7 @@
    (lambda (s)
      (if (1/path?_2312 s)
        (path-bytes_2645 s)
-       ($value
-        (impersonate-ref path-bytes_2645 struct:path 0 s 'path 'bytes))))))
+       ($value (impersonate-ref path-bytes_2645 struct:path 0 s 'bytes))))))
 (define path-convention_2368
   (|#%name| path-convention (record-accessor struct:path 1)))
 (define path-convention
@@ -17314,13 +17350,7 @@
      (if (1/path?_2312 s)
        (path-convention_2368 s)
        ($value
-        (impersonate-ref
-         path-convention_2368
-         struct:path
-         1
-         s
-         'path
-         'convention))))))
+        (impersonate-ref path-convention_2368 struct:path 1 s 'convention))))))
 (define is-path?
   (|#%name|
    path?
@@ -18937,7 +18967,6 @@
          struct:bytes-output-port-methods.1
          0
          s
-         'bytes-output-port-methods
          'get-length))))))
 (define bytes-output-port-methods-get-bytes.1_2698
   (|#%name|
@@ -18955,7 +18984,6 @@
          struct:bytes-output-port-methods.1
          1
          s
-         'bytes-output-port-methods
          'get-bytes))))))
 (define bytes-output-port-vtable.1
   (let ((app_0 (core-port-methods-close.1 core-output-port-vtable.1)))
@@ -20624,7 +20652,6 @@
          struct:as-constructor
          0
          s
-         'as-constructor
          'tag))))))
 (define build-graph
   (lambda (v_0 ht_0 print-graph?_0 mode_0 config_0)
@@ -21753,9 +21780,9 @@
 (define install-do-global-print!
   (lambda (param_0 default-value_0)
     (set! do-global-print
-      (let ((...rc/io/print/main.rkt:123:8_0
+      (let ((...rc/io/print/main.rkt:124:8_0
              (|#%name|
-              ...rc/io/print/main.rkt:123:8
+              ...rc/io/print/main.rkt:124:8
               (lambda (who34_0 v35_0 o36_0 quote-depth-in32_0 max-length33_0)
                 (begin
                   (let ((quote-depth-in_0
@@ -21823,25 +21850,25 @@
                                            bstr_1)))))))))))
                         (void)))))))))
         (|#%name|
-         ...rc/io/print/main.rkt:123:8
+         ...rc/io/print/main.rkt:124:8
          (case-lambda
           ((who_0 v_0 o_0)
            (begin
-             (...rc/io/print/main.rkt:123:8_0
+             (...rc/io/print/main.rkt:124:8_0
               who_0
               v_0
               o_0
               unsafe-undefined
               #f)))
           ((who_0 v_0 o_0 quote-depth-in_0 max-length33_0)
-           (...rc/io/print/main.rkt:123:8_0
+           (...rc/io/print/main.rkt:124:8_0
             who_0
             v_0
             o_0
             quote-depth-in_0
             max-length33_0))
           ((who_0 v_0 o_0 quote-depth-in32_0)
-           (...rc/io/print/main.rkt:123:8_0
+           (...rc/io/print/main.rkt:124:8_0
             who_0
             v_0
             o_0
@@ -22375,20 +22402,25 @@
   (lambda (who_0 v_0)
     (raise
      (let ((app_0
-            (let ((app_0 (symbol->immutable-string who_0)))
-              (string-append
-               app_0
-               ": printing disabled for unreadable value"
-               "\n  value: "
-               (with-continuation-mark*
-                push-authentic
-                parameterization-key
-                (extend-parameterization
-                 (continuation-mark-set-first #f parameterization-key)
-                 1/print-unreadable
-                 #t)
-                (let ((app_1 (error-value->string-handler)))
-                  (|#%app| app_1 v_0 (error-print-width))))))))
+            (let ((msg_0
+                   (string-append
+                    "printing disabled for unreadable value"
+                    "\n  value: "
+                    (with-continuation-mark*
+                     push-authentic
+                     parameterization-key
+                     (extend-parameterization
+                      (continuation-mark-set-first #f parameterization-key)
+                      1/print-unreadable
+                      #t)
+                     (let ((app_0 (error-value->string-handler)))
+                       (|#%app| app_0 v_0 (error-print-width)))))))
+              (begin-unsafe
+               (error-message->adjusted-string
+                who_0
+                'racket/primitive
+                msg_0
+                'racket/primitive)))))
        (|#%app| exn:fail app_0 (current-continuation-marks))))))
 (define check-unreadable
   (lambda (who_0 config_0 mode_0 v_0)
@@ -23624,7 +23656,6 @@
          struct:starting-point
          0
          s
-         'starting-point
          'kind))))))
 (define starting-point-bstr_2482
   (|#%name| starting-point-bstr (record-accessor struct:starting-point 1)))
@@ -23640,7 +23671,6 @@
          struct:starting-point
          1
          s
-         'starting-point
          'bstr))))))
 (define starting-point-len_2128
   (|#%name| starting-point-len (record-accessor struct:starting-point 2)))
@@ -23656,7 +23686,6 @@
          struct:starting-point
          2
          s
-         'starting-point
          'len))))))
 (define starting-point-orig-len_2772
   (|#%name| starting-point-orig-len (record-accessor struct:starting-point 3)))
@@ -23672,7 +23701,6 @@
          struct:starting-point
          3
          s
-         'starting-point
          'orig-len))))))
 (define starting-point-extra-sep_1722
   (|#%name|
@@ -23690,7 +23718,6 @@
          struct:starting-point
          4
          s
-         'starting-point
          'extra-sep))))))
 (define starting-point-add-ups?_2423
   (|#%name| starting-point-add-ups? (record-accessor struct:starting-point 5)))
@@ -23706,7 +23733,6 @@
          struct:starting-point
          5
          s
-         'starting-point
          'add-ups?))))))
 (define starting-point-drive?_2742
   (|#%name| starting-point-drive? (record-accessor struct:starting-point 6)))
@@ -23722,7 +23748,6 @@
          struct:starting-point
          6
          s
-         'starting-point
          'drive?))))))
 (define make-starting-point.1
   (|#%name|
@@ -25625,7 +25650,6 @@
          struct:security-guard
          0
          s
-         'security-guard
          'parent))))))
 (define security-guard-file-guard_2311
   (|#%name|
@@ -25643,7 +25667,6 @@
          struct:security-guard
          1
          s
-         'security-guard
          'file-guard))))))
 (define security-guard-network-guard_2285
   (|#%name|
@@ -25661,7 +25684,6 @@
          struct:security-guard
          2
          s
-         'security-guard
          'network-guard))))))
 (define security-guard-link-guard_2431
   (|#%name|
@@ -25679,7 +25701,6 @@
          struct:security-guard
          3
          s
-         'security-guard
          'link-guard))))))
 (define root-security-guard (security-guard1.1 #f void void void))
 (define 1/current-security-guard
@@ -26757,10 +26778,19 @@
                                  (begin-unsafe
                                   (raise
                                    (let ((app_0
-                                          (format-rktio-message
-                                           'port-try-file-lock?
-                                           r_0
-                                           base-msg_0)))
+                                          (begin-unsafe
+                                           (let ((msg_0
+                                                  (string-append
+                                                   base-msg_0
+                                                   "\n  system error: "
+                                                   (format-rktio-system-error-message
+                                                    r_0))))
+                                             (begin-unsafe
+                                              (error-message->adjusted-string
+                                               'port-try-file-lock?
+                                               'racket/primitive
+                                               msg_0
+                                               'racket/primitive))))))
                                      (|#%app|
                                       exn:fail
                                       app_0
@@ -26797,10 +26827,19 @@
                          (begin-unsafe
                           (raise
                            (let ((app_0
-                                  (format-rktio-message
-                                   'port-file-unlock
-                                   r_0
-                                   base-msg_0)))
+                                  (begin-unsafe
+                                   (let ((msg_0
+                                          (string-append
+                                           base-msg_0
+                                           "\n  system error: "
+                                           (format-rktio-system-error-message
+                                            r_0))))
+                                     (begin-unsafe
+                                      (error-message->adjusted-string
+                                       'port-file-unlock
+                                       'racket/primitive
+                                       msg_0
+                                       'racket/primitive))))))
                              (|#%app|
                               exn:fail
                               app_0
@@ -30252,13 +30291,17 @@
                                  (if (hash-ref seen_0 from-base_0 #f)
                                    (raise
                                     (let ((app_0
-                                           (let ((app_0
-                                                  (symbol->string who_0)))
-                                             (string-append
-                                              app_0
-                                              ": cycle detected at link"
-                                              "\n  link path: "
-                                              (path->string new-base_0)))))
+                                           (let ((msg_0
+                                                  (string-append
+                                                   "cycle detected at link"
+                                                   "\n  link path: "
+                                                   (path->string new-base_0))))
+                                             (begin-unsafe
+                                              (error-message->adjusted-string
+                                               who_0
+                                               'racket/primitive
+                                               msg_0
+                                               'racket/primitive)))))
                                       (|#%app|
                                        exn:fail:filesystem
                                        app_0
@@ -30546,10 +30589,19 @@
                                         (begin-unsafe
                                          (raise
                                           (let ((app_0
-                                                 (format-rktio-message
-                                                  'environment-variables-set!
-                                                  r_0
-                                                  base-msg_0)))
+                                                 (begin-unsafe
+                                                  (let ((msg_0
+                                                         (string-append
+                                                          base-msg_0
+                                                          "\n  system error: "
+                                                          (format-rktio-system-error-message
+                                                           r_0))))
+                                                    (begin-unsafe
+                                                     (error-message->adjusted-string
+                                                      'environment-variables-set!
+                                                      'racket/primitive
+                                                      msg_0
+                                                      'racket/primitive))))))
                                             (|#%app|
                                              exn:fail
                                              app_0
@@ -30866,7 +30918,19 @@
             (let ((base-msg_0 "path lookup failed"))
               (begin-unsafe
                (raise
-                (let ((app_0 (format-rktio-message who_0 s_0 base-msg_0)))
+                (let ((app_0
+                       (begin-unsafe
+                        (let ((msg_0
+                               (string-append
+                                base-msg_0
+                                "\n  system error: "
+                                (format-rktio-system-error-message s_0))))
+                          (begin-unsafe
+                           (error-message->adjusted-string
+                            who_0
+                            'racket/primitive
+                            msg_0
+                            'racket/primitive))))))
                   (|#%app| exn:fail app_0 (current-continuation-marks)))))))
           (let ((bstr_0 (|#%app| rktio_to_bytes s_0)))
             (begin
@@ -32144,13 +32208,7 @@
      (if (1/logger?_2836 s)
        (logger-topic_2043 s)
        ($value
-        (impersonate-ref
-         logger-topic_2043
-         struct:logger
-         0
-         s
-         'logger
-         'topic))))))
+        (impersonate-ref logger-topic_2043 struct:logger 0 s 'topic))))))
 (define logger-parent_2124
   (|#%name| logger-parent (record-accessor struct:logger 1)))
 (define logger-parent
@@ -32160,13 +32218,7 @@
      (if (1/logger?_2836 s)
        (logger-parent_2124 s)
        ($value
-        (impersonate-ref
-         logger-parent_2124
-         struct:logger
-         1
-         s
-         'logger
-         'parent))))))
+        (impersonate-ref logger-parent_2124 struct:logger 1 s 'parent))))))
 (define logger-propagate-filters_2354
   (|#%name| logger-propagate-filters (record-accessor struct:logger 2)))
 (define logger-propagate-filters
@@ -32181,7 +32233,6 @@
          struct:logger
          2
          s
-         'logger
          'propagate-filters))))))
 (define logger-receiver-box+backrefs_2574
   (|#%name| logger-receiver-box+backrefs (record-accessor struct:logger 3)))
@@ -32197,7 +32248,6 @@
          struct:logger
          3
          s
-         'logger
          'receiver-box+backrefs))))))
 (define logger-prune-counter_2638
   (|#%name| logger-prune-counter (record-accessor struct:logger 4)))
@@ -32213,7 +32263,6 @@
          struct:logger
          4
          s
-         'logger
          'prune-counter))))))
 (define logger-permanent-receivers_3109
   (|#%name| logger-permanent-receivers (record-accessor struct:logger 5)))
@@ -32229,7 +32278,6 @@
          struct:logger
          5
          s
-         'logger
          'permanent-receivers))))))
 (define logger-max-receiver-level_2792
   (|#%name| logger-max-receiver-level (record-accessor struct:logger 6)))
@@ -32245,7 +32293,6 @@
          struct:logger
          6
          s
-         'logger
          'max-receiver-level))))))
 (define logger-topic-level-cache_2239
   (|#%name| logger-topic-level-cache (record-accessor struct:logger 7)))
@@ -32261,7 +32308,6 @@
          struct:logger
          7
          s
-         'logger
          'topic-level-cache))))))
 (define logger-local-level-timestamp_2442
   (|#%name| logger-local-level-timestamp (record-accessor struct:logger 8)))
@@ -32277,7 +32323,6 @@
          struct:logger
          8
          s
-         'logger
          'local-level-timestamp))))))
 (define logger-root-level-timestamp-box_2700
   (|#%name| logger-root-level-timestamp-box (record-accessor struct:logger 9)))
@@ -32293,7 +32338,6 @@
          struct:logger
          9
          s
-         'logger
          'root-level-timestamp-box))))))
 (define logger-level-sema-box_2755
   (|#%name| logger-level-sema-box (record-accessor struct:logger 10)))
@@ -32309,7 +32353,6 @@
          struct:logger
          10
          s
-         'logger
          'level-sema-box))))))
 (define set-logger-receiver-box+backrefs!_2144
   (|#%name|
@@ -32329,7 +32372,6 @@
          3
          s
          v
-         'logger
          'receiver-box+backrefs))))))
 (define set-logger-prune-counter!_2916
   (|#%name| set-logger-prune-counter! (record-mutator struct:logger 4)))
@@ -32347,7 +32389,6 @@
          4
          s
          v
-         'logger
          'prune-counter))))))
 (define set-logger-permanent-receivers!_2219
   (|#%name| set-logger-permanent-receivers! (record-mutator struct:logger 5)))
@@ -32365,7 +32406,6 @@
          5
          s
          v
-         'logger
          'permanent-receivers))))))
 (define set-logger-max-receiver-level!_2599
   (|#%name| set-logger-max-receiver-level! (record-mutator struct:logger 6)))
@@ -32383,7 +32423,6 @@
          6
          s
          v
-         'logger
          'max-receiver-level))))))
 (define set-logger-local-level-timestamp!_2922
   (|#%name|
@@ -32403,7 +32442,6 @@
          8
          s
          v
-         'logger
          'local-level-timestamp))))))
 (define 1/logger-name
   (|#%name|
@@ -32721,7 +32759,6 @@
          struct:log-receiver
          0
          s
-         'log-receiver
          'filters))))))
 (define-values
  (prop:receiver-send receiver-send? receiver-send-ref)
@@ -32833,7 +32870,6 @@
          struct:queue-log-receiver
          0
          s
-         'log-receiver
          'msgs))))))
 (define queue-log-receiver-waiters_2361
   (|#%name|
@@ -32851,7 +32887,6 @@
          struct:queue-log-receiver
          1
          s
-         'log-receiver
          'waiters))))))
 (define queue-log-receiver-backref_2724
   (|#%name|
@@ -32869,7 +32904,6 @@
          struct:queue-log-receiver
          2
          s
-         'log-receiver
          'backref))))))
 (define 1/make-log-receiver
   (|#%name|
@@ -32997,7 +33031,6 @@
          struct:stdio-log-receiver
          0
          s
-         'stdio-log-receiver
          'rktio))))))
 (define stdio-log-receiver-which_2480
   (|#%name|
@@ -33015,7 +33048,6 @@
          struct:stdio-log-receiver
          1
          s
-         'stdio-log-receiver
          'which))))))
 (define add-stdio-log-receiver!
   (lambda (who_0 logger_0 args_0 parse-who_0 which_0)
@@ -33134,7 +33166,6 @@
          struct:syslog-log-receiver
          0
          s
-         'syslog-log-receiver
          'rktio))))))
 (define syslog-log-receiver-cmd_2652
   (|#%name|
@@ -33152,7 +33183,6 @@
          struct:syslog-log-receiver
          1
          s
-         'syslog-log-receiver
          'cmd))))))
 (define add-syslog-log-receiver!
   (lambda (logger_0 . args_0)
@@ -34099,7 +34129,6 @@
          struct:fs-change-evt
          0
          s
-         'filesystem-change-evt
          'rfc))))))
 (define fs-change-evt-cust-ref_2823
   (|#%name|
@@ -34117,7 +34146,6 @@
          struct:fs-change-evt
          1
          s
-         'filesystem-change-evt
          'cust-ref))))))
 (define set-fs-change-evt-rfc!_3343
   (|#%name|
@@ -34137,7 +34165,6 @@
          0
          s
          v
-         'filesystem-change-evt
          'rfc))))))
 (define set-fs-change-evt-cust-ref!_2399
   (|#%name|
@@ -34157,7 +34184,6 @@
          1
          s
          v
-         'filesystem-change-evt
          'cust-ref))))))
 (define 1/filesystem-change-evt?
   (|#%name|
@@ -34242,10 +34268,18 @@
                                 (|#%app| fail2_0)
                                 (if (racket-error? rfc_0 1)
                                   (raise
-                                   (|#%app|
-                                    exn:fail:unsupported
-                                    "filesystem-change-evt: unsupported"
-                                    (current-continuation-marks)))
+                                   (let ((app_0
+                                          (let ((msg_0 "unsupported"))
+                                            (begin-unsafe
+                                             (error-message->adjusted-string
+                                              'filesystem-change-evt
+                                              'racket/primitive
+                                              msg_0
+                                              'racket/primitive)))))
+                                     (|#%app|
+                                      exn:fail:unsupported
+                                      app_0
+                                      (current-continuation-marks))))
                                   (raise-filesystem-error
                                    'filesystem-change-evt
                                    rfc_0
@@ -34596,7 +34630,6 @@
          struct:subprocess
          0
          s
-         'subprocess
          'process))))))
 (define subprocess-cust-ref_2827
   (|#%name| subprocess-cust-ref (record-accessor struct:subprocess 1)))
@@ -34612,7 +34645,6 @@
          struct:subprocess
          1
          s
-         'subprocess
          'cust-ref))))))
 (define subprocess-is-group?_2132
   (|#%name| subprocess-is-group? (record-accessor struct:subprocess 2)))
@@ -34628,7 +34660,6 @@
          struct:subprocess
          2
          s
-         'subprocess
          'is-group?))))))
 (define set-subprocess-process!_1881
   (|#%name| set-subprocess-process! (record-mutator struct:subprocess 0)))
@@ -34646,7 +34677,6 @@
          0
          s
          v
-         'subprocess
          'process))))))
 (define set-subprocess-cust-ref!_2630
   (|#%name| set-subprocess-cust-ref! (record-mutator struct:subprocess 1)))
@@ -34664,7 +34694,6 @@
          1
          s
          v
-         'subprocess
          'cust-ref))))))
 (define do-subprocess
   (|#%name|
@@ -34710,11 +34739,11 @@
                 'subprocess
                 "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                 stderr_0))
-             (let ((lr1346 unsafe-undefined)
+             (let ((lr1421 unsafe-undefined)
                    (group_0 unsafe-undefined)
                    (command_0 unsafe-undefined)
                    (exact/args_0 unsafe-undefined))
-               (set! lr1346
+               (set! lr1421
                  (call-with-values
                   (lambda ()
                     (if (path-string? group/command_0)
@@ -34769,9 +34798,9 @@
                    ((group_1 command_1 exact/args_1)
                     (vector group_1 command_1 exact/args_1))
                    (args (raise-binding-result-arity-error 3 args)))))
-               (set! group_0 (unsafe-vector*-ref lr1346 0))
-               (set! command_0 (unsafe-vector*-ref lr1346 1))
-               (set! exact/args_0 (unsafe-vector*-ref lr1346 2))
+               (set! group_0 (unsafe-vector*-ref lr1421 0))
+               (set! command_0 (unsafe-vector*-ref lr1421 1))
+               (set! exact/args_0 (unsafe-vector*-ref lr1421 2))
                (call-with-values
                 (lambda ()
                   (if (if (pair? exact/args_0)
@@ -35062,10 +35091,19 @@
                                                                           (begin-unsafe
                                                                            (raise
                                                                             (let ((app_0
-                                                                                   (format-rktio-message
-                                                                                    'subprocess
-                                                                                    r_0
-                                                                                    base-msg_0)))
+                                                                                   (begin-unsafe
+                                                                                    (let ((msg_0
+                                                                                           (string-append
+                                                                                            base-msg_0
+                                                                                            "\n  system error: "
+                                                                                            (format-rktio-system-error-message
+                                                                                             r_0))))
+                                                                                      (begin-unsafe
+                                                                                       (error-message->adjusted-string
+                                                                                        'subprocess
+                                                                                        'racket/primitive
+                                                                                        msg_0
+                                                                                        'racket/primitive))))))
                                                                               (|#%app|
                                                                                exn:fail
                                                                                app_0
@@ -35183,10 +35221,18 @@
                    (begin-unsafe
                     (raise
                      (let ((app_0
-                            (format-rktio-message
-                             'subprocess-status
-                             r_0
-                             base-msg_0)))
+                            (begin-unsafe
+                             (let ((msg_0
+                                    (string-append
+                                     base-msg_0
+                                     "\n  system error: "
+                                     (format-rktio-system-error-message r_0))))
+                               (begin-unsafe
+                                (error-message->adjusted-string
+                                 'subprocess-status
+                                 'racket/primitive
+                                 msg_0
+                                 'racket/primitive))))))
                        (|#%app|
                         exn:fail
                         app_0
@@ -35377,10 +35423,19 @@
                          (begin-unsafe
                           (raise
                            (let ((app_0
-                                  (format-rktio-message
-                                   'shell-execute
-                                   r_0
-                                   base-msg_0)))
+                                  (begin-unsafe
+                                   (let ((msg_0
+                                          (string-append
+                                           base-msg_0
+                                           "\n  system error: "
+                                           (format-rktio-system-error-message
+                                            r_0))))
+                                     (begin-unsafe
+                                      (error-message->adjusted-string
+                                       'shell-execute
+                                       'racket/primitive
+                                       msg_0
+                                       'racket/primitive))))))
                              (|#%app|
                               exn:fail
                               app_0
@@ -35405,7 +35460,19 @@
 (define raise-network-error
   (lambda (who_0 orig-err_0 base-msg_0)
     (let ((err_0 (remap-rktio-error orig-err_0)))
-      (let ((msg_0 (format-rktio-message who_0 err_0 base-msg_0)))
+      (let ((msg_0
+             (begin-unsafe
+              (let ((msg_0
+                     (string-append
+                      base-msg_0
+                      "\n  system error: "
+                      (format-rktio-system-error-message err_0))))
+                (begin-unsafe
+                 (error-message->adjusted-string
+                  who_0
+                  'racket/primitive
+                  msg_0
+                  'racket/primitive))))))
         (raise
          (if (not (eq? (begin-unsafe (vector-ref err_0 0)) 3))
            (let ((app_0 (current-continuation-marks)))
@@ -35438,14 +35505,18 @@
          socket-str_0))
       (raise
        (let ((app_0
-              (let ((app_0 (symbol->string who_0)))
-                (string-append
-                 app_0
-                 ": "
-                 msg_0
-                 "\n  socket: "
-                 (let ((app_1 (error-value->string-handler)))
-                   (|#%app| app_1 u_0 (error-print-width)))))))
+              (let ((msg_1
+                     (string-append
+                      msg_0
+                      "\n  socket: "
+                      (let ((app_0 (error-value->string-handler)))
+                        (|#%app| app_0 u_0 (error-print-width))))))
+                (begin-unsafe
+                 (error-message->adjusted-string
+                  who_0
+                  'racket/primitive
+                  msg_1
+                  'racket/primitive)))))
          (|#%app| exn:fail:network app_0 (current-continuation-marks)))))))
 (define raise-network-option-error
   (lambda (who_0 mode_0 v_0)
@@ -36452,7 +36523,6 @@
          struct:tcp-listener
          0
          s
-         'tcp-listener
          'lnr))))))
 (define tcp-listener-closed_2540
   (|#%name| tcp-listener-closed (record-accessor struct:tcp-listener 1)))
@@ -36468,7 +36538,6 @@
          struct:tcp-listener
          1
          s
-         'tcp-listener
          'closed))))))
 (define tcp-listener-custodian-reference_2721
   (|#%name|
@@ -36486,7 +36555,6 @@
          struct:tcp-listener
          2
          s
-         'tcp-listener
          'custodian-reference))))))
 (define 1/tcp-listen
   (let ((tcp-listen_0
@@ -36897,7 +36965,6 @@
          struct:accept-evt
          0
          s
-         'tcp-accept-evt
          'listener))))))
 (define error-result
   (lambda (thunk_0)
@@ -38650,10 +38717,17 @@
   (lambda (who_0 size_0)
     (raise
      (let ((app_0
-            (1/format
-             (string-append "~a: given size is too large\n" "  given size: ~e")
-             who_0
-             size_0)))
+            (let ((msg_0
+                   (string-append
+                    "given size is too large\n"
+                    "  given size: "
+                    (number->string size_0))))
+              (begin-unsafe
+               (error-message->adjusted-string
+                who_0
+                'racket/primitive
+                msg_0
+                'racket/primitive)))))
        (|#%app| exn:fail:network app_0 (current-continuation-marks))))))
 (define 1/udp-multicast-join-group!
   (|#%name|
@@ -39102,13 +39176,17 @@
                       (if err-str_0
                         (raise
                          (let ((app_0
-                                (let ((app_0 (symbol->string who_0)))
-                                  (string-append
-                                   app_0
-                                   ": "
-                                   msg_0
-                                   "\n  system error: "
-                                   (->string err-str_0)))))
+                                (let ((msg_1
+                                       (string-append
+                                        msg_0
+                                        "\n  system error: "
+                                        (->string err-str_0))))
+                                  (begin-unsafe
+                                   (error-message->adjusted-string
+                                    who_0
+                                    'racket/primitive
+                                    msg_1
+                                    'racket/primitive)))))
                            (|#%app|
                             exn:fail:filesystem
                             app_0
@@ -39129,13 +39207,17 @@
     (if err-str_0
       (raise
        (let ((app_0
-              (let ((app_0 (symbol->string who_0)))
-                (string-append
-                 app_0
-                 ": "
-                 msg_0
-                 "\n  system error: "
-                 (->string err-str_0)))))
+              (let ((msg_1
+                     (string-append
+                      msg_0
+                      "\n  system error: "
+                      (->string err-str_0))))
+                (begin-unsafe
+                 (error-message->adjusted-string
+                  who_0
+                  'racket/primitive
+                  msg_1
+                  'racket/primitive)))))
          (|#%app| exn:fail:filesystem app_0 (current-continuation-marks))))
       (raise-filesystem-error who_0 v_0 msg_0))))
 (define ->string
@@ -39150,10 +39232,16 @@
         (void)
         (raise-argument-error 'default-load-extension "symbol?" sym_0))
       (raise
-       (|#%app|
-        exn:fail:unsupported
-        "default-load-extension: extensions are not supported"
-        (current-continuation-marks))))))
+       (let ((app_0
+              (let ((who_0 "default-load-extension"))
+                (let ((msg_0 "extensions are not supported"))
+                  (begin-unsafe
+                   (error-message->adjusted-string
+                    who_0
+                    'racket/primitive
+                    msg_0
+                    'racket/primitive))))))
+         (|#%app| exn:fail:unsupported app_0 (current-continuation-marks)))))))
 (define 1/current-load-extension
   (make-parameter
    default-load-extension
@@ -39201,10 +39289,19 @@
                                 (begin-unsafe
                                  (raise
                                   (let ((app_0
-                                         (format-rktio-message
-                                          'seconds->date
-                                          dt_0
-                                          base-msg_0)))
+                                         (begin-unsafe
+                                          (let ((msg_0
+                                                 (string-append
+                                                  base-msg_0
+                                                  "\n  system error: "
+                                                  (format-rktio-system-error-message
+                                                   dt_0))))
+                                            (begin-unsafe
+                                             (error-message->adjusted-string
+                                              'seconds->date
+                                              'racket/primitive
+                                              msg_0
+                                              'racket/primitive))))))
                                     (|#%app|
                                      exn:fail
                                      app_0
@@ -39686,10 +39783,18 @@
               (begin-unsafe
                (raise
                 (let ((app_0
-                       (format-rktio-message
-                        'dynamic-place
-                        new-fd_0
-                        base-msg_0)))
+                       (begin-unsafe
+                        (let ((msg_0
+                               (string-append
+                                base-msg_0
+                                "\n  system error: "
+                                (format-rktio-system-error-message new-fd_0))))
+                          (begin-unsafe
+                           (error-message->adjusted-string
+                            'dynamic-place
+                            'racket/primitive
+                            msg_0
+                            'racket/primitive))))))
                   (|#%app| exn:fail app_0 (current-continuation-marks)))))))
           (void))
         new-fd_0))))
@@ -39705,7 +39810,18 @@
               (begin-unsafe
                (raise
                 (let ((app_0
-                       (format-rktio-message 'dynamic-place p_0 base-msg_0)))
+                       (begin-unsafe
+                        (let ((msg_0
+                               (string-append
+                                base-msg_0
+                                "\n  system error: "
+                                (format-rktio-system-error-message p_0))))
+                          (begin-unsafe
+                           (error-message->adjusted-string
+                            'dynamic-place
+                            'racket/primitive
+                            msg_0
+                            'racket/primitive))))))
                   (|#%app| exn:fail app_0 (current-continuation-marks)))))))
           (void))
         (call-with-values

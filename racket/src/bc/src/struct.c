@@ -134,6 +134,9 @@ static Scheme_Object *chaperone_prop_getter_p(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *make_struct_proc(Scheme_Struct_Type *struct_type, char *func_name,
 				       Scheme_ProcT proc_type, int field_num);
+static Scheme_Object *make_struct_proc_for_realm(Scheme_Struct_Type *struct_type,
+                                                 char *func_name, Scheme_Object *realm, Scheme_Object *contract,
+                                                 Scheme_ProcT proc_type, int field_num);
 
 static Scheme_Object *make_name(const char *pre, const char *tn, int tnl, const char *post1,
 				const char *fn, int fnl, const char *post2, int sym);
@@ -485,7 +488,7 @@ scheme_init_struct (Scheme_Startup_Env *env)
   REGISTER_SO(scheme_make_struct_field_accessor_proc);
   scheme_make_struct_field_accessor_proc = scheme_make_prim_w_arity(make_struct_field_accessor,
                                                                     "make-struct-field-accessor",
-                                                                    2, 3);
+                                                                    2, 5);
   scheme_addto_prim_instance("make-struct-field-accessor",
                              scheme_make_struct_field_accessor_proc,
 			     env);
@@ -493,7 +496,7 @@ scheme_init_struct (Scheme_Startup_Env *env)
   REGISTER_SO(scheme_make_struct_field_mutator_proc);
   scheme_make_struct_field_mutator_proc = scheme_make_prim_w_arity(make_struct_field_mutator,
                                                                    "make-struct-field-mutator",
-                                                                   2, 3);
+                                                                   2, 5);
   scheme_addto_prim_instance("make-struct-field-mutator",
 			     scheme_make_struct_field_mutator_proc,
 			     env);
@@ -1461,7 +1464,32 @@ static int extract_accessor_offset(Scheme_Object *acc)
 
 static char *extract_field_proc_name(Scheme_Object *prim)
 {
-  return (char *)SCHEME_PRIM_CLOSURE_ELS(prim)[2];
+  return (char *)((Scheme_Closed_Primitive_Proc *)prim)->name;
+}
+
+static char *extract_field_proc_name_and_realm(Scheme_Object *st_name, Scheme_Object *prim, char **_pred_name, Scheme_Object **_realm)
+{
+  Scheme_Object *name_info;
+  char *pred_name;
+    
+  name_info = SCHEME_PRIM_CLOSURE_ELS(prim)[2];
+  if (SCHEME_SYMBOLP(name_info)) {
+    *_realm = name_info;
+    pred_name = pred_name_string(st_name);    
+  } else {
+    *_realm = SCHEME_CAR(name_info);
+    name_info = SCHEME_CDR(name_info);
+    if (SCHEME_SYMBOLP(name_info))
+      pred_name = scheme_symbol_val(name_info);
+    else {
+      name_info = scheme_char_string_to_byte_string(name_info);
+      pred_name = SCHEME_BYTE_STR_VAL(name_info);
+    }
+  }
+
+  *_pred_name = pred_name;
+
+  return extract_field_proc_name(prim);
 }
 
 typedef int (*Check_Val_Proc)(Scheme_Object *);
@@ -1960,23 +1988,29 @@ Scheme_Object *scheme_extract_checked_procedure(int argc, Scheme_Object **argv)
 /*                             struct ops                                 */
 /*========================================================================*/
 
-static void wrong_struct_type(char *name, 
+static void wrong_struct_type(Scheme_Object *prim, 
 			      Scheme_Object *expected,
 			      Scheme_Object *received,
 			      int which, int argc,
 			      Scheme_Object **argv)
 {
+  char *name, *pred_name;
+  Scheme_Object *realm;
+  
+  name = extract_field_proc_name_and_realm(expected, prim, &pred_name, &realm);
+  
   if (SAME_OBJ(expected, received))
-    scheme_contract_error(name,
+    scheme_contract_error(SCHEME_NAME_PLUS_REALM_ARGUMENTS,
                           "contract violation;\n"
                           " given value instantiates a different structure type with the same name",
-                          "expected", 0, pred_name_string(expected),
+                          name, realm,
+                          "expected", 0, pred_name,
                           "given", 1, argv[which],
                           NULL);
   else
-    scheme_wrong_contract(name,
-                          pred_name_string(expected), 
-                          which, argc, argv);
+    scheme_wrong_contract_for_realm(name, realm,
+                                    pred_name, 
+                                    which, argc, argv);
 }
 
 #define STRUCT_TYPEP(st, v) \
@@ -2614,12 +2648,13 @@ Scheme_Object *scheme_struct_getter(int argc, Scheme_Object **args, Scheme_Objec
     inst = (Scheme_Structure *)SCHEME_CHAPERONE_VAL((Scheme_Object *)inst);
 
   if (!SCHEME_STRUCTP(((Scheme_Object *)inst))) {
-    scheme_wrong_contract(extract_field_proc_name(prim), 
-                          pred_name_string(st->name), 
-                          0, argc, args);
+    char *name, *pred_name;
+    Scheme_Object *realm;
+    name = extract_field_proc_name_and_realm(st->name, prim, &pred_name, &realm);
+    scheme_wrong_contract_for_realm(name, realm, pred_name, 0, argc, args);
     return NULL;
   } else if (!STRUCT_TYPEP(st, inst)) {
-    wrong_struct_type(extract_field_proc_name(prim), 
+    wrong_struct_type(prim,
 		      st->name, 
 		      SCHEME_STRUCT_NAME_SYM(inst), 
 		      0, argc, args);
@@ -2649,14 +2684,15 @@ Scheme_Object *scheme_struct_setter(int argc, Scheme_Object **args, Scheme_Objec
     inst = (Scheme_Structure *)SCHEME_CHAPERONE_VAL((Scheme_Object *)inst);
 
   if (!SCHEME_STRUCTP(((Scheme_Object *)inst))) {
-    scheme_wrong_contract(extract_field_proc_name(prim),
-                          pred_name_string(st->name), 
-                          0, argc, args);
+    char *name, *pred_name;
+    Scheme_Object *realm;
+    name = extract_field_proc_name_and_realm(st->name, prim, &pred_name, &realm);
+    scheme_wrong_contract_for_realm(name, realm, pred_name, 0, argc, args);
     return NULL;
   }
 	
   if (!STRUCT_TYPEP(st, inst)) {
-    wrong_struct_type(extract_field_proc_name(prim),
+    wrong_struct_type(prim,
 		      st->name, 
 		      SCHEME_STRUCT_NAME_SYM(inst),
 		      0, argc, args);
@@ -3606,6 +3642,7 @@ static Scheme_Object *make_struct_field_xxor(const char *who, int getter,
   char digitbuf[20];
   int fieldstrlen;
   Scheme_Struct_Type *st;
+  Scheme_Object *realm = scheme_default_realm, *contract = NULL;
 
   /* We don't allow chaperones on the getter or setter procedure, because we
      can't preserve them in the generated procedure. */
@@ -3634,30 +3671,56 @@ static Scheme_Object *make_struct_field_xxor(const char *who, int getter,
       fieldstr = scheme_symbol_val(argv[2]);
       fieldstrlen = SCHEME_SYM_LEN(argv[2]);
     }
+    if (argc > 3) {
+      if (SCHEME_FALSEP(argv[3])) {
+        name = NULL;
+      } else {
+        name = (char *)fieldstr;
+        if (!SCHEME_SYMBOLP(argv[3]) && !SCHEME_CHAR_STRINGP(argv[3]))
+          scheme_wrong_contract(who, "(or/c symbol? string? #f)", 3, argc, argv);
+        contract = argv[3];
+        if (argc > 4) {
+          if (!SCHEME_SYMBOLP(argv[4]))
+            scheme_wrong_contract(who, "symbol?", 4, argc, argv);
+          realm = argv[4];
+        }
+      }
+    } else {
+      name = NULL;
+    }
   } else {
+    fieldstr = NULL;
+    fieldstrlen = 0;
+    name = NULL;
+  }
+
+  if (!name && !fieldstr) {
     sprintf(digitbuf, "field%d", (int)SCHEME_INT_VAL(argv[1]));
     fieldstr = digitbuf;
     fieldstrlen = strlen(fieldstr);
+    name = NULL;
   }
 
   st = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(argv[0])[0];
 
-  if (!fieldstr) {
-    if (getter)
-      name = "accessor";
-    else
-      name = "mutator";
-  } else if (getter) {
-    name = (char *)GET_NAME((char *)st->name, -1,
-			    fieldstr, fieldstrlen, 0);
-  } else {
-    name = (char *)SET_NAME((char *)st->name, -1,
-			    fieldstr, fieldstrlen, 0);
+  if (!name) {
+    if (!fieldstr) {
+      if (getter)
+        name = "accessor";
+      else
+        name = "mutator";
+    } else if (getter) {
+      name = (char *)GET_NAME((char *)st->name, -1,
+                              fieldstr, fieldstrlen, 0);
+    } else {
+      name = (char *)SET_NAME((char *)st->name, -1,
+                              fieldstr, fieldstrlen, 0);
+    }
   }
 
-  return make_struct_proc(st, 
-			  name, 
-			  (getter ? SCHEME_GETTER : SCHEME_SETTER), pos);
+  return make_struct_proc_for_realm(st, 
+                                    name, realm, contract,
+                                    (getter ? SCHEME_GETTER : SCHEME_SETTER), pos);
 }
 
 static Scheme_Object *make_struct_field_accessor(int argc, Scheme_Object *argv[])
@@ -4485,9 +4548,9 @@ Scheme_Object **scheme_make_struct_names_from_array(const char *base,
 }
 
 static Scheme_Object *
-make_struct_proc(Scheme_Struct_Type *struct_type, 
-		 char *func_name, 
-		 Scheme_ProcT proc_type, int field_num)
+make_struct_proc_for_realm(Scheme_Struct_Type *struct_type, 
+                           char *func_name,  Scheme_Object *realm, Scheme_Object *contract,
+                           Scheme_ProcT proc_type, int field_num)
 {
   Scheme_Object *p, *a[3];
   short flags = 0;
@@ -4525,7 +4588,9 @@ make_struct_proc(Scheme_Struct_Type *struct_type,
 
     a[0] = (Scheme_Object *)struct_type;
     a[1] = scheme_make_integer(field_num);
-    a[2] = (Scheme_Object *)func_name;
+    if (contract)
+      realm = scheme_make_pair(realm, contract);
+    a[2] = realm;
 
     if ((proc_type == SCHEME_GETTER) || (proc_type == SCHEME_GEN_GETTER)) {
       p = scheme_make_folding_prim_closure(scheme_struct_getter,
@@ -4568,7 +4633,17 @@ make_struct_proc(Scheme_Struct_Type *struct_type,
   return p;
 }
 
-Scheme_Object *scheme_rename_struct_proc(Scheme_Object *p, Scheme_Object *sym)
+static Scheme_Object *
+make_struct_proc(Scheme_Struct_Type *struct_type, 
+		 char *func_name,
+		 Scheme_ProcT proc_type, int field_num)
+{
+  return make_struct_proc_for_realm(struct_type,
+                                    func_name, scheme_default_realm, NULL,
+                                    proc_type, field_num);
+}
+
+Scheme_Object *scheme_rename_struct_proc(Scheme_Object *p, Scheme_Object *sym, Scheme_Object *realm)
 {
   if (SCHEME_PRIMP(p)) {
     unsigned short flags = ((Scheme_Primitive_Proc *)p)->pp.flags;
@@ -4579,16 +4654,23 @@ Scheme_Object *scheme_rename_struct_proc(Scheme_Object *p, Scheme_Object *sym)
     if (is_getter || is_setter) {
       const char *func_name;
       Scheme_Struct_Type *st;
+      Scheme_Object *contract;
       int field_pos;
       
       func_name = scheme_symbol_name(sym);
 
       st = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(p)[0];
       field_pos = SCHEME_INT_VAL(SCHEME_PRIM_CLOSURE_ELS(p)[1]);
-      
-      return make_struct_proc(st, (char *)func_name, 
-                              is_getter ? SCHEME_GETTER : SCHEME_SETTER,
-                              field_pos);
+
+      contract = SCHEME_PRIM_CLOSURE_ELS(p)[2];
+      if (SCHEME_PAIRP(contract))
+        contract = SCHEME_CDR(contract);
+      else
+        contract = NULL;
+ 
+      return make_struct_proc_for_realm(st, (char *)func_name, realm, contract,
+                                        is_getter ? SCHEME_GETTER : SCHEME_SETTER,
+                                        field_pos);
     }
   }
 

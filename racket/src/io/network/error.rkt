@@ -1,6 +1,7 @@
 #lang racket/base
 (require "../host/rktio.rkt"
-         "../host/error.rkt")
+         "../host/error.rkt"
+         "../error/message.rkt")
 
 (provide raise-network-error
          raise-network-arguments-error
@@ -34,9 +35,10 @@
                           socket-str))
   (raise
    (exn:fail:network
-    (string-append (symbol->string who) ": " msg
-                   "\n  socket: "
-                   ((error-value->string-handler) u (error-print-width)))
+    (error-message->string who
+                           (string-append msg
+                                          "\n  socket: "
+                                          ((error-value->string-handler) u (error-print-width))))
     (current-continuation-marks))))
 
 (define (raise-network-option-error who mode v)

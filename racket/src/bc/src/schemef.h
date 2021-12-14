@@ -199,6 +199,9 @@ MZ_EXTERN Scheme_On_Atomic_Timeout_Proc scheme_set_on_atomic_timeout(Scheme_On_A
 
 MZ_EXTERN MZ_NORETURN void scheme_signal_error(const char *msg, ...);
 MZ_EXTERN MZ_NORETURN void scheme_raise_exn(int exnid, ...);
+MZ_EXTERN MZ_NORETURN void scheme_raise_realm_exn(int exnid,
+                                                  intptr_t name_len, Scheme_Object *name_realm, Scheme_Object *msg_realm,
+                                                  ...);
 MZ_EXTERN void scheme_warning(char *msg, ...);
 
 MZ_EXTERN void scheme_raise(Scheme_Object *exn);
@@ -227,6 +230,7 @@ MZ_EXTERN MZ_NORETURN void scheme_wrong_count_m(const char *name, int minc, int 
 MZ_EXTERN MZ_NORETURN void scheme_case_lambda_wrong_count(const char *name, int argc, Scheme_Object **argv, int is_method, int count, ...);
 MZ_EXTERN MZ_NORETURN void scheme_wrong_type(const char *name, const char *expected, int which, int argc, Scheme_Object **argv);
 MZ_EXTERN MZ_NORETURN void scheme_wrong_contract(const char *name, const char *expected, int which, int argc, Scheme_Object **argv);
+MZ_EXTERN MZ_NORETURN void scheme_wrong_contract_for_realm(const char *name, Scheme_Object *realm, const char *expected, int which, int argc, Scheme_Object **argv);
 MZ_EXTERN MZ_NORETURN void scheme_wrong_field_type(Scheme_Object *c_name, const char *expected, Scheme_Object *o);
 MZ_EXTERN MZ_NORETURN void scheme_wrong_field_contract(Scheme_Object *c_name, const char *expected, Scheme_Object *o);
 MZ_EXTERN MZ_NORETURN void scheme_arg_mismatch(const char *name, const char *msg, Scheme_Object *o);
@@ -355,6 +359,9 @@ MZ_EXTERN Scheme_Object *scheme_extract_one_cc_mark(Scheme_Object *mark_set,
 MZ_EXTERN Scheme_Object *scheme_extract_one_cc_mark_to_tag(Scheme_Object *mark_set, 
                                                            Scheme_Object *key,
                                                            Scheme_Object *prompt_tag);
+MZ_EXTERN Scheme_Object *scheme_extract_cc_mark_list(Scheme_Object *mark_set, 
+                                                     Scheme_Object *key,
+                                                     Scheme_Object *prompt_tag);
 
 /* Internal */
 MZ_EXTERN Scheme_Object *scheme_do_eval(Scheme_Object *obj, int _num_rands, Scheme_Object **rands, int val);
@@ -631,6 +638,7 @@ MZ_EXTERN Scheme_Object *scheme_make_offset_external_cptr(void *cptr, intptr_t o
 MZ_EXTERN int scheme_is_cpointer(Scheme_Object *cp);
 
 MZ_EXTERN const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_error);
+MZ_EXTERN Scheme_Object*scheme_get_proc_realm(Scheme_Object *p);
 
 /*========================================================================*/
 /*                               strings                                  */

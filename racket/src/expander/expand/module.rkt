@@ -412,6 +412,11 @@
                              (hash-ref declared-keywords '#:cross-phase-persistent)))
        (check-cross-phase-persistent-form fully-expanded-bodys-except-post-submodules self))
 
+     (define realm (let ([realm-stx (hash-ref declared-keywords '#:realm #f)])
+                     (if realm-stx
+                         (syntax-e realm-stx)
+                         (current-compile-realm))))
+
      ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      ;; Pass 4: expand `module*` submodules
      
@@ -438,6 +443,7 @@
                                             #:root-ctx root-ctx
                                             #:ctx submod-ctx
                                             #:modules-being-compiled modules-being-compiled
+                                            #:realm realm
                                             #:portal-syntaxes portal-syntaxes
                                             #:fill compiled-module-box)))
      
@@ -465,7 +471,7 @@
      ;; Assemble the `#%module-begin` result:
      (cond
       [(expand-context-to-parsed? submod-ctx)
-       (parsed-#%module-begin rebuild-mb-s (parsed-only fully-expanded-bodys))]
+       (parsed-#%module-begin rebuild-mb-s (parsed-only fully-expanded-bodys) realm)]
       [else
        (define mb-result-s
          (rebuild
@@ -474,7 +480,7 @@
        (cond
         [(not (expand-context-in-local-expand? submod-ctx))
          (expanded+parsed mb-result-s
-                          (parsed-#%module-begin rebuild-mb-s (parsed-only fully-expanded-bodys)))]
+                          (parsed-#%module-begin rebuild-mb-s (parsed-only fully-expanded-bodys) realm))]
         [else mb-result-s])]))
 
    ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -531,6 +537,10 @@
 
    (define-values (requires provides) (extract-requires-and-provides requires+provides self self))
 
+   (define parsed-mb (if (expanded+parsed? expanded-mb)
+                         (expanded+parsed-parsed expanded-mb)
+                         expanded-mb))
+
    (define result-form
      (and (or (expand-context-to-parsed? init-ctx)
               always-produce-compiled?)
@@ -542,10 +552,8 @@
                          provides
                          (requires+provides-all-bindings-simple? requires+provides)
                          (root-expand-context-encode-for-module root-ctx self self)
-                         (parsed-#%module-begin-body
-                          (if (expanded+parsed? expanded-mb)
-                              (expanded+parsed-parsed expanded-mb)
-                              expanded-mb))
+                         (parsed-#%module-begin-body parsed-mb)
+                         (parsed-#%module-begin-realm parsed-mb)
                          portal-syntaxes
                          (unbox compiled-module-box)
                          compiled-submodules)))
@@ -923,17 +931,25 @@
          [(#%declare)
           (log-expand partial-body-ctx 'prim-declare exp-body)
           (define-match m exp-body '(#%declare kw ...))
-          (for ([kw (in-list (m 'kw))])
-            (unless (keyword? (syntax-e kw))
-              (raise-syntax-error #f "expected a keyword" exp-body kw))
-            (unless (memq (syntax-e kw) '(#:cross-phase-persistent #:empty-namespace #:unsafe))
-              (raise-syntax-error #f "not an allowed declaration keyword" exp-body kw))
-            (when (hash-ref declared-keywords (syntax-e kw) #f)
-              (raise-syntax-error #f "keyword declared multiple times" exp-body kw))
-            (when (eq? (syntax-e kw) '#:unsafe)
-              (unless (eq? (current-code-inspector) initial-code-inspector)
-                (raise-syntax-error #f "unsafe compilation disallowed by code inspector" exp-body kw)))
-            (hash-set! declared-keywords (syntax-e kw) kw))
+          (let loop ([kws (m 'kw)])
+            (unless (null? kws)
+              (define kw (car kws))
+              (unless (keyword? (syntax-e kw))
+                (raise-syntax-error #f "expected a keyword" exp-body kw))
+              (unless (memq (syntax-e kw) '(#:cross-phase-persistent #:empty-namespace #:unsafe #:realm))
+                (raise-syntax-error #f "not an allowed declaration keyword" exp-body kw))
+              (define has-arg? (eq? (syntax-e kw) '#:realm))
+              (when (hash-ref declared-keywords (syntax-e kw) #f)
+                (raise-syntax-error #f "keyword declared multiple times" exp-body kw))
+              (when (eq? (syntax-e kw) '#:unsafe)
+                (unless (eq? (current-code-inspector) initial-code-inspector)
+                  (raise-syntax-error #f "unsafe compilation disallowed by code inspector" exp-body kw)))
+              (when (eq? (syntax-e kw) '#:realm)
+                (unless (and (pair? (cdr kws))
+                             (identifier? (cadr kws)))
+                  (raise-syntax-error #f "expected an identifier after keyword" exp-body kw)))
+              (hash-set! declared-keywords (syntax-e kw) (if has-arg? (cadr kws) kw))
+              (loop (if has-arg? (cddr kws) (cdr kws)))))
           (define parsed-body (parsed-#%declare exp-body))
           (cons (if (expand-context-to-parsed? partial-body-ctx)
                     parsed-body
@@ -1193,6 +1209,7 @@
                                       #:root-ctx root-ctx
                                       #:ctx ctx
                                       #:modules-being-compiled modules-being-compiled
+                                      #:realm realm
                                       #:portal-syntaxes portal-syntaxes
                                       #:fill compiled-module-box)
   
@@ -1208,6 +1225,7 @@
                    (requires+provides-all-bindings-simple? requires+provides)
                    (root-expand-context-encode-for-module root-ctx self self)
                    (parsed-only fully-expanded-bodys-except-post-submodules)
+                   realm
                    portal-syntaxes
                    #f
                    (hasheq)))

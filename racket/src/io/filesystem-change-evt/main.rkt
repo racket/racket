@@ -10,7 +10,8 @@
          "../host/thread.rkt"
          "../host/pthread.rkt"
          "../sandman/main.rkt"
-         "../sandman/ltps.rkt")
+         "../sandman/ltps.rkt"
+         "../error/message.rkt")
 
 (provide filesystem-change-evt?
          filesystem-change-evt
@@ -66,7 +67,7 @@
        [fail (fail)]
        [(racket-error? rfc RKTIO_ERROR_UNSUPPORTED)
         (raise (exn:fail:unsupported
-                "filesystem-change-evt: unsupported"
+                (error-message->string 'filesystem-change-evt "unsupported")
                 (current-continuation-marks)))]
        [else
         (raise-filesystem-error who rfc (format "error generating event\n  path: ~a"

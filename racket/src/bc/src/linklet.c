@@ -1163,6 +1163,7 @@ static Scheme_Linklet *compile_and_or_optimize_linklet(Scheme_Object *form, Sche
   Scheme_Config *config;
   int enforce_const, set_undef, can_inline;
   Scheme_Performance_State perf_state;
+  Scheme_Object *realm;
 
   scheme_performance_record_start(&perf_state);
 
@@ -1170,12 +1171,13 @@ static Scheme_Linklet *compile_and_or_optimize_linklet(Scheme_Object *form, Sche
   enforce_const = SCHEME_TRUEP(scheme_get_param(config, MZCONFIG_COMPILE_MODULE_CONSTS));
   set_undef = SCHEME_TRUEP(scheme_get_param(config, MZCONFIG_ALLOW_SET_UNDEFINED));
   can_inline = SCHEME_FALSEP(scheme_get_param(config, MZCONFIG_DISALLOW_INLINE));
+  realm = scheme_get_param(config, MZCONFIG_COMPILE_REALM);
 
   if (_import_keys && !*_import_keys)
     _import_keys = NULL;
 
   if (!linklet) {
-    linklet = scheme_compile_linklet(form, set_undef, (_import_keys ? *_import_keys : NULL));
+    linklet = scheme_compile_linklet(form, set_undef, (_import_keys ? *_import_keys : NULL), realm);
     linklet = scheme_letrec_check_linklet(linklet);
   } else {
     linklet = scheme_unresolve_linklet(linklet, (set_undef ? COMP_ALLOW_SET_UNDEFINED : 0));

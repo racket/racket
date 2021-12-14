@@ -78,6 +78,7 @@
    (define min-phase (hash-ref h 'min-phase 0))
    (define max-phase (hash-ref h 'max-phase 0))
    (define language-info (hash-ref h 'language-info #f))
+   (define realm (hash-ref h 'realm 'racket))
 
    ;; Evaluate linklets, so that they're JITted just once (on demand).
    ;; Also, filter the bundle hash to just the phase-specific linklets, so that
@@ -136,6 +137,7 @@
                               #:requires requires
                               #:provides provides
                               #:language-info language-info
+                              #:realm realm
                               #:min-phase-level min-phase
                               #:max-phase-level max-phase
                               #:cross-phase-persistent? cross-phase-persistent?

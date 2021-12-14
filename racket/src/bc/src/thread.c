@@ -146,6 +146,7 @@ READ_ONLY Scheme_At_Exit_Proc replacement_at_exit;
 ROSYM Scheme_Object *scheme_parameterization_key;
 ROSYM Scheme_Object *scheme_exn_handler_key;
 ROSYM Scheme_Object *scheme_break_enabled_key;
+ROSYM Scheme_Object *scheme_error_message_adjuster_key;
 
 THREAD_LOCAL_DECL(static Scheme_Object *configuration_callback_cache[2]);
 
@@ -8061,6 +8062,7 @@ static void make_initial_config(Scheme_Thread *p)
   init_param(cells, paramz, MZCONFIG_COMPILE_MODULE_CONSTS, scheme_true);
   init_param(cells, paramz, MZCONFIG_USE_JIT, scheme_startup_use_jit ? scheme_true : scheme_false);
   init_param(cells, paramz, MZCONFIG_COMPILE_TARGET_MACHINE, scheme_startup_compile_machine_independent ? scheme_false : racket_symbol);
+  init_param(cells, paramz, MZCONFIG_COMPILE_REALM, scheme_default_realm);
 
   {
     Scheme_Object *s;

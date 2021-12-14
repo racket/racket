@@ -246,33 +246,64 @@ The result of @racket[make-struct-type] is five values:
 
 @defproc[(make-struct-field-accessor [accessor-proc struct-accessor-procedure?]
                                      [field-pos exact-nonnegative-integer?]
-                                     [field-name (or/c symbol? #f) 
-                                                 (symbol->string (format "field~a" field-pos))])
+                                     [field/p<roc-name (or/c symbol? #f) 
+                                                      (symbol->string (format "field~a" field-pos))]
+                                     [arg-contract-str (or/c string? symbol? #f) #f]
+                                     [realm symbol? 'racket])
          procedure?]{
 
 Returns a field accessor that is equivalent to @racket[(lambda (s)
 (accessor-proc s field-pos))].  The @racket[accessor-proc] must be
-an @tech{accessor} returned by @racket[make-struct-type]. The name of the
-resulting procedure for debugging purposes is derived from
-@racket[field-name] and the name of @racket[accessor-proc]'s
-structure type if @racket[field-name] is a symbol.
+an @tech{accessor} returned by @racket[make-struct-type].
 
-For examples, see @racket[make-struct-type].}
+The @racket[field/proc-name] argument determines the name of the
+resulting procedure for error reporting and debugging purposes. If
+@racket[field/proc-name] is a symbol and @racket[arg-contract-str] is not
+@racket[#f], then @racket[field/proc-name] is used as the procedure
+name. If @racket[field/proc-name] is a symbol and
+@racket[arg-contract-str] is @racket[#f], then @racket[field/proc-name] is
+combined with the name of @racket[accessor-proc]'s structure type to
+form the procedure name. If @racket[field/proc-name] is @racket[#f],
+then @racket['accessor] is used as the procedure name.
+
+The @racket[arg-contract-str] argument determines how the accessor
+procedure reports an error when it is applied to a value that is not
+an instance of the @racket[accessor-proc]'s structure type. If it is a
+string or symbol, the text of the string or symbol is used as a
+contract for error reporting. Otherwise, contract text is synthesized
+from the name of @racket[accessor-proc]'s structure type.
+
+The @racket[realm] argument is also used for error reporting. It
+specifies a @tech{realm} that an error-message adjuster may use to
+determine how to adjust an error message. The @racket[realm] argument
+also determines the result of @racket[procedure-realm] for the
+accessor procedure.
+
+For examples, see @racket[make-struct-type].
+
+@history[#:changed "8.3.0.11" @elem{Added the @racket[arg-contract-str]
+                                    and @racket[realm] arguments.}]}
 
 @defproc[(make-struct-field-mutator [mutator-proc struct-mutator-procedure?]
                                     [field-pos exact-nonnegative-integer?]
-                                    [field-name (or/c symbol? #f)
-                                                (symbol->string (format "field~a" field-pos))])
+                                    [field/proc-name (or/c symbol? #f)
+                                                     (symbol->string (format "field~a" field-pos))]
+                                    [arg-contract-str (or/c string? symbol? #f) #f]
+                                    [realm symbol? 'racket])
          procedure?]{
 
 Returns a field mutator that is equivalent to @racket[(lambda (s v)
 (mutator-proc s field-pos v))].  The @racket[mutator-proc] must be
-a @tech{mutator} returned by @racket[make-struct-type]. The name of the
-resulting procedure for debugging purposes is derived from
-@racket[field-name] and the name of @racket[mutator-proc]'s
-structure type if @racket[field-name] is a symbol.
+a @tech{mutator} returned by @racket[make-struct-type].
 
-For examples, see @racket[make-struct-type].}
+The @racket[field-name], @racket[arg-contract-str], and @racket[realm]
+arguments are used for error and debugging purposes analogous to the
+same arguments to @racket[make-struct-field-accessor].
+
+For examples, see @racket[make-struct-type].
+
+@history[#:changed "8.3.0.11" @elem{Added the @racket[arg-contract-str]
+                                    and @racket[realm] arguments.}]}
 
 
 @defthing[prop:sealed struct-type-property?]{
@@ -312,7 +343,10 @@ A @deftech{structure type property} allows per-type information to be
                                     [supers (listof (cons/c struct-type-property?
                                                             (any/c . -> . any/c)))
                                             null]
-                                    [can-impersonate? any/c #f])
+                                    [can-impersonate? any/c #f]
+                                    [accessor-name (or/c symbol? #f)]
+                                    [contract-str (or/c string? symbol? #f)]
+                                    [realm symbol? 'racket])
          (values struct-type-property?
                  procedure?
                  procedure?)]{
@@ -381,6 +415,22 @@ If the argument is @racket[#f], then redirection is not allowed.
 Otherwise, the property accessor may be redirected by a struct
 impersonator.
 
+The optional @racket[accessor-name] argument supplies a name (in the
+sense of @racket[object-name]) to use for the returned accessor
+function. If @racket[accessor-name] is @racket[#f], a name is created
+by adding @racketidfont{-ref} to the end of @racket[name].
+
+The optional @racket[contract-str] argument supplies a contract that
+is included in an error message with the returned accessor is applied
+to a value that is not an instance of the property (and where a
+@racket[_failure-result] argument is not supplied to the accessor). If
+@racket[contract-str] is @racket[#f], a contract is created by adding
+@racketidfont{?} to the end of @racket[name].
+
+The optional @racket[realm] argument supplies a @tech{realm} (in the
+sense of @racket[procedure-realm]) to associate with the returned
+accessor.
+
 @examples[
 #:eval struct-eval
 (define-values (prop:p p? p-ref) (make-struct-type-property 'p))
@@ -406,7 +456,11 @@ impersonator.
                     (list (cons prop:q 8))))
 (q-ref struct:c)
 (p-ref struct:c)
-]}
+]
+
+@history[#:changed "8.3.0.11" @elem{Added the @racket[accessor-name],
+                                    @racket[contract-str], and
+                                    @racket[realm] arguments.}]}
 
 
 @defproc[(struct-type-property? [v any/c]) boolean?]{

@@ -3373,9 +3373,9 @@ static Scheme_Object *hash_keys_subset_p_slow(int argc, Scheme_Object *argv[])
 
   b[0] = argv[1];
   if (!SCHEME_TRUEP(hash_p(1, argv)))
-    scheme_wrong_type("hash-keys-subset?", "hash?", 0 , argc, argv);
+    scheme_wrong_contract("hash-keys-subset?", "hash?", 0 , argc, argv);
   if (!SCHEME_TRUEP(hash_p(1, b)))
-    scheme_wrong_type("hash-keys-subset?", "hash?", 1, argc, argv);
+    scheme_wrong_contract("hash-keys-subset?", "hash?", 1, argc, argv);
 
   if (SCHEME_TRUEP(scheme_hash_eq_p(1, argv)))
     kind1 = 0;

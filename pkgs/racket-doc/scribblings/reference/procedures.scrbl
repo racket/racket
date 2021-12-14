@@ -63,14 +63,17 @@ one has an optional input with different semantics.  In addition,
 }
 
 @defproc[(procedure-rename [proc procedure?]
-                           [name symbol?])
+                           [name symbol?]
+                           [realm symbol? 'racket])
          procedure?]{
 
 Returns a procedure that is like @racket[proc], except that its name
 as returned by @racket[object-name] (and as printed for debugging) is
-@racket[name].
+@racket[name] and its @tech{realm} (potentially used for adjusting
+error messages) is @racket[realm].
 
-The given @racket[name] is used for printing an error message if the
+The given @racket[name] and @racket[realm] are used for printing and adjusting
+an error message if the
 resulting procedure is applied to the wrong number of arguments.  In
 addition, if @racket[proc] is an @tech{accessor} or @tech{mutator}
 produced by @racket[struct],
@@ -79,7 +82,22 @@ produced by @racket[struct],
 @racket[name] when its (first) argument has the wrong type. More
 typically, however, @racket[name] is not used for reporting errors,
 since the procedure name is typically hard-wired into an internal
-check.}
+check.
+
+@history[#:changed "8.3.0.11" @elem{Added the @racket[realm] argument.}]}
+
+
+@defproc[(procedure-realm [proc procedure?])
+         symbol?]{
+
+Reports the @tech{realm} of a procedure, which can depend on the
+module where the procedure was created, the
+@racket[current-compile-realm] value when the procedure's code was
+compiled, or a realm explicitly assigned through a function like
+@racket[procedure-rename].
+
+@history[#:added "8.3.0.11"]}
+
 
 @defproc[(procedure->method [proc procedure?]) procedure?]{
 
@@ -201,7 +219,8 @@ keyword arguments.
 
 @defproc[(procedure-reduce-arity [proc procedure?]
                                  [arity procedure-arity?]
-                                 [name (or/c symbol? #f) #f])
+                                 [name (or/c symbol? #f) #f]
+                                 [realm symbol? 'racket])
          procedure?]{
 
 Returns a procedure that is the same as @racket[proc] (including
@@ -220,9 +239,10 @@ arity-reduced procedure) or @racket[arity] must be the empty list
 @exnraise[exn:fail:contract].
 
 If @racket[name] is not @racket[#f], then @racket[object-name] of the
-result procedure produces @racket[name]. Otherwise,
-@racket[object-name] of the result procedure produces the same result
-as for @racket[proc].
+result procedure produces @racket[name], and @racket[procedure-realm]
+of the result produced produces @racket[realm]. Otherwise,
+@racket[object-name] and @racket[procedure-realm]of the result procedure
+produces the same result as for @racket[proc].
 
 @examples[
 (define my+ (procedure-reduce-arity + 2 ))
@@ -233,11 +253,13 @@ as for @racket[proc].
 ]
 
 @history[#:changed "7.0.0.11" @elem{Added the optional @racket[name]
-                                    argument.}]}
+                                    argument.}
+         #:changed "8.3.0.11" @elem{Added the @racket[realm] argument.}]}
 
 @defproc[(procedure-reduce-arity-mask [proc procedure?]
                                       [mask exact-integer?]
-                                      [name (or/c symbol? #f) #f])
+                                      [name (or/c symbol? #f) #f]
+                                      [realm symbol? 'racket])
          procedure?]{
 
 The same as @racket[procedure-reduce-arity], but using the
@@ -247,7 +269,8 @@ The mask encoding of an arity is often easier to test and manipulate,
 and @racket[procedure-reduce-arity-mask] is sometimes faster than
 @racket[procedure-reduce-arity] while always being at least as fast.
 
-@history[#:added "7.0.0.11"]}
+@history[#:added "7.0.0.11"
+         #:changed "8.3.0.11" @elem{Added the @racket[realm] argument.}]}
 
 @defproc[(procedure-keywords [proc procedure?])
          (values
@@ -578,10 +601,17 @@ bound outside of the @racket[lambda] or @racket[case-lambda], and when
 
 @section{Reflecting on Primitives}
 
-A @idefterm{primitive procedure} is a built-in procedure that is
-implemented in low-level language. Not all procedures of
+A @deftech{primitive procedure} is a built-in procedure that may be
+implemented in a lower-level language. Not all procedures of
 @racketmodname[racket/base] are primitives, but many are. The
-distinction is mainly useful to other low-level code.
+distinction between primitives and other procedures may be useful to
+other low-level code.
+
+The distinction between primitives and other procedures may also be
+useful for adjusting exception messages through parameters such as
+@racket[error-primitive-name->symbol-handler], but the notion of
+``primitive'' for those handlers and the notion for
+@racket[primitive?] do not coincide completely.
 
 @defproc[(primitive? [v any/c]) boolean?]{
 

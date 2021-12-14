@@ -1116,6 +1116,7 @@ mark_comp_env {
   gcMARK2(e->vars, gc);
   gcMARK2(e->value_name, gc);
   gcMARK2(e->linklet, gc);
+  gcMARK2(e->realm, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Comp_Env));

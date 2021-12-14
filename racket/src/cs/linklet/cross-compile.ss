@@ -64,8 +64,8 @@
       (cache-cross-compiler a)
       (values (car bv+literals) (cdr bv+literals)))))
 
-(define (cross-compile machine v quoteds unsafe?)
-  (do-cross (if unsafe? 'u 'c) machine v quoteds))
+(define (cross-compile machine v quoteds realm unsafe?)
+  (do-cross (if unsafe? 'u 'c) machine (cons realm v) quoteds))
 
 (define (cross-fasl-to-string machine v quoteds mode)
   (do-cross (if (eq? mode 'code) 'f 'd) machine v quoteds))

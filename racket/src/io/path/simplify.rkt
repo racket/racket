@@ -10,7 +10,8 @@
          "parameter.rkt"
          "complete.rkt"
          (submod "../file/main.rkt" for-simplify)
-         "simplify-nofs.rkt")
+         "simplify-nofs.rkt"
+         "../error/message.rkt")
 
 (provide simplify-path)
 
@@ -56,8 +57,10 @@
             (when (hash-ref seen from-base #f)
               (raise
                (exn:fail:filesystem
-                (string-append (symbol->string who) ": cycle detected at link"
-                               "\n  link path: " (path->string new-base))
+                (error-message->string
+                 who
+                 (string-append "cycle detected at link"
+                                "\n  link path: " (path->string new-base)))
                 (current-continuation-marks))))
             (values from-base (hash-set seen from-base #t))]))
        (define-values (next-base name dir?) (split-path from-base))

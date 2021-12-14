@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../host/thread.rkt"
+         "../error/message.rkt"
          "port.rkt"
          "input-port.rkt"
          "output-port.rkt"
@@ -17,14 +18,14 @@
     (define input? (core-input-port? cp))
     (raise
      (exn:fail
-      (string-append (symbol->string who)
-                     ": "
-                     (if input?
-                         "input port is closed"
-                         "output port is closed")
-                     "\n  "
-                     (if input?
-                         "input port: "
-                         "output port: ")
-                     ((error-value->string-handler) cp (error-print-width)))
+      (error-message->string
+       who
+       (string-append (if input?
+                          "input port is closed"
+                          "output port is closed")
+                      "\n  "
+                      (if input?
+                          "input port: "
+                          "output port: ")
+                      ((error-value->string-handler) cp (error-print-width))))
       (current-continuation-marks)))))

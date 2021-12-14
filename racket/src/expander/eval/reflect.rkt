@@ -18,7 +18,8 @@
          module-compiled-imports
          module-compiled-exports
          module-compiled-indirect-exports
-         module-compiled-cross-phase-persistent?)
+         module-compiled-cross-phase-persistent?
+         module-compiled-realm)
 
 ;; The representation of a module with its submodules is designed to
 ;; make reading an individual submodule (with its submodule path
@@ -63,3 +64,8 @@
   (check who compiled-module-expression? c)
   (define h (compiled-module->h c))
   (hash-ref h 'cross-phase-persistent? #f))
+
+(define/who (module-compiled-realm c)
+  (check who compiled-module-expression? c)
+  (define h (compiled-module->h c))
+  (hash-ref h 'realm 'racket))

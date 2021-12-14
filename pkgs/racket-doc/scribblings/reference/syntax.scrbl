@@ -397,7 +397,8 @@ Legal only in a @tech{module begin context}, and handled by the
          #:grammar
          ([declaration-keyword #:cross-phase-persistent
                                #:empty-namespace
-                               #:unsafe])]{
+                               #:unsafe
+                               (code:line #:realm identifier)])]{
 
 Declarations that affect run-time or reflective properties of the
 module:
@@ -430,6 +431,11 @@ module:
        @racket[(variable-reference-from-unsafe?
        (#%variable-reference))].}
 
+@item{@racket[@#,indexed-racket[#:realm] identifier] --- declares that
+       the module and any procedures within the module are given a
+       @tech{realm} that is the symbol form of @racket[identifier], effectively
+       overriding the value of @racket[current-compile-realm].}
+
 ]
 
 A @racket[#%declare] form must appear in a @tech{module
@@ -438,7 +444,8 @@ context} or a @tech{module-begin context}. Each
 @racket[module] body.
 
 @history[#:changed "6.3" @elem{Added @racket[#:empty-namespace].}
-         #:changed "7.9.0.5" @elem{Added @racket[#:unsafe].}]}
+         #:changed "7.9.0.5" @elem{Added @racket[#:unsafe].}
+         #:changed "8.3.0.11" @elem{Added @racket[#:realm].}]}
 
 
 @;------------------------------------------------------------------------

@@ -10,7 +10,8 @@
          "semaphore.rkt"
          "parameter.rkt"
          "sink.rkt"
-         "exit.rkt")
+         "exit.rkt"
+         "error.rkt")
 
 (provide current-custodian
          make-custodian
@@ -401,7 +402,7 @@
   (check who exact-nonnegative-integer? need-amt)
   (check who custodian? stop-cust)
   (raise (exn:fail:unsupported
-          "custodian-require-memory: unsupported"
+          (error-message->string 'custodian-require-memory "unsupported")
           (current-continuation-marks))))
 
 (define/who (custodian-limit-memory limit-cust need-amt [stop-cust limit-cust])
@@ -654,6 +655,6 @@
         (define limit (custodian-immediate-limit c))
         (when (and limit (n . >= . limit))
           (raise (exn:fail:out-of-memory
-                  "out of memory"
+                  (error-message->string #f "out of memory")
                   (current-continuation-marks))))
         (loop (custodian-parent-reference c))))))

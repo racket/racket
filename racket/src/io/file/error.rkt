@@ -1,6 +1,7 @@
 #lang racket/base
 (require "../host/rktio.rkt"
-         "../host/error.rkt")
+         "../host/error.rkt"
+         "../error/message.rkt")
 
 (provide raise-filesystem-error
          copy-file-step-string
@@ -18,9 +19,7 @@
                 [(racket-error? err RKTIO_ERROR_EXISTS)
                  ;; don't add "system error", because it
                  ;; will be redundant
-                 (if who
-                     (string-append (symbol->string who) ": " base-msg)
-                     base-msg)]
+                 (error-message->string who base-msg)]
                 [else
                  (format-rktio-message who err base-msg)]))
   (raise

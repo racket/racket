@@ -279,7 +279,7 @@ Scheme_Object *scheme_intern_struct_prop_proc_shape(int shape)
 
 /*********************************************************************/
 
-Scheme_Comp_Env *scheme_new_comp_env(Scheme_Linklet *linklet, int flags)
+Scheme_Comp_Env *scheme_new_comp_env(Scheme_Linklet *linklet, int flags, Scheme_Object *realm)
 {
   Scheme_Comp_Env *env;
   Scheme_Hash_Tree *vars;
@@ -292,6 +292,7 @@ Scheme_Comp_Env *scheme_new_comp_env(Scheme_Linklet *linklet, int flags)
   env->vars = vars;
 
   env->linklet = linklet;
+  env->realm = realm;
 
   return env;
 }

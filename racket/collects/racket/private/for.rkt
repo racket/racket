@@ -857,10 +857,13 @@
   ;; the largest fixnum, after running these checks start,
   ;; stop, and step are guaranteed to be fixnums.
   (define (check-ranges who type-name vec start stop step len)
-    (unless (and (exact-nonnegative-integer? start)
-                 (or (< start len) (= len start stop)))
+    (unless (exact-nonnegative-integer? start)
+      (raise-argument-error who "exact-nonnegative-integer?" start))
+    (unless (or (< start len) (= len start stop))
       (raise-range-error who type-name "starting " start vec 0 (sub1 len)))
-    (unless (and (exact-integer? stop) (<= -1 stop) (<= stop len))
+    (unless (exact-integer? stop)
+      (raise-argument-error who "exact-integer?" stop))
+    (unless (and (<= -1 stop) (<= stop len))
       (raise-range-error who type-name "stopping " stop vec -1 len))
     (unless (and (exact-integer? step) (not (zero? step)))
       (raise-argument-error who "(and/c exact-integer? (not/c zero?))" step))
