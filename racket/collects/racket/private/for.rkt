@@ -1824,11 +1824,23 @@
     (lambda (x) x)
     (lambda (x) `(,#'begin ,x ,#'(values))))
 
+  ;; rev-append :: list?, list? -> list?
+  (define (rev-append xs ys)
+    (if (null? xs)
+        ys
+        (rev-append (cdr xs) (cons (car xs) ys))))
+
   (define-for-variants (for/list for*/list)
     ([fold-var null])
     (lambda (x) `(,#'alt-reverse ,x))
     (lambda (x) x)
-    (lambda (x) `(,#'cons ,x ,#'fold-var)))
+    (lambda (x)
+      #`(call-with-values
+         (λ () #,x)
+         (case-lambda
+           [() fold-var]
+           [(e) (cons e fold-var)]
+           [xs (rev-append xs fold-var)]))))
 
   (define (grow-vector vec)
     (define n (vector-length vec))
