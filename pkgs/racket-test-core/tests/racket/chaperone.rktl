@@ -61,9 +61,11 @@
 (test #t chaperone-of?/impersonator '#hash(("0" . 0) ("1" . 1) ("2" . 2)) '#hash(("0" . 0) ("1" . 1) ("2" . 2)))
 (test #t chaperone-of?/impersonator '#hasheq((z . 0) (o . 1) (t . 2)) '#hasheq((z . 0) (o . 1) (t . 2)))
 (test #t chaperone-of?/impersonator '#hasheqv((0 . "0") (1 . "1") (2 . "2")) '#hasheqv((0 . "0") (1 . "1") (2 . "2")))
+(test #t chaperone-of?/impersonator '#hashequalw(("0" . z) ("1" . o) ("2" . t)) '#hashequalw(("0" . z) ("1" . o) ("2" . t)))
 (test #t chaperone-of?/impersonator (hash 'a 1) (hash 'a 1))
 (test #t chaperone-of?/impersonator (hasheq 'a 1) (hasheq 'a 1))
 (test #t chaperone-of?/impersonator (hasheqv 'a 1) (hasheqv 'a 1))
+(test #t chaperone-of?/impersonator (hashequalw 'a 1) (hashequalw 'a 1))
 (test #f chaperone-of? (hash 'a 1) (hash 'a 2))
 (let ()
   ;; mutable strings as keys make these different:
@@ -73,9 +75,9 @@
   (test #t chaperone-of?/impersonator (hasheq a 1) (hasheq a 1)))
 
 ;; mutable hash chaperone-of? intensional equality:
-(for ([make-hash (in-list (list make-hash make-hasheq make-hasheqv
-                                make-weak-hash make-weak-hasheq make-weak-hasheqv
-                                make-ephemeron-hash make-ephemeron-hasheq make-ephemeron-hasheqv))])
+(for ([make-hash (in-list (list make-hash make-hasheq make-hasheqv make-hashequalw
+                                make-weak-hash make-weak-hasheq make-weak-hasheqv make-weak-hashequalw
+                                make-ephemeron-hash make-ephemeron-hasheq make-ephemeron-hasheqv make-ephemeron-hashequalw))])
   (define h (make-hash '((a . 1))))
   (test #t chaperone-of?/impersonator h h)
   (test #f chaperone-of? (make-hash '((a . 1))) (make-hash '((a . 1)))))
@@ -1948,10 +1950,10 @@
      (test #t hash? h)
      (test #t (lambda (x) (hash? x)) h)))
  (list
-  make-hash make-hasheq make-hasheqv
-  (lambda () #hash()) (lambda () #hasheq()) (lambda () #hasheqv())
-  make-weak-hash make-weak-hasheq make-weak-hasheqv
-  make-ephemeron-hash make-ephemeron-hasheq make-ephemeron-hasheqv))
+  make-hash make-hasheq make-hasheqv make-hashequalw
+  (lambda () #hash()) (lambda () #hasheq()) (lambda () #hasheqv()) (lambda () #hashequalw())
+  make-weak-hash make-weak-hasheq make-weak-hasheqv make-weak-hashequalw
+  make-ephemeron-hash make-ephemeron-hasheq make-ephemeron-hasheqv make-ephemeron-hashequalw))
 
 (let ([mk (lambda clear-proc+more
             (apply chaperone-hash (make-hash)
@@ -1982,9 +1984,9 @@
      (test #t hash? h)
      (test #t (lambda (x) (hash? x)) h)))
  (list
-  make-hash make-hasheq make-hasheqv
-  make-weak-hash make-weak-hasheq make-weak-hasheqv
-  make-ephemeron-hash make-ephemeron-hasheq make-ephemeron-hasheqv))
+  make-hash make-hasheq make-hasheqv make-hashequalw
+  make-weak-hash make-weak-hasheq make-weak-hasheqv make-weak-hashequalw
+  make-ephemeron-hash make-ephemeron-hasheq make-ephemeron-hasheqv make-ephemeron-hashequalw))
 
 (for-each 
  (lambda (make-hash)
@@ -1993,7 +1995,7 @@
                       (lambda (h k) (values k (lambda (h k v) v)))
                       (lambda (h k v) (values k v))
                       (lambda (h k) k) (lambda (h k) k))))
- (list (lambda () #hash()) (lambda () #hasheq()) (lambda () #hasheqv())))
+ (list (lambda () #hash()) (lambda () #hasheq()) (lambda () #hasheqv()) (lambda () #hashequalw())))
 
 (as-chaperone-or-impersonator
  ([chaperone-hash impersonate-hash])
@@ -2080,9 +2082,9 @@
       (test '(equal? key val key2 val2 key2 key) list 'equal? get-k get-v set-k set-v remove-k access-k)
       (void)))
   (list
-   make-hash make-hasheq make-hasheqv
-   make-weak-hash make-weak-hasheq make-weak-hasheqv
-   make-ephemeron-hash make-ephemeron-hasheq make-ephemeron-hasheqv)))
+   make-hash make-hasheq make-hasheqv make-hashequalw
+   make-weak-hash make-weak-hasheq make-weak-hasheqv make-weak-hashequalw
+   make-ephemeron-hash make-ephemeron-hasheq make-ephemeron-hasheqv make-ephemeron-hashequalw)))
 
 (for-each
  (lambda (h1)   
@@ -2171,7 +2173,7 @@
      (test #t chaperone-of? h5 h3)
      (test #f chaperone-of? (hash-set h3 1 sub1) h3)
      (test #f chaperone-of? (hash-set h3 2 sub1) h3)))
- (list #hash() #hasheq() #hasheqv()))
+ (list #hash() #hasheq() #hasheqv() #hashequalw()))
 
 ;; Make sure that multiple chaperone/impersonator layers
 ;; are allowed by `chaperone-of?` and `impersonator-of?`
