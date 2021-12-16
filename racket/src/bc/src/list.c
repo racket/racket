@@ -134,6 +134,8 @@ static Scheme_Object *hash_keys_subset_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *eq_hash_code(int argc, Scheme_Object *argv[]);
 static Scheme_Object *equal_hash_code(int argc, Scheme_Object *argv[]);
 static Scheme_Object *equal_hash2_code(int argc, Scheme_Object *argv[]);
+static Scheme_Object *equal_always_hash_code(int argc, Scheme_Object *argv[]);
+static Scheme_Object *equal_always_hash2_code(int argc, Scheme_Object *argv[]);
 static Scheme_Object *eqv_hash_code(int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_hash(int argc, Scheme_Object **argv);
 static Scheme_Object *impersonate_hash(int argc, Scheme_Object **argv);
@@ -780,6 +782,16 @@ scheme_init_list (Scheme_Startup_Env *env)
   scheme_addto_prim_instance("equal-secondary-hash-code",
 			     scheme_make_noncm_prim(equal_hash2_code,
 						    "equal-secondary-hash-code",
+						    1, 1),
+			     env);
+  scheme_addto_prim_instance("equal-always-hash-code",
+			     scheme_make_noncm_prim(equal_always_hash_code,
+						    "equal-always-hash-code",
+						    1, 1),
+			     env);
+  scheme_addto_prim_instance("equal-always-secondary-hash-code",
+			     scheme_make_noncm_prim(equal_always_hash2_code,
+						    "equal-always-secondary-hash-code",
 						    1, 1),
 			     env);
 
@@ -3973,6 +3985,27 @@ static Scheme_Object *equal_hash2_code(int argc, Scheme_Object *argv[])
   intptr_t v;
 
   v = scheme_equal_hash_key2(argv[0]);
+
+  return scheme_make_integer(v);
+}
+
+static Scheme_Object *equal_always_hash_code(int argc, Scheme_Object *argv[])
+{
+  intptr_t v;
+
+  if (SCHEME_INTP(argv[0]))
+    return argv[0];
+
+  v = scheme_equal_always_hash_key(argv[0]);
+
+  return scheme_make_integer(v);
+}
+
+static Scheme_Object *equal_always_hash2_code(int argc, Scheme_Object *argv[])
+{
+  intptr_t v;
+
+  v = scheme_equal_always_hash_key2(argv[0]);
 
   return scheme_make_integer(v);
 }

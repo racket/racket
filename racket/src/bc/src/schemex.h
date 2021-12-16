@@ -904,6 +904,8 @@ intptr_t (*scheme_equal_hash_key)(Scheme_Object *o);
 intptr_t (*scheme_equal_hash_key2)(Scheme_Object *o);
 intptr_t (*scheme_recur_equal_hash_key)(Scheme_Object *o, void *cycle_data);
 intptr_t (*scheme_recur_equal_hash_key2)(Scheme_Object *o, void *cycle_data);
+intptr_t (*scheme_equal_always_hash_key)(Scheme_Object *o);
+intptr_t (*scheme_equal_always_hash_key2)(Scheme_Object *o);
 intptr_t (*scheme_eqv_hash_key)(Scheme_Object *o);
 intptr_t (*scheme_eqv_hash_key2)(Scheme_Object *o);
 void (*scheme_set_type_equality)(Scheme_Type type, 

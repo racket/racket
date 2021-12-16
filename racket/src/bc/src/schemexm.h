@@ -666,6 +666,8 @@
 #define scheme_equal_hash_key2 (scheme_extension_table->scheme_equal_hash_key2)
 #define scheme_recur_equal_hash_key (scheme_extension_table->scheme_recur_equal_hash_key)
 #define scheme_recur_equal_hash_key2 (scheme_extension_table->scheme_recur_equal_hash_key2)
+#define scheme_equal_always_hash_key (scheme_extension_table->scheme_equal_always_hash_key)
+#define scheme_equal_always_hash_key2 (scheme_extension_table->scheme_equal_always_hash_key2)
 #define scheme_eqv_hash_key (scheme_extension_table->scheme_eqv_hash_key)
 #define scheme_eqv_hash_key2 (scheme_extension_table->scheme_eqv_hash_key2)
 #define scheme_set_type_equality (scheme_extension_table->scheme_set_type_equality)
