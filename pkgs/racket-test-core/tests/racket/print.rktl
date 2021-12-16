@@ -100,6 +100,8 @@
   (ptest "'#hasheq((1 . 2))" (make-hasheq (list (cons 1 2))))
   (ptest "'#hasheqv((1 . 2))" (hasheqv 1 2))
   (ptest "'#hasheqv((1 . 2))" (make-hasheqv (list (cons 1 2))))
+  (ptest "'#hashequalw((1 . 2))" (hashequalw 1 2))
+  (ptest "'#hashequalw((1 . 2))" (make-hashequalw (list (cons 1 2))))
 
   (ptest "(mcons 1 2)" (mcons 1 2))
   (ptest "(mcons 1 '())" (mcons 1 null))

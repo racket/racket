@@ -543,22 +543,22 @@
     (hash-remove-iterate-test make-hash (X ...) in-hash-X sel) ...
     (hash-remove-iterate-test make-hash (X ...) in-Y-hash-X sel) ...))
 
-(hash-remove-iterate-test* [make-hash make-hasheq make-hasheqv]
+(hash-remove-iterate-test* [make-hash make-hasheq make-hasheqv make-hashequalw]
                           (k v) in-hash in-mutable-hash and)
-(hash-remove-iterate-test* [make-hash make-hasheq make-hasheqv]
+(hash-remove-iterate-test* [make-hash make-hasheq make-hasheqv make-hashequalw]
                           (k) in-hash-keys in-mutable-hash-keys values)
-(hash-remove-iterate-test* [make-hash make-hasheq make-hasheqv]
+(hash-remove-iterate-test* [make-hash make-hasheq make-hasheqv make-hashequalw]
                           (v) in-hash-values in-mutable-hash-values values)
-(hash-remove-iterate-test* [make-hash make-hasheq make-hasheqv]
+(hash-remove-iterate-test* [make-hash make-hasheq make-hasheqv make-hashequalw]
                            (p) in-hash-pairs in-mutable-hash-pairs car)
 
-(hash-remove-iterate-test* [make-weak-hash make-weak-hasheq make-weak-hasheqv]
+(hash-remove-iterate-test* [make-weak-hash make-weak-hasheq make-weak-hasheqv make-weak-hashequalw]
                           (k v) in-hash in-weak-hash and)
-(hash-remove-iterate-test* [make-weak-hash make-weak-hasheq make-weak-hasheqv]
+(hash-remove-iterate-test* [make-weak-hash make-weak-hasheq make-weak-hasheqv make-weak-hashequalw]
                           (k) in-hash-keys in-weak-hash-keys values)
-(hash-remove-iterate-test* [make-weak-hash make-weak-hasheq make-weak-hasheqv]
+(hash-remove-iterate-test* [make-weak-hash make-weak-hasheq make-weak-hasheqv make-weak-hashequalw]
                           (v) in-hash-values in-weak-hash-values values)
-(hash-remove-iterate-test* [make-weak-hash make-weak-hasheq make-weak-hasheqv]
+(hash-remove-iterate-test* [make-weak-hash make-weak-hasheq make-weak-hasheqv make-weak-hashequalw]
                            (p) in-hash-pairs in-weak-hash-pairs car)
 
 ;; ----------------------------------------
@@ -626,6 +626,13 @@
     (test-hash-ref-key/mut (make-hash) equal? k1 k2)
     (test-hash-ref-key/mut (make-weak-hash) equal? k1 k2)
     (test-hash-ref-key/immut (hash) equal? k1 k2))
+
+  ;; equal-always?-based hashes
+  (let* ([k1 "hello"]
+         [k2 (string->immutable-string (substring k1 0))])
+    (test-hash-ref-key/mut (make-hashequalw) equal-always? k1 k2)
+    (test-hash-ref-key/mut (make-weak-hashequalw) equal-always? k1 k2)
+    (test-hash-ref-key/immut (hashequalw) equal-always? k1 k2))
 
   ;; eqv?-based hashes
   (let ([k1 (expt 2 64)]
@@ -720,14 +727,17 @@
   (test '(2) hash-map (hash 'one 1) (proc (lambda (k v) (add1 v))))
   (test '(2) hash-map (hasheq 'one 1) (proc (lambda (k v) (add1 v))))
   (test '(2) hash-map (hasheqv 'one 1) (proc (lambda (k v) (add1 v))))
+  (test '(2) hash-map (hashequalw 'one 1) (proc (lambda (k v) (add1 v))))
 
   (test (void) hash-for-each (hash 'one 1) (proc void))
   (test (void) hash-for-each (hasheq 'one 1) (proc void))
   (test (void) hash-for-each (hasheqv 'one 1) (proc void))
+  (test (void) hash-for-each (hashequalw 'one 1) (proc void))
 
   (test (hash 'one 2) hash-map/copy (hash 'one 1) (proc (lambda (k v) (values k (add1 v)))))
   (test (hasheq 'one 2) hash-map/copy (hasheq 'one 1) (proc (lambda (k v) (values k (add1 v)))))
   (test (hasheqv 'one 2) hash-map/copy (hasheqv 'one 1) (proc (lambda (k v) (values k (add1 v)))))
+  (test (hashequalw 'one 2) hash-map/copy (hashequalw 'one 1) (proc (lambda (k v) (values k (add1 v)))))
 
   (test (hash 'one 2)
         hash-map/copy
@@ -742,6 +752,11 @@
   (test (hasheqv 'one 2)
         hash-map/copy
         (make-hasheqv '((one . 1)))
+        (proc (lambda (k v) (values k (add1 v))))
+        #:kind 'immutable)
+  (test (hashequalw 'one 2)
+        hash-map/copy
+        (make-hashequalw '((one . 1)))
         (proc (lambda (k v) (values k (add1 v))))
         #:kind 'immutable))
 

@@ -3659,19 +3659,26 @@
                '(lambda (x) 5)
                #f))
   (check-empty-allocation 'hash)
+  (check-empty-allocation 'hashequalw)
   (check-empty-allocation 'hasheqv)
   (check-empty-allocation 'hasheq)
   (check-empty-allocation 'make-hash)
+  (check-empty-allocation 'make-hashequalw)
   (check-empty-allocation 'make-hasheqv)
   (check-empty-allocation 'make-hasheq)
   (check-empty-allocation 'make-weak-hash)
+  (check-empty-allocation 'make-weak-hashequalw)
   (check-empty-allocation 'make-weak-hasheqv)
   (check-empty-allocation 'make-weak-hasheq)
   (check-empty-allocation 'make-immutable-hash)
+  (check-empty-allocation 'make-immutable-hashequalw)
   (check-empty-allocation 'make-immutable-hasheqv)
   (check-empty-allocation 'make-immutable-hasheq)
 
   (test-comp `(lambda (x y) (hash x y) 5) ; can trigger equal callbacks
+             '(lambda () 5)
+             #f)
+  (test-comp `(lambda (x y) (hashequalw x y) 5) ; can trigger equal-always callbacks
              '(lambda () 5)
              #f)
   (test-comp `(lambda (x y) (hasheqv x y) 5)
@@ -3681,6 +3688,9 @@
 
   ;; Wrong arity
   (test-comp `(lambda (x y) (hash x) 5)
+             '(lambda (x) 5)
+             #f)
+  (test-comp `(lambda (x y) (hashequalw x) 5)
              '(lambda (x) 5)
              #f)
   (test-comp `(lambda (x) (hasheqv x) 5)
