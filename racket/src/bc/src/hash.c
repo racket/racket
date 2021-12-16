@@ -4,7 +4,7 @@
 #include <math.h>
 #include "../gc2/gc2_obj.h"
 
-READ_ONLY static Scheme_Hash_Tree *empty_hash_tree[3];
+READ_ONLY static Scheme_Hash_Tree *empty_hash_tree[4];
 
 THREAD_LOCAL_DECL(intptr_t scheme_hash_request_count);
 THREAD_LOCAL_DECL(intptr_t scheme_hash_iteration_count);
@@ -1891,6 +1891,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
   case scheme_hash_tree_type:
   case scheme_eq_hash_tree_type:
   case scheme_eqv_hash_tree_type:
+  case scheme_equal_always_hash_tree_type:
   case scheme_hash_tree_indirection_type:
     {
       Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)o;
@@ -2488,6 +2489,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
   case scheme_hash_tree_type: /* ^^^ fallthrough ^^^ */
   case scheme_eq_hash_tree_type:
   case scheme_eqv_hash_tree_type:
+  case scheme_equal_always_hash_tree_type:
     {
       Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)o;
       Scheme_Object *iv, *ik;
@@ -2614,7 +2616,7 @@ intptr_t scheme_eqv_hash_key2(Scheme_Object *o)
 
 /* Based on Phil Bagwell's "Ideal Hash Trees" (2000) */
 
-#define HASHTR_KIND_MULT(kind) (!kind ? 1 : ((kind == 1) ? 2 : 3))
+#define HASHTR_KIND_MULT(kind) (!kind ? 1 : ((kind == 1) ? 2 : ((kind == 2) ? 3 : 4)))
 #define HASH_TREE_RECORD_SIZE(kind, popcount) (sizeof(Scheme_Hash_Tree)  \
                                                + (((HASHTR_KIND_MULT(kind) * (popcount)) - mzFLEX_DELTA) \
                                                   * sizeof(Scheme_Object*)))
@@ -3431,7 +3433,9 @@ static Scheme_Hash_Tree *make_hash_tree(int eql_kind, int popcount)
                      ? scheme_eq_hash_tree_type
                      : ((eql_kind == 1)
                         ? scheme_hash_tree_type
-                        : scheme_eqv_hash_tree_type));
+                        : ((eql_kind == 3)
+                           ? scheme_equal_always_hash_tree_type
+                           : scheme_eqv_hash_tree_type)));
   SCHEME_HASHTR_FLAGS(ht) = kind;
 
   return ht;
@@ -3456,6 +3460,9 @@ void scheme_init_hash_tree(void)
 
   t = make_hash_tree(2, 0);
   empty_hash_tree[2] = t;
+
+  t = make_hash_tree(3, 0);
+  empty_hash_tree[3] = t;
 }
 
 Scheme_Hash_Tree *scheme_make_hash_tree_of_type(Scheme_Type stype)
@@ -3464,6 +3471,8 @@ Scheme_Hash_Tree *scheme_make_hash_tree_of_type(Scheme_Type stype)
     return scheme_make_hash_tree(SCHEME_hashtr_eq);
   else if (stype == scheme_hash_tree_type)
     return scheme_make_hash_tree(SCHEME_hashtr_equal);
+  else if (stype == scheme_equal_always_hash_tree_type)
+    return scheme_make_hash_tree(SCHEME_hashtr_equal_always);
   else
     return scheme_make_hash_tree(SCHEME_hashtr_eqv);
 }

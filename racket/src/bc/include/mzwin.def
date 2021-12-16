@@ -242,6 +242,7 @@ EXPORTS
  scheme_bucket_table_next
  scheme_make_hash_table
  scheme_make_hash_table_equal
+ scheme_make_hash_table_equal_always
  scheme_make_hash_table_eqv
  scheme_hash_set
  scheme_hash_get
@@ -576,6 +577,7 @@ EXPORTS
  scheme_eq
  scheme_eqv
  scheme_equal
+ scheme_equal_always
  scheme_chaperone_of
  scheme_impersonator_of
  scheme_equal_hash_key

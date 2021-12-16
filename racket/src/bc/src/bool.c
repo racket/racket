@@ -491,6 +491,27 @@ int scheme_equal (Scheme_Object *obj1, Scheme_Object *obj2) XFORM_ASSERT_NO_CONV
   return is_slow_equal(obj1, obj2);
 }
 
+int is_slow_equal_always (Scheme_Object *obj1, Scheme_Object *obj2)
+{
+  Equal_Info eql;
+
+  init_equal_info(&eql);
+  eql.mode = 5; /* mode 5: 'equal-always? */
+
+  return is_equal(obj1, obj2, &eql);
+}
+
+int scheme_equal_always (Scheme_Object *obj1, Scheme_Object *obj2) XFORM_ASSERT_NO_CONVERSION
+{
+  int v;
+
+  v = is_fast_equal(obj1, obj2, 1); /* 1: 'chaperone-of? or 'equal-always? */
+  if (v > -1)
+    return v;
+
+  return is_slow_equal_always(obj1, obj2);
+}
+
 static Scheme_Object *union_find(Scheme_Object *obj1, Scheme_Hash_Table *ht)
 {
   Scheme_Object *v, *prev = obj1, *prev_prev = obj1;
@@ -886,6 +907,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     case scheme_hash_tree_type:
     case scheme_eq_hash_tree_type:
     case scheme_eqv_hash_tree_type:
+    case scheme_equal_always_hash_tree_type:
     case scheme_hash_tree_indirection_type:
       {
 #   include "mzeqchk.inc"

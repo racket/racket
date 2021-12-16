@@ -361,6 +361,7 @@ int (*scheme_bucket_table_index)(Scheme_Bucket_Table *hash, mzlonglong pos, Sche
 Scheme_Object *(*scheme_bucket_table_next)(Scheme_Bucket_Table *hash, mzlonglong start);
 Scheme_Hash_Table *(*scheme_make_hash_table)(int type);
 Scheme_Hash_Table *(*scheme_make_hash_table_equal)();
+Scheme_Hash_Table *(*scheme_make_hash_table_equal_always)();
 Scheme_Hash_Table *(*scheme_make_hash_table_eqv)();
 void (*scheme_hash_set)(Scheme_Hash_Table *table, Scheme_Object *key, Scheme_Object *val);
 Scheme_Object *(*scheme_hash_get)(Scheme_Hash_Table *table, Scheme_Object *key);
@@ -895,6 +896,7 @@ int (*scheme_is_subinspector)(Scheme_Object *i, Scheme_Object *sup);
 int (*scheme_eq)(Scheme_Object *obj1, Scheme_Object *obj2);
 int (*scheme_eqv)(Scheme_Object *obj1, Scheme_Object *obj2);
 int (*scheme_equal)(Scheme_Object *obj1, Scheme_Object *obj2);
+int (*scheme_equal_always)(Scheme_Object *obj1, Scheme_Object *obj2);
 int (*scheme_chaperone_of)(Scheme_Object *obj1, Scheme_Object *obj2);
 int (*scheme_impersonator_of)(Scheme_Object *obj1, Scheme_Object *obj2);
 #ifdef MZ_PRECISE_GC
