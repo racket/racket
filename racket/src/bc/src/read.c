@@ -2732,7 +2732,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
         Scheme_Object *k;
 
 	kind = read_compact_number(port);
-        if ((kind < 0) || (kind > 2))
+        if ((kind < 0) || (kind > 3))
           scheme_ill_formed_code(port);
 	len = read_compact_number(port);
 
