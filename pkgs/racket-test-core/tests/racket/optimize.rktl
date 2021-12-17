@@ -3016,14 +3016,13 @@
   (test-use-unsafe-fxbinary 'fxior 'unsafe-fxior)
   (test-use-unsafe-fxbinary 'fxxor 'unsafe-fxxor)
 
-  (unless (eq? 'chez-scheme (system-type 'vm)) ; cptypes doesn't currently convert to fixnum ops
-    (test-use-unsafe-fxbinary '= 'unsafe-fx=)
-    (test-use-unsafe-fxbinary '< 'unsafe-fx<)
-    (test-use-unsafe-fxbinary '> 'unsafe-fx>)
-    (test-use-unsafe-fxbinary '<= 'unsafe-fx<=)
-    (test-use-unsafe-fxbinary '>= 'unsafe-fx>=)
-    (test-use-unsafe-fxbinary 'min 'unsafe-fxmin)
-    (test-use-unsafe-fxbinary 'max 'unsafe-fxmax))
+  (test-use-unsafe-fxbinary '= 'unsafe-fx=)
+  (test-use-unsafe-fxbinary '< 'unsafe-fx<)
+  (test-use-unsafe-fxbinary '> 'unsafe-fx>)
+  (test-use-unsafe-fxbinary '<= 'unsafe-fx<=)
+  (test-use-unsafe-fxbinary '>= 'unsafe-fx>=)
+  (test-use-unsafe-fxbinary 'min 'unsafe-fxmin)
+  (test-use-unsafe-fxbinary 'max 'unsafe-fxmax)
 
   (test-use-unsafe-fxbinary 'fx= 'unsafe-fx=)
   (test-use-unsafe-fxbinary 'fx< 'unsafe-fx<)
