@@ -2695,6 +2695,8 @@ Scheme_Object *scheme_hash_tree_copy(Scheme_Object *v)
 
   if (scheme_is_hash_tree_equal((Scheme_Object *)t))
     naya = scheme_make_hash_table_equal();
+  else if (scheme_is_hash_tree_equal_always((Scheme_Object *)t))
+    naya = scheme_make_hash_table_equal_always();
   else if (scheme_is_hash_tree_eqv((Scheme_Object *)t))
     naya = scheme_make_hash_table_eqv();
   else
@@ -2733,6 +2735,7 @@ Scheme_Object *scheme_hash_eq_p(int argc, Scheme_Object *argv[])
 
   if (SCHEME_HASHTP(o)) {
     if ((((Scheme_Hash_Table *)o)->compare != scheme_compare_equal)
+        && (((Scheme_Hash_Table *)o)->compare != scheme_compare_equal_always)
         && (((Scheme_Hash_Table *)o)->compare != compare_eqv))
       return scheme_true;
   } else if (SCHEME_HASHTRP(o)) {
@@ -2740,6 +2743,7 @@ Scheme_Object *scheme_hash_eq_p(int argc, Scheme_Object *argv[])
       return scheme_true;
   } else if (SCHEME_BUCKTP(o)) {
     if ((((Scheme_Bucket_Table *)o)->compare != scheme_compare_equal)
+        && (((Scheme_Bucket_Table *)o)->compare != scheme_compare_equal_always)
         && (((Scheme_Bucket_Table *)o)->compare != compare_eqv))
       return scheme_true;
   } else {
@@ -2861,6 +2865,11 @@ int scheme_is_hash_table_eqv(Scheme_Object *o)
   return (((Scheme_Hash_Table *)o)->compare == compare_eqv);
 }
 
+int scheme_is_hash_table_equal_always(Scheme_Object *o)
+{
+  return (((Scheme_Hash_Table *)o)->compare == scheme_compare_equal_always);
+}
+
 int scheme_is_hash_tree_equal(Scheme_Object *o)
 {
   return SAME_TYPE(scheme_hash_tree_type, SCHEME_HASHTR_TYPE(o));
@@ -2869,6 +2878,11 @@ int scheme_is_hash_tree_equal(Scheme_Object *o)
 int scheme_is_hash_tree_eqv(Scheme_Object *o)
 {
   return SAME_TYPE(scheme_eqv_hash_tree_type, SCHEME_HASHTR_TYPE(o));
+}
+
+int scheme_is_hash_tree_equal_always(Scheme_Object *o)
+{
+  return SAME_TYPE(scheme_equal_always_hash_tree_type, SCHEME_HASHTR_TYPE(o));
 }
 
 static Scheme_Object *hash_table_put_bang(int argc, Scheme_Object *argv[])

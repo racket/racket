@@ -482,6 +482,7 @@ MZ_EXTERN void scheme_hash_set_atomic(Scheme_Hash_Table *table, Scheme_Object *k
 MZ_EXTERN Scheme_Object *scheme_hash_get_atomic(Scheme_Hash_Table *table, Scheme_Object *key);
 MZ_EXTERN int scheme_hash_table_equal(Scheme_Hash_Table *t1, Scheme_Hash_Table *t2);
 MZ_EXTERN int scheme_is_hash_table_equal(Scheme_Object *o);
+MZ_EXTERN int scheme_is_hash_table_equal_always(Scheme_Object *o);
 MZ_EXTERN int scheme_is_hash_table_eqv(Scheme_Object *o);
 MZ_EXTERN Scheme_Hash_Table *scheme_clone_hash_table(Scheme_Hash_Table *ht);
 MZ_EXTERN void scheme_clear_hash_table(Scheme_Hash_Table *ht);
@@ -496,6 +497,7 @@ XFORM_NONGCING MZ_EXTERN mzlonglong scheme_hash_tree_next(Scheme_Hash_Tree *tree
 XFORM_NONGCING_NONALIASING MZ_EXTERN int scheme_hash_tree_index(Scheme_Hash_Tree *tree, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val);
 MZ_EXTERN int scheme_hash_tree_equal(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2);
 MZ_EXTERN int scheme_is_hash_tree_equal(Scheme_Object *o);
+MZ_EXTERN int scheme_is_hash_tree_equal_always(Scheme_Object *o);
 MZ_EXTERN int scheme_is_hash_tree_eqv(Scheme_Object *o);
 
 /*========================================================================*/

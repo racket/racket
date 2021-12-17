@@ -163,6 +163,7 @@ scheme_init_type ()
   set_name(scheme_hash_tree_type, "<hash>");
   set_name(scheme_eq_hash_tree_type, "<hash>");
   set_name(scheme_eqv_hash_tree_type, "<hash>");
+  set_name(scheme_equal_always_hash_tree_type, "<hash>");
   set_name(scheme_hash_tree_indirection_type, "<hash>");
   set_name(scheme_hash_tree_subtree_type, "<hash-node>");
   set_name(scheme_hash_tree_collision_type, "<hash-node>");

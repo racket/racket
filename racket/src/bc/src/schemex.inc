@@ -298,6 +298,7 @@
   scheme_extension_table->scheme_hash_get_atomic = scheme_hash_get_atomic;
   scheme_extension_table->scheme_hash_table_equal = scheme_hash_table_equal;
   scheme_extension_table->scheme_is_hash_table_equal = scheme_is_hash_table_equal;
+  scheme_extension_table->scheme_is_hash_table_equal_always = scheme_is_hash_table_equal_always;
   scheme_extension_table->scheme_is_hash_table_eqv = scheme_is_hash_table_eqv;
   scheme_extension_table->scheme_clone_hash_table = scheme_clone_hash_table;
   scheme_extension_table->scheme_clear_hash_table = scheme_clear_hash_table;
@@ -311,6 +312,7 @@
   scheme_extension_table->scheme_hash_tree_index = scheme_hash_tree_index;
   scheme_extension_table->scheme_hash_tree_equal = scheme_hash_tree_equal;
   scheme_extension_table->scheme_is_hash_tree_equal = scheme_is_hash_tree_equal;
+  scheme_extension_table->scheme_is_hash_tree_equal_always = scheme_is_hash_tree_equal_always;
   scheme_extension_table->scheme_is_hash_tree_eqv = scheme_is_hash_tree_eqv;
   scheme_extension_table->scheme_make_prim = scheme_make_prim;
   scheme_extension_table->scheme_make_noneternal_prim = scheme_make_noneternal_prim;
