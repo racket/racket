@@ -766,38 +766,41 @@ static Scheme_Object *read_inner(Scheme_Object *port, ReadParams *params, int pr
               scheme_read_err(port, "read: expected `a` after `#h`");
               return NULL;
 	    } else {
-	      GC_CAN_IGNORE const mzchar str[] = { 's', 'h', 'e', 'q', 'v', 0 };
-	      int scanpos = 0, failed = 0;
+	      GC_CAN_IGNORE const mzchar str[] = { 's', 'h', 'e', 'q', 'u', 'a', 'l', 'w', 0 };
+	      int scanpos = 0, failed = 0, kind = -1;
 
 	      do {
 		ch = scheme_getc(port);
 		if ((mzchar)ch == str[scanpos]) {
 		  scanpos++;
+		} else if ((scanpos == 4) && (mzchar)ch == 'v') {
+		  /* hasheqv */
+		  kind = 2;
+		  break;
+		} else if ((scanpos == 7) && (mzchar)ch == 'w') {
+		  /* hashequalw */
+		  kind = 3;
+		  break;
+		} else if ((scanpos == 4) && ((ch == '(') || (ch == '[') || (ch == '{'))) {
+		  /* hasheq */
+		  kind = 0;
+		  break;
+		} else if ((scanpos == 2) && ((ch == '(') || (ch == '[') || (ch == '{'))) {
+		  /* hash */
+		  kind = 1;
+		  break;
 		} else {
-		  if ((scanpos == 2) || (scanpos == 4)) {
-		    if (!(ch == '(')
-			&& !(ch == '[')
-			&& !(ch == '{'))
-		      failed = 1;
-		  } else
-		    failed = 1;
+		  failed = 1;
 		  break;
 		}
 	      } while (str[scanpos]);
               
 	      if (!failed) {
 		/* Found recognized tag. Look for open paren... */
-                int kind;
 
-		if (scanpos > 4)
+		if (!((ch == '(') || (ch == '[') || (ch == '{'))) {
 		  ch = scheme_getc(port);
-                
-                if (scanpos == 4)
-                  kind = 0;
-                else if (scanpos == 2)
-                  kind = 1;
-                else 
-                  kind = 2;
+		}
 
 		if (ch == '(')
 		  return read_hash(port, ch, ')', kind, params);
