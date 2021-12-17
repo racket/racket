@@ -1068,6 +1068,8 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
       mzlonglong i;
       if (scheme_is_hash_tree_equal(obj))
         kind = 1;
+      else if (scheme_is_hash_tree_equal_always(obj))
+        kind = 3;
       else if (scheme_is_hash_tree_eqv(obj))
         kind = 2;
       else

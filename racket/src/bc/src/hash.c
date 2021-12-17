@@ -222,6 +222,14 @@ static int equal_w_key_wraps(Scheme_Object *ekey, Scheme_Object *tkey, Scheme_Ob
   return scheme_equal(ekey, tkey);
 }
 
+static int equal_always_w_key_wraps(Scheme_Object *ekey, Scheme_Object *tkey, Scheme_Object *key_wraps)
+{
+  if (key_wraps)
+    tkey = apply_equal_key_wraps(tkey, key_wraps);
+
+  return scheme_equal_always(ekey, tkey);
+}
+
 /*========================================================================*/
 /*                      normal mutable hash table                         */
 /*========================================================================*/
@@ -287,7 +295,7 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
   mask = table->size - 1;
 
   if (table->make_hash_indices) {
-    if (table->compare == scheme_compare_equal) {
+    if (table->compare == scheme_compare_equal || table->compare == scheme_compare_equal_always) {
       if (key_wraps)
         ekey = apply_equal_key_wraps(key, key_wraps);
       else
@@ -3355,6 +3363,12 @@ static Scheme_Object *hamt_linear_search(Scheme_Hash_Tree *tree, int stype, Sche
 	if (_interned_key) *_interned_key = found_key;
         return found_val;
       }
+    } else if (stype == scheme_equal_always_hash_tree_type) {
+      if (equal_always_w_key_wraps(key, found_key, key_wraps)) {
+        if (_i) *_i = i;
+        if (_interned_key) *_interned_key = found_key;
+        return found_val;
+      }
     } else {
       if (scheme_eqv(key, found_key)) {
         if (_i) *_i = i;
@@ -3556,6 +3570,10 @@ Scheme_Object *scheme_hash_tree_get_w_key_wraps(Scheme_Hash_Tree *tree, Scheme_O
     if (key_wraps)
       key = apply_equal_key_wraps(key, key_wraps);
     h = to_unsigned_hash(scheme_equal_hash_key(key));
+  } else if (stype == scheme_equal_always_hash_tree_type) {
+    if (key_wraps)
+      key = apply_equal_key_wraps(key, key_wraps);
+    h = to_unsigned_hash(scheme_equal_always_hash_key(key));
   } else
     h = to_unsigned_hash(scheme_eqv_hash_key(key));
   h = HAMT_REORDER(h);
@@ -3572,6 +3590,11 @@ Scheme_Object *scheme_hash_tree_get_w_key_wraps(Scheme_Hash_Tree *tree, Scheme_O
   } else {
     if (stype == scheme_hash_tree_type) {
       if (equal_w_key_wraps(key, tree->els[pos], key_wraps)) {
+        if (_interned_key) *_interned_key = tree->els[pos];
+        return mzHAMT_VAL(tree, pos);
+      }
+    } else if (stype == scheme_equal_always_hash_tree_type) {
+      if (equal_always_w_key_wraps(key, tree->els[pos], key_wraps)) {
         if (_interned_key) *_interned_key = tree->els[pos];
         return mzHAMT_VAL(tree, pos);
       }
@@ -3619,6 +3642,10 @@ Scheme_Hash_Tree *scheme_hash_tree_set_w_key_wraps(Scheme_Hash_Tree *tree, Schem
     if (key_wraps)
       ekey = apply_equal_key_wraps(ekey, key_wraps);
     h = to_unsigned_hash(scheme_equal_hash_key(ekey));
+  } else if (stype == scheme_equal_always_hash_tree_type) {
+    if (key_wraps)
+      ekey = apply_equal_key_wraps(ekey, key_wraps);
+    h = to_unsigned_hash(scheme_equal_always_hash_key(ekey));
   } else
     h = to_unsigned_hash(scheme_eqv_hash_key(key));
   h = HAMT_REORDER(h);
@@ -3681,6 +3708,8 @@ Scheme_Hash_Tree *scheme_hash_tree_set_w_key_wraps(Scheme_Hash_Tree *tree, Schem
       same = SAME_OBJ(key, in_tree->els[pos]);
     else if (stype == scheme_hash_tree_type)
       same = equal_w_key_wraps(ekey, in_tree->els[pos], key_wraps);
+    else if (stype == scheme_equal_always_hash_tree_type)
+      same = equal_always_w_key_wraps(ekey, in_tree->els[pos], key_wraps);
     else
       same = scheme_eqv(key, in_tree->els[pos]);
 
@@ -3694,8 +3723,10 @@ Scheme_Hash_Tree *scheme_hash_tree_set_w_key_wraps(Scheme_Hash_Tree *tree, Schem
              return empty_hash_tree[0];
            else if (stype == scheme_hash_tree_type)
              return empty_hash_tree[1];
-           else
+           else if (stype == scheme_eqv_hash_tree_type)
              return empty_hash_tree[2];
+           else
+             return empty_hash_tree[3];
         } else
           return tree;
       } else if (SAME_OBJ(val, mzHAMT_VAL(in_tree, pos))
@@ -3743,6 +3774,12 @@ static int hamt_equal_entries(int stype, void *eql_data,
         return scheme_recur_equal(v1, v2, eql_data);
     } else
       return scheme_equal(k1, k2);
+  } else if (stype == scheme_equal_always_hash_tree_type) {
+    if (eql_data) {
+      if (scheme_recur_equal(k1, k2, eql_data))
+        return scheme_recur_equal(v1, v2, eql_data);
+    } else
+      return scheme_equal_always(k1, k2);
   } else {
     if (scheme_eqv(k1, k2)) {
       if (eql_data)
@@ -3908,6 +3945,7 @@ static void register_traversers(void)
   GC_REG_TRAV(scheme_hash_tree_type, hash_tree_val);
   GC_REG_TRAV(scheme_eq_hash_tree_type, hash_tree_val);
   GC_REG_TRAV(scheme_eqv_hash_tree_type, hash_tree_val);
+  GC_REG_TRAV(scheme_equal_always_hash_tree_type, hash_tree_val);
   GC_REG_TRAV(scheme_hash_tree_subtree_type, hash_tree_val);
   GC_REG_TRAV(scheme_hash_tree_collision_type, hash_tree_val);
   GC_REG_TRAV(scheme_hash_tree_indirection_type, hash_tree_val);
