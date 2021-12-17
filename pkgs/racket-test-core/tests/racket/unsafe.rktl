@@ -649,6 +649,13 @@
               #:post (lambda (x) (list x (f64vector-ref v 2)))
               #:literal-ok? #f))
 
+  (test-bin 9.5 'unsafe-f32vector-ref (f32vector 1.0 9.5 18.7) 1)
+  (let ([v (f32vector 1.0 9.5 18.7)])
+    (test-tri (list (void) 27.4) 'unsafe-f32vector-set! v 2 27.4
+              #:pre (lambda () (f32vector-set! v 2 0.0))
+              #:post (lambda (x) (list x (f32vector-ref v 2)))
+              #:literal-ok? #f))
+
   (when (extflonum-available?)
     (test-bin 9.5t0 'unsafe-extflvector-ref (extflvector 1.0t0 9.5t0 18.7t0) 1)
     (test-un 5 'unsafe-extflvector-length (extflvector 1.1t0 2.0t0 3.1t0 4.5t0 5.7t0))

@@ -38,6 +38,7 @@
                      [_TAG         (id "_" "")]
                      [_TAG*        (id "_" "*")]
                      [TAGname      name]
+                     [f32?         (if (eq? (syntax-e #'TAG) 'f32) #'#t #'#f)]
                      [f64?         (if (eq? (syntax-e #'TAG) 'f64) #'#t #'#f)]
                      [f80?         (if (eq? (syntax-e #'TAG) 'f80) #'#t #'#f)]
                      [s16?         (if (eq? (syntax-e #'TAG) 's16) #'#t #'#f)]
@@ -64,6 +65,7 @@
                    (if (and (exact-nonnegative-integer? i) (< i (TAG-length v)))
                        ;; use JIT-inlined operation if available:
                        (cond
+                        [f32? (unsafe-f32vector-ref v i)]
                         [f64? (unsafe-f64vector-ref v i)]
                         [f80? (unsafe-f80vector-ref v i)]
                         [s16? (unsafe-s16vector-ref v i)]
@@ -77,6 +79,8 @@
                    (if (and (exact-nonnegative-integer? i) (< i (TAG-length v)))
                        ;; use JIT-inlined operation if available:
                        (cond
+                        [(and f32? (inexact-real? x))
+                         (unsafe-f32vector-set! v i x)]
                         [(and f64? (inexact-real? x))
                          (unsafe-f64vector-set! v i x)]
                         [(and f80? (extflonum? x))

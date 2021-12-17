@@ -55,6 +55,8 @@
   [unsafe-extflvector-length (known-procedure/pure 2)]
   [unsafe-extflvector-ref (known-procedure/succeeds 4)]
   [unsafe-extflvector-set! (known-procedure/succeeds 8)]
+  [unsafe-f32vector-ref (known-procedure/succeeds 4)]
+  [unsafe-f32vector-set! (known-procedure/succeeds 8)]
   [unsafe-f64vector-ref (known-procedure/succeeds 4)]
   [unsafe-f64vector-set! (known-procedure/succeeds 8)]
   [unsafe-f80vector-ref (known-procedure/succeeds 4)]

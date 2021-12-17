@@ -162,6 +162,21 @@
         (bytevector-ieee-double-native-set! mem k v)
         (foreign-set! 'double mem k v))))
 
+(define (unsafe-f32vector-ref f32 k)
+  (let* ([cptr (unsafe-struct*-ref f32 0)]
+         [mem (cpointer-memory cptr)]
+         [k (fx* k 4)])
+    (if (bytes? mem)
+        (bytevector-ieee-single-native-ref mem k)
+        (foreign-ref 'float mem k))))
+(define (unsafe-f32vector-set! f32 k v)
+  (let* ([cptr (unsafe-struct*-ref f32 0)]
+         [mem (cpointer-memory cptr)]
+         [k (fx* k 4)])
+    (if (bytes? mem)
+        (bytevector-ieee-single-native-set! mem k v)
+        (foreign-set! 'float mem k v))))
+
 ;; FIXME
 (define (unsafe-f80vector-ref f80 k)
   (let* ([cptr (unsafe-struct*-ref f80 0)]

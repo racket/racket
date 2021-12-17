@@ -436,6 +436,15 @@ Unsafe versions of @racket[f64vector-ref] and
 
 
 @deftogether[(
+@defproc[(unsafe-f32vector-ref [vec f32vector?] [k fixnum?]) flonum?]
+@defproc[(unsafe-f32vector-set! [vec f32vector?] [k fixnum?] [n flonum?]) void?]
+)]{
+
+Unsafe versions of @racket[f32vector-ref] and
+@racket[f32vector-set!].}
+
+
+@deftogether[(
 @defproc[(unsafe-s16vector-ref [vec s16vector?] [k fixnum?]) (integer-in -32768 32767)]
 @defproc[(unsafe-s16vector-set! [vec s16vector?] [k fixnum?] [n (integer-in -32768 32767)]) void?]
 )]{

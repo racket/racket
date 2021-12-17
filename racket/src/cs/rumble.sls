@@ -718,6 +718,8 @@
           unsafe-s16vector-set!
           unsafe-u16vector-ref
           unsafe-u16vector-set!
+          unsafe-f32vector-ref
+          unsafe-f32vector-set!
           unsafe-f64vector-ref
           unsafe-f64vector-set!
           unsafe-f80vector-set!
