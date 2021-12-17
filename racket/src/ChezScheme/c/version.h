@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-#include "config.h"
+#ifndef EXPEDITOR_EXTERNAL_USE
+# include "config.h"
+#endif
 
 #if defined(scheme_feature_pthreads)
 # define PTHREADS
@@ -157,8 +159,12 @@ typedef int tputsputcchar;
 typedef char *memcpy_t;
 struct timespec;
 #ifndef __MINGW32__
-# define _setjmp setjmp
-# define _longjmp longjmp
+# if defined(_WIN64)
+#  define HAND_CODED_SETJMP_SIZE 32
+# else
+#  define _setjmp setjmp
+#  define _longjmp longjmp
+# endif
 #endif
 #ifndef __MINGW32__
 #define ftruncate _chsize_s

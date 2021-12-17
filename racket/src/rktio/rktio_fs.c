@@ -19,6 +19,7 @@
 # include <windows.h>
 # include <shlobj.h>
 # include <direct.h>
+# include <sys/types.h>
 # include <sys/stat.h>
 # include <sys/utime.h>
 # include <io.h>
@@ -701,6 +702,106 @@ rktio_ok_t rktio_set_current_directory(rktio_t *rktio, const char *path)
   return !err;
 }
 
+#if defined(RKTIO_STAT_TIMESPEC_FIELD)
+# define rktio_st_atim st_atimespec
+# define rktio_st_mtim st_mtimespec
+# define rktio_st_ctim st_ctimespec
+#else
+# define rktio_st_atim st_atim
+# define rktio_st_mtim st_mtim
+# define rktio_st_ctim st_ctim
+#endif
+
+rktio_stat_t *rktio_file_or_directory_stat(
+  rktio_t *rktio, rktio_const_string_t path, rktio_bool_t follow_links)
+{
+  int stat_result;
+  struct rktio_stat_t *rktio_stat_buf;
+#ifdef RKTIO_SYSTEM_UNIX
+  struct stat stat_buf;
+
+  do {
+    if (follow_links) {
+      stat_result = stat(path, &stat_buf);
+    } else {
+      stat_result = lstat(path, &stat_buf);
+    }
+  } while ((stat_result == -1) && (errno == EINTR));
+
+  if (stat_result) {
+    get_posix_error();
+    return NULL;
+  } else {
+    rktio_stat_buf = (struct rktio_stat_t *) malloc(sizeof(struct rktio_stat_t));
+    rktio_stat_buf->device_id = stat_buf.st_dev;
+    rktio_stat_buf->inode = stat_buf.st_ino;
+    rktio_stat_buf->mode = stat_buf.st_mode;
+    rktio_stat_buf->hardlink_count = stat_buf.st_nlink;
+    rktio_stat_buf->user_id = stat_buf.st_uid;
+    rktio_stat_buf->group_id = stat_buf.st_gid;
+    rktio_stat_buf->device_id_for_special_file = stat_buf.st_rdev;
+    rktio_stat_buf->size = stat_buf.st_size;
+    rktio_stat_buf->block_size = stat_buf.st_blksize;
+    rktio_stat_buf->block_count = stat_buf.st_blocks;
+    /* The `tv_nsec` fields are only the fractional part of the seconds.
+       (The value is always lower than 1_000_000_000.) */
+    rktio_stat_buf->access_time_seconds = stat_buf.rktio_st_atim.tv_sec;
+    rktio_stat_buf->access_time_nanoseconds = stat_buf.rktio_st_atim.tv_nsec;
+    rktio_stat_buf->modify_time_seconds = stat_buf.rktio_st_mtim.tv_sec;
+    rktio_stat_buf->modify_time_nanoseconds = stat_buf.rktio_st_mtim.tv_nsec;
+    rktio_stat_buf->ctime_seconds = stat_buf.rktio_st_ctim.tv_sec;
+    rktio_stat_buf->ctime_nanoseconds = stat_buf.rktio_st_ctim.tv_nsec;
+    rktio_stat_buf->ctime_is_change_time = 1;
+  }
+#endif
+#ifdef RKTIO_SYSTEM_WINDOWS
+  struct __stat64 stat_buf;
+  const WIDE_PATH_t *wp;
+  wp = MSC_WIDE_PATH_temp(path);
+  if (!wp) {
+    return NULL;
+  }
+
+  do {
+    /* No stat/lstat distinction under Windows */
+    stat_result = _wstat64(wp, &stat_buf);
+  } while ((stat_result == -1) && (errno == EINTR));
+
+  if (stat_result) {
+    get_posix_error();
+    return NULL;
+  }
+
+  rktio_stat_buf = (struct rktio_stat_t *) malloc(sizeof(struct rktio_stat_t));
+  /* Corresponds to drive on Windows. 0 = A:, 1 = B: etc. */
+  rktio_stat_buf->device_id = stat_buf.st_dev;
+  rktio_stat_buf->inode = stat_buf.st_ino;
+  rktio_stat_buf->mode = stat_buf.st_mode;
+  rktio_stat_buf->hardlink_count = stat_buf.st_nlink;
+  rktio_stat_buf->user_id = stat_buf.st_uid;
+  rktio_stat_buf->group_id = stat_buf.st_gid;
+  /* `st_rdev` has the same value as `st_dev`, so don't use it */
+  rktio_stat_buf->device_id_for_special_file = 0;
+  rktio_stat_buf->size = stat_buf.st_size;
+  /* `st_blksize` and `st_blocks` don't exist under Windows,
+     so set them to an arbitrary integer, for example 0. */
+  rktio_stat_buf->block_size = 0;
+  rktio_stat_buf->block_count = 0;
+  /* The stat result under Windows doesn't contain nanoseconds
+     information, so set them to 0, corresponding to times in
+     whole seconds. */
+  rktio_stat_buf->access_time_seconds = stat_buf.st_atime;
+  rktio_stat_buf->access_time_nanoseconds = 0;
+  rktio_stat_buf->modify_time_seconds = stat_buf.st_mtime;
+  rktio_stat_buf->modify_time_nanoseconds = 0;
+  rktio_stat_buf->ctime_seconds = stat_buf.st_ctime;
+  rktio_stat_buf->ctime_nanoseconds = 0;
+  rktio_stat_buf->ctime_is_change_time = 0;
+#endif
+
+  return rktio_stat_buf;
+}
+
 static rktio_identity_t *get_identity(rktio_t *rktio, rktio_fd_t *fd, const char *path, int follow_links)
 {
   uintptr_t devi = 0, inoi = 0, inoi2 = 0;
@@ -950,7 +1051,7 @@ char *rktio_readlink(rktio_t *rktio, const char *fullfilename)
 #endif
 }
 
-int rktio_make_directory(rktio_t *rktio, const char *filename)
+int rktio_make_directory_with_permissions(rktio_t *rktio, const char *filename, int perm_bits)
 {
 #ifdef NO_MKDIR
   set_racket_error(RKTIO_ERROR_UNSUPPORTED);
@@ -971,10 +1072,13 @@ int rktio_make_directory(rktio_t *rktio, const char *filename)
 
   while (1) {
     wp = MSC_WIDE_PATH_temp(filename);
-    if (!wp) return 0;
+    if (!wp) {
+      if (copied) free(copied);
+      return 0;
+    }
     if (!MSC_W_IZE(mkdir)(wp
 # ifndef MKDIR_NO_MODE_FLAG
-			  , 0777
+			  , perm_bits
 # endif
 			  )) {
       if (copied) free(copied);
@@ -991,6 +1095,11 @@ int rktio_make_directory(rktio_t *rktio, const char *filename)
   if (copied) free(copied);
 
   return 0;
+}
+
+int rktio_make_directory(rktio_t *rktio, const char *filename)
+{
+  return rktio_make_directory_with_permissions(rktio, filename, RKTIO_DEFAULT_DIRECTORY_PERM_BITS);
 }
 
 int rktio_delete_directory(rktio_t *rktio, const char *filename, const char *current_directory, int enable_write_on_fail)
@@ -2291,11 +2400,10 @@ char *rktio_uname(rktio_t *rktio) {
  
 #ifdef RKTIO_SYSTEM_WINDOWS
 char *rktio_uname(rktio_t *rktio) {
-  char buff[1024], *r;
+  char buff[1024];
   OSVERSIONINFO info;
   BOOL hasInfo;
   char *p;
-  int len;
 
   info.dwOSVersionInfoSize = sizeof(info);
 

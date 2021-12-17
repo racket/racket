@@ -64,6 +64,26 @@
 (test #hash([four . 4] [three . 3] [one . 1] [two . 2])
       hash-union #hash([one . 1] [two . 1]) #hash([three . 3] [four . 4] [two . 1])
       #:combine +)
+(test #hash([1 . 1] [2 . 2] [3 . 3] [4 . 4])
+      hash-union #hash([1 . 1]) #hasheq([2 . 2] [3 . 3]) #hasheq([4 . 4]))
+(test #hasheq([1 . 1] [2 . 2] [3 . 3] [4 . 4])
+      hash-union #hasheq([1 . 1]) #hash([2 . 2] [3 . 3]) #hash([4 . 4]))
+(test #hash([1 . -2] [2 . 2])
+      hash-union #hash([1 . 1] [2 . 2]) #hash([1 . 3])
+      #:combine -)
+
+(test #hash([4 . four] [3 . three] [1 . one] [2 . two])
+      hash-union #hash([1 . one]) (make-hash '([2 . two] [3 . three] [4 . four])))
+(test #hash([four . 4] [three . 3] [one . 1] [two . 2])
+      hash-union #hash([one . 1] [two . 1]) (make-hash '([two . 1] [three . 3] [four . 4]))
+      #:combine +)
+(test #hash([1 . 1] [2 . 2] [3 . 3] [4 . 4])
+      hash-union #hash([1 . 1]) (make-hasheq '([2 . 2] [3 . 3])) (make-hasheq '([4 . 4])))
+(test #hasheq([1 . 1] [2 . 2] [3 . 3] [4 . 4])
+      hash-union #hasheq([1 . 1]) (make-hash '([2 . 2] [3 . 3])) (make-hash '([4 . 4])))
+(test #hash([1 . -2] [2 . 2])
+      hash-union #hash([1 . 1]) (make-hash '([1 . 3] [2 . 2]))
+      #:combine -)
 
 (test #hash((a . 5) (b . 7))
       hash-intersect #hash((a . 1) (b . 2) (c . 3)) #hash((a . 4) (b . 5))
@@ -757,6 +777,30 @@
                  (op ht ht2))))])
     (sync (system-idle-evt))
     (test #f `(no-crash? ,op) fail?)))
+
+;; ----------------------------------------
+;; check `hash-keys` on a table with weakly held keys:
+
+(test #t 'hash-keys 
+      (for/and ([i 10000])
+        (define ht (make-weak-hasheq))
+        (for ([i (in-range 1000)])
+          (hash-set! ht (number->string i) i))
+        (list? (hash-keys ht))))
+
+;; ----------------------------------------
+
+(test #t hash-ephemeron? (hash-copy-clear (make-ephemeron-hash)))
+(test #t hash-ephemeron? (hash-copy-clear (make-ephemeron-hasheq)))
+(test #t hash-ephemeron? (hash-copy-clear (make-ephemeron-hasheqv)))
+
+(test #f hash-ephemeron? (hash-copy-clear (make-hash)))
+(test #f hash-ephemeron? (hash-copy-clear (make-hasheq)))
+(test #f hash-ephemeron? (hash-copy-clear (make-hasheqv)))
+
+(test #t hash-equal? (hash-copy-clear (make-ephemeron-hash)))
+(test #t hash-eq? (hash-copy-clear (make-ephemeron-hasheq)))
+(test #t hash-eqv? (hash-copy-clear (make-ephemeron-hasheqv)))
 
 ;; ----------------------------------------
 

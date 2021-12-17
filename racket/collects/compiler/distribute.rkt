@@ -134,7 +134,7 @@
 			      (directory-list dir)))
 		  copy-collects)
         ;; Remove signatures, if any
-        (when (eq? 'macosx (cross-system-type))
+        (when (and executables? (eq? 'macosx (cross-system-type)))
           (for-each remove-signature binaries))
 	;; Patch binaries to find libs
         (when executables?
@@ -143,7 +143,7 @@
                (lambda (sub-dir type relative-dir)
                  (cond
                   [relative-base
-                   (if (string? relative-base) (string->path relative-base) relative-base)]
+                   (build-path relative-base relative-dir)]
                   [(not executables?)
                    (build-path dest-dir relative-dir)]
                   [sub-dir
@@ -174,7 +174,7 @@
                                                    relative-exts-dir
                                                    relative->binary-relative)
             ;; Add signatures, if needed
-            (when (eq? 'macosx (cross-system-type))
+            (when (and executables? (eq? 'macosx (cross-system-type)))
               (for-each add-ad-hoc-signature binaries))
             ;; Restore executable permissions:
             (when old-permss

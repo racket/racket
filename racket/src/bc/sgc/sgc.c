@@ -2461,7 +2461,7 @@ static void *do_malloc(SET_NO_BACKINFO
     a = malloc_sector(size + size_align(sizeof(MemoryChunk)), sector_kind_chunk, 1, 
                       flags & do_malloc_EXECUTABLE);
     if (!a) {
-      if (mem_use >= mem_limit)
+      if ((mem_use >= mem_limit) && !GC_dont_gc)
 	GC_gcollect();
       
       a = malloc_sector(size + size_align(sizeof(MemoryChunk)), sector_kind_chunk, 0,

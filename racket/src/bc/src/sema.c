@@ -1,8 +1,10 @@
 #include "schpriv.h"
+#include "schrktio.h"
 
 #ifndef NO_SCHEME_THREADS
 
 READ_ONLY Scheme_Object *scheme_always_ready_evt;
+READ_ONLY Scheme_Object *scheme_never_ready_evt;
 THREAD_LOCAL_DECL(Scheme_Object *scheme_system_idle_channel);
 
 static Scheme_Object *make_sema(int n, Scheme_Object **p);
@@ -51,6 +53,7 @@ static void register_traversers(void);
 typedef struct {
   Scheme_Object so;
   double sleep_end;
+  int is_monotonic;
 } Scheme_Alarm;
 
 /* For object-sync: */
@@ -175,7 +178,7 @@ void scheme_init_sema(Scheme_Startup_Env *env)
   scheme_addto_prim_instance("alarm-evt", 
 			     scheme_make_prim_w_arity(make_alarm,
 						      "alarm-evt",
-						      1, 1), 
+						      1, 2),
 			     env);
 
   scheme_addto_prim_instance("system-idle-evt", 
@@ -189,9 +192,10 @@ void scheme_init_sema(Scheme_Startup_Env *env)
   scheme_always_ready_evt->type = scheme_always_evt_type;
   scheme_addto_prim_instance("always-evt", scheme_always_ready_evt, env);
 
-  o = scheme_alloc_small_object();
-  o->type = scheme_never_evt_type;
-  scheme_addto_prim_instance("never-evt", o, env);
+  REGISTER_SO(scheme_never_ready_evt);
+  scheme_never_ready_evt = scheme_alloc_small_object();
+  scheme_never_ready_evt->type = scheme_never_evt_type;
+  scheme_addto_prim_instance("never-evt", scheme_never_ready_evt, env);
 
   REGISTER_SO(thread_recv_evt);
   o = scheme_alloc_small_object();
@@ -1398,6 +1402,7 @@ static Scheme_Object *make_alarm(int argc, Scheme_Object **argv)
 {
   Scheme_Alarm *a;
   double sleep_end;
+  int is_monotonic = 0;
 
   if (!SCHEME_REALP(argv[0])) {
     scheme_wrong_contract("alarm-evt", "real?", 0, argc, argv);
@@ -1405,9 +1410,14 @@ static Scheme_Object *make_alarm(int argc, Scheme_Object **argv)
 
   sleep_end = scheme_get_val_as_double(argv[0]);
 
+  if((argc > 1) && SCHEME_TRUEP(argv[1])) {
+    is_monotonic = 1;
+  }
+
   a = MALLOC_ONE_TAGGED(Scheme_Alarm);
   a->so.type = scheme_alarm_type;
   a->sleep_end = sleep_end;
+  a->is_monotonic = is_monotonic;
 
   return (Scheme_Object *)a;
 }
@@ -1416,11 +1426,17 @@ static int alarm_ready(Scheme_Object *_a, Scheme_Schedule_Info *sinfo)
 {
   Scheme_Alarm *a = (Scheme_Alarm *)_a;
 
-  if (!sinfo->sleep_end
-      || (sinfo->sleep_end > a->sleep_end))
-    sinfo->sleep_end = a->sleep_end;
+  double sleep_end_monotonic = a->sleep_end;
+  if(!a->is_monotonic) {
+    sleep_end_monotonic = rktio_get_inexact_monotonic_milliseconds(scheme_rktio)
+                          + a->sleep_end - scheme_get_inexact_milliseconds();
+  }
 
-  if (a->sleep_end <= scheme_get_inexact_milliseconds())
+  if (!sinfo->sleep_end
+      || (sinfo->sleep_end > sleep_end_monotonic))
+    sinfo->sleep_end = sleep_end_monotonic;
+
+  if (sleep_end_monotonic <= rktio_get_inexact_monotonic_milliseconds(scheme_rktio))
     return 1;
 
   return 0;

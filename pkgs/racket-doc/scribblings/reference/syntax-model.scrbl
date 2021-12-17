@@ -148,16 +148,35 @@ form's @tech{scope sets} at all phases. The context of each binding
 and reference determines the @tech{phase level} whose @tech{scope set} is
 relevant.
 
+A @deftech{binding space} is a convention that distinguishes bindings
+by having a specific @tech{scope} for the space; an identifier is
+``bound in a space'' if its binding includes the space's scope in its
+@tech{scope set}. A space's scope is accessed indirectly by using
+@racket[make-interned-syntax-introducer]; that is, a space is just the
+set of bindings with a scope that is interned with that space's name,
+where the @deftech{default binding space} corresponds to having no
+interned scopes. The @racket[require] and @racket[provide] forms
+include support for bindings spaces through subforms like
+@racket[for-space] and @racket[only-space-in]. No other forms provided
+by the @racketmodname[racket] module bind or reference identifier in a
+specified space; such forms are intended to be implemented by new
+macros. By convention, when an identifier is bound in a space, a
+corresponding identifier also should be bound in the default binding
+space; that convention helps avoid mismatches between imports or
+mismatches due to local bindings that shadow only in some spaces.
+
 @history[#:changed "6.3" @elem{Changed local bindings to have a
                                specific phase level, like top-level
-                               and module bindings.}]
+                               and module bindings.}
+         #:changed "8.2.0.3" @elem{Added @tech{binding spaces}.}]
 
 @;------------------------------------------------------------------------
 @section[#:tag "stxobj-model"]{Syntax Objects}
 
 A @deftech{syntax object} combines a simpler Racket value, such as a symbol or pair, with
-@tech{lexical information}, @tech{source-location} information, @tech{syntax properties}, and @tech{tamper
-status}. The @deftech{lexical information} of a @tech{syntax object} comprises a set of @tech{scope
+@tech{lexical information}, @tech{source-location} information, @tech{syntax properties}, and
+whether the syntax object is
+@tech{tainted}. The @deftech{lexical information} of a @tech{syntax object} comprises a set of @tech{scope
 sets}, one for each @tech{phase level}. In particular, an @tech{identifier} is represented as a syntax
 object containing a @tech{symbol}, and its @tech{lexical information} can be combined with the global
 table of bindings to determine its @tech{binding} (if any) at each @tech{phase level}.
@@ -711,10 +730,6 @@ In addition to using scopes to track introduced identifiers, the
 expander tracks the expansion history of a form through @tech{syntax
 properties} such as @racket['origin]. See @secref["stxprops"] for
 more information.
-
-Finally, the expander uses a @tech{tamper status} to control the way
-that unexported and protected @tech{module bindings} are used. See
-@secref["stxcerts"] for more information on a @tech{tamper status}.
 
 The expander's handling of @racket[letrec-syntaxes+values] is similar
 to its handling of @racket[define-syntaxes]. A

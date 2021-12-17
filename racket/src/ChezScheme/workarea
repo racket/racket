@@ -283,7 +283,7 @@ else
     if [ -h $W/s/$M.def ] ; then
         rm $W/s/$M.def
     fi
-    if [ $"M" = "$Muni" ] ; then
+    if [ "$M" = "$Muni" ] ; then
         Munix=unix
     else
         Munix=tunix
@@ -382,8 +382,8 @@ case $M in
   *nt)
     (cd $W/boot/$M; workln "$upupupbootdir"/boot/$M/mainmd.obj mainmd.obj)
     (cd $W/boot/$M; workln "$upupupbootdir"/boot/$M/mainmt.obj mainmt.obj)
-    (cd $W/boot/$M; workln "$upupupbootdir"/boot/$M/csv955md.lib csv955md.lib)
-    (cd $W/boot/$M; workln "$upupupbootdir"/boot/$M/csv955mt.lib csv955mt.lib)
+    (cd $W/boot/$M; workln "$upupupbootdir"/boot/$M/csv957md.lib csv957md.lib)
+    (cd $W/boot/$M; workln "$upupupbootdir"/boot/$M/csv957mt.lib csv957mt.lib)
     (cd $W/boot/$M; workln "$upupupbootdir"/boot/$M/scheme.res scheme.res)
     ;;
   *)
@@ -398,8 +398,8 @@ case $M in
   *nt)
     (cd $W/bin/$M; workln "$upupupsrcdir"/bin/$M/scheme.exe scheme.exe)
     (cd $W/bin/$M; forceworkln2 scheme.exe petite.exe)
-    (cd $W/bin/$M; workln "$upupupsrcdir"/bin/$M/csv955.dll csv955.dll)
-    (cd $W/bin/$M; workln "$upupupsrcdir"/bin/$M/csv955.lib csv955.lib)
+    (cd $W/bin/$M; workln "$upupupsrcdir"/bin/$M/csv957.dll csv957.dll)
+    (cd $W/bin/$M; workln "$upupupsrcdir"/bin/$M/csv957.lib csv957.lib)
     ;;
   *)
     (cd $W/bin/$M; workln "$upupupsrcdir"/bin/$M/scheme scheme)
@@ -434,15 +434,6 @@ workdir $W/pkg
 (cd $W; workln "$upsrcdir"/makefiles/installsh installsh)
 (cd $W; workln "$upsrcdir"/scheme.1.in scheme.1.in)
 
-case $M in
-  *nt)
-    (cd $W/c; make source > /dev/null 2>&1)
-    (cd $W/s; make source > /dev/null 2>&1)
-    (cd $W/mats; make source > /dev/null 2>&1)
-    ;;
-esac
-
-
 cat > $W/s/Mf-config << END
 upupsrcdir=$upupsrcdir
 upupupbootdir=$upupupbootdir
@@ -453,5 +444,25 @@ END
 cat > $W/Mf-config << END
 srcdir=$srcdir
 END
+
+# temporary; replaced by `configure`, but needed for *nt
+cat > $W/c/Mf-config << END
+upupsrcdir=$upupsrcdir
+m=$M
+END
+
+# temporary; replaced by `configure`, but needed for *nt
+cat > $W/mats/Mf-config << END
+upupsrcdir=$upupsrcdir
+m=$M
+END
+
+case $M in
+  *nt)
+    (cd $W/c; make source > /dev/null 2>&1)
+    (cd $W/s; make source > /dev/null 2>&1)
+    (cd $W/mats; make source > /dev/null 2>&1)
+    ;;
+esac
 
 exit 0

@@ -2156,7 +2156,6 @@
     #t)
 
   (when-threaded
-    ; copied from thread.ms
     (begin
       (define $threads (foreign-procedure "(cs)threads" () scheme-object))
       (define $nthreads 1)
@@ -2165,41 +2164,24 @@
           (lambda () (sleep t))))
       (define $thread-check
         (lambda ()
-          (let loop ([n 10] [nt (length ($threads))])
-            (cond
-              [(<= nt $nthreads)
-               (set! $nthreads nt)
-               (collect)]
-              [else
-                ($yield)
-                (let* ([ls ($threads)] [nnt (length ls)])
-                  (cond
-                    [(< nnt nt) (loop n nnt)]
-                    [(= n 0)
-                     (set! $nthreads nnt)
-                     (errorf #f "extra threads running ~s" ls)]
-                    [else (loop (- n 1) nnt)]))]))
+          (let ([ls ($threads)])
+            (unless (= $nthreads (length ls))
+              (errorf #f "extra threads running ~s" ls))
+            (collect))
           #t))
       ($thread-check)))
 
   (when-threaded
     ((lambda (x)
        (<= 200 x 2000))
-     (let ([cc (make-cost-center)]
-           [finished #f]
-           [finished-mutex (make-mutex)]
-           [finished-condition (make-condition)])
+     (let ([cc (make-cost-center)])
        (define sum-th
          (lambda ()
-           (with-cost-center cc (lambda () ($cc-sum-1 (iota 10))))
-           (with-mutex finished-mutex
-             (if finished
-                 (condition-signal finished-condition)
-                 (set! finished #t)))))
-       (with-mutex finished-mutex
-         (fork-thread sum-th)
-         (fork-thread sum-th)
-         (condition-wait finished-condition finished-mutex))
+           (with-cost-center cc (lambda () ($cc-sum-1 (iota 10))))))
+       (define t1 (fork-thread sum-th))
+       (define t2 (fork-thread sum-th))
+       (thread-join t1)
+       (thread-join t2)
        (cost-center-instruction-count cc))))
 
   (when-threaded ($thread-check))
@@ -2208,41 +2190,28 @@
     (reset-cost-center! $cc-1)
     ((lambda (x)
        (<= 200 x 3000))
-     (let ([finished #f]
-           [finished-mutex (make-mutex)]
-           [finished-condition (make-condition)])
+     (let ()
        (define sum-th
          (lambda ()
-           ($cc-sum-2 (iota 10))
-           (with-mutex finished-mutex
-             (if finished
-                 (condition-signal finished-condition)
-                 (set! finished #t)))))
-       (with-mutex finished-mutex
-         (fork-thread sum-th)
-         (fork-thread sum-th)
-         (condition-wait finished-condition finished-mutex))
+           ($cc-sum-2 (iota 10))))
+       (define t1 (fork-thread sum-th))
+       (define t2 (fork-thread sum-th))
+       (thread-join t1)
+       (thread-join t2)
        (cost-center-instruction-count $cc-1))))
 
   (when-threaded ($thread-check))
 
   (when-threaded
     (reset-cost-center! $cc-1)
-    (let ([cc (make-cost-center)]
-          [finished #f]
-          [finished-mutex (make-mutex)]
-          [finished-condition (make-condition)])
+    (let ([cc (make-cost-center)])
       (define sum-th
         (lambda ()
-          (with-cost-center cc (lambda () ($cc-sum-2 (iota 10))))
-          (with-mutex finished-mutex
-            (if finished
-                (condition-signal finished-condition)
-                (set! finished #t)))))
-       (with-mutex finished-mutex
-         (fork-thread sum-th)
-         (fork-thread sum-th)
-         (condition-wait finished-condition finished-mutex))
+          (with-cost-center cc (lambda () ($cc-sum-2 (iota 10))))))
+       (define t1 (fork-thread sum-th))
+       (define t2 (fork-thread sum-th))
+       (thread-join t1)
+       (thread-join t2)
        (<= (cost-center-instruction-count $cc-1)
            (cost-center-instruction-count cc))))
 
@@ -2391,21 +2360,14 @@
       (case (fixnum-width)
         [(30) 160]
         [(61) 320])
-      (let ([cc (make-cost-center)]
-            [finished #f]
-            [finished-mutex (make-mutex)]
-            [finished-condition (make-condition)])
+      (let ([cc (make-cost-center)])
         (define reverse-th
           (lambda ()
-            (with-cost-center cc (lambda () ($cc-reverse-1 (iota 10))))
-            (with-mutex finished-mutex
-              (if finished
-                  (condition-signal finished-condition)
-                  (set! finished #t)))))
-        (with-mutex finished-mutex
-          (fork-thread reverse-th)
-          (fork-thread reverse-th)
-          (condition-wait finished-condition finished-mutex))
+            (with-cost-center cc (lambda () ($cc-reverse-1 (iota 10))))))
+        (define t1 (fork-thread reverse-th))
+        (define t2 (fork-thread reverse-th))
+        (thread-join t1)
+        (thread-join t2)
         (cost-center-allocation-count cc))))
 
   (when-threaded ($thread-check))
@@ -2414,41 +2376,28 @@
     (reset-cost-center! $cc-2)
     ((lambda (x) ; wide range to accommodate both 4-byte and 8-byte words
        (<= 160 x 960))
-     (let ([finished #f]
-           [finished-mutex (make-mutex)]
-           [finished-condition (make-condition)])
+     (let ()
        (define reverse-th
          (lambda ()
-           ($cc-reverse-2 (iota 10))
-           (with-mutex finished-mutex
-             (if finished
-                 (condition-signal finished-condition)
-                 (set! finished #t)))))
-       (with-mutex finished-mutex
-         (fork-thread reverse-th)
-         (fork-thread reverse-th)
-         (condition-wait finished-condition finished-mutex))
+           ($cc-reverse-2 (iota 10))))
+        (define t1 (fork-thread reverse-th))
+        (define t2 (fork-thread reverse-th))
+        (thread-join t1)
+        (thread-join t2)
        (cost-center-allocation-count $cc-2))))
 
   (when-threaded ($thread-check))
 
   (when-threaded
     (reset-cost-center! $cc-2)
-    (let ([cc (make-cost-center)]
-          [finished #f]
-          [finished-mutex (make-mutex)]
-          [finished-condition (make-condition)])
+    (let ([cc (make-cost-center)])
       (define reverse-th
         (lambda ()
-          (with-cost-center cc (lambda () ($cc-reverse-2 (iota 10))))
-          (with-mutex finished-mutex
-            (if finished
-                (condition-signal finished-condition)
-                (set! finished #t)))))
-       (with-mutex finished-mutex
-         (fork-thread reverse-th)
-         (fork-thread reverse-th)
-         (condition-wait finished-condition finished-mutex))
+          (with-cost-center cc (lambda () ($cc-reverse-2 (iota 10))))))
+       (define t1 (fork-thread reverse-th))
+       (define t2 (fork-thread reverse-th))
+       (thread-join t1)
+       (thread-join t2)
        (<= (cost-center-instruction-count $cc-2)
            (cost-center-instruction-count cc))))
 
@@ -4988,6 +4937,149 @@
     (#%$show-allocation #t)
     #t)
 )
+
+; regression test for a bug in arm32 targets that improperly handled
+; add-with-immediate instructions when the immediate operand didn't fit
+; into 8 bits
+; h/t @weinholt on Github
+(mat arm32-immediate-operand
+  (begin
+    (with-output-to-file "testfile-ai-1.ss"
+      (lambda ()
+        (pretty-print
+         '(library (arm-immediate-1)
+            (export x y)
+            (import (rnrs))
+            (define (x) '(a))
+            (define (y . _) '(a)))))
+      'replace)
+    (compile-library "testfile-ai-1.ss")
+    (with-output-to-file "testfile-ai-2.ss"
+      (lambda ()
+        (pretty-print
+         '(library (arm-immediate-2)
+            (export)
+            (import (rnrs) (arm-immediate-1))
+            (define a
+              (y (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)))
+            (define b
+              (y (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)
+                 (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x))))))
+      'replace)
+    (compile-library "testfile-ai-2.ss")
+    #t))
+
+(mat self-evaluating-vectors
+  ;; Do not assume the initial state of self-evaluating-vectors. For the tests below however, set it
+  ;; to #t
+  (begin
+    (define default-sev (self-evaluating-vectors))
+    (self-evaluating-vectors #t)
+    #t)
+
+  (error? (parameterize ([self-evaluating-vectors #f])
+            (eval '#(1 a b))))
+
+  (equal? (eval '#(2 c d)) '#(2 c d))
+
+  (equal? (eval '(let ()
+                   (define-syntax qv
+                     (syntax-rules ()
+                       [(_ a ...) #(a ...)]))
+                   (qv 3 e f)))
+          '#(3 e f))
+
+  ;; There were bugs in handling of annotations in vectors (which only manifests when loading from files)
+  (begin
+    (define-syntax exptest
+      (lambda (stx)
+        (define (testfile . forms)
+          (with-output-to-file "testfile-sev.ss"
+            (lambda ()
+              (for-each pretty-print forms))
+            'replace)
+          (load "testfile-sev.ss"))
+
+        (syntax-case stx ()
+          [(_ (lib name . libbody) b b* ...)
+           (let ()
+             (testfile (datum (lib name . libbody)))
+             #'(let ()
+                 (import name)
+                 b b* ...))])))
+    #t)
+
+  (equal? (exptest (library (test-self-eval-vector)
+                     (export v)
+                     (import (chezscheme))
+                     (define v #(a b c)))
+                   v)
+          '#(a b c))
+  (equal? (exptest (library (test-self-eval-vector)
+                     (export v)
+                     (import (chezscheme))
+                     (define v #(a (b) #(c (d) e))))
+                   v)
+          '#(a (b) #(c (d) e)))
+  (equal? (exptest (library (test-self-eval-vector)
+                     (export qv)
+                     (import (chezscheme))
+                     (define-syntax qv
+                       (syntax-rules ()
+                         [(_ a ...)
+                          #(a ...)])))
+                   (qv a (b c #(d) e) f))
+          '#(a (b c #(d) e) f))
+  (equal? (exptest (library (test-self-eval-vector)
+                     (export mqv v)
+                     (import (chezscheme))
+                     (define-syntax mqv
+                       (syntax-rules ()
+                         [(_ mm init)
+                          (define-syntax mm
+                            (syntax-rules ()
+                              [(_ a (... ...))
+                               #(init a (... ...) #(init a) (... ...) (#(init a)) (... ...))]))]))
+                     (mqv M zz)
+                     (define v (M a- b-)))
+                   (mqv mm XX)
+                   (list (mm aa bb cc) v))
+          '(#(XX aa bb cc #(XX aa) #(XX bb) #(XX cc) (#(XX aa)) (#(XX bb)) (#(XX cc)))
+            #(zz a- b- #(zz a-) #(zz b-) (#(zz a-)) (#(zz b-)))))
+  ;; Restore the flag in order not to disturb the other tests
+  (begin
+    (self-evaluating-vectors default-sev)
+    #t))
 
 (mat current-generate-id
   (begin

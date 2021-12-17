@@ -58,10 +58,6 @@
 ;; - payloads should contain no artificial syntax objects (that is, they should
 ;;   only contain syntax objects from the input or that will be the basis for
 ;;   results (possibly adjusted by scopes, etc))
-;; - arming and disarming should be reported separately from rewrites, so that
-;;   the macro stepper can track the identity of terms (it's complicated---some
-;;   adjustments can be collapsed, as long as the intermediate syntax objects
-;;   are not externally visible)
 
 (define key->arity
   ;; event-symbol => (U Nat 'any)

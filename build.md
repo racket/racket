@@ -733,7 +733,10 @@ usual GitHub-based workflow:
 
 * Make your changes and rebuild with `make` or `make as-is` or `raco
   setup`, where `raco setup` is the best choice when modifying Racket
-  libraries that are in `"collects"` or a package.
+  libraries that are in `"collects"` or a package. If your changes
+  involve modifying things that are part of the `racket` executable,
+  then a simple `make` may not suffice; see “Modifying Racket” in
+  `"racket/src/README.txt"` for more information.
 
 * Commit changes to your fork and [submit a pull
   request](https://help.github.com/en/articles/creating-a-pull-request).
@@ -744,15 +747,31 @@ Guidelines](#33-general-contribution-guidelines).
 ### 3.2. Distribution-Package Contributions
 
 If you find yourself changing a file that is in a `"share/pkgs"`
-subdirectory, then that file is not part of the main Racket Git
-repository. It almost certainly has its own Git repository somewhere
-else, possibly within
+subdirectory (either installed as part of a Racket release or as a
+product of an in-place build), then that file is not part of the main
+Racket Git repository. It almost certainly has its own Git repository
+somewhere else, possibly within
 [https://github.com/racket](https://github.com/racket), but possibly in
 another user’s space. The name of the directory in `"share/pkgs"` is
 almost certainly the package name.
 
-To start working on a package <_pkg-name_>, it’s usually best to go to
-the root directory of your Racket repository checkout and run
+To start working on a package <_pkg-name_> from a Racket release or
+snapshot, you first need to adjust the package installation to use the
+source specified by the main package catalog
+
+  `raco pkg update --no-setup --catalog https://pkgs.racket-lang.org
+<pkg-name>`
+
+and then in the directory you’d like to hold the package’s source
+
+  `raco pkg update --clone <pkg-name>`
+
+will clone the package’s source Git repository into `"<pkg-name>"`
+within the current directory.
+
+Alternatively, if you already have an in-place build of the main Racket
+repository, you can start working on a package <_pkg-name_>, by going to
+the root directory of your Racket repository checkout and running
 
   `raco pkg update --clone extra-pkgs/<pkg-name>`
 
@@ -788,7 +807,7 @@ Some information that might improve your experience:
 * If you’re done and want to go back to the normal installation for
   <_pkg-name_>, use
 
-    `raco pkg update --catalog <pkg-name>`
+    `raco pkg update --lookup <pkg-name>`
 
 * See Developing Packages with Git for more information about how
   packages are meant to work as Git repositories.

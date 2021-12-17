@@ -32,7 +32,7 @@
           'load/use-compiled load/use-compiled
 
           'current-eval current-eval
-          'current-compile current-compile
+          'current-compile current-compile ; protected
           'current-load current-load
           'current-load/use-compiled current-load/use-compiled
 

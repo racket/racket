@@ -241,7 +241,8 @@
                    compress-flag
                    "++exe" "../build/raw_racketcs.exe" (format "../../Racket~a.exe" cs-suffix)
                    "++exe" "../build/raw_gracketcs.exe" (format "../../lib/GRacket~a.exe" cs-suffix)
-                   "../build/raw_libracketcs.dll" "../../lib/libracketcsxxxxxxx.dll"
+                   "++rewrite" "libracketcsxxx_raw.dll" "libracketcsxxxxxxx.dll"
+                   "../build/libracketcsxxx_raw.dll" "../../lib/libracketcsxxxxxxx.dll"
                    "../build/petite-v.boot"
                    "../build/scheme-v.boot"
                    "../build/racket-v.boot")

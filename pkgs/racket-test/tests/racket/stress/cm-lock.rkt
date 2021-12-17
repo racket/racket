@@ -38,24 +38,25 @@
      (displayln "#lang racket/base\n" o))))
 
 (define p-l-c (compile-lock->parallel-lock-client (make-compile-lock) (current-custodian)))
-(parameterize ([parallel-lock-client p-l-c]
-               [current-load/use-compiled (make-compilation-manager-load/use-compiled-handler)])
+(parameterize ([parallel-lock-client p-l-c])
   (define ths
     (for/list ([fn (in-list fns)]
                [j (in-naturals)])
       (thread
        (lambda ()
-         (write-compile-stuck fn)
+         (parameterize ([current-namespace (make-base-namespace)])
+           (parameterize ([current-load/use-compiled (make-compilation-manager-load/use-compiled-handler)])
+             (write-compile-stuck fn)
 
-         (for ([i (in-range 20)])
-           (thread-wait
-            (thread (lambda ()
-                      (dynamic-require fn #f)
-                      (log-error "shouldn't get here!")))))
+             (for ([i (in-range 20)])
+               (thread-wait
+                (thread (lambda ()
+                          (dynamic-require fn #f)
+                          (log-error "shouldn't get here!")))))
 
-         (printf "Expect succeed ~a...\n" j)
-         (write-compile-ok fn)
-         (dynamic-require fn #f)))))
+             (printf "Expect succeed ~a...\n" j)
+             (write-compile-ok fn)
+             (dynamic-require fn #f)))))))
   (for-each sync ths))
 
 (delete-directory/files dir)

@@ -10,6 +10,7 @@
          "full-binding.rkt"
          "module-binding.rkt"
          "local-binding.rkt"
+         "like-ambiguous-binding.rkt"
          "datum-map.rkt"
          "../expand/rename-trans.rkt"
          "../common/module-path.rkt"
@@ -26,6 +27,7 @@
  same-binding-nominals?
  identifier-binding
  identifier-binding-symbol
+ identifier-distinct-binding
  
  maybe-install-free=id!
  binding-set-free=id
@@ -82,8 +84,8 @@
 (define (same-binding-nominals? ab bb)
   (and (eq? (module-path-index-resolve (module-binding-nominal-module ab))
             (module-path-index-resolve (module-binding-nominal-module bb)))
-       (eqv? (module-binding-nominal-require-phase ab)
-             (module-binding-nominal-require-phase bb))
+       (eqv? (module-binding-nominal-require-phase+space-shift ab)
+             (module-binding-nominal-require-phase+space-shift bb))
        (eqv? (module-binding-nominal-sym ab)
              (module-binding-nominal-sym bb))))
 
@@ -110,11 +112,20 @@
               (module-binding-nominal-module b)
               (module-binding-nominal-sym b)
               (module-binding-phase b)
-              (module-binding-nominal-require-phase b)
-              (module-binding-nominal-phase b)))]
+              (module-binding-nominal-require-phase+space-shift b)
+              (module-binding-nominal-phase+space b)))]
    [(local-binding? b)
     'lexical]
    [else #f]))
+
+(define (identifier-distinct-binding id other-id phase)
+  (define scs (resolve id phase #:get-scopes? #t))
+  (cond
+    [(not scs) #f]
+    [else
+     (define other-scs (syntax-scope-set other-id phase))
+     (and (not (subset? scs other-scs))
+          (identifier-binding id phase))]))
 
 ;; ----------------------------------------
 
@@ -170,7 +181,7 @@
                                (modified-content
                                 content
                                 (propagation-mpi-shift (and (modified-content? content*)
-                                                            (modified-content-scope-propagations+tamper content*))
+                                                            (modified-content-scope-propagations+taint content*))
                                                        (lambda (s) (shift-cons shift s))
                                                        inspector
                                                        (syntax-scopes s)
@@ -250,6 +261,9 @@
            (when can-cache?
              (resolve+shift-cache-set! s phase result-b))
            result-b])]
+       [(like-ambiguous-binding? b) (if unbound-sym?
+                                        (syntax-content s)
+                                        ambiguous-value)]
        [else
         (when can-cache?
           (resolve+shift-cache-set! s phase (or b '#:none)))
@@ -321,7 +335,7 @@
                              (modified-content
                               content
                               (propagation-mpi-shift (and (modified-content? content*)
-                                                          (modified-content-scope-propagations+tamper content*))
+                                                          (modified-content-scope-propagations+taint content*))
                                                      #f
                                                      insp
                                                      (syntax-scopes s)

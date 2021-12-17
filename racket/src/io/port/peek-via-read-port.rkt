@@ -24,6 +24,13 @@
    (lambda (dest-bstr start end copy? to-buffer?)
      0)]
 
+  ;; in atomic mode
+  ;; called when no peeked bytes are available;
+  ;; return 'not-ready as #f, while #f means implement by peeking,
+  ;; and other possibilities are #t or evt 
+  [byte-ready/inner
+   (lambda (work-done!) #f)]
+
   #:static
   ;; in atomic mode
   [purge-buffer
@@ -205,6 +212,9 @@
        (cond
          [(peeked-amt . fx> . 0) #t]
          [peeked-eof? #t]
+         [(send peek-via-read-input-port this byte-ready/inner work-done!)
+          => (lambda (status) (and (not (eq? status 'not-ready))
+                                   status))]
          [else
           (slow-mode!)
           (define v (pull-some-bytes))

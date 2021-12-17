@@ -2,6 +2,8 @@
 @(require "mz.rkt" (for-label syntax/parse))
 
 @(define lit-ellipsis (racket ...))
+@(define lit-_ (racket _))
+@(define meta-dots @racketmetafont{...})
 
 @(define syntax-eval
    (lambda ()
@@ -33,6 +35,8 @@
                              (stat-pattern ...)
                              (stat-pattern ...+ . stat-pattern)
                              (code:line #,(tt "#")(stat-pattern ...))
+                             (code:line #,(tt "#&")stat-pattern)
+                             (code:line #,(tt "#s")(key-datum stat-pattern ...))
                              const]
                [ellipsis #,lit-ellipsis])]{
 
@@ -49,8 +53,8 @@ A syntax object matches a @racket[pattern] as follows:
 
  @specsubform[_]{
 
- A @racket[_] pattern (i.e., an identifier with the same binding as
- @racket[_]) matches any syntax object.}
+ A @lit-_ pattern (i.e., an identifier with the same binding as
+ @lit-_ and not among the @racket[literal-id]s) matches any syntax object.}
 
  @specsubform[id]{
 
@@ -64,6 +68,10 @@ A syntax object matches a @racket[pattern] as follows:
  object that matched the pattern with a @deftech{depth marker} of
  @math{0}.
 
+ With a @racket[stat-pattern], @racket[...] is not treated specially.
+ It either matches a @racket[literal-id] or is bound as a
+ pattern variable.
+
  An @racket[id] that has the same binding as a @racket[literal-id]
  matches a syntax object that is an identifier with the same binding
  in the sense of @racket[free-identifier=?].  The match does not
@@ -71,7 +79,7 @@ A syntax object matches a @racket[pattern] as follows:
 
  @specsubform[(pattern ...)]{
 
- A @racket[(pattern ...)] pattern matches a syntax object whose datum
+ A @racket[(pattern @#,meta-dots)] pattern matches a syntax object whose datum
  form (i.e., without lexical information) is a list with as many
  elements as sub-@racket[pattern]s in the pattern, and where each
  syntax object that corresponds to an element of the list matches
@@ -93,7 +101,7 @@ A syntax object matches a @racket[pattern] as follows:
 
  @specsubform[(pattern ... pattern ellipsis pattern ...)]{
 
- Like the @racket[(pattern ...)] kind of pattern, but matching a
+ Like the @racket[(pattern @#,meta-dots)] kind of pattern, but matching a
  syntax object with any number (zero or more) elements that match the
  sub-@racket[pattern] followed by @racket[ellipsis] in the
  corresponding position relative to other sub-@racket[pattern]s.
@@ -105,7 +113,10 @@ A syntax object matches a @racket[pattern] as follows:
  @tech{depth marker}. (The sub-@racket[pattern] itself may contain
  @racket[ellipsis], leading to a pattern variables bound to lists of
  lists of syntax objects with a @tech{depth marker} of @math{2}, and
- so on.)}
+ so on.)
+
+ All patterns forms with @racket[ellipsis] apply only when
+ @racket[ellipsis] is not among the @racket[literal-id]s.}
 
  @specsubform[(pattern ... pattern ellipsis pattern ... . np-pattern)]{
 
@@ -116,7 +127,7 @@ A syntax object matches a @racket[pattern] as follows:
 
  @specsubform[(code:line #,(tt "#")(pattern ...))]{
 
- Like a @racket[(pattern ...)] pattern, but matching a vector syntax object
+ Like a @racket[(pattern @#,meta-dots)] pattern, but matching a vector syntax object
  whose elements match the corresponding sub-@racket[pattern]s.}
 
  @specsubform[(code:line #,(tt "#")(pattern ... pattern ellipsis pattern ...))]{
@@ -132,14 +143,14 @@ A syntax object matches a @racket[pattern] as follows:
 
  @specsubform[(code:line #,(tt "#s")(key-datum pattern ...))]{
 
- Like a @racket[(pattern ...)] pattern, but matching a @tech{prefab}
+ Like a @racket[(pattern @#,meta-dots)] pattern, but matching a @tech{prefab}
  structure syntax object whose fields match the corresponding
  sub-@racket[pattern]s. The @racket[key-datum] must correspond to a
  valid first argument to @racket[make-prefab-struct].}
 
  @specsubform[(code:line #,(tt "#s")(key-datum pattern ... pattern ellipsis pattern ...))]{
 
- Like a @racket[(pattern ... pattern ellipsis pattern ...)] pattern,
+ Like a @racket[(pattern @#,meta-dots pattern ellipsis pattern @#,meta-dots)] pattern,
  but matching a @tech{prefab} structure syntax object whose elements
  match the corresponding sub-@racket[pattern]s.}
 
@@ -160,11 +171,9 @@ If @racket[stx-expr] produces a non-@tech{syntax object}, then its
 result is converted to a syntax object using @racket[datum->syntax]
 and the lexical context and source location of the @racket[stx-expr].
 
-If @racket[stx-expr] produces a syntax object that is @tech{tainted}
-or @tech{armed}, then any syntax object bound by a @racket[pattern]
-are @tech{tainted}---unless the binding corresponds to the whole
-syntax object produced by @racket[stx-expr], in which case it remains
-@tech{tainted} or @tech{armed}.
+If @racket[stx-expr] produces a syntax object that is @tech{tainted},
+then any syntax object bound by a @racket[pattern]
+are @tech{tainted}.
 
 @mz-examples[
 (require (for-syntax racket/base))
@@ -483,32 +492,56 @@ Illegal as an expression form. The @racket[unsyntax-splicing] form is
 for use only with a @racket[quasisyntax] template.}
 
 
-@defform[(syntax/loc stx-expr template)
-         #:contracts ([stx-expr syntax?])]{
+@defform[(syntax/loc loc-expr template)
+         #:contracts ([loc-expr (or/c #f srcloc? syntax?
+                                      (list/c any/c
+                                              (or/c exact-positive-integer? #f)
+                                              (or/c exact-nonnegative-integer? #f)
+                                              (or/c exact-positive-integer? #f)
+                                              (or/c exact-nonnegative-integer? #f))
+                                      (vector/c any/c
+                                                (or/c exact-positive-integer? #f)
+                                                (or/c exact-nonnegative-integer? #f)
+                                                (or/c exact-positive-integer? #f)
+                                                (or/c exact-nonnegative-integer? #f)))])]{
 
 Like @racket[syntax], except that the immediate resulting syntax
 object takes its source-location information from the result of
-@racket[stx-expr] (which must produce a syntax object).
+@racket[loc-expr].
 
 Only the source location of the immediate result---the ``outermost''
 syntax object---is adjusted. The source location is @emph{not}
-adjusted if both the source and position of @racket[stx-expr] are
+adjusted if both the source and position of @racket[loc-expr] are
 @racket[#f]. The source location is adjusted only if the resulting
 syntax object comes from the template itself rather than the value of
 a syntax pattern variable. For example, if @racket[_x] is a syntax
-pattern variable, then @racket[(syntax/loc stx-expr _x)] does not use
-the location of @racket[stx-expr].
+pattern variable, then @racket[(syntax/loc loc-expr _x)] does not use
+the location of @racket[loc-expr].
 
 @history[#:changed "6.90.0.25" @elem{Previously, @racket[syntax/loc]
-did not enforce the contract on @racket[stx-expr] if @racket[template]
-was just a pattern variable.}]}
+did not enforce the contract on @racket[loc-expr] if @racket[template]
+was just a pattern variable.}
+         #:changed "8.2.0.6" @elem{Allows @racket[loc-expr] to be any
+source location value that @racket[datum->syntax] accepts.}]}
 
-@defform[(quasisyntax/loc stx-expr template)
-         #:contracts ([stx-expr syntax?])]{
+@defform[(quasisyntax/loc loc-expr template)
+         #:contracts ([loc-expr (or/c #f srcloc? syntax?
+                                      (list/c any/c
+                                              (or/c exact-positive-integer? #f)
+                                              (or/c exact-nonnegative-integer? #f)
+                                              (or/c exact-positive-integer? #f)
+                                              (or/c exact-nonnegative-integer? #f))
+                                      (vector/c any/c
+                                                (or/c exact-positive-integer? #f)
+                                                (or/c exact-nonnegative-integer? #f)
+                                                (or/c exact-positive-integer? #f)
+                                                (or/c exact-nonnegative-integer? #f)))])]{
 
 Like @racket[quasisyntax], but with source-location assignment like
-@racket[syntax/loc].}
+@racket[syntax/loc].
 
+@history[#:changed "8.2.0.6" @elem{Allows @racket[loc-expr] to be any
+source location value that @racket[datum->syntax] accepts.}]}
 
 @defform[(quote-syntax/prune id)]{
 

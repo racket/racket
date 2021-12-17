@@ -60,7 +60,7 @@ disablecurses=no
 disableiconv=no
 addflags=yes
 addwarningflags=no
-default_warning_flags="-Wpointer-arith -Wall -Wextra -Werror -Wno-implicit-fallthrough"
+default_warning_flags="-Wpointer-arith -Wall -Wextra -Wno-implicit-fallthrough"
 : ${CC:="gcc"}
 : ${CPPFLAGS:=""}
 : ${CFLAGS:=""}
@@ -529,7 +529,7 @@ if [ "$cflagsset" = "no" ] ; then
         CFLAGS="-m32 ${optFlags}"
         ;;
     arm32*)
-        CFLAGS="-m32 ${optFlags}"
+        CFLAGS="${optFlags}"
         ;;
     arm64osx)
         CFLAGS="-arch arm64 ${optFlags}"
@@ -617,7 +617,7 @@ if [ "$addflags" = "yes" ] ; then
         LIBS="${LIBS} ${iconvLib} -lm ${ncursesLib}"
         ;;
     *nb)
-        if [ "$disablecurses" = "no" ]; then
+        if [ "$disableiconv" = "no" ]; then
             iconvLib="/usr/lib/i18n/libiconv_std.a"
         fi
         LIBS="${LIBS} ${iconvLib} -lm /usr/pkg/lib/libncurses.a"
@@ -632,7 +632,7 @@ if [ "$addflags" = "yes" ] ; then
         LIBS="${LIBS} -lshell32 -luser32 -lole32 -lrpcrt4 -luuid"
         ;;
     8qnx)
-        if [ "$disablecurses" = "no" ]; then
+        if [ "$disableiconv" = "no" ]; then
             iconvLib="/usr/local/lib/libiconv.so"
         fi
         LIBS="${LIBS} -lm ${iconvLib} -lsocket ${ncursesLib}"

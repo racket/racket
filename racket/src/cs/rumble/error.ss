@@ -68,6 +68,14 @@
                     v)
                   'error-value->string-handler))
 
+(define/who error-syntax->string-handler
+  (make-parameter (lambda (v len)
+                    (#%format "~s" v))
+                  (lambda (v)
+                    (check who (procedure-arity-includes/c 2) v)
+                    v)
+                  'error-syntax->string-handler))
+
 (define/who error-print-context-length
   (make-parameter 16
                   (lambda (v)

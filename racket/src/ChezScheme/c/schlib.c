@@ -246,7 +246,19 @@ void S_call_help(tc_in, singlep, lock_ts) ptr tc_in; IBOOL singlep; IBOOL lock_t
             S_error_abort("S_generic_invoke return");
             break;
         case 1: { /* normal return */
-            ptr yp = CCHAIN(tc);
+            ptr yp = FRAME(tc, 1);
+            CCHAIN(tc) = yp;
+            {
+              /* unlock code objects that we're escaping past */
+              ptr xp;
+              for (xp = CCHAIN(tc); ; xp = Scdr(xp)) {
+                ptr p = CDAR(xp);
+                S_mobilize_object(Scar(p));
+                if (Scdr(p) != Sfalse) S_mobilize_object(Scdr(p));
+                if (xp == yp) break;
+                FREEJMPBUF(TO_VOIDP(CAAR(xp)));
+              }
+            }
             FREEJMPBUF(TO_VOIDP(CAAR(yp)));
             CCHAIN(tc) = Scdr(yp);
             break;
@@ -292,16 +304,10 @@ void S_return() {
         if (xp == Snil)
             S_error("", "attempt to return to stale foreign context");
 
-  /* error checks are done; now unlock affected code objects */
-    for (xp = CCHAIN(tc); ; xp = Scdr(xp)) {
-        ptr p = CDAR(xp);
-        S_mobilize_object(Scar(p));
-        if (Scdr(p) != Sfalse) S_mobilize_object(Scdr(p));
-        if (xp == yp) break;
-        FREEJMPBUF(TO_VOIDP(CAAR(xp)));
-    }
+  /* return handling at setjmp will release frames not in the `yp` sublist;
+     we don't do that here, because Windows might need the full chain for
+     unwind handling */
 
-  /* reset cchain and return via longjmp */
-    CCHAIN(tc) = yp;
+  /* return via longjmp */
     LONGJMP(TO_VOIDP(CAAR(yp)), 1);
 }

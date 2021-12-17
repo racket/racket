@@ -26,7 +26,7 @@ hardware threads.
 
 @margin-note{Currently, parallel support for places is enabled
   only for the @tech{CS} and @tech{3m} implementations of Racket, and for @tech{3m}, only
-  by default for Windows, Linux x86/x86_64, and Mac OS x86/x86_64. To
+  by default for Windows, Linux x86/x86_64, and Mac OS x86/x86_64/AArch64. To
   enable support for other platforms with @tech{3m}, use @DFlag{enable-places} with
   @exec{configure} when building Racket. The @racket[place-enabled?]
   function reports whether places run in parallel.
@@ -194,13 +194,24 @@ such as a distributed places node produced by @racket[create-place-node].
  pumps bytes from the created place's ports to the current ports in the
  creating place.
 
+ Most @tech{parameters} in the created place have their original
+ initial values, but the created place inherits the creating place's
+ values for the following parameters: @racket[current-directory],
+ @racket[current-library-collection-paths],
+ @racket[current-library-collection-links],
+ and @racket[current-compiled-file-roots].
+
  The @racket[module-path] argument must not be a module path of the
  form @racket[(#,(racket quote) _sym)] unless the module is predefined (see
  @racket[module-predefined?]).
 
 The @racket[dynamic-place] binding is protected in the sense of
  @racket[protect-out], so access to this operation can be prevented
- by adjusting the code inspector (see @secref["modprotect"]).}
+ by adjusting the code inspector (see @secref["modprotect"]).
+
+@history[#:changed "8.2.0.7" @elem{Changed created place to inherit
+                                   the creating place's @racket[current-directory]
+                                   value.}]}
 
 
 @defproc[(dynamic-place* [module-path (or/c module-path? path?)]
@@ -436,7 +447,13 @@ The @racket[place*] binding is protected in the same way as
   @racket[place-message-allowed?], otherwise an @exnraise[exn:fail:contract].
 }
 
+@defproc[(processor-count) exact-positive-integer?]{
 
+  Returns the number of parallel computation units (e.g., processors or
+  cores) that are available on the current machine.
+
+  This is the same binding as available from @racketmodname[racket/future].
+}
 
 @;------------------------------------------------------------------------
 

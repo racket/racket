@@ -13,7 +13,7 @@ a function to extract items from a @exec{zip} archive.}
                                    . -> . any)
                                   (bytes? boolean? input-port? . -> . any))
                               (make-filesystem-entry-reader)]
-                [#:must-unzip? must-unzip? any/c #f]
+                [#:must-unzip? must-unzip? any/c #t]
                 [#:preserve-timestamps? preserve-timestamps? any/c #f]
                 [#:utc-timestamps? utc-timestamps? any/c #f])
          void?]{
@@ -38,12 +38,13 @@ is interpreted as UTC.
 
 @history[#:changed "6.0.0.3" @elem{Added the @racket[#:preserve-timestamps?] argument.}
          #:changed "6.0.1.12" @elem{Added the @racket[#:utc-timestamps?] argument.}
-         #:changed "8.0.0.10" @elem{Added the @racket[#:must-unzip?] argument.}]}
+         #:changed "8.0.0.10" @elem{Added the @racket[#:must-unzip?] argument.}
+         #:changed "8.2.0.7" @elem{Changed the @racket[#:must-unzip?] default to @racket[#t].}]}
 
 
 @defproc[(call-with-unzip [in (or/c path-string? input-port?)]
                           [proc (-> path-string? any)]
-                          [#:must-unzip? must-unzip? any/c #f])
+                          [#:must-unzip? must-unzip? any/c #t])
          any]{
 
 Unpacks @racket[in] to a temporary directory, calls @racket[proc] on
@@ -54,7 +55,8 @@ Like @racket[unzip], no error is reported in the case @racket[in] is
 not a @exec{zip} archive, unless @racket[must-unzip?] is true.
 
 @history[#:added "6.0.1.6"
-         #:changed "8.0.0.10" @elem{Added the @racket[#:must-unzip?] argument.}]}
+         #:changed "8.0.0.10" @elem{Added the @racket[#:must-unzip?] argument.}
+         #:changed "8.2.0.7" @elem{Changed the @racket[#:must-unzip?] default to @racket[#t].}]}
 
 
 @defproc[(make-filesystem-entry-reader

@@ -742,15 +742,19 @@
         (with-continuation-mark
           linklet-instantiate-key (instance-name target-instance)
           (begin
-           (when (eq? 'lazy (linklet-preparation linklet))
-             ;; Trigger lazy conversion of code from bytevector
-             (let ([code (eval-from-bytevector (linklet-code linklet)
-                                               (extract-literals (linklet-literals linklet))
-                                               (linklet-format linklet))])
-               (with-interrupts-disabled
-                (when (eq? 'lazy (linklet-preparation linklet))
-                  (linklet-code-set! linklet code)
-                  (linklet-preparation-set! linklet 'callable)))))
+           ;; Trigger lazy conversion of code from bytevector, but
+           ;; beware that multiple thread might try to do that at once
+           (let-values ([(prep code) (with-interrupts-disabled
+                                      (values (linklet-preparation linklet)
+                                              (linklet-code linklet)))])
+             (when (eq? 'lazy prep)
+               (let ([code (eval-from-bytevector code
+                                                 (extract-literals (linklet-literals linklet))
+                                                 (linklet-format linklet))])
+                 (with-interrupts-disabled
+                  (when (eq? 'lazy (linklet-preparation linklet))
+                    (linklet-code-set! linklet code)
+                    (linklet-preparation-set! linklet 'callable))))))
            ;; Call the linklet:
            (performance-region
             'instantiate

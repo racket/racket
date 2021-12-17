@@ -1582,10 +1582,16 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
             }
 
             if ((ok && !winwrote)
-                || (!ok && (errsaved == ERROR_NOT_ENOUGH_MEMORY))) {
+                || (!ok && (errsaved == ERROR_NOT_ENOUGH_MEMORY))
+                /* it doesn't seem like `ERROR_PIPE_BUSY` should happen
+                   in response to `WriteFile`, but it seems like this
+                   might be happening (and this check is harmless if
+                   it can't happen) */
+                || (!ok && (errsaved == ERROR_PIPE_BUSY))) {
               towrite = towrite >> 1;
               if (!towrite) {
-		/* leave ok as 1 and winwrote as 0 */
+		/* leave winwrote as 0 */
+                ok = 1;
 		break;
               }
             } else

@@ -17,13 +17,13 @@
          "bind-top.rkt"
          "lift-context.rkt"
          "lift-key.rkt"
-         "log.rkt")
+         "log.rkt"
+         "portal-syntax.rkt")
 
 (add-core-form!
  'define-values
  (lambda (s ctx)
-   (define disarmed-s (syntax-disarm s))
-   (log-expand ctx 'prim-define-values disarmed-s)
+   (log-expand ctx 'prim-define-values s)
    (unless (eq? (expand-context-context ctx) 'top-level)
      (raise-syntax-error #f "not allowed in an expression position" s))
    (define-match m s '(define-values (id ...) rhs))
@@ -38,11 +38,10 @@
 (add-core-form!
  'define-syntaxes
  (lambda (s ctx)
-   (define disarmed-s (syntax-disarm s))
-   (log-expand ctx 'prim-define-syntaxes disarmed-s)
+   (log-expand ctx 'prim-define-syntaxes s)
    (unless (eq? (expand-context-context ctx) 'top-level)
      (raise-syntax-error #f "not in a definition context" s))
-   (define-match m disarmed-s '(define-syntaxes (id ...) rhs))
+   (define-match m s '(define-syntaxes (id ...) rhs))
    (define-values (ids syms) (as-expand-time-top-level-bindings (m 'id) s ctx))
    (log-expand ctx 'prepare-env)
    (define exp-rhs (expand-transformer (m 'rhs) (as-named-context ctx ids)))
@@ -97,11 +96,10 @@
 (add-core-form!
  '#%require
  (lambda (s ctx)
-   (define disarmed-s (syntax-disarm s))
-   (log-expand ctx 'prim-require disarmed-s)
+   (log-expand ctx 'prim-require s)
    (unless (eq? (expand-context-context ctx) 'top-level)
      (raise-syntax-error #f "allowed only in a module or the top level" s))
-   (define-match m disarmed-s '(#%require req ...))
+   (define-match m s '(#%require req ...))
    (define sc (new-scope 'macro)) ; to hide bindings
    (define ns (expand-context-namespace ctx))
    ;; Check the `#%require` form syntax and trigger compile-time
@@ -116,7 +114,15 @@
                                 (make-requires+provides #f)
                                 #:who 'require
                                 ;; We don't need to check for conflicts:
-                                #:initial-require? #t)
+                                #:initial-require? #t
+                                #:add-defined-portal
+                                (lambda (id phase portal-stx orig-s)
+                                  (define-values (ids syms) (as-expand-time-top-level-bindings (list id) orig-s ctx))
+                                  (define sym (car syms))
+                                  (when phase
+                                    (define t (portal-syntax portal-stx))
+                                    (namespace-set-transformer! ns phase sym t))
+                                  sym))
    ;; Nothing to expand
    (if (expand-context-to-parsed? ctx)
        (parsed-require s)

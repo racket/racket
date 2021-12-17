@@ -13,12 +13,15 @@
 
 (provide (all-defined-out))
 
-(define ((check-dependencies which) deps)
+(define current-dependencies-pkg-dir (make-parameter '|[unknown]|))
+
+(define ((check-dependencies which [pkg-dir (current-dependencies-pkg-dir)]) deps)
   (unless (list? deps)
-    (pkg-error (~a "invalid `" which "' specification\n"
-                   "  expected: (listof pkg-dep?)"
-                   "  given: ~e")
-               deps))
+    (pkg-error (~a "invalid `" which "` specification\n"
+                   "  bad specification: ~e\n"
+                   "  package directory: ~a")
+               deps
+               pkg-dir))
 
   (define (package-source? dep)
     (and (string? dep)
@@ -60,24 +63,26 @@
     (filter (compose1 not pkg-dep?) deps))
 
   (unless (null? invalid-deps)
-    (pkg-error (~a "invalid `" which "' specification\n"
+    (pkg-error (~a "invalid `" which "` specification\n"
                    "  specification: ~e\n"
                    (if ((length invalid-deps) . = . 1)
                        "  bad dep: ~e"
-                       "  bad deps: ~e"))
+                       "  bad deps: ~e")
+                   "\n  package directory: ~a")
                deps
                (if ((length invalid-deps) . = . 1)
                    (car invalid-deps)
-                   invalid-deps))))
+                   invalid-deps)
+               pkg-dir)))
 
 (define (get-all-deps* metadata-ns pkg-dir)
   (values
    (get-metadata metadata-ns pkg-dir 
                  'deps (lambda () empty)
-                 #:checker (check-dependencies 'deps))
+                 #:checker (check-dependencies 'deps pkg-dir))
    (get-metadata metadata-ns pkg-dir 
                  'build-deps (lambda () empty)
-                 #:checker (check-dependencies 'build-deps))))
+                 #:checker (check-dependencies 'build-deps pkg-dir))))
 
 (define (get-all-deps metadata-ns pkg-dir)
   (define-values (deps build-deps) (get-all-deps* metadata-ns pkg-dir))
@@ -95,18 +100,22 @@
                                                      (or (string? v)
                                                          (eq? v 'core)))
                                                    l))
-                                (pkg-error (~a "invalid `~a' specification\n"
-                                               "  specification: ~e")
+                                (pkg-error (~a "invalid `~a` specification\n"
+                                               "  specification: ~e\n"
+                                               "  package directory: ~a")
                                            key
-                                           l))
+                                           l
+                                           pkg-dir))
                               (unless (andmap (lambda (i)
                                                 (or (eq? i 'core)
                                                     (set-member? deps-set i)))
                                               l)
-                                (pkg-error (~a "`~a' is not a subset of dependencies\n"
-                                               "  specification: ~e")
+                                (pkg-error (~a "`~a` is not a subset of dependencies\n"
+                                               "  specification: ~e\n"
+                                               "  package directory: ~a")
                                            key
-                                           l))))))
+                                           l
+                                           pkg-dir))))))
 
 (define (get-all-implies metadata-ns pkg-dir deps)
   (get-all-deps-subset 'implies metadata-ns pkg-dir deps))
@@ -125,7 +134,7 @@
         (unless (or (collection-name-element? s)
                     (eq? s 'multi)
                     (eq? s 'use-pkg-name))
-          (log-error (format (~a "bad `collection' definition in \"info.rkt\";\n"
+          (log-error (format (~a "bad `collection` definition in \"info.rkt\";\n"
                                  " definition will be ignored\n"
                                  "  path: ~a\n"
                                  "  found: ~e\n"

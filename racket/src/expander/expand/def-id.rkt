@@ -63,7 +63,7 @@
     (define b (make-module-binding self phase defined-sym #:frame-id frame-id
                                    #:nominal-sym sym))
     (when requires+provides
-      (remove-required-id! requires+provides id phase #:unless-matches b))
+      (remove-required-id! requires+provides id phase))
     (add-binding! id b phase #:in orig-s)
     (when requires+provides
       (add-defined-or-required-id! requires+provides id phase b #:as-transformer? as-transformer?))

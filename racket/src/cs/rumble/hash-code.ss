@@ -120,16 +120,16 @@
 (define (equal-hash-loop x burn hc)
   (cond
     [(fx> burn MAX-HASH-BURN) (values hc burn)]
-    [(boolean? x) (values (fx+/wraparound hc (if x #x0ace0120 #x0cafe121)) burn)]
-    [(null? x) (values (fx+/wraparound hc #x0cabd122) burn)]
-    [(number? x) (values (fx+/wraparound hc (number-hash x)) burn)]
-    [(char? x) (values (fx+/wraparound hc (char->integer x)) burn)]
-    [(symbol? x) (values (fx+/wraparound hc (symbol-hash x)) burn)]
-    [(string? x) (values (fx+/wraparound hc (string-hash x)) burn)]
-    [(bytevector? x) (values (fx+/wraparound hc (equal-hash x)) burn)]
-    [(fxvector? x) (values (fx+/wraparound hc (equal-hash x)) burn)]
-    [(flvector? x) (values (fx+/wraparound hc (equal-hash x)) burn)]
-    [(box? x) (equal-hash-loop (unbox x) (fx+ burn 1) (fx+/wraparound hc 1))]
+    [(boolean? x) (values (fx+/wraparound (mix-hash-code hc) (if x #x0ace0120 #x0cafe121)) burn)]
+    [(null? x) (values (fx+/wraparound (mix-hash-code hc) #x0cabd122) burn)]
+    [(number? x) (values (fx+/wraparound (mix-hash-code hc) (number-hash x)) burn)]
+    [(char? x) (values (fx+/wraparound (mix-hash-code hc) (char->integer x)) burn)]
+    [(symbol? x) (values (fx+/wraparound (mix-hash-code hc) (symbol-hash x)) burn)]
+    [(string? x) (values (fx+/wraparound (mix-hash-code hc) (string-hash x)) burn)]
+    [(bytevector? x) (values (fx+/wraparound (mix-hash-code hc) (equal-hash x)) burn)]
+    [(fxvector? x) (values (fx+/wraparound (mix-hash-code hc) (equal-hash x)) burn)]
+    [(flvector? x) (values (fx+/wraparound (mix-hash-code hc) (equal-hash x)) burn)]
+    [(box? x) (equal-hash-loop (unbox x) (fx+ burn 1) (fx+/wraparound (mix-hash-code hc) 1))]
     [(pair? x)
      (let-values ([(hc0 burn) (equal-hash-loop (car x) (fx+ burn 2) 0)])
        (let ([hc (fx+/wraparound (mix-hash-code hc) hc0)]
@@ -154,11 +154,12 @@
     [(hash? x)
      ;; Treat hash-table hashing specially, so it can be order-insensitive
      (let ([burn (fx* (fxmax burn 1) 2)])
-       (let ([hc (fx+/wraparound hc (->fx (hash-hash-code
-                                           x
-                                           (lambda (x)
-                                             (let-values ([(hc0 burn0) (equal-hash-loop x burn 0)])
-                                               hc0)))))])
+       (let ([hc (fx+/wraparound (mix-hash-code hc)
+                                 (->fx (hash-hash-code
+                                        x
+                                        (lambda (x)
+                                          (let-values ([(hc0 burn0) (equal-hash-loop x burn 0)])
+                                            hc0)))))])
          (values hc burn)))]
     [(mpair? x)
      (let-values ([(hc0 burn) (equal-hash-loop (mcar x) (fx+ burn 2) 0)])
@@ -167,33 +168,34 @@
     [(and (#%$record? x) (#%$record-hash-procedure x))
      => (lambda (rec-hash)
           (let ([burn (fx+ burn 2)])
-            (let ([hc (fx+/wraparound hc (->fx/checked
-                                          'equal-hash-code
-                                          (rec-hash x (lambda (x)
-                                                        (let-values ([(hc0 burn0) (equal-hash-loop x burn 0)])
-                                                          (set! burn burn0)
-                                                          hc0)))))])
+            (let ([hc (fx+/wraparound (mix-hash-code hc)
+                                      (->fx/checked
+                                       'equal-hash-code
+                                       (rec-hash x (lambda (x)
+                                                     (let-values ([(hc0 burn0) (equal-hash-loop x burn 0)])
+                                                       (set! burn burn0)
+                                                       hc0)))))])
               (values hc burn))))]
     [(impersonator? x)
      ;; If an impersonator wraps a value where `equal?` hashing is
      ;; `eq?` hashing, such as for a procedure, then make sure
      ;; we discard the impersonator wrapper.
      (equal-hash-loop (impersonator-val x) burn hc)]
-    [else (values (fx+/wraparound hc (eq-hash-code x)) burn)]))
+    [else (values (fx+/wraparound (mix-hash-code hc) (eq-hash-code x)) burn)]))
 
 (define (equal-secondary-hash-loop x burn hc)
   (cond
-    [(fx> burn MAX-HASH-BURN) (values hc burn)]
-    [(boolean? x) (values (fx+/wraparound hc 1) burn)]
-    [(null? x) (values (fx+/wraparound hc 2) burn)]
-    [(number? x) (values (fx+/wraparound hc (number-secondary-hash x)) burn)]
-    [(char? x) (values (fx+/wraparound hc (fxnot (char->integer x))) burn)]
-    [(symbol? x) (values (fx+/wraparound hc (fxnot (symbol-hash x))) burn)]
-    [(string? x) (values (fx+/wraparound hc (fxnot (string-hash x))) burn)]
-    [(bytevector? x) (values (fx+/wraparound hc (equal-hash x)) burn)]
-    [(fxvector? x) (values (fx+/wraparound hc (equal-hash x)) burn)]
-    [(flvector? x) (values (fx+/wraparound hc (equal-hash x)) burn)]
-    [(box? x) (equal-secondary-hash-loop (unbox x) (fx+ burn 1) (fx+/wraparound hc 10))]
+    [(fx> burn MAX-HASH-BURN) (values (mix-hash-code hc) burn)]
+    [(boolean? x) (values (fx+/wraparound (mix-hash-code hc) 1) burn)]
+    [(null? x) (values (fx+/wraparound (mix-hash-code hc) 2) burn)]
+    [(number? x) (values (fx+/wraparound (mix-hash-code hc) (number-secondary-hash x)) burn)]
+    [(char? x) (values (fx+/wraparound (mix-hash-code hc) (fxnot (char->integer x))) burn)]
+    [(symbol? x) (values (fx+/wraparound (mix-hash-code hc) (fxnot (symbol-hash x))) burn)]
+    [(string? x) (values (fx+/wraparound (mix-hash-code hc) (fxnot (string-hash x))) burn)]
+    [(bytevector? x) (values (fx+/wraparound (mix-hash-code hc) (equal-hash x)) burn)]
+    [(fxvector? x) (values (fx+/wraparound (mix-hash-code hc) (equal-hash x)) burn)]
+    [(flvector? x) (values (fx+/wraparound (mix-hash-code hc) (equal-hash x)) burn)]
+    [(box? x) (equal-secondary-hash-loop (unbox x) (fx+ burn 1) (fx+/wraparound (mix-hash-code hc) 10))]
     [(pair? x)
      (let-values ([(hc0 burn) (equal-secondary-hash-loop (car x) (fx+ burn 2) 0)])
        (let ([hc (fx+/wraparound (mix-hash-code hc) hc0)])
@@ -211,11 +213,12 @@
     [(hash? x)
      ;; Treat hash-table hashing specially, so it can be order-insensitive
      (let ([burn (fx* (fxmax burn 1) 2)])
-       (let ([hc (fx+/wraparound hc (->fx (hash-hash-code
-                                           x
-                                           (lambda (x)
-                                             (let-values ([(hc0 burn0) (equal-secondary-hash-loop x burn 0)])
-                                               hc0)))))])
+       (let ([hc (fx+/wraparound (mix-hash-code hc)
+                                 (->fx (hash-hash-code
+                                        x
+                                        (lambda (x)
+                                          (let-values ([(hc0 burn0) (equal-secondary-hash-loop x burn 0)])
+                                            hc0)))))])
          (values hc burn)))]
     [(mpair? x)
      (let-values ([(hc0 burn) (equal-secondary-hash-loop (mcar x) (fx+ burn 2) 0)])
@@ -227,16 +230,17 @@
               (#%$record-hash-procedure x)))
      => (lambda (rec-hash)
           (let ([burn (fx+ burn 2)])
-            (let ([hc (fx+/wraparound hc (->fx/checked
-                                          'equal-secondary-hash-code
-                                          (rec-hash x (lambda (x)
-                                                        (let-values ([(hc0 burn0) (equal-secondary-hash-loop x burn 0)])
-                                                          (set! burn burn0)
-                                                          hc0)))))])
+            (let ([hc (fx+/wraparound (mix-hash-code hc)
+                                      (->fx/checked
+                                       'equal-secondary-hash-code
+                                       (rec-hash x (lambda (x)
+                                                     (let-values ([(hc0 burn0) (equal-secondary-hash-loop x burn 0)])
+                                                       (set! burn burn0)
+                                                       hc0)))))])
               (values hc burn))))]
     [(impersonator? x)
      (equal-secondary-hash-loop (impersonator-val x) burn hc)]
-    [else (values (fx+/wraparound hc (fxnot (eq-hash-code x))) burn)]))
+    [else (values (fx+/wraparound (mix-hash-code hc) (fxnot (eq-hash-code x))) burn)]))
 
 (define number-secondary-hash
   (lambda (z)

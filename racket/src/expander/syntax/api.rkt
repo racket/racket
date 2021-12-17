@@ -1,7 +1,9 @@
 #lang racket/base
 (require "../common/phase.rkt"
+         "../common/phase+space.rkt"
          "../common/module-path.rkt"
          (rename-in "syntax.rkt"
+                    [syntax-srcloc raw:syntax-srcloc]
                     [syntax->datum raw:syntax->datum]
                     [datum->syntax raw:datum->syntax])
          "property.rkt"
@@ -15,7 +17,8 @@
          (rename-in "binding.rkt"
                     [free-identifier=? raw:free-identifier=?]
                     [identifier-binding raw:identifier-binding]
-                    [identifier-binding-symbol raw:identifier-binding-symbol])
+                    [identifier-binding-symbol raw:identifier-binding-symbol]
+                    [identifier-distinct-binding raw:identifier-distinct-binding])
          (rename-in "track.rkt"
                     [syntax-track-origin raw:syntax-track-origin])
          (rename-in "binding-set.rkt"
@@ -27,7 +30,13 @@
          "../common/contract.rkt"
          (rename-in "debug.rkt"
                     [syntax-debug-info raw:syntax-debug-info])
-         (only-in "../expand/context.rkt" get-current-expand-context)
+         (only-in "../expand/context.rkt"
+                  get-current-expand-context
+                  expand-context-namespace)
+         (only-in "../namespace/module.rkt"
+                  namespace-module-get-portal-syntax-lookup)
+         (only-in "../namespace/namespace.rkt"
+                  current-namespace)
          "../expand/log.rkt")
 
 ;; Provides public versions of syntax functions (with contract checks,
@@ -35,6 +44,7 @@
 
 (provide syntax?
          syntax-e
+         syntax-srcloc
          syntax-property
          syntax-property-remove
          syntax-property-preserved?
@@ -59,6 +69,8 @@
          identifier-template-binding
          identifier-label-binding
          identifier-binding-symbol
+         identifier-distinct-binding
+         identifier-binding-portal-syntax
          identifier-prune-lexical-context
          syntax-shift-phase-level
          syntax-track-origin
@@ -67,6 +79,10 @@
 (define/who (syntax-e s)
   (check who syntax? s)
   (raw:syntax-e s))
+
+(define/who (syntax-srcloc s)
+  (check who syntax? s)
+  (raw:syntax-srcloc s))
 
 (define/who (syntax->datum s)
   (check who syntax? s)
@@ -82,9 +98,11 @@
     (raise-argument-error who "(or/c #f syntax?)" stx-c))
   (unless (or (not stx-l)
               (syntax? stx-l)
+              (srcloc? stx-l)
               (encoded-srcloc? stx-l))
     (raise-argument-error who
                           (string-append "(or/c #f syntax?\n"
+                                         "         srcloc?\n"
                                          "         (list/c any/c\n"
                                          "                 (or/c exact-positive-integer? #f)\n"
                                          "                 (or/c exact-nonnegative-integer? #f)\n"
@@ -107,9 +125,9 @@
                                        [sym as-sym]
                                        [phase as-phase]
                                        [nominal-mpi mpi]
-                                       [nominal-phase phase]
+                                       [nominal-phase+space phase]
                                        [nominal-sym sym]
-                                       [nominal-require-phase 0]
+                                       [nominal-require-phase+space-shift 0]
                                        [insp #f])
   (check who syntax-binding-set? bs)
   (check who symbol? as-sym)
@@ -118,14 +136,14 @@
   (check who symbol? sym)
   (check who phase? #:contract phase?-string phase)
   (check who module-path-index? nominal-mpi)
-  (check who phase? #:contract phase?-string nominal-phase)
+  (check who phase+space? #:contract phase+space?-string nominal-phase+space)
   (check who symbol? nominal-sym)
-  (check who phase? #:contract phase?-string nominal-require-phase)
+  (check who phase+space-shift? #:contract phase+space-shift?-string nominal-require-phase+space-shift)
   (check who inspector? #:or-false insp)
   (raw:syntax-binding-set-extend bs as-sym as-phase mpi
                                  sym phase
-                                 nominal-mpi nominal-phase nominal-sym
-                                 nominal-require-phase
+                                 nominal-mpi (intern-phase+space nominal-phase+space) nominal-sym
+                                 (intern-phase+space-shift nominal-require-phase+space-shift)
                                  insp))
 
 (define/who (syntax-binding-set->syntax bs datum)
@@ -194,6 +212,29 @@
   (check who identifier? id)
   (check who phase? #:contract phase?-string phase)
   (raw:identifier-binding-symbol id phase))
+
+(define/who (identifier-distinct-binding id other-id [phase (syntax-local-phase-level)])
+  (check who identifier? id)
+  (check who identifier? other-id)
+  (check who phase? #:contract phase?-string phase)
+  (raw:identifier-distinct-binding id other-id phase))
+
+(define/who (identifier-binding-portal-syntax id [phase (syntax-local-phase-level)])
+  (check who identifier? id)
+  (check who phase? #:contract phase?-string phase)
+  (define b (resolve+shift id phase #:unbound-sym? #t))
+  (cond
+    [(module-binding? b)
+     (define ctx (get-current-expand-context #:fail-ok? #t))
+     (define phase-shift (phase- phase (module-binding-phase b)))
+     (define portal-syntax-lookup
+       (namespace-module-get-portal-syntax-lookup (if ctx
+                                                      (expand-context-namespace ctx)
+                                                      (current-namespace))
+                                                  (module-binding-module b)
+                                                  phase-shift))
+     (portal-syntax-lookup (module-binding-phase b) (module-binding-sym b))]
+    [else #f]))
 
 (define/who (identifier-prune-lexical-context id [syms null])
   (check who identifier? id)

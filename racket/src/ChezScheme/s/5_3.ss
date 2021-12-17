@@ -226,10 +226,12 @@
 
 ;; Only try to use Burnikel-Ziegler when we have large enough bignums:
 (define (big-divide-bignums? n d)
+  ;; Based on Brian Burkhalter's recommendation:
+  ;;  http://mail.openjdk.java.net/pipermail/core-libs-dev/2013-November/023493.html
   (and (bignum? n)
        (bignum? d)
-       (fx>= ($bignum-length n) DIV-LIMIT)
-       (fx>= ($bignum-length d) DIV-LIMIT)))
+       (fx>= ($bignum-length d) DIV-LIMIT)
+       (fx>= (- ($bignum-length n) ($bignum-length d)) DIV-LIMIT)))
 
 (define integer/
   (lambda (n d)
@@ -869,6 +871,21 @@
                                       (real-part x))
                                    2))])
              (make-rectangular rp (/ (imag-part x) (* 2 rp))))])))
+
+(define (exact-ratnum* y x)
+  ;; Simplied from ratnum case below:
+  (let ((p ($ratio-numerator x))
+        (q ($ratio-denominator x)))
+    (cond
+      [(and (fixnum? p) (fixnum? q))
+       (integer/ (* y p) q)]
+      [else
+       (let* ((gcd-rq (exgcd y q))
+              (num (* p (intquotient y gcd-rq)))
+              (den (intquotient q gcd-rq)))
+         (if (eqv? den 1)
+             num
+             (make-ratnum num den)))])))
 
 (define ($fldiv-and-mod x y)
   (if (negated-flonum? y)
@@ -2541,15 +2558,14 @@
                                        (toom4 (bitwise-arithmetic-shift-right x xz)
 					      (bitwise-arithmetic-shift-right y yz))
                                        z))))))]
-             [(ratnum?) (/ (* x ($ratio-numerator y)) ($ratio-denominator y))]
+             [(ratnum?) (exact-ratnum* x y)]
              [($exactnum? $inexactnum?)
               (make-rectangular (* x (real-part y)) (* x (imag-part y)))]
              [(flonum?) (exact-inexact* x y)]
              [else (nonnumber-error who y)])]
          [(ratnum?)
           (type-case y
-             [(fixnum? bignum?)
-              (integer/ (* y ($ratio-numerator x)) ($ratio-denominator x))]
+             [(fixnum? bignum?) (exact-ratnum* y x)]
              [(ratnum?)
 	      ;; adapted from Gambit, see gambit/lib/_num.scm
 	      (let ((p ($ratio-numerator x))

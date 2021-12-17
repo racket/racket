@@ -1416,6 +1416,11 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
 
     __START_SHORT_JUMPS__(branch_short);
 
+    if (for_branch) {
+      scheme_prepare_branch_jump(jitter, for_branch);
+      CHECK_LIMIT();
+    }
+
     __START_INNER_TINY__(branch_short);
     ref1 = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
     __END_INNER_TINY__(branch_short);

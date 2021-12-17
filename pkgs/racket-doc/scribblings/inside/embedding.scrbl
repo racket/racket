@@ -38,22 +38,15 @@ To embed Racket CGC in a program, follow these steps:
   libraries into the installation's @filepath{lib} directory. Be sure
   to build the CGC variant, since the default is 3m.
 
-  On Windows, stub libraries for use with Microsoft tools are
-  @filepath{libracket@italic{x}.lib} and
-  @filepath{libmzgc@italic{x}.lib} (where @italic{x} represents the
-  version number) are in a compiler-specific directory in
-  @filepath{racket\lib}. These libraries identify the bindings that are
-  provided by @filepath{libracket@italic{x}.dll} and
-  @filepath{libmzgc@italic{x}.dll} --- which are typically installed
-  in @filepath{racket\lib}. When linking with Cygwin, link to
-  @filepath{libracket@italic{x}.dll} and
-  @filepath{libmzgc@italic{x}.dll} directly.  At run time, either
+  On Windows, link to @filepath{libracket@italic{x}.dll} and
+  @filepath{libmzgc@italic{x}.dll} (where @italic{x} represents the
+  version number). At run time, either
   @filepath{libracket@italic{x}.dll} and
   @filepath{libmzgc@italic{x}.dll} must be moved to a location in the
   standard DLL search path, or your embedding application must
-  ``delayload'' link the DLLs and explicitly load them before
-  use. (@filepath{Racket.exe} and @filepath{GRacket.exe} use the latter
-  strategy.)
+  ``delayload'' link the DLLs and explicitly load them before use.
+  (@filepath{Racket.exe} uses the latter strategy.) See also
+  @secref["link-dll"].
 
   On Mac OS, dynamic libraries are provided by the
   @filepath{Racket} framework, which is typically installed in
@@ -320,11 +313,8 @@ In addition, some library details are different:
   @exec{libtool}). There is no separate library for 3m analogous to
   CGC's @filepath{libmzgc.a}.}
 
- @item{On Windows, the stub library for use with Microsoft tools is
-  @filepath{libracket3m@italic{x}.lib} (where @italic{x} represents the
-  version number). This library identifies the bindings that are
-  provided by @filepath{libracket3m@italic{x}.dll}.  There is no
-  separate library for 3m analogous to CGC's
+ @item{On Windows, link to @filepath{libracket3m@italic{x}.dll}. There
+  is no separate library for 3m analogous to CGC's
   @filepath{libmzgc@italic{x}.lib}.}
 
   @item{On Mac OS, 3m dynamic libraries are provided by the

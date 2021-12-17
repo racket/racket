@@ -101,7 +101,7 @@
   
   (define (download!)
     (when download-printf
-      (download-printf "Downloading repository ~a\n" (url->string url)))
+      (download-printf "Downloading repository ~a commit ~a\n" (url->string url) checksum))
     (call-with-git-checkout-credentials
      (lambda ()
        (call-with-network-retries
@@ -109,6 +109,7 @@
           (git-checkout host #:port port repo
                         #:dest-dir dest-dir
                         #:ref checksum
+                        #:initial-search-ref (or (url-fragment url) "master")
                         #:status-printf (lambda (fmt . args)
                                           (define (strip-ending-newline s)
                                             (regexp-replace #rx"\n$" s ""))

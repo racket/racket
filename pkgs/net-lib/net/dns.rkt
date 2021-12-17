@@ -195,8 +195,9 @@
           (udp-send-to udp nameserver 53 (list->bytes query))
           (sync (handle-evt (udp-receive!-evt udp s)
                             (lambda (r) (bytes->list (subbytes s 0 (car r)))))
-                (handle-evt (alarm-evt (+ (current-inexact-milliseconds)
-                                          timeout))
+                (handle-evt (alarm-evt (+ (current-inexact-monotonic-milliseconds)
+                                          timeout)
+                                       #t)
                             (lambda (v) (retry (* timeout 2)))))))
       (lambda () (udp-close udp))))
 

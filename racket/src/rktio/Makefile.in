@@ -154,18 +154,7 @@ clean:
 # To rebuild the S-expression form of "rktio.h"
 
 rktio-rktl rktio-inc rktio-def:
-	$(MAKE) $(srcdir)/rktio.rktl
-	$(MAKE) $(srcdir)/rktio.inc
-	$(MAKE) $(srcdir)/rktio.def
-
-$(srcdir)/rktio.rktl: $(srcdir)/rktio.h $(srcdir)/parse.rkt
-	$(RACKET) $(srcdir)/parse.rkt -o $(srcdir)/rktio.rktl $(srcdir)/rktio.h
-
-$(srcdir)/rktio.inc: $(srcdir)/rktio.h $(srcdir)/parse.rkt
-	$(RACKET) $(srcdir)/parse.rkt -c -o $(srcdir)/rktio.inc $(srcdir)/rktio.h
-
-$(srcdir)/rktio.def: $(srcdir)/rktio.h $(srcdir)/parse.rkt
-	$(RACKET) $(srcdir)/parse.rkt -d -o $(srcdir)/rktio.def $(srcdir)/rktio.h
+	cd $(srcdir) && make -f Mf-rktio
 
 # ----------------------------------------
 

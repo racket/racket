@@ -158,9 +158,10 @@ exec racket -t "$0" -- -s -t 60 -v -R $*
 (define timing-thread
   (thread
    (λ ()
-     (sync 
-      (alarm-evt (+ (current-inexact-milliseconds)
-                    (* 1000 (time-limit)))))
+     (sync
+      (alarm-evt (+ (current-inexact-monotonic-milliseconds)
+                    (* 1000 (time-limit)))
+                 #t))
      (stop!))))
 
 (define server-thread

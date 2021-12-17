@@ -1,5 +1,10 @@
 #lang scribble/doc
-@(require "mz.rkt" scribble/bnf (for-label racket/pretty racket/gui/base setup/dirs))
+@(require "mz.rkt"
+          scribble/bnf
+          (for-label racket/pretty
+                     racket/gui/base
+                     setup/dirs
+                     racket/interaction-info))
 
 @(define (FlagFirst n) (as-index (Flag n)))
 @(define (DFlagFirst n) (as-index (DFlag n)))
@@ -494,7 +499,9 @@ A module can have a @racket[configure-runtime] submodule that is
 the main module of a program. Normally, a @racket[configure-runtime]
 submodule is added to a module by the module's language (i.e., by the
 @racket[#%module-begin] form among a @racket[module]'s initial
-bindings).
+bindings). The body of a @racket[configure-runtime] submodule
+typically sets parameters, possibly including
+@racket[current-interaction-info].
 
 Alternatively or in addition, an older protocol is in place.
 When a module is implemented using @hash-lang{}, the language after

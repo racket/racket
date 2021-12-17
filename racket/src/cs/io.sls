@@ -210,6 +210,27 @@
       (make-ptr
        (ftype-ref rktio_length_and_addrinfo_t (address) (make-ftype-pointer rktio_length_and_addrinfo_t (ptr->address fs)) 0)))
 
+    (define (rktio_stat_to_vector p)
+      (let ([p (make-ftype-pointer rktio_stat_t (ptr->address p))])
+        (vector
+         (ftype-ref rktio_stat_t (device_id) p)
+         (ftype-ref rktio_stat_t (inode) p)
+         (ftype-ref rktio_stat_t (mode) p)
+         (ftype-ref rktio_stat_t (hardlink_count) p)
+         (ftype-ref rktio_stat_t (user_id) p)
+         (ftype-ref rktio_stat_t (group_id) p)
+         (ftype-ref rktio_stat_t (device_id_for_special_file) p)
+         (ftype-ref rktio_stat_t (size) p)
+         (ftype-ref rktio_stat_t (block_size) p)
+         (ftype-ref rktio_stat_t (block_count) p)
+         (ftype-ref rktio_stat_t (access_time_seconds) p)
+         (ftype-ref rktio_stat_t (access_time_nanoseconds) p)
+         (ftype-ref rktio_stat_t (modify_time_seconds) p)
+         (ftype-ref rktio_stat_t (modify_time_nanoseconds) p)
+         (ftype-ref rktio_stat_t (ctime_seconds) p)
+         (ftype-ref rktio_stat_t (ctime_nanoseconds) p)
+         (ftype-ref rktio_stat_t (ctime_is_change_time) p))))
+
     (define (rktio_identity_to_vector p)
       (let ([p (make-ftype-pointer rktio_identity_t (ptr->address p))])
         (vector
@@ -406,6 +427,7 @@
                                  'rktio_is_timestamp rktio_is_timestamp
                                  'rktio_recv_length_ref rktio_recv_length_ref
                                  'rktio_recv_address_ref rktio_recv_address_ref
+                                 'rktio_stat_to_vector rktio_stat_to_vector
                                  'rktio_identity_to_vector rktio_identity_to_vector
                                  'rktio_seconds_to_date* rktio_seconds_to_date*
                                  'rktio_convert_result_to_vector rktio_convert_result_to_vector
@@ -539,6 +561,8 @@
 
   (include "include.ss")
   (include-generated "io.scm")
+
+  (include "io/terminal.ss")
 
   ;; Initialize:
   (set-log-system-message! (lambda (level str)

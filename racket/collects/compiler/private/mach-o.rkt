@@ -32,7 +32,7 @@
     (error 'check-same "not: ~e ~e" a b)))
 
 (define (round-up-page v machine-type)
-<  (if (eqv? machine-type aarch64-machine-type)
+  (if (eqv? machine-type aarch64-machine-type)
       (bitwise-and #xFFFFC000 (+ v #x3FFF))
       (bitwise-and #xFFFFF000 (+ v #xFFF))))
 
@@ -95,6 +95,10 @@
                  [function-starts-offset #f]
                  [data-in-code-pos #f]
                  [data-in-code-offset #f]
+                 [exports-trie-pos #f]
+                 [exports-trie-offset #f]
+                 [chained-fixups-pos #f]
+                 [chained-fixups-offset #f]
                  [code-signature-pos #f]
                  [code-signature-size 0]
                  [code-signature-lc-sz 0]
@@ -210,6 +214,20 @@
                                                         (+ weakbindoff weakbindsize)
                                                         (+ lazybindoff lazybindsize)
                                                         (+ exportbindoff exportbindsize))))]
+                    [(#x80000033)
+                     ;; LC_DYLD_EXPORTS_TRIE
+                     (let ([offset (read-ulong p)]
+                           [size (read-ulong p)])
+                       (set! exports-trie-pos pos)
+                       (set! exports-trie-offset offset)
+                       (set! linkedit-limit-offset (max linkedit-limit-offset (+ offset size))))]
+                    [(#x80000034)
+                     ;; LC_DYLD_CHAINED_FIXUPS
+                     (let ([offset (read-ulong p)]
+                           [size (read-ulong p)])
+                       (set! chained-fixups-pos pos)
+                       (set! chained-fixups-offset offset)
+                       (set! linkedit-limit-offset (max linkedit-limit-offset (+ offset size))))]
                     [(#x26)
                      ;; LC_FUNCTION_STARTS
                      (let ([offset (read-ulong p)]
@@ -314,18 +332,16 @@
                      (error 'mach-o "dysym position not found"))
                    (when (dysym-pos . > . link-edit-pos)
                      (set! dysym-pos (+ dysym-pos new-cmd-sz)))
-                   (when hints-pos
-                     (when (hints-pos . > . link-edit-pos)
-                       (set! hints-pos (+ hints-pos new-cmd-sz))))
-                   (when function-starts-pos
-                     (when (function-starts-pos . > . link-edit-pos)
-                       (set! function-starts-pos (+ function-starts-pos new-cmd-sz))))
-                   (when data-in-code-pos
-                     (when (data-in-code-pos . > . link-edit-pos)
-                       (set! data-in-code-pos (+ data-in-code-pos new-cmd-sz))))
-                   (when code-sign-drs-pos
-                     (when (code-sign-drs-pos . > . link-edit-pos)
-                       (set! code-sign-drs-pos (+ code-sign-drs-pos new-cmd-sz))))
+                   (define-syntax-rule (shift-pos! pos)
+                     (when pos
+                       (when (pos . > . link-edit-pos)
+                         (set! pos (+ pos new-cmd-sz)))))
+                   (shift-pos! hints-pos)
+                   (shift-pos! function-starts-pos)
+                   (shift-pos! data-in-code-pos)
+                   (shift-pos! code-sign-drs-pos)
+                   (shift-pos! exports-trie-pos)
+                   (shift-pos! chained-fixups-pos)
                    (set! link-edit-pos (+ link-edit-pos new-cmd-sz))
                    (when move-link-edit?
                      ;; Update link-edit segment entry:
@@ -386,7 +402,15 @@
                          (update 1)
                          (update 2)
                          (update 3)
-                         (update 4))))
+                         (update 4)))
+                     ;; Shift export-trie drs:
+                     (when exports-trie-pos
+                       (file-position p (+ exports-trie-pos 8))
+                       (write-ulong (+ exports-trie-offset outlen) out))
+                     ;; Shift chained-fixups drs:
+                     (when chained-fixups-pos
+                       (file-position p (+ chained-fixups-pos 8))
+                       (write-ulong (+ chained-fixups-offset outlen) out)))
                    ;; Write segdata to former link-data offset:
                    (file-position out out-offset)
                    (display segdata out)

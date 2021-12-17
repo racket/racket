@@ -454,7 +454,7 @@ duplicates files.}
 
 @index['("file modification date and time")]{Returns}
 the file or directory's last modification date in seconds
-since midnight UTC, January 1, 1970 (see also @secref["time"]) when
+since @tech{the epoch} (see also @secref["time"]) when
 @racket[secs-n] is not provided or is @racket[#f].
 
 For FAT filesystems on Windows, directories do not have modification
@@ -510,6 +510,74 @@ encoding of properties (mostly permissions) to install for the file.
 
 In all modes, the @exnraise[exn:fail:filesystem] on error (e.g., if no
 such file exists).}
+
+
+@defproc[(file-or-directory-stat [path path-string?]
+                                 [as-link? boolean? #f])
+         (and/c (hash/c symbol? any/c) hash-eq?)]{
+
+@index['("inode")]{Returns} a hash with the following keys and values,
+where each value currently is a nonnegative exact integer:
+
+@itemlist[
+ @item{@indexed-racket['device-id] : device ID}
+ @item{@indexed-racket['inode] : inode number}
+ @item{@indexed-racket['mode] : mode bits (see below)}
+ @;{
+ @item{@indexed-racket['type] : one of @racket['socket],
+   @racket['symbolic-link], @racket['file], @racket['directory],
+   @racket['block-device], @racket['character-device] or
+   @racket['fifo]}
+ }
+ @item{@indexed-racket['hardlink-count] : number of hard links}
+ @item{@indexed-racket['user-id] : numeric user ID of owner}
+ @item{@indexed-racket['group-id] : numeric group ID of owner}
+ @item{@indexed-racket['device-id-for-special-file] : device ID (if special file)}
+ @item{@indexed-racket['size] : size of file or symbolic link in bytes}
+ @item{@indexed-racket['block-size] : size of filesystem blocks}
+ @item{@indexed-racket['block-count] : number of used filesystem blocks}
+ @item{@indexed-racket['access-time-seconds] : last access time in seconds
+   since @tech{the epoch}}
+ @item{@indexed-racket['modify-time-seconds] : last modification time in
+   seconds since @tech{the epoch}}
+ @item{@indexed-racket['change-time-seconds] : last status change time in
+   seconds since @tech{the epoch}}
+ @item{@indexed-racket['creation-time-seconds] : creation time in seconds since
+   @tech{the epoch}}
+ @item{@indexed-racket['access-time-nanoseconds] : last access time in
+   nanoseconds since @tech{the epoch}}
+ @item{@indexed-racket['modify-time-nanoseconds] : last modification time in
+   nanoseconds since @tech{the epoch}}
+ @item{@indexed-racket['change-time-nanoseconds] : last status change time in
+   nanoseconds since @tech{the epoch}}
+ @item{@indexed-racket['creation-time-nanoseconds] : creation time in
+   nanoseconds since @tech{the epoch}}
+]
+
+If @racket[as-link?] is a true value, then if @racket[path] refers to a
+symbolic link, the stat information of the link is returned instead of the stat
+information of the referenced filesystem item.
+
+The mode bits are the bits for permissions and other data, as returned from the
+Posix @tt{stat}/@tt{lstat} functions or the Windows @tt{_wstat64} function,
+respectively. To select portions of the bit pattern, use the constants
+@indexed-racket[user-read-bit], etc.
+
+Depending on the operating system and filesystem, the ``nanoseconds''
+timestamps may have less than nanoseconds precision. For example, in one
+environment a timestamp may be @racket[1234567891234567891] (nanoseconds
+precision) and in another environment @racket[1234567891000000000] (seconds
+precision).
+
+Values that aren't available for a platform/filesystem combination may be set
+to @racket[0].
+
+If @racket[as-link?] is @racket[#f] and @racket[path] isn't accessible,
+the @exnraise[exn:fail:filesystem]. This exception is also raised if
+@racket[as-link?] is a true value and @racket[path] can't be resolved, i.e., is
+a dangling link.
+
+@history[#:added "8.3.0.7"]}
 
 
 @defproc[(file-or-directory-identity [path path-string?]
@@ -632,10 +700,20 @@ of the current directory.}
 Returns @racket[#t] if @racket[path] refers to a directory,
 @racket[#f] otherwise.}
 
-@defproc[(make-directory [path path-string?]) void?]{
+@defproc[(make-directory [path path-string?]
+                         [permissions (integer-in 0 65535) @#,racketvalfont{#o777}])
+         void?]{
 
 Creates a new directory with the path @racket[path].  If the directory
-is not created successfully, the @exnraise[exn:fail:filesystem].}
+is not created successfully, the @exnraise[exn:fail:filesystem].
+
+The @racket[permissions] argument specifies the permissions of the
+created directory, where an integer representation of permissions is
+treated the same as for @racket[file-or-directory-permissions]. On
+Unix and Mac OS, these permissions bits are combined with the
+process's umask. On Windows, @racket[permissions] is not used.
+
+@history[#:changed "8.3.0.5" @elem{Added the @racket[permissions] argument.}]}
 
 
 @defproc[(delete-directory [path path-string?]) void?]{
@@ -774,8 +852,8 @@ In addition to the bindings described below,
 compile-time expressions with @racket[define-runtime-path].
 
 @defform[(define-runtime-path id maybe-runtime?-id expr)
-         #:grammar ([maybe-runtime? code:blank
-                                    (code:line #:runtime?-id runtime?-id)])]{
+         #:grammar ([maybe-runtime?-id code:blank
+                                       (code:line #:runtime?-id runtime?-id)])]{
 
 Uses @racket[expr] as both a compile-time (i.e., @tech{phase} 1)
 expression and a run-time (i.e., @tech{phase} 0) expression. In either
@@ -1613,20 +1691,35 @@ Creates a lock filename by prepending @racket["_LOCK"] on Windows
   (make-lock-file-name "/home/george/project/important-file")]}
 
 @deftogether[(
-@defthing[user-read-bit     @#,racketvalfont{#o400}]
-@defthing[user-write-bit    @#,racketvalfont{#o200}]
-@defthing[user-execute-bit  @#,racketvalfont{#o100}]
-@defthing[group-read-bit    @#,racketvalfont{#o040}]
-@defthing[group-write-bit   @#,racketvalfont{#o020}]
-@defthing[group-execute-bit @#,racketvalfont{#o010}]
-@defthing[other-read-bit    @#,racketvalfont{#o004}]
-@defthing[other-write-bit   @#,racketvalfont{#o002}]
-@defthing[other-execute-bit @#,racketvalfont{#o001}]
+; See https://en.wikibooks.org/wiki/C_Programming/POSIX_Reference/sys/stat.h
+@defthing[file-type-bits             @#,racketvalfont{#o170000}]
+@defthing[socket-type-bits           @#,racketvalfont{#o140000}]
+@defthing[symbolic-link-type-bits    @#,racketvalfont{#o120000}]
+@defthing[regular-file-type-bits     @#,racketvalfont{#o100000}]
+@defthing[block-device-type-bits     @#,racketvalfont{#o060000}]
+@defthing[directory-type-bits        @#,racketvalfont{#o040000}]
+@defthing[character-device-type-bits @#,racketvalfont{#o020000}]
+@defthing[fifo-type-bits             @#,racketvalfont{#o010000}]
+@defthing[set-user-id-bit            @#,racketvalfont{#o004000}]
+@defthing[set-group-id-bit           @#,racketvalfont{#o002000}]
+@defthing[sticky-bit                 @#,racketvalfont{#o001000}]
+@defthing[user-permission-bits       @#,racketvalfont{#o000700}]
+@defthing[user-read-bit              @#,racketvalfont{#o000400}]
+@defthing[user-write-bit             @#,racketvalfont{#o000200}]
+@defthing[user-execute-bit           @#,racketvalfont{#o000100}]
+@defthing[group-permission-bits      @#,racketvalfont{#o000070}]
+@defthing[group-read-bit             @#,racketvalfont{#o000040}]
+@defthing[group-write-bit            @#,racketvalfont{#o000020}]
+@defthing[group-execute-bit          @#,racketvalfont{#o000010}]
+@defthing[other-permission-bits      @#,racketvalfont{#o000007}]
+@defthing[other-read-bit             @#,racketvalfont{#o000004}]
+@defthing[other-write-bit            @#,racketvalfont{#o000002}]
+@defthing[other-execute-bit          @#,racketvalfont{#o000001}]
 )]{
 
-Constants that are useful with @racket[file-or-directory-permissions]
-and bitwise operations such as @racket[bitwise-ior], and
-@racket[bitwise-and].}
+Constants that are useful with @racket[file-or-directory-permissions],
+@racket[file-or-directory-stat] and bitwise operations such as
+@racket[bitwise-ior], and @racket[bitwise-and].}
 
 
 @examples[#:hidden #:eval file-eval

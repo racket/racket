@@ -32,6 +32,7 @@
 (test #t chaperone-of?/impersonator '(10) '(10))
 (test #t chaperone-of?/impersonator '#(1 2 3) '#(1 2 3))
 (test #t chaperone-of?/impersonator '#&(1 2 3) '#&(1 2 3))
+(test #f chaperone-of?/impersonator (mcons 1 2) (mcons 1 2))
 
 (test #f chaperone-of?/impersonator (make-string 1 #\x) (make-string 1 #\x))
 (test #t chaperone-of?/impersonator 
@@ -50,6 +51,29 @@
 (test #f either-chaperone-of?/impersonator 
       '#&17
       (box 17))
+
+;; immutable hash chaperone-of? structural equality:
+(test #t chaperone-of?/impersonator '#hash(("0" . 0) ("1" . 1) ("2" . 2)) '#hash(("0" . 0) ("1" . 1) ("2" . 2)))
+(test #t chaperone-of?/impersonator '#hasheq((z . 0) (o . 1) (t . 2)) '#hasheq((z . 0) (o . 1) (t . 2)))
+(test #t chaperone-of?/impersonator '#hasheqv((0 . "0") (1 . "1") (2 . "2")) '#hasheqv((0 . "0") (1 . "1") (2 . "2")))
+(test #t chaperone-of?/impersonator (hash 'a 1) (hash 'a 1))
+(test #t chaperone-of?/impersonator (hasheq 'a 1) (hasheq 'a 1))
+(test #t chaperone-of?/impersonator (hasheqv 'a 1) (hasheqv 'a 1))
+(test #f chaperone-of? (hash 'a 1) (hash 'a 2))
+(let ()
+  ;; mutable strings as keys make these different:
+  (test #f chaperone-of? (hasheq (string #\a) 1) (hasheq (string #\a) 1))
+  ;; but if the mutable strings are eq it's fine:
+  (define a (string #\a))
+  (test #t chaperone-of?/impersonator (hasheq a 1) (hasheq a 1)))
+
+;; mutable hash chaperone-of? intensional equality:
+(for ([make-hash (in-list (list make-hash make-hasheq make-hasheqv
+                                make-weak-hash make-weak-hasheq make-weak-hasheqv
+                                make-ephemeron-hash make-ephemeron-hasheq make-ephemeron-hasheqv))])
+  (define h (make-hash '((a . 1))))
+  (test #t chaperone-of?/impersonator h h)
+  (test #f chaperone-of? (make-hash '((a . 1))) (make-hash '((a . 1)))))
 
 (let ()
   (define-struct o (a b))
@@ -2411,6 +2435,30 @@
         'threads-finished
         (for/and ([t ths])
           (semaphore-try-wait? done))))
+
+;; ----------------------------------------
+
+;; Check chaparone violation message:
+
+(let ()
+  (define h
+    (chaperone-hash (make-hash '((a . 0)))
+                    (λ (h k) (values k (λ (h k v) (add1 v))))
+                    (λ (h k v) (values k (add1 v)))
+                    (λ (h k) k)
+                    (λ (h k) k)))
+  (err/rt-test (hash-ref h 'a)
+               exn:fail:contract?
+               (string-append
+                "hash-ref: non-chaperone result;\n? received a [a-z]* that is not a chaperone of the original [a-z]*\n"
+                "  original: 0\n"
+                "  received: 1"))
+  (err/rt-test (hash-set! h 'a 5)
+               exn:fail:contract?
+               (string-append
+                "hash-set!: non-chaperone result;\n? received a [a-z]* that is not a chaperone of the original [a-z]*\n"
+                "  original: 5\n"
+                "  received: 6")))
 
 ;; ----------------------------------------
 

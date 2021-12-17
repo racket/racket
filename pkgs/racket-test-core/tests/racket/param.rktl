@@ -325,6 +325,20 @@
 		      '(format "~e" 10)
 		      exn:fail?
 		      (list "bad setting" zero-arg-proc one-arg-proc three-arg-proc))
+		(list error-syntax->string-handler
+		      (list (error-syntax->string-handler) (lambda (x w) (error 'converter)))
+		      '(with-handlers ([exn:fail:syntax? void])
+                         (raise-syntax-error #f "ok" #'oops))
+		      (lambda (x) (and (exn:fail? x) (regexp-match? #rx"converter" (exn-message x))))
+		      (list "bad setting" zero-arg-proc one-arg-proc three-arg-proc))
+		(list print-syntax-width
+		      (list 1024 32)
+                      '(let ([s (format "~s" (datum->syntax #f (cons 'hello (for/list ([i 100])
+                                                                              i))))])
+                         (unless (regexp-match #rx"hello" s) (error "bad format"))
+                         (unless (regexp-match #rx"99[)]" s) (error "no 99")))
+		      (lambda (x) (and (exn:fail? x) (regexp-match? #rx"no 99" (exn-message x))))
+		      (list -1 2 12.0))
 
 		(list current-print
 		      (list (current-print)

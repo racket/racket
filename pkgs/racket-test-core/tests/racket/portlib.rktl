@@ -723,6 +723,11 @@
       (test 1 peek-bytes-avail!* b 1 #f s)
       (test 2 read-bytes-avail!* b s))))
 
+;; module-level contract violation check
+(err/rt-test (make-limited-input-port (open-input-bytes #"_") 1.0)
+             exn:fail:contract?)
+
+
 ;; Make sure that blocking on a limited input port doesn't
 ;; block in the case of a peek after available bytes:
 (let ()
@@ -980,7 +985,7 @@
      (object-name p)
      (lambda (bstr)
        (if (zero? (random 2))
-           (wrap-evt (alarm-evt (+ (current-inexact-milliseconds) 5))
+           (wrap-evt (alarm-evt (+ (current-inexact-monotonic-milliseconds) 5) #t)
                      (lambda (v) 0))
            (read-bytes-avail! bstr p)))
      #f
@@ -1322,7 +1327,7 @@
     (define PORT 5999)
 
     (define (make-alarm-e)
-      (alarm-evt (+ (current-inexact-milliseconds) 5)))
+      (alarm-evt (+ (current-inexact-monotonic-milliseconds) 5) #t))
 
     (define ((connection-handler in out with-alarm?))
       (let loop ((alarm-e (make-alarm-e))

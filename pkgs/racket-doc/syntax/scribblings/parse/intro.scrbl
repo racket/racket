@@ -223,8 +223,8 @@ distinct binding pairs.''
              #:with (rhs ...) #'(b.rhs ...)))
 
   (syntax-parse stx
-    [(_ bs:distinct-bindings . body)
-     #'((lambda (bs.var ...) . body) bs.rhs ...)]))
+    [(_ bs:distinct-bindings body ...+)
+     #'((lambda (bs.var ...) body ...) bs.rhs ...)]))
 ]
 Here we've introduced the @racket[#:with] clause. A @racket[#:with]
 clause matches a pattern with a computed term. Here we use it to bind

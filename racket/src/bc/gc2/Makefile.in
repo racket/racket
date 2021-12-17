@@ -49,6 +49,12 @@ XSRCDIR = xsrc
 XFORM = env XFORM_USE_PRECOMP=$(XSRCDIR)/precomp.h $(XFORM_NOPRECOMP)
 SRCDIR = $(srcdir)/../src
 
+STRIP_SIGNATURE_VIA_RACKET = $(BOOTSTRAP_RACKET) "${srcdir}/../../mac/codesign.rkt" --remove-signature
+RESTORE_SIGNATURE_VIA_RACKET = $(BOOTSTRAP_RACKET) "${srcdir}/../../mac/codesign.rkt" -s - --entitlements
+BOOTSTRAP_RACKET = @RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) $(SETUP_BOOT) ignored ignored.d
+
+INSTALL_NAME_TOOL_VIA_RACKET = $(BOOTSTRAP_RACKET) "${srcdir}/../../mac/install_name_tool.rkt"
+
 FOREIGN_USED_OBJ = foreign.@LTO@
 FOREIGN_NOT_USED_OBJ = $(FOREIGN_USED_OBJ)
 
@@ -622,7 +628,7 @@ MACLIBRKT_LINK_static = $(MACLIBRKT_LIBS)
 ../racket@MMM@@OSX@: $(MZFWMMM) main.@LTO@
 	@MZLINKER@ -o ../racket@MMM@ @PROFFLAGS@ @LDFLAGS@ main.@LTO@ -Wl,-headerpad_max_install_names $(MACLIBRKT_LINK_@MACLIBRKT_LINK_MODE@) @LIBS@
 	@STRIP_SIGNATURE@ "../racket@MMM@"
-	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)_3m/Racket" "@executable_path/Racket.framework/Versions/$(FWVERSION)_3m/Racket" "../racket@MMM@"
+	@INSTALL_NAME_TOOL@ -change "Racket.framework/Versions/$(FWVERSION)_3m/Racket" "@executable_path/Racket.framework/Versions/$(FWVERSION)_3m/Racket" "../racket@MMM@"
 	@RESTORE_SIGNATURE@ "${srcdir}/../../mac/entitlements.plist" "../racket@MMM@"
 
 ../lib/libracket3mxxxxxxx.dll: ../libracket3m.@LIBSFX@ ../mzsj86g.o $(LIBRKTIO)

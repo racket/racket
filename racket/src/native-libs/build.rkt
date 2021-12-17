@@ -507,6 +507,11 @@
                                           (if linux? '("--enable-libmount=no") '())
                                           (if mac?
                                               '("CFLAGS=-include Kernel/uuid/uuid.h")
+                                              '())
+                                          (if win?
+                                              ;; abuse of `LIBS`, but avoids conflict with `path-flags`
+                                              '("LIBS=-Wl,--allow-multiple-definition"
+                                                "--disable-compile-warnings")
                                               '()))
                       #:env (append path-flags
                                     ;; Disable Valgrind support, which particularly

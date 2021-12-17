@@ -18,7 +18,7 @@
     ;; consulting the exporting module
     (define m (namespace->module ns (module-path-index-resolve
                                      (module-binding-nominal-module b))))
-    (define b/p (hash-ref (hash-ref (module-provides m) (module-binding-nominal-phase b) #hasheq())
+    (define b/p (hash-ref (hash-ref (module-provides m) (module-binding-nominal-phase+space b) #hasheq())
                           (module-binding-nominal-sym b)
                           #f))
     (provided-as-transformer? b/p)]
@@ -27,5 +27,5 @@
     ;; binding is a transformer or variable binding
     (namespace-visit-available-modules! ns (+ at-phase (module-binding-phase b)))
     (define-values (val primitive? insp protected?)
-      (binding-lookup b empty-env null ns at-phase id))
+      (binding-lookup b empty-env null ns at-phase id #:check-access? #f))
     (not (variable? val))]))

@@ -209,6 +209,7 @@ static Scheme_Object *subprocess_wait(int c, Scheme_Object *args[]);
 static Scheme_Object *sch_shell_execute(int c, Scheme_Object *args[]);
 static Scheme_Object *current_subproc_cust_mode (int, Scheme_Object *[]);
 static Scheme_Object *subproc_group_on (int, Scheme_Object *[]);
+static Scheme_Object *current_subproc_keep_file_descriptors (int, Scheme_Object *[]);
 static void register_subprocess_wait();
 
 static void block_timer_signals(int block);
@@ -257,6 +258,7 @@ ROSYM static Scheme_Object *must_truncate_symbol;
 
 ROSYM Scheme_Object *scheme_none_symbol, *scheme_line_symbol, *scheme_block_symbol;
 
+ROSYM static Scheme_Object *inherited_symbol, *all_symbol;
 ROSYM static Scheme_Object *exact_symbol, *new_symbol;
 
 #define READ_STRING_BYTE_BUFFER_SIZE 1024
@@ -319,6 +321,12 @@ scheme_init_port (Scheme_Startup_Env *env)
   exact_symbol = scheme_intern_symbol("exact");
   new_symbol = scheme_intern_symbol("new");
 
+  REGISTER_SO(inherited_symbol);
+  REGISTER_SO(all_symbol);
+
+  inherited_symbol = scheme_intern_symbol("inherited");
+  all_symbol = scheme_intern_symbol("all");
+
   REGISTER_SO(fd_input_port_type);
   REGISTER_SO(fd_output_port_type);
   REGISTER_SO(file_input_port_type);
@@ -373,6 +381,7 @@ scheme_init_port (Scheme_Startup_Env *env)
 
   ADD_PARAMETER("subprocess-group-enabled", subproc_group_on, MZCONFIG_SUBPROC_GROUP_ENABLED, env);
   ADD_PARAMETER("current-subprocess-custodian-mode", current_subproc_cust_mode, MZCONFIG_SUBPROC_CUSTODIAN_MODE, env);
+  ADD_PARAMETER("current-subprocess-keep-file-descriptors", current_subproc_keep_file_descriptors, MZCONFIG_SUBPROC_KEEP_FDS, env);
 
   scheme_addto_prim_instance("shell-execute", scheme_make_prim_w_arity(sch_shell_execute, "shell-execute", 5, 5), env);
 }
@@ -6133,6 +6142,23 @@ static Scheme_Object *subproc_group_on (int argc, Scheme_Object *argv[])
                              -1, NULL, NULL, 1);
 }
 
+static Scheme_Object *subproc_keep_fd_p(int argc, Scheme_Object **argv)
+{
+  if (SCHEME_NULLP(argv[0])
+      || SAME_OBJ(argv[0], inherited_symbol)
+      || SAME_OBJ(argv[0], all_symbol))
+    return argv[0];
+
+  return NULL;
+}
+
+static Scheme_Object *current_subproc_keep_file_descriptors (int argc, Scheme_Object **argv)
+{
+  return scheme_param_config("current-subprocess-keep-file-descriptors", scheme_make_integer(MZCONFIG_SUBPROC_KEEP_FDS),
+                             argc, argv, 
+                             -1, subproc_keep_fd_p, "(or/c '() 'inherited 'all)", 1);
+}
+
 static Scheme_Object *subprocess(int c, Scheme_Object *args[])
      /* subprocess(out, in, err, exe, arg ...) */
 {
@@ -6142,7 +6168,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   Scheme_Object *errport;
   Scheme_Object *a[4];
   Scheme_Subprocess *subproc;
-  Scheme_Object *cust_mode, *current_dir, *group;
+  Scheme_Object *cust_mode, *current_dir, *group, *keep_fds;
   int flags = 0;
   rktio_fd_t *stdout_fd = NULL;
   rktio_fd_t *stdin_fd = NULL;
@@ -6166,6 +6192,8 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 
       op = scheme_output_port_record(outport);
 
+      CHECK_PORT_CLOSED(name, "output", port, op->closed);
+
       if (SAME_OBJ(op->sub_type, file_output_port_type)) {
 	int tmp;
 	tmp = MSC_IZE(fileno)(((Scheme_Output_File *)op->port_data)->f);
@@ -6183,6 +6211,8 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
       Scheme_Input_Port *ip;
 
       ip = scheme_input_port_record(inport);
+
+      CHECK_PORT_CLOSED(name, "input", port, ip->closed);
 
       if (SAME_OBJ(ip->sub_type, file_input_port_type)) {
 	int tmp;
@@ -6204,6 +6234,8 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
       Scheme_Output_Port *op;
 
       op = scheme_output_port_record(errport);
+
+      CHECK_PORT_CLOSED(name, "output", port, op->closed);
 
       if (SAME_OBJ(op->sub_type, file_output_port_type)) {
 	int tmp;
@@ -6338,6 +6370,12 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
       && !strcmp(SCHEME_SYM_VAL(cust_mode), "kill")
       && (rktio_process_allowed_flags(scheme_rktio) & RKTIO_PROCESS_WINDOWS_CHAIN_TERMINATION))
     flags |= RKTIO_PROCESS_WINDOWS_CHAIN_TERMINATION;
+
+  keep_fds = scheme_get_param(config, MZCONFIG_SUBPROC_KEEP_FDS);
+  if (SAME_OBJ(keep_fds, all_symbol))
+    flags |= RKTIO_PROCESS_NO_CLOSE_FDS;
+  else if (SCHEME_NULLP(keep_fds))
+    flags |= RKTIO_PROCESS_NO_INHERIT_FDS;
 
   current_dir = scheme_get_param(config, MZCONFIG_CURRENT_DIRECTORY);
 
@@ -7013,3 +7051,309 @@ static void register_traversers(void)
 END_XFORM_SKIP;
 
 #endif
+
+#ifdef MZ_TERMINAL_SUPPORT
+# define EXPEDITOR_EXTERNAL_USE
+# define DISABLE_X11
+# include "../../ChezScheme/c/version.h"
+/* GETPAGESIZE is set for a recognized platform */
+#endif
+
+#if defined(MZ_TERMINAL_SUPPORT) && defined(GETPAGESIZE)
+
+#define FEATURE_EXPEDITOR
+
+typedef Scheme_Object *ptr;
+typedef intptr_t iptr;
+typedef int IBOOL;
+typedef int I32;
+typedef unsigned int U32;
+typedef int INT;
+#define Strue scheme_true
+#define Sfalse scheme_false
+#define Seof_object scheme_eof
+#define Svoid scheme_void
+#define Schar scheme_make_character
+#define Scons scheme_make_pair
+#define Sinteger scheme_make_integer
+#define Sstring_length SCHEME_CHAR_STRLEN_VAL
+#define Sstring_ref(s, i) (SCHEME_CHAR_STR_VAL(s)[i])
+#define Sstring_set(s, i, c) ((SCHEME_CHAR_STR_VAL(s)[i]) = c)
+#define S_string(null, n) scheme_alloc_char_string(n, 0)
+#define S_strerror(errno) NULL
+#define S_error1(who, msg, val) scheme_signal_error(msg, val)
+#define S_error(who, msg) scheme_signal_error(msg)
+
+#ifdef WIN32
+static char *Swide_to_utf8(const wchar_t *arg) {
+  int len;
+  char* arg8;
+  len = WideCharToMultiByte(CP_UTF8, 0, arg, -1, NULL, 0, NULL, NULL);
+  if (0 == len) return NULL;
+  arg8 = (char*)malloc(len * sizeof(char));
+  if (0 == WideCharToMultiByte(CP_UTF8, 0, arg, -1, arg8, len, NULL, NULL)) {
+    free(arg8);
+    return NULL;
+  }
+  return arg8;
+}
+
+static Scheme_Object *Sstring_utf8(const char *s, int len) {
+  return scheme_make_sized_utf8_string(s, len);
+}
+
+static Scheme_Object *S_LastErrorString() {
+  return scheme_make_utf8_string("[unknown]");
+}
+#endif
+
+static void S_expeditor_init(void);
+
+static struct {
+  Scheme_Object *null_string;
+} S_G;
+
+static void Sforeign_symbol(const char *name, void *val) {
+}
+
+#ifdef MZ_XFORM
+START_XFORM_SUSPEND;
+#endif
+
+#include "../../ChezScheme/c/expeditor.c"
+
+#ifdef MZ_XFORM
+END_XFORM_SUSPEND;
+#endif
+
+# define MZ_EXPR_EDIT 1
+ROSYM static Scheme_Object *up_symbol, *down_symbol, *left_symbol, *right_symbol;
+ROSYM static Scheme_Object *eol_symbol, *eos_symbol, *screen_symbol;
+
+#else
+
+# define MZ_EXPR_EDIT 0
+
+#endif
+
+static Scheme_Object *terminal_init_term(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  intptr_t in, out;
+  scheme_get_int_val(argv[0], &in);
+  scheme_get_int_val(argv[1], &out);
+  return s_ee_init_term(in, out) ? scheme_true : scheme_false;
+#else
+  return scheme_false;
+#endif
+}
+
+static Scheme_Object *terminal_read_char(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  return s_ee_read_char(SCHEME_TRUEP(argv[0]));
+#else
+  return scheme_false;
+#endif
+}
+
+static Scheme_Object *terminal_write_char(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  s_ee_write_char(SCHEME_CHAR_VAL(argv[0]));
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_set_color(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  s_ee_set_color(SCHEME_INT_VAL(argv[0]), SCHEME_TRUEP(argv[1]));
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_flush(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  s_ee_flush();
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_get_screen_size(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  return s_ee_get_screen_size();  
+#else
+  return scheme_false;
+#endif
+}
+
+static Scheme_Object *terminal_raw_mode(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  if (SCHEME_TRUEP(argv[0]))
+    s_ee_raw();
+  else
+    s_ee_noraw();
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_postoutput_mode(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  if (SCHEME_TRUEP(argv[0]))
+    s_ee_postoutput();
+  else
+    s_ee_nopostoutput();
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_signal_mode(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  if (SCHEME_TRUEP(argv[0]))
+    s_ee_signal();
+  else
+    s_ee_nosignal();
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_automargin_mode(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  if (SCHEME_TRUEP(argv[0]))
+    s_ee_enter_am_mode();
+  else
+    s_ee_exit_am_mode();
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_nanosleep(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  s_ee_nanosleep(SCHEME_INT_VAL(argv[0]), SCHEME_INT_VAL(argv[1]));
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_pause(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  s_ee_pause();
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_get_clipboard(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  Scheme_Object *r;
+  scheme_enable_garbage_collection(0);
+  r = s_ee_get_clipboard();
+  scheme_enable_garbage_collection(1);
+  return r;
+#else
+  return scheme_false;
+#endif
+}
+
+static Scheme_Object *terminal_move_cursor(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  Scheme_Object *s = argv[0];
+  intptr_t n = SCHEME_INT_VAL(argv[1]);
+  if (SAME_OBJ(s, up_symbol))
+    s_ee_up(n);
+  else if (SAME_OBJ(s, down_symbol))
+    s_ee_down(n);
+  else if (SAME_OBJ(s, left_symbol))
+    s_ee_left(n);
+  else if (SAME_OBJ(s, right_symbol))
+    s_ee_right(n);
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_clear(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  Scheme_Object *s = argv[0];
+  if (SAME_OBJ(s, eol_symbol))
+    s_ee_clear_eol();
+  else if (SAME_OBJ(s, eos_symbol))
+    s_ee_clear_eos();
+  else if (SAME_OBJ(s, screen_symbol))
+    s_ee_clear_screen();
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_scroll_reverse(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  s_ee_scroll_reverse(SCHEME_INT_VAL(argv[0]));
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_bell(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  s_ee_bell();
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_carriage_return(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  s_ee_carriage_return();
+#endif
+  return scheme_void;
+}
+
+static Scheme_Object *terminal_line_feed(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  s_ee_line_feed();
+#endif
+  return scheme_void;
+}
+
+void scheme_init_terminal(Scheme_Startup_Env *env) {
+#if MZ_EXPR_EDIT
+  REGISTER_SO(up_symbol);
+  REGISTER_SO(down_symbol);
+  REGISTER_SO(left_symbol);
+  REGISTER_SO(right_symbol);
+  REGISTER_SO(eol_symbol);
+  REGISTER_SO(eos_symbol);
+  REGISTER_SO(screen_symbol);
+
+  up_symbol = scheme_intern_symbol("up");
+  down_symbol = scheme_intern_symbol("down");
+  left_symbol = scheme_intern_symbol("left");
+  right_symbol = scheme_intern_symbol("right");
+
+  eol_symbol = scheme_intern_symbol("eol");
+  eos_symbol = scheme_intern_symbol("eos");
+  screen_symbol = scheme_intern_symbol("screen");
+
+  REGISTER_SO(S_G.null_string);
+  S_G.null_string = scheme_make_utf8_string("");
+
+  S_expeditor_init();
+#endif
+
+# define ADDTO_EE(name, proc, args)                                     \
+  scheme_addto_prim_instance(name,                                      \
+                             scheme_make_prim_w_arity(proc, name, args, args), \
+                             env)
+
+  ADDTO_EE("terminal-init", terminal_init_term, 2);
+  ADDTO_EE("terminal-read-char", terminal_read_char, 1);
+  ADDTO_EE("terminal-write-char", terminal_write_char, 1);
+  ADDTO_EE("terminal-set-color", terminal_set_color, 2);
+  ADDTO_EE("terminal-flush", terminal_flush, 0);
+  ADDTO_EE("terminal-get-screen-size", terminal_get_screen_size, 0);
+  ADDTO_EE("terminal-raw-mode", terminal_raw_mode, 1);
+  ADDTO_EE("terminal-postoutput-mode", terminal_postoutput_mode, 1);
+  ADDTO_EE("terminal-signal-mode", terminal_signal_mode, 1);
+  ADDTO_EE("terminal-automargin-mode", terminal_automargin_mode, 1);
+  ADDTO_EE("terminal-nanosleep", terminal_nanosleep, 2);
+  ADDTO_EE("terminal-pause", terminal_pause, 0);
+  ADDTO_EE("terminal-get-clipboard", terminal_get_clipboard, 0);
+  ADDTO_EE("terminal-move-cursor", terminal_move_cursor, 2);
+  ADDTO_EE("terminal-clear", terminal_clear, 1);
+  ADDTO_EE("terminal-scroll-reverse", terminal_scroll_reverse, 1);
+  ADDTO_EE("terminal-bell", terminal_bell, 0);
+  ADDTO_EE("terminal-carriage-return", terminal_carriage_return, 0);
+  ADDTO_EE("terminal-line-feed", terminal_line_feed, 0);
+}

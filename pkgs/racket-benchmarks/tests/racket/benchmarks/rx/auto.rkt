@@ -17,12 +17,12 @@ exec racket -qu "$0" ${1+"$@"}
     (define byte-pregexp byte-regexp))
 
   (define (test-mz input rx iterations)
-    (let ([start (current-inexact-milliseconds)])
+    (let ([start (current-inexact-monotonic-milliseconds)])
       (let loop ([n iterations])
 	(unless (zero? n)
 	  (regexp-match-positions rx input)
 	  (loop (sub1 n))))
-      (- (current-inexact-milliseconds) start)))
+      (- (current-inexact-monotonic-milliseconds) start)))
 
   (define (test-racket input rx iterations)
     (test-mz input (byte-pregexp rx) iterations))
@@ -83,12 +83,12 @@ exec racket -qu "$0" ${1+"$@"}
     (let ([pcregexp (dynamic-require "pcre.rkt" 'pcregexp)]
 	  [pcregexp-match (dynamic-require "pcre.rkt" 'pcregexp-match)])
       (let ([rx (pcregexp rx)])
-	(let ([start (current-inexact-milliseconds)])
+	(let ([start (current-inexact-monotonic-milliseconds)])
 	  (let loop ([n iterations])
 	    (unless (zero? n)
 	      (pcregexp-match rx input)
 	      (loop (sub1 n))))
-	  (- (current-inexact-milliseconds) start)))))
+	  (- (current-inexact-monotonic-milliseconds) start)))))
 
   (define (random-letters n)
     (parameterize ([current-pseudo-random-generator (make-pseudo-random-generator)])

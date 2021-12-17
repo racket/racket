@@ -43,6 +43,8 @@
                  (eqv? b (char->integer #\|))
                  (eqv? b (char->integer #\:))
                  (eqv? b (char->integer #\<))
-                 (eqv? b (char->integer #\>)))
+                 (eqv? b (char->integer #\>))
+                 (eqv? b (char->integer #\?))
+                 (eqv? b (char->integer #\*)))
              #t]
             [else (loop i #f)])]))]))

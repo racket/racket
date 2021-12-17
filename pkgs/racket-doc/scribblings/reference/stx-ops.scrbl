@@ -1,8 +1,11 @@
 #lang scribble/doc
-@(require "mz.rkt")
+@(require "mz.rkt"
+          (for-label racket/syntax-srcloc))
 
 @(define stx-eval (make-base-eval))
 @(stx-eval '(require (for-syntax racket/base)))
+
+@(define racket-srcloc @racket[srcloc])
 
 @title[#:tag "stxops"]{Syntax Object Content}
 
@@ -39,7 +42,9 @@ Returns the source component of the @tech{source location}
 for the @tech{syntax object} @racket[stx], or @racket[#f]
 if none is known. The source is represented by an arbitrary value
 (e.g., one passed to @racket[read-syntax]), but it is typically a file
-path string.}
+path string.
+
+See also @racket[syntax-srcloc] from @racketmodname[racket/syntax-srcloc]}.
 
 
 @defproc[(syntax-line [stx syntax?]) 
@@ -48,9 +53,11 @@ path string.}
 Returns the line number (positive exact integer)
 of the @tech{source location} for the start of the
 @tech{syntax object} in its source, or @racket[#f] if the line number or
-source is unknown. The result is @racket[#f] if and only if
-@racket[(syntax-column stx)] produces @racket[#f]. See also
-@secref["linecol"].}
+source is unknown. See also @secref["linecol"].
+
+@history[#:changed "7.0" @elem{Dropped a guarantee that @racket[syntax-line]
+                               and @racket[syntax-column] both produce
+                               @racket[#f] or both produce integers.}]}
 
 
 @defproc[(syntax-column [stx syntax?])
@@ -59,9 +66,11 @@ source is unknown. The result is @racket[#f] if and only if
 Returns the column number (non-negative exact integer)
 of the @tech{source location} for the start
 of the @tech{syntax object} in its source, or @racket[#f] if the source
-column is unknown. The result is @racket[#f] if and only if
-@racket[(syntax-line stx)] produces @racket[#f]. See also
-@secref["linecol"].}
+column is unknown. See also @secref["linecol"].
+
+@history[#:changed "7.0" @elem{Dropped a guarantee that @racket[syntax-line]
+                               and @racket[syntax-column] both produce
+                               @racket[#f] or both produce integers.}]}
 
 
 @defproc[(syntax-position [stx syntax?])
@@ -168,10 +177,8 @@ object for every pair of parentheses in the source, and by creating a
 pair-valued @tech{syntax object} @italic{only} for parentheses in the
 source. See @secref["parse-pair"] for more information.
 
-If @racket[stx] is @tech{tainted} or @tech{armed}, then any syntax
-object in the result of @racket[(syntax-e stx)] is @tech{tainted}, and
-multiple calls to @racket[syntax-e] may return values that are not
-@racket[eq?]. For a @racket[stx] that is not @tech{armed}, the results from
+If @racket[stx] is @tech{tainted}, then any syntax object in the
+result of @racket[(syntax-e stx)] is @tech{tainted}. The results from
 multiple calls to @racket[syntax-e] of @racket[stx] are @racket[eq?].}
 
 
@@ -182,7 +189,7 @@ of @tech{syntax object}s when @racket[(syntax->datum stx)] would produce a
 list. In other words, @tech{syntax pairs} in @racket[(syntax-e stx)]
 are flattened.
 
-If @racket[stx] is @tech{tainted} or @tech{armed}, then any syntax
+If @racket[stx] is @tech{tainted}, then any syntax
 object in the result of @racket[(syntax->list stx)] is @tech{tainted}.
 
 @examples[#:eval stx-eval
@@ -218,7 +225,9 @@ needed to strip lexical and source-location information recursively.
 
 @defproc[(datum->syntax [ctxt (or/c syntax? #f)]
                         [v any/c]
-                        [srcloc (or/c syntax? #f
+                        [srcloc (or/c #f
+                                      syntax?
+                                      srcloc?
                                       (list/c any/c
                                               (or/c exact-positive-integer? #f)
                                               (or/c exact-nonnegative-integer? #f)
@@ -255,8 +264,7 @@ properties (see @secref["stxprops"]) of @racket[prop] (even the
 hidden ones that would not be visible via @racket[syntax-property-symbol-keys]); if @racket[v]
 is a pair, vector, box, immutable @tech{hash table}, or immutable
 @tech{prefab} structure, recursively converted values are not given
-properties. If @racket[ctxt] is @tech{tainted} or
-@tech{armed}, then the resulting syntax object from
+properties. If @racket[ctxt] is @tech{tainted}, then the resulting syntax object from
 @racket[datum->syntax] is @tech{tainted}. The @tech{code inspector}
 of @racket[ctxt], if any, is compared to the code inspector of the
 module for the macro currently being transformed, if any; if both
@@ -268,22 +276,9 @@ Any of @racket[ctxt], @racket[srcloc], or @racket[prop] can be
 @racket[#f], in which case the resulting syntax has no lexical
 context, source information, and/or new properties.
 
-If @racket[srcloc] is not @racket[#f] or a @tech{syntax object}, it
-must be a list or vector of five elements:
-
-@racketblock[
-  (list source-name line column position span)
-  @#,elem{or} (vector source-name line column position span)
-]
-
-where @racket[source-name] is an arbitrary value for the source
-name; @racket[line] is an integer for the source line, or @racket[#f];
-@racket[column] is an integer for the source column, or @racket[#f];
-@racket[position] is an integer for the source position, or
-@racket[#f]; and @racket[span] is an integer for the source span, or
-@racket[#f]. The @racket[line] and @racket[column] values must both be
-numbers or both be @racket[#f], otherwise the
-@exnraise[exn:fail:contract].
+If @racket[srcloc] is not @racket[#f], a @racket-srcloc instance, or a
+@tech{syntax object}, it must be a list or vector of five elements
+that correspond to @racket-srcloc fields.
 
 Graph structure is not preserved by the conversion of @racket[v] to a
 @tech{syntax object}. Instead, @racket[v] is essentially unfolded into
@@ -292,7 +287,10 @@ immutable @tech{hash tables}, and immutable @tech{prefab} structures,
 then the @exnraise[exn:fail:contract].
 
 The @racket[ignored] argument is allowed for backward compatibility
-and has no effect on the returned syntax object.}
+and has no effect on the returned syntax object.
+
+@history[#:changed "8.2.0.5" @elem{Allow a @racket-srcloc value as a
+                                   @racket[srcloc] argument.}]}
 
 @deftogether[(
 @defproc[(syntax-binding-set? [v any/c]) boolean?]
@@ -493,6 +491,21 @@ limited to---the following keys:
 ]
 
 @history[#:added "6.3"]}
+
+
+@section{Syntax Object Source Locations}
+
+@note-lib-only[racket/syntax-srcloc]
+
+@defproc[(syntax-srcloc [stx syntax?]) (or/c #f srcloc?)]{
+
+Returns the @tech{source location} for the @tech{syntax object}
+@racket[stx], or @racket[#f] if none is known.
+
+@history[#:added "8.2.0.5"]}
+
+
+
 
 @close-eval[stx-eval]
 

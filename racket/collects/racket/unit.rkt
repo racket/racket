@@ -1100,14 +1100,14 @@
                                               'expression
                                               null)])
                             (syntax-local-bind-syntaxes (syntax->list #'(id ...)) #'rhs def-ctx)
-                            (with-syntax ([(id ...) (map syntax-local-identifier-as-binding
+                            (with-syntax ([(id ...) (map (lambda (id) (syntax-local-identifier-as-binding id def-ctx))
                                                     (syntax->list #'(id ...)))])
                               (list (track #'(define-syntaxes (id ...) rhs)))))]
                          [(define-values (id ...) rhs)
                           (andmap identifier? (syntax->list #'(id ...)))
                           (begin
                             (syntax-local-bind-syntaxes (syntax->list #'(id ...)) #f def-ctx)
-                            (with-syntax ([(id ...) (map syntax-local-identifier-as-binding
+                            (with-syntax ([(id ...) (map (lambda (id) (syntax-local-identifier-as-binding id def-ctx))
                                                          (syntax->list #'(id ...)))])
                               (list (track #'(define-values (id ...) rhs)))))]
                          [else (list defn-or-expr)])))
@@ -1154,7 +1154,7 @@
          (for-each
           (lambda (name loc ctc)
             (let ([v (bound-identifier-mapping-get defined-names-table
-                                                   (syntax-local-identifier-as-binding name)
+                                                   name
                                                    (lambda () #f))])
               (unless v
                 (raise-stx-err (format "undefined export ~a" (syntax-e name))))

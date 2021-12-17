@@ -130,7 +130,10 @@
                                             (cons carv cdrv)
                                             cdrv))])
                     (cons-if-true
-                     (very-verbose)
-                     'very-verbose
-                     (cons-if-true (disable-inlining) 'disable-inlining null))))
+                     (disable-const)
+                     'disable-constant
+                     (cons-if-true
+                      (very-verbose)
+                      'very-verbose
+                      (cons-if-true (disable-inlining) 'disable-inlining null)))))
        (exit 1))])

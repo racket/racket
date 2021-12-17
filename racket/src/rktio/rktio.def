@@ -138,12 +138,14 @@ rktio_rename_file
 rktio_get_current_directory
 rktio_set_current_directory
 rktio_make_directory
+rktio_make_directory_with_permissions
 rktio_delete_directory
 rktio_readlink
 rktio_make_link
 rktio_file_size
 rktio_get_file_modify_seconds
 rktio_set_file_modify_seconds
+rktio_file_or_directory_stat
 rktio_fd_identity
 rktio_path_identity
 rktio_get_file_or_directory_permissions

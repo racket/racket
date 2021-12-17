@@ -44,6 +44,7 @@
   (when (eq? initial-place current-place)
     ;; needed by custodian GC callback for memory limits:
     (atomically (ensure-wakeup-handle!)))
+  (define inherited (host:place-get-inherit))
   (define orig-cust (create-custodian #f))
   (define lock (host:make-mutex))
   (define started (host:make-condition))
@@ -106,7 +107,8 @@
           (define finish
             (host:start-place child-pch path sym
                               child-in-fd child-out-fd child-err-fd
-                              orig-cust orig-plumber))
+                              orig-cust orig-plumber
+                              inherited))
           (call-with-continuation-prompt
            (lambda ()
              (host:mutex-acquire lock)

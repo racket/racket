@@ -129,12 +129,12 @@
           ;; callbacks, then the loop can suspend the current thread
           (define timeout-at
             (and timeout
-                 (+ (* timeout 1000) (current-inexact-milliseconds))))
+                 (+ (* timeout 1000) (current-inexact-monotonic-milliseconds))))
           (let loop ([did-work? #t] [polled-all? #f])
             (cond
               [(and polled-all?
                     timeout
-                    (timeout-at . <= . (current-inexact-milliseconds)))
+                    (timeout-at . <= . (current-inexact-monotonic-milliseconds)))
                (start-atomic)
                (cond
                  [(syncing-selected s)

@@ -2,6 +2,7 @@
 (require "../host/thread.rkt"
          "../host/rktio.rkt"
          "host.rkt"
+         "../format/main.rkt"
          "error.rkt")
 
 (provide path-or-fd-identity)

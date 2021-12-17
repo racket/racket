@@ -72,7 +72,7 @@
       ['download-cache-dir (build-path (find-system-path 'cache-dir)
                                        "download-cache")]
       ['download-cache-max-files 1024]
-      ['download-cache-max-bytes (* 64 1024 1024)]
+      ['download-cache-max-bytes (* 128 1024 1024)]
       ['trash-max-packages 512]
       ['trash-max-seconds (* 60 60 24 2)] ; 2 days
       ['network-retries 5]

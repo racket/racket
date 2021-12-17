@@ -45,6 +45,11 @@
                  (define/with-syntax (n ...) #'(1 2 3))
                  #'(0 n ...)))
               '(0 1 2 3))
+(check-equal? (syntax->datum
+               (let ()
+                 (define/with-syntax (0 (m n ...) ...) #'(0 (1 2) (3 4 5) (6)))
+                 #'(0 m ... (n ... $) ...)))
+              '(0 1 3 6 (2 $) (4 5 $) ($)))
 
 ;; ----
 
@@ -138,10 +143,15 @@
        ; single intdef case
        '#,(syntax-local-eval #'(map syntax-local-value (list #'x #'y))
                              ctx1)
+       ; #f case
+       '#,(syntax-local-eval #'(list 1 2)
+                             #f)
+       ; #f case as default
+       '#,(syntax-local-eval #'(list 1 2))
        ; list of intdefs case
        '#,(syntax-local-eval #'(map syntax-local-value (list #'y #'z))
                              (list ctx1 ctx2))))
   (check-equal?
     (m)
-    '((5 6) (6 7))))
+    '((5 6) (1 2) (1 2) (6 7))))
 

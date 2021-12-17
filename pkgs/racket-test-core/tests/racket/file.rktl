@@ -2,7 +2,8 @@
 (load-relative "loadtest.rktl")
 (require ffi/file
          ffi/unsafe
-         compiler/find-exe)
+         compiler/find-exe
+         racket/file)
 
 (Section 'file)
 
@@ -1279,6 +1280,18 @@
   (close-input-port e)
   (subprocess-wait s))
 
+;;-----------------------------------------------------
+
+(parameterize ([current-directory work-dir])
+  (define fn (make-temporary-file "subproc~a"))
+  (define i (open-input-file fn))
+  (define o (open-output-file fn #:exists 'update))
+  (close-input-port i)
+  (close-output-port o)
+  (err/rt-test (subprocess o #f #f (find-exe)) exn:fail? #rx"closed")
+  (err/rt-test (subprocess #f i #f (find-exe)) exn:fail? #rx"closed")
+  (err/rt-test (subprocess #f #f o (find-exe)) exn:fail? #rx"closed"))
+
 ;;------------------------------------------------------------
 
 ;; Test custom output port
@@ -1600,6 +1613,18 @@
 		 '(close-output-port w2)
 		 '(close-input-port r2))))
   (tcp-close l))
+
+;;----------------------------------------------------------------------
+;; Directory and permissions
+
+(unless (eq? 'windows (system-type))
+  (let ([dir (make-temporary-file "perms~a" 'directory)])
+    (define d2 (build-path dir "created"))
+    (make-directory d2 #o500)
+    (test #o500 file-or-directory-permissions d2 'bits)
+    (delete-directory/files dir)))
+(err/rt-test (make-directory "would-be-new" 'a))
+(err/rt-test (make-directory "would-be-new" -1))
 
 ;;----------------------------------------------------------------------
 ;; Filesystem-change events
@@ -2011,8 +2036,6 @@
 (test #f port-waiting-peer? (current-output-port))
 (test #f port-waiting-peer? (open-input-bytes #""))
 (err/rt-test (port-waiting-peer? 10))
-
-(delete-directory work-dir)
 
 ;; Network - - - - - - - - - - - - - - - - - - - - - -
 
@@ -2632,5 +2655,124 @@
 (test-sha-more sha256-bytes)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; file-or-directory-identity
+
+(test #t number? (file-or-directory-identity (current-directory)))
+(test #t = (file-or-directory-identity (current-directory)) (file-or-directory-identity (current-directory)))
+(err/rt-test (file-or-directory-identity "thisDoesNotExistAtAll") exn:fail:filesystem?)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; file-or-directory-stat
+
+(arity-test file-or-directory-stat 1 2)
+
+; Write regular file and check stat data.
+(let ()
+  (define temp-file-path (build-path work-dir "stat-test"))
+  (define TEST-CONTENT "stat test content")
+  (display-to-file TEST-CONTENT temp-file-path #:exists 'truncate)
+  (void (call-with-input-file temp-file-path read-byte))
+  (define stat-result (file-or-directory-stat temp-file-path))
+  (test #t hash-eq? stat-result)
+  (define expected-stat-keys '(device-id
+                               inode
+                               mode
+                               hardlink-count
+                               user-id
+                               group-id
+                               device-id-for-special-file
+                               size
+                               block-size
+                               block-count
+                               access-time-seconds
+                               modify-time-seconds
+                               change-time-seconds
+                               creation-time-seconds
+                               access-time-nanoseconds
+                               modify-time-nanoseconds
+                               change-time-nanoseconds
+                               creation-time-nanoseconds))
+  (test #t 'ok-stat-keys (for/and ([(k v) (in-hash stat-result)])
+                           (and (memq k expected-stat-keys)
+                                (exact-nonnegative-integer? v))))
+  (test (length expected-stat-keys) hash-count stat-result)
+  (define (stat-ref key) (hash-ref stat-result key))
+  ;
+  (test #t = (stat-ref 'size) (string-length TEST-CONTENT))
+  (test #t = (stat-ref 'hardlink-count) 1)
+  (define (positive-fixnum-key? key)
+    (define n (stat-ref key))
+    (and (positive-integer? n) (fixnum? n)))
+  (unless (eq? (system-type) 'windows)
+    (test #t positive-fixnum-key? 'inode)
+    (test #t positive-fixnum-key? 'device-id))
+  (define stat-mode (stat-ref 'mode))
+  (test #t = (bitwise-and stat-mode file-type-bits) regular-file-type-bits)
+  (test #f = (bitwise-and stat-mode file-type-bits) directory-type-bits)
+  (test #f = (bitwise-and stat-mode file-type-bits) fifo-type-bits)
+  (test #f = (bitwise-and stat-mode file-type-bits) symbolic-link-type-bits)
+  (test #f = (bitwise-and stat-mode file-type-bits) socket-type-bits)
+  (when (eq? (system-type) 'windows)
+    ; Windows doesn't provide a user and group id and sets both values to 0.
+    (test #t = (stat-ref 'user-id) 0)
+    (test #t = (stat-ref 'group-id) 0))
+  (unless (eq? (system-type) 'windows)
+    ; Check user and group id. Assuming the tests don't run as root, this is
+    ; probably all we can sensibly do.
+    ; ... but the tests do run as root in some CI configuration, so disabled
+    (when #f
+      (test #t positive-fixnum-key? 'user-id)
+      (test #t positive-fixnum-key? 'group-id)))
+  (test #t = (stat-ref 'device-id-for-special-file) 0)
+  (unless (eq? (system-type) 'windows)
+    (test #t positive-fixnum-key? 'block-size)
+    ; On my system, I had expected 1 block, but it's actually 8. This number
+    ; is supported by the `stat` command line tool.
+    (test #t positive-fixnum-key? 'block-count))
+  (test #t >= (stat-ref 'access-time-seconds)
+              (stat-ref 'modify-time-seconds))
+  (test #t >= (stat-ref 'access-time-nanoseconds)
+              (stat-ref 'modify-time-nanoseconds))
+  (unless (eq? (system-type) 'windows)
+    ; Only true for Poxis, since Windows doesn't provide the status change
+    ; time.
+    (test #t = (stat-ref 'change-time-nanoseconds)
+          (stat-ref 'modify-time-nanoseconds)))
+  (define (nano->secs ns) (quotient ns #e1e9))
+  (test (stat-ref 'access-time-seconds) nano->secs (stat-ref 'access-time-nanoseconds))
+  (test (stat-ref 'modify-time-seconds) nano->secs (stat-ref 'modify-time-nanoseconds))
+  (test (stat-ref 'change-time-seconds) nano->secs (stat-ref 'change-time-nanoseconds))
+  (test (stat-ref 'creation-time-seconds) nano->secs (stat-ref 'creation-time-nanoseconds))
+  (delete-file temp-file-path))
+
+(err/rt-test (file-or-directory-stat "thisDoesNotExistAtAll") exn:fail:filesystem?)
+
+; Test symlink-related features.
+(unless (eq? (system-type) 'windows)
+  ; Test that stat'ing a dangling link causes a filesystem exception.
+  (let ()
+    (define link-file-path (build-path work-dir "stat-test-dangling-link"))
+    (make-file-or-directory-link "/nonexistent_target" link-file-path)
+    (err/rt-test (file-or-directory-stat link-file-path) exn:fail:filesystem?)
+    (delete-file link-file-path))
+
+  ; On the other hand, stat'ing the link itself should work.
+  (let ()
+    (define link-file-path (build-path work-dir "stat-test-dangling-link"))
+    (define link-target "/nonexistent_target")
+    (make-file-or-directory-link link-target link-file-path)
+    (define stat-result (file-or-directory-stat link-file-path #t))
+    (define stat-mode (hash-ref stat-result 'mode))
+    (test #t = (bitwise-and stat-mode file-type-bits) symbolic-link-type-bits)
+    (test #f = (bitwise-and stat-mode file-type-bits) directory-type-bits)
+    (test #f = (bitwise-and stat-mode file-type-bits) regular-file-type-bits)
+    (test #t = (hash-ref stat-result 'size) (string-length link-target))
+    (delete-file link-file-path)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(delete-directory/files work-dir)
 
 (report-errs)

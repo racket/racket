@@ -58,13 +58,17 @@ MZMMM = $(MZMMM_@WXVARIANT@)
 
 SETUP_BOOT = -O "info@compiler/cm error" -l- setup @BOOT_MODE@ $(srcdir)/../../../setup-go.rkt ../../../compiled
 
-XFORM_CMD = $(MZMMM) $(SELF_RACKET_FLAGS) $(SETUP_BOOT) --tag ++out $(srcdir)/../../gc2/xform-mod.rkt
+PRE_BOOTSTRAP_RACKET = $(MZMMM) $(SELF_RACKET_FLAGS) $(SETUP_BOOT)
+
+XFORM_CMD = $(PRE_BOOTSTRAP_RACKET) --tag ++out $(srcdir)/../../gc2/xform-mod.rkt
 XFORM_CPP_ARGS = -I$(srcdir)/../../gc2 $(NOGCINC) $(OPTIONS) @PREFLAGS@ $(XFORM_INC_@WXVARIANT@)
 
 XFORM = $(XFORM_CMD) --cpp "$(CPP) $(XFORM_CPP_ARGS)" @XFORMFLAGS@ -o ++out
 XFORMDEP = $(srcdir)/../../gc2/xform-mod.rkt $(srcdir)/../../gc2/gc2.h
 
 GRACKETLDFLAGS = $(LDFLAGS) -L../..
+
+INSTALL_NAME_TOOL_VIA_RACKET = $(PRE_BOOTSTRAP_RACKET) ignored ignored.d "${srcdir}/../../../mac/install_name_tool.rkt"
 
 DEF_COLLECTS_DIR = +D INITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../../../collects; @PWD@`"'"'
 DEF_CONFIG_DIR = +D INITIAL_CONFIG_DIRECTORY='"'"`cd $(srcdir)/../../../..; @PWD@`/etc"'"'
@@ -118,7 +122,7 @@ MACLIBRKT_LINK_static = ../../libracket3m.@LIBSFX@ $(LIBRKTIO) $(LDLIBS)
 
 ../GRacket@MMM@.app/Contents/MacOS/GRacket@MMM@: $(MRAPPSKEL) $(MZFW) grmain.@LTO@
 	$(GRACKETLINKER) $(LDFLAGS) -o ../GRacket@MMM@.app/Contents/MacOS/GRacket@MMM@ grmain.@LTO@ -Wl,-headerpad_max_install_names $(MACLIBRKT_LINK_@MACLIBRKT_LINK_MODE@) -framework CoreFoundation
-	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)_3m/Racket" "@executable_path/../../../../Racket.framework/Versions/$(FWVERSION)_3m/Racket" "../GRacket@MMM@.app/Contents/MacOS/GRacket@MMM@"
+	@INSTALL_NAME_TOOL@ -change "Racket.framework/Versions/$(FWVERSION)_3m/Racket" "@executable_path/../../../../Racket.framework/Versions/$(FWVERSION)_3m/Racket" "../GRacket@MMM@.app/Contents/MacOS/GRacket@MMM@"
 
 $(MRFW) : $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../libracket3m.@LIBSFX@ wx_font.o wx_file_dialog.o $(MRFWRES)
 	$(GRACKETLINKER) $(LDFLAGS) -dynamiclib -o $(MRFW) -Wl,-headerpad_max_install_names $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../libracket3m.@LIBSFX@ $(@WXVARIANT@_LIBS) @X_EXTRA_LIBS@ wx_font.o wx_file_dialog.o

@@ -23,7 +23,7 @@
 ;; generates and consults ".dep" files to manage dependencies. Two
 ;; design choices/constraints complicate its job:
 ;;
-;;  - Dependencies are recorded as unordered. Consequenlt, CM can't
+;;  - Dependencies are recorded as unordered. Consequenlty, CM can't
 ;;    recur in a simple way on dependencies, because a change in one
 ;;    dependency may cause another former dependency to be removed.
 ;;
@@ -43,7 +43,7 @@
 ;;
 ;; Other complications:
 ;;
-;;  - The collection sinstallation, `use-compile-file-paths`, and
+;;  - The collection installation, `use-compile-file-paths`, and
 ;;    `current-compiled-file-roots` create search paths that multiply.
 ;;    Generally, CM checks at all roots but writes only at the first
 ;;    root.
@@ -209,7 +209,7 @@
 (define (compile-root path->mode roots path0 up-to-date collection-cache read-src-syntax seen
                       #:sha1-only? [sha1-only? #f])
   (define orig-path (simple-form-path path0))
-  (define (read-deps path)
+  (define (read-deps path #:roots [roots roots])
     (read-deps-file
      (path-add-extension (get-compilation-path path->mode roots path) #".dep")))
   (define (do-check)
@@ -243,15 +243,34 @@
                 (hash-set! up-to-date alt-path stamp))
               stamp))]
        [else
-        (let ([deps (read-deps path)]
-              [new-seen (hash-set seen path #t)])
+        (let* ([deps (read-deps path)]
+               [cross-deps (and (cross-multi-compile? roots)
+                                (read-deps path #:roots (list (cadr roots))))]
+               [cross-path-zo-time (and cross-deps
+                                        (get-compiled-time path->mode (list (cadr roots)) path))]
+               [new-seen (hash-set seen path #t)])
           (define needs-build?
             (cond
+              [(and (not sha1-only?)
+                    (cross-multi-compile? roots)
+                    (or (not cross-deps)
+                        (not cross-path-zo-time)))
+               (trace-printf "missing cross-compiled for ~a..."
+                             path)
+               #t]
               [(not (and (deps-has-version? deps)
                          (equal? (version) (deps-version deps))))
                (trace-printf "old version ~a for ~a..."
                              (and (deps-has-version? deps)
                                   (deps-version deps))
+                             path)
+               #t]
+              [(and cross-deps
+                    (not (and (deps-has-version? cross-deps)
+                              (equal? (version) (deps-version cross-deps)))))
+               (trace-printf "old version ~a for cross ~a..."
+                             (and (deps-has-version? cross-deps)
+                                  (deps-version cross-deps))
                              path)
                #t]
               [(not (and (deps-has-machine? deps)
@@ -267,14 +286,31 @@
                                   (deps-machine deps))
                              path)
                #t]
-              [(> path-time (or path-zo-time -inf.0))
+              [(and cross-deps
+                    (not sha1-only?)
+                    (not (and (deps-has-machine? cross-deps)
+                              (eq? (cross-system-type 'target-machine) (deps-machine cross-deps)))))
+               (trace-printf "different machine ~a for cross ~a..."
+                             (and (deps-has-machine? cross-deps)
+                                  (deps-machine cross-deps))
+                             path)
+               #t]
+              [(and (> path-time (or path-zo-time -inf.0))
+                    (not sha1-only?))
                (trace-printf "newer src... ~a > ~a" path-time path-zo-time)
-               (maybe-compile-zo deps path->mode roots path orig-path read-src-syntax up-to-date collection-cache new-seen
+               (maybe-compile-zo deps cross-deps path->mode roots path orig-path read-src-syntax up-to-date collection-cache new-seen
                                  #:trying-sha1? sha1-only?)]
-              [(different-source-sha1-and-dep-recorded path deps)
+              [(and cross-deps (> path-time (or cross-path-zo-time -inf.0))
+                    (not sha1-only?))
+               (trace-printf "newer src than cross... ~a > ~a" path-time cross-path-zo-time)
+               (maybe-compile-zo deps cross-deps path->mode roots path orig-path read-src-syntax up-to-date collection-cache new-seen
+                                 #:trying-sha1? sha1-only?)]
+              [(or (different-source-sha1-and-dep-recorded path deps)
+                   (and cross-deps
+                        (different-source-sha1-and-dep-recorded path cross-deps)))
                => (lambda (difference)
                     (trace-printf "different src hash ~a for ~a..." difference path)
-                    (maybe-compile-zo deps path->mode roots path orig-path read-src-syntax up-to-date collection-cache new-seen
+                    (maybe-compile-zo deps cross-deps path->mode roots path orig-path read-src-syntax up-to-date collection-cache new-seen
                                       #:trying-sha1? sha1-only?))]
               [((if sha1-only? ormap ormap-strict)
                 (lambda (p)
@@ -293,7 +329,7 @@
                                                     path d (car t) path-zo-time)
                                       #t))]))
                 (deps-imports deps))
-               (maybe-compile-zo deps path->mode roots path orig-path read-src-syntax up-to-date collection-cache new-seen
+               (maybe-compile-zo deps cross-deps path->mode roots path orig-path read-src-syntax up-to-date collection-cache new-seen
                                  #:trying-sha1? sha1-only?)]
               [else #f]))
           (cond
@@ -304,7 +340,7 @@
             #f]
            [else
             (when needs-build?
-              (maybe-compile-zo deps path->mode roots path orig-path read-src-syntax up-to-date collection-cache new-seen))
+              (maybe-compile-zo deps cross-deps path->mode roots path orig-path read-src-syntax up-to-date collection-cache new-seen))
             (let ([stamp (cons (or (get-compiled-time path->mode roots path) +inf.0)
                                (delay (get-compiled-sha1 path->mode roots path)))])
               (define (make-key p)
@@ -372,7 +408,7 @@
 ;; dependent files, where that checking is not allowed to test for the
 ;; bytecode file's existence.
 ;;
-(define (maybe-compile-zo deps path->mode roots path orig-path read-src-syntax up-to-date collection-cache seen
+(define (maybe-compile-zo deps cross-deps path->mode roots path orig-path read-src-syntax up-to-date collection-cache seen
                           #:trying-sha1? [trying-sha1? #f])
   (let ([actual-path (actual-source-path orig-path)])
     (unless trying-sha1?
@@ -380,12 +416,17 @@
       (trace-printf "maybe-compile-zo starting ~a" actual-path))
     (begin0
      (parameterize ([indent (+ 2 (indent))])
-       (let* ([zo-name (path-add-extension (get-compilation-path path->mode roots path) #".zo")])
+       (let* ([zo-name (path-add-extension (get-compilation-path path->mode roots path) #".zo")]
+              [cross-zo-name (and (cross-multi-compile? roots)
+                                  (path-add-extension (get-compilation-path path->mode (list (cadr roots)) path) #".zo"))])
          (cond
            [(and (trust-existing-zos)
-                 (file-exists? zo-name))
+                 (file-exists? zo-name)
+                 (or (not cross-zo-name)
+                     (file-exists? cross-zo-name)))
             (trace-printf "trusting: ~a" zo-name)
             (touch zo-name)
+            (when cross-zo-name (touch cross-zo-name))
             #f]
            [else
             (define lock-zo-name (if (cross-multi-compile? roots)
@@ -412,7 +453,9 @@
                    (cond
                      [(and just-touch? (file-exists? zo-name))
                       (log-compile-event path 'start-touch)
-                      (touch zo-name)]
+                      (touch zo-name)
+                      (when cross-zo-name
+                        (touch cross-zo-name))]
                      [else
                       (when just-touch? (set! just-touch? #f))
                       (define mi-recompile-from (select-machine-independent recompile-from
@@ -477,7 +520,21 @@
                                   (equal? (version) (deps-version deps))
                                   (deps-src-sha1 deps)
                                   (get-source-sha1 path)))
-            (define-syntax-rule (explain v e) (or v (and e #f)))
+            (define (explain-failure fmt . args)
+              (cond
+                [(or trying-sha1? (not (managed-recompile-only)))
+                 (apply trace-printf fmt args)
+                 #f]
+                [else
+                 ;; report error here, so we can provide more information:
+                 (error 'compile-zo 
+                        (string-append "compile from source disallowed\n"
+                                       "  module: ~a\n"
+                                       "  compile reason: ~a")
+                        path
+                        (apply format fmt args))]))
+            (define-syntax-rule (explain v (trace-printf arg ...))
+              (or v (explain-failure arg ...)))
             (cond
               [(and (not src-sha1)
                     (not (file-exists? actual-path)))
@@ -497,23 +554,39 @@
                   (cond
                     [trying-sha1? #f]
                     [else (build/sync)])])]
-              [(and (explain src-sha1
+              [(and (explain (or cross-deps
+                                 (not (cross-multi-compile? roots)))
+                             (trace-printf "no cross compilation: ~a" path))
+                    (explain src-sha1
                              (trace-printf "no source hash: ~a" path))
                     (explain (equal? (version) (deps-version deps))
                              (trace-printf "different version: ~a" path))
+                    (explain (or (not cross-deps)
+                                 (equal? (version) (deps-version cross-deps)))
+                             (trace-printf "different version for cross: ~a" path))
                     (explain (equal? src-sha1 (and (pair? (deps-sha1s deps))
                                                    (deps-src-sha1 deps)))
                              (trace-printf "source hash changed: ~a" path))
+                    (explain (or (not cross-deps)
+                                 (equal? src-sha1 (and (pair? (deps-sha1s cross-deps))
+                                                       (deps-src-sha1 cross-deps))))
+                             (trace-printf "source hash changed for cross: ~a" path))
                     (explain (or (eq? (deps-machine deps) (current-compile-target-machine))
                                  (not (deps-machine deps))
                                  (and (cross-multi-compile? roots)
                                       (eq? (system-type 'target-machine) (deps-machine deps))))
                              (trace-printf "wrong machine: ~a" path))
+                    (explain (or (not cross-deps)
+                                 (eq? (deps-machine cross-deps) (cross-system-type 'target-machine))
+                                 (not (deps-machine cross-deps)))
+                             (trace-printf "wrong machine for cross: ~a" path))
                     (let ([imports-sha1
                            (get-dep-sha1s path
                                           (deps-imports deps) up-to-date collection-cache read-src-syntax path->mode roots seen
                                           #:must-exist? #f)])
-                      (explain (equal? imports-sha1 (deps-imports-sha1 deps))
+                      (explain (and (equal? imports-sha1 (deps-imports-sha1 deps))
+                                    (or (not cross-deps)
+                                        (equal? imports-sha1 (deps-imports-sha1 cross-deps))))
                                (trace-printf "different dependency deps for ~a: ~a ~a"
                                              zo-name
                                              imports-sha1
@@ -522,9 +595,9 @@
                ;; or maybe just update the file's modification date
                (trace-printf "hash-equivalent: ~a" zo-name)
                (cond
-                 [(and (eq? (deps-machine deps) (current-compile-target-machine))
-                       (or (deps-machine deps)
-                           (not (cross-multi-compile? roots))))
+                 [(and (deps-machine deps)
+                       (or (not cross-deps)
+                           (deps-machine cross-deps)))
                   (cond
                     [trying-sha1? #f]
                     [else (build/touch)])]
@@ -775,7 +848,7 @@
           (write-updated-deps use-existing-deps assume-compiled-sha1 zo-name
                               #:target-machine #f))
         ;; Explicitly delete target file before writing ".dep", just so
-        ;; ".dep" is doesn't claim a description of the wrong file
+        ;; ".dep" doesn't claim a description of the wrong file
         (when (file-exists? zo-name)
           (try-delete-file zo-name #f))
         (cond

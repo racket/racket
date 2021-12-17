@@ -46,6 +46,7 @@
                               root-ctx-simple?
                               encoded-root-ctx
                               body
+                              portal-syntaxes       ; phase -> symbol -> syntax-object
                               compiled-module       ; #f or already-compiled module
                               compiled-submodules)  ; already-compiled submodules
   #:authentic)

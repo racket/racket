@@ -7148,5 +7148,39 @@
 (test '(1 2) dynamic-require ''check-inline-of-set!-expression 'result)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Regression test for schemify cross-module inlining
+
+(module modifies-its-exported-variable racket/base
+  (provide (all-defined-out))
+  (define X '())
+  (define (change-X!)
+    (set! X (cons 'shouldnt-be X))))
+
+(module uses-imported-variable-before-modify racket/base
+  (require 'modifies-its-exported-variable)
+  (provide old-X)
+  (define old-X
+    (let ([copy-of-X X])
+      (change-X!)
+      copy-of-X)))
+
+(test '() dynamic-require ''uses-imported-variable-before-modify 'old-X)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; regression test for detecting obviously incompatible record types
+
+(let ()
+  (struct a (n1) #:prefab)
+  (struct b a (n2) #:prefab)
+
+  (define val #s((b a 1) 0 1))
+
+  (unless (b? val)
+    (+ "unreachable 1"))
+
+  (unless (a? val)
+    (+ "unreachable 2")))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

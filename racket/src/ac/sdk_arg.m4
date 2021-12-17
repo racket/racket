@@ -2,6 +2,7 @@ AC_ARG_ENABLE(sdk,     [  --enable-sdk=<path>     use Mac OS 10.4 SDK directory]
 AC_ARG_ENABLE(sdk,     [  --enable-sdk5=<path>    use Mac OS 10.5 SDK directory])
 AC_ARG_ENABLE(sdk,     [  --enable-sdk6=<path>    use Mac OS 10.6 SDK directory])
 AC_ARG_ENABLE(sdk,     [  --enable-sdk9=<path>    use Mac OS 10.9 SDK directory])
+AC_ARG_ENABLE(sdk,     [  --enable-sdk11=<path>   use Mac OS 11.0 SDK directory])
 AC_ARG_ENABLE(sdk,     [  --enable-ios=<path>     use iOS SDK directory])
 AC_ARG_ENABLE(sdk,     [  --enable-sysroot=<path> use sysroot directory (e.g., for Android)])
 AC_ARG_ENABLE(xonx,    [  --enable-xonx           use Unix style (e.g., use Gtk) for Mac OS])

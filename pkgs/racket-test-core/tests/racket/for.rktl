@@ -105,6 +105,10 @@
 ;; Test optimized:
 (test '(2) 'in-list-of-list (for/list ([v (in-list (list 1))]) (add1 v)))
 (test '(0) 'in-mlist-of-mlist (for/list ([v (in-mlist (mlist 1))]) (sub1 v)))
+(test '() 'in-mlist-of-mlist (for/list ([v (in-mlist null)]) v))
+
+;; `in-mlist` only checks listness as much as explored
+(test 1 'in-mlist-of-mlist (for/first ([v (in-mlist (mcons 1 2))]) v))
 
 (test-sequence [(1 2 3)] (in-port read (open-input-string "1 2 3")))
 (test-sequence [((123) 4)] (in-port read (open-input-string "(123) 4")))

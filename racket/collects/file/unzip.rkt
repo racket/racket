@@ -169,11 +169,14 @@
 
 (define (make-filter-input-port inflate orig-in)
   (define-values (in out) (make-pipe 4096))
+  (define fail-exn #f)
   (values
    in
-   (thread (lambda () 
-             (inflate orig-in out)
-             (close-output-port out)))))
+   (thread (lambda ()
+             (with-handlers ([exn:fail? (lambda (exn) (set! fail-exn exn))])
+               (inflate orig-in out))
+             (close-output-port out)))
+   (lambda () fail-exn)))
 
 (define (skip-bytes amt in)
   (read-bytes amt in)
@@ -204,21 +207,27 @@
                       in
                       (make-limited-input-port in compressed #f))])
         (let ()
-          (define-values (in t)
+          (define-values (in t get-filter-exn)
             (if (zero? compression)
-                (values in0 #f)
+                (values in0 #f (lambda () #f))
                 (make-filter-input-port inflate in0)))
-          
-          (if preserve-timestamps?
-              (read-entry filename dir? in (and (not dir?)
-                                                (msdos-date+time->seconds date time utc?)))
-              (read-entry filename dir? in))
 
-          ;; Read until the end of the deflated stream when compressed size unknown
-          (when (bitwise-bit-set? bits 3)
-            (let loop () (unless (eof-object? (read-bytes 1024 in)) (loop))))
+          (define read-exn
+            (with-handlers ([exn:fail? (lambda (exn) exn)])
+              (if preserve-timestamps?
+                  (read-entry filename dir? in (and (not dir?)
+                                                    (msdos-date+time->seconds date time utc?)))
+                  (read-entry filename dir? in))
 
-          (when t (kill-thread t)))
+              ;; Read until the end of the deflated stream when compressed size unknown
+              (when (bitwise-bit-set? bits 3)
+                (let loop () (unless (eof-object? (read-bytes 1024 in)) (loop))))
+              #f))
+
+          (when t (kill-thread t))
+
+          (define either-exn (or (get-filter-exn) read-exn))
+          (when either-exn (raise either-exn)))
 
         ;; appnote VI-C : if bit 3 is set, then the file data
         ;; is immediately followed by a data descriptor
@@ -313,18 +322,26 @@
 ;; unzip : [(or/c path-string? input-port) (bytes boolean input-port -> any)] -> any
 (define unzip
   (lambda (orig-in [read-entry (make-filesystem-entry-reader)]
-                   #:must-unzip? [must-unzip? #f]
+                   #:must-unzip? [must-unzip? #t]
                    #:preserve-timestamps? [preserve-timestamps? #f]
                    #:utc-timestamps? [utc? #f])
     (call-with-input
      orig-in
      (lambda (in)
+       (define tag (peek-integer 4 #f in #f))
        (cond
-         [(= (peek-integer 4 #f in #f) *local-file-header*)
+         [(eqv? tag *local-file-header*)
           (unzip-one-entry in read-entry preserve-timestamps? utc?)
           (unzip in read-entry
                  #:preserve-timestamps? preserve-timestamps?
                  #:utc-timestamps? utc?)]
+         [(memv tag (list *archive-extra-record*
+                          *central-file-header*
+                          *digital-signature*
+                          *zip64-end-of-central-directory-record*
+                          *zip64-end-of-central-directory-locator*
+                          *end-of-central-directory-record*))
+          (void)]
          [must-unzip?
           (error 'unzip "input does not appear to be an archive\n  input: ~e" orig-in)]
          [else (void)])))))
@@ -412,7 +429,7 @@
           (delete-directory/files temp-dir)))))
 
 (define (call-with-unzip zip-file user-proc
-                         #:must-unzip? [must-unzip? #f])
+                         #:must-unzip? [must-unzip? #t])
   (let ([temp-dir #f])
     (dynamic-wind
         (lambda ()

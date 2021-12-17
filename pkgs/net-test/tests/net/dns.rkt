@@ -85,7 +85,7 @@
 (define *google-dns*   "8.8.8.8")
 (define *google-dns-2* "8.8.4.4")
 (define *nwu-url*      "eecs.northwestern.edu")
-(define *nwu-ips*      '("129.105.8.227" "129.105.5.15" "129.105.8.237"))
+(define *nwu-ips*      '("129.105.5.141"))
 (define *racket-host*  "winooski.ccs.neu.edu")
 (define *racket-ip*    "129.10.115.117")
 (define *indiana-host* "hurin.soic.indiana.edu") ; a.k.a. drdr.racket-lang.org

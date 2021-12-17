@@ -2,7 +2,7 @@
 ;; Check to make we're using a build of Chez Scheme
 ;; that has all the features we need.
 (define-values (need-maj need-min need-sub need-dev)
-  (values 9 5 5 5))
+  (values 9 5 7 2))
 
 (unless (guard (x [else #f]) (eval 'scheme-fork-version-number))
   (error 'compile-file
@@ -28,8 +28,6 @@
       [(name line col)
        (make-source-object sfd bfp efp line col)]))))
 
-(generate-wpo-files #t)
-
 (define (get-opt args flag arg-count)
   (cond
    [(null? args) #f]
@@ -40,10 +38,9 @@
    [else #f]))
 
 (define whole-program? #f)
-(generate-inspector-information #f)
-(generate-procedure-source-information #f)
-(fasl-compressed #f)
-(enable-arithmetic-left-associative #t)
+(define inspector-information? #f)
+(define source-information? #f)
+(define compressed? #f)
 (define build-dir "")
 (define xpatch-path #f)
 
@@ -52,11 +49,11 @@
     (cond
      [(get-opt args "--debug" 0)
       => (lambda (args)
-           (generate-inspector-information #t)
+           (set! inspector-information? #t)
            (loop args))]
      [(get-opt args "--srcloc" 0)
       => (lambda (args)
-           (generate-procedure-source-information #t)
+           (set! source-information? #t)
            (loop args))]
      [(get-opt args "--unsafe" 0)
       => (lambda (args)
@@ -64,12 +61,12 @@
            (loop args))]
      [(get-opt args "--compress" 0)
       => (lambda (args)
-           (fasl-compressed #t)
+           (set! compressed? #t)
            (putenv "PLT_CS_MAKE_COMPRESSED" "y") ; for "linklet.sls"
            (loop args))]
      [(get-opt args "--compress-more" 0)
       => (lambda (args)
-           (fasl-compressed #t)
+           (set! compressed? #t)
            (putenv "PLT_CS_MAKE_COMPRESSED" "y") ; for "linklet.sls"
            (putenv "PLT_CS_MAKE_COMPRESSED_DATA" "y") ; ditto
            (loop args))]
@@ -113,6 +110,13 @@
 
 (when xpatch-path
   (load xpatch-path))
+
+;; set these after xpatch is loaded, in case they're reset by the patch:
+(generate-wpo-files #t)
+(generate-inspector-information inspector-information?)
+(generate-procedure-source-information source-information?)
+(fasl-compressed compressed?)
+(enable-arithmetic-left-associative #t)
 
 (define (compile-it)
  (cond

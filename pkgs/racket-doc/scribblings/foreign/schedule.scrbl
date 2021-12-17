@@ -83,9 +83,12 @@ available.}
                                               [msecs flonum?])
          void?]{
 
-Causes the Racket process will wake up and resume polling at the point
-when @racket[(current-inexact-milliseconds)] starts returning a value
-that is @racket[msecs] or greater.}
+Causes the Racket process to wake up and resume polling at the point
+when @racket[(current-inexact-monotonic-milliseconds)] starts returning
+a value that is @racket[msecs] or greater.}
+
+@history[#:changed "8.3.0.9" @elem{@racket[unsafe-poll-ctx-milliseconds-wakeup] previously used
+                                   @racket[current-inexact-milliseconds].}]
 
 @defproc[(unsafe-set-sleep-in-thread! [foreground-sleep (-> any/c)]
                                       [fd fixnum?])

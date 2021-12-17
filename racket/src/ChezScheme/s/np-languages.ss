@@ -464,9 +464,7 @@
   (define-language L4.5 (extends L4)
     (nongenerative-id #{L4.5 jczowy6yjfz400ntojb6av7y0-4.5})
     (terminals
-      (+ (label (l))
-         (maybe-label (mdcl))
-         (immediate (imm))))
+      (+ (maybe-label (mdcl))))
     (entry CaseLambdaExpr)
     (Expr (e body)
       (- (call info e0 e1 ...))
@@ -478,6 +476,8 @@
   (define-language L4.75 (extends L4.5)
     (nongenerative-id #{L4.75 jczowy6yjfz400ntojb6av7y0-4.75})
     (entry CaseLambdaExpr)
+    (terminals
+      (+ (label (l))))
     (Expr (e body)
       (- (foreign info e)
          (fcallable info e))
@@ -550,7 +550,8 @@
       (+ (var (x))
          (primitive (prim)) ; moved up one language to support closure instrumentation
          (fixnum (interface offset))
-         (mref-type (type))))
+         (mref-type (type))
+         (immediate (imm))))
     (entry Program)
     (Program (prog)
       (+ (labels ([l* le*] ...) l)                     => (labels ([l* le*] ...) (l))))
@@ -663,6 +664,7 @@
   (declare-primitive store-store-fence effect #f)
   (declare-primitive acquire-fence effect #f)
   (declare-primitive release-fence effect #f)
+  (declare-primitive set-cr-bit effect #f) ; ppc32
   
   (declare-primitive < pred #t)
   (declare-primitive <= pred #t)

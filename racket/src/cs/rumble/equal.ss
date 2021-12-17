@@ -93,6 +93,9 @@
                            (equal? (unbox orig-a) (unbox orig-b) ctx)))))]
            [(authentic-hash? a)
             (and (authentic-hash? b)
+                 (or (not (eq? mode 'chaperone-of?))
+                     (and (intmap? a)   ; authentic immutable hash
+                          (intmap? b)))
                  (or (check-union-find ctx a b)
                      (hash=? orig-a orig-b
                              (or eql?
@@ -101,6 +104,7 @@
                                      (equal? a b ctx)))))))]
            [(mpair? a)
             (and (mpair? b)
+                 (not (eq? mode 'chaperone-of?))
                  (or (check-union-find ctx a b)
                      (if eql?
                          (and (eql? (mcar a) (mcar b))

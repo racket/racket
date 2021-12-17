@@ -95,6 +95,9 @@ typedef unsigned long uintptr_t;
 /* Use Generations with the GC */
 #undef USE_GC_GENS
 
+/* Use terminal support from Chez Scheme: */
+#undef MZ_TERMINAL_SUPPORT
+
 /* For platforms like Linux, where context info may not be available: */
 #undef MZ_NO_UNWIND_SUPPORT
 

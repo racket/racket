@@ -37,7 +37,7 @@ RACKET_SETUP_ARGS = false ../../bin/racket ../../bin/racket ../collects ../etc "
 PRIMITIVES_TABLES = primitive/kernel.ss primitive/unsafe.ss primitive/flfxnum.ss \
                     primitive/paramz.ss primitive/extfl.ss primitive/network.ss \
                     primitive/futures.ss primitive/foreign.ss primitive/place.ss \
-                    primitive/linklet.ss primitive/internal.ss
+                    primitive/linklet.ss primitive/terminal.ss primitive/internal.ss
 
 # Set by the makefile in the "c" directory when driving this one
 BUILDDIR =
@@ -146,6 +146,7 @@ LINKLET_SRCS = linklet/version.ss \
                linklet/performance.ss \
                linklet/annotation.ss \
                linklet/compress.ss \
+               linklet/config.ss \
                linklet/cross-compile.ss
 
 $(BUILDDIR)linklet.$(CSO): linklet.sls $(LINKLET_SRCS) $(LINKLET_DEPS) $(COMPILE_FILE_DEPS)
@@ -195,7 +196,7 @@ regexp-rktl:
 io-demo: $(BUILDDIR)io.$(CSO)
 	$(SCHEME) $(IO_DEPS) $(BUILDDIR)io.$(CSO) demo/io.ss
 
-$(BUILDDIR)io.$(CSO): schemified/io.scm io.sls $(IO_DEPS) ../rktio/rktio.rktl $(COMPILE_FILE_DEPS)
+$(BUILDDIR)io.$(CSO): schemified/io.scm io.sls io/terminal.ss $(IO_DEPS) ../rktio/rktio.rktl $(COMPILE_FILE_DEPS)
 	$(COMPILE_FILE) io.sls $(IO_DEPS)
 
 $(BOOTSTRAPPED)/io.scm: $(BUILDDIR)compiled/io.rktl $(CONVERT_DEPS)

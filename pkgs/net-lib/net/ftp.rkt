@@ -139,17 +139,21 @@
 ;; need PASS command. "or 230? (rege..." means if 230? is true already
 ;; , then do not check the line anymore, it's just true.
 (define (ftp-establish-connection* in out username password)
-  (ftp-check-response in out #"220" void (void))
-  (fprintf out "USER ~a\r\n" username)
-  (let ([no-password? (ftp-check-response
-                       in out (list #"331" #"230")
-                       (lambda (line 230?)
-                         (or 230? (regexp-match #rx#"^230" line)))
-                       #f)])
-    (unless no-password?
-      (fprintf out "PASS ~a\r\n" password)
-      (ftp-check-response in out #"230" void (void))))
-  (make-ftp-connection in out))
+  (with-handlers ([exn:fail? (λ (e)
+                               (close-input-port in)
+                               (close-output-port out)
+                               (raise e))])
+    (ftp-check-response in out #"220" void (void))
+    (fprintf out "USER ~a\r\n" username)
+    (let ([no-password? (ftp-check-response
+                         in out (list #"331" #"230")
+                         (lambda (line 230?)
+                           (or 230? (regexp-match #rx#"^230" line)))
+                         #f)])
+      (unless no-password?
+        (fprintf out "PASS ~a\r\n" password)
+        (ftp-check-response in out #"230" void (void))))
+    (make-ftp-connection in out)))
 
 (define (ftp-establish-connection server-address server-port username password)
   (let-values ([(tcpin tcpout) (tcp-connect server-address server-port)])

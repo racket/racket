@@ -2,6 +2,7 @@
 
 (require racket/contract
          racket/contract/private/generate-base
+         racket/set
          (only-in racket/list empty? cons?)
          rackunit
          racket/math
@@ -99,20 +100,36 @@
 (check-not-exn (λ () (test-contract-generation (hash/c string? (hash/c integer? string?)))))
 (check-not-exn (λ () (test-contract-generation (hash/c (hash/c string? integer?) (hash/c integer? string?)))))
 
-(define hash/c-list
-  (for/list ([i (in-range 100)])
-    (contract-random-generate
-     (hash/c integer? integer?))))
+(check-not-exn (λ () (test-contract-generation (set/c boolean?))))
+(check-not-exn (λ () (test-contract-generation (set/c integer?))))
+(check-not-exn (λ () (test-contract-generation (set/c (-> number? boolean?)))))
+(check-not-exn (λ () (test-contract-generation (set/c string? #:cmp 'eqv #:kind 'weak))))
+(check-not-exn (λ () (test-contract-generation (set/c string? #:cmp 'eq #:kind 'mutable))))
 
-;; hash/c should periodically generate empty hashes
-(check-pred
- (λ (v) (not (empty? v)))
- (filter hash-empty? hash/c-list))
+(define (check-empty-and-nonempty ctc val-empty? val-nonempty?)
+  (define val-list
+    (for/list ([i (in-range 100)])
+      (contract-random-generate ctc)))
 
-;; hash/c should periodically generate hashes with multiple elements
-(check-pred
- (λ (v) (not (empty? v)))
- (filter (λ (h) (> (length (hash-values h)) 1)) hash/c-list))
+  ;; periodically generate empty values
+  (check-pred
+   (λ (v) (not (empty? v)))
+   (filter val-empty? val-list))
+
+  ;; periodically generate values with multiple elements
+  (check-pred
+   (λ (v) (not (empty? v)))
+   (filter val-nonempty? val-list)))
+
+(check-empty-and-nonempty
+ (hash/c integer? integer?)
+ hash-empty?
+ (λ (h) (> (length (hash-values h)) 1)))
+
+(check-empty-and-nonempty
+ (set/c integer?)
+ set-empty?
+ (λ (s) (> (set-count s) 1)))
 
 (check-not-exn
  (λ ()
@@ -543,6 +560,14 @@
  pos-exn?
  (contract (hash/c symbol? (-> integer? boolean?))
            (make-hash (list (cons 'lam (λ (n) (+ n 1)))))
+           'pos
+           'neg))
+
+(check-exercise
+ 10
+ pos-exn?
+ (contract (set/c (-> integer? boolean?))
+           (set add1)
            'pos
            'neg))
 

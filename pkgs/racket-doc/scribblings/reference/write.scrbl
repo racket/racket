@@ -270,7 +270,10 @@ to @racket[write] or @racket[display]); defaults to @racket[#t]. See
 A @tech{parameter} that controls printing of @tech{syntax objects}. Up to
 @racket[width] characters are used to show the datum form of a syntax
 object within @litchar{#<syntax}...@litchar{>} (after the
-@tech{syntax object}'s source location, if any).}
+@tech{syntax object}'s source location, if any), where @litchar{...} is
+used as the last three characters if the printed form would otherwise be longer
+than @racket[width] characters. A value of @racket[0] for
+@racket[width] means that the datum is not shown at all.}
 
 @defparam[print-value-columns columns (or/c +inf.0 (and/c exact-integer? (>/c 5)))]{
 

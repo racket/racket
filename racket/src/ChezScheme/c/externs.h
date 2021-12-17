@@ -386,9 +386,9 @@ extern INT matherr PROTO((struct exception *x));
 /* segment.c */
 extern void S_segment_init PROTO((void));
 extern void *S_getmem PROTO((iptr bytes, IBOOL zerofill, IBOOL for_code));
-extern void S_freemem PROTO((void *addr, iptr bytes));
+extern void S_freemem PROTO((void *addr, iptr bytes, IBOOL for_code));
 extern iptr S_find_segments PROTO((thread_gc *creator, ISPC s, IGEN g, iptr n));
-extern void S_free_chunk PROTO((chunkinfo *chunk));
+extern void S_free_chunk PROTO((chunkinfo *chunk, IBOOL for_code));
 extern void S_free_chunks PROTO((void));
 extern uptr S_curmembytes PROTO((void));
 extern uptr S_maxmembytes PROTO((void));
@@ -428,6 +428,12 @@ extern void S_return PROTO((void));
 extern void S_call_help PROTO((ptr tc, IBOOL singlep, IBOOL lock_ts));
 extern void S_call_one_result PROTO((void));
 extern void S_call_any_results PROTO((void));
+
+#ifdef HAND_CODED_SETJMP_SIZE
+/* w64setjmp.S */
+int S_setjmp(void *b);
+void S_longjmp(void *b, int v);
+#endif
 
 #ifdef PORTABLE_BYTECODE
 /* pb.c */

@@ -3,6 +3,7 @@
          "../common/struct-star.rkt"
          "../syntax/syntax.rkt"
          "../common/phase.rkt"
+         "../common/phase+space.rkt"
          "../syntax/scope.rkt"
          "../syntax/binding.rkt"
          "../syntax/taint.rkt"
@@ -57,6 +58,7 @@
          syntax-local-module-required-identifiers
          syntax-local-module-exports
          syntax-local-submodules
+         syntax-local-module-interned-scope-symbols
 
          syntax-local-expand-observer
          
@@ -98,10 +100,15 @@
   (log-expand ctx 'track-syntax 'syntax-local-introduce new-s s)
   new-s)
 
-(define/who (syntax-local-identifier-as-binding id)
+(define/who (syntax-local-identifier-as-binding id [intdef #f])
   (check who identifier? id)
+  (when intdef
+    (check who internal-definition-context? intdef))
   (define ctx (get-current-expand-context 'syntax-local-identifier-as-binding))
-  (define new-id (remove-use-site-scopes id ctx))
+  (define new-id
+    (if intdef
+        (remove-intdef-use-site-scopes id intdef)
+        (remove-use-site-scopes id ctx)))
   (log-expand ctx 'track-syntax 'syntax-local-identifier-as-binding new-id id)
   new-id)
 
@@ -124,7 +131,9 @@
   (do-make-syntax-introducer (new-scope (if as-use-site? 'use-site 'macro))))
 
 (define/who (make-interned-syntax-introducer sym-key)
-  (check who symbol? sym-key)
+  (check who (lambda (v) (and (symbol? v) (symbol-interned? v)))
+         #:contract "(and/c symbol? symbol-interned?)"
+         sym-key)
   (do-make-syntax-introducer (make-interned-scope sym-key)))
 
 (define (do-make-syntax-introducer sc)
@@ -155,6 +164,7 @@
   (define maybe-taint (if (syntax-clean? ext-s) values syntax-taint))
   (define shifts (syntax-mpi-shifts ext-s))
   (lambda (s [mode 'add])
+    (check 'syntax-introducer syntax? s)
     (define new-s
       (maybe-taint
        (case mode
@@ -218,11 +228,11 @@
          [immediate? (values v #f)]
          [else v])])])))
 
-(define (syntax-local-value id [failure-thunk #f] [intdef #f])
-  (do-syntax-local-value 'syntax-local-value #:immediate? #f id intdef failure-thunk))
+(define/who (syntax-local-value id [failure-thunk #f] [intdef #f])
+  (do-syntax-local-value who #:immediate? #f id intdef failure-thunk))
 
-(define (syntax-local-value/immediate id [failure-thunk #f] [intdef #f])
-  (do-syntax-local-value 'syntax-local-value/immediate #:immediate? #t id intdef failure-thunk))
+(define/who (syntax-local-value/immediate id [failure-thunk #f] [intdef #f])
+  (do-syntax-local-value who #:immediate? #t id intdef failure-thunk))
 
 ;; ----------------------------------------
 
@@ -388,11 +398,11 @@
   (requireds->phase-ht (extract-module-definitions (expand-context-requires+provides ctx))))
   
   
-(define/who (syntax-local-module-required-identifiers mod-path phase-level)
+(define/who (syntax-local-module-required-identifiers mod-path phase+space-shift)
   (unless (or (not mod-path) (module-path? mod-path))
     (raise-argument-error who "(or/c module-path? #f)" mod-path))
-  (unless (or (eq? phase-level #t) (phase? phase-level))
-    (raise-argument-error who (format "(or/c ~a #t)" phase?-string) phase-level))
+  (unless (or (eq? phase+space-shift #t) (phase+space-shift? phase+space-shift))
+    (raise-argument-error who (format "(or/c ~a #t)" phase+space-shift?-string) phase+space-shift))
   (unless (syntax-local-transforming-module-provides?)
     (raise-arguments-error who "not currently transforming module provides"))
   (define ctx (get-current-expand-context 'syntax-local-module-required-identifiers))
@@ -402,15 +412,15 @@
   (define requireds
     (extract-all-module-requires requires+provides
                                  mpi
-                                 (if (eq? phase-level #t) 'all phase-level)))
+                                 (if (eq? phase+space-shift #t) 'all (intern-phase+space-shift phase+space-shift))))
   (and requireds
-       (for/list ([(phase ids) (in-hash (requireds->phase-ht requireds))])
-         (cons phase ids))))
+       (for/list ([(phase+space-shift ids) (in-hash (requireds->phase-ht requireds))])
+         (cons phase+space-shift ids))))
 
 (define (requireds->phase-ht requireds)
   (for/fold ([ht (hasheqv)]) ([r (in-list requireds)])
     (hash-update ht
-                 (required-phase r)
+                 (required-phase+space r)
                  (lambda (l) (cons (required-id r) l))
                  null)))
 
@@ -448,6 +458,13 @@
   (for/list ([(name kind) (in-hash submods)]
              #:when (eq? kind 'module))
     name))
+
+(define/who (syntax-local-module-interned-scope-symbols)
+  ;; just returns all interned-scope symbols, but defined
+  ;; relative to a module expansion in case it's necessary to
+  ;; do better in the future
+  (void (get-current-expand-context who))
+  (interned-scope-symbols))
 
 ;; ----------------------------------------
 

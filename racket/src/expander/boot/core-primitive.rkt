@@ -10,14 +10,17 @@
          (except-in "../syntax/binding.rkt"
                     free-identifier=?
                     identifier-binding
-                    identifier-binding-symbol)
+                    identifier-binding-symbol
+                    identifier-distinct-binding)
          "../namespace/core.rkt"
          "../expand/set-bang-trans.rkt"
          "../expand/rename-trans.rkt"
+         "../expand/portal-syntax.rkt"
          "../expand/liberal-def-ctx.rkt"
          "../expand/syntax-local.rkt"
          "../expand/definition-context.rkt"
          "../expand/local-expand.rkt"
+         "../expand/apply-transformer.rkt"
          "../syntax/api.rkt"
          "../syntax/api-taint.rkt"
          "../syntax/error.rkt"
@@ -31,13 +34,23 @@
 (provide primitive-ids)
 
 ;; Register core primitives:
-(define-syntax-rule (add-core-primitives! #:table primitive-ids id ...)
+(define-syntax-rule (add-core-primitives! #:table primitive-ids id/maybe-protected ...)
   (begin
-    (define primitive-ids (seteq 'id ...))
+    (define primitive-ids (seteq (quote-core id/maybe-protected) ...))
     (void
      (begin
-       (add-core-primitive! 'id id)
+       (add-a-core-primitive! id/maybe-protected)
        ...))))
+
+(define-syntax quote-core
+  (syntax-rules (protect)
+    [(_ (protect id)) 'id]
+    [(_ id) 'id]))
+
+(define-syntax add-a-core-primitive!
+  (syntax-rules (protect)
+    [(_ (protect id)) (add-core-primitive! 'id id #:protected? #t)]
+    [(_ id) (add-core-primitive! 'id id)]))
 
 (add-core-primitives! #:table primitive-ids
                       
@@ -56,13 +69,16 @@
                       identifier-template-binding
                       identifier-label-binding
                       identifier-binding-symbol
+                      identifier-distinct-binding
+                      (protect identifier-binding-portal-syntax)
                       identifier-prune-lexical-context
                       syntax-debug-info
                       syntax-track-origin
                       syntax-shift-phase-level
                       syntax-source-module
                       identifier-prune-to-source-module
-                      
+
+                      syntax-srcloc
                       syntax-source
                       syntax-line
                       syntax-column
@@ -131,8 +147,8 @@
                       make-syntax-delta-introducer
                       syntax-local-make-delta-introducer
                       
-                      syntax-local-value
-                      syntax-local-value/immediate
+                      (protect syntax-local-value)
+                      (protect syntax-local-value/immediate)
                       
                       syntax-local-lift-expression
                       syntax-local-lift-values-expression
@@ -148,14 +164,17 @@
                       syntax-local-module-required-identifiers
                       syntax-local-module-exports
                       syntax-local-submodules
+                      syntax-local-module-interned-scope-symbols
                       
                       syntax-local-get-shadower
+
+                      syntax-local-apply-transformer
                       
-                      local-expand
-                      local-expand/capture-lifts
-                      local-transformer-expand
-                      local-transformer-expand/capture-lifts
-                      syntax-local-expand-expression
+                      (protect local-expand)
+                      (protect local-expand/capture-lifts)
+                      (protect local-transformer-expand)
+                      (protect local-transformer-expand/capture-lifts)
+                      (protect syntax-local-expand-expression)
 
                       internal-definition-context?
                       syntax-local-make-definition-context
@@ -164,6 +183,8 @@
                       internal-definition-context-introduce
                       internal-definition-context-seal
                       identifier-remove-from-definition-context
+                      internal-definition-context-add-scopes
+                      internal-definition-context-splice-binding-identifier
                       
                       make-set!-transformer
                       prop:set!-transformer
@@ -174,6 +195,10 @@
                       prop:rename-transformer
                       make-rename-transformer
                       rename-transformer-target
+
+                      portal-syntax?
+                      make-portal-syntax
+                      portal-syntax-content
 
                       prop:liberal-define-context
                       liberal-define-context?
@@ -192,7 +217,7 @@
                       module-path-index-split
                       module-path-index-submodule
 
-                      current-module-name-resolver
+                      (protect current-module-name-resolver)
                       current-module-declare-name
                       current-module-declare-source
                       

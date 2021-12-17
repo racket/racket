@@ -4231,7 +4231,7 @@ static int check_sleep(int need_activity, int sleep_now)
 	double d;
 	double t;
 
-	d = (p_time - scheme_get_inexact_milliseconds());
+	d = (p_time - rktio_get_inexact_monotonic_milliseconds(scheme_rktio));
 
 	t = (d / 1000);
 	if (t <= 0) {
@@ -4307,7 +4307,7 @@ void scheme_check_threads(void)
 {
   double start, now;
 
-  start = scheme_get_inexact_milliseconds();
+  start = rktio_get_inexact_monotonic_milliseconds(scheme_rktio);
   
   while (1) {
     scheme_current_thread->suspend_break++;
@@ -4317,7 +4317,7 @@ void scheme_check_threads(void)
     if (check_sleep(have_activity, 0))
       break;
 
-    now = scheme_get_inexact_milliseconds();
+    now = rktio_get_inexact_monotonic_milliseconds(scheme_rktio);
     if (((now - start) * 1000) > MZ_THREAD_QUANTUM_USEC)
       break;
   }
@@ -4754,7 +4754,7 @@ static void find_next_thread(Scheme_Thread **return_arg) {
         }
       } else if (next->block_descriptor == SLEEP_BLOCKED) {
         if (!msecs)
-          msecs = scheme_get_inexact_milliseconds();
+          msecs = rktio_get_inexact_monotonic_milliseconds(scheme_rktio);
         if (next->sleep_end <= msecs)
           break;
       } else
@@ -4878,7 +4878,7 @@ void scheme_thread_block(float sleep_time)
     scheme_wake_up();
 
   if (sleep_time > 0) {
-    sleep_end = scheme_get_inexact_milliseconds();
+    sleep_end = rktio_get_inexact_monotonic_milliseconds(scheme_rktio);
     sleep_end += (sleep_time * 1000.0);
   } else
     sleep_end = 0;
@@ -5061,7 +5061,7 @@ void scheme_thread_block(float sleep_time)
 #endif
   
   if (sleep_end > 0) {
-    if (sleep_end > scheme_get_inexact_milliseconds()) {
+    if (sleep_end > rktio_get_inexact_monotonic_milliseconds(scheme_rktio)) {
       /* Still have time to sleep if necessary, but make sure we're
 	 not ready (because maybe that's why we were swapped back in!) */
       if (p->block_descriptor == GENERIC_BLOCKED) {
@@ -5121,7 +5121,7 @@ int scheme_block_until(Scheme_Ready_Fun _f, Scheme_Needs_Wakeup_Fun fdf,
   if (!delay)
     sleep_end = 0.0;
   else {
-    sleep_end = scheme_get_inexact_milliseconds();
+    sleep_end = rktio_get_inexact_monotonic_milliseconds(scheme_rktio);
     sleep_end += (delay * 1000.0);    
   }
 
@@ -5137,7 +5137,7 @@ int scheme_block_until(Scheme_Ready_Fun _f, Scheme_Needs_Wakeup_Fun fdf,
       scheme_current_thread->ran_some = 1;
     } else {
       if (now_sleep_end) {
-	delay = (float)(now_sleep_end - scheme_get_inexact_milliseconds());
+	delay = (float)(now_sleep_end - rktio_get_inexact_monotonic_milliseconds(scheme_rktio));
 	delay /= 1000.0;
 	if (delay <= 0)
 	  delay = (float)0.00001;
@@ -6772,7 +6772,7 @@ int scheme_syncing_ready(Syncing *syncing, Scheme_Schedule_Info *sinfo, int can_
   }
 
   if (syncing->timeout >= 0.0) {
-    if (syncing->sleep_end <= scheme_get_inexact_milliseconds())
+    if (syncing->sleep_end <= rktio_get_inexact_monotonic_milliseconds(scheme_rktio))
       result = 1;
   } else if (all_semas && can_suspend) {
     /* Try to block in a GCable way: */
@@ -7256,7 +7256,7 @@ static Scheme_Object *do_sync(const char *name, int argc, Scheme_Object *argv[],
 	return NULL;
       }
       
-      start_time = scheme_get_inexact_milliseconds();
+      start_time = rktio_get_inexact_monotonic_milliseconds(scheme_rktio);
     } else
       start_time = 0;
   } else {
@@ -8056,7 +8056,7 @@ static void make_initial_config(Scheme_Thread *p)
   init_param(cells, paramz, MZCONFIG_PRINT_READER, scheme_false);
   init_param(cells, paramz, MZCONFIG_PRINT_LONG_BOOLEAN, scheme_false);
   init_param(cells, paramz, MZCONFIG_PRINT_AS_QQ, scheme_true);
-  init_param(cells, paramz, MZCONFIG_PRINT_SYNTAX_WIDTH, scheme_make_integer(32));
+  init_param(cells, paramz, MZCONFIG_PRINT_SYNTAX_WIDTH, scheme_make_integer(256));
 
   init_param(cells, paramz, MZCONFIG_COMPILE_MODULE_CONSTS, scheme_true);
   init_param(cells, paramz, MZCONFIG_USE_JIT, scheme_startup_use_jit ? scheme_true : scheme_false);
@@ -8158,6 +8158,11 @@ static void make_initial_config(Scheme_Thread *p)
                                   0, 0);
     init_param(cells, paramz, MZCONFIG_READ_INPUT_PORT_HANDLER, ph);
 
+    ph = scheme_make_prim_w_arity(scheme_default_read_get_evt,
+                                  "default-get-interaction-evt",
+                                  0, 0);
+    init_param(cells, paramz, MZCONFIG_READ_GET_EVT, ph);
+
     ph = scheme_make_prim_w_arity(scheme_default_read_handler,
                                   "default-read-interaction-handler",
                                   2, 2);
@@ -8196,6 +8201,8 @@ static void make_initial_config(Scheme_Thread *p)
   }
   
   init_param(cells, paramz, MZCONFIG_THREAD_INIT_STACK_SIZE, scheme_make_integer(DEFAULT_INIT_STACK_SIZE));
+
+  init_param(cells, paramz, MZCONFIG_SUBPROC_KEEP_FDS, scheme_intern_symbol("inherited"));
 
   {
     int i;

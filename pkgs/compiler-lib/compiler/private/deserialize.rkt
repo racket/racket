@@ -2,7 +2,8 @@
 (require racket/linklet
          compiler/zo-parse
          compiler/zo-marshal
-         compiler/faslable-correlated)
+         compiler/faslable-correlated
+         racket/phase+space)
 
 ;; Re-implement just enough deserialization to deal with 'decl
 ;; linklets, so we can get `required`, etc.
@@ -84,15 +85,19 @@
           (values (reverse rev) rest)]
          [(#:mpi)
           (values (vector-ref mpis (cadr r)) (cddr r))]
-         [(#:hash #:hasheq #:hasheqv)
+         [(#:hash #:hasheq #:hasheqv #:hasheqv/phase+space)
           (define ht (case i
                        [(#:hash) (hash)]
                        [(#:hasheq) (hasheq)]
-                       [(#:hasheqv) (hasheqv)]))
+                       [(#:hasheqv  #:hasheqv/phase+space) (hasheqv)]))
           (for/fold ([ht ht] [r (cddr r)]) ([i (in-range (cadr r))])
             (define-values (k k-rest) (loop r))
             (define-values (v v-rest) (loop k-rest))
-            (values (hash-set ht k v) v-rest))]
+            (define use-k (if (and (eq? i '#:hasheqv/phase+space)
+                                   (pair? k))
+                              (phase+space (car k) (cdr k))
+                              k))
+            (values (hash-set ht use-k v) v-rest))]
          [(#:provided)
           (define-values (bdg bdg-rest) (loop (cdr r)))
           (define-values (prot? prot?-rest) (loop bdg-rest))

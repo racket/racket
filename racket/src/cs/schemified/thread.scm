@@ -854,8 +854,10 @@
         (lambda (pos_0)
           (begin
             (if pos_0
-              (let ((app_0 (hash-iterate-key h_0 pos_0)))
-                (cons app_0 (loop_0 (hash-iterate-next h_0 pos_0))))
+              (let ((k_0 (hash-iterate-key h_0 pos_0 unsafe-undefined)))
+                (let ((r_0 (loop_0 (hash-iterate-next h_0 pos_0))))
+                  (let ((k_1 k_0))
+                    (if (eq? k_1 unsafe-undefined) r_0 (cons k_1 r_0)))))
               null))))))
      (loop_0 (hash-iterate-first h_0)))))
 (define hash-empty?
@@ -1106,6 +1108,8 @@
 (define host:wakeup (hash-ref (primitive-table '|#%engine|) 'wakeup #f))
 (define host:fork-place
   (hash-ref (primitive-table '|#%engine|) 'fork-place #f))
+(define host:place-get-inherit
+  (hash-ref (primitive-table '|#%engine|) 'place-get-inherit #f))
 (define host:start-place
   (hash-ref (primitive-table '|#%engine|) 'start-place #f))
 (define host:exit (hash-ref (primitive-table '|#%engine|) 'exit #f))
@@ -1695,7 +1699,7 @@
        0.0
        (/
         (let ((app_0 (if timeout-at_0 timeout-at_0 (|#%app| distant-future))))
-          (- app_0 (current-inexact-milliseconds)))
+          (- app_0 (current-inexact-monotonic-milliseconds)))
         1000.0))))
    (lambda (wakeup_0)
      (if (let ((t_0 (unsafe-place-local-ref cell.3$1)))
@@ -1705,7 +1709,7 @@
         (lambda () (min-key+value (unsafe-place-local-ref cell.3$1)))
         (case-lambda
          ((timeout-at_0 threads_0)
-          (if (<= timeout-at_0 (current-inexact-milliseconds))
+          (if (<= timeout-at_0 (current-inexact-monotonic-milliseconds))
             (if (null? threads_0)
               (void)
               (begin
@@ -1783,7 +1787,7 @@
 (define effect_2775
   (begin (void (current-sandman the-default-sandman)) (void)))
 (define distant-future
-  (lambda () (+ (current-inexact-milliseconds) 31536000000.0)))
+  (lambda () (+ (current-inexact-monotonic-milliseconds) 31536000000.0)))
 (define current-atomic (make-pthread-parameter 0))
 (define current-thread/in-atomic (make-pthread-parameter #f))
 (define current-future$1 (make-pthread-parameter #f))
@@ -4747,6 +4751,10 @@
          timeout-at_0))))))
 (define schedule-info-did-work!
   (lambda (sched-info_0) (set-schedule-info-did-work?! sched-info_0 #t)))
+(define schedule-info-repoll?
+  (lambda (sched-info_0)
+    (let ((or-part_0 (schedule-info-did-work? sched-info_0)))
+      (if or-part_0 or-part_0 (schedule-info-exts sched-info_0)))))
 (define reference-sink
   (lambda (v_0) (ephemeron-value (make-ephemeron #f (void)) (void) v_0)))
 (define finish_2437
@@ -5245,9 +5253,9 @@
                       (set-custodian-place! c_0 (custodian-place parent_0))
                       (let ((children_0 (custodian-children c_0)))
                         (let ((cref_0
-                               (let ((temp41_0
+                               (let ((temp43_0
                                       (|#%name|
-                                       temp41
+                                       temp43
                                        (lambda (c_1)
                                          (begin
                                            (begin
@@ -5256,12 +5264,13 @@
                                               c_1)))))))
                                  (do-custodian-register.1
                                   #f
+                                  #f
                                   #t
                                   #f
                                   #t
                                   parent_0
                                   c_0
-                                  temp41_0))))
+                                  temp43_0))))
                           (begin
                             (set-custodian-parent-reference! c_0 cref_0)
                             (if cref_0
@@ -5290,75 +5299,83 @@
 (define do-custodian-register.1
   (|#%name|
    do-custodian-register
-   (lambda (at-exit?7_0
-            gc-root?10_0
-            late?9_0
-            weak?8_0
-            cust15_0
-            obj16_0
-            callback17_0)
+   (lambda (at-exit?8_0
+            callback-wrapped?7_0
+            gc-root?11_0
+            late?10_0
+            weak?9_0
+            cust17_0
+            obj18_0
+            callback19_0)
      (begin
        (begin
          (start-atomic)
          (begin0
-           (if (1/custodian-shut-down? cust15_0)
+           (if (1/custodian-shut-down? cust17_0)
              #f
              (let ((we_0
-                    (if (not weak?8_0)
-                      (if late?9_0
-                        (|#%app| host:make-late-will-executor void)
-                        (|#%app| host:make-will-executor void))
+                    (if (not callback-wrapped?7_0)
+                      (if (not weak?9_0)
+                        (if late?10_0
+                          (|#%app| host:make-late-will-executor void #f)
+                          (|#%app| host:make-will-executor void))
+                        #f)
                       #f)))
                (begin
                  (hash-set!
-                  (custodian-children cust15_0)
-                  obj16_0
-                  (if weak?8_0
-                    (if late?9_0 (late-callback4.1 callback17_0) callback17_0)
-                    (if at-exit?7_0
-                      (at-exit-callback3.1 callback17_0 we_0 late?9_0)
-                      (willed-callback2.1 callback17_0 we_0 late?9_0))))
+                  (custodian-children cust17_0)
+                  obj18_0
+                  (if callback-wrapped?7_0
+                    callback19_0
+                    (if weak?9_0
+                      (if late?10_0
+                        (late-callback4.1 callback19_0)
+                        callback19_0)
+                      (if at-exit?8_0
+                        (at-exit-callback3.1 callback19_0 we_0 late?10_0)
+                        (willed-callback2.1 callback19_0 we_0 late?10_0)))))
                  (if we_0
-                   (|#%app| host:will-register we_0 obj16_0 void)
+                   (|#%app| host:will-register we_0 obj18_0 void)
                    (void))
-                 (if gc-root?10_0
+                 (if gc-root?11_0
                    (begin
                      (|#%app| host:disable-interrupts)
-                     (if (custodian-gc-roots cust15_0)
+                     (if (custodian-gc-roots cust17_0)
                        (void)
-                       (set-custodian-gc-roots! cust15_0 (make-weak-hasheq)))
-                     (hash-set! (custodian-gc-roots cust15_0) obj16_0 #t)
-                     (check-limit-custodian cust15_0)
+                       (set-custodian-gc-roots! cust17_0 (make-weak-hasheq)))
+                     (hash-set! (custodian-gc-roots cust17_0) obj18_0 #t)
+                     (check-limit-custodian cust17_0)
                      (|#%app| host:enable-interrupts))
                    (void))
-                 (let ((or-part_0 (custodian-self-reference cust15_0)))
+                 (let ((or-part_0 (custodian-self-reference cust17_0)))
                    (if or-part_0
                      or-part_0
                      (let ((cref_0
-                            (custodian-reference5.1 (make-weak-box cust15_0))))
+                            (custodian-reference5.1 (make-weak-box cust17_0))))
                        (begin
-                         (set-custodian-self-reference! cust15_0 cref_0)
+                         (set-custodian-self-reference! cust17_0 cref_0)
                          cref_0)))))))
            (end-atomic)))))))
 (define 1/unsafe-custodian-register
   (let ((unsafe-custodian-register_0
          (|#%name|
           unsafe-custodian-register
-          (lambda (cust20_0
-                   obj21_0
-                   callback22_0
-                   at-exit?23_0
-                   weak?24_0
-                   late?19_0)
+          (lambda (cust22_0
+                   obj23_0
+                   callback24_0
+                   at-exit?25_0
+                   weak?26_0
+                   late?21_0)
             (begin
               (do-custodian-register.1
-               at-exit?23_0
+               at-exit?25_0
                #f
-               late?19_0
-               weak?24_0
-               cust20_0
-               obj21_0
-               callback22_0))))))
+               #f
+               late?21_0
+               weak?26_0
+               cust22_0
+               obj23_0
+               callback24_0))))))
     (|#%name|
      unsafe-custodian-register
      (case-lambda
@@ -5371,20 +5388,20 @@
           at-exit?_0
           weak?_0
           #f)))
-      ((cust_0 obj_0 callback_0 at-exit?_0 weak?_0 late?19_0)
+      ((cust_0 obj_0 callback_0 at-exit?_0 weak?_0 late?21_0)
        (unsafe-custodian-register_0
         cust_0
         obj_0
         callback_0
         at-exit?_0
         weak?_0
-        late?19_0))))))
+        late?21_0))))))
 (define custodian-register-thread
   (lambda (cust_0 obj_0 callback_0)
-    (do-custodian-register.1 #f #t #f #t cust_0 obj_0 callback_0)))
+    (do-custodian-register.1 #f #f #t #f #t cust_0 obj_0 callback_0)))
 (define custodian-register-place
   (lambda (cust_0 obj_0 callback_0)
-    (do-custodian-register.1 #f #t #f #t cust_0 obj_0 callback_0)))
+    (do-custodian-register.1 #f #f #t #f #t cust_0 obj_0 callback_0)))
 (define 1/unsafe-custodian-unregister
   (|#%name|
    unsafe-custodian-unregister
@@ -5448,40 +5465,15 @@
                                                 #t
                                                 #f)
                                               #f)))
-                                       (if (willed-callback? callback_0)
-                                         (let ((temp62_0
-                                                (willed-callback-proc
-                                                 callback_0)))
-                                           (let ((temp63_0
-                                                  (at-exit-callback?
-                                                   callback_0)))
-                                             (let ((temp65_0
-                                                    (willed-callback-late?
-                                                     callback_0)))
-                                               (do-custodian-register.1
-                                                temp63_0
-                                                gc-root?_0
-                                                temp65_0
-                                                #f
-                                                parent_0
-                                                child_0
-                                                temp62_0))))
-                                         (let ((temp68_0
-                                                (if (late-callback? callback_0)
-                                                  (late-callback-proc
-                                                   callback_0)
-                                                  callback_0)))
-                                           (let ((temp71_0
-                                                  (late-callback? callback_0)))
-                                             (let ((temp68_1 temp68_0))
-                                               (do-custodian-register.1
-                                                #f
-                                                gc-root?_0
-                                                temp71_0
-                                                #t
-                                                parent_0
-                                                child_0
-                                                temp68_1))))))
+                                       (do-custodian-register.1
+                                        #f
+                                        #t
+                                        gc-root?_0
+                                        #f
+                                        #f
+                                        parent_0
+                                        child_0
+                                        callback_0))
                                      (void))
                                    (for-loop_0 (hash-iterate-next ht_0 i_0))))
                                 (args
@@ -5642,18 +5634,18 @@
   (let ((do-custodian-shutdown-all_0
          (|#%name|
           do-custodian-shutdown-all
-          (lambda (c26_0 only-at-exit?25_0)
+          (lambda (c28_0 only-at-exit?27_0)
             (begin
-              (if (1/custodian-shut-down? c26_0)
+              (if (1/custodian-shut-down? c28_0)
                 (void)
                 (begin
-                  (set-custodian-shut-down! c26_0)
+                  (set-custodian-shut-down! c28_0)
                   (begin
-                    (if (custodian-sync-futures? c26_0)
+                    (if (custodian-sync-futures? c28_0)
                       (|#%app| futures-sync-for-custodian-shutdown)
                       (void))
                     (begin
-                      (let ((ht_0 (custodian-children c26_0)))
+                      (let ((ht_0 (custodian-children c28_0)))
                         (begin
                           (letrec*
                            ((for-loop_0
@@ -5669,7 +5661,7 @@
                                       ((child_0 callback_0)
                                        (begin
                                          (if child_0
-                                           (if (if only-at-exit?25_0
+                                           (if (if only-at-exit?27_0
                                                  (1/custodian? child_0)
                                                  #f)
                                              (do-custodian-shutdown-all
@@ -5677,7 +5669,7 @@
                                               #t)
                                              (if (let ((or-part_0
                                                         (not
-                                                         only-at-exit?25_0)))
+                                                         only-at-exit?27_0)))
                                                    (if or-part_0
                                                      or-part_0
                                                      (at-exit-callback?
@@ -5688,7 +5680,7 @@
                                                  (|#%app|
                                                   callback_0
                                                   child_0
-                                                  c26_0)
+                                                  c28_0)
                                                  (|#%app| callback_0 child_0))
                                                (void)))
                                            (void))
@@ -5701,13 +5693,13 @@
                                     (values)))))))
                            (for-loop_0 (hash-iterate-first ht_0)))))
                       (begin
-                        (hash-clear! (custodian-children c26_0))
+                        (hash-clear! (custodian-children c28_0))
                         (begin
-                          (if (custodian-gc-roots c26_0)
-                            (hash-clear! (custodian-gc-roots c26_0))
+                          (if (custodian-gc-roots c28_0)
+                            (hash-clear! (custodian-gc-roots c28_0))
                             (void))
                           (begin
-                            (let ((lst_0 (custodian-post-shutdown c26_0)))
+                            (let ((lst_0 (custodian-post-shutdown c28_0)))
                               (begin
                                 (letrec*
                                  ((for-loop_0
@@ -5724,28 +5716,28 @@
                                           (values)))))))
                                  (for-loop_0 lst_0))))
                             (begin
-                              (set-custodian-post-shutdown! c26_0 null)
+                              (set-custodian-post-shutdown! c28_0 null)
                               (begin
-                                (let ((sema_0 (custodian-shutdown-sema c26_0)))
+                                (let ((sema_0 (custodian-shutdown-sema c28_0)))
                                   (if sema_0
                                     (semaphore-post-all sema_0)
                                     (void)))
                                 (let ((p-cref_0
-                                       (custodian-parent-reference c26_0)))
+                                       (custodian-parent-reference c28_0)))
                                   (begin
                                     (if p-cref_0
                                       (1/unsafe-custodian-unregister
-                                       c26_0
+                                       c28_0
                                        p-cref_0)
                                       (void))
-                                    (remove-limit-custodian! c26_0)
+                                    (remove-limit-custodian! c28_0)
                                     (set-custodian-memory-limits!
-                                     c26_0
+                                     c28_0
                                      null)))))))))))))))))
     (case-lambda
      ((c_0) (do-custodian-shutdown-all_0 c_0 #f))
-     ((c_0 only-at-exit?25_0)
-      (do-custodian-shutdown-all_0 c_0 only-at-exit?25_0)))))
+     ((c_0 only-at-exit?27_0)
+      (do-custodian-shutdown-all_0 c_0 only-at-exit?27_0)))))
 (define custodian-get-shutdown-sema
   (lambda (c_0)
     (begin
@@ -5766,28 +5758,28 @@
   (let ((unsafe-add-post-custodian-shutdown_0
          (|#%name|
           unsafe-add-post-custodian-shutdown
-          (lambda (proc28_0 custodian27_0)
+          (lambda (proc30_0 custodian29_0)
             (begin
               (begin
-                (if (if (procedure? proc28_0)
-                      (procedure-arity-includes? proc28_0 0)
+                (if (if (procedure? proc30_0)
+                      (procedure-arity-includes? proc30_0 0)
                       #f)
                   (void)
                   (raise-argument-error
                    'unsafe-add-post-custodian-shutdown
                    "(procedure-arity-includes/c 0)"
-                   proc28_0))
+                   proc30_0))
                 (begin
-                  (if (let ((or-part_0 (not custodian27_0)))
-                        (if or-part_0 or-part_0 (1/custodian? custodian27_0)))
+                  (if (let ((or-part_0 (not custodian29_0)))
+                        (if or-part_0 or-part_0 (1/custodian? custodian29_0)))
                     (void)
                     (raise-argument-error
                      'unsafe-add-post-custodian-shutdown
                      "(or/c custodian? #f)"
-                     custodian27_0))
+                     custodian29_0))
                   (let ((c_0
-                         (if custodian27_0
-                           custodian27_0
+                         (if custodian29_0
+                           custodian29_0
                            (place-custodian
                             (unsafe-place-local-ref cell.1$2)))))
                     (if (if (not
@@ -5802,14 +5794,14 @@
                         (begin0
                           (set-custodian-post-shutdown!
                            c_0
-                           (cons proc28_0 (custodian-post-shutdown c_0)))
+                           (cons proc30_0 (custodian-post-shutdown c_0)))
                           (end-atomic))))))))))))
     (|#%name|
      unsafe-add-post-custodian-shutdown
      (case-lambda
       ((proc_0) (begin (unsafe-add-post-custodian-shutdown_0 proc_0 #f)))
-      ((proc_0 custodian27_0)
-       (unsafe-add-post-custodian-shutdown_0 proc_0 custodian27_0))))))
+      ((proc_0 custodian29_0)
+       (unsafe-add-post-custodian-shutdown_0 proc_0 custodian29_0))))))
 (define custodian-subordinate?
   (lambda (c_0 super-c_0)
     (letrec*
@@ -5922,25 +5914,25 @@
   (let ((custodian-limit-memory_0
          (|#%name|
           custodian-limit-memory
-          (lambda (limit-cust30_0 need-amt31_0 stop-cust29_0)
+          (lambda (limit-cust32_0 need-amt33_0 stop-cust31_0)
             (begin
               (let ((stop-cust_0
-                     (if (eq? stop-cust29_0 unsafe-undefined)
-                       limit-cust30_0
-                       stop-cust29_0)))
+                     (if (eq? stop-cust31_0 unsafe-undefined)
+                       limit-cust32_0
+                       stop-cust31_0)))
                 (begin
-                  (if (1/custodian? limit-cust30_0)
+                  (if (1/custodian? limit-cust32_0)
                     (void)
                     (raise-argument-error
                      'custodian-limit-memory
                      "custodian?"
-                     limit-cust30_0))
-                  (if (exact-nonnegative-integer? need-amt31_0)
+                     limit-cust32_0))
+                  (if (exact-nonnegative-integer? need-amt33_0)
                     (void)
                     (raise-argument-error
                      'custodian-limit-memory
                      "exact-nonnegative-integer?"
-                     need-amt31_0))
+                     need-amt33_0))
                   (if (1/custodian? stop-cust_0)
                     (void)
                     (raise-argument-error
@@ -5951,36 +5943,36 @@
                   (start-atomic/no-interrupts)
                   (begin0
                     (if (let ((or-part_0
-                               (1/custodian-shut-down? limit-cust30_0)))
+                               (1/custodian-shut-down? limit-cust32_0)))
                           (if or-part_0
                             or-part_0
                             (1/custodian-shut-down? stop-cust_0)))
                       (void)
                       (begin
                         (set-custodian-memory-limits!
-                         limit-cust30_0
+                         limit-cust32_0
                          (let ((app_0
                                 (cons
-                                 need-amt31_0
-                                 (if (eq? limit-cust30_0 stop-cust_0)
+                                 need-amt33_0
+                                 (if (eq? limit-cust32_0 stop-cust_0)
                                    #f
                                    stop-cust_0))))
                            (cons
                             app_0
-                            (custodian-memory-limits limit-cust30_0))))
-                        (if (eq? stop-cust_0 limit-cust30_0)
+                            (custodian-memory-limits limit-cust32_0))))
+                        (if (eq? stop-cust_0 limit-cust32_0)
                           (let ((old-limit_0
-                                 (custodian-immediate-limit limit-cust30_0)))
+                                 (custodian-immediate-limit limit-cust32_0)))
                             (if (let ((or-part_0 (not old-limit_0)))
                                   (if or-part_0
                                     or-part_0
-                                    (> old-limit_0 need-amt31_0)))
+                                    (> old-limit_0 need-amt33_0)))
                               (set-custodian-immediate-limit!
-                               limit-cust30_0
-                               need-amt31_0)
+                               limit-cust32_0
+                               need-amt33_0)
                               (void)))
                           (void))
-                        (check-limit-custodian limit-cust30_0)))
+                        (check-limit-custodian limit-cust32_0)))
                     (end-atomic/no-interrupts))
                   (void))))))))
     (|#%name|
@@ -5989,8 +5981,8 @@
       ((limit-cust_0 need-amt_0)
        (begin
          (custodian-limit-memory_0 limit-cust_0 need-amt_0 unsafe-undefined)))
-      ((limit-cust_0 need-amt_0 stop-cust29_0)
-       (custodian-limit-memory_0 limit-cust_0 need-amt_0 stop-cust29_0))))))
+      ((limit-cust_0 need-amt_0 stop-cust31_0)
+       (custodian-limit-memory_0 limit-cust_0 need-amt_0 stop-cust31_0))))))
 (define custodians-with-limits (make-hasheq))
 (define check-limit-custodian
   (lambda (limit-cust_0)
@@ -6028,8 +6020,8 @@
            (raise-argument-error 'make-custodian-box "custodian?" c_0))
          (let ((b_0 (custodian-box1.1 v_0 (custodian-get-shutdown-sema c_0))))
            (begin
-             (if (let ((temp80_0 (lambda (b_1) (set-custodian-box-v! b_1 #f))))
-                   (do-custodian-register.1 #f #t #f #t c_0 b_0 temp80_0))
+             (if (let ((temp75_0 (lambda (b_1) (set-custodian-box-v! b_1 #f))))
+                   (do-custodian-register.1 #f #f #t #f #t c_0 b_0 temp75_0))
                (void)
                (begin-unsafe
                 (raise-arguments-error
@@ -7736,7 +7728,7 @@
                   or-part_0
                   (schedule-info-did-work? sched-info_0)))
             (|#%app| thread-did-work!)
-            (thread-did-no-work!))
+            (thread-poll-done! (current-thread/in-atomic)))
           (set-thread-sched-info! (current-thread/in-atomic) sched-info_0))
         (end-atomic))
       (engine-block))))
@@ -7754,7 +7746,9 @@
                   (thread-yield #f)
                   (let ((until-msecs_0
                          (let ((app_0 (* secs20_0 1000.0)))
-                           (+ app_0 (current-inexact-milliseconds)))))
+                           (+
+                            app_0
+                            (current-inexact-monotonic-milliseconds)))))
                     (letrec*
                      ((loop_0
                        (|#%name|
@@ -7771,11 +7765,16 @@
      sleep
      (case-lambda (() (begin (sleep_0 0))) ((secs20_0) (sleep_0 secs20_0))))))
 (define cell.2$1 (unsafe-make-place-local hash2610))
-(define thread-did-no-work!
-  (lambda ()
+(define thread-poll-done!
+  (lambda (t_0)
     (unsafe-place-local-set!
      cell.2$1
-     (hash-set (unsafe-place-local-ref cell.2$1) (1/current-thread) #t))))
+     (hash-set (unsafe-place-local-ref cell.2$1) t_0 #t))))
+(define thread-poll-not-done!
+  (lambda (t_0)
+    (unsafe-place-local-set!
+     cell.2$1
+     (hash-remove (unsafe-place-local-ref cell.2$1) t_0))))
 (define thread-did-work!
   (lambda () (unsafe-place-local-set! cell.2$1 hash2610)))
 (define thread-unscheduled-for-work-tracking!
@@ -7886,30 +7885,32 @@
        (begin
          (start-atomic)
          (begin0
-           (let ((c1_0 (thread-forward-break-to t_0)))
-             (if c1_0
-               (lambda () (do-break-thread c1_0 kind_0 check-t_0))
-               (begin
-                 (if (if (thread-pending-break t_0)
-                       (break>? kind_0 (thread-pending-break t_0))
-                       #f)
-                   (set-thread-pending-break! t_0 kind_0)
-                   (void))
-                 (if (thread-pending-break t_0)
-                   (void)
-                   (begin
+           (if (1/thread-dead? t_0)
+             void
+             (let ((c1_0 (thread-forward-break-to t_0)))
+               (if c1_0
+                 (lambda () (do-break-thread c1_0 kind_0 check-t_0))
+                 (begin
+                   (if (if (thread-pending-break t_0)
+                         (break>? kind_0 (thread-pending-break t_0))
+                         #f)
                      (set-thread-pending-break! t_0 kind_0)
-                     (thread-did-work!)
-                     (run-suspend/resume-callbacks t_0 car)
-                     (run-suspend/resume-callbacks t_0 cdr)
-                     (if (thread-descheduled? t_0)
-                       (if (thread-suspended? t_0)
-                         (void)
-                         (begin
-                           (run-interrupt-callback t_0)
-                           (thread-reschedule! t_0)))
-                       (void))))
-                 void)))
+                     (void))
+                   (if (thread-pending-break t_0)
+                     (void)
+                     (begin
+                       (set-thread-pending-break! t_0 kind_0)
+                       (thread-did-work!)
+                       (run-suspend/resume-callbacks t_0 car)
+                       (run-suspend/resume-callbacks t_0 cdr)
+                       (if (thread-descheduled? t_0)
+                         (if (thread-suspended? t_0)
+                           (void)
+                           (begin
+                             (run-interrupt-callback t_0)
+                             (thread-reschedule! t_0)))
+                         (void))))
+                   void))))
            (end-atomic))))
       (if (eq? t_0 check-t_0)
         (begin
@@ -9547,7 +9548,7 @@
                                            (let ((app_0 (* timeout10_0 1000)))
                                              (+
                                               app_0
-                                              (current-inexact-milliseconds)))
+                                              (current-inexact-monotonic-milliseconds)))
                                            #f)))
                                     (letrec*
                                      ((loop_0
@@ -9559,7 +9560,7 @@
                                                   (if timeout10_0
                                                     (<=
                                                      timeout-at_0
-                                                     (current-inexact-milliseconds))
+                                                     (current-inexact-monotonic-milliseconds))
                                                     #f)
                                                   #f)
                                               (begin
@@ -12429,13 +12430,23 @@
       (current-thread/in-atomic t_0)
       (let ((e_0 (thread-engine t_0)))
         (begin
-          (set-thread-sched-info! t_0 #f)
+          (clear-sched-info! t_0)
           (current-future$1 (thread-future t_0))
           (set-place-current-thread! (unsafe-place-local-ref cell.1$2) t_0)
           (unsafe-place-local-set!
            cell.3
            (add1 (unsafe-place-local-ref cell.3)))
           (run-callbacks-in-engine e_0 callbacks_0 t_0 leftover-ticks_0))))))
+(define clear-sched-info!
+  (lambda (t_0)
+    (let ((sched-info_0 (thread-sched-info t_0)))
+      (if sched-info_0
+        (begin
+          (set-thread-sched-info! t_0 #f)
+          (if (schedule-info-repoll? sched-info_0)
+            (thread-poll-not-done! t_0)
+            (void)))
+        (void)))))
 (define current-thread-now-running!
   (lambda () (set-thread-engine! (current-thread/in-atomic) 'running)))
 (define swap-in-engine
@@ -12667,10 +12678,10 @@
 (define check-place-activity void)
 (define set-check-place-activity!
   (lambda (proc_0) (set! check-place-activity proc_0)))
-(define finish_2685
+(define finish_2553
   (make-struct-type-install-properties
    '(alarm-evt)
-   1
+   2
    0
    #f
    (list
@@ -12679,16 +12690,24 @@
      (poller2.1
       (lambda (e_0 ctx_0)
         (let ((msecs_0 (alarm-evt-msecs e_0)))
-          (if (>= (current-inexact-milliseconds) msecs_0)
-            (values (list e_0) #f)
-            (begin
-              (schedule-info-add-timeout-at!
-               (poll-ctx-sched-info ctx_0)
-               msecs_0)
-              (values #f e_0))))))))
+          (let ((monotonic?_0 (alarm-evt-monotonic e_0)))
+            (let ((current-ms_0
+                   (if monotonic?_0
+                     current-inexact-monotonic-milliseconds
+                     current-inexact-milliseconds)))
+              (if (>= (|#%app| current-ms_0) msecs_0)
+                (values (list e_0) #f)
+                (begin
+                  (schedule-info-add-timeout-at!
+                   (poll-ctx-sched-info ctx_0)
+                   (if monotonic?_0
+                     msecs_0
+                     (let ((app_0 (current-inexact-monotonic-milliseconds)))
+                       (+ app_0 (- msecs_0 (current-inexact-milliseconds))))))
+                  (values #f e_0))))))))))
    (current-inspector)
    #f
-   '(0)
+   '(0 1)
    #f
    'alarm-evt))
 (define struct:alarm-evt
@@ -12698,9 +12717,9 @@
    (|#%nongenerative-uid| alarm-evt)
    #f
    #f
-   1
+   2
    0))
-(define effect_2822 (finish_2685 struct:alarm-evt))
+(define effect_2822 (finish_2553 struct:alarm-evt))
 (define alarm-evt1.1
   (|#%name|
    alarm-evt
@@ -12732,13 +12751,36 @@
          s
          'alarm-evt
          'msecs))))))
+(define alarm-evt-monotonic_2115
+  (|#%name| alarm-evt-monotonic (record-accessor struct:alarm-evt 1)))
+(define alarm-evt-monotonic
+  (|#%name|
+   alarm-evt-monotonic
+   (lambda (s)
+     (if (alarm-evt?_2440 s)
+       (alarm-evt-monotonic_2115 s)
+       ($value
+        (impersonate-ref
+         alarm-evt-monotonic_2115
+         struct:alarm-evt
+         1
+         s
+         'alarm-evt
+         'monotonic))))))
 (define create-alarm-evt
-  (lambda (msecs_0)
-    (begin
-      (if (real? msecs_0)
-        (void)
-        (raise-argument-error 'create-alarm-evt "real?" msecs_0))
-      (alarm-evt1.1 msecs_0))))
+  (let ((create-alarm-evt_0
+         (|#%name|
+          create-alarm-evt
+          (lambda (msecs3_0 monotonic?2_0)
+            (begin
+              (begin
+                (if (real? msecs3_0)
+                  (void)
+                  (raise-argument-error 'create-alarm-evt "real?" msecs3_0))
+                (alarm-evt1.1 msecs3_0 monotonic?2_0)))))))
+    (case-lambda
+     ((msecs_0) (create-alarm-evt_0 msecs_0 #f))
+     ((msecs_0 monotonic?2_0) (create-alarm-evt_0 msecs_0 monotonic?2_0)))))
 (define 1/call-in-nested-thread
   (let ((call-in-nested-thread_0
          (|#%name|
@@ -12836,7 +12878,7 @@
                                                               (thread-dead!
                                                                (check-not-unsafe-undefined
                                                                 t_0
-                                                                't_78)))
+                                                                't_80)))
                                                             (end-atomic)))
                                                         (engine-block))))))))))))
                                    (do-make-thread.1
@@ -13720,297 +13762,304 @@
          (if (eq? initial-place (unsafe-place-local-ref cell.1$2))
            (begin (start-atomic) (begin0 (ensure-wakeup-handle!) (end-atomic)))
            (void))
-         (let ((orig-cust_0 (create-custodian #f)))
-           (let ((lock_0 (|#%app| host:make-mutex)))
-             (let ((started_0 (|#%app| host:make-condition)))
-               (call-with-values
-                (lambda () (1/place-channel))
-                (case-lambda
-                 ((place-pch_0 child-pch_0)
-                  (let ((orig-plumber_0 (1/make-plumber)))
-                    (let ((current-place15_0
-                           (unsafe-place-local-ref cell.1$2)))
-                      (let ((new-place_0
-                             (make-place.1
-                              current-place15_0
-                              place-pch_0
-                              lock_0
-                              orig-cust_0)))
-                        (begin
-                          (set-custodian-place! orig-cust_0 new-place_0)
-                          (let ((done-waiting_0
-                                 (place-done-waiting new-place_0)))
-                            (let ((default-exit_0
-                                   (|#%name|
-                                    default-exit
-                                    (lambda (explicit?7_0 v9_0)
-                                      (begin
+         (let ((inherited_0 (|#%app| host:place-get-inherit)))
+           (let ((orig-cust_0 (create-custodian #f)))
+             (let ((lock_0 (|#%app| host:make-mutex)))
+               (let ((started_0 (|#%app| host:make-condition)))
+                 (call-with-values
+                  (lambda () (1/place-channel))
+                  (case-lambda
+                   ((place-pch_0 child-pch_0)
+                    (let ((orig-plumber_0 (1/make-plumber)))
+                      (let ((current-place15_0
+                             (unsafe-place-local-ref cell.1$2)))
+                        (let ((new-place_0
+                               (make-place.1
+                                current-place15_0
+                                place-pch_0
+                                lock_0
+                                orig-cust_0)))
+                          (begin
+                            (set-custodian-place! orig-cust_0 new-place_0)
+                            (let ((done-waiting_0
+                                   (place-done-waiting new-place_0)))
+                              (let ((default-exit_0
+                                     (|#%name|
+                                      default-exit
+                                      (lambda (explicit?7_0 v9_0)
                                         (begin
-                                          (let ((temp17_0
-                                                 (if explicit?7_0
-                                                   "exit (via `exit`)"
-                                                   "exit")))
-                                            (log-place.1
-                                             unsafe-undefined
-                                             #f
-                                             temp17_0))
-                                          (let ((flush-failed?_0 #f))
-                                            (begin
-                                              (plumber-flush-all/wrap
-                                               orig-plumber_0
-                                               (lambda (proc_0 h_0)
-                                                 (call-with-continuation-prompt
-                                                  (lambda ()
-                                                    (|#%app| proc_0 h_0))
-                                                  (default-continuation-prompt-tag)
-                                                  (lambda (thunk_0)
-                                                    (begin
-                                                      (set! flush-failed?_0 #t)
-                                                      (call-with-continuation-prompt
-                                                       thunk_0))))))
-                                              (start-atomic)
-                                              (begin0
-                                                (begin
-                                                  (|#%app|
-                                                   host:mutex-acquire
-                                                   lock_0)
-                                                  (set-place-queued-result!
-                                                   new-place_0
-                                                   (if flush-failed?_0
-                                                     1
-                                                     (if (byte? v9_0) v9_0 0)))
-                                                  (place-has-activity!
-                                                   new-place_0)
-                                                  (|#%app|
-                                                   host:mutex-release
-                                                   lock_0))
-                                                (end-atomic))
-                                              (engine-block)))))))))
-                              (begin
-                                (start-atomic)
-                                (let ((cref_0
-                                       (custodian-register-place
-                                        (1/current-custodian)
-                                        new-place_0
-                                        shutdown-place)))
-                                  (begin
-                                    (if cref_0
-                                      (void)
-                                      (begin
-                                        (end-atomic)
-                                        (let ((c_0 (1/current-custodian)))
-                                          (begin-unsafe
-                                           (raise-arguments-error
-                                            'dynamic-place
-                                            "the custodian has been shut down"
-                                            "custodian"
-                                            c_0)))))
+                                          (begin
+                                            (let ((temp17_0
+                                                   (if explicit?7_0
+                                                     "exit (via `exit`)"
+                                                     "exit")))
+                                              (log-place.1
+                                               unsafe-undefined
+                                               #f
+                                               temp17_0))
+                                            (let ((flush-failed?_0 #f))
+                                              (begin
+                                                (plumber-flush-all/wrap
+                                                 orig-plumber_0
+                                                 (lambda (proc_0 h_0)
+                                                   (call-with-continuation-prompt
+                                                    (lambda ()
+                                                      (|#%app| proc_0 h_0))
+                                                    (default-continuation-prompt-tag)
+                                                    (lambda (thunk_0)
+                                                      (begin
+                                                        (set! flush-failed?_0
+                                                          #t)
+                                                        (call-with-continuation-prompt
+                                                         thunk_0))))))
+                                                (start-atomic)
+                                                (begin0
+                                                  (begin
+                                                    (|#%app|
+                                                     host:mutex-acquire
+                                                     lock_0)
+                                                    (set-place-queued-result!
+                                                     new-place_0
+                                                     (if flush-failed?_0
+                                                       1
+                                                       (if (byte? v9_0)
+                                                         v9_0
+                                                         0)))
+                                                    (place-has-activity!
+                                                     new-place_0)
+                                                    (|#%app|
+                                                     host:mutex-release
+                                                     lock_0))
+                                                  (end-atomic))
+                                                (engine-block)))))))))
+                                (begin
+                                  (start-atomic)
+                                  (let ((cref_0
+                                         (custodian-register-place
+                                          (1/current-custodian)
+                                          new-place_0
+                                          shutdown-place)))
                                     (begin
-                                      (set-place-custodian-ref!
-                                       new-place_0
-                                       cref_0)
-                                      (call-with-values
-                                       (lambda ()
-                                         (|#%app|
-                                          make-place-ports+fds
-                                          in_0
-                                          out_0
-                                          err_0))
-                                       (case-lambda
-                                        ((parent-in_0
-                                          parent-out_0
-                                          parent-err_0
-                                          child-in-fd_0
-                                          child-out-fd_0
-                                          child-err-fd_0)
-                                         (begin
-                                           (|#%app| host:mutex-acquire lock_0)
-                                           (let ((host-thread_0
-                                                  (|#%app|
-                                                   host:fork-place
-                                                   (lambda ()
-                                                     (begin
-                                                       (unsafe-place-local-set!
-                                                        cell.1$2
-                                                        new-place_0)
-                                                       (call-in-another-main-thread
-                                                        orig-cust_0
-                                                        (lambda ()
-                                                          (begin
-                                                            (set-place-id!
-                                                             new-place_0
-                                                             (|#%app|
-                                                              get-pthread-id))
+                                      (if cref_0
+                                        (void)
+                                        (begin
+                                          (end-atomic)
+                                          (let ((c_0 (1/current-custodian)))
+                                            (begin-unsafe
+                                             (raise-arguments-error
+                                              'dynamic-place
+                                              "the custodian has been shut down"
+                                              "custodian"
+                                              c_0)))))
+                                      (begin
+                                        (set-place-custodian-ref!
+                                         new-place_0
+                                         cref_0)
+                                        (call-with-values
+                                         (lambda ()
+                                           (|#%app|
+                                            make-place-ports+fds
+                                            in_0
+                                            out_0
+                                            err_0))
+                                         (case-lambda
+                                          ((parent-in_0
+                                            parent-out_0
+                                            parent-err_0
+                                            child-in-fd_0
+                                            child-out-fd_0
+                                            child-err-fd_0)
+                                           (begin
+                                             (|#%app|
+                                              host:mutex-acquire
+                                              lock_0)
+                                             (let ((host-thread_0
+                                                    (|#%app|
+                                                     host:fork-place
+                                                     (lambda ()
+                                                       (begin
+                                                         (unsafe-place-local-set!
+                                                          cell.1$2
+                                                          new-place_0)
+                                                         (call-in-another-main-thread
+                                                          orig-cust_0
+                                                          (lambda ()
                                                             (begin
-                                                              (set-place-host-roots!
+                                                              (set-place-id!
                                                                new-place_0
                                                                (|#%app|
-                                                                host:current-place-roots))
+                                                                get-pthread-id))
                                                               (begin
-                                                                (1/current-thread-group
-                                                                 (unsafe-place-local-ref
-                                                                  cell.1))
+                                                                (set-place-host-roots!
+                                                                 new-place_0
+                                                                 (|#%app|
+                                                                  host:current-place-roots))
                                                                 (begin
-                                                                  (1/current-custodian
-                                                                   orig-cust_0)
+                                                                  (1/current-thread-group
+                                                                   (unsafe-place-local-ref
+                                                                    cell.1))
                                                                   (begin
-                                                                    (1/current-plumber
-                                                                     orig-plumber_0)
+                                                                    (1/current-custodian
+                                                                     orig-cust_0)
                                                                     (begin
-                                                                      (1/exit-handler
-                                                                       (lambda (v_0)
-                                                                         (default-exit_0
-                                                                          #t
-                                                                          v_0)))
+                                                                      (1/current-plumber
+                                                                       orig-plumber_0)
                                                                       (begin
-                                                                        (current-pseudo-random-generator
-                                                                         (make-pseudo-random-generator))
+                                                                        (1/exit-handler
+                                                                         (lambda (v_0)
+                                                                           (default-exit_0
+                                                                            #t
+                                                                            v_0)))
                                                                         (begin
-                                                                          (1/current-evt-pseudo-random-generator
+                                                                          (current-pseudo-random-generator
                                                                            (make-pseudo-random-generator))
-                                                                          (let ((finish_0
-                                                                                 (|#%app|
-                                                                                  host:start-place
-                                                                                  child-pch_0
-                                                                                  path_0
-                                                                                  sym_0
-                                                                                  child-in-fd_0
-                                                                                  child-out-fd_0
-                                                                                  child-err-fd_0
-                                                                                  orig-cust_0
-                                                                                  orig-plumber_0)))
-                                                                            (call-with-continuation-prompt
-                                                                             (lambda ()
-                                                                               (begin
-                                                                                 (|#%app|
-                                                                                  host:mutex-acquire
-                                                                                  lock_0)
-                                                                                 (set-place-wakeup-handle!
-                                                                                  new-place_0
-                                                                                  (sandman-get-wakeup-handle))
-                                                                                 (|#%app|
-                                                                                  host:condition-signal
-                                                                                  started_0)
-                                                                                 (|#%app|
-                                                                                  host:mutex-release
-                                                                                  lock_0)
-                                                                                 (let ((temp20_0
-                                                                                        "enter"))
-                                                                                   (log-place.1
-                                                                                    unsafe-undefined
+                                                                          (begin
+                                                                            (1/current-evt-pseudo-random-generator
+                                                                             (make-pseudo-random-generator))
+                                                                            (let ((finish_0
+                                                                                   (|#%app|
+                                                                                    host:start-place
+                                                                                    child-pch_0
+                                                                                    path_0
+                                                                                    sym_0
+                                                                                    child-in-fd_0
+                                                                                    child-out-fd_0
+                                                                                    child-err-fd_0
+                                                                                    orig-cust_0
+                                                                                    orig-plumber_0
+                                                                                    inherited_0)))
+                                                                              (call-with-continuation-prompt
+                                                                               (lambda ()
+                                                                                 (begin
+                                                                                   (|#%app|
+                                                                                    host:mutex-acquire
+                                                                                    lock_0)
+                                                                                   (set-place-wakeup-handle!
+                                                                                    new-place_0
+                                                                                    (sandman-get-wakeup-handle))
+                                                                                   (|#%app|
+                                                                                    host:condition-signal
+                                                                                    started_0)
+                                                                                   (|#%app|
+                                                                                    host:mutex-release
+                                                                                    lock_0)
+                                                                                   (let ((temp20_0
+                                                                                          "enter"))
+                                                                                     (log-place.1
+                                                                                      unsafe-undefined
+                                                                                      #f
+                                                                                      temp20_0))
+                                                                                   (|#%app|
+                                                                                    finish_0)
+                                                                                   (default-exit_0
                                                                                     #f
-                                                                                    temp20_0))
-                                                                                 (|#%app|
-                                                                                  finish_0)
-                                                                                 (default-exit_0
-                                                                                  #f
-                                                                                  0)))
-                                                                             (default-continuation-prompt-tag)
-                                                                             (lambda (thunk_0)
-                                                                               (begin
-                                                                                 (call-with-continuation-prompt
-                                                                                  thunk_0)
-                                                                                 (default-exit_0
-                                                                                  #f
-                                                                                  1)))))))))))))))))
-                                                   (lambda (result_0)
-                                                     (begin
-                                                       (do-custodian-shutdown-all
-                                                        orig-cust_0)
-                                                       (let ((lst_0
-                                                              (place-post-shutdown
-                                                               new-place_0)))
+                                                                                    0)))
+                                                                               (default-continuation-prompt-tag)
+                                                                               (lambda (thunk_0)
+                                                                                 (begin
+                                                                                   (call-with-continuation-prompt
+                                                                                    thunk_0)
+                                                                                   (default-exit_0
+                                                                                    #f
+                                                                                    1)))))))))))))))))
+                                                     (lambda (result_0)
+                                                       (begin
+                                                         (do-custodian-shutdown-all
+                                                          orig-cust_0)
+                                                         (let ((lst_0
+                                                                (place-post-shutdown
+                                                                 new-place_0)))
+                                                           (begin
+                                                             (letrec*
+                                                              ((for-loop_0
+                                                                (|#%name|
+                                                                 for-loop
+                                                                 (lambda (lst_1)
+                                                                   (begin
+                                                                     (if (pair?
+                                                                          lst_1)
+                                                                       (let ((proc_0
+                                                                              (unsafe-car
+                                                                               lst_1)))
+                                                                         (let ((rest_0
+                                                                                (unsafe-cdr
+                                                                                 lst_1)))
+                                                                           (begin
+                                                                             (|#%app|
+                                                                              proc_0)
+                                                                             (for-loop_0
+                                                                              rest_0))))
+                                                                       (values)))))))
+                                                              (for-loop_0
+                                                               lst_0))))
+                                                         (void)
+                                                         (kill-future-scheduler)
+                                                         (|#%app|
+                                                          host:mutex-acquire
+                                                          lock_0)
+                                                         (set-place-result!
+                                                          new-place_0
+                                                          result_0)
+                                                         (|#%app|
+                                                          host:mutex-release
+                                                          lock_0)
                                                          (begin
                                                            (letrec*
                                                             ((for-loop_0
                                                               (|#%name|
                                                                for-loop
-                                                               (lambda (lst_1)
+                                                               (lambda (i_0)
                                                                  (begin
-                                                                   (if (pair?
-                                                                        lst_1)
-                                                                     (let ((proc_0
-                                                                            (unsafe-car
-                                                                             lst_1)))
-                                                                       (let ((rest_0
-                                                                              (unsafe-cdr
-                                                                               lst_1)))
-                                                                         (begin
-                                                                           (|#%app|
-                                                                            proc_0)
-                                                                           (for-loop_0
-                                                                            rest_0))))
+                                                                   (if i_0
+                                                                     (let ((pl_0
+                                                                            (hash-iterate-key
+                                                                             done-waiting_0
+                                                                             i_0)))
+                                                                       (begin
+                                                                         (wakeup-waiting
+                                                                          pl_0)
+                                                                         (for-loop_0
+                                                                          (hash-iterate-next
+                                                                           done-waiting_0
+                                                                           i_0))))
                                                                      (values)))))))
                                                             (for-loop_0
-                                                             lst_0))))
-                                                       (void)
-                                                       (kill-future-scheduler)
-                                                       (|#%app|
-                                                        host:mutex-acquire
-                                                        lock_0)
-                                                       (set-place-result!
-                                                        new-place_0
-                                                        result_0)
-                                                       (|#%app|
-                                                        host:mutex-release
-                                                        lock_0)
-                                                       (begin
-                                                         (letrec*
-                                                          ((for-loop_0
-                                                            (|#%name|
-                                                             for-loop
-                                                             (lambda (i_0)
-                                                               (begin
-                                                                 (if i_0
-                                                                   (let ((pl_0
-                                                                          (hash-iterate-key
-                                                                           done-waiting_0
-                                                                           i_0)))
-                                                                     (begin
-                                                                       (wakeup-waiting
-                                                                        pl_0)
-                                                                       (for-loop_0
-                                                                        (hash-iterate-next
-                                                                         done-waiting_0
-                                                                         i_0))))
-                                                                   (values)))))))
-                                                          (for-loop_0
-                                                           (hash-iterate-first
-                                                            done-waiting_0))))
-                                                       (void)
-                                                       (hash-clear!
-                                                        done-waiting_0))))))
-                                             (begin
-                                               (set-place-host-thread!
-                                                new-place_0
-                                                host-thread_0)
-                                               (|#%app|
-                                                host:condition-wait
-                                                started_0
-                                                lock_0)
-                                               (|#%app|
-                                                host:mutex-release
-                                                lock_0)
-                                               (end-atomic)
-                                               (let ((temp11_0 "create"))
-                                                 (let ((temp12_0
-                                                        (place-id
-                                                         new-place_0)))
-                                                   (let ((temp11_1 temp11_0))
-                                                     (log-place.1
-                                                      unsafe-undefined
-                                                      temp12_0
-                                                      temp11_1))))
-                                               (values
-                                                new-place_0
-                                                parent-in_0
-                                                parent-out_0
-                                                parent-err_0)))))
-                                        (args
-                                         (raise-binding-result-arity-error
-                                          6
-                                          args)))))))))))))))
-                 (args (raise-binding-result-arity-error 2 args))))))))))))
+                                                             (hash-iterate-first
+                                                              done-waiting_0))))
+                                                         (void)
+                                                         (hash-clear!
+                                                          done-waiting_0))))))
+                                               (begin
+                                                 (set-place-host-thread!
+                                                  new-place_0
+                                                  host-thread_0)
+                                                 (|#%app|
+                                                  host:condition-wait
+                                                  started_0
+                                                  lock_0)
+                                                 (|#%app|
+                                                  host:mutex-release
+                                                  lock_0)
+                                                 (end-atomic)
+                                                 (let ((temp11_0 "create"))
+                                                   (let ((temp12_0
+                                                          (place-id
+                                                           new-place_0)))
+                                                     (let ((temp11_1 temp11_0))
+                                                       (log-place.1
+                                                        unsafe-undefined
+                                                        temp12_0
+                                                        temp11_1))))
+                                                 (values
+                                                  new-place_0
+                                                  parent-in_0
+                                                  parent-out_0
+                                                  parent-err_0)))))
+                                          (args
+                                           (raise-binding-result-arity-error
+                                            6
+                                            args)))))))))))))))
+                   (args (raise-binding-result-arity-error 2 args)))))))))))))
 (define 1/place-break
   (let ((place-break_0
          (|#%name|

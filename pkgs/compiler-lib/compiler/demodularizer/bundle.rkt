@@ -175,7 +175,7 @@
                   (.mpi-vector))
                 '((#f)
                   (#f))
-                '(self-mpi requires provides phase-to-link-modules)
+                '(self-mpi requires provides phase-to-link-modules portal-stxes)
                 '()
                 '()
                 #hasheq()
@@ -197,7 +197,9 @@
                    (make-phase-to-link-modules application
                                                (lambda (name prim) (primitive prim))
                                                (lambda (depth) (toplevel depth module-use-pos #f #f))
-                                               (lambda (depth) (toplevel depth mpi-vector-pos #f #f)))))
+                                               (lambda (depth) (toplevel depth mpi-vector-pos #f #f))))
+                 (def-values (list (toplevel 0 (+ exports-pos 4) #f #f)) ; portal-stxes
+                   (application (primitive hasheqv) null)))
                 (+ 32 (length import-keys))
                 #f))]
       [(s-exp)
@@ -206,7 +208,7 @@
         `(linklet ((deserialize
                     module-use)
                    (.mpi-vector))
-             (self-mpi requires provides phase-to-link-modules)
+             (self-mpi requires provides phase-to-link-modules portal-stxes)
            (define-values (self-mpi) (vector-ref .mpi-vector 0))
            (define-values (requires) (deserialize .mpi-vector #f #f 0 '#() 0 '#() '#()
                                                   (quote ,serialized-requires)))
@@ -215,7 +217,8 @@
              ,(make-phase-to-link-modules cons
                                           (lambda (name prim) name)
                                           (lambda (depth) 'module-use)
-                                          (lambda (depth) '.mpi-vector)))))]))
+                                          (lambda (depth) '.mpi-vector)))
+           (define-values (portal-stxes) '#hasheqv())))]))
 
   ;; By not including a 'stx-data linklet, we get a default
   ;; linklet that supplies #f for any syntax-literal reference.

@@ -22,7 +22,7 @@
                          (raise-syntax-error #f "not an identifier" x stx)))
                      (syntax->list #'(id ...)))
            #'(begin-for-syntax
-              (define-values (id ...) expr)))])))
+               (define-values (id ...) expr)))])))
 
   (define-syntaxes (define define-syntax define-for-syntax)
     (let ([go

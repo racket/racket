@@ -1,6 +1,7 @@
 #lang racket/base
 (require "../compile/serialize-property.rkt"
-         "full-binding.rkt")
+         "full-binding.rkt"
+         "../common/phase+space.rkt")
 
 (provide make-module-binding
          module-binding-update
@@ -10,9 +11,9 @@
          module-binding-phase
          module-binding-sym
          module-binding-nominal-module
-         module-binding-nominal-phase
+         module-binding-nominal-phase+space
          module-binding-nominal-sym
-         module-binding-nominal-require-phase
+         module-binding-nominal-require-phase+space-shift
          module-binding-extra-inspector
          module-binding-extra-nominal-bindings
          
@@ -23,9 +24,9 @@
 
 (define (make-module-binding module phase sym
                              #:nominal-module [nominal-module module]
-                             #:nominal-phase [nominal-phase phase]
+                             #:nominal-phase+space [nominal-phase+space phase]
                              #:nominal-sym [nominal-sym sym]
-                             #:nominal-require-phase [nominal-require-phase 0]
+                             #:nominal-require-phase+space-shift [nominal-require-phase+space-shift 0]
                              #:frame-id [frame-id #f]
                              #:free=id [free=id #f]
                              #:extra-inspector [extra-inspector #f]
@@ -34,15 +35,15 @@
    [(or frame-id
         free=id
         extra-inspector
-        (not (and (eqv? nominal-phase phase)
+        (not (and (eqv? nominal-phase+space phase)
                   (eq? nominal-sym sym)
-                  (eqv? nominal-require-phase 0)
+                  (eqv? nominal-require-phase+space-shift 0)
                   (null? extra-nominal-bindings))))
     (full-module-binding frame-id
                          free=id
                          module phase sym
-                         nominal-module nominal-phase nominal-sym
-                         nominal-require-phase
+                         nominal-module nominal-phase+space nominal-sym
+                         nominal-require-phase+space-shift
                          extra-inspector
                          extra-nominal-bindings)]
    [else
@@ -53,18 +54,18 @@
                                #:phase [phase (module-binding-phase b)]
                                #:sym [sym (module-binding-sym b)]
                                #:nominal-module [nominal-module (module-binding-nominal-module b)]
-                               #:nominal-phase [nominal-phase (module-binding-nominal-phase b)]
+                               #:nominal-phase+space [nominal-phase+space (module-binding-nominal-phase+space b)]
                                #:nominal-sym [nominal-sym (module-binding-nominal-sym b)]
-                               #:nominal-require-phase [nominal-require-phase (module-binding-nominal-require-phase b)]
+                               #:nominal-require-phase+space-shift [nominal-require-phase+space-shift (module-binding-nominal-require-phase+space-shift b)]
                                #:frame-id [frame-id (binding-frame-id b)]
                                #:free=id [free=id (binding-free=id b)]
                                #:extra-inspector [extra-inspector (module-binding-extra-inspector b)]
                                #:extra-nominal-bindings [extra-nominal-bindings (module-binding-extra-nominal-bindings b)])
   (make-module-binding module phase sym
                        #:nominal-module nominal-module
-                       #:nominal-phase nominal-phase
+                       #:nominal-phase+space nominal-phase+space
                        #:nominal-sym nominal-sym
-                       #:nominal-require-phase nominal-require-phase
+                       #:nominal-require-phase+space-shift nominal-require-phase+space-shift
                        #:frame-id frame-id
                        #:free=id free=id
                        #:extra-inspector extra-inspector
@@ -77,8 +78,8 @@
 
 ;; See `identifier-binding` docs for information about these fields:
 (struct full-module-binding full-binding (module phase sym
-                                           nominal-module nominal-phase nominal-sym
-                                           nominal-require-phase
+                                           nominal-module nominal-phase+space nominal-sym
+                                           nominal-require-phase+space-shift
                                            extra-inspector ; preserves access to protected definitions
                                            extra-nominal-bindings)
   #:authentic
@@ -97,9 +98,9 @@
        (ser-push! (full-module-binding-sym b))
        (ser-push! (full-module-binding-phase b))
        (ser-push! (full-module-binding-nominal-module b))
-       (ser-push! (full-module-binding-nominal-phase b))
+       (ser-push! (full-module-binding-nominal-phase+space b))
        (ser-push! (full-module-binding-nominal-sym b))
-       (ser-push! (full-module-binding-nominal-require-phase b))
+       (ser-push! (full-module-binding-nominal-require-phase+space-shift b))
        (ser-push! (full-binding-free=id b))
        (if (full-module-binding-extra-inspector b)
            (ser-push! 'tag '#:inspector)
@@ -121,17 +122,17 @@
 
 (define (deserialize-full-module-binding module sym phase
                                          nominal-module
-                                         nominal-phase
+                                         nominal-phase+space
                                          nominal-sym
-                                         nominal-require-phase
+                                         nominal-require-phase+space-shift
                                          free=id
                                          extra-inspector
                                          extra-nominal-bindings)
   (make-module-binding module phase sym
                        #:nominal-module nominal-module
-                       #:nominal-phase nominal-phase
+                       #:nominal-phase+space (intern-phase+space nominal-phase+space)
                        #:nominal-sym nominal-sym
-                       #:nominal-require-phase nominal-require-phase
+                       #:nominal-require-phase+space-shift (intern-phase+space-shift nominal-require-phase+space-shift)
                        #:free=id free=id
                        #:extra-inspector extra-inspector
                        #:extra-nominal-bindings extra-nominal-bindings))
@@ -161,20 +162,20 @@
       (simple-module-binding-nominal-module b)
       (full-module-binding-nominal-module b)))
        
-(define (module-binding-nominal-phase b)
+(define (module-binding-nominal-phase+space b)
   (if (simple-module-binding? b)
       (simple-module-binding-phase b)
-      (full-module-binding-nominal-phase b)))
+      (full-module-binding-nominal-phase+space b)))
 
 (define (module-binding-nominal-sym b)
   (if (simple-module-binding? b)
       (simple-module-binding-sym b)
       (full-module-binding-nominal-sym b)))
 
-(define (module-binding-nominal-require-phase b)
+(define (module-binding-nominal-require-phase+space-shift b)
   (if (simple-module-binding? b)
       0
-      (full-module-binding-nominal-require-phase b)))
+      (full-module-binding-nominal-require-phase+space-shift b)))
 
 (define (module-binding-extra-inspector b)
   (if (simple-module-binding? b)

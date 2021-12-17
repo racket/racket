@@ -34,12 +34,26 @@
          write-to-file
          display-lines-to-file
 
+         file-type-bits
+         socket-type-bits
+         symbolic-link-type-bits
+         regular-file-type-bits
+         block-device-type-bits
+         directory-type-bits
+         character-device-type-bits
+         fifo-type-bits
+         set-user-id-bit
+         set-group-id-bit
+         sticky-bit
+         user-permission-bits
          user-read-bit
          user-write-bit
          user-execute-bit
+         group-permission-bits
          group-read-bit
          group-write-bit
          group-execute-bit
+         other-permission-bits
          other-read-bit
          other-write-bit
          other-execute-bit)
@@ -762,7 +776,7 @@
   (unless (memq file-mode '(binary text))
     (raise-argument-error who "(or/c 'binary 'text)" file-mode)))
 
-(define (file->x who f file-mode read-x x-append)
+(define (file->x who f file-mode read-x x-append empty-val)
   (check-path who f)
   (check-file-mode who file-mode)
   (let ([sz (with-handlers ([exn:fail:filesystem? (lambda (_) 0)])
@@ -771,17 +785,21 @@
       (lambda (in)
         ;; There's a good chance that `file-size' gets all the data:
         (let ([s (read-x sz in)])
-          ;; ... but double-check:
-          (let ([more (let loop ()
-                        (let ([l (read-x 4096 in)])
-                          (if (eof-object? l) null (cons l (loop)))))])
-            (if (null? more) s (apply x-append (cons s more)))))))))
+          (if (eof-object? s)
+              ;; the file was truncated to size 0 _after_ we got the
+              ;; file size
+              empty-val
+              ;; ... check for more data past the initial file-size amt
+              (let ([more (let loop ()
+                            (let ([l (read-x 4096 in)])
+                              (if (eof-object? l) null (cons l (loop)))))])
+                (if (null? more) s (apply x-append (cons s more))))))))))
 
 (define (file->string f #:mode [mode 'binary])
-  (file->x 'file->string f mode read-string string-append))
+  (file->x 'file->string f mode read-string string-append ""))
 
 (define (file->bytes f #:mode [mode 'binary])
-  (file->x 'file->bytes f mode read-bytes bytes-append))
+  (file->x 'file->bytes f mode read-bytes bytes-append #""))
 
 (define (file->value f #:mode [file-mode 'binary])
   (check-path 'file->value f)
@@ -833,12 +851,27 @@
   (->file 'display-lines-to-file f mode exists
           (lambda (p) (do-lines->port l p newline))))
 
-(define user-read-bit     #o400)
-(define user-write-bit    #o200)
-(define user-execute-bit  #o100)
-(define group-read-bit    #o040)
-(define group-write-bit   #o020)
-(define group-execute-bit #o010)
-(define other-read-bit    #o004)
-(define other-write-bit   #o002)
-(define other-execute-bit #o001)
+; See https://en.wikibooks.org/wiki/C_Programming/POSIX_Reference/sys/stat.h
+(define file-type-bits             #o170000)
+(define socket-type-bits           #o140000)
+(define symbolic-link-type-bits    #o120000)
+(define regular-file-type-bits     #o100000)
+(define block-device-type-bits     #o060000)
+(define directory-type-bits        #o040000)
+(define character-device-type-bits #o020000)
+(define fifo-type-bits             #o010000)
+(define set-user-id-bit            #o004000)
+(define set-group-id-bit           #o002000)
+(define sticky-bit                 #o001000)
+(define user-permission-bits       #o000700)
+(define user-read-bit              #o000400)
+(define user-write-bit             #o000200)
+(define user-execute-bit           #o000100)
+(define group-permission-bits      #o000070)
+(define group-read-bit             #o000040)
+(define group-write-bit            #o000020)
+(define group-execute-bit          #o000010)
+(define other-permission-bits      #o000007)
+(define other-read-bit             #o000004)
+(define other-write-bit            #o000002)
+(define other-execute-bit          #o000001)

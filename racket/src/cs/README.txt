@@ -46,8 +46,9 @@ build:
    the Racket CS implementation).
 
    Unlike Chez Scheme boot files, the files generated in "schemified"
-   are human-readable and -editable Scheme code. That possibilities
-   provides a way out of bootstrapping black holes, even without BC.
+   are human-readable and -editable Scheme code. That provides a way
+   out of bootstrapping black holes, even without BC.
+   
 
 
 ========================================================================
@@ -544,6 +545,42 @@ If you modify Racket in a way that changes compiled code, including
 changing the set of primitives, be sure to update the version number
 in "../version/racket_version.h", so that various tools know to
 rebuild bytecode.
+
+Modifying "thread", "io", "regexp", "schemify", or "expander"
+-------------------------------------------------------------
+
+If you modify one of the layers in "../thread", "../io", "../regexp",
+"../schemify", or "../expander", then a `make run` here in development
+mode will pick up those changes. Even if you don't use development
+mode here, though, use plain `make` to compile the changes into a
+"schemified/*.scm" form. The bootstrapped forms in "schemified/*.scm"
+should be committed to the Racket repo along with the source-file
+changes.
+
+If you're working in a Racket repo checkout, and if you have a working
+`racket` in your `PATH`, `make derived` in the checkout's top-level
+directory includes a `make` in this directory.
+
+If you modify the "thread", "io", or "regexp" layer to add new
+bindings, you will also need to modify "primitive/kernel.ss" (or, less
+commonly, one of the other files in "primitive"). For example,
+"../io/main.rkt" needs to `provide` everything that should be exported
+from that layer, but any provided name also needs to be added to
+"primitive/kernel.ss" to make that exported to the `#%kernel` instance
+(a hash table) that the expander layer uses to create primitive
+modules like `#%kernel`. The entries in "primitive" files use the
+constructors defined in "../schemify/known.rkt" to describe
+primitives; note that most of the numebrs you see are arity masks in
+the sense of `procedure-arity-mask`.
+
+For some additions to rktio with corresponding changes to the io
+layer, you may need to modify "io.sls" to fill in some conversion
+glue. For example, "io.sls" defines `rktio_identity_to_vector`, which
+unpacks a C-level structure from rktio into a Scheme value for
+consumption by the io layer.
+
+Modifying Chez Scheme
+---------------------
 
 If you modify the Chez Scheme implementation in "../ChezScheme" in a
 way that changes compiled code, then you should also update the Chez

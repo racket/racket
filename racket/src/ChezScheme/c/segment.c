@@ -107,7 +107,7 @@ void *S_getmem(iptr bytes, IBOOL zerofill, UNUSED IBOOL for_code) {
   return addr;
 }
 
-void S_freemem(void *addr, iptr bytes) {
+void S_freemem(void *addr, iptr bytes, UNUSED IBOOL for_code) {
   debug(printf("freemem(%p, %p)\n", addr, TO_VOIDP(bytes)))
   free(addr);
   membytes -= bytes;
@@ -115,7 +115,7 @@ void S_freemem(void *addr, iptr bytes) {
 #endif
 
 #if defined(USE_VIRTUAL_ALLOC)
-#include <winbase.h>
+# include <winbase.h>
 void *S_getmem(iptr bytes, IBOOL zerofill, IBOOL for_code) {
   void *addr;
 
@@ -128,14 +128,14 @@ void *S_getmem(iptr bytes, IBOOL zerofill, IBOOL for_code) {
     uptr n = S_pagesize - 1; iptr p_bytes = (iptr)(((uptr)bytes + n) & ~n);
     int perm = (for_code ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
     if ((addr = VirtualAlloc((void *)0, (SIZE_T)p_bytes, MEM_COMMIT, perm)) == (void *)0) out_of_memory();
-    if ((membytes += p_bytes) > maxmembytes) maxmembytes = membytes;
+    if ((membytes += p_bytes) > maxmembytes) maxmembytes = membytes;    
     debug(printf("getmem VirtualAlloc(%p => %p) -> %p\n", TO_VOIDP(bytes), TO_VOIDP(p_bytes), addr))
   }
 
   return addr;
 }
 
-void S_freemem(void *addr, iptr bytes) {
+void S_freemem(void *addr, iptr bytes, UNUSED IBOOL for_code) {
   if ((uptr)bytes < S_pagesize) {
     debug(printf("freemem free(%p, %p)\n", addr, bytes))
     membytes -= bytes;
@@ -188,7 +188,7 @@ void *S_getmem(iptr bytes, IBOOL zerofill, IBOOL for_code) {
   return addr;
 }
 
-void S_freemem(void *addr, iptr bytes) {
+void S_freemem(void *addr, iptr bytes, UNUSED IBOOL for_code) {
   if ((uptr)bytes < S_pagesize) {
     debug(printf("freemem free(%p, %p)\n", addr, TO_VOIDP(bytes)))
     free(addr);
@@ -443,14 +443,14 @@ static seginfo *allocate_segments(uptr nreq, UNUSED IBOOL for_code) {
   return &chunk->sis[0];
 }
 
-void S_free_chunk(chunkinfo *chunk) {
+void S_free_chunk(chunkinfo *chunk, IBOOL for_code) {
   chunkinfo *nextchunk = chunk->next;
   contract_segment_table(chunk->base, chunk->base + chunk->segs);
   S_G.number_of_empty_segments -= chunk->segs;
   *chunk->prev = nextchunk;
   if (nextchunk != NULL) nextchunk->prev = chunk->prev;
-  S_freemem(chunk->addr, chunk->bytes);
-  S_freemem(chunk, sizeof(chunkinfo) + sizeof(seginfo) * chunk->segs);
+  S_freemem(chunk->addr, chunk->bytes, for_code);
+  S_freemem(chunk, sizeof(chunkinfo) + sizeof(seginfo) * chunk->segs, for_code);
 }
 
 /* retain approximately heap-reserve-ratio segments for every
@@ -468,12 +468,12 @@ void S_free_chunks(void) {
     if (chunk) {
       nextchunk = chunk->next;
       ntofree -= chunk->segs;
-      S_free_chunk(chunk);
+      S_free_chunk(chunk, 0);
     }
     if (code_chunk) {
       code_nextchunk = code_chunk->next;
       ntofree -= code_chunk->segs;
-      S_free_chunk(code_chunk);
+      S_free_chunk(code_chunk, 1);
     }
   }
 }
@@ -556,10 +556,10 @@ static void contract_segment_table(uptr base, uptr end) {
     t1end = t1 + end - base < t1i->t1 + SEGMENT_T1_SIZE ? t1 + end - base : t1i->t1 + SEGMENT_T1_SIZE;
     n = t1end - t1;
     if ((t1i->refcount -= n) == 0) {
-      S_freemem((void *)t1i, sizeof(t1table));
+      S_freemem((void *)t1i, sizeof(t1table), 0);
 #ifdef segment_t3_bits
       if ((t2i->refcount -= 1) == 0) {
-        S_freemem((void *)t2i, sizeof(t2table));
+        S_freemem((void *)t2i, sizeof(t2table), 0);
         S_segment_info[SEGMENT_T3_IDX(base)] = NULL;
       } else {
         S_segment_info[SEGMENT_T3_IDX(base)]->t2[SEGMENT_T2_IDX(base)] = NULL;

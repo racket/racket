@@ -19,7 +19,7 @@
     * https://stackoverflow.com/a/2124759/144981
 #>
 
-$command = "echo off & " + $PSScriptRoot + "\msvcprep.bat " + $Args[0] + " & set"
+$command = "echo off & `"" + $PSScriptRoot + "`"\msvcprep.bat " + $Args[0] + " & set"
 cmd /c $command |
   ForEach {
       if ($_ -match "=") {

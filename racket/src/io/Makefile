@@ -54,12 +54,11 @@ demo: $(RKTIO_DEP)
 	$(RACO) make demo.rkt
 	$(RACKET) demo.rkt
 
-demo-thread: $(RKTIO_DEP)
-	$(RACO) make demo-thread.rkt
-	$(RACKET) demo-thread.rkt
-
 
 ../build/so-rktio/Makefile: ../rktio/configure ../rktio/Makefile.in ../rktio/rktio_config.h.in
+	$(MAKE) rebuild-rktio
+
+rebuild-rktio:
 	mkdir -p ../build/so-rktio
 	$(MAKE) build-rktio RACKET="`$(RACKET) ../cs/absify.rkt --exec $(RACKET)`" PREFIX="`$(RACKET) ../cs/absify.rkt ../..`"
 

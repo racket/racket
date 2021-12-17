@@ -14,7 +14,7 @@
          "misc.rkt"
          "list.rkt")
 
-(provide and/c integer-in)
+(provide (rename-out [_and/c and/c]) integer-in)
 
 (define (and-name ctc)
   (apply build-compound-type-name 'and/c (base-and/c-ctcs ctc)))
@@ -178,19 +178,19 @@
    #:generate and/c-generate?
    #:equivalent and-equivalent?))
 
-(define-syntax (and/c stx)
+(define-syntax (_and/c stx)
   (syntax-case stx (pair? listof)
     [(_ pair? (listof e))
      #'(non-empty-listof e)]
     [(_ (listof e) pair?)
      #'(non-empty-listof e)]
     [(_ . args)
-     #'(real-and/c . args)]
+     #'(and/c . args)]
     [x
      (identifier? #'x)
-     #'real-and/c]))
+     #'and/c]))
 
-(define/subexpression-pos-prop/name real-and/c-name (real-and/c . raw-fs)
+(define/subexpression-pos-prop/name real-and/c-name (and/c . raw-fs)
   (let ([contracts (coerce-contracts 'and/c raw-fs)])
     (cond
       [(null? contracts) any/c]
@@ -395,7 +395,7 @@
   (check-two-args 'integer-in start end |(or/c #f exact-integer?)| |(or/c #f exact-integer?)|)
   (cond
     [(and start end (= start end))
-     (and/c start exact?)]
+     (_and/c start exact?)]
     [else
      (integer-in-ctc start end)]))
 

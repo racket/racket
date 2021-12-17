@@ -1,0 +1,9 @@
+cff-version: 1.1.0
+message: If you use this software, please cite it as below.
+authors:
+  - family-names: Flatt
+    given-names: Matthew
+  - name: PLT
+title: "Reference: Racket"
+version: 8.2
+date-released: 2010

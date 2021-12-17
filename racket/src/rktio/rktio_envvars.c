@@ -13,7 +13,7 @@ struct rktio_envvars_t {
 # define SETENV_DROPS_LEADING_EQUAL_SIGN
 #endif
 
-#if defined(OS_X) && !TARGET_OS_IPHONE
+#if defined(OS_X) && !defined(TARGET_OS_IPHONE)
 # include <crt_externs.h>
 # define GET_ENVIRON_ARRAY *_NSGetEnviron()
 #endif
@@ -56,10 +56,14 @@ char *rktio_getenv(rktio_t *rktio, const char *name)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   char *s;
+  rktio_getenv_lock();
   s = getenv(name);
-  if (s)
-    return MSC_IZE(strdup)(s);
-  else {
+  if (s) {
+    s = MSC_IZE(strdup)(s);
+    rktio_getenv_unlock();
+    return s;
+  } else {
+    rktio_getenv_unlock();
     set_racket_error(RKTIO_ERROR_NO_SUCH_ENVVAR);
     return NULL;
   }
@@ -106,7 +110,11 @@ int rktio_setenv(rktio_t *rktio, const char *name, const char *val)
     }
 #endif
 
+    rktio_getenv_lock();
+
     r = setenv(name, val, 1);
+
+    rktio_getenv_unlock();
 
 #ifdef SETENV_DROPS_LEADING_EQUAL_SIGN
     if (tmp)
@@ -118,8 +126,12 @@ int rktio_setenv(rktio_t *rktio, const char *name, const char *val)
 
     return (r ? 0 : 1);
   } else {
+    rktio_getenv_lock();
+
     /* on some platforms, unsetenv() returns void */
     unsetenv(name);
+
+    rktio_getenv_unlock();
     return 1;
   }
 #endif
@@ -207,6 +219,8 @@ rktio_envvars_t *rktio_envvars(rktio_t *rktio)
     char **ea, *p;
     rktio_envvars_t *envvars;
 
+    rktio_getenv_lock();
+
     ea = GET_ENVIRON_ARRAY;
 
     for (i = 0; ea[i]; i++) {
@@ -225,6 +239,8 @@ rktio_envvars_t *rktio_envvars(rktio_t *rktio)
       envvars->names[i] = rktio_strndup(p, j);
       envvars->vals[i] = MSC_IZE(strdup)(p+j+1);
     }
+
+    rktio_getenv_unlock();
 
     return envvars;
   }
@@ -428,5 +444,35 @@ void *rktio_envvars_to_block(rktio_t *rktio, rktio_envvars_t *envvars)
   r[len] = 0;
 
   return r;
+#endif
+}
+
+/*========================================================================*/
+
+#ifdef RKTIO_USE_PTHREADS
+static int lock_initialized = 0;
+static pthread_mutex_t envvars_lock;
+#endif
+
+int rktio_environ_init(rktio_t *rktio)
+{
+#ifdef RKTIO_USE_PTHREADS
+  if (!lock_initialized) {
+    pthread_mutex_init(&envvars_lock, NULL);
+    lock_initialized = 1;
+  }
+#endif
+  return 1;
+}
+
+void rktio_getenv_lock() {
+#ifdef RKTIO_USE_PTHREADS
+  pthread_mutex_lock(&envvars_lock);
+#endif
+}
+
+void rktio_getenv_unlock() {
+#ifdef RKTIO_USE_PTHREADS
+  pthread_mutex_unlock(&envvars_lock);
 #endif
 }

@@ -74,6 +74,7 @@
            thread-dead?
            thread-dead!
            thread-did-work!
+           thread-poll-not-done!
            
            thread-reschedule!
 
@@ -716,7 +717,7 @@
     [(or (not sched-info)
          (schedule-info-did-work? sched-info))
      (thread-did-work!)]
-    [else (thread-did-no-work!)])
+    [else (thread-poll-done! (current-thread/in-atomic))])
    (set-thread-sched-info! (current-thread/in-atomic) sched-info))
   (engine-block))
 
@@ -732,7 +733,7 @@
      (thread-yield #f)]
     [else
      (define until-msecs (+ (* secs 1000.0)
-                            (current-inexact-milliseconds)))
+                            (current-inexact-monotonic-milliseconds)))
      (let loop ()
        ((thread-deschedule! (current-thread)
                             until-msecs
@@ -751,9 +752,14 @@
 ;; performed work:
 (define-place-local poll-done-threads #hasheq())
 
-(define (thread-did-no-work!)
-  (set! poll-done-threads (hash-set poll-done-threads (current-thread) #t)))
+(define (thread-poll-done! t)
+  (set! poll-done-threads (hash-set poll-done-threads t #t)))
 
+(define (thread-poll-not-done! t)
+  (set! poll-done-threads (hash-remove poll-done-threads t)))
+
+;; When a thread has done work, then other threads might get a
+;; different answer by polling
 (define (thread-did-work!)
   (set! poll-done-threads #hasheq()))
 
@@ -846,6 +852,7 @@
 (define (do-break-thread t kind check-t)
   ((atomically
     (cond
+      [(thread-dead? t) void]
       [(thread-forward-break-to t)
        => (lambda (other-t)
             (lambda () (do-break-thread other-t kind check-t)))]

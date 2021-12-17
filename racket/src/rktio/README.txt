@@ -19,3 +19,8 @@ Many such libraries exist already. This one happens to have exactly
 the things that a Racket implementation needs.
 
 See "rktio.h" for the API.
+
+If you add new things to "rktio.h", then run `make -f Mf-rktio` to
+generate "rktio.rktl", "rktio.inc", and "rktio.def". (That requires a
+`racket` executable in your `PATH`.) Those derived files supply glue
+for Racket CS and Racket BC to use rktio functionality.

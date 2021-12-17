@@ -25,7 +25,7 @@ associated with a sub-inspector of @racket[current-code-inspector].
 When an inspector that controls a module invocation is installed with
 @racket[current-code-inspector], it enables using
 @racket[module->namespace] on the module, and it enables access to the
-module's protected exports (i.e., those identifiers exported from the
+module's @deftech{protected} exports (i.e., those identifiers exported from the
 module with @racket[protect-out]) via @racket[dynamic-require]. A
 module cannot @racket[require] a module that has a weaker
 declaration-time code inspector.

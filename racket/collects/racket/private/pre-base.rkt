@@ -224,7 +224,8 @@
                               random
                               collection-path collection-file-path
                               symbol->immutable-string
-                              keyword->immutable-string)
+                              keyword->immutable-string
+                              syntax-srcloc)
              (all-from "reqprov.rkt")
              (all-from-except "for.rkt"
                               define-in-vector-like

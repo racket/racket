@@ -47,7 +47,7 @@ RACKETCS_SUFFIX =
 RACKET =
 RACKET_FOR_BOOTFILES = $(RACKET)
 RACKET_FOR_BUILD = $(RACKET)
-PB_BRANCH = circa-8.1.0.6-2
+PB_BRANCH = circa-8.3.0.9-2
 PB_REPO = https://github.com/racket/pb
 SINGLE_BRANCH_FLAG = --single-branch
 EXTRA_REPOS_BASE =
@@ -310,19 +310,19 @@ maybe-fetch-pb-as-is:
 	echo done
 fetch-pb-from:
 	mkdir -p racket/src/ChezScheme/boot
-	if [ ! -d racket/src/ChezScheme/boot/pb ] ; 	  then git clone -q $(SINGLE_BRANCH_FLAG) -b circa-8.1.0.6-2 $(PB_REPO) racket/src/ChezScheme/boot/pb ; 	  else cd racket/src/ChezScheme/boot/pb && git fetch -q origin circa-8.1.0.6-2:remotes/origin/circa-8.1.0.6-2 ; fi
-	cd racket/src/ChezScheme/boot/pb && git remote set-branches origin circa-8.1.0.6-2
-	cd racket/src/ChezScheme/boot/pb && git checkout -q circa-8.1.0.6-2
+	if [ ! -d racket/src/ChezScheme/boot/pb ] ; 	  then git clone -q $(SINGLE_BRANCH_FLAG) -b circa-8.3.0.9-2 $(PB_REPO) racket/src/ChezScheme/boot/pb ; 	  else cd racket/src/ChezScheme/boot/pb && git fetch -q origin circa-8.3.0.9-2:remotes/origin/circa-8.3.0.9-2 ; fi
+	cd racket/src/ChezScheme/boot/pb && git remote set-branches origin circa-8.3.0.9-2
+	cd racket/src/ChezScheme/boot/pb && git checkout -q circa-8.3.0.9-2
 pb-fetch:
 	$(MAKE) fetch-pb EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" PB_REPO="$(PB_REPO)" SINGLE_BRANCH_FLAG="$(SINGLE_BRANCH_FLAG)"
 pb-build:
 	cd racket/src/ChezScheme && racket rktboot/main.rkt --machine pb
 pb-stage:
-	cd racket/src/ChezScheme/boot/pb && git branch circa-8.1.0.6-2
-	cd racket/src/ChezScheme/boot/pb && git checkout circa-8.1.0.6-2
+	cd racket/src/ChezScheme/boot/pb && git branch circa-8.3.0.9-2
+	cd racket/src/ChezScheme/boot/pb && git checkout circa-8.3.0.9-2
 	cd racket/src/ChezScheme/boot/pb && git add . && git commit --amend -m "new build"
 pb-push:
-	cd racket/src/ChezScheme/boot/pb && git push -u origin circa-8.1.0.6-2
+	cd racket/src/ChezScheme/boot/pb && git push -u origin circa-8.3.0.9-2
 win-cs-base:
 	IF "$(RACKET_FOR_BUILD)" == "" $(MAKE) win-bc-then-cs-base SETUP_BOOT_MODE=--boot WIN32_BUILD_LEVEL=bc PLAIN_RACKET=racket\racketbc DISABLE_STATIC_LIBS="$(DISABLE_STATIC_LIBS)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" JOB_OPTIONS="$(JOB_OPTIONS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)"
 	IF not "$(RACKET_FOR_BUILD)" == "" $(MAKE) win-just-cs-base SETUP_BOOT_MODE=--chain DISABLE_STATIC_LIBS="$(DISABLE_STATIC_LIBS)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" JOB_OPTIONS="$(JOB_OPTIONS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" RACKET_FOR_BUILD="$(RACKET_FOR_BUILD)"
@@ -545,5 +545,11 @@ win32-installer-from-bundle:
 	$(MAKE) win-installer-from-bundle DIST_BASE="$(DIST_BASE)" DIST_DESC="$(DIST_DESC)" DIST_DIR="$(DIST_DIR)" DIST_NAME="$(DIST_NAME)" DIST_SUFFIX="$(DIST_SUFFIX)" INSTALLER_OPTIONS="$(INSTALLER_OPTIONS)" INSTALLER_POST_PROCESS_BASE64="$(INSTALLER_POST_PROCESS_BASE64)" INSTALLER_PRE_PROCESS_BASE64="$(INSTALLER_PRE_PROCESS_BASE64)" MAC_PKG_MODE="$(MAC_PKG_MODE)" NOTARIZATION_CONFIG="$(NOTARIZATION_CONFIG)" OSSLSIGNCODE_ARGS_BASE64="$(OSSLSIGNCODE_ARGS_BASE64)" README="$(README)" RELEASE_MODE="$(RELEASE_MODE)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" SIGN_IDENTITY="$(SIGN_IDENTITY)" SOURCE_MODE="$(SOURCE_MODE)" TGZ_MODE="$(TGZ_MODE)" UPLOAD="$(UPLOAD)" VERSIONLESS_MODE="$(VERSIONLESS_MODE)" WIN32_PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
 win32-test-client:
 	$(MAKE) win-test-client JOB_OPTIONS="$(JOB_OPTIONS)" PKG_INSTALL_OPTIONS="$(PKG_INSTALL_OPTIONS)" PKG_SOURCE_MODE="$(PKG_SOURCE_MODE)" SVR_CAT="$(SVR_CAT)" TEST_ARGS_q="$(TEST_ARGS_q)" TEST_PKGS="$(TEST_PKGS)" WIN32_PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
+derived:
+	if [ "$(RACKET)" = "" ] ; 	  then $(MAKE) derived-with-racket RACKET=racket ;           else $(MAKE) derived-with-racket RACKET="$(RACKET)" ; fi
+derived-with-racket:
+	cd racket/src/rktio && make -f Mf-rktio RACKET="$(RACKET)"
+	cd racket/src/expander && make expander-maybe RACKET="$(RACKET)"
+	cd racket/src/cs && make RACKET="$(RACKET)"
 makemake: .makefile racket/src/makemake.rkt
 	racket racket/src/makemake.rkt .makefile > Makefile

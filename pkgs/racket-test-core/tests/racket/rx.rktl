@@ -2090,4 +2090,13 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(test "aaa" regexp-replace* "(x)" "aaa"
+      ;; no error, even though this is the wrong arity:
+      (lambda (x) x))
+
+(err/rt-test (regexp-replace* "(a)" "aaa" (lambda (x) x))
+             exn:fail:contract:arity?)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

@@ -53,6 +53,7 @@
         [(|#%flfxnum|) flfxnum-table]
         [(|#%extfl|) extfl-table]
         [(|#%network|) network-table]
+        [(|#%terminal|) terminal-table]
         [else (hash-ref user-installed-tables key #f)])]
      [(key table)
       (hash-set! user-installed-tables key table)]))
@@ -77,6 +78,7 @@
   (include "primitive/place.ss")
   (include "primitive/foreign.ss")
   (include "primitive/linklet.ss")
+  (include "primitive/terminal.ss")
   (include "primitive/internal.ss")
 
   ;; ----------------------------------------

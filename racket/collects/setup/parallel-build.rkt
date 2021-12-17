@@ -274,7 +274,7 @@
            (define-values (dir file b) (split-path hd))
            (set! filelist tail)
            (handler workerid 'start hd "" "" "")
-           (values hd (list (->bytes hd) (->bytes (path->complete-path hd)) null))]))
+           (values hd (list (->bytes hd) (->bytes (path->complete-path hd)) options))]))
 
       (define/public (has-jobs?) (not (null? filelist)))
       (define/public (jobs-cnt) (length filelist))
@@ -337,6 +337,7 @@
                                                        (format-error x #:long? #f #:to-string? #t))))])
            (parameterize ([parallel-lock-client lock-client]
                           [compile-context-preservation-enabled (member 'disable-inlining options )]
+                          [compile-enforce-module-constants (not (memq 'disable-constant options))]
                           [manager-trace-handler (if (member 'very-verbose options)
                                                      (lambda (p) (printf "  ~a\n" p))
                                                      (manager-trace-handler))]

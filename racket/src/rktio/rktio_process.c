@@ -357,7 +357,7 @@ void centralized_done_with_process_id(int pid, int in_group)
         if (keep_unused) {
           st->next_unused = unused_pid_statuses;
           unused_pid_statuses = st;
-          if (st->signal_fd)
+          if (st->signal_fd && st->in_group)
             remove_group_signal_fd(st->signal_fd);
         } else
           st->unneeded = 1;
@@ -1068,18 +1068,58 @@ static char *cmdline_protect(const char *s)
   return MSC_IZE(strdup)(s);
 }
 
+/* Avoid direct reference to Vista functionality: */
+typedef struct {
+  STARTUPINFOW StartupInfo;
+  void *lpAttributeList;
+} rktio_STARTUPINFOEXW;
+#define rktio_EXTENDED_STARTUPINFO_PRESENT 0x00080000
+#define rktio_PROC_THREAD_ATTRIBUTE_HANDLE_LIST 0x00020002
+typedef BOOL (*rktio_InitializeProcThreadAttributeList_t)(void *lpAttributeList,
+                                                          DWORD dwAttributeCount,
+                                                          DWORD dwFlags,
+                                                          PSIZE_T lpSize);
+static rktio_InitializeProcThreadAttributeList_t rktio_InitializeProcThreadAttributeList;
+typedef BOOL (*rktio_UpdateProcThreadAttribute_t)(void *lpAttributeList,
+                                                  DWORD dwFlags,
+                                                  DWORD_PTR Attribute,
+                                                  PVOID lpValue,
+                                                  SIZE_T cbSize,
+                                                  PVOID lpPreviousValue,
+                                                  PSIZE_T lpReturnSize);
+static rktio_UpdateProcThreadAttribute_t rktio_UpdateProcThreadAttribute;
+typedef void (*rktio_DeleteProcThreadAttributeList_t)(void *lpAttributeList);
+static rktio_DeleteProcThreadAttributeList_t rktio_DeleteProcThreadAttributeList;
+static void init_thread_attr_procs()
+{
+  if (!rktio_InitializeProcThreadAttributeList
+      || !rktio_UpdateProcThreadAttribute) {
+    HMODULE hm;
+
+    hm = LoadLibraryW(L"kernel32.dll");
+
+    rktio_InitializeProcThreadAttributeList = (rktio_InitializeProcThreadAttributeList_t)GetProcAddress(hm, "InitializeProcThreadAttributeList");
+    rktio_UpdateProcThreadAttribute = (rktio_UpdateProcThreadAttribute_t)GetProcAddress(hm, "UpdateProcThreadAttribute");
+    rktio_DeleteProcThreadAttributeList = (rktio_DeleteProcThreadAttributeList_t)GetProcAddress(hm, "DeleteProcThreadAttributeList");
+
+    FreeLibrary(hm);
+  }
+}
+
 static intptr_t do_spawnv(rktio_t *rktio,
                           const char *command, int argc, const char * const *argv,
 			  int exact_cmdline, intptr_t sin, intptr_t sout, intptr_t serr, int *pid,
 			  int new_process_group, int chain_termination_here_to_child,
-                          void *env, const char *wd)
+                          void *env, const char *wd,
+                          int disable_inherit)
 {
-  intptr_t i, l, len = 0;
+  intptr_t i, l, len = 0, retval;
   int use_jo;
   intptr_t cr_flag;
   char *cmdline;
   wchar_t *cmdline_w, *wd_w, *command_w;
-  STARTUPINFOW startup;
+  rktio_STARTUPINFOEXW startupx;
+  STARTUPINFOW *startup;
   PROCESS_INFORMATION info;
 
   if (exact_cmdline) {
@@ -1102,18 +1142,19 @@ static intptr_t do_spawnv(rktio_t *rktio,
     cmdline[len] = 0;
   }
 
-  memset(&startup, 0, sizeof(startup));
-  startup.cb = sizeof(startup);
-  startup.dwFlags = STARTF_USESTDHANDLES;
-  startup.hStdInput = (HANDLE)sin;
-  startup.hStdOutput = (HANDLE)sout;
-  startup.hStdError = (HANDLE)serr;
+  memset(&startupx, 0, sizeof(startupx));
+  startup = &startupx.StartupInfo;
+  startup->cb = sizeof(*startup);
+  startup->dwFlags = STARTF_USESTDHANDLES;
+  startup->hStdInput = (HANDLE)sin;
+  startup->hStdOutput = (HANDLE)sout;
+  startup->hStdError = (HANDLE)serr;
 
   /* If none of the stdio handles are consoles, specifically
      create the subprocess without a console: */
-  if (!rktio_system_fd_is_terminal(rktio, (intptr_t)startup.hStdInput)
-      && !rktio_system_fd_is_terminal(rktio, (intptr_t)startup.hStdOutput)
-      && !rktio_system_fd_is_terminal(rktio, (intptr_t)startup.hStdError))
+  if (!rktio_system_fd_is_terminal(rktio, (intptr_t)startup->hStdInput)
+      && !rktio_system_fd_is_terminal(rktio, (intptr_t)startup->hStdOutput)
+      && !rktio_system_fd_is_terminal(rktio, (intptr_t)startup->hStdError))
     cr_flag = CREATE_NO_WINDOW;
   else
     cr_flag = 0;
@@ -1146,25 +1187,61 @@ static intptr_t do_spawnv(rktio_t *rktio,
   wd_w = WIDE_PATH_copy(wd);
   command_w = WIDE_PATH_temp(command);
 
+  if (disable_inherit) {
+    /* don't just set the `bInherit` argument to `CreateProcessW` to
+       false, because that disables sharing for
+       stdin.stdout/stderr. */
+    init_thread_attr_procs();
+    if (rktio_InitializeProcThreadAttributeList
+        && rktio_UpdateProcThreadAttribute
+        && rktio_DeleteProcThreadAttributeList) {
+      LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList = NULL;
+      SIZE_T size = 0;
+      HANDLE handles_to_inherit[3];
+      rktio_InitializeProcThreadAttributeList(NULL, 1, 0, &size);
+      lpAttributeList = HeapAlloc(GetProcessHeap(), 0, size);
+      rktio_InitializeProcThreadAttributeList(lpAttributeList, 1, 0, &size);
+      handles_to_inherit[0] = startup->hStdInput;
+      handles_to_inherit[1] = startup->hStdOutput;
+      handles_to_inherit[2] = startup->hStdError;
+      rktio_UpdateProcThreadAttribute(lpAttributeList,
+                                      0, rktio_PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
+                                      handles_to_inherit,
+                                      sizeof(handles_to_inherit), NULL, NULL);
+      startupx.lpAttributeList = lpAttributeList;
+      startup->cb = sizeof(startupx);
+      cr_flag |= rktio_EXTENDED_STARTUPINFO_PRESENT;
+    } else
+      disable_inherit = 0;
+  }
+
   if (cmdline_w
       && wd_w
       && command_w
       && CreateProcessW(command_w, cmdline_w, 
                         NULL, NULL, 1 /*inherit*/,
                         cr_flag, env, wd_w,
-                        &startup, &info)) {
+                        startup, &info)) {
     if (use_jo)
       AssignProcessToJobObject(rktio->process_job_object, info.hProcess);
     CloseHandle(info.hThread);
     *pid = info.dwProcessId;
     free(cmdline_w);
     free(wd_w);
-    return (intptr_t)info.hProcess;
+    retval = (intptr_t)info.hProcess;
   } else {
     if (cmdline_w) free(cmdline_w);
     if (wd_w) free(wd_w);
-    return -1;
+    retval = -1;
   }
+
+  if (disable_inherit) {
+    void *lpAttributeList = startupx.lpAttributeList;
+    rktio_DeleteProcThreadAttributeList(lpAttributeList);
+    HeapFree(GetProcessHeap(), 0, lpAttributeList);
+  }
+
+ return retval;
 }
 
 static void CopyFileHandleForSubprocess(intptr_t *hs, int pos)
@@ -1296,8 +1373,17 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
 
   if (envvars)
     env = rktio_envvars_to_block(rktio, envvars);
-  else
+  else {
+#ifdef RKTIO_USE_PTHREADS
+    {
+      rktio_envvars_t *current_envvars = rktio_envvars(rktio);
+      env = rktio_envvars_to_block(rktio, current_envvars);
+      rktio_envvars_free(rktio, current_envvars);
+    }
+#else
     env = NULL;
+#endif
+  }
 
 #if defined(RKTIO_SYSTEM_WINDOWS)
 
@@ -1333,7 +1419,8 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
 			     &pid,
                              new_process_group,
                              windows_chain_termination_to_child,
-                             env, current_directory);
+                             env, current_directory,
+                             flags & RKTIO_PROCESS_NO_INHERIT_FDS);
 
     if (!windows_exact_cmdline) {
       for (i = 0; i < argc; i++) {
@@ -1367,7 +1454,10 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
     init_sigchld(rktio);
 #endif
 
-    close_after_len = rktio_close_fds_len();
+    if (flags & RKTIO_PROCESS_NO_CLOSE_FDS)
+      close_after_len = 0;
+    else
+      close_after_len = rktio_close_fds_len();
 
     /* add a NULL terminator */
     {

@@ -1,4 +1,8 @@
-This is the source code distribution for minimal Racket.
+This directory has the source code for the `racket` executable.
+
+If this directory is part of a Racket source code distribution, then
+the distribution may include additional packages. Those extra packages
+will be installed built with the `make install` step.
 
 If this directory is part of a clone of the Git repository for Racket,
 then the clone's root directory includes a makefile to both build
@@ -101,6 +105,13 @@ Quick instructions:
  Racket BC implementation, the content of the "foreign" subdirectory
  requires GNU Make if no installed "libffi" is detected. If the build
  fails with another variant of `make`, please try using GNU Make.
+
+ When building from a Git clone, after `make install`, the Racket
+ installation is still more "minimal" than a "Minimal Racket"
+ distribution, because it does not have the "racket-lib" package
+ installed. Consider adding that package with
+
+   raco pkg install -i racket-lib
 
 Detailed instructions:
 
@@ -470,9 +481,9 @@ inheriting the build machine's disposition.
 ========================================================================
 
 See "cs/README.txt" and "bc/README.txt" for information about
-modifying those implementations of Racket, but one thing they have in
-common is updating the Racket version number. The source for the
-Racket version number is shared in "version/racket_version.h".
+modifying the CS and BC implementations of Racket, but one thing they
+have in common is updating the Racket version number. The source for
+the Racket version number is shared in "version/racket_version.h".
 
 The version number for the "base" package needs to be updated
 separately. If this directory is part of a clone of the Git repository
@@ -484,6 +495,10 @@ distributions, and the point of a version in each place is to detect a
 mismatch between those extracted distributions. The "version.rktl"
 test in Racket's core test suite effectively checks that they're in
 sync within the Racket repo.
+
+Another thing CS and BC have in common is the macro-expander
+implementation. See "expander/README.txt" for more information,
+including the "Building Racket to use this expander" section.
 
 
 ========================================================================

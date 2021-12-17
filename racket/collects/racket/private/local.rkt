@@ -4,10 +4,24 @@
                      "intdef-util.rkt"))
 (provide (for-syntax do-local))
 
-(define-for-syntax (do-local stx combine)
+; splicing-hygiene-hack? note:
+; This implementation is used for both `local` and `splicing-local`.  In the
+; case of `splicing-local`, local bindings will be rebound in the surrounding
+; definition context via `define`. The expander does not understand that theese
+; bindings are intended to be local to the form and will remove use-site
+; scopes. To avoid ambiguous reference problems, do-local needs to treat
+; use-site scopes in the same way for the initial bindings.  So when
+; splicing-hygiene-hack? is true, use-site scopes from the surronding context
+; are removed from binding identifiers.
+
+(define-for-syntax (do-local stx splicing-hygiene-hack? combine)
   (syntax-case stx ()
     [(_ (defn ...) body1 body ...)
      (let* ([def-ctx (syntax-local-make-definition-context)]
+            [as-binding (lambda (id) (let ([id1 (syntax-local-identifier-as-binding id def-ctx)])
+                                       (if splicing-hygiene-hack?
+                                           (syntax-local-identifier-as-binding id1)
+                                           id1)))]
             [expand-context (cons (gensym 'intdef)
                                   (let ([orig-ctx (syntax-local-context)])
                                     (if (pair? orig-ctx)
@@ -40,7 +54,7 @@
                               [(define-values (id ...) body)
                                (let ([ids (syntax->list (syntax (id ...)))])
                                  (check-ids d ids)
-                                 (syntax-local-bind-syntaxes ids #f def-ctx)
+                                 (syntax-local-bind-syntaxes (map as-binding ids) #f def-ctx)
                                  (list d))]
                               [(define-values . rest)
                                (raise-syntax-error
@@ -52,7 +66,7 @@
                                                      #'rhs
                                                      'expression
                                                      null)])
-                                   (syntax-local-bind-syntaxes ids #'rhs def-ctx)
+                                   (syntax-local-bind-syntaxes (map as-binding ids) #'rhs def-ctx)
                                    (list (datum->syntax d (list #'define-syntaxes #'(id ...) #'rhs) d d))))]
                               [(define-syntaxes . rest)
                                (raise-syntax-error
@@ -72,7 +86,7 @@
                                (map (lambda (d)
                                       (syntax-case d (define-values)
                                         [(define-values ids rhs)
-                                         (with-syntax ([ids (map syntax-local-identifier-as-binding
+                                         (with-syntax ([ids (map as-binding
                                                                  (syntax->list #'ids))])
                                            (list #'(ids rhs)))]
                                         [_ null]))
@@ -81,7 +95,7 @@
                                (map (lambda (d)
                                       (syntax-case d (define-syntaxes)
                                         [(define-syntaxes ids rhs)
-                                         (with-syntax ([ids (map syntax-local-identifier-as-binding
+                                         (with-syntax ([ids (map as-binding
                                                                  (syntax->list #'ids))])
                                            (list #'(ids rhs)))]
                                         [_ null]))

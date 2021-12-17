@@ -1,7 +1,8 @@
 #lang racket/base
 (require "syntax.rkt"
          "scope.rkt"
-         "module-binding.rkt")
+         "module-binding.rkt"
+         "../common/phase+space.rkt")
 
 (provide syntax-binding-set
          syntax-binding-set?
@@ -13,8 +14,8 @@
 
 (define (syntax-binding-set-extend bs as-sym as-phase mpi
                                    sym phase
-                                   nominal-mpi nominal-phase nominal-sym
-                                   nominal-require-phase
+                                   nominal-mpi nominal-phase+space nominal-sym
+                                   nominal-require-phase+space-shift
                                    inspector)
   (struct-copy syntax-binding-set bs
                [binds
@@ -23,9 +24,9 @@
                             (make-module-binding mpi phase sym
                                                  #:extra-inspector inspector
                                                  #:nominal-module nominal-mpi
-                                                 #:nominal-phase nominal-phase
+                                                 #:nominal-phase+space nominal-phase+space
                                                  #:nominal-sym nominal-sym
-                                                 #:nominal-require-phase nominal-require-phase))
+                                                 #:nominal-require-phase+space-shift nominal-require-phase+space-shift))
                       (syntax-binding-set-binds bs))]))
 
 (define (syntax-binding-set->syntax bs datum)

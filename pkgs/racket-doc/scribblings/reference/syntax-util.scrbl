@@ -219,14 +219,14 @@ is used as the basis for the identifier's name.
          syntax?]{
 
 Equivalent to @racket[(internal-definition-context-introduce intdef-ctx stx 'add)]. The
-@racket[internal-definition-context-apply] function is provided for backwards compatibility; the more
-general @racket[internal-definition-context-introduce] function is preferred.
+@racket[internal-definition-context-apply] function is provided for backwards compatibility; the
+ @racket[internal-definition-context-add-scopes] function is preferred.
 }
 
-@defproc[(syntax-local-eval [stx syntax?]
+@defproc[(syntax-local-eval [stx any/c]
                             [intdef-ctx (or/c internal-definition-context?
-                                              (listof internal-definition-context?)
-                                              #f)
+                                              #f
+                                              (listof internal-definition-context?))
                              '()])
          any]{
 

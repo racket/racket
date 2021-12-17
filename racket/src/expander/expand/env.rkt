@@ -62,12 +62,11 @@
   (if (and no-stops? (local-variable? t))
       (let ([bind-id (local-variable-id t)])
         ;; Keep source locations and properties of original reference:
-        (define pruned-id (datum->syntax (syntax-disarm bind-id) (syntax-e bind-id) id id))
+        (define pruned-id (datum->syntax bind-id (syntax-e bind-id) id id))
         ;; Don't transition from non-`syntax-original?` to `syntax-original?`
-        (define new-id (if (syntax-any-macro-scopes? id)
-                           (syntax-property-remove pruned-id original-property-sym)
-                           pruned-id))
-        (syntax-rearm new-id id))
+        (if (syntax-any-macro-scopes? id)
+            (syntax-property-remove pruned-id original-property-sym)
+            pruned-id))
       id))
 
 ;; `missing` is a token to represent the absence of a binding; a
@@ -137,7 +136,8 @@
 ;; just `resolve+shift` may leave the access with a too-weak inspector.
 (define (binding-lookup b env lift-envs ns phase id
                         #:in [in-s #f]
-                        #:out-of-context-as-variable? [out-of-context-as-variable? #f])
+                        #:out-of-context-as-variable? [out-of-context-as-variable? #f]
+                        #:check-access? [check-access? #t])
   (cond
    [(module-binding? b)
     (define top-level? (top-level-module-path-index? (module-binding-module b)))
@@ -149,7 +149,7 @@
     (define t (namespace-get-transformer m-ns (module-binding-phase b) (module-binding-sym b)
                                          variable))
     (define protected?
-      (and mi (check-access b mi id in-s (if (variable? t) "variable" "transformer"))))
+      (and check-access? mi (check-access b mi id in-s (if (variable? t) "variable" "transformer"))))
     (define insp (and mi (module-instance-module mi) (module-inspector (module-instance-module mi))))
     (values t primitive? insp protected?)]
    [(local-binding? b)

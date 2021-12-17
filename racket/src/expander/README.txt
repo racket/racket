@@ -107,7 +107,13 @@ Building Racket to use this expander:
 After you change the expander, you must perform an explicit build step
 to use it when making Racket CS or Racket BC. Normally, for that case,
 the expander would be modified as part of a Racket repo checkout.
-Then:
+
+If you're working with a Racket repo checkout, and if you have a
+working `racket` in your `PATH`, use `make derived` in the checkout's
+top-level directory to propagate changes for both BC and CS. Then, you
+can build CS or BC as usual.
+
+Otherwise:
 
  * For Racket CS, go to "racket/src/cs" in the repo and run `make`.
    That will update files in "racket/src/cs/schemified", including

@@ -3,7 +3,6 @@
           (for-label racket/base
                      racket/include
                      racket/contract
-                     racket/future
                      racket/promise
                      racket/file
                      racket/place
@@ -14,6 +13,7 @@
                      compiler/compilation-path
                      compiler/compile-file
                      syntax/modread
+                     (only-in racket/match match)
                      (only-in racket/unit define-signature)
                      (only-in compiler/compiler compile-zos)))
 
@@ -682,15 +682,16 @@ The return value is @racket[(void)] if it was successful, or @racket[#f] if ther
     (parallel-compile-files 
       source-files 
       #:worker-count 4
-      #:handler (lambda (type work msg out err)
+      #:handler
+      (lambda (type work msg out err)
         (match type
           ['done (when (verbose) (printf " Made ~a\n" work))]
           ['output (printf " Output from: ~a\n~a~a" work out err)]
-          [else (printf " Error compiling ~a\n~a\n~a~a"
-                        work 
-                        msg 
-                        out 
-                        err)])))]
+          [_ (printf " Error compiling ~a\n~a\n~a~a"
+                     work
+                     msg
+                     out
+                     err)])))]
 
 @history[#:changed "7.0.0.19" @elem{Added the @racket[#:use-places?] argument.}]}
 

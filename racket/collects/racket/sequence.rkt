@@ -7,6 +7,10 @@
          racket/contract/combinator
          racket/contract/base
          (for-syntax racket/base)
+         (only-in racket/contract/private/prop
+                  contract-struct-stronger?
+                  contract-struct-equivalent?
+                  trust-me)
          syntax/stx)
 
 (provide empty-sequence
@@ -23,7 +27,7 @@
          sequence-filter
          sequence-add-between
          sequence-count
-         sequence/c
+         (rename-out [-sequence/c sequence/c])
          in-syntax
          (contract-out [in-slice (exact-positive-integer? sequence? . -> . any)]))
 
@@ -65,7 +69,7 @@
              (or v '(#f)))])
     (cond
      [(not v)
-      (raise-arguments-error 
+      (raise-arguments-error
        'sequence-ref
        "sequence ended before index"
        "index" i
@@ -89,7 +93,7 @@
           [(zero? n)
            (let-values ([(vals next) (next)])
              (values (lambda (v+n) (apply values (car v+n)))
-                     (lambda (v+n) 
+                     (lambda (v+n)
                        (let-values ([(vals next) ((cdr v+n))])
                          (cons vals next)))
                      (cons vals next)
@@ -100,7 +104,7 @@
            (let-values ([(vals next) (next)])
              (if vals
                  (loop next (sub1 n))
-                 (raise-arguments-error 
+                 (raise-arguments-error
                   'sequence-ref
                   "sequence ended before index"
                   "index" i
@@ -122,14 +126,13 @@
        (lambda ()
          (let-values ([(vals next) (sequence-generate* s)])
            (values (lambda (v+n) (apply f (car v+n)))
-                   (lambda (v+n) 
+                   (lambda (v+n)
                      (let-values ([(vals next) ((cdr v+n))])
                        (cons vals next)))
                    (cons vals next)
                    car
                    #f
                    #f))))))
-           
 
 (define (sequence-filter f s)
   (unless (procedure? f) (raise-argument-error 'sequence-filter "procedure?" f))
@@ -143,7 +146,7 @@
              (if (or (not vals)
                      (apply f vals))
                  (values (lambda (v+n) (apply values (car v+n)))
-                         (lambda (v+n) 
+                         (lambda (v+n)
                            (let loop ([next (cdr v+n)])
                              (let-values ([(vals next) (next)])
                                (if (or (not vals)
@@ -179,123 +182,190 @@
                    #f
                    #f))))))
 
-(define (sequence/c #:min-count [min-count #f] . elem/cs)
-  (unless (or (exact-nonnegative-integer? min-count)
-              (not min-count))
-    (raise-argument-error 'sequence/c
-                          (format "~s" '(or/c exact-nonnegative-integer? #f))
-                          min-count))
-  (define ctcs (for/list ([elem/c (in-list elem/cs)])
-                 (coerce-contract 'sequence/c elem/c)))
-  (define elem/mk-projs 
+
+(define (sequence/c-name this)
+  (define min-count (sequence/c-min-count this))
+  (define ctcs (sequence/c-ctcs this))
+  (apply build-compound-type-name 'sequence/c
+         (append
+          (if min-count
+              (list '#:min-count min-count)
+              '())
+          ctcs)))
+
+(define (sequence/c-first-order this)
+  (define n-cs (length (sequence/c-ctcs this)))
+   (λ (val)
+     (cond
+       [(list? val) (= n-cs 1)]
+       [(vector? val) (= n-cs 1)]
+       [(hash? val) (= n-cs 2)]
+       [else (sequence? val)])))
+
+(define (sequence/c-late-neg-projection this)
+  (define ctcs (sequence/c-ctcs this))
+  (define n-cs (length ctcs))
+  (define min-count (sequence/c-min-count this))
+  (define elem/mk-projs
     (for/list ([ctc (in-list ctcs)])
       (contract-late-neg-projection ctc)))
-  (define n-cs (length elem/cs))
-  (make-contract
-   #:name (apply build-compound-type-name 'sequence/c 
-                 (append
-                  (if min-count
-                      (list '#:min-count min-count)
-                      '())
-                  ctcs))
-   #:first-order 
-   (λ (val)
-     (and (sequence? val)
-          (if (vector? val) (= n-cs 1) #t)
-          (if (list? val)   (= n-cs 1) #t)
-          (if (hash? val)   (= n-cs 2) #t)))
-   #:late-neg-projection
-   (λ (orig-blame)
-     (define blame (blame-add-context orig-blame "an element of"))
-     (define ps (for/list ([mk-proj (in-list elem/mk-projs)])
-                  (mk-proj blame)))
-     (cond
-       [(and (= n-cs 1) (not min-count))
-        (define p (car ps))
-        (λ (seq neg-party)
-          (unless (sequence? seq)
-            (raise-blame-error
-             orig-blame #:missing-party neg-party seq
-             '(expected: "a sequence" given: "~e")
-             seq))
-          (define blame+neg-party (cons orig-blame neg-party))
-          (define result-seq
-            (make-do-sequence
-             (lambda ()
-               (let*-values ([(more? next) (sequence-generate seq)])
-                 (values
-                  (lambda (idx)
-                    (call-with-values
-                     next
-                     (case-lambda
-                       [(elem)
-                        (with-contract-continuation-mark
-                         blame+neg-party
-                         (p elem neg-party))]
-                       [elems
-                        (define n-elems (length elems))
-                        (raise-blame-error
-                         blame #:missing-party neg-party seq
-                         '(expected: "a sequence of ~a values" given: "~a values\n values: ~e")
-                         n-cs n-elems elems)])))
-                  add1
-                  0
-                  (lambda (idx) (more?))
-                  (lambda elems #t)
-                  (lambda (idx . elems) #t))))))
-          (cond
-            [(list? seq) (sequence->list result-seq)]
-            [(stream? seq) (sequence->stream result-seq)]
-            [else result-seq]))]
-       [else
-        (λ (seq neg-party)
-          (unless (sequence? seq)
-            (raise-blame-error
-             orig-blame #:missing-party neg-party seq
-             '(expected: "a sequence" given: "~e")
-             seq))
-          (define blame+neg-party (cons orig-blame neg-party))
-          (define result-seq
-            (make-do-sequence
-             (lambda ()
-               (let*-values ([(more? next) (sequence-generate seq)])
-                 (values
-                  (lambda (idx)
-                    (call-with-values
-                     next
-                     (lambda elems
-                       (with-contract-continuation-mark
-                        blame+neg-party
+  (define list-late-neg-proj
+    (and (= n-cs 1)
+         (get/build-late-neg-projection (listof (car ctcs)))))
+  (λ (orig-blame)
+    (define blame (blame-add-context orig-blame "an element of"))
+    (define ps (for/list ([mk-proj (in-list elem/mk-projs)])
+                 (mk-proj blame)))
+    (define lst/blame (and list-late-neg-proj (list-late-neg-proj orig-blame)))
+    (cond
+      [(= n-cs 1)
+       (define p (car ps))
+       (λ (seq neg-party)
+         (cond
+           [(list? seq)
+            (when min-count
+              (unless (>= (length seq) min-count)
+                (raise-blame-error orig-blame #:missing-party neg-party seq
+                                   '(expected: "a sequence with at least ~a elements" given: "~e")
+                                   min-count seq)))
+            (lst/blame seq neg-party)]
+           [else
+            (unless (sequence? seq)
+              (raise-blame-error
+               orig-blame #:missing-party neg-party seq
+               '(expected: "a sequence" given: "~e")
+               seq))
+            (define blame+neg-party (cons orig-blame neg-party))
+            (define result-seq
+              (make-do-sequence
+               (lambda ()
+                 (let*-values ([(more? next) (sequence-generate seq)])
+                   (values
+                    (lambda (idx)
+                      (call-with-values
+                       next
+                       (case-lambda
+                         [(elem)
+                          (with-contract-continuation-mark
+                              blame+neg-party
+                            (p elem neg-party))]
+                         [elems
+                          (raise-wrong-elem-count blame neg-party seq n-cs elems)])))
+                    add1
+                    0
+                    (lambda (idx)
+                      (define ans (more?))
+                      (when (and min-count (idx . < . min-count))
+                        (unless ans
+                          (raise-too-few-elements orig-blame neg-party seq min-count)))
+                      ans)
+                    (lambda elems #t)
+                    (lambda (idx . elems) #t))))))
+            (cond
+              [(stream? seq) (sequence->stream result-seq)]
+              [else result-seq])]))]
+      [else
+       (λ (seq neg-party)
+         (unless (sequence? seq)
+           (raise-blame-error
+            orig-blame #:missing-party neg-party seq
+            '(expected: "a sequence" given: "~e")
+            seq))
+         (define blame+neg-party (cons orig-blame neg-party))
+         (define result-seq
+           (make-do-sequence
+            (lambda ()
+              (let*-values ([(more? next) (sequence-generate seq)])
+                (values
+                 (lambda (idx)
+                   (call-with-values
+                    next
+                    (lambda elems
+                      (with-contract-continuation-mark
+                          blame+neg-party
                         (define n-elems (length elems))
                         (unless (= n-elems n-cs)
-                          (raise-blame-error
-                           blame #:missing-party neg-party seq
-                           '(expected: "a sequence of ~a values" given: "~a values\n values: ~e")
-                           n-cs n-elems elems))
+                          (raise-wrong-elem-count blame neg-party seq n-cs elems))
                         (apply
                          values
                          (for/list ([elem (in-list elems)]
                                     [p (in-list ps)])
                            (p elem neg-party)))))))
-                  add1
-                  0
-                  (lambda (idx)
-                    (define ans (more?))
-                    (when (and min-count (idx . < . min-count))
-                      (unless ans
-                        (raise-blame-error
-                         orig-blame #:missing-party neg-party
-                         seq
-                         '(expected: "a sequence that contains at least ~a values" given: "~e")
-                         min-count
-                         seq)))
-                    ans)
-                  (lambda elems #t)
-                  (lambda (idx . elems) #t))))))
-          (cond
-            [(list? seq) (sequence->list result-seq)]
-            [(stream? seq) (sequence->stream result-seq)]
-            [else result-seq]))]))))
+                 add1
+                 0
+                 (lambda (idx)
+                   (define ans (more?))
+                   (when (and min-count (idx . < . min-count))
+                     (unless ans
+                       (raise-too-few-elements orig-blame neg-party seq min-count)))
+                   ans)
+                 (lambda elems #t)
+                 (lambda (idx . elems) #t))))))
+         (cond
+           [(list? seq) (sequence->list result-seq)]
+           [(stream? seq) (sequence->stream result-seq)]
+           [else result-seq]))])))
+
+(define (raise-too-few-elements orig-blame neg-party seq min-count)
+  (raise-blame-error
+   orig-blame #:missing-party neg-party
+   seq
+   '(expected: "a sequence that contains at least ~a values" given: "~e")
+   min-count
+   seq))
+
+(define (raise-wrong-elem-count blame neg-party seq n-cs elems)
+  (define n-elems (length elems))
+  (raise-blame-error
+   blame #:missing-party neg-party seq
+   '(expected: "a sequence of ~a values" given: "~a values\n values: ~e")
+   n-cs n-elems elems))
+
+(define (sequence/c-stronger this that)
+  (and (sequence/c? that)
+       (>= (or (sequence/c-min-count this) 0)
+           (or (sequence/c-min-count that) 0))
+       (let ([this-ctcs (sequence/c-ctcs this)]
+             [that-ctcs (sequence/c-ctcs that)])
+         (and (= (length this-ctcs) (length that-ctcs))
+              (for/and ([this-ctc (in-list this-ctcs)]
+                        [that-ctc (in-list that-ctcs)])
+                (contract-struct-stronger? this-ctc that-ctc))))))
+
+(define (sequence/c-equivalent this that)
+  (and (sequence/c? that)
+       (= (or (sequence/c-min-count this) 0)
+          (or (sequence/c-min-count that) 0))
+       (let ([this-ctcs (sequence/c-ctcs this)]
+             [that-ctcs (sequence/c-ctcs that)])
+         (and (= (length this-ctcs) (length that-ctcs))
+              (for/and ([this-ctc (in-list this-ctcs)]
+                        [that-ctc (in-list that-ctcs)])
+                (contract-struct-equivalent? this-ctc that-ctc))))))
+
+(struct sequence/c (ctcs min-count)
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:contract
+  (build-contract-property
+   #:trusted trust-me
+   #:name sequence/c-name
+   #:first-order sequence/c-first-order
+   #:late-neg-projection sequence/c-late-neg-projection
+   #:stronger sequence/c-stronger
+   #:equivalent sequence/c-equivalent))
+
+(define -sequence/c
+  (let ([make-sequence/c sequence/c])
+    (define (sequence/c #:min-count [min-count #f] . elem/cs)
+      (unless (or (exact-nonnegative-integer? min-count)
+                  (not min-count))
+        (raise-argument-error 'sequence/c
+                              (format "~s" '(or/c exact-nonnegative-integer? #f))
+                              min-count))
+      (define ctcs (for/list ([elem/c (in-list elem/cs)])
+                     (coerce-contract 'sequence/c elem/c)))
+      (make-sequence/c ctcs min-count))
+    sequence/c))
 
 
 ;; additional sequence constructors

@@ -4,7 +4,6 @@
                      racket/syntax
                      (only-in racket/list append* remove-duplicates)
                      syntax/parse/pre
-                     syntax/parse/experimental/template
                      racket/lazy-require
                      syntax/parse/lib/function-header))
 
@@ -197,7 +196,7 @@
      (define-syntax (define/match stx)
        (syntax-parse stx
          [(_ ?header:function-header ?clause ...)
-          (quasitemplate
+          (quasisyntax
            (define ?header
-             (match*/derived (?? ?header.params) #,stx
+             (match*/derived (~? ?header.params) #,stx
                ?clause ...)))])))))

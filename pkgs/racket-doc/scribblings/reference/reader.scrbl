@@ -912,7 +912,9 @@ and passes it to the procedure that is the value of the
 module path. The module path is passed to @racket[dynamic-require]
 with either @racket['read] or @racket['read-syntax] (depending on
 whether the reader is in @racket[read] or @racket[read-syntax]
-mode). The module is loaded in a @tech{root namespace} of the
+mode) while holding the registry lock via
+@racket[namespace-call-with-registry-lock].
+The module is loaded in a @tech{root namespace} of the
 @tech{current namespace}.
 
 The arity of the resulting procedure determines whether it accepts
@@ -976,6 +978,10 @@ file, possibly after comment forms, to specify the syntax of a module.
 If the @racket[read-accept-reader] or @racket[read-accept-lang]
 @tech{parameter} is set to @racket[#f], then if the reader encounters
 @litchar{#lang} or equivalent @litchar{#!}, the @exnraise[exn:fail:read].
+
+@history[#:changed "8.2.0.2" @elem{Changed reader-module loading for @litchar{#reader}
+                                   and @litchar{#lang} to hold the current namespace
+                                   registry's lock.}]
 
 @section[#:tag "parse-cdot"]{Reading with C-style Infix-Dot Notation}
 

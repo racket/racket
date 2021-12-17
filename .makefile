@@ -344,7 +344,7 @@ RACKET_FOR_BOOTFILES = $(RACKET)
 RACKET_FOR_BUILD = $(RACKET)
 
 # This branch name changes each time the pb boot files are updated:
-PB_BRANCH == circa-8.1.0.6-2
+PB_BRANCH == circa-8.3.0.9-2
 PB_REPO = https://github.com/racket/pb
 
 # Set to empty for Git before v1.7.10:
@@ -1113,6 +1113,20 @@ win32-installer-from-bundle:
 
 win32-test-client:
 	$(MAKE) win-test-client
+
+# ------------------------------------------------------------
+# Run steps that require a working `racket` to build things
+# that need to be in sync to build `racket` in the first place
+
+derived:
+	if [ "$(RACKET)" = "" ] ; \
+	  then $(MAKE) derived-with-racket RACKET=racket ; \
+          else $(MAKE) derived-with-racket RACKET="$(RACKET)" ; fi
+
+derived-with-racket:
+	cd racket/src/rktio && make -f Mf-rktio RACKET="$(RACKET)"
+	cd racket/src/expander && make expander-maybe RACKET="$(RACKET)"
+	cd racket/src/cs && make RACKET="$(RACKET)"
 
 # ------------------------------------------------------------
 # Remake "Makefile"

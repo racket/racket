@@ -149,6 +149,7 @@
                        phase-to-link-module-uses
                        (current-code-inspector)
                        phase-to-link-extra-inspectorss
+                       #hasheqv()
                        (mpis-as-vector mpis)
                        (syntax-literals-as-vector syntax-literals)
                        null
@@ -162,7 +163,7 @@
   (define phase (compile-context-phase cctx))
   (cond
    [(parsed-require? p)
-    (define form-stx (compile-quote-syntax (syntax-disarm (parsed-s p)) cctx))
+    (define form-stx (compile-quote-syntax (parsed-s p) cctx))
     `(,top-level-require!-id ,form-stx ,ns-id)]
    [else #f]))
 

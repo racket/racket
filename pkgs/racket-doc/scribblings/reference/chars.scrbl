@@ -40,8 +40,8 @@ Returns a character's code-point number.
 
 
 @defproc[(integer->char [k (and/c exact-integer?
-                                  (or/c (integer-in 0 #xD7FF)
-                                        (integer-in #xE000 #x10FFFF)))])
+                                  (or/c (integer-in 0 @#,racketvalfont{#xD7FF})
+                                        (integer-in @#,racketvalfont{#xE000} @#,racketvalfont{#x10FFFF})))])
          char?]{
 
 Return the character whose code-point number is @racket[k]. For

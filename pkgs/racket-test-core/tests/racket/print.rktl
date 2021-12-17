@@ -339,9 +339,13 @@
   (test "'()" format "~e" (list (show-nothing))))
 
 ;; ----------------------------------------
-;; make sure +inf.0 is ok for `print-syntax-width':
+;; make sure +inf.0, 3, and 0 are ok for `print-syntax-width':
 (parameterize ([print-syntax-width +inf.0])
   (test +inf.0 print-syntax-width))
+(parameterize ([print-syntax-width 0])
+  (test 0 print-syntax-width))
+(parameterize ([print-syntax-width 3])
+  (test 3 print-syntax-width))
 
 ;; ----------------------------------------
 ;; Try to provoke a stack overflow during printing of truncated

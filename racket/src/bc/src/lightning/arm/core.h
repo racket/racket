@@ -53,7 +53,7 @@ jit_v_order[JIT_V_NUM] = {
 
 #define jit_no_set_flags()		jit_flags.no_set_flags
 
-#if TARGET_OS_IPHONE
+#if defined(TARGET_OS_IPHONE)
 # define USE_SEPARATE_DIV_AND_MOD
 #endif
 

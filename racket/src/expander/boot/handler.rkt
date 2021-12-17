@@ -5,6 +5,7 @@
          "../syntax/api.rkt"
          "../syntax/error.rkt"
          "../syntax/srcloc.rkt"
+         "../syntax/taint.rkt"
          "../namespace/namespace.rkt"
          "../eval/parameter.rkt"
          "../eval/main.rkt"
@@ -398,7 +399,7 @@
                                             (exn:fail:syntax:missing-module
                                              msg
                                              (current-continuation-marks)
-                                             (list stx)
+                                             (list (syntax-taint stx))
                                              s)
                                             (exn:fail:filesystem:missing-module
                                              msg
@@ -716,12 +717,17 @@
 (define (get-original-parameterization)
   orig-paramz)
 
+(define (default-current-read-interaction?)
+  (eq? (current-read-interaction) default-read-interaction))
+
 ;; ----------------------------------------
-;; For historical uses of '#%boot
+;; Mostly for historical uses of '#%boot
 
 (define boot-primitives
   (hash 'boot boot
         'seal seal
         ;; Historically, exported a `orig-paramz` after place
         ;; initialization, but we now need an indirection
-        'get-original-parameterization get-original-parameterization))
+        'get-original-parameterization get-original-parameterization
+        ;; Used to enable alternate reader interaction:
+        'default-current-read-interaction? default-current-read-interaction?))

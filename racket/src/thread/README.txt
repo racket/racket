@@ -1,6 +1,6 @@
 This thread implementation can be run in a host Racket with `make
 demo`, but it's meant to be compiled for use in Racket on Chez Scheme;
-see "../cs/README.txt".
+see "../cs/README.txt", especially the "Modifying Racket" section.
 
 Core engine support must be provided by a more primitive layer. The
 more primitive layer must also provide `break-enabled-key` and special

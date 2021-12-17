@@ -110,6 +110,10 @@
 (define (set-prepare-for-place! proc)
   (set! do-prepare-for-place proc))
 
+(define do-place-get-inherit (lambda () (list)))
+(define (set-place-get-inherit! proc)
+  (set! do-place-get-inherit proc))
+
 (define do-start-place void)
 (define (set-start-place! proc)
   (set! do-start-place proc))
@@ -118,8 +122,11 @@
 (define (set-destroy-place! proc)
   (set! do-destroy-place proc))
 
-(define (start-place pch path sym in out err cust plumber)
-  (let ([finish (do-start-place pch path sym in out err cust plumber)])
+(define (place-get-inherit)
+  (do-place-get-inherit))
+
+(define (start-place pch path sym in out err cust plumber inh)
+  (let ([finish (do-start-place pch path sym in out err cust plumber inh)])
     (reset-async-callback-poll-wakeup!)
     finish))
 

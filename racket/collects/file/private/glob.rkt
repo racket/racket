@@ -42,6 +42,7 @@
   (for-syntax racket/base))
 
 (module+ test ;; faking RackUnit
+  (define windows? (eq? 'windows (system-type 'os)))
 
   (define current-test-case (make-parameter #f))
   (define num-tests (box 0))
@@ -157,6 +158,7 @@
 
 (module+ test
   (define HOME (find-system-path 'home-dir))
+  (define ROOT (path->complete-path "/"))
 
   (test-case "path-string->glob"
     ;; -- no wildcards => unambiguous
@@ -345,7 +347,9 @@
 ;; - interpret wildcards as regular expressions
 ;; - escape other regexp syntax
 (define glob-element->regexp
-  (let ([REGEXP-CHARS '(#\. #\( #\) #\| #\+ #\$ #\^ #\[ #\] #\{ #\})])
+  (let* ([REGEXP-CHARS '(#\. #\( #\) #\| #\+ #\$ #\^ #\[ #\] #\{ #\})]
+         [windows? (case (system-type 'os) ((windows) #true) (else #false))]
+         [path-sep (if windows? "\\\\" "/")])
          ;; Need to quote these characters before using string as a regexp
     (λ (path capture-dotfiles?)
       (define str (path->string path))
@@ -379,16 +383,18 @@
             ;; - else, match anything except '/'
             (if (and (< (+ i 1) len) (eq? (string-ref str (+ i 1)) #\*))
               (begin (set-box! in-** #t)
-                     (if capture-dotfiles? ".*" "((?!/\\.).)*"))
-              "[^/]*")]
+                     (if capture-dotfiles? ".*" (format "((?!~a\\.).)*" path-sep)))
+              (format "[^~a]*" path-sep))]
            [(eq? c #\?)
-            "[^/]"]
+            (format "[^~a]" path-sep)]
            [(and (eq? c #\[) (has-matching-bracket? str (+ i 1)))
             (set-box! prev-brace-idx i)
             "["]
            [(memq c REGEXP-CHARS)
             ;; escape characters that the regexp might interpret
             (string #\\ c)]
+           [(and windows? (eq? c #\\))
+            path-sep]
            [else
             ;; keep everything else
             (string c)])))
@@ -430,9 +436,9 @@
 (module+ test
   (test-case "glob-element->filename/string"
     (check-equal? (glob-element->filename/string "a") "a")
-    (check-equal? (glob-element->filename/string "foo\\*rkt") "foo*rkt")
-    (check-equal? (glob-element->filename/string "?\\?\\]\\[\\*") "??][*")
-    (check-equal? (glob-element->filename/string "\\}a\\,") "}a,")
+    (check-equal? (glob-element->filename/string "foo\\*rkt") (if windows? "foo\\*rkt" "foo*rkt"))
+    (check-equal? (glob-element->filename/string "?\\?\\]\\[\\*") (if windows? "?\\?\\]\\[\\*" "??][*"))
+    (check-equal? (glob-element->filename/string "\\}a\\,") (if windows? "\\}a\\," "}a,"))
     (check-equal? (glob-element->filename/string "\\normal") "\\normal")))
 
 (define (glob-quote/string str)
@@ -523,8 +529,10 @@
   (string-contains? (path-or-symbol->string p) "**"))
 
 ;; normalize-path : path? -> path?
-(define (normalize-path p)
-  (path->complete-path (simplify-path (expand-user-path p))))
+(define normalize-path
+  (case (system-type 'os)
+    [(windows) (lambda (p) (path->complete-path (simplify-path p)))]
+    [else (lambda (p) (path->complete-path (simplify-path (expand-user-path p))))]))
 
 ;; path*->path : (listof path?) -> path?
 (define (path*->path p*)
@@ -583,18 +591,22 @@
 (module+ test
   (check-equal? (escaped? "be\\n" 0) #f)
   (check-equal? (escaped? "be\\\\n" 4) #f)
-  (check-equal? (escaped? "be\\n" 3) #t)
-  (check-equal? (escaped? "\\neb" 1) #t))
+  (check-equal? (escaped? "be\\n" 3) (not windows?))
+  (check-equal? (escaped? "\\neb" 1) (not windows?)))
 
-(define (escaped? str i)
-  (case i
-   [(0)
-    #f]
-   [(1)
-    (eq? #\\ (string-ref str 0))]
-   [else
-    (and (eq? #\\ (string-ref str (- i 1)))
-         (not (eq? #\\ (string-ref str (- i 2)))))]))
+(define escaped?
+  (case (system-type 'os)
+    [(windows) (lambda (str i) #false)]
+    [else
+      (lambda (str i)
+        (case i
+         [(0)
+          #f]
+         [(1)
+          (eq? #\\ (string-ref str 0))]
+         [else
+          (and (eq? #\\ (string-ref str (- i 1)))
+               (not (eq? #\\ (string-ref str (- i 2)))))]))]))
 
 ;; `(starts-with-dot? str)` returns #t if the first character in `str` is #\.
 
@@ -636,6 +648,8 @@
 ;; =============================================================================
 
 (module+ test
+  (define (dir-str s) (string-append s (if windows? "\\" "/")))
+  (define path-sep (if windows? "\\\\" "/"))
 
   (parameterize ([current-directory (symbol->string (gensym "glob-test"))])
     (test-case "path-string->glob:unambiguous"
@@ -644,13 +658,13 @@
         (check-pred glob-unambiguous? r)
         (check-equal? r expect))
 
-      (check-path-string->glob/unamb "/a/b/c" (build-path "/" "a" "b" "c"))
-      (check-path-string->glob/unamb "/////a" (build-path "/" "a"))
-      (check-path-string->glob/unamb "~/foo.txt" (build-path HOME "foo.txt"))
-      (check-path-string->glob/unamb "~/foo/bar/baz.md"
+      (check-path-string->glob/unamb "/a/b/c" (build-path ROOT "a" "b" "c"))
+      (check-path-string->glob/unamb "/////a" (build-path ROOT "a"))
+      (check-path-string->glob/unamb (build-path HOME "foo.txt") (build-path HOME "foo.txt"))
+      (check-path-string->glob/unamb (build-path HOME "foo/bar/baz.md")
                                      (build-path HOME "foo" "bar" "baz.md"))
       (check-path-string->glob/unamb "/a/b/c?/../e"
-                                     (build-path "/" "a" "b" "e")))
+                                     (build-path ROOT "a" "b" "e")))
 
     (test-case "path-string->glob:recursive"
       (define (check-path-string->glob/recur input expect)
@@ -660,14 +674,16 @@
 
       (check-path-string->glob/recur
         "/**/"
-        (cons (string->path "/") #rx"^/((?!/\\.).)*/$"))
+        (cons ROOT
+              (if windows? #rx"^C:\\\\((?!\\\\\\.).)*\\\\$" #rx"^/((?!/\\.).)*/$")))
       (check-path-string->glob/recur
         "a.a/[b?]/**/c?"
         (cons (path->directory-path (build-path (current-directory) "a.a"))
               (regexp
                 (format "^~a$"
-                  (path->string
-                    (build-path (current-directory) "a\\.a/[b?]/((?!/\\.).)*/c[^/]")))))))
+                  (if windows?
+                      (string-append (regexp-quote (path->string (current-directory))) "a\\.a\\\\[b?]\\\\((?!\\\\\\.).)*\\\\c[^\\\\]")
+                      (path->string (build-path (current-directory) "a\\.a/[b?]/((?!/\\.).)*/c[^/]"))))))))
 
     (test-case "path-string->glob:split"
       (define (check-path-string->glob/split input expect)
@@ -680,22 +696,22 @@
         (list (current-directory) (build-path "*")))
       (check-path-string->glob/split
         "/a/b/c?"
-        (list (build-path "/" "a" "b/") (build-path "c?")))
+        (list (build-path ROOT "a" (dir-str "b")) (build-path "c?")))
       (check-path-string->glob/split
         "/a/b/c?/d/e"
-        (cons (build-path "/" "a" "b/") (map string->path '("c?" "d" "e"))))
+        (cons (build-path ROOT "a" (dir-str "b")) (map string->path '("c?" "d" "e"))))
       (check-path-string->glob/split
         "~/foo/bar?/baz.md"
-        (cons (build-path HOME "foo/") (map string->path '("bar?" "baz.md"))))
+        (cons (build-path (if windows? (build-path (current-directory) "~") HOME) (dir-str "foo")) (map string->path '("bar?" "baz.md"))))
       (check-path-string->glob/split
         "~/foo/*/baz/.."
-        (list (build-path HOME "foo/") (string->path "*")))
+        (list (build-path (if windows? (build-path (current-directory) "~") HOME) (dir-str "foo")) (string->path "*")))
       (check-path-string->glob/split
         "~/foo/bar*/baz/.."
-        (list (build-path HOME "foo/") (string->path "bar*")))
+        (list (build-path (if windows? (build-path (current-directory) "~") HOME) (dir-str "foo")) (string->path "bar*")))
       (check-path-string->glob/split
         "/a[bc]/d/e/f/../g"
-        (cons (find-system-path 'sys-dir)
+        (cons ROOT
               (map string->path '("a[bc]" "d" "e" "g")))))
 
     (test-case "has-glob-pattern?"
@@ -706,9 +722,8 @@
       (check-equal? (has-glob-pattern?* "foo") #f)
       (check-equal? (has-glob-pattern?* "]") #f)
       (check-equal? (has-glob-pattern?* "[") #f)
-      (check-equal? (has-glob-pattern?* "lit\\*star") #f)
-      (check-equal? (has-glob-pattern?* "\\?\\?") #f)
-      (check-equal? (has-glob-pattern?* "\\[\\]x") #f)
+      (check-equal? (has-glob-pattern?* "\\?\\?") windows?)
+      (check-equal? (has-glob-pattern?* "\\[\\]x") windows?)
       (check-equal? (has-glob-pattern?* "][") #f)
       (check-equal? (has-glob-pattern?* "*") #t)
       (check-equal? (has-glob-pattern?* "?") #t)
@@ -720,7 +735,9 @@
       (check-equal? (has-glob-pattern?* "foo?bar*") #t)
       (check-equal? (has-glob-pattern?* "???*") #t)
       (check-equal? (has-glob-pattern?* "ar[gh]r*") #t)
-      (check-equal? (has-glob-pattern?* (string #\\ #\\ #\*)) #t))
+      (check-equal? (has-glob-pattern?* (string #\\ #\\ #\*)) #t)
+      (unless windows?
+        (check-equal? (has-glob-pattern?* "lit\\*star") #f)))
 
     (define (glob-element->regexp* s)
       (glob-element->regexp (string->path s) #f))
@@ -728,15 +745,15 @@
     (test-case "glob-element->regexp"
       (check-equal? (glob-element->regexp* "foobar") "foobar")
       (check-equal? (glob-element->regexp* ".") "\\.")
-      (check-equal? (glob-element->regexp* "*") "[^/]*")
-      (check-equal? (glob-element->regexp* "foo*.txt") "foo[^/]*\\.txt")
+      (check-equal? (glob-element->regexp* "*") (format "[^~a]*" path-sep))
+      (check-equal? (glob-element->regexp* "foo*.txt") (format "foo[^~a]*\\.txt" path-sep))
       (check-equal? (glob-element->regexp* "(hello world)") "\\(hello world\\)")
       (check-equal? (glob-element->regexp* "^foo|bar$") "\\^foo\\|bar\\$")
-      (check-equal? (glob-element->regexp* "things?") "things[^/]")
+      (check-equal? (glob-element->regexp* "things?") (format "things[^~a]" path-sep))
       (check-equal? (glob-element->regexp* "\tescaped\\things\n?")
-                    "\tescaped\\things\n[^/]")
+                    (format "\tescaped~athings\n[^~a]" (if windows? "\\\\" "\\") path-sep))
       (check-equal? (glob-element->regexp* "outside[in]") "outside[in]")
-      (check-equal? (glob-element->regexp* ".?.?.?") "\\.[^/]\\.[^/]\\.[^/]")
+      (check-equal? (glob-element->regexp* ".?.?.?") (format "\\.[^~a]\\.[^~a]\\.[^~a]" path-sep path-sep path-sep))
       (check-equal? (glob-element->regexp* "[") "\\[")
       (check-equal? (glob-element->regexp* "][") "\\]\\[")
       (check-equal? (glob-element->regexp* "[]]") "[]]")
@@ -745,26 +762,35 @@
 
    (test-case "glob-element->regexp:tree.ss" ;; from tree.ss in the PLT SVN
       (check-equal? (glob-element->regexp* "glob") "glob")
-      (check-equal? (glob-element->regexp* "gl?ob") "gl[^/]ob")
-      (check-equal? (glob-element->regexp* "gl*ob") "gl[^/]*ob")
-      (check-equal? (glob-element->regexp* "gl*?ob") "gl[^/]*[^/]ob")
-      (check-equal? (glob-element->regexp* "gl?*ob") "gl[^/][^/]*ob")
+      (check-equal? (glob-element->regexp* "gl?ob") (format "gl[^~a]ob" path-sep))
+      (check-equal? (glob-element->regexp* "gl*ob") (format "gl[^~a]*ob" path-sep))
+      (check-equal? (glob-element->regexp* "gl*?ob") (format "gl[^~a]*[^~a]ob" path-sep path-sep))
+      (check-equal? (glob-element->regexp* "gl?*ob") (format "gl[^~a][^~a]*ob" path-sep path-sep))
       (check-equal? (glob-element->regexp* "gl.ob") "gl\\.ob")
-      (check-equal? (glob-element->regexp* "gl?.ob") "gl[^/]\\.ob")
+      (check-equal? (glob-element->regexp* "gl?.ob") (format "gl[^~a]\\.ob" path-sep))
       (check-equal? (glob-element->regexp* "gl^ob") "gl\\^ob")
-      (check-equal? (glob-element->regexp* "gl^?ob") "gl\\^[^/]ob")
-      (check-equal? (glob-element->regexp* "gl\\.ob") "gl\\.ob")
-      (check-equal? (glob-element->regexp* "gl\\ob") "gl\\ob")
-      (check-equal? (glob-element->regexp* "gl\\*ob") "gl\\*ob")
-      (check-equal? (glob-element->regexp* "gl\\?ob") "gl\\?ob")
-      (check-equal? (glob-element->regexp* "gl\\|ob") "gl\\|ob")
-      (check-equal? (glob-element->regexp* "gl\\{ob") "gl\\{ob")
+      (check-equal? (glob-element->regexp* "gl^?ob") (format "gl\\^[^~a]ob" path-sep))
+      (if windows?
+          (let ()
+            (check-equal? (glob-element->regexp* "gl\\.ob") "gl\\\\\\.ob")
+            (check-equal? (glob-element->regexp* "gl\\ob") "gl\\\\ob")
+            (check-equal? (glob-element->regexp* "gl\\*ob") "gl\\\\[^\\\\]*ob")
+            (check-equal? (glob-element->regexp* "gl\\?ob") "gl\\\\[^\\\\]ob")
+            (check-equal? (glob-element->regexp* "gl\\|ob") "gl\\\\\\|ob")
+            (check-equal? (glob-element->regexp* "gl\\{ob") "gl\\\\\\{ob"))
+          (let ()
+            (check-equal? (glob-element->regexp* "gl\\.ob") "gl\\.ob")
+            (check-equal? (glob-element->regexp* "gl\\ob") "gl\\ob")
+            (check-equal? (glob-element->regexp* "gl\\*ob") "gl\\*ob")
+            (check-equal? (glob-element->regexp* "gl\\?ob") "gl\\?ob")
+            (check-equal? (glob-element->regexp* "gl\\|ob") "gl\\|ob")
+            (check-equal? (glob-element->regexp* "gl\\{ob") "gl\\{ob")))
       (check-equal? (glob-element->regexp* "gl[?]ob") "gl[?]ob")
       (check-equal? (glob-element->regexp* "gl[*?]ob") "gl[*?]ob")
       (check-equal? (glob-element->regexp* "gl[?*]ob") "gl[?*]ob")
       (check-equal? (glob-element->regexp* "gl[]*]ob") "gl[]*]ob")
-      (check-equal? (glob-element->regexp* "gl[^]*]ob") "gl[^][^/]*\\]ob")
-      (check-equal? (glob-element->regexp* "gl[^]*]*ob") "gl[^][^/]*\\][^/]*ob"))
+      (check-equal? (glob-element->regexp* "gl[^]*]ob") (format "gl[^][^~a]*\\]ob" path-sep))
+      (check-equal? (glob-element->regexp* "gl[^]*]*ob") (format "gl[^][^~a]*\\][^~a]*ob" path-sep path-sep)))
 
   (test-case "expand-braces:simple"
     (check-equal? (expand-braces "") '())

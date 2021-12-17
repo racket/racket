@@ -104,8 +104,8 @@ is @racket[#f].}
                        module-path-index?
                        symbol?
                        exact-nonnegative-integer?
-                       (or/c exact-integer? #f)
-                       (or/c exact-integer? #f))
+                       phase+space-shift?
+                       phase+space?)
                (list/c symbol?))]{
 
 Returns one of three (if @racket[top-level-symbol?] is @racket[#f])
@@ -121,7 +121,7 @@ or four (if @racket[top-level-symbol?] is true) kinds of values, depending on th
 
       @item{The result is a list of seven items when @racket[id-stx]
       has a @tech{module binding}: @racket[(list _from-mod _from-sym
-      _nominal-from-mod _nominal-from-sym _from-phase _import-phase
+      _nominal-from-mod _nominal-from-sym _from-phase _import-phase+space-shift
       _nominal-export-phase)].
 
         @itemize[
@@ -168,14 +168,16 @@ or four (if @racket[top-level-symbol?] is true) kinds of values, depending on th
         representing the originating phase. For example, it is
         @racket[1] if the definition is for-syntax.}
 
-        @item{@racket[_import-phase] is @racket[0] if the binding
+        @item{@racket[_import-phase+space-shift] is @racket[0] if the binding
         import of @racket[_nominal-from-mode] is from a definition
         or a plain @racket[require], @racket[1] if it is from a
-        @racket[for-syntax] import, etc.}
+        @racket[for-syntax] import, a phase combined with a space name if it
+        is from a @racket[for-space] import, etc.}
 
-        @item{@racket[_nominal-export-phase] is the @tech{phase level}
+        @item{@racket[_nominal-export-phase+space] is the @tech{phase level}
+        and @tech{binding space}
         of the export from @racket[_nominal-from-mod] for an
-        imported binding or the phase level of the definition for a
+        imported binding, or it is the phase level of the definition for a
         binding from the enclosing module of @racket[id-stx].}
 
         ]}
@@ -201,7 +203,8 @@ transformer, so that @racket[identifier-binding] is consistent with
 @racket[free-identifier=?].
 
 @history[#:changed "6.6.0.4" @elem{Added the @racket[top-level-symbol?] argument to report
-                                   information on top-level bindings.}]}
+                                   information on top-level bindings.}
+        #:changed "8.2.0.3" @elem{Generalized phase results to phase--space combinations.}]}
 
 
 @defproc[(identifier-transformer-binding [id-stx identifier?]
@@ -214,10 +217,12 @@ transformer, so that @racket[identifier-binding] is consistent with
                        module-path-index?
                        symbol?
                        exact-nonnegative-integer?
-                       (or/c exact-integer? #f)
-                       (or/c exact-integer? #f)))]{
+                       phase+space-shift?
+                       phase+space?))]{
 
-Same as @racket[(identifier-binding id-stx (and rt-phase-level (add1 rt-phase-level)))].}
+Same as @racket[(identifier-binding id-stx (and rt-phase-level (add1 rt-phase-level)))].
+
+@history[#:changed "8.2.0.3" @elem{Generalized phase results to phase--space combinations.}]}
 
 
 @defproc[(identifier-template-binding [id-stx identifier?])
@@ -227,11 +232,13 @@ Same as @racket[(identifier-binding id-stx (and rt-phase-level (add1 rt-phase-le
                        symbol?
                        module-path-index?
                        symbol?
-                       exact-nonnegative-integer?
-                       (or/c exact-integer? #f)
-                       (or/c exact-integer? #f)))]{
+                       phase+space?
+                       phase+space-shift?
+                       phase+space?))]{
 
-Same as @racket[(identifier-binding id-stx (sub1 (syntax-local-phase-level)))].}
+Same as @racket[(identifier-binding id-stx (sub1 (syntax-local-phase-level)))].
+
+@history[#:changed "8.2.0.3" @elem{Generalized phase results to phase--space combinations.}]}
 
 
 @defproc[(identifier-label-binding [id-stx identifier?])
@@ -242,10 +249,37 @@ Same as @racket[(identifier-binding id-stx (sub1 (syntax-local-phase-level)))].}
                        module-path-index?
                        symbol?
                        exact-nonnegative-integer?
-                       (or/c exact-integer? #f)
-                       (or/c exact-integer? #f)))]{
+                       phase+space-shift?
+                       phase+space?))]{
 
-Same as @racket[(identifier-binding id-stx #f)].}
+Same as @racket[(identifier-binding id-stx #f)].
+
+@history[#:changed "8.2.0.3" @elem{Generalized phase results to phase--space combinations.}]}
+
+
+@defproc[(identifier-distinct-binding [id-stx identifier?]
+                                      [wrt-id-stx identifier?]
+                                      [phase-level (or/c exact-integer? #f)
+                                                   (syntax-local-phase-level)])
+         (or/c 'lexical
+               #f
+               (list/c module-path-index?
+                       symbol?
+                       module-path-index?
+                       symbol?
+                       exact-nonnegative-integer?
+                       phase+space-shift?
+                       phase+space?)
+               (list/c symbol?))]{
+
+Like @racket[(identifier-binding id-stx phase-level)], but the result
+is @racket[#f] if the binding for @racket[id-stx] has scopes that are
+a subset of the scopes for @racket[wrt-id-stx]. That is, if
+@racket[id-stx] and @racket[wrt-id-stx] have the same symbolic name, a
+binding for @racket[id-stx] is returned only if the binding does not
+also apply to @racket[wrt-id-stx].
+
+@history[#:added "8.3.0.8"]}
 
 
 @defproc[(identifier-binding-symbol [id-stx identifier?]
@@ -264,5 +298,19 @@ When @racket[identifier-binding] would produce a list, then the second
 element of that list is the result that
 @racket[identifier-binding-symbol] produces.}
 
+
+@defproc[(identifier-binding-portal-syntax [id-stx identifier?]
+                                           [phase-level (or/c exact-integer? #f)
+                                                        (syntax-local-phase-level)])
+         (or/c #f syntax?)]{
+
+If @racket[id-stx] is bound at @racket[phase-level] to @tech{portal
+syntax}, either via @racket[define-syntax] or @racket[#%require], then
+the portal syntax content is returned. The module that binds
+@racket[id-stx] must be declared, but it need not be instantiated at
+the relevant phase, and @racket[identifier-binding-portal-syntax] does
+not instantiate the module.
+
+@history[#:added "8.3.0.8"]}
 
 @close-eval[stx-eval]

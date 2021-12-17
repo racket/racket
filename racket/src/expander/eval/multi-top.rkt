@@ -65,6 +65,7 @@
                         (vector-ref phase-to-link-modules-vector (vector-ref phase-to-link-modules-tree 0))
                         #f ; compile-time-inspector
                         #hasheqv() ; phase-to-link-extra-inspectorsss
+                        #hasheqv() ; portal-stxes
                         (for/vector #:length (vector-length mpi-pos-vec) ([pos (in-vector mpi-pos-vec)])
                                     (vector-ref mpi-vector pos))
                         (for/vector #:length (cdr syntax-literals-spec) ([i (in-range (cdr syntax-literals-spec))])

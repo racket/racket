@@ -357,6 +357,12 @@
     ($oops who "invalid new length ~s for ~s" n st))
   (string-truncate! st n))
 
+(define-who $make-uninitialized-string
+  (lambda (n)
+    (unless (and (fixnum? n) (not ($fxu< (constant maximum-string-length) n)))
+      ($oops who "~s is not a valid string length" n))
+    ($make-uninitialized-string n)))
+
 (define-who make-string
   (case-lambda
     [(n c)
@@ -1974,11 +1980,14 @@
   (lambda (t)
     (unless (thread? t)
       ($oops who "~a is not a thread" t))
-    (with-tc-mutex
-     (let f ()
-       (unless (eq? ($thread-tc t) 0)
-         (condition-wait $terminated-cond $tc-mutex)
-         (f))))))
+    ;; not using `with-tc-mutex` because we don't want to
+    ;; disable interrupts
+    (mutex-acquire $tc-mutex)
+    (let f ()
+      (unless (eq? ($thread-tc t) 0)
+        (condition-wait $terminated-cond $tc-mutex)
+        (f)))
+    (mutex-release $tc-mutex)))
 
 (set-who! thread-preserve-ownership!
   (let ([preserve! (foreign-procedure "(cs)thread_preserve_ownership" (ptr) void)])

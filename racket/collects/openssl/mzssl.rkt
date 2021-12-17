@@ -226,8 +226,6 @@ TO DO:
   (or libssl-load-fail-reason
       libcrypto-load-fail-reason))
 
-(define libmz (ffi-lib #f))
-
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; SSL bindings and constants
 
@@ -235,7 +233,6 @@ TO DO:
   #:default-make-fail make-not-available)
 (define-ffi-definer define-ssl libssl
   #:default-make-fail make-not-available)
-(define-ffi-definer define-mzscheme libmz)
 
 (define-cpointer-type _BIO_METHOD*)
 (define-cpointer-type _BIO*)

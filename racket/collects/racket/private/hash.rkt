@@ -1,9 +1,14 @@
 (module hash "pre-base.rkt"
+  (require '#%unsafe)
+
   (define (hash-keys h)
     (let loop ([pos (hash-iterate-first h)])
       (if pos
-          (cons (hash-iterate-key h pos)
-                (loop (hash-iterate-next h pos)))
+          (let ([k (hash-iterate-key h pos unsafe-undefined)]
+                [r (loop (hash-iterate-next h pos))])
+            (if (eq? k unsafe-undefined)
+                r
+                (cons k r)))
           null)))
 
   (define (hash-values table)
@@ -61,6 +66,11 @@
        [(hash-equal? table) (make-weak-hash)]
        [(hash-eqv? table) (make-weak-hasheqv)]
        [(hash-eq? table) (make-weak-hasheq)])]
+     [(hash-ephemeron? table)
+      (cond
+        [(hash-equal? table) (make-ephemeron-hash)]
+        [(hash-eqv? table) (make-ephemeron-hasheqv)]
+        [(hash-eq? table) (make-ephemeron-hasheq)])]
      [else
       (cond
        [(hash-equal? table) (make-hash)]

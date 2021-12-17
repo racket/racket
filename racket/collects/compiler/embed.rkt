@@ -512,7 +512,8 @@
         (hash-set! working filename full-name)
         (let* ([get-module-code*
                 ;; Re-used when swapping code during cross-compilation.
-                (lambda (#:roots [roots (current-compiled-file-roots)])
+                (lambda (#:roots [roots (current-compiled-file-roots)]
+                         #:host? [host? #f])
                   (get-module-code just-filename
                                    #:roots roots
                                    #:submodule-path submod-path
@@ -520,7 +521,11 @@
                                      (if (pair? l)
                                          (car l)
                                          "compiled"))
-                                   compiler
+                                   (if (and host? (cross-compiling?))
+                                       (lambda (e)
+                                         (parameterize ([current-compile-target-machine (system-type 'target-machine)])
+                                           (compiler e)))
+                                       compiler)
                                    (if on-extension
                                        (lambda (f l?)
                                          (on-extension f l?)
@@ -541,7 +546,7 @@
                                                   ((file-date so) . >= . (file-date zo)))
                                              'so
                                              #f)))))]
-               [code (or ready-code (get-module-code*))])
+               [code (or ready-code (get-module-code* #:host? #t))])
           (cond
            [(extension? code)
             (when verbose?

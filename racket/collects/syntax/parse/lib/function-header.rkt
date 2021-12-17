@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require "../../parse.rkt"
+(require syntax/parse/pre
          racket/list)
 
 (provide function-header formal formals formals-no-rest)

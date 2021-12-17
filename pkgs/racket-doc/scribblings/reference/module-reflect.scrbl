@@ -1,7 +1,8 @@
 #lang scribble/doc
 @(require "mz.rkt"
           (for-label compiler/embed
-                     syntax/modresolve))
+                     syntax/modresolve
+                     racket/phase+space))
 
 @title{Module Names and Loading}
 
@@ -186,13 +187,17 @@ are treated the same as four arguments with the fourth argument as
 @racket[#t], except that an error is also logged. Support for three
 arguments will be removed in a future version.
 
+The @racket[current-module-name-resolver] binding is provided as
+@tech{protected} in the sense of @racket[protect-out].
+
 @history[#:changed "6.0.1.12" 
          @elem{Added error logging to the default module name resolver
                when called with three arguments.}
          #:changed "7.0.0.17"
          @elem{Added special treatment of @racket[submod] forms with a
                nonexistent collection by the default module name
-               resolver.}]}
+               resolver.}
+         #:changed "8.2.0.4" @elem{Changed binding to protected.}]}
 
 
 @defparam[current-module-declare-name name (or/c resolved-module-path? #f)]{
@@ -288,7 +293,8 @@ Returns @racket[#t] if @racket[v] is a @tech{module path index},
 
 
 @defproc[(module-path-index-resolve [mpi module-path-index?]
-                                    [load? any/c #f])
+                                    [load? any/c #f]
+                                    [src-stx (or/c syntax? #f) #f])
          resolved-module-path?]{
 
 Returns a @tech{resolved module path} for the resolved module name,
@@ -301,11 +307,17 @@ on the kind of module paths encapsulated by @racket[mpi], the computed
 resolved name can depend on the value of
 @racket[current-load-relative-directory] or
 @racket[current-directory]. The @racket[load?] argument is propagated as
-the last argument to the @tech{module name resolver}.
+the last argument to the @tech{module name resolver}, while the
+@racket[src-stx] argument is propagated as the next-to-last argument.
 
-See @racket[resolve-module-path-index].
+Beware that concurrent resolution in namespaces that share a module
+registry can create race conditions when loading modules. See also
+@racket[namespace-call-with-registry-lock].
 
-@history[#:changed "6.90.0.16" @elem{Added the @racket[load?] optional argument.}]}
+See also @racket[resolve-module-path-index].
+
+@history[#:changed "6.90.0.16" @elem{Added the @racket[load?] optional argument.}
+         #:changed "8.2" @elem{Added the @racket[src-stx] optional argument.}]}
 
 
 @defproc[(module-path-index-split [mpi module-path-index?])
@@ -398,15 +410,16 @@ the module's explicit imports.}
 
 @defproc[(module-compiled-exports [compiled-module-code compiled-module-expression?]
                                   [verbosity (or/c #f 'defined-names) #f])
-         (values (listof (cons/c (or/c exact-integer? #f) list?))
-                 (listof (cons/c (or/c exact-integer? #f) list?)))]{
+         (values (listof (cons/c phase+space? list?))
+                 (listof (cons/c phase+space? list?)))]{
 
-Returns two association lists mapping @tech{phase level} values (where
-@racket[#f] corresponds to the @tech{label phase level}) to exports at
-the corresponding phase. The first association list is for exported
+Returns two association lists mapping from a combination of @tech{phase level}
+and @tech{binding space} to exports at
+the corresponding phase and space. The first association list is for exported
 variables, and the second is for exported syntax. Beware however, that
 value bindings re-exported though a @tech{rename transformer} are in
-the syntax list instead of the value list.
+the syntax list instead of the value list. See @racket[phase+space?]
+for information on the phase-and-space representation.
 
 Each associated list, which is represented by @racket[list?] in the
 result contracts above, more precisely matches the contract
@@ -416,9 +429,9 @@ result contracts above, more precisely matches the contract
                 (listof 
                  (or/c module-path-index?
                        (list/c module-path-index?
-                               (or/c exact-integer? #f)
+                               phase+space?
                                symbol?
-                               (or/c exact-integer? #f))))
+                               phase+space?)))
                 (code:comment @#,elem{only if @racket[verbosity] is @racket['defined-names]:})
                 symbol?))
 ]
@@ -442,12 +455,14 @@ than the name that is exported).
 For each origin, a @tech{module path index} by itself means that the
 binding was imported with a @tech{phase level} shift of @racket[0]
 (i.e., a plain @racket[require] without @racket[for-meta],
-@racket[for-syntax], etc.), and imported identifier has the same name
+@racket[for-syntax], etc.) into the default @tech{binding space} (i.e.,
+without @racket[for-space]), and the imported identifier has the same name
 as the re-exported name. An origin represented with a list indicates
-explicitly the import, the import @tech{phase level} shift (where
-@racket[#f] corresponds to a @racket[for-label] import), the import
-name of the re-exported binding, and the @tech{phase level} of the
-import.
+explicitly the import, the @tech{phase level} plus @tech{binding space}
+where the imported identifier is bound (see @racket[phase+space?] for more
+information on the representation), the symbolic name of the import
+as bound in the importing module, and the @tech{phase level} plus
+@tech{binding space} of the identifier from the exporting module.
 
 @examples[#:eval mod-eval
           (module-compiled-exports
@@ -466,7 +481,8 @@ import.
                  (define compile-time (current-seconds)))))
            'defined-names)]
 
-@history[#:changed "7.5.0.6" @elem{Added the @racket[verbosity] argument.}]}
+@history[#:changed "7.5.0.6" @elem{Added the @racket[verbosity] argument.}
+         #:changed "8.2.0.3" @elem{Generalized results to phase--space combinations.}]}
 
 
 
@@ -700,8 +716,8 @@ A module can be @tech{declare}d by using @racket[dynamic-require].
           [mod (or/c module-path? module-path-index?
                      resolved-module-path?)]
           [verbosity (or/c #f 'defined-names) #f])
-         (values (listof (cons/c (or/c exact-integer? #f) list?))
-                 (listof (cons/c (or/c exact-integer? #f) list?)))]{
+         (values (listof (cons/c phase+space? list?))
+                 (listof (cons/c phase+space? list?)))]{
 
  Like @racket[module-compiled-exports], but produces the
  exports of @racket[mod], which must be @tech{declare}d (but
@@ -717,7 +733,8 @@ A module can be @tech{declare}d by using @racket[dynamic-require].
             (define bush (* 2 pi)))
           (module->exports ''banana)]
 
-@history[#:changed "7.5.0.6" @elem{Added the @racket[verbosity] argument.}]}
+@history[#:changed "7.5.0.6" @elem{Added the @racket[verbosity] argument.}
+         #:changed "8.2.0.3" @elem{Generalized results to phase--space combinations.}]}
 
 
 @defproc[(module->indirect-exports

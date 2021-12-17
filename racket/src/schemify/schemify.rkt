@@ -565,8 +565,8 @@
                                      (schemify/knowns new-knowns inline-fuel wcm-state body))
                                    prim-knowns knowns imports mutated simples unsafe-mode?)
                 prim-knowns knowns imports mutated simples unsafe-mode?)])]
-           [`(let-values ([() (begin ,rhss ... (values))]) ,bodys ...)
-            `(begin ,@(schemify-body rhss 'fresh) ,@(schemify-body bodys wcm-state))]
+           [`(let-values ([() (begin ,rhs (values))]) ,bodys ...)
+            `(begin ,(schemify rhs 'fresh) ,@(schemify-body bodys wcm-state))]
            [`(let-values ([,idss ,rhss] ...) ,bodys ...)
             (or (and (not (or (aim? target 'interp) (aim? target 'cify)))
                      (struct-convert-local v prim-knowns knowns imports mutated simples
