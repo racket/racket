@@ -8,6 +8,9 @@
                               f64vector?
                               f64vector-ref
                               f64vector-set!
+                              f32vector?
+                              f32vector-ref
+                              f32vector-set!
                               u16vector?
                               u16vector-ref
                               u16vector-set!
