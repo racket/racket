@@ -92,6 +92,7 @@
      [(if kind (eq? 'ephemeron kind) (hash-ephemeron? table))
       (cond
         [(hash-equal? table) (make-ephemeron-hash)]
+        [(hash-equal-always? table) (make-ephemeron-hashequalw)]
         [(hash-eqv? table) (make-ephemeron-hasheqv)]
         [(hash-eq? table) (make-ephemeron-hasheq)])]
      [else
