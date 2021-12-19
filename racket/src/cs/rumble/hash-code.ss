@@ -178,7 +178,7 @@
      ;; If an impersonator wraps a value where `equal?` hashing is
      ;; `eq?` hashing, such as for a procedure, then make sure
      ;; we discard the impersonator wrapper.
-     (equal-hash-loop (impersonator-val x) burn (mix-hash-code hc))]
+     (equal-hash-loop (impersonator-val x) burn hc)]
     [else (values (fx+/wraparound hc (eq-hash-code x)) burn)]))
 
 (define (equal-secondary-hash-loop x burn hc) ; hc should be 0 or already mixed
