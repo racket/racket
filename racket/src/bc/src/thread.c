@@ -576,7 +576,7 @@ void scheme_init_thread(Scheme_Startup_Env *env)
   ADD_PARAMETER("current-thread-group", current_thread_set, MZCONFIG_THREAD_SET, env);
 
   ADD_PRIM_W_ARITY("parameter?"            , parameter_p           , 1, 1, env);
-  ADD_PRIM_W_ARITY("make-parameter"        , make_parameter        , 1, 3, env);
+  ADD_PRIM_W_ARITY("make-parameter"        , make_parameter        , 1, 4, env);
   ADD_PRIM_W_ARITY("make-derived-parameter", make_derived_parameter, 3, 3, env);
   ADD_PRIM_W_ARITY("parameter-procedure=?" , parameter_procedure_eq, 2, 2, env);
   ADD_PRIM_W_ARITY("parameterization?"     , parameterization_p    , 1, 1, env);
@@ -7905,7 +7905,7 @@ static Scheme_Object *do_param_fast(int argc, Scheme_Object *argv[], Scheme_Obje
 
 static Scheme_Object *make_parameter(int argc, Scheme_Object **argv)
 {
-  Scheme_Object *p, *cell, *a[1];
+  Scheme_Object *p, *cell, *a[2], *realm = scheme_default_realm;
   ParamData *data;
   void *k;
   const char *name;
@@ -7918,6 +7918,11 @@ static Scheme_Object *make_parameter(int argc, Scheme_Object **argv)
     if (!SCHEME_SYMBOLP(argv[2]))
       scheme_wrong_contract("make-parameter", "parameter?", 2, argc, argv);
     name = scheme_symbol_val(argv[2]);
+    if (argc > 3) {
+      realm = argv[3];
+      if (!SCHEME_SYMBOLP(realm))
+        scheme_wrong_contract("make-parameter", "parameter?", 3, argc, argv);
+    }
   } else
     name = "parameter-procedure";
 
@@ -7931,7 +7936,8 @@ static Scheme_Object *make_parameter(int argc, Scheme_Object **argv)
   data->guard = (((argc > 1) && SCHEME_TRUEP(argv[1])) ? argv[1] : NULL);
 
   a[0] = (Scheme_Object *)data;
-  p = scheme_make_prim_closure_w_arity(do_param_fast, 1, a, 
+  a[1] = realm;
+  p = scheme_make_prim_closure_w_arity(do_param_fast, 2, a, 
                                        name, 0, 1);
   ((Scheme_Primitive_Proc *)p)->pp.flags |= SCHEME_PRIM_TYPE_PARAMETER;
 
@@ -7940,7 +7946,7 @@ static Scheme_Object *make_parameter(int argc, Scheme_Object **argv)
 
 static Scheme_Object *make_derived_parameter(int argc, Scheme_Object **argv)
 {
-  Scheme_Object *p, *a[1];
+  Scheme_Object *p, *a[2], *realm = scheme_default_realm;
   ParamData *data;
 
   if (!SCHEME_PARAMETERP(argv[0]))
@@ -7959,7 +7965,8 @@ static Scheme_Object *make_derived_parameter(int argc, Scheme_Object **argv)
   data->extract_guard = argv[2];
 
   a[0] = (Scheme_Object *)data;
-  p = scheme_make_prim_closure_w_arity(do_param, 1, a, 
+  a[1] = realm;
+  p = scheme_make_prim_closure_w_arity(do_param, 2, a, 
                                        "parameter-procedure", 0, 1);
   ((Scheme_Primitive_Proc *)p)->pp.flags |= SCHEME_PRIM_TYPE_PARAMETER;
 

@@ -928,13 +928,6 @@ void scheme_init_error(Scheme_Startup_Env *env)
   windows_symbol  = scheme_intern_symbol("windows");
   gai_symbol      = scheme_intern_symbol("gai");
 
-  REGISTER_SO(scheme_default_realm);
-  REGISTER_SO(scheme_primitive_realm);
-  REGISTER_SO(local_realm_symbol);
-  scheme_default_realm = scheme_intern_symbol("racket");
-  scheme_primitive_realm = scheme_intern_symbol("racket/primitive");
-  local_realm_symbol = scheme_intern_symbol("local");
-
   REGISTER_SO(name_symbol);
   REGISTER_SO(message_symbol);
   REGISTER_SO(contract_symbol);
@@ -959,6 +952,16 @@ void scheme_init_error(Scheme_Startup_Env *env)
   REGISTER_SO(scheme_error_message_adjuster_key);
   scheme_error_message_adjuster_key = scheme_make_symbol("err-adjust");
   scheme_addto_prim_instance("error-message-adjuster-key", scheme_error_message_adjuster_key, env);
+}
+
+void scheme_init_realm()
+{
+  REGISTER_SO(scheme_default_realm);
+  REGISTER_SO(scheme_primitive_realm);
+  REGISTER_SO(local_realm_symbol);
+  scheme_default_realm = scheme_intern_symbol("racket");
+  scheme_primitive_realm = scheme_intern_symbol("racket/primitive");
+  local_realm_symbol = scheme_intern_symbol("local");
 }
 
 void scheme_init_logger_wait()
@@ -2997,7 +3000,7 @@ static Scheme_Object *do_raise_type_error(const char *name, int argc, Scheme_Obj
       args[i - (3+realm_arg)] = argv[i];
     }
 
-    s = scheme_char_string_to_byte_string(argv[1]);
+    s = scheme_char_string_to_byte_string(argv[1+realm_arg]);
 
     wrong(scheme_symbol_val(argv[0]), realm,
           SCHEME_BYTE_STR_VAL(s),
@@ -3090,7 +3093,7 @@ static Scheme_Object *do_raise_mismatch_error(const char *who, int mismatch, int
     char *st, **ss, *name;
     intptr_t slen, *slens, total = 0;
     int offset = (mismatch ? 0 : 1);
-    int scount = argc - 1 - offset;
+    int scount = argc - (1+use_realm) - offset;
 
     ss = (char **)MALLOC_N(char*, scount);
     slens = (intptr_t *)MALLOC_N_ATOMIC(intptr_t, scount);
@@ -3114,8 +3117,8 @@ static Scheme_Object *do_raise_mismatch_error(const char *who, int mismatch, int
         }
       }
       total += slen;
-      ss[i-1] = st;
-      slens[i-1] = slen;
+      ss[i-(1+use_realm)] = st;
+      slens[i-(1+use_realm)] = slen;
     }
     st = (char *)scheme_malloc_atomic(total + 1);
 
@@ -3135,7 +3138,7 @@ static Scheme_Object *do_raise_mismatch_error(const char *who, int mismatch, int
     }
     st[total] = 0;
 
-    s = scheme_char_string_to_byte_string(argv[1]);
+    s = scheme_char_string_to_byte_string(argv[1+use_realm]);
     if (mismatch) {
       s2 = "";
       l2 = 0;
@@ -3235,7 +3238,7 @@ static Scheme_Object *do_raise_arity_error(const char *who, int argc, Scheme_Obj
   else {
     int len;
     name = scheme_get_proc_name(argv[0], &len, 1);
-    if (!use_realm)
+    if (!use_realm && SCHEME_PROCP(argv[1]))
       realm = scheme_get_proc_realm(argv[1]);
   }
 
@@ -3502,7 +3505,7 @@ def_error_display_proc(int argc, Scheme_Object *argv[])
       prev_name = NULL;
       repeats = 0;
 
-      l = scheme_get_stack_trace(scheme_struct_ref(argv[1], 1));
+      l = scheme_get_stack_trace(scheme_struct_ref(argv[1], 1), 0);
       while (!SCHEME_NULLP(l)) {
         if (!max_cnt) {
           scheme_write_byte_string("\n   ...", 7, port);

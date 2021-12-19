@@ -456,7 +456,7 @@ scheme_init_fun (Scheme_Startup_Env *env)
   scheme_addto_prim_instance("continuation-mark-set->context",
 			     scheme_make_prim_w_arity(extract_cc_proc_marks,
 						      "continuation-mark-set->context",
-						      1, 1),
+						      1, 2),
 			     env);
 
   REGISTER_SO(scheme_void_proc);
@@ -789,7 +789,7 @@ make_prim_closure(Scheme_Prim *fun, int eternal,
 {
   Scheme_Primitive_Proc *prim;
   int hasr, size;
-  
+
   hasr = ((minr != 1) || (maxr != 1));
   size = (hasr 
 	  ? sizeof(Scheme_Prim_W_Result_Arity) 
@@ -2640,6 +2640,11 @@ Scheme_Object *scheme_get_proc_realm(Scheme_Object *p)
         return SCHEME_CAR(name_info);
       else
         return name_info;
+    } else if ((((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK) == SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER) {
+      Scheme_Struct_Property *prop = (Scheme_Struct_Property *)SCHEME_PRIM_CLOSURE_ELS(p)[0];
+      return prop->realm;
+    } else if ((((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK) == SCHEME_PRIM_TYPE_PARAMETER) {
+      return SCHEME_PRIM_CLOSURE_ELS(p)[1];
     }
     return scheme_primitive_realm;
   } else if (type == scheme_cont_type || type == scheme_escaping_cont_type) {
@@ -2660,7 +2665,8 @@ Scheme_Object *scheme_get_proc_realm(Scheme_Object *p)
         p = scheme_extract_struct_procedure(p, -1, NULL, &is_method);
       }
     }
-    goto top;
+    if (SCHEME_PROCP(p))
+      goto top;
   } else if (type == scheme_proc_chaperone_type) {
     p = SCHEME_CHAPERONE_VAL(p);
     SCHEME_USE_FUEL(1);
@@ -8531,9 +8537,9 @@ extract_cc_iterator(int argc, Scheme_Object *argv[])
 }
 
 Scheme_Object *
-scheme_get_stack_trace(Scheme_Object *mark_set)
+scheme_get_stack_trace(Scheme_Object *mark_set, int with_realms)
 {
-  Scheme_Object *l, *n, *m, *name, *loc;
+  Scheme_Object *l, *n, *m, *name, *loc, *realm, *e;
   Scheme_Object *a[2];
 
   l = ((Scheme_Cont_Mark_Set *)mark_set)->native_stack_trace;
@@ -8576,18 +8582,25 @@ scheme_get_stack_trace(Scheme_Object *mark_set)
   /* Make srclocs */
   for (n = l; SCHEME_PAIRP(n); n = SCHEME_CDR(n)) { 
     name = SCHEME_CAR(n);
-    if (SCHEME_VECTORP(name) && SCHEME_TRUEP(SCHEME_VEC_ELS(name)[1])) {
-      loc = scheme_make_location(SCHEME_VEC_ELS(name)[1],
-				 SCHEME_VEC_ELS(name)[2],
-				 SCHEME_VEC_ELS(name)[3],
-				 SCHEME_VEC_ELS(name)[4],
-				 SCHEME_VEC_ELS(name)[5]);
-      if (SCHEME_TRUEP(SCHEME_VEC_ELS(name)[6]))
-	name = scheme_make_pair(scheme_false, loc);
+    if (SCHEME_VECTORP(name)) {
+      if (SCHEME_TRUEP(SCHEME_VEC_ELS(name)[1]))
+        loc = scheme_make_location(SCHEME_VEC_ELS(name)[1],
+                                   SCHEME_VEC_ELS(name)[2],
+                                   SCHEME_VEC_ELS(name)[3],
+                                   SCHEME_VEC_ELS(name)[4],
+                                   SCHEME_VEC_ELS(name)[5]);
       else
-	name = scheme_make_pair(SCHEME_VEC_ELS(name)[0], loc);
+        loc = scheme_false;
+      if (SCHEME_VEC_SIZE(name) > 7)
+        realm = SCHEME_VEC_ELS(name)[7];
+      else
+        realm = scheme_default_realm;
+      if (SCHEME_TRUEP(SCHEME_VEC_ELS(name)[6]))
+	name = scheme_false;
+      else
+	name = SCHEME_VEC_ELS(name)[0];
     } else if (SCHEME_PAIRP(name) && SAME_OBJ(SCHEME_CDR(name), scheme_true)) {
-      /* a pair with #t we're running a module body */
+      /* a pair with #t => we're running a module body */
       const char *what;
 
       what = "[running body]";
@@ -8596,11 +8609,22 @@ scheme_get_stack_trace(Scheme_Object *mark_set)
       loc = scheme_make_location(name, scheme_false, scheme_false, scheme_false, scheme_false);
 
       name = scheme_intern_symbol(what);
-      name = scheme_make_pair(name, loc);
+      realm = scheme_default_realm;
     } else {
-      name = scheme_make_pair(name, scheme_false);
+      loc = scheme_false;
+      realm = scheme_default_realm;
     }
-    SCHEME_CAR(n) = name;
+
+    if (with_realms) {
+      e = scheme_make_vector(3, NULL);
+      SCHEME_VEC_ELS(e)[0] = name;
+      SCHEME_VEC_ELS(e)[1] = loc;
+      SCHEME_VEC_ELS(e)[2] = realm;
+      SCHEME_SET_IMMUTABLE(e);
+    } else
+      e = scheme_make_pair(name, loc);
+    
+    SCHEME_CAR(n) = e;
   }
 
   return l;
@@ -8614,7 +8638,7 @@ extract_cc_proc_marks(int argc, Scheme_Object *argv[])
     return NULL;
   }
 
-  return scheme_get_stack_trace(argv[0]);
+  return scheme_get_stack_trace(argv[0], (argc > 1) && SCHEME_TRUEP(argv[1]));
 }
 
 XFORM_NONGCING static Scheme_Object *default_mark_value(Scheme_Object *key)

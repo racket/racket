@@ -479,7 +479,7 @@ scheme_init_struct (Scheme_Startup_Env *env)
   REGISTER_SO(scheme_make_struct_type_property_proc);
   scheme_make_struct_type_property_proc = scheme_make_prim_w_arity2(make_struct_type_property,
                                                                     "make-struct-type-property",
-                                                                    1, 4,
+                                                                    1, 7,
                                                                     3, 3);
   scheme_addto_prim_instance("make-struct-type-property",
                              scheme_make_struct_type_property_proc,
@@ -1187,9 +1187,16 @@ static Scheme_Object *prop_accessor(int argc, Scheme_Object **args, Scheme_Objec
   if (v)
     return v;
   else if (argc == 1) {
-    scheme_wrong_contract(((Scheme_Primitive_Proc *)prim)->name,
-                          pred_name_string(((Scheme_Struct_Property *)SCHEME_PRIM_CLOSURE_ELS(prim)[0])->name),
-                          0, 1, args);
+    Scheme_Struct_Property *prop = (Scheme_Struct_Property *)SCHEME_PRIM_CLOSURE_ELS(prim)[0];
+    const char *ctc;
+    if (prop->contract_name) {
+      if (SCHEME_SYMBOLP(prop->contract_name))
+        ctc = scheme_symbol_val(prop->contract_name);
+      else
+        ctc = SCHEME_BYTE_STR_VAL(scheme_char_string_to_byte_string(prop->contract_name));
+    } else
+      ctc = pred_name_string(prop->name);
+    scheme_wrong_contract(((Scheme_Primitive_Proc *)prim)->name, ctc, 0, 1, args);
     return NULL;
   } else {
     v = args[1];
@@ -1211,6 +1218,7 @@ static Scheme_Object *make_struct_type_property_from_c(int argc, Scheme_Object *
   int len;
   const char *who;
   char can_impersonate = 0;
+  Scheme_Object *accessor_name = NULL, *contract_name = NULL, *realm = scheme_default_realm;
 
   if (type == scheme_struct_property_type)
     who = "make-struct-type-property";
@@ -1254,8 +1262,31 @@ static Scheme_Object *make_struct_type_property_from_c(int argc, Scheme_Object *
                               2, argc, argv);
       }
 
-      if (argc > 3)
+      if (argc > 3) {
         can_impersonate = SCHEME_TRUEP(argv[3]);
+
+        if (argc > 4) {
+          if (SCHEME_TRUEP(argv[4])) {
+            accessor_name = argv[4];
+            if (!SCHEME_SYMBOLP(accessor_name))
+              scheme_wrong_contract(who, "(or/c symbol? #f)", 5, argc, argv);
+          }
+
+          if (argc > 5) {
+            if (SCHEME_TRUEP(argv[5])) {
+              contract_name = argv[5];
+              if (!SCHEME_CHAR_STRINGP(contract_name) && !SCHEME_SYMBOLP(contract_name))
+                scheme_wrong_contract(who, "(or/c string? symbol? #f)", 5, argc, argv);
+            }
+            
+            if (argc > 6) {
+              realm = argv[6];
+              if (!SCHEME_SYMBOLP(realm))
+                scheme_wrong_contract(who, "symbol?", 6, argc, argv);
+            }
+          }
+        }
+      }
     }
   }
 
@@ -1266,6 +1297,8 @@ static Scheme_Object *make_struct_type_property_from_c(int argc, Scheme_Object *
     p->guard = argv[1];
   p->supers = supers;
   p->can_impersonate = can_impersonate;
+  p->contract_name = contract_name;
+  p->realm = realm;
 
   a[0] = (Scheme_Object *)p;
 
@@ -1279,9 +1312,13 @@ static Scheme_Object *make_struct_type_property_from_c(int argc, Scheme_Object *
   ((Scheme_Closed_Primitive_Proc *)v)->pp.flags |= SCHEME_PRIM_STRUCT_TYPE_STRUCT_PROP_PRED;
   *predout = v;
 
-  name = MALLOC_N_ATOMIC(char, len + 10);
-  memcpy(name, SCHEME_SYM_VAL(argv[0]), len);
-  memcpy(name + len, "-accessor", 10);
+  if (accessor_name) {
+    name = scheme_symbol_val(accessor_name);
+  } else {
+    name = MALLOC_N_ATOMIC(char, len + 10);
+    memcpy(name, SCHEME_SYM_VAL(argv[0]), len);
+    memcpy(name + len, "-accessor", 10);
+  }
 
   v = scheme_make_prim_closure_w_arity(prop_accessor, 1, a, name, 1, 2);
   ((Scheme_Closed_Primitive_Proc *)v)->pp.flags |= SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER;
@@ -1464,7 +1501,10 @@ static int extract_accessor_offset(Scheme_Object *acc)
 
 static char *extract_field_proc_name(Scheme_Object *prim)
 {
-  return (char *)((Scheme_Closed_Primitive_Proc *)prim)->name;
+  if (SCHEME_CLSD_PRIMP(prim))
+    return (char *)((Scheme_Closed_Primitive_Proc *)prim)->name;
+  else
+    return (char *)((Scheme_Primitive_Proc *)prim)->name;
 }
 
 static char *extract_field_proc_name_and_realm(Scheme_Object *st_name, Scheme_Object *prim, char **_pred_name, Scheme_Object **_realm)

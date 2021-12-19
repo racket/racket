@@ -330,6 +330,7 @@ void scheme_init_resolve();
 void scheme_init_sfs();
 void scheme_init_validate();
 void scheme_init_port_wait();
+void scheme_init_realm();
 void scheme_init_logger_wait();
 void scheme_init_struct_wait();
 void scheme_init_list(Scheme_Startup_Env *env);
@@ -1101,6 +1102,8 @@ typedef struct Scheme_Struct_Property {
   Scheme_Object *name; /* a symbol */
   Scheme_Object *guard; /* NULL, a procedure, or 'can-impersonate */
   Scheme_Object *supers; /* implied properties: listof (cons <prop> <proc>) */
+  Scheme_Object *contract_name; /* a symbole, string, or NULL */
+  Scheme_Object *realm; /* a symbol */
 } Scheme_Struct_Property;
 
 int scheme_inspector_sees_part(Scheme_Object *s, Scheme_Object *insp, int pos);
@@ -3509,7 +3512,7 @@ void scheme_dup_symbol_check(DupCheckRecord *r, const char *where,
 void scheme_check_identifier(const char *formname, Scheme_Object *id, 
 			     const char *where, Scheme_Object *form);
 
-Scheme_Object *scheme_get_stack_trace(Scheme_Object *mark_set);
+Scheme_Object *scheme_get_stack_trace(Scheme_Object *mark_set, int with_realms);
 
 XFORM_NONGCING int scheme_fast_check_arity(Scheme_Object *v, int a);
 Scheme_Object *scheme_get_or_check_arity(Scheme_Object *p, intptr_t a);

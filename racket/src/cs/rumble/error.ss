@@ -861,9 +861,10 @@
                           (if (string? s)
                               (string->symbol s)
                               s)))]
-             [realm (and realms?
-                         (car p)
-                         (procedure-realm (car p)))]
+             [realm (or (and realms?
+                             (procedure? (car p))
+                             (procedure-realm (car p)))
+                        default-realm)]
              [loc (and (cdr p)
                        (call-with-values (lambda ()
                                            (let* ([src (cdr p)]
@@ -888,7 +889,7 @@
                           [(path pos end) (|#%app| srcloc path #f #f (add1 pos) (- end pos))])))])
         (if (or name loc)
             (cons (if realms?
-                      (vector name realm loc)
+                      (vector->immutable-vector (vector name loc realm))
                       (cons name loc))
                   (loop (cdr l) ls))
             (loop (cdr l) ls)))])))

@@ -1856,9 +1856,37 @@ int scheme_is_simple_make_struct_type_property(Scheme_Object *e, int vals, int f
           && (!(flags & CHECK_STRUCT_TYPE_ALWAYS_SUCCEED)
               || SCHEME_FALSEP(app->rand2)
               || (SCHEME_LAMBDAP(app->rand2)
-                  && (((Scheme_Lambda *)app->rand2)->num_params == 2)))
-          && (scheme_omittable_expr(app->rator, 1, 4, (resolved ? OMITTABLE_RESOLVED : 0), NULL, NULL))) {
-        if (_has_guard) *_has_guard = 1;
+                  && (((Scheme_Lambda *)app->rand2)->num_params == 2)))) {
+        if (_has_guard) *_has_guard = !SCHEME_FALSEP(app->rand2);
+        return 1;
+      }
+    }
+  }
+  
+  if (SAME_TYPE(SCHEME_TYPE(e), scheme_application_type)) {
+    Scheme_App_Rec *app = (Scheme_App_Rec *)e;
+    if (SAME_OBJ(app->args[0], scheme_make_struct_type_property_proc)
+        && ((app->num_args >= 2) && (app->num_args < 7))) {
+      if (SCHEME_SYMBOLP(app->args[1])
+          && (!(flags & CHECK_STRUCT_TYPE_ALWAYS_SUCCEED)
+              || SCHEME_FALSEP(app->args[2])
+              || (SCHEME_LAMBDAP(app->args[2])
+                  && (((Scheme_Lambda *)app->args[2])->num_params == 2)))
+          && (!(flags & CHECK_STRUCT_TYPE_ALWAYS_SUCCEED)
+              || (((app->num_args < 3)
+                   || SCHEME_NULLP(app->args[3])) /* supers: could check more... */
+                  && ((app->num_args < 4)
+                      || scheme_omittable_expr(app->args[4], 1, 4, (resolved ? OMITTABLE_RESOLVED : 0), NULL, NULL))
+                  && ((app->num_args < 5)
+                      || SCHEME_FALSEP(app->args[5])
+                      || SCHEME_SYMBOLP(app->args[5]))
+                  && ((app->num_args < 6)
+                      || SCHEME_FALSEP(app->args[6])
+                      || SCHEME_CHAR_STRINGP(app->args[6])
+                      || SCHEME_SYMBOLP(app->args[6]))
+                  && ((app->num_args < 7)
+                      || SCHEME_SYMBOLP(app->args[7]))))) {
+        if (_has_guard) *_has_guard = !SCHEME_FALSEP(app->args[2]);
         return 1;
       }
     }

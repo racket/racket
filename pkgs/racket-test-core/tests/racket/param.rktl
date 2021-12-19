@@ -180,7 +180,7 @@
 
 (test 'this-one object-name (make-parameter 7 #f 'this-one))
 
-(arity-test make-parameter 1 3)
+(arity-test make-parameter 1 4)
 (err/rt-test (make-parameter 0 zero-arg-proc))
 (err/rt-test (make-parameter 0 two-arg-proc))
 (err/rt-test (make-parameter 0 #f 7))

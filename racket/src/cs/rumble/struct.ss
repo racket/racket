@@ -572,7 +572,9 @@
 (define struct-ref-error
   (case-lambda
    [(v record-name field-name)
-    (raise-argument-error* (make-struct-accessor-name record-name field-name)
+    (raise-argument-error* (if field-name
+                               (make-struct-accessor-name record-name field-name)
+                               'accessor)
                            default-realm
                            (record-name->contract-string record-name)
                            v)]
@@ -582,7 +584,9 @@
 (define struct-set!-error
   (case-lambda
    [(v record-name field-name)
-    (raise-argument-error* (make-struct-mutator-name record-name field-name)
+    (raise-argument-error* (if field-name
+                               (make-struct-mutator-name record-name field-name)
+                               'mutator)
                            default-realm
                            (record-name->contract-string record-name)
                            v)]
@@ -827,13 +831,14 @@
                             (if name
                                 (make-struct-accessor-name rec-name name)
                                 'accessor))]
+             [field/proc-name (if contract proc-name name)]
              [wrap-p
               (procedure-rename
                 (lambda (v)
                   ($value
                    (if (record? v rtd)
                        (p v)
-                       (impersonate-ref p rtd pos v proc-name contract realm))))
+                       (impersonate-ref p rtd pos v field/proc-name contract realm))))
                 proc-name)])
         (|#%struct-field-accessor| wrap-p rtd pos)))]
    [(pba pos name contract)
@@ -868,6 +873,7 @@
                            (if name
                                (make-struct-mutator-name rec-name name)
                                'mutator))]
+             [field/proc-name (if contract mut-name name)]
              [wrap-p
               (procedure-rename
                (if (struct-type-field-mutable? rtd pos)
@@ -875,7 +881,7 @@
 		     (lambda (v a)
 		       (if (record? v rtd)
 			   (p v a)
-			   (impersonate-set! p rtd pos abs-pos v a mut-name contract realm))))
+			   (impersonate-set! p rtd pos abs-pos v a field/proc-name contract realm))))
                    (lambda (v a)
                      (cannot-modify-by-pos-error mut-name v pos)))
                mut-name)])

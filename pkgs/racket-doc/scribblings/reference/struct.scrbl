@@ -247,7 +247,7 @@ The result of @racket[make-struct-type] is five values:
 @defproc[(make-struct-field-accessor [accessor-proc struct-accessor-procedure?]
                                      [field-pos exact-nonnegative-integer?]
                                      [field/p<roc-name (or/c symbol? #f) 
-                                                      (symbol->string (format "field~a" field-pos))]
+                                                       (symbol->string (format "field~a" field-pos))]
                                      [arg-contract-str (or/c string? symbol? #f) #f]
                                      [realm symbol? 'racket])
          procedure?]{
@@ -344,8 +344,8 @@ A @deftech{structure type property} allows per-type information to be
                                                             (any/c . -> . any/c)))
                                             null]
                                     [can-impersonate? any/c #f]
-                                    [accessor-name (or/c symbol? #f)]
-                                    [contract-str (or/c string? symbol? #f)]
+                                    [accessor-name (or/c symbol? #f) #f]
+                                    [contract-str (or/c string? symbol? #f) #f]
                                     [realm symbol? 'racket])
          (values struct-type-property?
                  procedure?

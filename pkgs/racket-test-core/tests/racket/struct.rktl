@@ -7,7 +7,7 @@
 	     [(prop:p2 p2? p2-ref) (make-struct-type-property 'prop2)]
 	     [(insp1) (make-inspector)]
 	     [(insp2) (make-inspector)])
-  (arity-test make-struct-type-property 1 4)
+  (arity-test make-struct-type-property 1 7)
   (arity-test struct-type-property-accessor-procedure? 1 1)
   (arity-test struct-type-property-predicate-procedure? 1 2)
   (test 3 primitive-result-arity make-struct-type-property)
