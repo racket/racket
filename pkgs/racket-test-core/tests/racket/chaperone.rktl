@@ -131,6 +131,21 @@
 (test #t chaperone?/impersonator (chaperone-box (box-immutable 10) (lambda (b v) v) (lambda (b v) v)))
 (err/rt-test (impersonate-box (box-immutable 10) (lambda (b v) v) (lambda (b v) v)))
 
+;; check equal?, equal-always?, and associated hash codes on an impersonator:
+(as-chaperone-or-impersonator
+  ([chaperone-box impersonate-box]
+   [chaperone-of? impersonator-of?])
+  (let* ([b (box 0)]
+         [b2 (chaperone-box b (lambda (b v) v) (lambda (b v) v))])
+    (test #f chaperone-of? b b2)
+    (test #t chaperone-of? b2 b)
+    (test #t equal? b b2)
+    (test #t equal-always? b b2)
+    (test #t equal? (equal-hash-code b) (equal-hash-code b2))
+    (test #t equal? (equal-secondary-hash-code b) (equal-secondary-hash-code b2))
+    (test #t equal? (equal-always-hash-code b) (equal-always-hash-code b2))
+    (test #t equal? (equal-always-secondary-hash-code b) (equal-always-secondary-hash-code b2))))
+
 (as-chaperone-or-impersonator
  ([chaperone-box impersonate-box]
   [chaperone-of? impersonator-of?])
@@ -223,6 +238,21 @@
 (err/rt-test (impersonate-vector (vector-immutable 1 2 3) (lambda (b i v) v) (lambda (b i v) v)))
 
 (test #(1 2 3) make-reader-graph (chaperone-vector (vector 1 2 3) (lambda (b i v) v) (lambda (b i v) v)))
+
+;; check equal?, equal-always?, and associated hash codes on an impersonator:
+(as-chaperone-or-impersonator
+  ([chaperone-vector impersonate-vector]
+   [chaperone-of? impersonator-of?])
+  (let* ([b (vector 1 2 3)]
+         [b2 (chaperone-vector b (lambda (b i v) v) (lambda (b i v) v))])
+    (test #f chaperone-of? b b2)
+    (test #t chaperone-of? b2 b)
+    (test #t equal? b b2)
+    (test #t equal-always? b b2)
+    (test #t equal? (equal-hash-code b) (equal-hash-code b2))
+    (test #t equal? (equal-secondary-hash-code b) (equal-secondary-hash-code b2))
+    (test #t equal? (equal-always-hash-code b) (equal-always-hash-code b2))
+    (test #t equal? (equal-always-secondary-hash-code b) (equal-always-secondary-hash-code b2))))
 
 (as-chaperone-or-impersonator
  ([chaperone-vector impersonate-vector]
@@ -1061,6 +1091,21 @@
     (define f2 (mk f1))
     (test #t blue? f2)
     (test "blue" blue-ref f2)))
+
+;; check equal?, equal-always?, and associated hash codes on an impersonator:
+(as-chaperone-or-impersonator
+  ([chaperone-procedure impersonate-procedure]
+   [chaperone-of? impersonator-of?])
+  (let* ([f (lambda (x) (list x x))]
+         [f2 (chaperone-procedure f (lambda (x) x))])
+    (test #f chaperone-of? f f2)
+    (test #t chaperone-of? f2 f)
+    (test #t equal? f f2)
+    (test #t equal-always? f f2)
+    (test #t equal? (equal-hash-code f) (equal-hash-code f2))
+    (test #t equal? (equal-secondary-hash-code f) (equal-secondary-hash-code f2))
+    (test #t equal? (equal-always-hash-code f) (equal-always-hash-code f2))
+    (test #t equal? (equal-always-secondary-hash-code f) (equal-always-secondary-hash-code f2))))
 
 ;; Single argument, no post filter:
 (as-chaperone-or-impersonator
