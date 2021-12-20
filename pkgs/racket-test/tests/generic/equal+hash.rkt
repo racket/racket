@@ -48,3 +48,181 @@
     (check-false (equal? (equal-always-hash-code (mkons 1 2))
                          (equal-always-hash-code (mkons 1 2)))))
   )
+
+#|
+;; dishonestly implement one layer deep of equal-now explicitly,
+;; while not declaring it mutable:
+(struct bxwrp-dishonest-deeprec (box)
+  #:methods gen:equal+hash
+  [(define (equal-proc self other =?)
+     (=? (unbox (bxwrp-dishonest-deeprec-box self))
+         (unbox (bxwrp-dishonest-deeprec-box other))))
+   (define (hash-proc self rec)
+     (rec (unbox (bxwrp-dishonest-deeprec-box self))))
+   (define (hash2-proc self rec)
+     (rec (unbox (bxwrp-dishonest-deeprec-box self))))])
+
+;; dishonestly delegate to equal-now instead of the recur procedure,
+;; while not declaring it mutable:
+(struct bxwrp-dishonest-equal (box)
+  #:methods gen:equal+hash
+  [(define (equal-proc self other =?)
+     (equal? (bxwrp-dishonest-equal-box self)
+             (bxwrp-dishonest-equal-box other)))
+   (define (hash-proc self rec)
+     (equal-hash-code (bxwrp-dishonest-equal-box self)))
+   (define (hash2-proc self rec)
+     (equal-hash-code (bxwrp-dishonest-equal-box self)))])
+|#
+
+(struct bxwrp-honest-mutable (box) #:mutable
+  #:methods gen:equal+hash
+  [(define (equal-proc self other =?)
+     (=? (unbox (bxwrp-honest-mutable-box self))
+         (unbox (bxwrp-honest-mutable-box other))))
+   (define (hash-proc self rec)
+     (rec (unbox (bxwrp-honest-mutable-box self))))
+   (define (hash2-proc self rec)
+     (rec (unbox (bxwrp-honest-mutable-box self))))])
+
+(struct bxwrp-honest-shallowrec (box)
+  #:methods gen:equal+hash
+  [(define (equal-proc self other =?)
+     (=? (bxwrp-honest-shallowrec-box self)
+         (bxwrp-honest-shallowrec-box other)))
+   (define (hash-proc self rec)
+     (rec (bxwrp-honest-shallowrec-box self)))
+   (define (hash2-proc self rec)
+     (rec (bxwrp-honest-shallowrec-box self)))])
+
+(struct bxwrp-shalloweq (box)
+  #:methods gen:equal+hash
+  [(define (equal-proc self other =?)
+     (eq? (bxwrp-shalloweq-box self)
+          (bxwrp-shalloweq-box other)))
+   (define (hash-proc self rec)
+     (eq-hash-code (bxwrp-shalloweq-box self)))
+   (define (hash2-proc self rec)
+     (eq-hash-code (bxwrp-shalloweq-box self)))])
+
+(module+ test
+  (test-case "bxwrp-honest-mutable equal+hash"
+    (check-equal? (bxwrp-honest-mutable (box 1))
+                  (bxwrp-honest-mutable (box 1)))
+    (check-equal? (equal-hash-code (bxwrp-honest-mutable (box 2)))
+                  (equal-hash-code (bxwrp-honest-mutable (box 2))))
+    (check-equal? (equal-secondary-hash-code
+                   (bxwrp-honest-mutable (box 3)))
+                  (equal-secondary-hash-code
+                   (bxwrp-honest-mutable (box 3))))
+    (check-false (equal-always? (bxwrp-honest-mutable (box 1))
+                                (bxwrp-honest-mutable (box 1))))
+    (check-false (= (equal-always-hash-code
+                     (bxwrp-honest-mutable (box 2)))
+                    (equal-always-hash-code
+                     (bxwrp-honest-mutable (box 2)))))
+    (check-false (= (equal-always-secondary-hash-code
+                     (bxwrp-honest-mutable (box 3)))
+                    (equal-always-secondary-hash-code
+                     (bxwrp-honest-mutable (box 3)))))
+    (check-false (chaperone-of? (bxwrp-honest-mutable (box 1))
+                                (bxwrp-honest-mutable (box 1))))
+    (let* ([b (box 4)]
+           [bw (bxwrp-honest-mutable b)])
+      (check-false (equal-always? (bxwrp-honest-mutable b)
+                                  (bxwrp-honest-mutable b)))
+      (check-false (= (equal-always-hash-code
+                       (bxwrp-honest-mutable b))
+                      (equal-always-hash-code
+                       (bxwrp-honest-mutable b))))
+      (check-false (= (equal-always-secondary-hash-code
+                       (bxwrp-honest-mutable b))
+                      (equal-always-secondary-hash-code
+                       (bxwrp-honest-mutable b))))
+      (check-false (chaperone-of? (bxwrp-honest-mutable b)
+                                  (bxwrp-honest-mutable b)))
+      (check equal-always? bw bw)
+      (check-equal? (equal-always-hash-code bw)
+                    (equal-always-hash-code bw))
+      (check-equal? (equal-always-secondary-hash-code bw)
+                    (equal-always-secondary-hash-code bw))
+      (check chaperone-of? bw bw)))
+
+  (test-case "bxwrp-honest-shallowrec equal+hash"
+    (check-equal? (bxwrp-honest-shallowrec (box 1))
+                  (bxwrp-honest-shallowrec (box 1)))
+    (check-equal? (equal-hash-code (bxwrp-honest-shallowrec (box 2)))
+                  (equal-hash-code (bxwrp-honest-shallowrec (box 2))))
+    (check-equal? (equal-secondary-hash-code
+                   (bxwrp-honest-shallowrec (box 3)))
+                  (equal-secondary-hash-code
+                   (bxwrp-honest-shallowrec (box 3))))
+    (check-false (equal-always? (bxwrp-honest-shallowrec (box 1))
+                                (bxwrp-honest-shallowrec (box 1))))
+    (check-false (= (equal-always-hash-code
+                     (bxwrp-honest-shallowrec (box 2)))
+                    (equal-always-hash-code
+                     (bxwrp-honest-shallowrec (box 2)))))
+    (check-false (= (equal-always-secondary-hash-code
+                     (bxwrp-honest-shallowrec (box 3)))
+                    (equal-always-secondary-hash-code
+                     (bxwrp-honest-shallowrec (box 3)))))
+    (check-false (chaperone-of? (bxwrp-honest-shallowrec (box 1))
+                                (bxwrp-honest-shallowrec (box 1))))
+    (let* ([b (box 4)])
+      (check equal-always?
+             (bxwrp-honest-shallowrec b)
+             (bxwrp-honest-shallowrec b))
+      (check-equal? (equal-always-hash-code (bxwrp-honest-shallowrec b))
+                    (equal-always-hash-code (bxwrp-honest-shallowrec b)))
+      (check-equal? (equal-always-secondary-hash-code
+                     (bxwrp-honest-shallowrec b))
+                    (equal-always-secondary-hash-code
+                     (bxwrp-honest-shallowrec b)))
+      (check chaperone-of?
+             (bxwrp-honest-shallowrec b)
+             (bxwrp-honest-shallowrec b))))
+
+  (test-case "bxwrp-shalloweq equal+hash"
+    (check-false (equal? (bxwrp-shalloweq (box 1))
+                         (bxwrp-shalloweq (box 1))))
+    (check-false (= (equal-hash-code (bxwrp-shalloweq (box 2)))
+                    (equal-hash-code (bxwrp-shalloweq (box 2)))))
+    (check-false (= (equal-secondary-hash-code
+                     (bxwrp-shalloweq (box 3)))
+                    (equal-secondary-hash-code
+                     (bxwrp-shalloweq (box 3)))))
+    (check-false (equal-always? (bxwrp-shalloweq (box 1))
+                                (bxwrp-shalloweq (box 1))))
+    (check-false (= (equal-always-hash-code
+                     (bxwrp-shalloweq (box 2)))
+                    (equal-always-hash-code
+                     (bxwrp-shalloweq (box 2)))))
+    (check-false (= (equal-always-secondary-hash-code
+                     (bxwrp-shalloweq (box 3)))
+                    (equal-always-secondary-hash-code
+                     (bxwrp-shalloweq (box 3)))))
+    (check-false (chaperone-of? (bxwrp-shalloweq (box 1))
+                                (bxwrp-shalloweq (box 1))))
+    (let* ([b (box 4)])
+      (check-equal? (bxwrp-shalloweq b)
+                    (bxwrp-shalloweq b))
+      (check-equal? (equal-hash-code (bxwrp-shalloweq b))
+                    (equal-hash-code (bxwrp-shalloweq b)))
+      (check-equal? (equal-secondary-hash-code
+                     (bxwrp-shalloweq b))
+                    (equal-secondary-hash-code
+                     (bxwrp-shalloweq b)))
+      (check equal-always?
+             (bxwrp-shalloweq b)
+             (bxwrp-shalloweq b))
+      (check-equal? (equal-always-hash-code (bxwrp-shalloweq b))
+                    (equal-always-hash-code (bxwrp-shalloweq b)))
+      (check-equal? (equal-always-secondary-hash-code
+                     (bxwrp-shalloweq b))
+                    (equal-always-secondary-hash-code
+                     (bxwrp-shalloweq b)))
+      (check chaperone-of?
+             (bxwrp-shalloweq b)
+             (bxwrp-shalloweq b))))
+  )
