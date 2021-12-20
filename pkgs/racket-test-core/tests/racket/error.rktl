@@ -4,6 +4,9 @@
 
 (test #t parameter? current-error-message-adjuster)
 
+(test #f (current-error-message-adjuster) 'i-just-made-up-this-new-mode)
+(err/rt-test ((current-error-message-adjuster) "oops"))
+
 (define-syntax-rule (test-error-match rx e)
   (test #t
         regexp-match?

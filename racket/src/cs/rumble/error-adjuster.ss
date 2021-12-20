@@ -23,10 +23,8 @@
                          (check who symbol? msg-realm)
                          (values from from-realm msg msg-realm))]
                       [else
-                       (let ([who 'default-error-message-adjuster])
-                         (check who (lambda (x) #f)
-                                :contract "(or/c 'name 'contract 'message)"
-                                mode))]))
+                       (check who symbol? mode)
+                       #f]))
                   (lambda (v)
                     (check who (procedure-arity-includes/c 1) v)
                     v)

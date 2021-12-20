@@ -1398,9 +1398,16 @@ currently defined, but more may be added in the future:
 
 ]
 
+A new library or language can introduce additional mode symbols, too.
+To avoid conflicts, prefix the mode symbol with a collection or
+library name followed by @litchar{/}.
+
 If an adjuster procedure returns @racket[#f] for a protocol, it's the
-same as returning a function that performs no conversion and returns
-its arguments.
+same as returning a function that performs no adjustment and returns
+its arguments. The default value of this parameter returns @racket[#f]
+for any symbol argument except the protocols listed above, for which
+it returns a procedure that checks its arguments and returns them with
+no adjustment.
 
 @history[#:added "8.3.0.11"]}
 

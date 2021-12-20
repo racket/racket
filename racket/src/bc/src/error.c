@@ -4733,7 +4733,8 @@ def_error_message_adjust_proc(int argc, Scheme_Object *argv[])
   else if (SAME_OBJ(argv[0], contract_symbol))
     return def_err_msg_adjust_contract_proc;
   else {
-    scheme_wrong_contract("default-error-message-adjuster", "(or/c 'name 'message 'contract)", 0, argc, argv);
+    if (!SCHEME_SYMBOLP(argv[0]))
+      scheme_wrong_contract("default-error-message-adjuster", "symbol?", 0, argc, argv);
     return scheme_false;
   }
 }
