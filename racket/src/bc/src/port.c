@@ -7156,10 +7156,19 @@ static Scheme_Object *terminal_read_char(int argc, Scheme_Object **argv) {
 }
 
 static Scheme_Object *terminal_write_char(int argc, Scheme_Object **argv) {
+  int width = 1;
 #if MZ_EXPR_EDIT
-  s_ee_write_char(SCHEME_CHAR_VAL(argv[0]));
+  width = s_ee_write_char(SCHEME_CHAR_VAL(argv[0]));
 #endif
-  return scheme_void;
+  return scheme_make_integer(width);
+}
+
+static Scheme_Object *terminal_char_width(int argc, Scheme_Object **argv) {
+  int width = 1;
+#if MZ_EXPR_EDIT
+  width = s_ee_char_width(SCHEME_CHAR_VAL(argv[0]));
+#endif
+  return scheme_make_integer(width);
 }
 
 static Scheme_Object *terminal_set_color(int argc, Scheme_Object **argv) {
@@ -7340,6 +7349,7 @@ void scheme_init_terminal(Scheme_Startup_Env *env) {
   ADDTO_EE("terminal-init", terminal_init_term, 2);
   ADDTO_EE("terminal-read-char", terminal_read_char, 1);
   ADDTO_EE("terminal-write-char", terminal_write_char, 1);
+  ADDTO_EE("terminal-char-width", terminal_char_width, 1);
   ADDTO_EE("terminal-set-color", terminal_set_color, 2);
   ADDTO_EE("terminal-flush", terminal_flush, 0);
   ADDTO_EE("terminal-get-screen-size", terminal_get_screen_size, 0);
