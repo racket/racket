@@ -750,6 +750,19 @@
   (check `(relative-in ,(collection-file-path "promise.rkt" "racket") "string.rkt"))
   (check '(relative-in racket (relative-in "private/reqprov.rkt" "../string.rkt"))))
 
+
+(module module-that-defines-submodule-named-a racket/base
+  (module a racket/base
+    (define a 'a)
+    (provide a)))
+
+(module module-that-uses-submodule-named-a racket/base
+  (require (relative-in (submod 'module-that-defines-submodule-named-a a) (submod ".." a)))
+  (define got-a a)
+  (provide got-a))
+
+(test 'a dynamic-require ''module-that-uses-submodule-named-a 'got-a)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; check collection-path details
 

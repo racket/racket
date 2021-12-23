@@ -52,7 +52,9 @@
             [(eq? kw 'submod)
              (syntax-case stx ()
                [(_ mp . rest)
-                (let ([new-mp (xlate-path #'mp)])
+                (let ([new-mp (case (syntax-e #'mp)
+                                [("." "..") #'mp]
+                                [else (xlate-path #'mp)])])
                   (if (and (eq? new-mp #'mp)
                            (eq? (car d) 'submod))
                       stx
