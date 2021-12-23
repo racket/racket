@@ -136,105 +136,141 @@ popular among Racketeers as well.
 
 @section{Vim}
 
-Many distributions of Vim ship with support for Scheme, which will
-mostly work for Racket. You can enable filetype detection of Racket
+Many distributions of Vim ship with support for Scheme, which will mostly work
+for Racket. As of @hyperlink["https://github.com/vim/vim/commit/1aeaf8c0e0421f34e51ef674f0c9a182debe77ae"]{version 7.3.518},
+Vim detects files with the extension @tt{.rkt} as having the
+@tt{scheme} filetype. @hyperlink["https://github.com/vim/vim/commit/9cd91a1e8816d727fbdbf0b3062288e15abc5f4d"]{Version 8.2.3368}
+added support for @tt{.rktd} and @tt{.rktl}.
+
+In older versions, you can enable filetype detection of Racket
 files as Scheme with the following:
 
 @verbatim[#:indent 2]|{
 if has("autocmd")
-  au BufReadPost *.rkt,*.rktl set filetype=scheme
+  autocmd filetypedetect BufReadPost *.rkt,*.rktl,*.rktd set filetype=scheme
 endif
 }|
 
-Alternatively, you can use the
-@hyperlink["https://github.com/wlangstroth/vim-racket"]{vim-racket}
-plugin to enable auto-detection, indentation, and syntax highlighting
-specifically for Racket files. Using the plugin is the easiest method, but if you
-would like to roll your own settings or override settings from the plugin, add
-something like the following to your @filepath{.vimrc} file:
+If your Vim supports the ftdetect system, in which case it's likely new enough
+to support Racket already, you can nevertheless put the following in
+@filepath{~/.vim/ftdetect/racket.vim}
+(@filepath{$HOME/vimfiles/ftdetect/racket.vim} on MS-Windows; see @tt{:help runtimepath}).
 
 @verbatim[#:indent 2]|{
-if has("autocmd")
-  au BufReadPost *.rkt,*.rktl set filetype=racket
-  au filetype racket set lisp
-  au filetype racket set autoindent
-endif
+" :help ftdetect
+" If you want to change the filetype only if one has not been set
+autocmd BufRead,BufNewFile *.rkt,*.rktl,*.rktd setfiletype scheme
+" If you always want to set this filetype
+autocmd BufRead,BufNewFile *.rkt,*.rktl,*.rktd set filetype=scheme
 }|
 
-However, if you take this path you may need to do more work when installing
-plugins because many Lisp-related plugins and scripts for vim are not aware of
-Racket. You can also set these conditional commands in a @filepath{scheme.vim} or
-@filepath{racket.vim} file in the @filepath{ftplugin} subdirectory of your vim folder.
+@subsection[#:tag "vim-plugins"]{Plugins}
 
-Most installations of vim will automatically have useful defaults enabled,
-but if your installation does not, you will want to set at least the following
-in your @filepath{.vimrc} file:
+Alternatively, you can use a plugin such as @itemlist[
+    @item{@hyperlink["https://github.com/wlangstroth/vim-racket"]{wlangstroth/vim-racket}}
+    @item{@hyperlink["https://github.com/benknoble/vim-racket"]{benknoble/vim-racket}}
+]@margin-note{The major difference between the two is that the
+@tt{benknoble/vim-racket} fork supports more features out of the box and is
+updated more frequently.}
+to enable auto-detection, indentation, and syntax highlighting specifically for
+Racket files.
 
-@verbatim[#:indent 2]|{
-" Syntax highlighting
-syntax on
+These plugins work by setting the @tt{filetype} option based on the @(hash-lang)
+line. For example:@itemlist[
+    @item{A file starting with @code{#lang racket} or @code{#lang racket/base}
+    has @tt{filetype} equal to @tt{racket}.}
+    @item{A file starting with @code{#lang scribble/base} or @code{#lang scribble/manual}
+    has @tt{filetype} equal to @tt{scribble}.}
+]
+Depending on which plugin you have, modifiers like @code{at-exp} may also be
+ignored, so that @code{#lang at-exp racket} is still a @tt{filetype} of
+@tt{racket}.
 
-" These lines make vim load various plugins
-filetype on
-filetype indent on
-filetype plugin on
+This approach is more flexible but may lead to more work. Since each
+@(hash-lang) has its own @tt{filetype}, options, syntax highlighting, and other
+features need to be configured for each filetype. This can be done via the
+standard @tt{ftplugin} mechanism. See for example @tt{:help ftplugin-overrule}
+and @tt{:help ftplugin}: place your options for @tt{<lang>} in
+@filepath{~/.vim/after/ftplugin/<lang>.vim}
+(@filepath{$HOME/vimfiles/after/ftplugin/<lang>.vim} on MS-Windows). Similarly,
+syntax files follow the standard mechanism documented in @tt{:help syntax}.
 
-" No tabs!
-set expandtab
-}|
+Both plugins come with configuration for Racket
+(and possibly other @(hash-lang)s) as @tt{ftplugin}s. To enable them, use the
+@tt{:filetype} command as documented in @tt{:help :filetype}. You likely want to
+turn on filetype plugins (@tt{:help :filetype-plugin-on}) and filetype indent
+plugins (@tt{:help :filetype-indent-on}).
 
-@subsubsub*section{Indentation}
+@subsection{Indentation}
 
 You can enable indentation for Racket by setting both the @tt{lisp} and
-@tt{autoindent} options in Vim. However, the indentation is limited and not as
-complete as what you can get in Emacs. You can also use Dorai Sitaram's
-@hyperlink["https://github.com/ds26gte/scmindent"]{scmindent} for
-better indentation of Racket code. The instructions on how to
-use the indenter are available on the website.
+@tt{autoindent} options in Vim. You will want to customize the buffer-local
+@tt{lispwords} option to control how special forms are indented. See @tt{:help
+'lispwords'}. Both plugins mentioned in @secref{vim-plugins} set this option for
+you.
 
-If you use the built-in indenter, you can customize it by setting how to
-indent certain keywords. The vim-racket plugin mentioned above sets
-some default keywords for you. You can add keywords yourself in your
-@filepath{.vimrc} file like this:
+However, the indentation can be limited and may not be as complete as what you
+can get in Emacs. You can also use Dorai Sitaram's
+@hyperlink["https://github.com/ds26gte/scmindent"]{scmindent} for better
+indentation of Racket code. The instructions on how to use the indenter are
+available on the website.
 
-@verbatim[#:indent 2]|{
-" By default vim will indent arguments after the function name
-" but sometimes you want to only indent by 2 spaces similar to
-" how DrRacket indents define. Set the `lispwords' variable to
-" add function names that should have this type of indenting.
-
-set lispwords+=public-method,override-method,private-method,syntax-case,syntax-rules
-set lispwords+=..more..
-}|
-
-@subsubsub*section{Highlighting}
+@subsection{Highlighting}
 
 The @hyperlink["http://www.vim.org/scripts/script.php?script_id=1230"]{Rainbow
-Parenthesis} script for vim can be useful for more visible parenthesis
-matching. Syntax highlighting for Scheme is shipped with vim on many platforms,
+Parenthesis} script for Vim can be useful for more visible parenthesis
+matching. Syntax highlighting for Scheme is shipped with Vim on many platforms,
 which will work for the most part with Racket. The vim-racket script
 provides good default highlighting settings for you.
 
-@subsubsub*section{Structured Editing}
+@subsection{Structured Editing}
 
 The @hyperlink["http://www.vim.org/scripts/script.php?script_id=2531"]{Slimv}
 plugin has a paredit mode that works like paredit in Emacs. However, the plugin
-is not aware of Racket. You can either set vim to treat Racket as Scheme files
+is not aware of Racket. You can either set Vim to treat Racket as Scheme files
 or you can modify the paredit script to load on @filepath{.rkt} files.
 
-@subsubsub*section{Scribble}
+For a more Vim-like set of key-mappings, pair either of @itemlist[
+    @item{@hyperlink["https://github.com/guns/vim-sexp"]{guns/vim-sexp}}
+    @item{@hyperlink["https://github.com/benknoble/vim-sexp"]{benknoble/vim-sexp}}
+]@margin-note{The @tt{benknoble/vim-sexp} fork is slightly more modern vimscript.}
+with @hyperlink["https://github.com/tpope/vim-sexp-mappings-for-regular-people"]{tpope/vim-sexp-mappings-for-regular-people}.
+The experience is on par with paredit, but more comfortable for the fingers.
 
-Vim support for writing scribble documents is provided by the
-@hyperlink["http://www.vim.org/scripts/script.php?script_id=3756"]{scribble.vim}
-plugin.
+@subsection{REPLs}
 
-@subsubsub*section{Miscellaneous}
+There are many general-purpose Vim + REPL plugins out there. Here are a few that
+support Racket out of the box: @itemlist[
+    @item{@hyperlink["https://github.com/rhysd/reply.vim"]{rhysd/reply.vim}}
+    @item{@hyperlink["https://github.com/kovisoft/slimv"]{kovisoft/slimv}, if you are using the @tt{scheme} filetype}
+    @item{@hyperlink["https://github.com/benknoble/vim-simpl"]{benknoble/vim-simpl}}
+]
 
-If you are installing many vim plugins (not necessary specific to Racket), we
-recommend using a plugin that will make loading other plugins easier.
-@hyperlink["http://www.vim.org/scripts/script.php?script_id=2332"]{Pathogen} is
-one plugin that does this; using it, you can install new plugins by extracting
-them to subdirectories in the @filepath{bundle} folder of your Vim installation.
+@subsection{Scribble}
+
+Vim support for writing scribble documents is provided by @itemlist[
+    @item{@hyperlink["https://github.com/wilbowma/scribble.vim"]{wilbowma/scribble.vim}}
+    @item{@hyperlink["https://github.com/benknoble/scribble.vim"]{benknoble/scribble.vim}}
+]@margin-note{Again, @tt{benknoble/scribble.vim} is updated more frequently and
+is somewhat more modern.}
+
+@subsection{Miscellaneous}
+
+If you are installing many Vim plugins (not necessary specific to Racket), we
+recommend using a plugin that will make loading other plugins easier. There are
+many plugin managers.
+
+@hyperlink["https://github.com/tpope/vim-pathogen"]{Pathogen} is one plugin that
+does this; using it, you can install new plugins by extracting them to
+subdirectories in the @filepath{bundle} folder of your personal Vim files
+(@filepath{~/.vim} on Unix, @filepath{$HOME/vimfiles} on MS-Windows).
+
+With newer Vim versions, you can use the package system (@tt{:help packages}).
+
+One relatively up-to-date reference on the various managers is
+@hyperlink["https://vi.stackexchange.com/q/388/10604"]{What are the differences between the vim plugin managers?}.
+The same site, @hyperlink["https://vi.stackexchange.com"]{Vi & Vim} is a great
+place to get help from Vimmers.
 
 @; ------------------------------------------------------------
 
