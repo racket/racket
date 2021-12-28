@@ -150,7 +150,11 @@
    (test (void) set-box! b 'ok)
    (test 'ok unbox b2)
    (test (void) set-box! b2 'fine)
-   (test 'fine unbox b)))
+   (test 'fine unbox b)
+
+   (test #t box? (chaperone-box b2
+                                (λ (b o) o)
+                                (λ (b i) i)))))
 
 ;; test chaperone-of checks in a chaperone:
 (parameterize ([print-box #f]) ; avoid problems printing errors

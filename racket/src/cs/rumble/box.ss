@@ -70,7 +70,11 @@
                          make-props-chaperone props))
 
 (define/who (impersonate-box b ref set . props)
-  (check who mutable-box? :contract "(and/c box? (not/c immutable?))" b)
+  (check who (lambda (b) (or (mutable-box? b)
+                             (and (impersonator? b)
+                                  (mutable-box? (impersonator-val b)))))
+         :contract "(and/c box? (not/c immutable?))"
+         b)
   (do-impersonate-box 'impersonate-box make-box-impersonator b ref set
                       make-props-chaperone props))
 
