@@ -162,7 +162,7 @@ your new functionality is needed to compile Chez Scheme itself, you'll
 have to implement a copy of the functionality (or enough of it) in
 "rktboot".
 
-Take care to implement an new functionality as safe, which means
+Take care to implement a new functionality as safe, which means
 checking arguments fully. Keep in mind that your implementation itself
 will be compiled as unsafe. While testing and debugging your
 additions, however, you'll probably want to use `make o=0` in the
