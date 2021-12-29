@@ -654,8 +654,7 @@
               (let ([x (list* w z)])
                 (car x)))
            '(lambda (w z) w))
-(test-comp #:except 'chez-scheme ; cadr not specialized
-           '(lambda (w z)
+(test-comp '(lambda (w z)
               (let ([x (list w z)])
                 (cadr x)))
            '(lambda (w z) z))
@@ -723,14 +722,13 @@
 (test-comp '(lambda (u v) (cdr (unsafe-cons-list u v)))
            '(lambda (u v) v))
 
-(test-comp #:except 'chez-scheme ; cp0 needs unbox specialization
+(test-comp #:except 'chez-scheme ; cp0 needs a third pass
            '(lambda (v) (unbox (box v)))
            '(lambda (v) v))
-(test-comp #:except 'chez-scheme ; cp0 needs unbox specialization
+(test-comp #:except 'chez-scheme ; cp0 needs a third pass
            '(lambda (v) (unsafe-unbox (box v)))
            '(lambda (v) v))
-(test-comp #:except 'chez-scheme ; cp0 needs unbox specialization
-           '(lambda (v) (unsafe-unbox* (box v)))
+(test-comp '(lambda (v) (unsafe-unbox* (box v)))
            '(lambda (v) v))
 
 (test-comp '(lambda () (car (cons (random 2) (random 3))))
