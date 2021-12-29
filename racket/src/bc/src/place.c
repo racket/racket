@@ -317,8 +317,8 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
     out_arg = args[3];
     err_arg = args[4];
 
-    if (!scheme_is_module_path(args[0]) && !SCHEME_PATHP(args[0]) && !scheme_is_resolved_module_path(args[0])) {
-      scheme_wrong_contract("dynamic-place", "(or/c module-path? path? resolved-module-path?)", 0, argc, args);
+    if (!scheme_is_module_path(args[0]) && !SCHEME_PATHP(args[0])) {
+      scheme_wrong_contract("dynamic-place", "(or/c module-path? path?)", 0, argc, args);
     }
     if (!SCHEME_SYMBOLP(args[1])) {
       scheme_wrong_contract("dynamic-place", "symbol?", 1, argc, args);
