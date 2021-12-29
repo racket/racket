@@ -150,7 +150,7 @@ are simulated using @racket[thread].}
 }
 
 
-@defproc[(dynamic-place [module-path (or/c module-path? path?)]
+@defproc[(dynamic-place [module-path (or/c resolved-module-path? module-path? path?)]
                         [start-name symbol?]
                         [#:at location (or/c #f place-location?) #f]
                         [#:named named any/c #f])
@@ -214,7 +214,7 @@ The @racket[dynamic-place] binding is protected in the sense of
                                    value.}]}
 
 
-@defproc[(dynamic-place* [module-path (or/c module-path? path?)]
+@defproc[(dynamic-place* [module-path (or/c resolved-module-path? module-path? path?)]
                          [start-name symbol?]
                          [#:in in (or/c input-port? #f) #f]
                          [#:out out (or/c output-port? #f) (current-output-port)]
