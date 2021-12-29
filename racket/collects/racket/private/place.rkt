@@ -108,8 +108,10 @@
   ;; Duplicate checks in that are in the primitive `pl-dynamic-place',
   ;; unfortunately, but we want these checks before we start making
   ;; stream-pumping threads, etc.
-  (unless (or (module-path? module-path) (path? module-path))
-    (raise-argument-error who "(or/c module-path? path?)" module-path))
+  (unless (or (resolved-module-path? module-path)
+              (module-path? module-path)
+              (path? module-path))
+    (raise-argument-error who "(or/c resolved-module-path? module-path? path?)" module-path))
   (unless (symbol? function)
     (raise-argument-error who "symbol?" function))
   (unless (or (not in) (input-port? in))
