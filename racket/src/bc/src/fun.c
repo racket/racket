@@ -2631,8 +2631,6 @@ Scheme_Object *scheme_get_proc_realm(Scheme_Object *p)
 
   type = SCHEME_TYPE(p);
   if (type == scheme_prim_type) {
-    return scheme_primitive_realm;
-  } else if (type == scheme_closed_prim_type) {
     if (((((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK) == SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER)
         || ((((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK) == SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER)) {
       Scheme_Object *name_info = SCHEME_PRIM_CLOSURE_ELS(p)[2];
@@ -2646,6 +2644,8 @@ Scheme_Object *scheme_get_proc_realm(Scheme_Object *p)
     } else if ((((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK) == SCHEME_PRIM_TYPE_PARAMETER) {
       return SCHEME_PRIM_CLOSURE_ELS(p)[1];
     }
+    return scheme_primitive_realm;
+  } else if (type == scheme_closed_prim_type) {
     return scheme_primitive_realm;
   } else if (type == scheme_cont_type || type == scheme_escaping_cont_type) {
     return scheme_default_realm;

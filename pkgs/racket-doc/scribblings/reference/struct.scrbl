@@ -246,8 +246,8 @@ The result of @racket[make-struct-type] is five values:
 
 @defproc[(make-struct-field-accessor [accessor-proc struct-accessor-procedure?]
                                      [field-pos exact-nonnegative-integer?]
-                                     [field/p<roc-name (or/c symbol? #f) 
-                                                       (symbol->string (format "field~a" field-pos))]
+                                     [field/proc-name (or/c symbol? #f) 
+                                                      (symbol->string (format "field~a" field-pos))]
                                      [arg-contract-str (or/c string? symbol? #f) #f]
                                      [realm symbol? 'racket])
          procedure?]{
@@ -418,7 +418,7 @@ impersonator.
 The optional @racket[accessor-name] argument supplies a name (in the
 sense of @racket[object-name]) to use for the returned accessor
 function. If @racket[accessor-name] is @racket[#f], a name is created
-by adding @racketidfont{-ref} to the end of @racket[name].
+by adding @racketidfont{-accessor} to the end of @racket[name].
 
 The optional @racket[contract-str] argument supplies a contract that
 is included in an error message with the returned accessor is applied

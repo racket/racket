@@ -2039,7 +2039,8 @@ static void wrong_struct_type(Scheme_Object *prim,
   
   name = extract_field_proc_name_and_realm(expected, prim, &pred_name, &realm);
   
-  if (SAME_OBJ(expected, received))
+  if (SAME_OBJ(expected, received)) {
+    pred_name = (char *)scheme_contract_realm_adjust(pred_name, realm);
     scheme_contract_error(SCHEME_NAME_PLUS_REALM_ARGUMENTS,
                           "contract violation;\n"
                           " given value instantiates a different structure type with the same name",
@@ -2047,7 +2048,7 @@ static void wrong_struct_type(Scheme_Object *prim,
                           "expected", 0, pred_name,
                           "given", 1, argv[which],
                           NULL);
-  else
+  } else
     scheme_wrong_contract_for_realm(name, realm,
                                     pred_name, 
                                     which, argc, argv);

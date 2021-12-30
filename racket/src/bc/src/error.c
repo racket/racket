@@ -154,8 +154,6 @@ static char *make_provided_list(Scheme_Object *o, int count, intptr_t *lenout);
 
 static char *init_buf(intptr_t *len, intptr_t *blen);
 
-static const char *contract_realm_adjust(const char *contract, Scheme_Object *realm);
-
 void scheme_set_logging2(int syslog_level, int stderr_level, int stdout_level)
 {
   if (syslog_level > -1)
@@ -1964,7 +1962,7 @@ static MZ_NORETURN void wrong_contract_for_realm(const char *name, Scheme_Object
   int isres = 0;
   GC_CAN_IGNORE char *isgiven = "given", *kind = "argument";
 
-  expected = contract_realm_adjust(expected, realm);
+  expected = scheme_contract_realm_adjust(expected, realm);
 
   o = argv[which < 0 ? 0 : which];
   if (argc < 0) {
@@ -2186,7 +2184,7 @@ void scheme_contract_error(const char *name, const char *msg, ...)
 {
   GC_CAN_IGNORE va_list args;
   int i, cnt = 0, kind;
-  intptr_t len = 0, nlen, mlen, seplen;
+  intptr_t len = 0, nlen, mlen, seplen, vlen;
   const char *strs[MAX_MISMATCH_EXTRAS], *str, *sep;
   Scheme_Object *vs[MAX_MISMATCH_EXTRAS], *v;
   const char *v_strs[MAX_MISMATCH_EXTRAS], *v_str;
@@ -2247,9 +2245,9 @@ void scheme_contract_error(const char *name, const char *msg, ...)
   for (i = 0; i < cnt; i++) {
     memcpy(s + len, "\n  ", 3);
     len += 3;
-    nlen = strlen(strs[i]);
-    memcpy(s + len, strs[i], nlen);
-    len += nlen;
+    vlen = strlen(strs[i]);
+    memcpy(s + len, strs[i], vlen);
+    len += vlen;
     memcpy(s + len, ": ", 2);
     len += 2;
     memcpy(s + len, v_strs[i], v_str_lens[i]);
@@ -4906,7 +4904,7 @@ static Scheme_Object *apply_adjusters(Scheme_Object *v1, Scheme_Object *realm1,
   }
 }
 
-static const char *contract_realm_adjust(const char *contract, Scheme_Object *realm)
+const char *scheme_contract_realm_adjust(const char *contract, Scheme_Object *realm)
 {
   Scheme_Object *base_adjr, *ctc;
 

@@ -65,7 +65,7 @@
             [accessor-name (or accessor-name
                                (string->symbol (string-append
                                                 (symbol->string name)
-                                                "-ref")))]
+                                                "-accessor")))]
             [predicate-name (string->symbol
                              (string-append
                               (symbol->string name)
@@ -839,7 +839,8 @@
                    (if (record? v rtd)
                        (p v)
                        (impersonate-ref p rtd pos v field/proc-name contract realm))))
-                proc-name)])
+                proc-name
+                realm)])
         (|#%struct-field-accessor| wrap-p rtd pos)))]
    [(pba pos name contract)
     (make-struct-field-accessor pba pos name contract default-realm)]
@@ -884,7 +885,8 @@
 			   (impersonate-set! p rtd pos abs-pos v a field/proc-name contract realm))))
                    (lambda (v a)
                      (cannot-modify-by-pos-error mut-name v pos)))
-               mut-name)])
+               mut-name
+               realm)])
         (|#%struct-field-mutator| wrap-p rtd pos)))]
    [(pbm pos name contract)
     (make-struct-field-mutator pbm pos name contract default-realm)]

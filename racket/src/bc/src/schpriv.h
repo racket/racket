@@ -972,6 +972,8 @@ extern Scheme_Object *scheme_apply_thread_thunk(Scheme_Object *rator);
 
 Scheme_Custodian* scheme_custodian_extract_reference(Scheme_Custodian_Reference *mr);
 
+const char *scheme_contract_realm_adjust(const char *contract, Scheme_Object *realm);
+
 /*========================================================================*/
 /*                    hash tables and linklet instances                   */
 /*========================================================================*/
