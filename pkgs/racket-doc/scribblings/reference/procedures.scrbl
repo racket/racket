@@ -241,8 +241,8 @@ arity-reduced procedure) or @racket[arity] must be the empty list
 If @racket[name] is not @racket[#f], then @racket[object-name] of the
 result procedure produces @racket[name], and @racket[procedure-realm]
 of the result produced produces @racket[realm]. Otherwise,
-@racket[object-name] and @racket[procedure-realm]of the result procedure
-produces the same result as for @racket[proc].
+@racket[object-name] and @racket[procedure-realm] of the result procedure
+produce the same result as for @racket[proc].
 
 @examples[
 (define my+ (procedure-reduce-arity + 2 ))
@@ -361,7 +361,9 @@ new procedure is the same as for @racket[plain-proc]. See also
                                          [arity procedure-arity?]
                                          [required-kws (listof keyword?)]
                                          [allowed-kws (or/c (listof keyword?)
-                                                            #f)])
+                                                            #f)]
+                                         [name (or/c symbol? #f) #f]
+                                         [realm symbol? 'racket])
          procedure?]{
 
 Like @racket[procedure-reduce-arity], but constrains the keyword
@@ -385,20 +387,25 @@ must require no more keywords than the ones listed in
 (show #:init 0 1 2 3 #:extra 4)
 (eval:error (show 1))
 (eval:error (show #:init 0 1 2 3 #:extra 4 #:more 7))
-]}
+]
+
+@history[#:changed "8.3.0.11" @elem{Added the @racket[realm] argument.}]}
 
 
 @defproc[(procedure-reduce-keyword-arity-mask [proc procedure?]
                                               [mask exact-integer?]
                                               [required-kws (listof keyword?)]
                                               [allowed-kws (or/c (listof keyword?)
-                                                                  #f)])
+                                                                  #f)]
+                                              [name (or/c symbol? #f) #f]
+                                              [realm symbol? 'racket])
          procedure?]{
 
 The same as @racket[procedure-reduce-keyword-arity], but using the
 representation of arity described with @racket[procedure-arity-mask].
 
-@history[#:added "7.0.0.11"]}
+@history[#:added "7.0.0.11"
+         #:changed "8.3.0.11" @elem{Added the @racket[realm] argument.}]}
 
 
 @defstruct[arity-at-least ([value exact-nonnegative-integer?])]{

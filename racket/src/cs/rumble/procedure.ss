@@ -213,6 +213,9 @@
      (cond
        [(named-procedure? f)
         (named-procedure-realm f)]
+       [(reduced-arity-procedure? f)
+        (or (reduced-arity-procedure-realm f)
+            (procedure-realm (reduced-arity-procedure-proc f)))]
        [(position-based-accessor? f)
         default-realm]
        [(position-based-mutator? f)

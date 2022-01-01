@@ -2657,9 +2657,10 @@ Scheme_Object *scheme_get_proc_realm(Scheme_Object *p)
       if (SCHEME_CHAPERONEP(p))
         p = SCHEME_CHAPERONE_VAL(p);
       if (scheme_reduced_procedure_struct
-          && scheme_is_struct_instance(scheme_reduced_procedure_struct, p)
-          && SCHEME_TRUEP(((Scheme_Structure *)p)->slots[2])) {
-        return ((Scheme_Structure *)p)->slots[4];
+          && scheme_is_struct_instance(scheme_reduced_procedure_struct, p)) {
+        if (SCHEME_TRUEP(((Scheme_Structure *)p)->slots[2]))
+          return ((Scheme_Structure *)p)->slots[4];
+        p = ((Scheme_Structure *)p)->slots[0];
       } else {
         int is_method;
         p = scheme_extract_struct_procedure(p, -1, NULL, &is_method);
@@ -3087,8 +3088,10 @@ static Scheme_Object *make_reduced_proc(Scheme_Object *proc,
   if (SCHEME_STRUCTP(proc)
       && scheme_is_struct_instance(scheme_reduced_procedure_struct, proc)) {
     /* Don't need the intermediate layer */
-    if (!name)
+    if (!name) {
       name = ((Scheme_Structure *)proc)->slots[2];
+      realm = ((Scheme_Structure *)proc)->slots[4];
+    }
     if (!is_meth)
       is_meth = ((Scheme_Structure *)proc)->slots[3];
     proc = ((Scheme_Structure *)proc)->slots[0];

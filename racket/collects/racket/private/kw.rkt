@@ -544,6 +544,21 @@
                                   "procedure?"
                                   p)]))
 
+  ;; determines whether `p` requires keyword arguments, and if
+  ;; so, returns the (potentially nested) `keyword-procedure`
+  ;; that has keyword information
+  (define (extract-keyword-root p)
+    (cond
+      [(keyword-procedure? p) p]
+      [(procedure? p)
+       (let ([v (new-procedure-ref p #f)])
+         (if (procedure? v)
+             (extract-keyword-root v)
+             (let ([a (procedure-accessor-ref p #f)])
+               (and a
+                    (extract-keyword-root (a p))))))]
+      [else #f]))
+
   ;; ----------------------------------------
   ;; `lambda' with optional and keyword arguments
   
@@ -1846,30 +1861,22 @@
     (let ([procedure-rename 
            (case-lambda
              [(proc name realm)
-              (if (not (and (keyword-procedure? proc)
-                            (symbol? name)
-                            (symbol? realm)))
-                  (procedure-rename proc name realm)
-                  ;; Rename a keyword procedure:
-                  (cond
-                    [(okp? proc)
-                     ((if (okm? proc)
-                          make-optional-keyword-method
-                          make-optional-keyword-procedure)
-                      (keyword-procedure-checker proc)
-                      (keyword-procedure-proc proc)
-                      (keyword-procedure-required proc)
-                      (keyword-procedure-allowed proc)
-                      (procedure-rename (okp-ref proc 0) name realm))]
-                    [else
-                     ;; Constructor must be from `make-required':
-                     (let* ([name+fail (keyword-procedure-name+fail proc)]
-                            [mk (make-required name realm (vector-ref name+fail 2) (keyword-method? proc) #f)])
-                       (mk
-                        (keyword-procedure-checker proc)
-                        (keyword-procedure-proc proc)
-                        (keyword-procedure-required proc)
-                        (keyword-procedure-allowed proc)))]))]
+              (cond
+                [(not (and (symbol? name)
+                           (symbol? realm)))
+                 (procedure-rename proc name realm)]
+                [(extract-keyword-root proc)
+                 => (lambda (kw-p)
+                      (do-procedure-reduce-keyword-arity 'procedure-rename
+                                                         proc
+                                                         #f
+                                                         (procedure-arity-mask proc)
+                                                         name
+                                                         realm
+                                                         (keyword-procedure-required kw-p)
+                                                         (keyword-procedure-allowed kw-p)))]
+                [else
+                 (procedure-rename proc name realm)])]
              [(proc name)
               (new:procedure-rename proc name 'racket)])])
       procedure-rename))
@@ -1883,6 +1890,8 @@
                     (define name+fail (keyword-procedure-name+fail proc))
                     (or (vector-ref name+fail 1)
                         (procedure-realm (vector-ref name+fail 2)))]
+                   [(okp? proc)
+                    (procedure-realm (okp-ref proc 0))]
                    [else
                     (procedure-realm (keyword-procedure-proc proc))])
                  ;; Not a keyword-accepting procedure:
