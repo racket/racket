@@ -570,7 +570,10 @@ precision) and in another environment @racket[1234567891000000000] (seconds
 precision).
 
 Values that aren't available for a platform/filesystem combination may be set
-to @racket[0].
+to @racket[0]. For example, this applies to the @racket['user-id] and
+@racket['group-id] keys on Windows. Also, Posix platforms provide the status
+change timestamp, but not the creation timestamp; for Windows it's the
+opposite.
 
 If @racket[as-link?] is @racket[#f] and @racket[path] isn't accessible,
 the @exnraise[exn:fail:filesystem]. This exception is also raised if
