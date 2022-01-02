@@ -54,6 +54,11 @@
 (syntax-test #'(module m racket/base (#%declare something)))
 (syntax-test #'(module m racket/base (#%declare "something")))
 (syntax-test #'(module m racket/base (#%declare #:something)))
+(syntax-test #'(module m racket/base (#%declare #:realm)))
+(syntax-test #'(module m racket/base (#%declare #:unsafe #:unsafe)))
+(syntax-test #'(module m racket/base (#%declare #:unsafe) (#%declare #:unsafe)))
+(syntax-test #'(module m racket/base (#%declare #:realm elsewhere #:realm elsewhere)))
+(syntax-test #'(module m racket/base (#%declare #:realm elsewhere) (#%declare #:realm elsewhere)))
 
 (syntax-test #'(#%provide))
 (syntax-test #'(#%provide . x))
@@ -3048,6 +3053,41 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 (require 'unsafe-module-so-call-provided-carefully)
 (test 3 unsafe-first '(3 4 5))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check `#:realm`
+
+(module module-with-body-in-elsewhere-realm racket/base
+  (#%declare #:realm elsewhere)
+  (provide f1 f2 f3 f4)
+  (define (f1 x) x)
+  (define f2 (lambda (x) x))
+  (define f3 (case-lambda
+               [(x) x]
+               [(x y) y]))
+  (define f4 (lambda (x)
+               (lambda (y) x))))
+
+(test 'elsewhere procedure-realm (dynamic-require ''module-with-body-in-elsewhere-realm 'f1))
+(test 'elsewhere procedure-realm (dynamic-require ''module-with-body-in-elsewhere-realm 'f2))
+(test 'elsewhere procedure-realm (dynamic-require ''module-with-body-in-elsewhere-realm 'f3))
+(test 'elsewhere procedure-realm ((dynamic-require ''module-with-body-in-elsewhere-realm 'f4) 1))
+
+(parameterize ([current-compile-realm 'somewhere])
+  (eval '(module module-with-body-in-parameterized-realm racket/base
+           (provide f1)
+           (define (f1 x) x)))
+  (test 'somewhere procedure-realm (eval '(lambda (x) x)))
+  (test 'somewhere procedure-realm (eval '(begin
+                                            (define procedure-that-is-somewhere (lambda (x) x))
+                                            procedure-that-is-somewhere)))
+  (eval '(module module-with-body-still-in-elsewhere-realm racket/base
+           (#%declare #:realm elsewhere)
+           (provide f1)
+           (define (f1 x) x))))
+
+(test 'somewhere procedure-realm (dynamic-require ''module-with-body-in-parameterized-realm 'f1))
+(test 'elsewhere procedure-realm (dynamic-require ''module-with-body-still-in-elsewhere-realm 'f1))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Make sure that a module with an attached instance
