@@ -1730,20 +1730,48 @@
      (lambda (v_0) (|#%app| (|#%app| do-stream-ref v_0 2))))))))
 (define empty-stream (make-do-stream (lambda () #t) void void))
 (define hash-keys
-  (lambda (h_0)
-    (letrec*
-     ((loop_0
-       (|#%name|
-        loop
-        (lambda (pos_0)
-          (begin
-            (if pos_0
-              (let ((k_0 (hash-iterate-key h_0 pos_0 unsafe-undefined)))
-                (let ((r_0 (loop_0 (hash-iterate-next h_0 pos_0))))
-                  (let ((k_1 k_0))
-                    (if (eq? k_1 unsafe-undefined) r_0 (cons k_1 r_0)))))
-              null))))))
-     (loop_0 (hash-iterate-first h_0)))))
+  (let ((hash-keys_0
+         (|#%name|
+          hash-keys
+          (lambda (h_0 try-order?_0)
+            (begin
+              (if try-order?_0
+                (hash-map h_0 (lambda (k_0 v_0) k_0) #t)
+                (letrec*
+                 ((loop_0
+                   (|#%name|
+                    loop
+                    (lambda (pos_0)
+                      (begin
+                        (if pos_0
+                          (let ((k_0
+                                 (hash-iterate-key
+                                  h_0
+                                  pos_0
+                                  unsafe-undefined)))
+                            (let ((r_0 (loop_0 (hash-iterate-next h_0 pos_0))))
+                              (let ((k_1 k_0))
+                                (if (eq? k_1 unsafe-undefined)
+                                  r_0
+                                  (cons k_1 r_0)))))
+                          null))))))
+                 (loop_0 (hash-iterate-first h_0)))))))))
+    (|#%name|
+     hash-keys
+     (case-lambda
+      ((h_0)
+       (begin
+         (begin
+           (if (hash? h_0)
+             (void)
+             (raise-argument-error 'hash-keys "hash?" 0 h_0))
+           (hash-keys_0 h_0 #f))))
+      ((h_0 try-order?_0)
+       (begin
+         (if (hash? h_0)
+           (void)
+           (raise-argument-error 'hash-keys "hash?" 0 h_0 try-order?_0))
+         (hash-keys_0 h_0 try-order?_0)))))))
 (define hash-empty?
   (lambda (table_0)
     (begin
