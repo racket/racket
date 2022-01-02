@@ -103,7 +103,7 @@ if test "${enable_iconv}" = "" ; then
   enable_iconv=yes
 fi
 
-if test "${enable_xonx}" == "" ; then
+if test "${enable_xonx}" = "" ; then
   enable_xonx=no
 fi
 
@@ -306,7 +306,7 @@ case "$host_os" in
     MACH_OS=osx
     LIBS="${LIBS} -framework CoreFoundation"
     LDFLAGS="${LDFLAGS} -Wl,-headerpad_max_install_names"
-    if test "${enable_xonx}" == "no" ; then
+    if test "${enable_xonx}" = "no" ; then
       INCLUDEDEP="-include"
       OSX=""
       NOT_OSX="osx"
@@ -340,7 +340,7 @@ case "$host_os" in
       fi
     fi
 
-    if test "${enable_mac64}" == "no"; then
+    if test "${enable_mac64}" = "no"; then
       MACH_HOST_CPU="x86"
       extra_scheme_config_args="--32"
     fi
