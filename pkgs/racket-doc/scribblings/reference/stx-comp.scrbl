@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "mz.rkt")
+@(require "mz.rkt"
+          (for-label racket/phase+space))
 
 @(define stx-eval (make-base-eval))
 @examples[#:hidden #:eval stx-eval (require (for-syntax racket/base))]
