@@ -55,7 +55,7 @@
              [for-meta-ok? #t]
              [just-meta-ok? #t]
              [layer 'raw])
-    (for/and ([req (in-list reqs)])
+    (for ([req (in-list reqs)])
       (define (check-nested want-layer [ok? #t])
         (unless (and ok? (member want-layer (member layer layers)))
           (raise-syntax-error #f "invalid nesting" orig-s req)))

@@ -3124,5 +3124,10 @@
 (test 'success dynamic-require ''defctx-list 'res)
 
 ;; ----------------------------------------
+;; regression test
+
+(test (void) eval '(require (combine-in)))
+
+;; ----------------------------------------
 
 (report-errs)
