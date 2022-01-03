@@ -415,14 +415,21 @@ Backward-compatible aliases for
 @history[#:changed "6.5.0.2" @elem{Added the @racket[#:tethered?] argument.}]}
 
 
-@defproc[(installed-executable-path->desktop-path [exec-path path-string?] [user? any/c])
-         (and/c path? complete-path?)]{
+@defproc[(installed-executable-path->desktop-path [exec-path path-string?] [user? any/c] [tethered? any/c])
+         (or/c (and/c path? complete-path?) #f)]{
 
 Returns a path for a @filepath{.desktop} file to describe the
 installed executable at @racket[exec-path]. Only the filename part of
 @racket[exec-path] is used. The @racket[user?] argument should be true
 if @racket[exec-path] is installed in a user-specific location (in
-which case the result path will also be user-specific).}
+which case the result path will also be user-specific). The
+@racket[tethered?] argument should be true for a @tech{tethered}
+install. The result can be @racket[#f] only when @racket[tethered?] is
+true and @racket[find-addon-tethered-apps-dir] (when @racket[user?] is
+true) or @racket[find-config-tethered-apps-dir] (when @racket[user?] is
+@racket[#f]) returns @racket[#f].
+
+@history[#:changed "8.3.0.11" @elem{Added the @racket[tethered?] argument.}]}
 
 
 @defproc[(installed-desktop-path->icon-path [desktop-path path-string?]

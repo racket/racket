@@ -1775,9 +1775,11 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
 @deftogether[(
 @defproc[(find-addon-tethered-console-bin-dir) (or/c #f path?)]
 @defproc[(find-addon-tethered-gui-bin-dir) (or/c #f path?)]
+@defproc[(find-addon-tethered-apps-dir) (or/c #f path?)]
 )]{
   Returns a path to a user-specific directory to hold an extra copy of
-  each installed executable, where the extra copy is created by
+  each installed executable and @filepath{.desktop}
+  file (for Unix), where the extra copy is created by
   @exec{raco setup} and tethered to a particular result for
   @racket[(find-system-path 'addon-dir)] and
   @racket[(find-config-dir)].
@@ -1785,33 +1787,39 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
   Unlike other directories, which are configured via
   @filepath{config.rktd} in the @racket[(find-config-dir)] directory
   (see @secref["config-file"]), these paths are configured via
-  @racket['addon-tethered-console-bin-dir] and
-  @racket['addon-tethered-gui-bin-dir] entries in
+  @racket['addon-tethered-console-bin-dir],
+  @racket['addon-tethered-gui-bin-dir], and
+  @racket['addon-tethered-apps-dir] entries in
   @filepath{config.rktd} in @racket[(build-path (find-system-path
   'addon-dir) "etc")]. If no configuration is present, the result from
   the corresponding function,
-  @racket[find-addon-tethered-console-bin-dir] or
-  @racket[find-addon-tethered-gui-bin-dir], is @racket[#f] instead of
+  @racket[find-addon-tethered-console-bin-dir],
+  @racket[find-addon-tethered-gui-bin-dir], or
+  @racket[find-addon-tethered-apps-dir], is @racket[#f] instead of
   a path.
 
   See @secref["tethered-install"] for more information.
 
-  @history[#:added "6.5.0.2"]}
+  @history[#:added "6.5.0.2"
+           #:changed "8.3.0.11" @elem{Added @racket[find-addon-tethered-apps-dir].}]]}
 
 
 @deftogether[(
 @defproc[(find-config-tethered-console-bin-dir) (or/c #f path?)]
 @defproc[(find-config-tethered-gui-bin-dir) (or/c #f path?)]
+@defproc[(find-config-tethered-apps-dir) (or/c #f path?)]
 )]{
-  Similar to @racket[find-addon-tethered-console-bin-dir] and
-  @racket[find-addon-tethered-gui-bin-dir], but configured via
+  Similar to @racket[find-addon-tethered-console-bin-dir],
+  @racket[find-addon-tethered-gui-bin-dir], and
+  @racket[find-addon-tethered-apps-dir], but configured via
   @filepath{config.rktd} in the @racket[(find-config-dir)] directory
   (see @secref["config-file"]) and triggers executables that are
   tethered only to a particular value of @racket[(find-config-dir)].
 
   See @secref["tethered-install"] for more information.
 
-  @history[#:added "6.5.0.2"]}
+  @history[#:added "6.5.0.2"
+           #:changed "8.3.0.11" @elem{Added @racket[find-addon-tethered-apps-dir].}]}
  
 @; ------------------------------------------------------------------------
 
@@ -2578,9 +2586,11 @@ layer:
        directory @nonterm{addon-dir} and a
        @filepath{@nonterm{addon-dir}/etc/config.rktd} file that maps
        @racket['addon-tethered-console-bin-dir] to
-       @nonterm{tethered-bin-dir} and
+       @nonterm{tethered-bin-dir},
        @racket['addon-tethered-gui-bin-dir] to
-       @nonterm{tethered-gui-bin-dir}. Initialize the tethered layer
+       @nonterm{tethered-gui-bin-dir}, and (optionally)
+       @racket['addon-tethered-apps-dir] to
+       @nonterm{tethered-apps-dir}. Initialize the tethered layer
        with
 
        @commandline{racket -A @nonterm{addon-dir} -l- raco setup --avoid-main}}
@@ -2588,10 +2598,12 @@ layer:
  @item{An @defterm{installation} layer with tethering is like a one
        without tethering (see @secref["layered-install"]), but where
        the layer's @filepath{@nonterm{layer-dir}/etc/config.rktd} file
-       that maps @racket['config-tethered-console-bin-dir] to
-       @nonterm{tethered-bin-dir} and
+       maps @racket['config-tethered-console-bin-dir] to
+       @nonterm{tethered-bin-dir},
        @racket['config-tethered-gui-bin-dir] to
-       @nonterm{tethered-gui-bin-dir}. The @racket['bin-dir] and
+       @nonterm{tethered-gui-bin-dir}, and (optionally)
+       @racket['config-tethered-apps-dir] to
+       @nonterm{tethered-apps-dir}. The @racket['bin-dir] and
        @racket['gui-bin-dir] configurations can point to the same
        directories, but executables are not specifically created there by
        @exec{raco setup}. Initialize the tethered layer with
@@ -2602,7 +2614,8 @@ layer:
 
 In either case, initialization creates tethered executables in the
 directories @nonterm{tethered-bin-dir} and
-@nonterm{tethered-gui-bin-dir}. Thereafter, tethered executables like
+@nonterm{tethered-gui-bin-dir}, writing @filepath{.desktop} files
+(for Unix) in @nonterm{tethered-apps-dir} (if specified). Thereafter, tethered executables like
 @exec{@nonterm{tethered-bin-dir}/racket} and
 @exec{@nonterm{tethered-bin-dir}/raco} can be used to work with the
 tethered layer.

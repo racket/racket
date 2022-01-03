@@ -73,6 +73,7 @@
 (define config:gui-bin-search-dirs (delay/sync (or (force config:gui-bin-search-dirs/raw) (force config:bin-search-dirs))))
 (define-config config:config-tethered-console-bin-dir 'config-tethered-console-bin-dir to-path)
 (define-config config:config-tethered-gui-bin-dir 'config-tethered-gui-bin-dir to-path)
+(define-config config:config-tethered-apps-dir 'config-tethered-apps-dir to-path)
 (define-config config:man-dir 'man-dir to-path)
 (define-config config:man-search-dirs 'man-search-dirs to-path)
 (define-config config:links-file 'links-file to-path)
@@ -289,6 +290,7 @@
          config:gui-bin-dir
          config:config-tethered-console-bin-dir
          config:config-tethered-gui-bin-dir
+         config:config-tethered-apps-dir
          config:bin-search-dirs
          config:gui-bin-search-dirs)
 
