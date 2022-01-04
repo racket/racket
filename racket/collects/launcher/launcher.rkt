@@ -530,7 +530,7 @@
                             (file-name-from-path dest))
                            (cdr m)))))))
 
-(define (installed-executable-path->desktop-path dest user? tethered?)
+(define (installed-executable-path->desktop-path dest user? [tethered? #f])
   (unless (path-string? dest)
     (raise-argument-error 'installed-executable-path->desktop-path
                           "path-string?"
