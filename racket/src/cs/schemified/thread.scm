@@ -1830,6 +1830,8 @@
           (current-atomic n_0)
           (do-end-atomic-callback))
         (if (fx< n_0 0) (bad-end-atomic) (current-atomic n_0))))))
+(define abort-atomic
+  (lambda () (begin (current-atomic 0) (end-atomic-callback 0))))
 (define do-end-atomic-callback
   (lambda ()
     (let ((cbs_0 (end-atomic-callback)))
@@ -7172,20 +7174,27 @@
   (lambda (t_0 timeout-at_0)
     (begin
       (if (thread-descheduled? t_0)
-        (internal-error "tried to deschedule a descheduled thread")
-        (void))
-      (set-thread-descheduled?! t_0 #t)
-      (thread-group-remove! (thread-parent t_0) t_0)
-      (|#%app| thread-unscheduled-for-work-tracking! t_0)
-      (if timeout-at_0
-        (add-to-sleeping-threads!
-         t_0
-         (begin-unsafe
-          (|#%app| (sandman-do-merge-timeout the-sandman) #f timeout-at_0)))
-        (void))
-      (if (eq? t_0 (current-thread/in-atomic))
-        (|#%app| thread-did-work!)
-        (void))
+        (if (eq? (thread-descheduled? t_0) 'terribly-wrong)
+          (void)
+          (begin
+            (set-thread-descheduled?! t_0 'terribly-wrong)
+            (internal-error "tried to deschedule a descheduled thread")))
+        (begin
+          (set-thread-descheduled?! t_0 #t)
+          (thread-group-remove! (thread-parent t_0) t_0)
+          (|#%app| thread-unscheduled-for-work-tracking! t_0)
+          (if timeout-at_0
+            (add-to-sleeping-threads!
+             t_0
+             (begin-unsafe
+              (|#%app|
+               (sandman-do-merge-timeout the-sandman)
+               #f
+               timeout-at_0)))
+            (void))
+          (if (eq? t_0 (current-thread/in-atomic))
+            (|#%app| thread-did-work!)
+            (void))))
       (lambda ()
         (if (eq? t_0 (1/current-thread))
           (begin
@@ -7198,8 +7207,10 @@
                     (if (positive? (current-atomic))
                       (if (|#%app| force-atomic-timeout-callback)
                         (loop_0)
-                        (internal-error
-                         "attempt to deschedule the current thread in atomic mode"))
+                        (begin
+                          (abort-atomic)
+                          (internal-error
+                           "attempt to deschedule the current thread in atomic mode")))
                       (void)))))))
              (loop_0))
             (engine-block))
@@ -7999,7 +8010,7 @@
   (lambda (thd_0)
     (let ((mbx_0 (thread-mailbox thd_0)))
       (if (begin-unsafe (not (queue-start mbx_0)))
-        (internal-error "No Mail!\n")
+        (internal-error "no mail!")
         (queue-remove! mbx_0)))))
 (define is-mail?
   (lambda (thd_0)
@@ -12501,7 +12512,9 @@
                    (current-future$1 #f)
                    (if (zero? (current-atomic))
                      (void)
-                     (internal-error "terminated in atomic mode!"))
+                     (begin
+                       (abort-atomic)
+                       (internal-error "terminated in atomic mode!")))
                    (flush-end-atomic-callbacks!)
                    (thread-dead! t_0)
                    (if (eq? (unsafe-place-local-ref cell.1$1) t_0)

@@ -159,6 +159,7 @@
           (set-place-current-thread! current-place #f)
           (current-future #f)
           (unless (zero? (current-atomic))
+            (abort-atomic)
             (internal-error "terminated in atomic mode!"))
           (flush-end-atomic-callbacks!)
           (thread-dead! t)
