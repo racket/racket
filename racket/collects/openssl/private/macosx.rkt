@@ -44,6 +44,17 @@
     (memcpy buf data-ptr len)
     buf))
 
+(define-cpointer-type _CFArrayRef)
+
+(define-cf CFArrayGetCount
+  (_fun [theArray : _CFArrayRef]
+        -> _CFIndex))
+
+(define-cf CFArrayGetValueAtIndex
+  (_fun [theArray : _CFArrayRef]
+        [idx : _CFIndex]
+        -> _pointer))
+
 ;; ----
 
 (define libsec
@@ -97,10 +108,17 @@
 (define-sec SecItemExport #|since 10.7|# item-export-type
   #:fail (lambda () SecKeychainItemExport))
 
+(define-sec SecTrustCopyAnchorCertificates
+  (_fun [anchors : (_ptr o _CFArrayRef)]
+        -> (status : _OSStatus)
+        -> (values status anchors)))
+
 ;; ----
 
 (define (load-macosx-keychain who ssl-ctx path try?)
-  (define ders (keychain-path->ders who path try?))
+  (define ders
+    (cond [path (keychain-path->ders who path try?)]
+          [else (trust-anchors->ders who try?)]))
   (define xstore (SSL_CTX_get_cert_store ssl-ctx))
   (for ([der (in-list ders)])
     (let ([x509 (d2i_X509 der)])
@@ -111,13 +129,24 @@
             [else
              (error who "retrieved invalid certificate from keychain: ~e" path)]))))
 
+(define (trust-anchors->ders who try?)
+  (define-values (status roots) (SecTrustCopyAnchorCertificates))
+  (cond [(= 0 status)
+         (define len (CFArrayGetCount roots))
+         (begin0 (for/list ([i (in-range len)])
+                   (define cert (CFArrayGetValueAtIndex roots i))
+                   (cert->der (cast cert _pointer _id)))
+           (CFRelease roots))]
+        [try? null]
+        [else (error who "unable to retrieve Mac OS trust anchors")]))
+
 (define (keychain-path->ders who path try?)
   (define path* (path->complete-path (cleanse-path path)))
   (define-values (status keychain)
     (SecKeychainOpen path*))
   (begin0 (cond [(= status 0)
                  (keychain->ders who keychain try?)]
-                [try? (void)]
+                [try? null]
                 [else
                  (error who "failed to open keychain: ~e" path)])
     (CFRelease keychain)))
@@ -127,7 +156,7 @@
     (SecKeychainSearchCreateFromAttributes keychain kSecCertificateItemClass #f))
   (begin0 (cond [(= status 0)
                  (keychain-search->ders who search try?)]
-                [try? (void)]
+                [try? null]
                 [else (error "internal error: failed to open keychain search")])
     (CFRelease search)))
 
@@ -136,10 +165,13 @@
     (define-values (status next)
       (SecKeychainSearchCopyNext search))
     (cond [(= status 0)
-           (let-values ([(status* data) (SecItemExport next)])
-             (let ([der (CFData->bytes data)])
-               (CFRelease next)
-               (CFRelease data)
-               (cons der (loop))))]
+           (define der (cert->der next))
+           (CFRelease next)
+           (cons der (loop))]
           ;; FIXME: other error codes?
           [else null])))
+
+(define (cert->der item)
+  (define-values (status data) (SecItemExport item))
+  (begin0 (CFData->bytes data)
+    (CFRelease data)))

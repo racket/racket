@@ -85,7 +85,7 @@ TO DO:
   (or/c path-string?
         (list/c 'directory path-string?)
         (list/c 'win32-store string?)
-        (list/c 'macosx-keychain path-string?)))
+        (list/c 'macosx-keychain (or/c #f path-string?))))
 
 (provide
  ssl-dh4096-param-bytes
@@ -482,7 +482,7 @@ TO DO:
       ;; aren't useful. So just skip them.
       '((win32-store "ROOT"))]
      [(macosx darwin)
-      '((macosx-keychain "/System/Library/Keychains/SystemRootCertificates.keychain"))]
+      '((macosx-keychain #f))]
      [else
       (x509-root-sources)])))
 

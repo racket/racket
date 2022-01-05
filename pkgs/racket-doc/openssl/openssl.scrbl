@@ -495,7 +495,7 @@ empty and @racket[mode] is @racket['accept], an exception
             [src (or/c path-string?
                        (list/c 'directory path-string?)
                        (list/c 'win32-store string?)
-                       (list/c 'macosx-keychain path-string?))]
+                       (list/c 'macosx-keychain (or/c #f path-string?)))]
             [#:try? try? any/c #f])
          void?]{
 
@@ -522,6 +522,11 @@ needs verification.}
 certificates from the store named @racket[_store] are loaded
 immediately. Only supported on Windows.}
 
+@item{If @racket[src] is @racket[(list 'macosx-keychain #f)], then the
+certificates from the Mac OS trust anchor (root) certificates (as
+returned by @hyperlink["https://developer.apple.com/documentation/security/1401507-sectrustcopyanchorcertificates"]{@tt{SecTrustCopyAnchorCertificates}})
+are loaded immediately. Only supported on Mac OS.}
+
 @item{If @racket[src] is @racket[(list 'macosx-keychain _path)], then
 the certificates from the keychain stored at @racket[_path] are loaded
 immediately. Only supported on Mac OS.}
@@ -536,13 +541,15 @@ failure is ignored.
 You can use the file @filepath{test.pem} of the @filepath{openssl}
 collection for testing purposes. Since @filepath{test.pem} is public,
 such a test configuration obviously provides no security.
-}
+
+@history[#:changed "8.4.0.5" @elem{Added @racket[(list 'macosx-keychain #f)]
+                             variant.}]}
 
 @defparam[ssl-default-verify-sources srcs
           (let ([source/c (or/c path-string?
                                 (list/c 'directory path-string?)
                                 (list/c 'win32-store string?)
-                                (list/c 'macosx-keychain path-string?))])
+                                (list/c 'macosx-keychain (or/c #f path-string?)))])
             (listof source/c))]{
 
 Holds a list of verification sources, used by
@@ -555,16 +562,16 @@ on the platform:
 @tt{SSL_CERT_FILE} and @tt{SSL_CERT_DIR} environment variables, if the
 variables are set, or the system-wide default locations otherwise.}
 
-@item{On Mac OS, the default sources consist of the system keychain
-for root certificates: @racket['(macosx-keychain
-"/System/Library/Keychains/SystemRootCertificates.keychain")].}
+@item{On Mac OS, the default sources consist of the OS trust anchor
+(root) certificates: @racket['(macosx-keychain #f)].}
 
 @item{On Windows, the default sources consist of the system
 certificate store for root certificates: @racket['(win32-store
 "ROOT")].}
 
 ]
-}
+
+@history[#:changed "8.4.0.5" @elem{Changed default source on Mac OS.}]}
 
 @defproc[(ssl-load-default-verify-sources!
            [context (or/c ssl-client-context? ssl-server-context?)])
