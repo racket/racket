@@ -94,6 +94,18 @@
     (parameterize ([current-output-port (open-output-nowhere)]) (verbose-fact 2))))
 
 (test
+  (list ">(plus1 2)"
+        "<3")
+  'trace-define-in-definition-only-context
+   (trace-output
+     (define (f x)
+       (local-require racket/local)
+       (local [(trace-define (plus1 x) (add1 x))]
+         (plus1 x)))
+         (parameterize ([current-output-port (open-output-nowhere)])
+           (f 2))))
+
+(test
   (list ">(fact 120)"
         "<120")
   'trace-lambda-named

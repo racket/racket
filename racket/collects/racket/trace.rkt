@@ -320,7 +320,7 @@
     (syntax-case stx ()
       [(_ e ...)
       (let-values ([(name def) (normalize-definition stx #'lambda)])
-        #`(begin #,(quasisyntax/loc stx (define #,name #,def)) (trace #,name)))]))
+        #`(begin #,(quasisyntax/loc stx (define #,name #,def)) (define _ (trace #,name))))]))
 
   (define-syntax trace-let
     (syntax-rules ()
