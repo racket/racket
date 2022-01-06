@@ -104,6 +104,7 @@ enum {
 
 typedef struct {
   int init_ns;
+  int make;
 #ifndef DONT_PARSE_COMMAND_LINE
   int num_enl;
 #endif  
@@ -229,6 +230,30 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
 {
   volatile int exit_val = 0;
   volatile int did_config = 0;
+
+  if (fa->a->make) {
+    Scheme_Thread * volatile p;
+    mz_jmp_buf * volatile save, newbuf;
+
+    p = scheme_get_current_thread();
+    save = p->error_buf;
+    p->error_buf = &newbuf;
+    
+    if (!scheme_setjmp(newbuf)) {
+      Scheme_Object *a[2], *p, *param;
+      a[0] = scheme_intern_symbol("compiler/private/cm-minimal");
+      a[1] = scheme_intern_symbol("make-compilation-manager-load/use-compiled-handler");
+      p = scheme_dynamic_require(2, a);
+
+      p = _scheme_apply(p, 0, NULL);
+
+      param = scheme_builtin_value("current-load/use-compiled");
+      a[0] = p;
+      _scheme_apply(param, 1, a);
+    }
+
+    p->error_buf = save;
+  }
 
   if (fa->a->init_ns) {
     Scheme_Object *a[1], *nsreq;
@@ -719,7 +744,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 #endif
   char *init_lib = INITIAL_NAMESPACE_MODULE;
   int was_config_flag = 0, saw_nc_flag = 0;
-  int no_compiled = 0;
+  int make = 0, no_compiled = 0;
   int init_ns = 0, no_init_ns = 0;
   int cross_compile = 0;
   Scheme_Object *syslog_level = NULL, *stderr_level = NULL, *stdout_level = NULL;
@@ -773,6 +798,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
       argv[0] = "-N";
     else if (!strcmp("--exec", argv[0]))
       argv[0] = "-E";
+    else if (!strcmp("--make", argv[0]))
+      argv[0] = "-y";
     else if (!strcmp("--no-compiled", argv[0]))
       argv[0] = "-c";
     else if (!strcmp("--no-lib", argv[0]))
@@ -930,6 +957,10 @@ static int run_from_cmd_line(int argc, char *_argv[],
           collects_extra = scheme_make_pair(check_make_path(prog, real_switch, argv[0]), collects_extra);
           was_config_flag = 1;
 	  break;
+        case 'y':
+          make = 1;
+          was_config_flag = 1;
+          break;
         case 'c':
           no_compiled = 1;
           was_config_flag = 1;
@@ -1327,9 +1358,10 @@ static int run_from_cmd_line(int argc, char *_argv[],
   set_os_process_name(sprog);
 #endif
   
-  if (no_compiled)
+  if (no_compiled) {
     scheme_set_compiled_file_paths(scheme_make_null());
-  else {
+    make = 0;
+  } else {
     const char *s;
     s = getenv("PLT_ZO_PATH");
     if (s)
@@ -1380,6 +1412,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
   fa = (FinishArgs *)scheme_malloc(sizeof(FinishArgs));
   fa->a = fa_a;
   fa->a->init_ns = init_ns;
+  fa->a->make = make;
 #ifndef DONT_PARSE_COMMAND_LINE
   fa->evals_and_loads = evals_and_loads;
   fa->eval_kind = eval_kind;
@@ -1468,6 +1501,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
 # endif
   "\n"
   "Configuration options:\n\n"
+  "  -y, --make\n"
+  "     Yes, enable automatic update of compiled files\n"
   "  -c, --no-compiled\n"
   "     Disable loading of compiled files\n"
   "  -q, --no-init-file\n"

@@ -4,7 +4,8 @@
           (for-label racket/pretty
                      racket/gui/base
                      setup/dirs
-                     racket/interaction-info))
+                     racket/interaction-info
+                     compiler/cm))
 
 @(define (FlagFirst n) (as-index (Flag n)))
 @(define (DFlagFirst n) (as-index (DFlag n)))
@@ -265,8 +266,22 @@ flags:
 
  @itemize[
 
+  @item{@FlagFirst{y} or @DFlagFirst{make} : Enables automatic
+        generation and update of compiled @filepath{.zo} files for
+        modules loaded in the initial namespace. Specifically, the
+        result of
+        @racket[(make-compilation-manager-load/use-compiled-handler)]
+        is installed as the @tech{compiled-load handler} before other
+        module-loading actions. @bold{Caution:} This flag is intended
+        for use in interactive settings; using it in a script is
+        probably a bad idea, because concurrent invocations of the
+        script may collide attempting to update compiled files, or
+        there may be filesystem-permission issues. Using
+        @FlagFirst{c}/@DFlagFirst{no-compiled} cancels the effect of
+        @FlagFirst{y}/@DFlagFirst{make}.}
+
   @item{@FlagFirst{c} or @DFlagFirst{no-compiled} : Disables loading
-        of compiled byte-code @filepath{.zo} files, by initializing
+        of compiled @filepath{.zo} files, by initializing
         @racket[use-compiled-file-paths] to @racket[null].
         Use judiciously: this effectively ignores the content of all
         @filepath{compiled} subdirectories, so that any used modules are
@@ -486,7 +501,8 @@ Extra arguments following the last option are available from the
          #:changed "7.1.0.5" @elem{Added @Flag{M}/@DFlag{compile-any}.}
          #:changed "7.8.0.6" @elem{Added @Flag{Z}.}
          #:changed "8.0.0.10" @elem{Added @Flag{E}.}
-         #:changed "8.0.0.11" @elem{Added @Flag{Y}.}]
+         #:changed "8.0.0.11" @elem{Added @Flag{Y}.}
+         #:changed "8.4.0.1" @elem{Added @Flag{y}/@DFlag{make}.}]
 
 @; ----------------------------------------------------------------------
 

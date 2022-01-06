@@ -13,6 +13,7 @@
                find-library-collection-paths
                use-collection-link-paths
                current-compiled-file-roots
+               current-load/use-compiled
                find-compiled-file-roots
                find-main-config
                executable-yield-handler
@@ -153,6 +154,7 @@
                              [platform-independent-zo-mode? "cs"]
                              [else (symbol->string (machine-type))])))]
              [else "compiled"])))
+   (define make? #f)
    (define user-specific-search-paths? #t)
    (define load-on-demand? #t)
    (define compile-target-machine (if (getenv "PLT_COMPILE_ANY")
@@ -452,6 +454,9 @@
              [("-v" "--version") 
               (set! version? #t)
               (flags-loop (cdr args) (see saw 'non-config))]
+             [("-y" "--make")
+              (set! make? #t)
+              (loop (cdr args))]
              [("-c" "--no-compiled")
               (set! compiled-file-paths '())
               (loop (cdr args))]
@@ -921,6 +926,12 @@
        (lambda ()
          (initialize-exit-handler!)
          (initialize-place!)
+
+         (when (and make? (not (null? compiled-file-paths)))
+           (|#%app|
+            current-load/use-compiled
+            (|#%app| (dynamic-require 'compiler/private/cm-minimal
+                                      'make-compilation-manager-load/use-compiled-handler))))
 
          (when init-library
            (namespace-require+ init-library))
