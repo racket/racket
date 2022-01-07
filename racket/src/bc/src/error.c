@@ -2151,19 +2151,19 @@ static Scheme_Object *do_raise_range_error(const char *who, int argc, Scheme_Obj
       scheme_wrong_contract(who, "(or/c exact-integer? #f)", 7+use_realm, argc, argv);
   }
   
-  type = scheme_char_string_to_byte_string(argv[1]);
-  desc = scheme_char_string_to_byte_string(argv[2]);
+  type = scheme_char_string_to_byte_string(argv[1+use_realm]);
+  desc = scheme_char_string_to_byte_string(argv[2+use_realm]);
 
   do_out_of_range(scheme_symbol_val(argv[0]),
                   realm,
                   SCHEME_BYTE_STR_VAL(type), /* type */
                   SCHEME_BYTE_STR_VAL(desc), /* index description */
-                  ((argc > 7) && SCHEME_TRUEP(argv[7])),
-                  argv[3], /* index */
-                  argv[4], /* in value */
-                  argv[7], /* lower bound */
-                  argv[5], /* start */
-                  argv[6]); /* end */
+                  ((argc > (7+use_realm)) && SCHEME_TRUEP(argv[7+use_realm])),
+                  argv[3+use_realm], /* index */
+                  argv[4+use_realm], /* in value */
+                  argv[7+use_realm], /* lower bound */
+                  argv[5+use_realm], /* start */
+                  argv[6+use_realm]); /* end */
 
   return scheme_void;
 }
