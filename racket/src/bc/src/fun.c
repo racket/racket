@@ -2519,8 +2519,11 @@ const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_error)
 	  return NULL;
       }
 
-      if (SCHEME_VECTORP(n))
+      if (SCHEME_VECTORP(n)) {
 	n = SCHEME_VEC_ELS(n)[0];
+        if (SCHEME_FALSEP(n))
+          return NULL;
+      }
 
       if (for_error < 0) {
 	s = (char *)n;
@@ -2596,8 +2599,11 @@ const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_error)
     }
 
     if (name) {
-      if (SCHEME_VECTORP(name))
+      if (SCHEME_VECTORP(name)) {
 	name = SCHEME_VEC_ELS(name)[0];
+        if (SCHEME_FALSEP(name))
+          return NULL;
+      }
       if (for_error < 0) {
 	s = (char *)name;
 	*len = -1;
@@ -2650,6 +2656,13 @@ Scheme_Object *scheme_get_proc_realm(Scheme_Object *p)
   } else if (type == scheme_cont_type || type == scheme_escaping_cont_type) {
     return scheme_default_realm;
   } else if (type == scheme_case_closure_type) {
+    Scheme_Object *n = ((Scheme_Case_Lambda *)p)->name;
+    if (n) {
+      if (SCHEME_BOXP(n))
+	n = SCHEME_BOX_VAL(n);
+      if (SCHEME_VECTORP(n) && (SCHEME_VEC_SIZE(n) > 7))
+	return SCHEME_VEC_ELS(n)[7];
+    }
     return scheme_default_realm;
   } else if (type == scheme_proc_struct_type) {
     while (SCHEME_CHAPERONE_PROC_STRUCTP(p)) {
@@ -2674,7 +2687,7 @@ Scheme_Object *scheme_get_proc_realm(Scheme_Object *p)
     goto top;
   } else {
     Scheme_Object *name;
-    
+
     if (type == scheme_closure_type) {
       name = SCHEME_CLOSURE_CODE(p)->name;
     } else if (type == scheme_case_lambda_sequence_type) {

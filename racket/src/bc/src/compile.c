@@ -288,41 +288,40 @@ Scheme_Object *combine_name_with_srcloc(Scheme_Object *name, Scheme_Object *code
   Scheme_Stx *cstx = (Scheme_Stx *)code;
   int keep_realm = !SAME_OBJ(realm, scheme_default_realm);
 
-  if (!SCHEME_STXP(code)) {
-    if (keep_realm) {
+  if (SCHEME_STXP(code)) {
+    if (((cstx->srcloc->col >= 0) || (cstx->srcloc->pos >= 0))
+        && cstx->srcloc->src) {
       Scheme_Object *vec;
-      vec = scheme_make_vector(8, scheme_false);
+      vec = scheme_make_vector(keep_realm ? 8 : 7, NULL);
       SCHEME_VEC_ELS(vec)[0] = name;
-      SCHEME_VEC_ELS(vec)[7] = realm;
+      SCHEME_VEC_ELS(vec)[1] = cstx->srcloc->src;
+      if (cstx->srcloc->line >= 0) {
+        SCHEME_VEC_ELS(vec)[2] = scheme_make_integer(cstx->srcloc->line);
+        SCHEME_VEC_ELS(vec)[3] = scheme_make_integer(cstx->srcloc->col-1);
+      } else {
+        SCHEME_VEC_ELS(vec)[2] = scheme_false;
+        SCHEME_VEC_ELS(vec)[3] = scheme_false;
+      }
+      if (cstx->srcloc->pos >= 0)
+        SCHEME_VEC_ELS(vec)[4] = scheme_make_integer(cstx->srcloc->pos);
+      else
+        SCHEME_VEC_ELS(vec)[4] = scheme_false;
+      if (cstx->srcloc->span >= 0)
+        SCHEME_VEC_ELS(vec)[5] = scheme_make_integer(cstx->srcloc->span);
+      else
+        SCHEME_VEC_ELS(vec)[5] = scheme_false;
+      SCHEME_VEC_ELS(vec)[6] = (src_based_name ? scheme_true : scheme_false);
+      if (keep_realm)
+        SCHEME_VEC_ELS(vec)[7] = realm;
+      return vec;
     }
-    return name;
   }
 
-  if (((cstx->srcloc->col >= 0) || (cstx->srcloc->pos >= 0))
-      && cstx->srcloc->src) {
+  if (keep_realm) {
     Scheme_Object *vec;
-    vec = scheme_make_vector(keep_realm ? 8 : 7, NULL);
+    vec = scheme_make_vector(8, scheme_false);
     SCHEME_VEC_ELS(vec)[0] = name;
-    SCHEME_VEC_ELS(vec)[1] = cstx->srcloc->src;
-    if (cstx->srcloc->line >= 0) {
-      SCHEME_VEC_ELS(vec)[2] = scheme_make_integer(cstx->srcloc->line);
-      SCHEME_VEC_ELS(vec)[3] = scheme_make_integer(cstx->srcloc->col-1);
-    } else {
-      SCHEME_VEC_ELS(vec)[2] = scheme_false;
-      SCHEME_VEC_ELS(vec)[3] = scheme_false;
-    }
-    if (cstx->srcloc->pos >= 0)
-      SCHEME_VEC_ELS(vec)[4] = scheme_make_integer(cstx->srcloc->pos);
-    else
-      SCHEME_VEC_ELS(vec)[4] = scheme_false;
-    if (cstx->srcloc->span >= 0)
-      SCHEME_VEC_ELS(vec)[5] = scheme_make_integer(cstx->srcloc->span);
-    else
-      SCHEME_VEC_ELS(vec)[5] = scheme_false;
-    SCHEME_VEC_ELS(vec)[6] = (src_based_name ? scheme_true : scheme_false);
-    if (keep_realm)
-      SCHEME_VEC_ELS(vec)[7] = realm;
-    
+    SCHEME_VEC_ELS(vec)[7] = realm;
     return vec;
   }
 
@@ -348,6 +347,11 @@ static Scheme_Object *build_closure_name(Scheme_Object *code, Scheme_Comp_Env *e
       name = scheme_source_to_name(code);
       if (name)
 	name = combine_name_with_srcloc(name, code, 1, env->realm);
+      else {
+        name = combine_name_with_srcloc(scheme_false, scheme_false, 0, env->realm);
+        if (SCHEME_FALSEP(name))
+          name = NULL;
+      }
     } else {
       name = combine_name_with_srcloc(name, code, 0, env->realm);
     }
