@@ -1,5 +1,10 @@
 Version 8.4, January 2022
+Add `file-or-directory-stat`
+Expander: add "portal" syntax
+Add `#%terminal` primitive module for editor support; using this,
+ "xrepl" and "expeditor" provide an improved REPL by default
 Change `set/c` to support random generation
+CS: faster multiplication and division for some numbers
 Other bug repairs and other changes noted in the documentation
 
 Version 8.3, October 2021
