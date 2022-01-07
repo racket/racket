@@ -397,7 +397,7 @@
          [use-exe (or alt-exe
                       (case kind
                         [(mred) (if (eq? 'macosx (cross-system-type))
-                                    (format "GRacket~a.app/Contents/MacOS/Gracket~a"
+                                    (format "GRacket~a.app/Contents/MacOS/GRacket~a"
                                             (variant-suffix variant #t)
                                             (variant-suffix variant #t))
                                     (string-append "gracket" (variant-suffix variant #f)))]
