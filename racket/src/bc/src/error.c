@@ -3257,7 +3257,7 @@ static Scheme_Object *do_raise_arity_error(const char *who, int argc, Scheme_Obj
     maxc = 0;
   }
 
-  wrong_count_for_realm(name, realm, minc, maxc, argc - 2, args, 0);
+  wrong_count_for_realm(name, realm, minc, maxc, argc - (2+use_realm), args, 0);
 
   return NULL;
 }
