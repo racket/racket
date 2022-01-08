@@ -1,11 +1,11 @@
-(fasl-compressed #f)
+(define compressed? #f)
 
 (define-values (src dest deps)
   (let loop ([args (command-line-arguments)])
     (cond
       [(and (pair? args)
             (equal? (car args) "--compress"))
-       (fasl-compressed #t)
+       (set! compressed? #t)
        (loop (cdr args))]
       [(and (pair? args)
             (equal? (car args) "--xpatch")
@@ -19,4 +19,5 @@
       [else
        (values (car args) (cadr args) (cddr args))])))
 
+(fasl-compressed compressed?)
 (vfasl-convert-file src dest deps)
