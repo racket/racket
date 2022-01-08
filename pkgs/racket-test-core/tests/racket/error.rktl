@@ -71,6 +71,7 @@
     (test-error-match #rx"^cons" (raise-range-error 'cons "pair" "" 3 '(1 . 2) 0 1 0))
     (test-error-match #rx"^cons" (let ([cons (lambda (x) x)])
                                    (cons 1 2)))
+    (test-error-match #rx"^cons: expect" (raise-type-error 'cons "something" 5))
     
     (test-error-match #rx"^kons" (raise-argument-error* 'cons 'racket/primitive "string?" 17))
     (test-error-match #rx"^kons" (raise-result-error* 'cons 'racket/primitive "string?" 17))

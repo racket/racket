@@ -316,7 +316,7 @@
     (error-message->adjusted-string
      who default-realm
      (string-append-immutable
-      ": expected argument of type <" what ">"
+      "expected argument of type <" what ">"
       "; given: "
       (error-value->string
        (if pos (list-ref (cons arg args) pos) arg))
