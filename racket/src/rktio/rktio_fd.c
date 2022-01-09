@@ -633,10 +633,8 @@ int rktio_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
   init_read_fd(rktio, rfd);
 
   if (!rfd->th) {
-    /* No thread -- so wait works. This case isn't actually used
-       right now, because wait doesn't seem to work reliably for
-       anything that we can recognize other than regfiles, which are
-       handled above. */
+    /* No thread -- so wait works. This case is currently used for
+       console input. */
     if (WaitForSingleObject(rfd->fd, 0) == WAIT_OBJECT_0)
       return RKTIO_POLL_READY;
   } else {
@@ -850,7 +848,7 @@ void rktio_poll_add(rktio_t *rktio, rktio_fd_t *rfd, rktio_poll_set_t *fds, int 
         /* regular files never block */
         rktio_poll_set_add_nosleep(rktio, fds);
       } else {
-        /* This case is not currently used. See fd_byte_ready. */
+        /* We get here for console input, for example.  */
         rktio_poll_set_add_handle(rktio, (intptr_t)rfd->fd, fds, 0);
       }
     }
@@ -953,34 +951,51 @@ intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, int
 
   if (!rfd->th) {
     /* We can read directly. This must be a regular file, where
-       reading never blocks. */
+       reading never blocks, or it's a console, where we can check. */
     DWORD rgot, offset = 0;
+    int ready;
+
+    if (rktio_fd_is_regular_file(rktio, rfd))
+      ready = -1; /* => regfile */
+    else {
+      DWORD ne;
+      GetNumberOfConsoleInputEvents((HANDLE)rfd->fd, &ne);
+      ready = (ne != 0);
+    }
 
     if (rfd->has_pending_byte) {
       if (!len)
-	return 0;
+        return 0;
       buffer[0] = rfd->pending_byte;
       if (len == 1) {
-	if (rfd->pending_byte == '\r') {
-	  /* We have to read one more byte and then decode,
-	     shifting the new byte into pending position
-	     if it's not '\n' */
-	} else {
-	  if (is_converted) is_converted[0] = 0;
-	  rfd->has_pending_byte = 0;
-	  return 1;
-	}
+        if (rfd->pending_byte == '\r') {
+          /* We have to read one more byte and then decode,
+             shifting the new byte into pending position
+             if it's not '\n' */
+          if (!ready) return 0;
+        } else {
+          if (is_converted) is_converted[0] = 0;
+          rfd->has_pending_byte = 0;
+          return 1;
+        }
       } else {
-	/* read after first byte installed into the buffer */
+        if (!ready) return 0;
+        /* read after first byte installed into the buffer */
         rfd->has_pending_byte = 0;
-	offset = 1;
+        offset = 1;
       }
     }
-    
-    if (!ReadFile((HANDLE)rfd->fd, buffer + offset, len - offset, &rgot, NULL)) {
+
+    if (ready < 0)
+      ready = ReadFile((HANDLE)rfd->fd, buffer + offset, len - offset, &rgot, NULL);
+    else
+      ready = ReadConsoleW((HANDLE)rfd->fd, buffer + offset, len - offset, &rgot, NULL);
+
+    if (!ready) {
       get_windows_error();
       return RKTIO_READ_ERROR;
     }
+
     rgot += offset;
     
     if (rfd->has_pending_byte) {
@@ -1121,7 +1136,13 @@ static void init_read_fd(rktio_t *rktio, rktio_fd_t *rfd)
 {
   force_console(rfd);
 
-  if (!rktio_fd_is_regular_file(rktio, rfd) && !rfd->th) {
+  if (rfd->th)
+    return;
+  else if (rktio_fd_is_regular_file(rktio, rfd)) {
+    return;
+  } else if (rktio_fd_is_terminal(rktio, rfd)) {
+    return;
+  } else {
     /* To get non-blocking I/O for anything that can block, we create
        a separate reader thread.
 
