@@ -2639,7 +2639,7 @@ static MZ_NORETURN void wrong_return_arity_for_realm(const char *where,
                                                      Scheme_Object *realm,
                                                      int expected, int got,
                                                      Scheme_Object **argv,
-                                                     const char *s, int slen)
+                                                     const char *s, intptr_t slen)
 {
   char *buffer, *v;
   intptr_t vlen, blen;
