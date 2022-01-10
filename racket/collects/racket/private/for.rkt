@@ -339,20 +339,17 @@
                 (let ([content (syntax-e #'e)])
                   (cond
                     [(exact-nonnegative-integer? content)
-                     (expand-clause orig-stx #'[(id ...) (*in-range e)])]
+                     (expand-clause orig-stx #'[(id ...) (*in-range (quote e))])]
                     [(list? content)
-                     (expand-clause orig-stx
-                                    ;; list is the only case we need to specifically quote it
-                                    ;; because it would turn into a function application otherwise
-                                    #'[(id ...) (*in-list expanded-rhs)])]
+                     (expand-clause orig-stx #'[(id ...) (*in-list (quote e))])]
                     [(vector? content)
-                     (expand-clause orig-stx #'[(id ...) (*in-vector e)])]
+                     (expand-clause orig-stx #'[(id ...) (*in-vector (quote e))])]
                     [(and (hash? content) (immutable? content))
-                     (expand-clause orig-stx #'[(id ...) (in-immutable-hash e)])]
+                     (expand-clause orig-stx #'[(id ...) (in-immutable-hash (quote e))])]
                     [(string? content)
-                     (expand-clause orig-stx #'[(id ...) (*in-string e)])]
+                     (expand-clause orig-stx #'[(id ...) (*in-string (quote e))])]
                     [(bytes? content)
-                     (expand-clause orig-stx #'[(id ...) (*in-bytes e)])]
+                     (expand-clause orig-stx #'[(id ...) (*in-bytes (quote e))])]
                     [else (eloop #f #'expanded-rhs)]))]
                [_ (eloop #f #'expanded-rhs)]))]
           ;; when for:no-implicit-optimization is true

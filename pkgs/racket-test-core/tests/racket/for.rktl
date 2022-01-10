@@ -1250,7 +1250,7 @@
 (let ()
   (test #t 'same-expansion-for-integer-clause
         (equal? (syntax->datum (expand #'(for ([j 100]) j)))
-                (syntax->datum (expand #'(for ([j (in-range 100)]) j)))))
+                (syntax->datum (expand #'(for ([j (in-range '100)]) j)))))
 
   (test #t 'same-expansion-for-list-clause
         (equal? (syntax->datum (expand #'(for ([j '(1 2 3)]) j)))
@@ -1293,6 +1293,22 @@
 
 (err/rt-test (for/list ([x -1]) x))
 (err/rt-test (for/list ([x 1.5]) x))
+
+;; ----------------------------------------
+;; Make sure explicitly quoted datum doesn't need to have a `#%datum` binding
+
+(test '(0)
+      eval-syntax #`(for/list ([i (quote #,(datum->syntax #f 1))]) i))
+(test '(1)
+      eval-syntax #`(for/list ([i (quote #,(datum->syntax #f '(1)))]) i))
+(test '(1)
+      eval-syntax #`(for/list ([i (quote #,(datum->syntax #f '#(1)))]) i))
+(test '(#\1)
+      eval-syntax #`(for/list ([i (quote #,(datum->syntax #f "1"))]) i))
+(test '(49)
+      eval-syntax #`(for/list ([i (quote #,(datum->syntax #f #"1"))]) i))
+(test '(1)
+      eval-syntax #`(for/list ([(k v) (quote #,(datum->syntax #f #hash((1 . 0))))]) k))
 
 ;; ----------------------------------------
 
