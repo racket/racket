@@ -640,9 +640,11 @@ each element in the sequence.
 }
 
 @defproc[(in-value [v any/c]) sequence?]{
-  Returns a sequence that produces a single value: @racket[v].  This
-  form is mostly useful for @racket[let]-like bindings in forms such
-  as @racket[for*/list].
+  Returns a sequence that produces a single value: @racket[v].
+
+  This form is mostly useful for @racket[let]-like bindings in forms
+  such as @racket[for*/list]---but a @racket[#:do] clause form, added
+  more recently, covers many of the same uses.
 }
 
 @defproc[(in-indexed [seq sequence?]) sequence?]{

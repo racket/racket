@@ -431,6 +431,33 @@
                    [y (in-range 3)])
         (+ x y)))
 
+;; Check #:do:
+(test (vector 0 0 1 0 1 2)
+      'do
+      (for/vector #:length 6
+                  ([x (in-range 3)]
+                   #:do [(define z (+ x 1))]
+                   [y (in-range z)])
+                  y))
+(test (vector 0 0 1 0 1 2)
+      'do
+      (for/vector #:length 6
+                  ([x (in-range 3)]
+                   #:do [(define-syntax-rule (z) (+ x 1))]
+                   [x (in-list '(oops))]
+                   #:when #t
+                   [y (in-range (z))])
+                  y))
+(test (vector 0 0 0 1 1 1)
+      'do
+      (for/vector #:length 6
+                  ([x (in-range 3)]
+                   #:do [(struct pt (x y))
+                         (define (mk x y) (pt x y))]
+                   #:when #t
+                   [y (in-range 3)])
+        (pt-x (mk x y))))
+
 (test #hash((a . 1) (b . 2) (c . 3)) 'mk-hash
       (for/hash ([v (in-naturals)]
                  [k '(a b c)])
@@ -1129,6 +1156,14 @@
                    [y (in-range x (+ x 3))]
                    #:final (and (= x 2) (= y 3)))
         (cons (list x y) lst)))
+
+(test (list 0 0 1 0 1 2)
+      'do
+      (for/foldr ([acc null])
+                 ([x (in-range 3)]
+                  #:do [(define-syntax-rule (z) (+ x 1))]
+                  [y (in-range (z))])
+         (cons y acc)))
 
 (test '(408 . 20400)
       'for/foldr-two-accs

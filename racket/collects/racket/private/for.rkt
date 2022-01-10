@@ -1576,12 +1576,23 @@
            (let ([final? (or expr final?-id)])
              (for/foldX/derived [orig-stx inner-recur nested? #f ()]
                ([fold-var fold-var] ...) next-k break-k final? rest . body)))]
+      ;; General "do" case, no pending emits:
+      [(_ [orig-stx inner-recur nested? #f ()] ([fold-var fold-init] ...) next-k break-k final?-id (#:do forms . rest) . body)
+       (syntax-case #'forms ()
+         [(form ...)
+          #'(let ([fold-var fold-init] ...)
+              form ...
+              (for/foldX/derived [orig-stx inner-recur nested? #f ()]
+                ([fold-var fold-var] ...) next-k break-k final?-id rest . body))]
+         [_
+          (raise-syntax-error #f "expected parenthesized sequence after `#:do`" #'orig-stx #'forms)])]
       ;; Keyword case, pending emits need to be flushed first
       [(frm [orig-stx inner-recur nested? #f binds] ([fold-var fold-init] ...) next-k break-k final?-id (kw expr . rest) . body)
        (or (eq? (syntax-e #'kw) '#:when)
            (eq? (syntax-e #'kw) '#:unless)
            (eq? (syntax-e #'kw) '#:break)
-           (eq? (syntax-e #'kw) '#:final))
+           (eq? (syntax-e #'kw) '#:final)
+           (eq? (syntax-e #'kw) '#:do))
        #'(frm [orig-stx inner-recur nested? #t binds] ([fold-var fold-init] ...) next-k break-k final?-id (kw expr . rest) . body)]
       ;; Convert single-value form to multi-value form:
       [(_ [orig-stx inner-recur nested? #f binds] fold-bind next-k break-k final?-id ([id rhs] . rest) . body)
@@ -1776,7 +1787,7 @@
                                  (cons #`[ids #,(rhs-wrap #'rhs)]
                                        (loop (cdr bs)))]
                                 [kw
-                                 (memq (syntax-e #'kw) '(#:when #:unless #:break #:final))
+                                 (memq (syntax-e #'kw) '(#:when #:unless #:break #:final #:do))
                                  (cons (car bs)
                                        (if (null? (cdr bs))
                                            null
