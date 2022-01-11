@@ -5,7 +5,8 @@
          racket/string
          racket/path
          net/url
-         "private/git-url-scheme.rkt")
+         "private/git-url-scheme.rkt"
+         "private/github-url.rkt")
 
 (provide
  package-source-format?
@@ -175,8 +176,7 @@
                 (complain "URL scheme is not 'git' or 'github'"))
               (define github?
                 (or (eq? type 'github)
-                    (equal? (url-scheme url) "github")
-                    (equal? (url-host url) "github.com")))
+                    (github-url? url)))
               (define name
                 (and (cor (pair? p)
                           (complain "URL path is empty"))

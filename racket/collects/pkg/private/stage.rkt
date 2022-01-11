@@ -32,7 +32,8 @@
          "git.rkt"
          "prefetch.rkt"
          "checkout-credentials.rkt"
-         "network.rkt")
+         "network.rkt"
+         "github-url.rkt")
 
 (provide (struct-out install-info)
          remote-package-checksum
@@ -751,7 +752,7 @@
   (define pkg-url
     (string->url pkg-url-str))
   (define type (if (eq? given-type 'clone)
-                   (if (equal? "github" (url-scheme (string->url pkg-url-str)))
+                   (if (github-url? (string->url pkg-url-str))
                        'github
                        'git)
                    (or given-type
