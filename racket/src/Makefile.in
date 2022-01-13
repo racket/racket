@@ -37,7 +37,8 @@ COPYING = "$(srcdir)/LICENSE-libscheme.txt" \
           "$(srcdir)/LICENSE-MIT.txt" \
           "$(srcdir)/LICENSE-APACHE.txt" \
           "$(srcdir)/LICENSE-LGPL.txt" \
-          "$(srcdir)/LICENSE-GPL.txt"
+          "$(srcdir)/LICENSE-GPL.txt" \
+          "$(srcdir)/LICENSE.txt"
 
 all:
 	$(MAKE) @MAIN_MAKE_TARGET@
