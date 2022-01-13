@@ -29,6 +29,7 @@
                 collection-file-path
                 find-library-collection-paths
                 find-library-collection-links
+                get-installation-name
                 
                 load/use-compiled
 

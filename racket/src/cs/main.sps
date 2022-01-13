@@ -16,6 +16,8 @@
                current-load/use-compiled
                find-compiled-file-roots
                find-main-config
+               read-installation-configuration-table
+               get-installation-name
                executable-yield-handler
                load-on-demand-enabled
                use-user-specific-search-paths
@@ -783,19 +785,21 @@
       [else
        (set-collects-dir! init-collects-dir)])
      (set-config-dir! init-config-dir)
-     (unless (eq? init-collects-dir 'disable)
-       (current-library-collection-links
-        (find-library-collection-links))
-       (current-library-collection-paths
-        (find-library-collection-paths collects-pre-extra (reverse rev-collects-post-extra))))
-     (let ([roots (find-compiled-file-roots)])
-       (if compiled-roots-path-list-string
-           (current-compiled-file-roots
-            (let ([s (regexp-replace* "@[(]version[)]"
-                                      compiled-roots-path-list-string
-                                      (version))])
-              (path-list-string->path-list s roots)))
-           (current-compiled-file-roots roots))))
+     (let* ([config (read-installation-configuration-table)]
+            [name (get-installation-name config)])
+       (unless (eq? init-collects-dir 'disable)
+         (current-library-collection-links
+          (find-library-collection-links config name))
+         (current-library-collection-paths
+          (find-library-collection-paths collects-pre-extra (reverse rev-collects-post-extra) config name)))
+       (let ([roots (find-compiled-file-roots config)])
+         (if compiled-roots-path-list-string
+             (current-compiled-file-roots
+              (let ([s (regexp-replace* "@[(]version[)]"
+                                        compiled-roots-path-list-string
+                                        (version))])
+                (path-list-string->path-list s roots)))
+             (current-compiled-file-roots roots)))))
 
    ;; Called when Racket is embedded in a larger application:
    (define (register-embedded-entry-info! escape)

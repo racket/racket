@@ -719,7 +719,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
   Scheme_Object *config_path = NULL;
   Scheme_Object *host_collects_path = NULL, *host_config_path = NULL;
   char *compiled_paths = NULL;
-  Scheme_Object *collects_paths_l, *collects_paths_r;
+  Scheme_Object *collects_paths_l, *collects_paths_r, *config_table;
 #ifndef DONT_PARSE_COMMAND_LINE
   char **evals_and_loads, *real_switch = NULL, specific_switch[2];
   int *eval_kind, num_enl;
@@ -1402,9 +1402,10 @@ static int run_from_cmd_line(int argc, char *_argv[],
   /* Creates the main kernel environment */
   global_env = mk_basic_env();
 
+  config_table = scheme_read_installation_config_table(global_env);
   if (!skip_coll_dirs)
-    scheme_init_collection_paths_post(global_env, collects_paths_l, collects_paths_r);
-  scheme_init_compiled_roots(global_env, compiled_paths);
+    scheme_init_collection_paths_post_config(global_env, collects_paths_l, collects_paths_r, config_table);
+  scheme_init_compiled_roots_config(global_env, compiled_paths, config_table);
 
   scheme_seal_parameters();
 

@@ -8,7 +8,8 @@
           compile-keep-source-locations!)
   (import (rename (except (chezpart)
                           syntax->datum
-                          datum->syntax)
+                          datum->syntax
+                          getenv)
                   [define chez:define])
           (rename (rumble)
                   [correlated? syntax?]

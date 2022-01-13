@@ -3799,7 +3799,35 @@ int scheme_is_predefined_module_path(Scheme_Object *m)
   return SCHEME_TRUEP(r);
 }
 
+Scheme_Object *scheme_read_installation_config_table(Scheme_Env *global_env)
+{
+  mz_jmp_buf * volatile save, newbuf;
+  Scheme_Thread * volatile p;
+  Scheme_Object *config_table = scheme_false;
+  p = scheme_get_current_thread();
+  save = p->error_buf;
+  p->error_buf = &newbuf;
+  if (!scheme_setjmp(newbuf)) {
+    Scheme_Object *rct;
+
+    rct = scheme_builtin_value("read-installation-configuration-table");
+    config_table = _scheme_apply(rct, 0, NULL);
+  } else {
+    scheme_clear_escape();
+  }
+  p->error_buf = save;
+
+  return config_table;
+}
+
 void scheme_init_collection_paths_post(Scheme_Env *env, Scheme_Object *extra_dirs, Scheme_Object *post_dirs)
+{
+  scheme_init_collection_paths_post_config(env, extra_dirs, post_dirs,
+                                           scheme_read_installation_config_table(env));
+}
+
+void scheme_init_collection_paths_post_config(Scheme_Env *env, Scheme_Object *extra_dirs, Scheme_Object *post_dirs,
+                                              Scheme_Object *config_table)
 {
   mz_jmp_buf * volatile save, newbuf;
   Scheme_Thread * volatile p;
@@ -3807,13 +3835,19 @@ void scheme_init_collection_paths_post(Scheme_Env *env, Scheme_Object *extra_dir
   save = p->error_buf;
   p->error_buf = &newbuf;
   if (!scheme_setjmp(newbuf)) {
-    Scheme_Object *clcp, *flcp, *a[2];
+    Scheme_Object *gin, *clcp, *flcp, *a[4], *name;
+
+    gin = scheme_builtin_value("get-installation-name");
+    a[0] = config_table;
+    name = _scheme_apply(gin, 1, a);
 
     clcp = scheme_builtin_value("current-library-collection-links");
     flcp = scheme_builtin_value("find-library-collection-links");
 
     if (clcp && flcp) {
-      a[0] = _scheme_apply(flcp, 0, NULL);
+      a[0] = config_table;
+      a[1] = name;
+      a[0] = _scheme_apply(flcp, 2, a);
       _scheme_apply(clcp, 1, a);
     }
 
@@ -3823,7 +3857,9 @@ void scheme_init_collection_paths_post(Scheme_Env *env, Scheme_Object *extra_dir
     if (clcp && flcp) {
       a[0] = extra_dirs;
       a[1] = post_dirs;
-      a[0] = _scheme_apply(flcp, 2, a);
+      a[2] = config_table;
+      a[3] = name;
+      a[0] = _scheme_apply(flcp, 4, a);
       _scheme_apply(clcp, 1, a);
     }
   } else {
@@ -3838,6 +3874,11 @@ void scheme_init_collection_paths(Scheme_Env *env, Scheme_Object *extra_dirs)
 }
 
 void scheme_init_compiled_roots(Scheme_Env *global_env, const char *paths)
+{
+  scheme_init_compiled_roots_config(global_env, paths, scheme_read_installation_config_table(global_env));
+}
+
+void scheme_init_compiled_roots_config(Scheme_Env *global_env, const char *paths, Scheme_Object *config_table)
 {
   mz_jmp_buf * volatile save, newbuf;
   Scheme_Thread * volatile p;

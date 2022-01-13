@@ -41,6 +41,7 @@
           'find-library-collection-paths find-library-collection-paths
           'find-library-collection-links find-library-collection-links
           'find-compiled-file-roots find-compiled-file-roots
+          'read-installation-configuration-table read-installation-configuration-table
 
           'current-library-collection-paths current-library-collection-paths
           'current-library-collection-links current-library-collection-links

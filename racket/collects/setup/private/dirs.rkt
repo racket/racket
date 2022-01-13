@@ -1,6 +1,8 @@
 #lang racket/base
 (require racket/promise
          racket/private/config
+         (only-in '#%utils
+                  [get-installation-name utils:get-installation-name])
          (for-syntax racket/base))
 
 ;; ----------------------------------------
@@ -105,8 +107,11 @@
 (define (get-doc-search-url) (or (force config:doc-search-url)
                                  "http://docs.racket-lang.org/local-redirect/index.html"))
 (define (get-doc-open-url) (force config:doc-open-url))
-(define (get-installation-name) (or (force config:installation-name)
-                                    (version)))
+(define installation-name (delay/sync (utils:get-installation-name (force config-table))))
+(define get-installation-name
+  (case-lambda
+    [() (force installation-name)]
+    [(config) (utils:get-installation-name config)]))
 (define (get-build-stamp) (force config:build-stamp))
 
 ;; ----------------------------------------

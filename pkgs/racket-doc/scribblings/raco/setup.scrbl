@@ -1756,10 +1756,26 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
 
   @history[#:added "6.0.1.6"]}
 
-@defproc[(get-installation-name) string?]{ Returns the current
-  installation's name, which is often @racket[(version)] but can be
-  configured via @racket['installation-name] in @filepath{config.rktd}
-  (see @secref["config-file"]).}
+@defproc[(get-installation-name [config (read-installation-configuration-table)]) string?]{
+
+ Returns the current installation's name, which is often
+ @racket[(version)], but an installation name can be set through a
+ combination of a @racket['installation-name] value in @racket[config]
+ plus a user-specific directory state if
+ @racket[(use-user-specific-search-paths)] is @racket[#t].
+
+ A user-specific result depends on whether a directory
+ @as-index{@filepath{other-version}} exists within
+ @racket[(find-system-path 'addon-dir)]. If that directory exists, and
+ it no directory with the installation's configured name exists, then
+ @racket["other-version"] is used as the installation name. So, by
+ creating the @filepath{other-version} directory, a user can opt into
+ sharing of packages and collections across installations/versions,
+ while opting out for a specific installation/version by creating
+ a directory with that installation's name.
+
+ @history[#:changed "8.4.0.3" @elem{Added the @racket[config] argument and support for a
+                                    user-specific installation name.}]}
 
 @defproc[(get-build-stamp) (or/c #f string?)]{ Returns a string
    that identifies an installation build, which can be used to augment

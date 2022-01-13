@@ -16,6 +16,8 @@
          find-compiled-file-roots
          
          find-col-file
+         read-installation-configuration-table
+         get-installation-name
 
          collection-place-init!)
 
@@ -56,21 +58,33 @@
                  file-name
                  check-compiled?))
 
-(define (get-config-table d)
+(define (read-installation-configuration-table)
+  (define d (find-main-config))
   (define p (and d (build-path d "config.rktd")))
   (or (and p
            (file-exists? p)
-           (with-input-from-file p
-             (lambda ()
-               (let ([v (call-with-default-reading-parameterization read)])
-                 (and (hash? v)
-                      v)))))
+           (with-handlers ([exn:fail? (lambda (exn) #hash())])
+             (with-input-from-file p
+               (lambda ()
+                 (let ([v (call-with-default-reading-parameterization read)])
+                   (and (hash? v)
+                        v))))))
       #hash()))
 
-(define (get-installation-name config-table)
-  (hash-ref config-table
-            'installation-name 
-            (version)))
+(define (get-installation-name [config-table (read-installation-configuration-table)])
+  (unless (hash? config-table) (raise-argument-error 'get-installation-name "hash?" config-table))
+  (let ([base-name (hash-ref config-table
+                             'installation-name
+                             (version))])
+    (cond
+      [(not (use-user-specific-search-paths)) base-name]
+      [else
+       (define addon-dir (find-system-path 'addon-dir))
+       (define other-version-name "other-version")
+       (cond
+         [(directory-exists? (build-path addon-dir base-name)) base-name]
+         [(directory-exists? (build-path addon-dir other-version-name)) other-version-name]
+         [else base-name])])))
 
 (define (coerce-to-relative-path p)
   (cond
@@ -106,11 +120,14 @@
           [else (cons (coerce-to-path (car l)) (loop (cdr l)))]))
       orig-l))
 
-(define (find-library-collection-links)
-  (define ht (get-config-table (find-main-config)))
+(define (find-library-collection-links [config-table (read-installation-configuration-table)]
+                                       [installation-name (and (hash? config-table)
+                                                               (get-installation-name config-table))])
+  (unless (hash? config-table) (raise-argument-error 'find-library-collection-links "hash?" config-table))
+  (unless (string? installation-name) (raise-argument-error 'find-library-collection-links "string?" installation-name))
   (define lf (coerce-to-path
-              (or (hash-ref ht 'links-file #f)
-                  (build-path (or (hash-ref ht 'share-dir #f)
+              (or (hash-ref config-table 'links-file #f)
+                  (build-path (or (hash-ref config-table 'share-dir #f)
                                   (build-path 'up "share"))
                               "links.rktd"))))
   (append
@@ -120,13 +137,13 @@
    (if (and (use-user-specific-search-paths)
             (use-collection-link-paths))
        (list (build-path (find-system-path 'addon-dir)
-                         (get-installation-name ht)
+                         installation-name
                          "links.rktd"))
        null)
    ;; installation-wide:
    (if (use-collection-link-paths)
        (add-config-search
-        ht
+        config-table
         'links-search-files
         (list lf))
        null)))
@@ -136,6 +153,7 @@
 
 (define (collection-place-init!)
   (set! links-cache (make-weak-hash)))
+
 
 ;; used for low-level exception abort below:
 (define stamp-prompt-tag (make-continuation-prompt-tag 'stamp))
@@ -468,10 +486,23 @@
                              modes))
                     roots)))))
 
-(define (find-library-collection-paths [extra-collects-dirs null] [post-collects-dirs null])
+(define (find-library-collection-paths [extra-collects-dirs null]
+                                       [post-collects-dirs null]
+                                       [config-table (read-installation-configuration-table)]
+                                       [installation-name (and (hash? config-table)
+                                                               (get-installation-name config-table))])
+  (unless (and (list? extra-collects-dirs)
+               (andmap path-string? extra-collects-dirs))
+    (raise-argument-error 'find-library-collection-paths "(listof path-string?)" extra-collects-dirs))
+  (unless (and (list? post-collects-dirs)
+               (andmap path-string? post-collects-dirs))
+    (raise-argument-error 'find-library-collection-paths "(listof path-string?)" post-collects-dirs))
+  (unless (hash? config-table)
+    (raise-argument-error 'find-library-collection-paths "hash?" config-table))
+  (unless (string? installation-name)
+    (raise-argument-error 'find-library-collection-paths "string?" installation-name))
   (let ([user-too? (use-user-specific-search-paths)]
-        [cons-if (lambda (f r) (if f (cons f r) r))]
-        [config-table (get-config-table (find-main-config))])
+        [cons-if (lambda (f r) (if f (cons f r) r))])
     (path-list-string->path-list
      (if user-too?
          (let ([c (environment-variables-ref (current-environment-variables)
@@ -486,7 +517,7 @@
       (cons-if
        (and user-too?
             (build-path (find-system-path 'addon-dir)
-                        (get-installation-name config-table)
+                        installation-name
                         "collects"))
        (let loop ([l (append
                       extra-collects-dirs
@@ -501,8 +532,8 @@
                          (loop (cdr l)))
                    (loop (cdr l)))))))))))
 
-(define (find-compiled-file-roots)
-  (define ht (get-config-table (find-main-config)))
+(define (find-compiled-file-roots [ht (read-installation-configuration-table)])
+  (unless (hash? ht) (raise-argument-error 'find-compiled-file-roots "hash?" ht))
   (define paths (hash-ref ht 'compiled-file-roots #f))
   (or (and (list? paths)
            (map coerce-to-relative-path paths))

@@ -74,6 +74,8 @@
          find-library-collection-links
          find-compiled-file-roots
          find-main-config
+         read-installation-configuration-table
+         get-installation-name
 
          current-library-collection-paths
          current-library-collection-links
@@ -82,7 +84,7 @@
          use-compiled-file-check
          use-collection-link-paths
          use-user-specific-search-paths
-         
+
          syntax?
          read-syntax
          datum->syntax syntax->datum
