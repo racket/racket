@@ -26320,10 +26320,11 @@
                                                 (host-> host-path_0)))))
                                           (void))
                                         (|#%app|
-                                         rktio_open
+                                         rktio_open_with_create_permissions
                                          (unsafe-place-local-ref cell.1)
                                          host-path_0
-                                         flags_0)))
+                                         flags_0
+                                         perms10_0)))
                                     fd0_0))))
                            (begin
                              (if (vector? fd_0)

@@ -107,7 +107,7 @@
                                           "error deleting file\n"
                                           "  path: ~a")
                                          (host-> host-path))))
-       (rktio_open rktio host-path flags)]
+       (rktio_open_with_create_permissions rktio host-path flags perms)]
       [else fd0]))
   (when (rktio-error? fd)
     (end-atomic)
