@@ -1737,8 +1737,13 @@ rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, const char *dest, const
       return NULL;
     }
 
-    dest_fd = rktio_open(rktio, dest, (RKTIO_OPEN_WRITE
-                                       | (exists_ok ? RKTIO_OPEN_TRUNCATE : 0)));
+    dest_fd = rktio_open_with_create_permissions(rktio, dest, (RKTIO_OPEN_WRITE
+                                                               | (exists_ok ? RKTIO_OPEN_TRUNCATE : 0)),
+                                                 /* Permissions may be reduced by umask, but the
+                                                    intent here is to make sure the file doesn't have
+                                                    more permissions than it will end up with. We
+                                                    install final permissions after the copy. */
+                                                 buf.st_mode);
     if (!dest_fd) {
       rktio_close(rktio, src_fd);
       rktio_set_last_error_step(rktio, RKTIO_COPY_STEP_OPEN_DEST);
@@ -1842,8 +1847,12 @@ rktio_ok_t rktio_copy_file_finish_permissions(rktio_t *rktio, rktio_file_copy_t 
 {
 #ifdef RKTIO_SYSTEM_UNIX
   int err;
-  
+
   do {
+    /* We could skip this step if we know that the creation mode
+       wasn't reduced by umask, but getting umask without setting it
+       is another problem (because the obvious get-and-set trick is no
+       good for a process-wide value in a multithreaded context). */
     err = fchmod(rktio_fd_system_fd(rktio, fc->dest_fd), fc->mode);
   } while ((err == -1) && (errno != EINTR));
 
