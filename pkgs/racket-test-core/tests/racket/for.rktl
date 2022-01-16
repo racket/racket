@@ -1295,6 +1295,40 @@
 (err/rt-test (for/list ([x 1.5]) x))
 
 ;; ----------------------------------------
+;; splicing clauses
+
+(define-splicing-for-clause-syntax parallel3
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ n m) #'([n (in-range 3)]
+                  [m (in-range 3)])])))
+
+(define-splicing-for-clause-syntax cross3
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ n m) #'([n (in-range 3)]
+                  #:when #t
+                  [m (in-range 3)])])))
+
+(test '((0 0) (1 1) (2 2))
+      'parallel3
+      (for/list (#:splice (parallel3 n m))
+        (list n m)))
+(test '((0 0) (1 1) (2 2))
+      'parallel3
+      (for*/list (#:splice (parallel3 n m))
+        (list n m)))
+
+(test '((0 0) (0 1) (0 2) (1 0) (1 1) (1 2) (2 0) (2 1) (2 2))
+      'cross3
+      (for/list (#:splice (cross3 n m))
+        (list n m)))
+(test '((0 0) (0 1) (0 2) (1 0) (1 1) (1 2) (2 0) (2 1) (2 2))
+      'cross3
+      (for*/list (#:splice (cross3 n m))
+        (list n m)))
+
+;; ----------------------------------------
 ;; Make sure explicitly quoted datum doesn't need to have a `#%datum` binding
 
 (test '(0)
