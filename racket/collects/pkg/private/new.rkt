@@ -115,8 +115,6 @@ EOS
       (with-output-to-file ".gitignore"
         (lambda () (display #<<EOS
 *~
-\#*
-.\#*
 .DS_Store
 compiled/
 /doc/
