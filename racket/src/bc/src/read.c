@@ -768,7 +768,7 @@ static Scheme_Object *read_inner(Scheme_Object *port, ReadParams *params, int pr
 	    } else {
 	      GC_CAN_IGNORE const mzchar str1[] = { 's', 'h', 'e', 'q', 'v', 0 };
 	      GC_CAN_IGNORE const mzchar str2[] = { 's', 'h', 'a', 'l', 'w', 0 };
-	      int scanpos = 0, track = 0, failed = 0, kind = -1;
+	      int scanpos = 0, track = 0, failed = 0;
 
 	      do {
 		ch = scheme_getc(port);
@@ -782,34 +782,39 @@ static Scheme_Object *read_inner(Scheme_Object *port, ReadParams *params, int pr
 		  /* track 2: hashalw */
 		  scanpos++;
 		  track = 2;
-		} else if ((track == 1) && (scanpos == 4) && ((ch == '(') || (ch == '[') || (ch == '{'))) {
-		  /* hasheq */
-		  kind = 0;
-		  break;
-		} else if ((track == 0) && (scanpos == 2) && ((ch == '(') || (ch == '[') || (ch == '{'))) {
-		  /* hash */
-		  kind = 1;
-		  break;
-		} else if ((track == 1) && (scanpos == 5) && ((ch == '(') || (ch == '[') || (ch == '{'))) {
-		  /* hasheqv */
-		  kind = 2;
-		  break;
-		} else if ((track == 2) && (scanpos == 5) && ((ch == '(') || (ch == '[') || (ch == '{'))) {
-		  /* hashalw */
-		  kind = 3;
-		  break;
 		} else {
-		  failed = 1;
+		  if ((scanpos == 2) || (scanpos == 4)) {
+		    if (!(ch == '(')
+			&& !(ch == '[')
+			&& !(ch == '{'))
+		      failed = 1;
+		  } else
+		    failed = 1;
 		  break;
 		}
 	      } while (str1[scanpos]);
               
 	      if (!failed) {
 		/* Found recognized tag. Look for open paren... */
+		int kind;
 
-		if (!((ch == '(') || (ch == '[') || (ch == '{'))) {
+		if (scanpos > 4) {
 		  ch = scheme_getc(port);
 		}
+
+                if ((track == 1) && (scanpos == 4)) {
+                  /* hasheq */
+                  kind = 0;
+                } else if ((track == 0) && (scanpos == 2)) {
+                  /* hash */
+                  kind = 1;
+                } else if ((track == 2) && (scanpos == 5)) {
+                  /* hashalw */
+                  kind = 3;
+                } else {
+                  /* hasheqv */
+                  kind = 2;
+                }
 
 		if (ch == '(')
 		  return read_hash(port, ch, ')', kind, params);
