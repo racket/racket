@@ -509,8 +509,8 @@
                (make-weak-hash))]
           [(equal-always)
            (if (null? (cdr v))
-               (make-hashequalw)
-               (make-weak-hashequalw))]
+               (make-hashalw)
+               (make-weak-hashalw))]
           [(eqv)
            (if (null? (cdr v))
                (make-hasheqv)
@@ -595,7 +595,7 @@
                          (if (eq? (caaddr v) 'equal)
                              (make-immutable-hash al)
                              (if (eq? (caaddr v) 'equal-always)
-                                 (make-immutable-hashequalw al)
+                                 (make-immutable-hashalw al)
                                  (make-immutable-hasheqv al))))))]
 	  [(date) (apply make-date (map loop (cdr v)))]
 	  [(date*) (apply make-date* (map loop (cdr v)))]

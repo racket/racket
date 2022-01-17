@@ -41556,7 +41556,7 @@
                                                             (if (eq? tmp_0 2)
                                                               (make-hasheqv)
                                                               (if (eq? tmp_0 3)
-                                                                (make-hashequalw)
+                                                                (make-hashalw)
                                                                 (make-hash)))))))
                                                    (let ((len_1
                                                           (|#%app|
@@ -41598,7 +41598,7 @@
                                                             (if (eq? tmp_0 2)
                                                               hash2589
                                                               (if (eq? tmp_0 3)
-                                                                (hashequalw)
+                                                                (hashalw)
                                                                 hash2725))))))
                                                    (let ((len_1
                                                           (|#%app|

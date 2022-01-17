@@ -414,8 +414,8 @@
 (define empty-hasheq (make-empty-bnode HAMT-EQTYPE-EQ))
 (define empty-hasheqv (make-empty-bnode HAMT-EQTYPE-EQV))
 (define empty-hash (make-empty-bnode HAMT-EQTYPE-EQUAL))
-;; equalw is short for EQUal ALWays, first 3 letters of each word
-(define empty-hashequalw (make-empty-bnode HAMT-EQTYPE-EQUAL-ALWAYS))
+;; hashalw is for equal ALWays, first 3 letters of "always" since "equal" is implicit
+(define empty-hashalw (make-empty-bnode HAMT-EQTYPE-EQUAL-ALWAYS))
 
 (define intmap-shell-falses (let loop ([n (fx* 2 HAMT-WIDTH)])
                               (if (fx= n 0)
@@ -834,7 +834,7 @@
                    node
                    [(eq)  empty-hasheq]
                    [(eqv) empty-hasheqv]
-                   [(equal-always) empty-hashequalw]
+                   [(equal-always) empty-hashalw]
                    [else  empty-hash])]
                  [else
                   (bnode-remove-key node bit)]))]

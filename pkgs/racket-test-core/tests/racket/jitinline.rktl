@@ -261,7 +261,7 @@
     (un #t 'immutable? #hash())
     (un #t 'immutable? #hasheq())
     (un #t 'immutable? #hasheqv())
-    (un #t 'immutable? #hashequalw())
+    (un #t 'immutable? #hashalw())
     (un #t 'immutable? (chaperone-vector '#(1 2 3) (lambda (vec i val) val) (lambda (vec i val) val)))
     (un #f 'immutable? (chaperone-vector (vector 1 2 3) (lambda (vec i val) val) (lambda (vec i val) val)))
 

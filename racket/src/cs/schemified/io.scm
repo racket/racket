@@ -21532,7 +21532,7 @@
              "#hasheq("
              (if (hash-eqv? v_0)
                "#hasheqv("
-               (if (hash-equal-always? v_0) "#hashequalw(" "#hash(")))))
+               (if (hash-equal-always? v_0) "#hashalw(" "#hash(")))))
       (let ((keys_0 (try-sort (hash-keys v_0))))
         (letrec*
          ((loop_0
@@ -22225,7 +22225,7 @@
                                                      "(hasheqv"
                                                      (if (hash-equal-always?
                                                           v_0)
-                                                       "(hashequalw"
+                                                       "(hashalw"
                                                        "(hash")))))
                                             (print-list
                                              p

@@ -27,20 +27,20 @@
          in-weak-set
          set-implements/c
 
-         set seteq seteqv setequalw
-         weak-set weak-seteq weak-seteqv weak-setequalw
-         mutable-set mutable-seteq mutable-seteqv mutable-setequalw
-         list->set list->seteq list->seteqv list->setequalw
-         list->weak-set list->weak-seteq list->weak-seteqv list->weak-setequalw
-         list->mutable-set list->mutable-seteq list->mutable-seteqv list->mutable-setequalw
+         set seteq seteqv setalw
+         weak-set weak-seteq weak-seteqv weak-setalw
+         mutable-set mutable-seteq mutable-seteqv mutable-setalw
+         list->set list->seteq list->seteqv list->setalw
+         list->weak-set list->weak-seteq list->weak-seteqv list->weak-setalw
+         list->mutable-set list->mutable-seteq list->mutable-seteqv list->mutable-setalw
          set-eq? set-eqv? set-equal? set-equal-always?
          set-weak? set-mutable? set?
-         for/set for/seteq for/seteqv for/setequalw
-         for*/set for*/seteq for*/seteqv for*/setequalw
-         for/weak-set for/weak-seteq for/weak-seteqv for/weak-setequalw
-         for*/weak-set for*/weak-seteq for*/weak-seteqv for*/weak-setequalw
-         for/mutable-set for/mutable-seteq for/mutable-seteqv for/mutable-setequalw
-         for*/mutable-set for*/mutable-seteq for*/mutable-seteqv for*/mutable-setequalw
+         for/set for/seteq for/seteqv for/setalw
+         for*/set for*/seteq for*/seteqv for*/setalw
+         for/weak-set for/weak-seteq for/weak-seteqv for/weak-setalw
+         for*/weak-set for*/weak-seteq for*/weak-seteqv for*/weak-setalw
+         for/mutable-set for/mutable-seteq for/mutable-seteqv for/mutable-setalw
+         for*/mutable-set for*/mutable-seteq for*/mutable-seteqv for*/mutable-setalw
 
          define-custom-set-types
          make-custom-set-types
@@ -412,9 +412,9 @@
        [else seteq])]
     [(eq? cmp 'equal-always)
      (cond
-       [mutable? mutable-setequalw]
-       [weak? weak-setequalw]
-       [else setequalw])]
+       [mutable? mutable-setalw]
+       [weak? weak-setalw]
+       [else setalw])]
     [else
      (cond
        [mutable? mutable-set]

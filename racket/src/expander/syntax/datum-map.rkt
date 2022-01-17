@@ -96,7 +96,7 @@
              (values k (loop #f v seen))))]
        [(hash-equal-always? s)
         (f #f
-           (for/hashequalw ([(k v) (in-hash s)])
+           (for/hashalw ([(k v) (in-hash s)])
              (values k (loop #f v seen))))]
        [else
         (f #f

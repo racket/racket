@@ -1825,7 +1825,7 @@ DEEP_SST2_L:
           nht = scheme_make_immutable_hash(0, NULL);
         }
         else if ( scheme_true == scheme_hash_equal_always_p(1, &so)) {
-          nht = scheme_make_immutable_hashequalw(0, NULL);
+          nht = scheme_make_immutable_hashalw(0, NULL);
         }
       }
       else

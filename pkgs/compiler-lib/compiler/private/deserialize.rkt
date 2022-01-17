@@ -85,10 +85,10 @@
           (values (reverse rev) rest)]
          [(#:mpi)
           (values (vector-ref mpis (cadr r)) (cddr r))]
-         [(#:hash #:hashequalw #:hasheq #:hasheqv #:hasheqv/phase+space)
+         [(#:hash #:hashalw #:hasheq #:hasheqv #:hasheqv/phase+space)
           (define ht (case i
                        [(#:hash) (hash)]
-                       [(#:hashequalw) (hashequalw)]
+                       [(#:hashalw) (hashalw)]
                        [(#:hasheq) (hasheq)]
                        [(#:hasheqv  #:hasheqv/phase+space) (hasheqv)]))
           (for/fold ([ht ht] [r (cddr r)]) ([i (in-range (cadr r))])

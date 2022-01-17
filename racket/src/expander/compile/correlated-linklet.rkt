@@ -98,7 +98,7 @@
         (for/hasheqv ([(key value) (in-hash v)])
           (values (->faslable key) (->faslable value)))]
        [(hash-equal-always? v)
-        (for/hashequalw ([(key value) (in-hash v)])
+        (for/hashalw ([(key value) (in-hash v)])
           (values (->faslable key) (->faslable value)))]
        [else
         (for/hash ([(key value) (in-hash v)])

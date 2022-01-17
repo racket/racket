@@ -288,11 +288,11 @@
           equal-always-hash-code
           equal-always-secondary-hash-code
 
-          hash hasheqv hasheq hashequalw
-          make-hash make-hasheqv make-hasheq make-hashequalw
-          make-immutable-hash make-immutable-hasheqv make-immutable-hasheq make-immutable-hashequalw
-          make-weak-hash make-weak-hasheq make-weak-hasheqv make-weak-hashequalw
-          make-ephemeron-hash make-ephemeron-hasheq make-ephemeron-hasheqv make-ephemeron-hashequalw
+          hash hasheqv hasheq hashalw
+          make-hash make-hasheqv make-hasheq make-hashalw
+          make-immutable-hash make-immutable-hasheqv make-immutable-hasheq make-immutable-hashalw
+          make-weak-hash make-weak-hasheq make-weak-hasheqv make-weak-hashalw
+          make-ephemeron-hash make-ephemeron-hasheq make-ephemeron-hasheqv make-ephemeron-hashalw
           hash-ref hash-ref-key hash-set hash-set! hash-remove hash-remove!
           hash-for-each hash-map hash-copy hash-clear hash-clear!
           hash-iterate-first hash-iterate-next
@@ -496,7 +496,7 @@
           make-hash-placeholder
           make-hasheq-placeholder
           make-hasheqv-placeholder
-          make-hashequalw-placeholder
+          make-hashalw-placeholder
 
           time-apply
           current-inexact-milliseconds

@@ -512,7 +512,7 @@
               [(0) make-hasheq-placeholder]
               [(1) make-hash-placeholder]
               [(2) make-hasheqv-placeholder]
-              [(3) make-hashequalw-placeholder])
+              [(3) make-hashalw-placeholder])
             (for/list ([i (in-range len)])
               (cons (read-compact cp)
                     (read-compact cp)))))]

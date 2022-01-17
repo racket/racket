@@ -3593,7 +3593,7 @@
                                                                           args))))
                                                                       table_0))))))
                                                              (let ((app_0
-                                                                    (hashequalw)))
+                                                                    (hashalw)))
                                                                (for-loop_0
                                                                 app_0
                                                                 (hash-iterate-first
@@ -3955,7 +3955,7 @@
                                                 2
                                                 args))))
                                             table_0))))))
-                                   (let ((app_0 (hashequalw)))
+                                   (let ((app_0 (hashalw)))
                                      (for-loop_0
                                       app_0
                                       (hash-iterate-first v_1)))))
