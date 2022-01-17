@@ -1676,7 +1676,10 @@
       [(_ [orig-stx nested?] fold-bind done-k (clause ...) expr ...)
        ;; If there's a `#:break` or `#:final`, then we need to use the
        ;; non-nested loop approach to implement them:
-       (ormap (lambda (s) (or (eq? '#:break (syntax-e s)) (eq? '#:final (syntax-e s))))
+       (ormap (lambda (s) (or (eq? '#:break (syntax-e s))
+                              (eq? '#:final (syntax-e s))
+                              ;; might generate `#:break` or `#:final`:
+                              (eq? '#:splice (syntax-e s))))
               (syntax->list #'(clause ... expr ...)))
        #'(for/foldX/derived [orig-stx inner-recur/fold nested? #f ()] fold-bind done-k done-k #f (clause ...) expr ...)]
       [(_ [orig-stx nested?] fold-bind done-k . rest)

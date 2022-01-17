@@ -1328,6 +1328,14 @@
       (for*/list (#:splice (cross3 n m))
         (list n m)))
 
+(define-splicing-for-clause-syntax final-if-7
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ i) #'(#:final (= i 7))])))
+(test '(0 1 2 3 4 5 6 7)
+      'final-if-7
+      (for/list ([i (in-range 10)] #:splice (final-if-7 i)) i))
+
 ;; ----------------------------------------
 ;; Make sure explicitly quoted datum doesn't need to have a `#%datum` binding
 
