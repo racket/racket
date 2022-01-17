@@ -376,14 +376,14 @@ int scheme_eqv (Scheme_Object *obj1, Scheme_Object *obj2)
   return (is_eqv(obj1, obj2) > 0);
 }
 
-/* for_chaperone_equalw:
+/* for_chaperone_alw:
      0: 'equal? or 'impersonator-of?
      1: 'chaperone-of? or 'equal-always?
    result:
      -1: unknown
      0: known false
      1: known true */
-XFORM_NONGCING int is_fast_equal (Scheme_Object *obj1, Scheme_Object *obj2, int for_chaperone_equalw)
+XFORM_NONGCING int is_fast_equal (Scheme_Object *obj1, Scheme_Object *obj2, int for_chaperone_alw)
 {
   Scheme_Type t1, t2;
   int cmp;
@@ -402,7 +402,7 @@ XFORM_NONGCING int is_fast_equal (Scheme_Object *obj1, Scheme_Object *obj2, int 
  case scheme_flvector_type:
    {
      intptr_t l1, l2, i;
-     if (for_chaperone_equalw) return -1;
+     if (for_chaperone_alw) return -1;
      l1 = SCHEME_FLVEC_SIZE(obj1);
      l2 = SCHEME_FLVEC_SIZE(obj2);
      if (l1 == l2) {
@@ -419,7 +419,7 @@ XFORM_NONGCING int is_fast_equal (Scheme_Object *obj1, Scheme_Object *obj2, int 
  case scheme_extflvector_type:
    {
      intptr_t l1, l2, i;
-     if (for_chaperone_equalw) return -1;
+     if (for_chaperone_alw) return -1;
      l1 = SCHEME_EXTFLVEC_SIZE(obj1);
      l2 = SCHEME_EXTFLVEC_SIZE(obj2);
      if (l1 == l2) {
@@ -438,7 +438,7 @@ XFORM_NONGCING int is_fast_equal (Scheme_Object *obj1, Scheme_Object *obj2, int 
  case scheme_windows_path_type:
    {
      intptr_t l1, l2;
-     if (for_chaperone_equalw) return -1;
+     if (for_chaperone_alw) return -1;
      l1 = SCHEME_BYTE_STRTAG_VAL(obj1);
      l2 = SCHEME_BYTE_STRTAG_VAL(obj2);
      return ((l1 == l2)
@@ -447,7 +447,7 @@ XFORM_NONGCING int is_fast_equal (Scheme_Object *obj1, Scheme_Object *obj2, int 
  case scheme_char_string_type:
    {
      intptr_t l1, l2;
-     if (for_chaperone_equalw) return -1;
+     if (for_chaperone_alw) return -1;
      l1 = SCHEME_CHAR_STRTAG_VAL(obj1);
      l2 = SCHEME_CHAR_STRTAG_VAL(obj2);
      return ((l1 == l2)

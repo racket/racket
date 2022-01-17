@@ -512,7 +512,7 @@
                   (read-byte/no-eof i)
                   [(fasl-hash-eq-variant) (make-hasheq)]
                   [(fasl-hash-eqv-variant) (make-hasheqv)]
-                  [(fasl-hash-equal-always-variant) (make-hashequalw)]
+                  [(fasl-hash-equal-always-variant) (make-hashalw)]
                   [else (make-hash)]))
       (define len (read-fasl-integer i))
       (for ([j (in-range len)])
@@ -523,7 +523,7 @@
                   (read-byte/no-eof i)
                   [(fasl-hash-eq-variant) #hasheq()]
                   [(fasl-hash-eqv-variant) #hasheqv()]
-                  [(fasl-hash-equal-always-variant) (hashequalw)]
+                  [(fasl-hash-equal-always-variant) (hashalw)]
                   [else #hash()]))
       (define len (read-fasl-integer i))
       (for/fold ([ht ht]) ([j (in-range len)])

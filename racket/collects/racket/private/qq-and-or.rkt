@@ -431,7 +431,7 @@
                                                               (if (hash-eqv? (syntax-e x))
                                                                   (quote-syntax make-immutable-hasheqv)
                                                                   (if (hash-equal-always? (syntax-e x))
-                                                                      (quote-syntax make-immutable-hashequalw)
+                                                                      (quote-syntax make-immutable-hashalw)
                                                                       (quote-syntax make-immutable-hash))))
                                                           l)))))
                                           x)))))))))

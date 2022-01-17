@@ -75,21 +75,21 @@
    [() (create-mutable-hash (make-ephemeron-eqv-hashtable) 'eqv?)]
    [(alist) (fill-hash! who (make-ephemeron-hasheqv) alist)]))
 
-;; equalw is short for EQUal ALWays, first 3 letters of each word
-(define/who make-hashequalw
+;; hashalw is for equal ALWays, first 3 letters of "always" since "equal" is implicit
+(define/who make-hashalw
   (case-lambda
    [() (create-mutable-hash (make-hashtable key-equal-always-hash-code key-equal-always?) 'equal-always?)]
-   [(alist) (fill-hash! who (make-hashequalw) alist)]))
+   [(alist) (fill-hash! who (make-hashalw) alist)]))
 
-(define/who make-weak-hashequalw
+(define/who make-weak-hashalw
   (case-lambda
    [() (create-mutable-hash (make-weak-hashtable key-equal-always-hash-code key-equal-always?) 'equal-always?)]
-   [(alist) (fill-hash! who (make-weak-hashequalw) alist)]))
+   [(alist) (fill-hash! who (make-weak-hashalw) alist)]))
 
-(define/who make-ephemeron-hashequalw
+(define/who make-ephemeron-hashalw
   (case-lambda
    [() (create-mutable-hash (make-ephemeron-hashtable key-equal-always-hash-code key-equal-always?) 'equal-always?)]
-   [(alist) (fill-hash! who (make-ephemeron-hashequalw) alist)]))
+   [(alist) (fill-hash! who (make-ephemeron-hashalw) alist)]))
 
 (define/who (fill-hash! who ht alist)
   (check who :test (and (list? alist) (andmap pair? alist)) :contract "(listof pair?)" alist)
@@ -131,7 +131,7 @@
                        (cdr alist))))])))]))
 
 (define-hash-constructors hash make-immutable-hash empty-hash)
-(define-hash-constructors hashequalw make-immutable-hashequalw empty-hashequalw)
+(define-hash-constructors hashalw make-immutable-hashalw empty-hashalw)
 (define-hash-constructors hasheqv make-immutable-hasheqv empty-hasheqv)
 (define-hash-constructors hasheq make-immutable-hasheq empty-hasheq)
 
@@ -218,7 +218,7 @@
     (let ([new-ht (cond
                    [(intmap-eq? ht) (make-hasheq)]
                    [(intmap-eqv? ht) (make-hasheqv)]
-                   [(intmap-equal-always? ht) (make-hashequalw)]
+                   [(intmap-equal-always? ht) (make-hashalw)]
                    [else (make-hash)])])
       (let loop ([i (intmap-iterate-first ht)])
         (when i
@@ -265,7 +265,7 @@
     (cond
      [(hash-eq? ht) empty-hasheq]
      [(hash-eqv? ht) empty-hasheqv]
-     [(hash-equal-always? ht) empty-hashequalw]
+     [(hash-equal-always? ht) empty-hashalw]
      [else empty-hash])]
    [(and (impersonator? ht)
          (intmap? (impersonator-val ht)))
@@ -1224,25 +1224,25 @@
               (cond
                [(hash-eq? val-ht) (make-weak-hasheq)]
                [(hash-eqv? val-ht) (make-weak-hasheq)]
-               [(hash-equal-always? val-ht) (make-weak-hashequalw)]
+               [(hash-equal-always? val-ht) (make-weak-hashalw)]
                [else (make-weak-hash)])]
              [(hash-ephemeron? ht)
               (cond
                [(hash-eq? val-ht) (make-ephemeron-hasheq)]
                [(hash-eqv? val-ht) (make-ephemeron-hasheq)]
-               [(hash-equal-always? val-ht) (make-ephemeron-hashequalw)]
+               [(hash-equal-always? val-ht) (make-ephemeron-hashalw)]
                [else (make-ephemeron-hash)])]
              [else
               (cond
                [(hash-eq? val-ht) (make-hasheq)]
                [(hash-eqv? val-ht) (make-hasheq)]
-               [(hash-equal-always? val-ht) (make-hashequalw)]
+               [(hash-equal-always? val-ht) (make-hashalw)]
                [else (make-hash)])])]
            [else
             (cond
              [(hash-eq? val-ht) (make-hasheq)]
              [(hash-eqv? val-ht) (make-hasheqv)]
-             [(hash-equal-always? val-ht) (make-hashequalw)]
+             [(hash-equal-always? val-ht) (make-hashalw)]
              [else (make-hash)])])])
     (let loop ([i (hash-iterate-first ht)])
       (cond

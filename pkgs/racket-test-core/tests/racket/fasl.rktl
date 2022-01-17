@@ -127,7 +127,7 @@
 (check-hash make-hash hash)
 (check-hash make-hasheq hasheq)
 (check-hash make-hasheqv hasheqv)
-(check-hash make-hashequalw hashequalw)
+(check-hash make-hashalw hashalw)
 
 (define (check-mutable make-x)
   (test #t immutable? (fasl->s-exp (s-exp->fasl (make-x 3))))

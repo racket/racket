@@ -291,7 +291,7 @@
            (define prefix (cond
                             [(hash-eq? v) "(hasheq"]
                             [(hash-eqv? v) "(hasheqv"]
-                            [(hash-equal-always? v) "(hashequalw"]
+                            [(hash-equal-always? v) "(hashalw"]
                             [else "(hash"]))
            (print-list p who l mode o max-length graph config #f prefix)]
           [else

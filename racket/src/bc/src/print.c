@@ -2100,7 +2100,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
             if (scheme_is_hash_table_eqv(obj))
               print_utf8_string(pp, "eqv", 0, 3);
             else if (scheme_is_hash_table_equal_always(obj))
-              print_utf8_string(pp, "equalw", 0, 6);
+              print_utf8_string(pp, "alw", 0, 3);
             else
               print_utf8_string(pp, "eq", 0, 2);
           }
@@ -2109,7 +2109,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
             if (scheme_is_hash_tree_eqv(obj))
               print_utf8_string(pp, "eqv", 0, 3);
             else if (scheme_is_hash_tree_equal_always(obj))
-              print_utf8_string(pp, "equalw", 0, 6);
+              print_utf8_string(pp, "alw", 0, 3);
             else
               print_utf8_string(pp, "eq", 0, 2);
           }

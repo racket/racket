@@ -766,34 +766,43 @@ static Scheme_Object *read_inner(Scheme_Object *port, ReadParams *params, int pr
               scheme_read_err(port, "read: expected `a` after `#h`");
               return NULL;
 	    } else {
-	      GC_CAN_IGNORE const mzchar str[] = { 's', 'h', 'e', 'q', 'u', 'a', 'l', 'w', 0 };
-	      int scanpos = 0, failed = 0, kind = -1;
+	      GC_CAN_IGNORE const mzchar str1[] = { 's', 'h', 'e', 'q', 'v', 0 };
+	      GC_CAN_IGNORE const mzchar str2[] = { 's', 'h', 'a', 'l', 'w', 0 };
+	      int scanpos = 0, track = 0, failed = 0, kind = -1;
 
 	      do {
 		ch = scheme_getc(port);
-		if ((mzchar)ch == str[scanpos]) {
+		if (((mzchar)ch == str1[scanpos]) && ((mzchar)ch == str2[scanpos])) {
 		  scanpos++;
-		} else if ((scanpos == 4) && (mzchar)ch == 'v') {
-		  /* hasheqv */
-		  kind = 2;
-		  break;
-		} else if ((scanpos == 7) && (mzchar)ch == 'w') {
-		  /* hashequalw */
-		  kind = 3;
-		  break;
-		} else if ((scanpos == 4) && ((ch == '(') || (ch == '[') || (ch == '{'))) {
+		} else if ((track != 2) && ((mzchar)ch == str1[scanpos])) {
+		  /* track 1: hasheq or hasheqv */
+		  scanpos++;
+		  track = 1;
+		} else if ((track != 1) && ((mzchar)ch == str2[scanpos])) {
+		  /* track 2: hashalw */
+		  scanpos++;
+		  track = 2;
+		} else if ((track == 1) && (scanpos == 4) && ((ch == '(') || (ch == '[') || (ch == '{'))) {
 		  /* hasheq */
 		  kind = 0;
 		  break;
-		} else if ((scanpos == 2) && ((ch == '(') || (ch == '[') || (ch == '{'))) {
+		} else if ((track == 0) && (scanpos == 2) && ((ch == '(') || (ch == '[') || (ch == '{'))) {
 		  /* hash */
 		  kind = 1;
+		  break;
+		} else if ((track == 1) && (scanpos == 5) && ((ch == '(') || (ch == '[') || (ch == '{'))) {
+		  /* hasheqv */
+		  kind = 2;
+		  break;
+		} else if ((track == 2) && (scanpos == 5) && ((ch == '(') || (ch == '[') || (ch == '{'))) {
+		  /* hashalw */
+		  kind = 3;
 		  break;
 		} else {
 		  failed = 1;
 		  break;
 		}
-	      } while (str[scanpos]);
+	      } while (str1[scanpos]);
               
 	      if (!failed) {
 		/* Found recognized tag. Look for open paren... */
@@ -814,7 +823,11 @@ static Scheme_Object *read_inner(Scheme_Object *port, ReadParams *params, int pr
 	      {
 		mzchar str_part[7], one_more[2];
 
-		memcpy(str_part, str, scanpos * sizeof(mzchar));
+		if (track == 2) {
+		  memcpy(str_part, str2, scanpos * sizeof(mzchar));
+		} else {
+		  memcpy(str_part, str1, scanpos * sizeof(mzchar));
+		}
 		str_part[scanpos] = 0;
 		if (NOT_EOF_OR_SPECIAL(ch)) {
 		  one_more[0] = ch;
