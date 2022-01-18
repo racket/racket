@@ -701,7 +701,9 @@ A parameter for the @deftech{error display handler}, which is called
 by the default exception handler with an error message and the
 exception value. More generally, the handler's first argument is a
 string to print as an error message, and the second is a value
-representing a raised exception.
+representing a raised exception. An error display handler can
+print errors in different ways, but it should always print to the
+current error port.
 
 The default error display handler @racket[display]s its first argument
 to the current error port (determined by the
