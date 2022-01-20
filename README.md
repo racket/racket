@@ -38,7 +38,6 @@ Contribute to Racket by
   * [Slack](https://racket-slack.herokuapp.com/)
 
 
-
 By making a contribution, you are agreeing that your contribution is
 licensed under the LGPLv3, Apache 2.0, and MIT licenses. Those
 licenses are available in this repository in the files
