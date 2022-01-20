@@ -32,11 +32,9 @@ Contributing
 
 Contribute to Racket by
 * [submitting a pull request](https://github.com/racket/racket), 
-* joining the [development mailing list](https://lists.racket-lang.org), 
 * visiting the Racket forums 
   * [Racket Discussions Discourse](https://racket.discourse.group/)
   * [Racket Discord}(https://discord.gg/6Zq8sH5) #internals
-  * [IRC](https://racket-lang.org/community.html)
   * [Slack](https://racket-slack.herokuapp.com/)
 
 
@@ -47,7 +45,7 @@ licenses are available in this repository in the files
 racket/src/LICENSE-LGPL.txt, racket/src/LICENSE-APACHE.txt, and
 racket/src/LICENSE-MIT.txt.
 
-See the [Racket Build Guide](build.md) for more guidance on
+See the [Building, Distributing, and Contributing to Racket](https://docs.racket-lang.org/racket-build-guide/index.html) for more guidance on
 contributing.
 
 The [Friendly Environment Policy](https://racket-lang.org/friendly.html) contains guidelines on expected behavior within the Racket community.
