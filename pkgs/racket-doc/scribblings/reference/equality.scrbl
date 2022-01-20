@@ -35,6 +35,41 @@ preferred for most use cases.
    (equal? #t #t))}
 
 
+@defproc[(equal-always? [v1 any/c] [v2 any/c]) boolean?]{
+
+ Indicates whether @racket[v1] and @racket[v2] are equal and will always stay
+ equal through @emph{mutations}. For them to be equal-always, corresponding
+ immutable values within @racket[v1] and @racket[v2] must be @racket[equal?],
+ while corresponding mutable values within them must be @racket[eq?].
+
+ Two values @racket[v1] and @racket[v2] are @racket[equal-always?] if and only
+ if there exists a third value @racket[_v3] such that @racket[v1] and
+ @racket[v2] are both chaperones of @racket[_v3], meaning
+ @racket[(chaperone-of? v1 _v3)] and @racket[(chaperone-of? v2 _v3)] are both
+ true.
+
+ For values that include no chaperones or other impersonators,
+ @racket[v1] and @racket[v2] can be considered equal-always
+ if they are @racket[equal?], except that corresponding mutable
+ vectors, boxes, hash tables, strings, byte strings, @tech{mutable pairs}, and
+ mutable structures within
+ @racket[v1] and @racket[v2] must be @racket[eq?].
+
+ @(examples
+   (equal-always? 'yes 'yes)
+   (equal-always? 'yes 'no)
+   (equal-always? (* 6 7) 42)
+   (equal-always? (expt 2 100) (expt 2 100))
+   (equal-always? 2 2.0)
+   (equal-always? (list 1 2) (list 1 2))
+   (let ([v (mcons 1 2)]) (equal-always? v v))
+   (equal-always? (mcons 1 2) (mcons 1 2))
+   (equal-always? (integer->char 955) (integer->char 955))
+   (equal-always? (make-string 3 #\z) (make-string 3 #\z))
+   (equal-always? (string->immutable-string (make-string 3 #\z)) (string->immutable-string (make-string 3 #\z)))
+   (equal-always? #t #t))}
+
+
 @defproc[(eqv? [v1 any/c] [v2 any/c]) boolean?]{
 
  Two values are @racket[eqv?] if and only if they are @racket[eq?],
@@ -104,6 +139,23 @@ preferred for most use cases.
                  (lambda (a b) (<= (abs (- a b)) 0.25))))}
 
 
+@defproc[
+ (equal-always?/recur [v1 any/c] [v2 any/c] [recur-proc (any/c any/c -> any/c)])
+ boolean?]{
+
+ Like @racket[equal-always?], but using @racket[recur-proc] for recursive
+ comparisons (which means that reference cycles are not handled
+ automatically). Non-@racket[#f] results from @racket[recur-proc] are
+ converted to @racket[#t] before being returned by
+ @racket[equal-always?/recur].
+
+ @(examples
+   (equal-always?/recur 1 1 (lambda (a b) #f))
+   (equal-always?/recur '(1) '(1) (lambda (a b) #f))
+   (equal-always?/recur (vector-immutable 1 1 1) (vector-immutable 1 1.2 3/4)
+                        (lambda (a b) (<= (abs (- a b)) 0.25))))}
+
+
 @section[#:tag "model-eq"]{Object Identity and Comparisons}
 
 
@@ -163,6 +215,22 @@ indexing and comparison operations, especially in the implementation of
 @defproc[(equal-secondary-hash-code [v any/c]) fixnum?]{
 
  Like @racket[equal-hash-code], but computes a secondary @tech{hash code}
+ suitable for use in double hashing.}
+
+
+@defproc[(equal-always-hash-code [v any/c]) fixnum?]{
+
+ Returns a @tech{hash code} consistent with @racket[equal-always?]. For any two
+ calls with @racket[equal-always?] values, the returned number is the same.
+
+ As @racket[equal-always-hash-code] traverses @racket[v], immutable
+ values within @racket[v] are hashed with @racket[equal-hash-code],
+ while mutable values within @racket[v] are hashed with @racket[eq-hash-code].}
+
+
+@defproc[(equal-always-secondary-hash-code [v any/c]) fixnum?]{
+
+ Like @racket[equal-always-hash-code], but computes a secondary @tech{hash code}
  suitable for use in double hashing.}
 
 
