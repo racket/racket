@@ -491,7 +491,7 @@
 (define-syntax (define-temporary-file/directory-transformer stx)
   (syntax-case stx ()
     [(_ name runtime-proc-expr infer-proc-expr)
-     (with-syntax ([(tmp) (generate-temporaries #'(name))])
+     (with-syntax ([tmp (datum->syntax #'name (string->symbol (format "~a/proc" (syntax-e #'name))))])
        #`(begin
            (define tmp
              (let ([name runtime-proc-expr])
