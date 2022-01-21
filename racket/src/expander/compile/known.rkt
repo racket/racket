@@ -30,7 +30,7 @@
 ;; function of known arity and maybe known pure (at least, no side effect), where
 ;; pure must return 1 value
 
-(struct known-function-of-satisfying (arg-predicate-keys) #:prefab)
+(struct known-function-of-satisfying (arg-predicate-keys result-key) #:prefab)
 ;; function that is known to be pure as long as its arguments
 ;; are known to satisfy certain predicates
 

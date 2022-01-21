@@ -864,4 +864,12 @@
 
 ;; ----------------------------------------
 
+(test (arity-at-least 1)
+      procedure-arity (make-keyword-procedure (lambda (ks vs x . r) void)))
+(test 'foo
+      object-name
+      (procedure-rename (make-keyword-procedure (lambda (ks vs x . r) void)) 'foo))
+
+;; ----------------------------------------
+
 (report-errs)

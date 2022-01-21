@@ -152,9 +152,34 @@
 (define (satisfies? e key defns locals)
   (define d (or (hash-ref locals e #f)
                 (lookup-defn defns e)))
-  (and d
-       (known-satisfies? d)
-       (eq? key (known-satisfies-predicate-key d))))
+  (define known-key
+    (or (and d
+             (known-satisfies? d)
+             (known-satisfies-predicate-key d))
+        (cond
+          [(not e) 'false]
+          [(exact-integer? e) 'exact-integer]
+          [(pair? e)
+           (define head (car e))
+           (cond
+             [(eq? head 'quote)
+              (define v (cadr e))
+              (cond
+                [(symbol? v) 'symbol]
+                [else #f])]
+             [else
+              (define p (lookup-defn defns head))
+              (cond
+                [(known-function-of-satisfying? p)
+                 (known-function-of-satisfying-result-key p)]
+                [else #f])])]
+          [else #f])))
+  (and known-key
+       (or (eq? key known-key)
+           (and (pair? key)
+                (eq? 'or (car key))
+                (for/or ([key (in-list (cdr key))])
+                  (eq? key known-key))))))
 
 ;; ----------------------------------------
 

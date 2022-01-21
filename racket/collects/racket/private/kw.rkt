@@ -454,11 +454,18 @@
                                   (apply proc null null args)))])
                (make-keyword-procedure
                 proc
-                (if (symbol? proc-name)
-                    (if (symbol? proc-realm)
-                        (procedure-rename plain-proc proc-name proc-realm)
-                        plain-proc)
-                    plain-proc)))]
+                ;; This is written with redundant checks to help purity analysis
+                (let ([mask (and (procedure? proc)
+                                 (arithmetic-shift (procedure-arity-mask proc) -2))])
+                  (if (procedure? plain-proc)
+                      (if (exact-integer? mask)
+                          (if (symbol? proc-name)
+                              (if (symbol? proc-realm)
+                                  (procedure-reduce-arity-mask plain-proc mask proc-name proc-realm)
+                                  (procedure-reduce-arity-mask plain-proc mask #f 'ignored))
+                              (procedure-reduce-arity-mask plain-proc mask #f 'ignored))
+                          plain-proc)
+                      plain-proc))))]
      [(proc plain-proc)
       (make-optional-keyword-procedure
        (make-keyword-checker null #f (and (procedure? proc) ; reundant check helps purity inference
