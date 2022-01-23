@@ -26,6 +26,7 @@ AC_ARG_ENABLE(racket,     [  --enable-racket=<path>  use <path> as Racket for bu
 AC_ARG_ENABLE(scheme,     [  --enable-scheme=<path>  use <path> as host's build directory for cross])
 AC_ARG_ENABLE(mach,       [  --enable-mach=<mach>    use Chez Scheme machine type <mach>])
 AC_ARG_ENABLE(target,     [  --enable-target=<mach>  cross-build for Chez Scheme machine type <mach>])
+AC_ARG_ENABLE(pb,         [  --enable-pb             build for platform without native-code backend])
 m4_include(../ac/portable_arg.m4)
 m4_include(../ac/natipkg_arg.m4)
 m4_include(../ac/sdk_arg.m4)
@@ -682,6 +683,25 @@ if test "${enable_liblz4}" = "yes" ; then
   fi
 fi
 
+############## libffi in pb mode ################
+
+BUILD_MACH="${MACH}"
+BUILD_TARGET_MACH="${TARGET_MACH}"
+
+if test "${enable_pb}" = "yes" ; then
+  enable_libffi=yes
+  enable_foreign=yes
+  CONFIG_MAIN_SCHEME_MODE="--pb --threads --enable-libffi"
+  MACH=tpb
+  TARGET_MACH=tpb
+else
+  CONFIG_MAIN_SCHEME_MODE=""
+fi
+
+libffi_unavailable_message="did not find working configuration"
+complain_if_libffi_fails=yes
+m4_include(../ac/libffi.m4)
+
 ############## other inferred machine properties ################
 
 AC_CHECK_SIZEOF([void *])
@@ -785,8 +805,8 @@ fi
 
 m4_include(../ac/rktio_keep.m4)
 
-SCHEME_CONFIG_ARGS="--machine=${MACH} --disable-x11 ${disable_curses_arg} ${cs_auto_flags} ${extra_scheme_config_args}"
-SCHEME_CROSS_CONFIG_ARGS="--machine=${TARGET_MACH} --disable-x11 ${cs_auto_flags} ${disable_curses_arg} ${extra_scheme_config_args}"
+SCHEME_CONFIG_ARGS="--machine=${BUILD_MACH} --disable-x11 ${disable_curses_arg} ${cs_auto_flags} ${extra_scheme_config_args}"
+SCHEME_CROSS_CONFIG_ARGS="--machine=${BUILD_TARGET_MACH} --disable-x11 ${cs_auto_flags} ${disable_curses_arg} ${extra_scheme_config_args}"
 
 AC_SUBST(upsrcdir)
 AC_SUBST(CC)
@@ -838,6 +858,7 @@ AC_SUBST(BOOT_COMPRESS_COMP)
 AC_SUBST(MAKE_BUILD_SCHEME)
 AC_SUBST(SCHEME_CONFIG_ARGS)
 AC_SUBST(SCHEME_CROSS_CONFIG_ARGS)
+AC_SUBST(CONFIG_MAIN_SCHEME_MODE)
 AC_SUBST(FRAMEWORK_INSTALL_DIR)
 AC_SUBST(FRAMEWORK_PREFIX)
 AC_SUBST(FRAMEWORK_REL_INSTALL)

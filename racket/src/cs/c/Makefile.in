@@ -158,7 +158,7 @@ scheme-via-pb:
 pb-bootquick:
 	$(MAKE) config-scheme MACH=pb CONFIG_SCHEME_MODE=--pb
 	cd $(SCHEME_WORKAREA) && $(MAKE) reset
-	cd $(SCHEME_WORKAREA) && $(MAKE) ${MACH}.bootquick
+	cd $(SCHEME_WORKAREA) && $(MAKE) $(MACH).bootquick
 	$(MAKE) config-scheme
 	cd $(SCHEME_WORKAREA) && $(MAKE) reset
 	$(SHELL) $(srcdir)/ready_boot.sh $(MACH) $(SCHEME_WORKAREA)
@@ -175,7 +175,7 @@ CHOST_HACK =
 SCHEME_CONFIG_VARS = CC="$(CC)" CFLAGS="$(BASE_CFLAGS)" LDFLAGS="$(LDFLAGS) $(LINK_DYNAMIC)" LIBS="$(LIBS)" \
                      AR="$(AR)" ARFLAGS="$(ARFLAGS)" RANLIB="$(RANLIB)" \
                      WINDRES="$(WINDRES)"
-CONFIG_SCHEME_MODE =
+CONFIG_SCHEME_MODE = @CONFIG_MAIN_SCHEME_MODE@
 
 config-scheme:
 	cd $(SCHEME_WORKAREA) && "$(UP_SCHEME_DIR)"/configure $(CONFIG_SCHEME_MODE) @SCHEME_CONFIG_ARGS@ $(SCHEME_CONFIG_VARS)

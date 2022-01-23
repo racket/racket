@@ -7090,6 +7090,8 @@ if test "${enable_libffi}" = "default" ; then
   esac
 fi
 
+libffi_unavailable_message="Building own libffi"
+
 if test "${enable_libffi}" = "yes" ; then
  if test "${enable_foreign}" = "yes" ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libffi" >&5
@@ -7146,7 +7148,7 @@ $as_echo "$have_libffi" >&6; }
   if test "${have_libffi}" = "no" ; then
     CFLAGS="${OLD_CFLAGS}"
     LIBS="${OLD_LIBS}"
-    echo "Building own libffi"
+    echo "${libffi_unavailable_message}"
     if test "${complain_if_libffi_fails}" = "yes" ; then
        echo configure: unable to link to libffi
        exit 1
@@ -7160,6 +7162,7 @@ $as_echo "$have_libffi" >&6; }
   fi
  fi
 fi
+
 
 ############## Solaris grunge ################
 
