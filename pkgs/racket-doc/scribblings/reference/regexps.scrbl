@@ -929,7 +929,7 @@ number @nonterm{n} following @litchar{\}. If a @litchar{\} in
 by itself is treated as @litchar{\0}.
 
 Note that the @litchar{\} described in the previous paragraphs is a
-character or byte of @racket[input]. To write such an @racket[input]
+character or byte of @racket[insert]. To write such an @racket[insert]
 as a Racket string literal, an escaping @litchar{\} is needed
 before the @litchar{\}. For example, the Racket constant
 @racket["\\1"] is @litchar{\1}.
