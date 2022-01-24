@@ -41,6 +41,13 @@
   (printf "~a\n" msg)
   (flush-output))
 
+(define target-arch
+  (case target-machine
+    [("pb32" "tpb" "tpb32")
+     (begin0 'pb
+       (status (format "Target arch for ~a machine is pb" target-machine)))]
+    [else (string->symbol target-machine)]))
+
 (define sources-date
   (for/fold ([d 0]) ([dir (in-list (list here-dir
                                          nano-dir
@@ -255,7 +262,7 @@
               [(constant-case architecture [else e ...])
                (loop #`(begin e ...))]
               [(constant-case architecture [(arch ...) e ...] . _)
-               (memq (string->symbol target-machine) (syntax->datum #'(arch ...)))
+               (memq target-arch (syntax->datum #'(arch ...)))
                (loop #`(begin e ...))]
               [(constant-case architecture _ . clauses)
                (loop #`(constant-case architecture . clauses))]
