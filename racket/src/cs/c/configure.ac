@@ -85,6 +85,7 @@ show_explicitly_set "${enable_racket}" "Racket"
 show_explicitly_set "${enable_scheme}" "Chez Scheme build directory"
 show_explicitly_set "${enable_mach}" "machine type"
 show_explicitly_set "${enable_target}" "cross-build machine type"
+show_explicitly_set "${enable_pb}" "pb machine type"
 m4_include(../ac/portable_show.m4)
 m4_include(../ac/natipkg_show.m4)
 show_explicitly_enabled "${enable_libz}" "Installed libz"
@@ -411,6 +412,17 @@ if test "${enable_mach}" != "" ; then
   MACH="${enable_mach}"
 fi
 
+# For a pb build where Racket is supplied, force cross-build
+# mode on the assumption that the host is not a a pb build
+# (because it should be created with default configure options)
+if test "${enable_pb}" = "yes" ; then
+  if test "${enable_racket}" != "" ; then
+    if test "${enable_target}" = "" ; then
+      enable_target="${MACH}"
+    fi
+  fi
+fi
+
 if test "${enable_target}" != "" ; then
   TARGET_MACH=${enable_target}
   CROSS_MODE="cross"
@@ -474,7 +486,6 @@ elif test "${build_os}_${build_cpu}" != "${host_os}_${host_cpu}" ; then
   MACH=${BUILD_MACH}
   CROSS_MODE="cross"
 else
-  BUILD_MACH=${MACH}
   TARGET_MACH=${MACH}
   CROSS_MODE=""
 fi
@@ -685,15 +696,17 @@ fi
 
 ############## libffi in pb mode ################
 
-BUILD_MACH="${MACH}"
-BUILD_TARGET_MACH="${TARGET_MACH}"
+KERNEL_MACH="${MACH}"
+KERNEL_TARGET_MACH="${TARGET_MACH}"
 
 if test "${enable_pb}" = "yes" ; then
   enable_libffi=yes
   enable_foreign=yes
   CONFIG_MAIN_SCHEME_MODE="--pb --threads --enable-libffi"
-  MACH=tpb
   TARGET_MACH=tpb
+  if test "${CROSS_MODE}" != "cross" ; then
+    MACH=tpb
+  fi
 else
   CONFIG_MAIN_SCHEME_MODE=""
 fi
@@ -805,8 +818,8 @@ fi
 
 m4_include(../ac/rktio_keep.m4)
 
-SCHEME_CONFIG_ARGS="--machine=${BUILD_MACH} --disable-x11 ${disable_curses_arg} ${cs_auto_flags} ${extra_scheme_config_args}"
-SCHEME_CROSS_CONFIG_ARGS="--machine=${BUILD_TARGET_MACH} --disable-x11 ${cs_auto_flags} ${disable_curses_arg} ${extra_scheme_config_args}"
+SCHEME_CONFIG_ARGS="--machine=${KERNEL_MACH} --disable-x11 ${disable_curses_arg} ${cs_auto_flags} ${extra_scheme_config_args}"
+SCHEME_CROSS_CONFIG_ARGS="--machine=${KERNEL_TARGET_MACH} --disable-x11 ${cs_auto_flags} ${disable_curses_arg} ${extra_scheme_config_args}"
 
 AC_SUBST(upsrcdir)
 AC_SUBST(CC)
