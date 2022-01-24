@@ -30,6 +30,9 @@ if test "${enable_racket}" = "auto" ; then
 fi
 RUN_LOCAL_RACKET="local/cs/c/racketcs"
 CONFIGURE_LOCAL_RACKET=--enable-cs
+if test "${enable_pb}" = "yes" ; then
+  CONFIGURE_LOCAL_RACKET="${CONFIGURE_LOCAL_RACKET} --enable-pb"
+fi
 LOCAL_RACKET_TARGET=cs
 
 # If BC is the default, then we rely on BC configure-parent
