@@ -1,6 +1,8 @@
 #lang scribble/doc
 @(require "mz.rkt"
-          (for-label syntax/for-body))
+          (for-label syntax/for-body
+                     syntax/parse
+                     syntax/parse/define))
 
 @title[#:tag "for"]{Iterations and Comprehensions: @racket[for], @racket[for/list], ...}
 
@@ -623,21 +625,16 @@ A macro that expands to @racket[for/fold/derived] should typically use
 definitions mixed with keywords like @racket[#:break].
 
 @mz-examples[#:eval for-eval
-(require (for-syntax syntax/for-body))
-(define-syntax (for/digits stx)
-  (syntax-case stx ()
-    [(_ clauses body ... tail-expr)
-     (with-syntax ([original stx]
-                   [((pre-body ...) (post-body ...))
-                    (split-for-body stx #'(body ... tail-expr))])
-       #'(let-values
-             ([(n k)
-               (for/fold/derived
-                   original ([n 0] [k 1])
-                 clauses
-                 pre-body ...
-                 (values (+ n (* (let () post-body ...) k)) (* k 10)))])
-           n))]))
+(require (for-syntax syntax/for-body)
+         syntax/parse/define)
+
+(define-syntax-parse-rule (for/digits clauses body ... tail-expr)
+  #:with original this-syntax
+  #:with ((pre-body ...) (post-body ...)) (split-for-body this-syntax #'(body ... tail-expr))
+  (for/fold/derived original ([n 0] [k 1] #:result n)
+    clauses
+    pre-body ...
+    (values (+ n (* (let () post-body ...) k)) (* k 10))))
 
 @code:comment{If we misuse for/digits, we can get good error reporting}
 @code:comment{because the use of orig-datum allows for source correlation:}
@@ -654,20 +651,18 @@ definitions mixed with keywords like @racket[#:break].
 
 
 @code:comment{Another example: compute the max during iteration:}
-(define-syntax (for/max stx)
-  (syntax-case stx ()
-    [(_ clauses body ... tail-expr)
-     (with-syntax ([original stx]
-                   [((pre-body ...) (post-body ...))
-                    (split-for-body stx #'(body ... tail-expr))])
-       #'(for/fold/derived original
-           ([current-max -inf.0])
-           clauses
-           pre-body ...
-           (define maybe-new-max (let () post-body ...))
-           (if (> maybe-new-max current-max)
-               maybe-new-max
-               current-max)))]))
+(define-syntax-parse-rule (for/max clauses body ... tail-expr)
+  #:with original this-syntax
+  #:with ((pre-body ...) (post-body ...)) (split-for-body this-syntax #'(body ... tail-expr))
+  (for/fold/derived original
+    ([current-max -inf.0])
+    clauses
+    pre-body ...
+    (define maybe-new-max (let () post-body ...))
+    (if (> maybe-new-max current-max)
+        maybe-new-max
+        current-max)))
+
 (for/max ([n '(3.14159 2.71828 1.61803)]
           [s '(-1      1       1)])
   (* n s))
@@ -681,20 +676,16 @@ definitions mixed with keywords like @racket[#:break].
 Like @racket[for*/fold], but the extra @racket[orig-datum] is used as the source for all syntax errors.
 
 @mz-examples[#:eval for-eval
-(require (for-syntax syntax/for-body))
-(define-syntax (for*/digits stx)
-  (syntax-case stx ()
-    [(_ clauses body ... tail-expr)
-     (with-syntax ([original stx]
-                   [((pre-body ...) (post-body ...))
-                    (split-for-body stx #'(body ... tail-expr))])
-       #'(let-values
-             ([(n k)
-               (for*/fold/derived original ([n 0] [k 1])
-                 clauses
-                 pre-body ...
-                 (values (+ n (* (let () post-body ...) k)) (* k 10)))])
-           n))]))
+(require (for-syntax syntax/for-body)
+         syntax/parse/define)
+
+(define-syntax-parse-rule (for*/digits clauses body ... tail-expr)
+  #:with original this-syntax
+  #:with ((pre-body ...) (post-body ...)) (split-for-body this-syntax #'(body ... tail-expr))
+  (for*/fold/derived original ([n 0] [k 1] #:result n)
+    clauses
+    pre-body ...
+    (values (+ n (* (let () post-body ...) k)) (* k 10))))
 
 (eval:error
  (for*/digits
