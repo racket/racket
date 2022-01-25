@@ -44,8 +44,8 @@ licenses are available in this repository in the files
 racket/src/LICENSE-LGPL.txt, racket/src/LICENSE-APACHE.txt, and
 racket/src/LICENSE-MIT.txt.
 
-See the [Building, Distributing, and Contributing to Racket](https://docs.racket-lang.org/racket-build-guide/index.html) 
-or [Racket Build Guide](build.md) for more guidance on contributing.
+See the [Building, Distributing, and Contributing to Racket] (build.md) 
+for more guidance on contributing.
 
 The [Friendly Environment Policy](https://racket-lang.org/friendly.html) 
 contains guidelines on expected behavior within the Racket community.
