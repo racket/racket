@@ -16,6 +16,7 @@ SCHEME = $(SCHEME_BIN) -B $(SCHEME_INC)/petite.boot -B $(SCHEME_INC)/scheme.boot
 
 TARGET_MACH = @TARGET_MACH@
 SCHEME_TARGET_INC = $(SCHEME_WORKAREA)/$(TARGET_MACH)/boot/$(TARGET_MACH)
+KERNEL_TARGET_MACH = @KERNEL_TARGET_MACH@
 
 CC = @CC@
 BASE_CFLAGS = @CFLAGS@ @CPPFLAGS@
@@ -231,8 +232,28 @@ OWN_LZ4_LIB = $(SCHEME_TARGET_INC)/../../lz4/lib/liblz4.a
 SCHEME_LIB_DEPS = $(SCHEME_TARGET_INC)/libkernel.a @Z_LIB_DEP@ @LZ4_LIB_DEP@
 SCHEME_LIBS = $(SCHEME_TARGET_INC)/libkernel.a @Z_LIB@ @LZ4_LIB@
 
-BOOT_OBJ_DEPS = boot.o $(SCHEME_LIB_DEPS) rktio/librktio.a
-BOOT_OBJS = boot.o $(SCHEME_LIBS) rktio/librktio.a
+PETITE_BOOT_plain = $(SCHEME_TARGET_INC)/petite.boot
+PETITE_BOOT_pbchunk = petite-pbchunk.boot
+PETITE_BOOT_IN = $(PETITE_BOOT_@PBCHUNK_MODE@)
+
+SCHEME_BOOT_plain = $(SCHEME_TARGET_INC)/scheme.boot
+SCHEME_BOOT_pbchunk = scheme-pbchunk.boot
+SCHEME_BOOT_IN = $(SCHEME_BOOT_@PBCHUNK_MODE@)
+
+RACKET_BOOT_plain = racket.boot
+RACKET_BOOT_pbchunk = racket-pbchunk.boot
+RACKET_BOOT_IN = $(RACKET_BOOT_@PBCHUNK_MODE@)
+
+BOOT_EXTRA_OBJS_plain =
+BOOT_EXTRA_OBJS_pbchunk = petite0.o petite1.o petite2.o petite3.o petite4.o \
+                          petite5.o petite6.o petite7.o petite8.o petite9.o \
+                          scheme0.o scheme1.o scheme2.o scheme3.o scheme4.o \
+                          scheme5.o scheme6.o scheme7.o scheme8.o scheme9.o \
+                          racket0.o racket1.o racket2.o racket3.o racket4.o \
+                          racket5.o racket6.o racket7.o racket8.o racket9.o
+
+BOOT_OBJ_DEPS = boot.o $(SCHEME_LIB_DEPS) rktio/librktio.a $(BOOT_EXTRA_OBJS_@PBCHUNK_MODE@)
+BOOT_OBJS = boot.o $(SCHEME_LIBS) rktio/librktio.a $(BOOT_EXTRA_OBJS_@PBCHUNK_MODE@)
 
 raw_racketcs@NOT_OSX@: main.o boot.o $(BOOT_OBJ_DEPS)
 	$(CC) $(CFLAGS) -o raw_racketcs main.o $(BOOT_OBJS) $(LDFLAGS) $(LIBS) $(LINK_DYNAMIC)
@@ -242,14 +263,14 @@ raw_gracketcs: grmain.o boot.o $(BOOT_OBJ_DEPS)
 	$(CC) $(CFLAGS) -o raw_gracketcs grmain.o $(BOOT_OBJS) $(LDFLAGS) $(LIBS) $(LINK_DYNAMIC)
 	@POST_LINKER@ raw_gracketcs
 
-petite-v.boot: $(SCHEME_TARGET_INC)/petite.boot
-	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) $(SCHEME_TARGET_INC)/petite.boot petite-v.boot
+petite-v.boot: $(PETITE_BOOT_IN)
+	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) $(PETITE_BOOT_IN) petite-v.boot
 
-scheme-v.boot: $(SCHEME_TARGET_INC)/scheme.boot
-	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) $(SCHEME_TARGET_INC)/scheme.boot scheme-v.boot petite
+scheme-v.boot: $(SCHEME_BOOT_IN)
+	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) $(SCHEME_BOOT_IN) scheme-v.boot petite
 
-racket-v.boot: racket.boot
-	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) racket.boot racket-v.boot petite scheme
+racket-v.boot: $(RACKET_BOOT_IN)
+	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) $(RACKET_BOOT_IN) racket-v.boot petite scheme
 
 # ----------------------------------------
 # Mac OS
@@ -287,7 +308,7 @@ $(GRACKET_BIN): grmain.o $(RKTFW) $(GRAPPSKEL)
 $(GRAPPSKEL): $(srcdir)/../../mac/osx_appl.rkt  $(srcdir)/../../version/racket_version.h $(srcdir)/../../mac/icon/GRacket.icns
 	$(BOOTSTRAP_RACKET) $(srcdir)/../../mac/osx_appl.rkt $(srcdir)/../.. "CS"
 
-BOOT_FILES = $(SCHEME_TARGET_INC)/petite.boot $(SCHEME_TARGET_INC)/scheme.boot racket.boot
+BOOT_FILES = $(PETITE_BOOT_IN) $(SCHEME_BOOT_IN) $(RACKET_BOOT_IN)
 FW_BOOT_DEST = Racket.framework/Versions/$(FWVERSION)_CS/boot
 
 $(RKTFW): $(BOOT_OBJ_DEPS) $(BOOT_FILES)
@@ -296,9 +317,9 @@ $(RKTFW): $(BOOT_OBJ_DEPS) $(BOOT_FILES)
 	rm -f Racket.framework/Racket
 	ln -s Versions/$(FWVERSION)_CS/Racket Racket.framework/Racket
 	mkdir -p Racket.framework/Versions/$(FWVERSION)_CS/boot
-	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) $(SCHEME_TARGET_INC)/petite.boot $(FW_BOOT_DEST)/petite.boot
-	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) $(SCHEME_TARGET_INC)/scheme.boot $(FW_BOOT_DEST)/scheme.boot petite
-	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) racket.boot $(FW_BOOT_DEST)/racket.boot petite scheme
+	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) $(PETITE_BOOT_IN) $(FW_BOOT_DEST)/petite.boot
+	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) $(SCHEME_BOOT_IN) $(FW_BOOT_DEST)/scheme.boot petite
+	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) $(RACKET_BOOT_IN) $(FW_BOOT_DEST)/racket.boot petite scheme
 
 adjust-framework-boot-compress:
 	$(BOOTSTRAP_RACKET) $(srcdir)/adjust-compress.rkt @BOOT_COMPRESS_COMP@ $(FW_BOOT_DEST)/petite.boot $(FW_BOOT_DEST)/scheme.boot $(FW_BOOT_DEST)/racket.boot
@@ -351,7 +372,7 @@ raw_racketcs.exe: main.o MemoryModule.o rres.o
 raw_gracketcs.exe: grmain.o MemoryModule.o grres.o
 	$(CC) $(CFLAGS) -mwindows -o raw_gracketcs.exe grmain.o MemoryModule.o grres.o $(LDFLAGS)
 
-$(RAW_RKT_DLL): boot.o $(BOOT_OBJ_DEPS) libres.o
+$(RAW_RKT_DLL): $(BOOT_OBJ_DEPS) libres.o
 	$(CC) $(CFLAGS) --shared -o $(RAW_RKT_DLL) $(BOOT_OBJS) libres.o $(LDFLAGS) rktio/librktio.a -static-libgcc $(LIBS)
 
 MemoryModule.o: $(srcdir)/../../start/MemoryModule.c
@@ -434,6 +455,9 @@ DEF_COLLECTS_DIR@MINGW@ =
 DEF_CONFIG_DIR@MINGW@ =
 DEF_C_DIRS = $(DEF_COLLECTS_DIR) $(DEF_CONFIG_DIR)
 
+BOOT_DEFS_plain =
+BOOT_DEFS_pbchunk = -DPBCHUNK_REGISTER
+
 MAIN_DEPS = $(srcdir)/main.c $(srcdir)/boot.h cs_config.h \
             $(srcdir)/../../start/config.inc \
             $(srcdir)/../../start/self_exe.inc
@@ -445,7 +469,7 @@ grmain.o: $(srcdir)/grmain.c $(MAIN_DEPS) $(srcdir)/../../start/gui_filter.inc
 	$(CC) $(CFLAGS) $(DEF_C_DIRS) -c -o grmain.o $(srcdir)/grmain.c
 
 boot.o: $(srcdir)/boot.c $(srcdir)/../../rktio/rktio.inc $(srcdir)/boot.h
-	$(CC) $(CFLAGS) -c -o boot.o $(srcdir)/boot.c
+	$(CC) $(CFLAGS) $(BOOT_DEFS_@PBCHUNK_MODE@) -c -o boot.o $(srcdir)/boot.c
 
 starter@NOT_MINGW@: $(srcdir)/../../start/ustart.c $(srcdir)/../../start/self_exe.inc
 	$(CC) $(CFLAGS) $(LDFLAGS) -o starter $(srcdir)/../../start/ustart.c
@@ -465,6 +489,120 @@ libracketcs.a: $(SCHEME_LIB_DEPS) rktio/librktio.a boot.o
 
 repack-no-install-libs:
 	$(NOOP)
+
+# ----------------------------------------
+# pbchunk mode
+
+# The "to-pbchunk.ss" script generates revised boot files as well as
+# petiteN.c, schemeN.c, and racketN.c, where those C files much be
+# linked and "boot.c" needs to initialize them
+
+PBCHUNK_IN = $(PETITE_BOOT_plain) $(SCHEME_BOOT_plain) $(RACKET_BOOT_plain)
+
+# Using `%` in place of `.` in `PBCHUNK_OUT` makes it work as a target
+# where a command produces multiple files at the same time
+PBCHUNK_OUT = petite-pbchunk%boot scheme-pbchunk%boot racket-pbchunk%boot \
+              petite0%c petite1%c petite2%c petite3%c petite4%c \
+              petite5%c petite6%c petite7%c petite8%c petite9%c \
+              scheme0%c scheme1%c scheme2%c scheme3%c scheme4%c \
+              scheme5%c scheme6%c scheme7%c scheme8%c scheme9%c \
+              racket0%c racket1%c racket2%c racket3%c racket4%c \
+              racket5%c racket6%c racket7%c racket8%c racket9%c
+
+$(PBCHUNK_OUT): $(PBCHUNK_IN)
+	$(SCHEME) --script $(srcdir)/to-pbchunk.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) $(PBCHUNK_IN)
+
+PBCHUNK_CFLAGS=$(CFLAGS) -DPORTABLE_BYTECODE -I$(SCHEME_WORKAREA)/$(TARGET_MACH)/boot/$(TARGET_MACH) -I$(SCHEME_WORKAREA)/$(TARGET_MACH)/c
+
+petite0.o: petite0.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o petite0.o petite0.c
+
+petite1.o: petite1.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o petite1.o petite1.c
+
+petite2.o: petite2.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o petite2.o petite2.c
+
+petite3.o: petite3.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o petite3.o petite3.c
+
+petite4.o: petite4.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o petite4.o petite4.c
+
+petite5.o: petite5.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o petite5.o petite5.c
+
+petite6.o: petite6.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o petite6.o petite6.c
+
+petite7.o: petite7.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o petite7.o petite7.c
+
+petite8.o: petite8.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o petite8.o petite8.c
+
+petite9.o: petite9.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o petite9.o petite9.c
+
+scheme0.o: scheme0.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o scheme0.o scheme0.c
+
+scheme1.o: scheme1.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o scheme1.o scheme1.c
+
+scheme2.o: scheme2.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o scheme2.o scheme2.c
+
+scheme3.o: scheme3.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o scheme3.o scheme3.c
+
+scheme4.o: scheme4.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o scheme4.o scheme4.c
+
+scheme5.o: scheme5.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o scheme5.o scheme5.c
+
+scheme6.o: scheme6.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o scheme6.o scheme6.c
+
+scheme7.o: scheme7.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o scheme7.o scheme7.c
+
+scheme8.o: scheme8.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o scheme8.o scheme8.c
+
+scheme9.o: scheme9.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o scheme9.o scheme9.c
+
+racket0.o: racket0.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o racket0.o racket0.c
+
+racket1.o: racket1.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o racket1.o racket1.c
+
+racket2.o: racket2.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o racket2.o racket2.c
+
+racket3.o: racket3.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o racket3.o racket3.c
+
+racket4.o: racket4.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o racket4.o racket4.c
+
+racket5.o: racket5.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o racket5.o racket5.c
+
+racket6.o: racket6.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o racket6.o racket6.c
+
+racket7.o: racket7.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o racket7.o racket7.c
+
+racket8.o: racket8.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o racket8.o racket8.c
+
+racket9.o: racket9.c
+	$(CC) $(PBCHUNK_CFLAGS) -c -o racket9.o racket9.c
 
 # ----------------------------------------
 # Install
@@ -533,7 +671,7 @@ common-install:
 SYSTEM_RKTD = $(DESTDIR)$(libpltdir)/system$(CS_INSTALLED).rktd
 
 system-install:
-	$(RACKET) -cu "$(srcdir)/gen-system.rkt" $(SYSTEM_RKTD) $(TARGET_MACH) @CROSS_COMPILE_TARGET_KIND@ "$(srcdir)" "@PLT_CS_SLSP_SUFFIX@"
+	$(RACKET) -cu "$(srcdir)/gen-system.rkt" $(SYSTEM_RKTD) $(TARGET_MACH) $(KERNEL_TARGET_MACH) @CROSS_COMPILE_TARGET_KIND@ "$(srcdir)" "@PLT_CS_SLSP_SUFFIX@"
 
 include-install:
 	$(ICP) $(srcdir)/api.h "$(DESTDIR)$(includepltdir)/racketcs.h"

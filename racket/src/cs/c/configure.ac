@@ -27,6 +27,7 @@ AC_ARG_ENABLE(scheme,     [  --enable-scheme=<path>  use <path> as host's build 
 AC_ARG_ENABLE(mach,       [  --enable-mach=<mach>    use Chez Scheme machine type <mach>])
 AC_ARG_ENABLE(target,     [  --enable-target=<mach>  cross-build for Chez Scheme machine type <mach>])
 AC_ARG_ENABLE(pb,         [  --enable-pb             build for platform without native-code backend])
+AC_ARG_ENABLE(pbchunk,    [  --enable-pbchunk        enable C chunks for pb boot (enabled by default)])
 m4_include(../ac/portable_arg.m4)
 m4_include(../ac/natipkg_arg.m4)
 m4_include(../ac/sdk_arg.m4)
@@ -86,6 +87,7 @@ show_explicitly_set "${enable_scheme}" "Chez Scheme build directory"
 show_explicitly_set "${enable_mach}" "machine type"
 show_explicitly_set "${enable_target}" "cross-build machine type"
 show_explicitly_set "${enable_pb}" "pb machine type"
+show_explicitly_disabled "${enable_pbchunk}" "pbchunk"
 m4_include(../ac/portable_show.m4)
 m4_include(../ac/natipkg_show.m4)
 show_explicitly_enabled "${enable_libz}" "Installed libz"
@@ -181,6 +183,8 @@ compress_boot_files_by_default=no
 cs_auto_flags=--disable-auto-flags
 
 COPY_NEW_CFLAGS_TO_CPPFLAGS=no
+
+PBCHUNK_MODE=plain
 
 ###### Autoconfigure #######
 
@@ -383,22 +387,28 @@ fi
 case "$MACH_HOST_CPU" in
   x86_64)
     MACH="${thread_prefix}a6${MACH_OS}"
+    pb_machine_name="${thread_prefix}pb64l"
     ;;
   x86|i*86)
     MACH="${thread_prefix}i3${MACH_OS}"
+    pb_machine_name="${thread_prefix}pb32l"
     ;;
   aarch64*|arm64*)
     MACH="${thread_prefix}arm64${MACH_OS}"
+    pb_machine_name="${thread_prefix}pb64l"
     ;;
   arm*)
     MACH="${thread_prefix}arm32${MACH_OS}"
+    pb_machine_name="${thread_prefix}pb32l"
     ;;
   powerpc64*)
     MACH=""
+    pb_machine_name="${thread_prefix}pb64b"
     # MACH="${thread_prefix}ppc64${MACH_OS}"
     ;;
   power*)
     MACH="${thread_prefix}ppc32${MACH_OS}"
+    pb_machine_name="${thread_prefix}pb32b"
     ;;
 esac
 
@@ -702,10 +712,17 @@ KERNEL_TARGET_MACH="${TARGET_MACH}"
 if test "${enable_pb}" = "yes" ; then
   enable_libffi=yes
   enable_foreign=yes
-  CONFIG_MAIN_SCHEME_MODE="--pb --threads --enable-libffi"
-  TARGET_MACH=tpb
+  CONFIG_MAIN_SCHEME_MODE="--pbarch --enable-libffi"
+  TARGET_MACH=${pb_machine_name}
   if test "${CROSS_MODE}" != "cross" ; then
-    MACH=tpb
+    MACH=${pb_machine_name}
+  fi
+  if test "${CONFIGURE_RACKET_SO_COMPILE}" = "" ; then
+    CONFIGURE_RACKET_SO_COMPILE="env"
+  fi
+  CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_MACHINE_TYPE=${KERNEL_TARGET_MACH}"
+  if test "${enable_pbchunk}" != "no" ; then
+    PBCHUNK_MODE=pbchunk
   fi
 else
   CONFIG_MAIN_SCHEME_MODE=""
@@ -850,6 +867,7 @@ AC_SUBST(BOOTFILE_RACKET)
 AC_SUBST(SCHEME_DIR)
 AC_SUBST(MACH)
 AC_SUBST(TARGET_MACH)
+AC_SUBST(KERNEL_TARGET_MACH)
 AC_SUBST(DIFF_MACH)
 AC_SUBST(CROSS_MODE)
 AC_SUBST(T_CROSS_MODE)
@@ -881,6 +899,7 @@ AC_SUBST(ENABLE_OR_DISABLE_WPO)
 AC_SUBST(COMP_SUBDIR_CONFIGURE_ARGS)
 AC_SUBST(CROSS_COMPILE_TARGET_KIND)
 AC_SUBST(CS_HOST_WORKAREA_PREFIX)
+AC_SUBST(PBCHUNK_MODE)
 AC_SUBST(RUN_RACKET)
 AC_SUBST(INSTALL_SETUP_FLAGS)
 AC_SUBST(INSTALL_SETUP_RACKET_FLAGS)

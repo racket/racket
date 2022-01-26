@@ -306,7 +306,8 @@ but note the following:
 
  * The Racket build creates a framework, "Racket.framework", which is
    installed into "racket/lib".  This framework is used by the `racket`
-   executable that goes into "racket/bin".
+   executable that goes into "racket/bin" unless the `--enable-embedfw`
+   flag is used.
 
  * The GRacket build creates a GUI-executable variant of the Racket
    executable. The GRacket build process also downloads (from github)
@@ -474,6 +475,25 @@ If you avoid passing newly-allocated code between threads and avoid
 When building BC for iOS, you may need to add `--disable-cify` for
 32-bit target and `--enable-cify` for 64-bit target instead of
 inheriting the build machine's disposition.
+
+
+========================================================================
+ Compiling without run-time code generation
+========================================================================
+
+Racket programs and expressions are normally compiled to machine code
+either at run time (when `eval` is used or when Racket BC JIT-compiles
+bytecode) or in advance (when compiling to ".zo" files using Racket
+CS). Interpreted modes are available --- but slower, of course:
+
+ * Racket CS: configure with `--enable-pb`, which uses a bytecode
+   virtual machine instead of native code. By default, core functions
+   are compiled to some extent via C; use `--disable-pbchunk` to
+   disable even that compilation.
+
+ * Racket BC: configure with `--disable-jit`, or run Racket with the
+   `-j` flag. On some supported platforms (such as AArch64), Racket BC
+   lacks JIT support and always uses interpreted mode.
 
 
 ========================================================================

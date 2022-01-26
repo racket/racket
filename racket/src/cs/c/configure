@@ -628,6 +628,7 @@ INSTALL_LIBS_ENABLE
 INSTALL_SETUP_RACKET_FLAGS
 INSTALL_SETUP_FLAGS
 RUN_RACKET
+PBCHUNK_MODE
 CS_HOST_WORKAREA_PREFIX
 CROSS_COMPILE_TARGET_KIND
 COMP_SUBDIR_CONFIGURE_ARGS
@@ -659,6 +660,7 @@ TT_CROSS_MODE
 T_CROSS_MODE
 CROSS_MODE
 DIFF_MACH
+KERNEL_TARGET_MACH
 TARGET_MACH
 MACH
 SCHEME_DIR
@@ -800,6 +802,7 @@ enable_scheme
 enable_mach
 enable_target
 enable_pb
+enable_pbchunk
 enable_portable
 enable_natipkg
 enable_sdk
@@ -1454,6 +1457,7 @@ Optional Features:
   --enable-mach=<mach>    use Chez Scheme machine type <mach>
   --enable-target=<mach>  cross-build for Chez Scheme machine type <mach>
   --enable-pb             build for platform without native-code backend
+  --enable-pbchunk        enable C chunks for pb boot (enabled by default)
   --enable-portable       prefer portable to host-specific
   --enable-natipkg        add "-natipkg" to library subpath
   --enable-sdk=<path>     use Mac OS 10.4 SDK directory
@@ -2645,6 +2649,11 @@ if test "${enable_pb+set}" = set; then :
   enableval=$enable_pb;
 fi
 
+# Check whether --enable-pbchunk was given.
+if test "${enable_pbchunk+set}" = set; then :
+  enableval=$enable_pbchunk;
+fi
+
 
 # Check whether --enable-portable was given.
 if test "${enable_portable+set}" = set; then :
@@ -2879,6 +2888,7 @@ show_explicitly_set "${enable_scheme}" "Chez Scheme build directory"
 show_explicitly_set "${enable_mach}" "machine type"
 show_explicitly_set "${enable_target}" "cross-build machine type"
 show_explicitly_set "${enable_pb}" "pb machine type"
+show_explicitly_disabled "${enable_pbchunk}" "pbchunk"
 show_explicitly_enabled "${enable_portable}" "portable"
 
 show_explicitly_enabled "${enable_natipkg}" "Adding \"-natipkg\" suffix to library subpath"
@@ -3300,6 +3310,8 @@ compress_boot_files_by_default=no
 cs_auto_flags=--disable-auto-flags
 
 COPY_NEW_CFLAGS_TO_CPPFLAGS=no
+
+PBCHUNK_MODE=plain
 
 ###### Autoconfigure #######
 
@@ -4631,22 +4643,28 @@ fi
 case "$MACH_HOST_CPU" in
   x86_64)
     MACH="${thread_prefix}a6${MACH_OS}"
+    pb_machine_name="${thread_prefix}pb64l"
     ;;
   x86|i*86)
     MACH="${thread_prefix}i3${MACH_OS}"
+    pb_machine_name="${thread_prefix}pb32l"
     ;;
   aarch64*|arm64*)
     MACH="${thread_prefix}arm64${MACH_OS}"
+    pb_machine_name="${thread_prefix}pb64l"
     ;;
   arm*)
     MACH="${thread_prefix}arm32${MACH_OS}"
+    pb_machine_name="${thread_prefix}pb32l"
     ;;
   powerpc64*)
     MACH=""
+    pb_machine_name="${thread_prefix}pb64b"
     # MACH="${thread_prefix}ppc64${MACH_OS}"
     ;;
   power*)
     MACH="${thread_prefix}ppc32${MACH_OS}"
+    pb_machine_name="${thread_prefix}pb32b"
     ;;
 esac
 
@@ -5813,10 +5831,17 @@ KERNEL_TARGET_MACH="${TARGET_MACH}"
 if test "${enable_pb}" = "yes" ; then
   enable_libffi=yes
   enable_foreign=yes
-  CONFIG_MAIN_SCHEME_MODE="--pb --threads --enable-libffi"
-  TARGET_MACH=tpb
+  CONFIG_MAIN_SCHEME_MODE="--pbarch --enable-libffi"
+  TARGET_MACH=${pb_machine_name}
   if test "${CROSS_MODE}" != "cross" ; then
-    MACH=tpb
+    MACH=${pb_machine_name}
+  fi
+  if test "${CONFIGURE_RACKET_SO_COMPILE}" = "" ; then
+    CONFIGURE_RACKET_SO_COMPILE="env"
+  fi
+  CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_MACHINE_TYPE=${KERNEL_TARGET_MACH}"
+  if test "${enable_pbchunk}" != "no" ; then
+    PBCHUNK_MODE=pbchunk
   fi
 else
   CONFIG_MAIN_SCHEME_MODE=""
@@ -6059,6 +6084,8 @@ done
 
 SCHEME_CONFIG_ARGS="--machine=${KERNEL_MACH} --disable-x11 ${disable_curses_arg} ${cs_auto_flags} ${extra_scheme_config_args}"
 SCHEME_CROSS_CONFIG_ARGS="--machine=${KERNEL_TARGET_MACH} --disable-x11 ${cs_auto_flags} ${disable_curses_arg} ${extra_scheme_config_args}"
+
+
 
 
 

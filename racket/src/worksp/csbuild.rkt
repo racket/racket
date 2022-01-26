@@ -317,6 +317,7 @@
           "../cs/c/gen-system.rkt"
           (format "../../lib/system~a.rktd" cs-suffix)
           machine
+          machine
           "machine"
           "../cs/c"
           "")
