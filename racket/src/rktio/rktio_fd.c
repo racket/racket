@@ -46,8 +46,9 @@ struct rktio_fd_t {
   char *buffer; /* shared with reading thread */
   int has_pending_byte; /* for text-mode input, may be dropped by a following lf */
   int pending_byte; /* for text-mode input, either a CR waiting to decode, or byte that didn't fit */
-  int leftover_len; /* for bytes that should be written, but that form a UTF-8 encoding prefix */
+  int leftover_len; /* for bytes that should be written/read, but that form a UTF-8 encoding prefix/suffix */
   char leftover[6];
+  int w_buf_count; /* number of console wide chars in `buffer` pending to encode */
 #endif
 };
 
@@ -60,6 +61,21 @@ struct rktio_fd_transfer_t {
 /*========================================================================*/
 
 #ifdef RKTIO_SYSTEM_WINDOWS
+
+/* There doesn't appear to be a good answer for fd-style waiting on
+   input with a Windows console handle.
+
+   When USE_BACKGROUND_THREAD_FOR_CONSOLE_INPUT is 0, the
+   implementation here treats the input as ready as soon as there are
+   events in the console, but those might be key events that haven't
+   been submitted by hitting Return. So, a `sync` could return too
+   early and reading can block when it shouldn't.
+
+   When USE_BACKGROUND_THREAD_FOR_CONSOLE_INPUT is 1, a background
+   thread avoids that problem with blocking, but can consume
+   characters while waiting, which means the console handle can't be
+   shared (with expeditor, for example). */
+#define USE_BACKGROUND_THREAD_FOR_CONSOLE_INPUT 0
 
 typedef struct Win_FD_Input_Thread {
   /* This is malloced for use in a Win32 thread */
@@ -146,6 +162,11 @@ static wchar_t *convert_output_wtext(const char *buffer, intptr_t *_towrite,
 				     int *_can_leftover, int *_keep_leftover,
 				     int leftover_len, char *leftover);
 static intptr_t recount_output_wtext(wchar_t *w_buffer, intptr_t winwrote);
+
+#define MIN_VIA_WIDE_BUFFER_SIZE 6
+static int read_console_via_wide(HANDLE fd,
+                                 wchar_t *w_buffer, DWORD w_buf_len, int *_w_buf_count,
+                                 void *dest_buffer, DWORD dest_len, DWORD *_got);
 
 #endif
 
@@ -632,9 +653,12 @@ int rktio_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
 
   init_read_fd(rktio, rfd);
 
+  if (rfd->leftover_len)
+    return RKTIO_POLL_READY;
+
   if (!rfd->th) {
-    /* No thread -- so wait works. This case is currently used for
-       console input. */
+    /* No thread, so use wait. See `USE_BACKGROUND_THREAD_FOR_CONSOLE_INPUT`
+       for why this isn't ready right for console handles. */
     if (WaitForSingleObject(rfd->fd, 0) == WAIT_OBJECT_0)
       return RKTIO_POLL_READY;
   } else {
@@ -848,8 +872,16 @@ void rktio_poll_add(rktio_t *rktio, rktio_fd_t *rfd, rktio_poll_set_t *fds, int 
         /* regular files never block */
         rktio_poll_set_add_nosleep(rktio, fds);
       } else {
-        /* We get here for console input, for example.  */
-        rktio_poll_set_add_handle(rktio, (intptr_t)rfd->fd, fds, 0);
+        /* We get here for console input with
+	   USE_BACKGROUND_THREAD_FOR_CONSOLE_INPUT is 0, for
+	   example.  */
+	if (rfd->leftover_len)
+	  rktio_poll_set_add_nosleep(rktio, fds);
+	else {
+	  /* This  is not really right for consoles.
+	     See `USE_BACKGROUND_THREAD_FOR_CONSOLE_INPUT`. */
+	  rktio_poll_set_add_handle(rktio, (intptr_t)rfd->fd, fds, 0);
+	}
       }
     }
 
@@ -958,9 +990,13 @@ intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, int
     if (rktio_fd_is_regular_file(rktio, rfd))
       ready = -1; /* => regfile */
     else {
-      DWORD ne;
-      GetNumberOfConsoleInputEvents((HANDLE)rfd->fd, &ne);
-      ready = (ne != 0);
+      if (rfd->leftover_len)
+        ready = 1;
+      else {
+	/* See `USE_BACKGROUND_THREAD_FOR_CONSOLE_INPUT` for why this
+	   isn't ready right for console handles. */
+	ready = (WaitForSingleObject((HANDLE)rfd->fd, 0) == WAIT_OBJECT_0);
+      }
     }
 
     if (rfd->has_pending_byte) {
@@ -988,8 +1024,44 @@ intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, int
 
     if (ready < 0)
       ready = ReadFile((HANDLE)rfd->fd, buffer + offset, len - offset, &rgot, NULL);
-    else
-      ready = ReadConsoleW((HANDLE)rfd->fd, buffer + offset, len - offset, &rgot, NULL);
+    else {
+      DWORD amt = len - offset;
+      if (rfd->leftover_len) {
+        if (amt > rfd->leftover_len)
+          rgot = rfd->leftover_len;
+        else
+          rgot = amt;
+        memcpy(buffer + offset, rfd->leftover, rgot);
+        rfd->leftover_len -= rgot;
+        if (rfd->leftover_len)
+          memmove(rfd->leftover, rfd->leftover + rgot, rfd->leftover_len);
+        ready = 1;
+      } else if (amt >= MIN_VIA_WIDE_BUFFER_SIZE) {
+        /* limit reading to the max that definitely fits in `amt` */
+        DWORD w_fill_len = amt / MIN_VIA_WIDE_BUFFER_SIZE;
+        if (w_fill_len > (RKTIO_FD_BUFFSIZE / sizeof(wchar_t))) {
+          /* at the same time, we mus not overflow the wide-character buffer */
+          w_fill_len = (RKTIO_FD_BUFFSIZE / sizeof(wchar_t));
+        }
+        ready = read_console_via_wide(rfd->fd,
+                                      (wchar_t *)rfd->buffer, w_fill_len, &rfd->w_buf_count,
+                                      buffer + offset, len - offset, &rgot);
+      } else {
+        /* we have to read into a buffer that is definitely large enough to decode
+           one wide character; they may be leftover bytes if `amt` isn't big enough
+           for the decoding */
+        ready = read_console_via_wide(rfd->fd,
+                                      (wchar_t *)rfd->buffer, 1, &rfd->w_buf_count,
+                                      rfd->leftover, MIN_VIA_WIDE_BUFFER_SIZE, &rgot);
+        if (ready && rgot) {
+          if (amt > rgot) amt = rgot;
+          memcpy(buffer, rfd->leftover, amt);
+          rfd->leftover_len = rgot - amt;
+          memmove(rfd->leftover, rfd->leftover + amt, rfd->leftover_len);
+          rgot = amt;
+        }
+      }
+    }
 
     if (!ready) {
       get_windows_error();
@@ -1070,7 +1142,7 @@ RKTIO_EXTERN intptr_t rktio_buffered_byte_count(rktio_t *rktio, rktio_fd_t *fd)
 # endif
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
-  return (fd->has_pending_byte ? 1 : 0);
+  return ((fd->has_pending_byte ? 1 : 0) + fd->leftover_len);
 #endif
 }
 
@@ -1140,7 +1212,14 @@ static void init_read_fd(rktio_t *rktio, rktio_fd_t *rfd)
     return;
   else if (rktio_fd_is_regular_file(rktio, rfd)) {
     return;
-  } else if (rktio_fd_is_terminal(rktio, rfd)) {
+  } else if (!USE_BACKGROUND_THREAD_FOR_CONSOLE_INPUT
+	     && rktio_fd_is_terminal(rktio, rfd)) {
+    if (!rfd->buffer) {
+      char *bfr;
+      bfr = malloc(RKTIO_FD_BUFFSIZE);
+      rfd->buffer = bfr;
+      rfd->w_buf_count = 0;
+    }
     return;
   } else {
     /* To get non-blocking I/O for anything that can block, we create
@@ -1218,6 +1297,11 @@ static void deinit_read_fd(rktio_fd_t *rfd, int full_close)
       rfd->th->you_clean_up = (full_close ? 1 : -1);
       ReleaseSemaphore(rfd->th->lock_sema, 1, NULL);
     }
+
+    rfd->buffer = NULL;
+  } else if (rfd->buffer) {
+    free(rfd->buffer);
+    rfd->buffer = NULL;
   }
 }
 
@@ -1257,34 +1341,9 @@ static long WINAPI WindowsFDReader(Win_FD_Input_Thread *th)
       ReleaseSemaphore(th->lock_sema, 1, NULL);
       if (!is_console)
 	ok = ReadFile(th->fd, th->buffer, toget, &got, NULL);
-      else {
-	if (w_buf_count) {
-	  ok = 1;
-	  got = w_buf_count;
-	} else
-	  ok = ReadConsoleW(th->fd, w_buffer, CONSOLE_BUFFER_IN_SIZE, &got, NULL);
-	if (ok) {
-	  /* check for Ctl-Z, and convert it to an EOF */
-	  int i, move_start = 0, move_len = 0;
-	  for (i = 0; i < got; i++) {
-	    if (w_buffer[i] == 26 /* ctl-z */) {
-	      move_start = i;
-	      move_len = got - i;
-	      if (i == 0) {
-		/* report EOF now */
-		move_start++;
-		move_len--;
-	      }
-	      got = i;
-	      break;
-	    }
-	  }
-	  got = WideCharToMultiByte(CP_UTF8, 0, w_buffer, got, th->buffer, RKTIO_FD_BUFFSIZE, NULL, 0);
-	  if (move_len > 0)
-	    memmove(w_buffer, w_buffer + move_start, sizeof(wchar_t) * move_len);
-	  w_buf_count = move_len;
-	}
-      }
+      else
+        ok = read_console_via_wide(th->fd, w_buffer, CONSOLE_BUFFER_IN_SIZE, &w_buf_count,
+                                   th->buffer, RKTIO_FD_BUFFSIZE, &got);
       if (ok) {
 	WaitForSingleObject(th->lock_sema, INFINITE);
 	th->avail = got;
@@ -1348,6 +1407,53 @@ static void WindowsFDICleanup(Win_FD_Input_Thread *th, int close_mode)
 
   free(th->buffer);
   free(th);
+}
+
+/* result is 0 for fail, non-zero for success */
+int read_console_via_wide(HANDLE fd,
+                          /* a buffer for pending wide characters; limit the amount of
+                             lookahead via `w_fill_len`; the `*_w_buf_count`argument
+                             says how many chars are there on entry and exit */
+                          wchar_t *w_buffer, DWORD w_fill_len, int *_w_buf_count,
+                          /* a buffer to receive encoded UTF-8; this
+                             buffer needs to be at least `MIN_VIA_WIDE_BUFFER_SIZE` bytes
+                             to ensure decoding progress */
+                          void *dest_buffer, DWORD dest_len, DWORD *_got) {
+  int w_buf_count = *_w_buf_count;
+  int ok;
+  DWORD got;
+  
+  if (w_buf_count) {
+    ok = 1;
+    got = w_buf_count;
+  } else
+    ok = ReadConsoleW(fd, w_buffer, w_fill_len, &got, NULL);
+  if (ok) {
+    /* check for Ctl-Z, and convert it to an EOF */
+    int i, move_start = 0, move_len = 0;
+    for (i = 0; i < got; i++) {
+      if (w_buffer[i] == 26 /* ctl-z */) {
+        move_start = i;
+        move_len = got - i;
+        if (i == 0) {
+          /* report EOF now */
+          move_start++;
+          move_len--;
+        }
+        got = i;
+        break;
+      }
+    }
+    got = WideCharToMultiByte(CP_UTF8, 0, w_buffer, got, dest_buffer, dest_len, NULL, 0);
+    if (move_len > 0)
+      memmove(w_buffer, w_buffer + move_start, sizeof(wchar_t) * move_len);
+    w_buf_count = move_len;
+  }
+
+  *_w_buf_count = w_buf_count;
+  *_got = got;
+
+  return ok;
 }
 
 #endif
