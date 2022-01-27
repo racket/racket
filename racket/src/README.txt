@@ -244,7 +244,7 @@ Detailed instructions:
     documentation.
 
     For a `--prefix` build, unless `--enable-sharezo` is specified,
-    "compiled" directories containin ".zo" files are moved from
+    "compiled" directories containing ".zo" files are moved from
     "share" to "lib" as the last step of installation. (The
     "config.rktd" file is updated so that `current-compile-file-roots`
     is initialized to find the relocated ".zo" files.) For Racket BC,
@@ -388,7 +388,7 @@ Some less commonly needed `configure` flags are for Racket BC:
 
  * `--enable-cify` or `--disable-cify` if the JIT availability on the
     target platform is different than the build platform; use
-    `--enable-cify` if the JIT is not abailable on the target
+    `--enable-cify` if the JIT is not available on the target
     platform.
 
 
@@ -529,7 +529,7 @@ Sources for the Racket CS implementation
 
  * "io" --- I/O
 
-    This layer uses the "racketio" library to access OS facilties.
+    This layer uses the "racketio" library to access OS facilities.
 
  * "regexp" --- regexp matcher
 
@@ -543,11 +543,11 @@ Sources for the Racket BC implementation
 
    This implementation can build from "scratch" with a C compiler, but
    first by building a CGC variant of Racket to transform the C
-   sourses to build a (normal) 3m variant.
+   sources to build a (normal) 3m variant.
 
  * "mzcom" --- MzCOM executable (for Windows)
 
- * "mysink" --- `ffi/unsafe/com` helper DLL (for Windows)
+ * "myssink" --- `ffi/unsafe/com` helper DLL (for Windows)
 
  * "cify" --- a Racket-to-C compiler
 
@@ -596,7 +596,7 @@ Sources shared by both Racket implementations
 
  * "setup-go.rkt" --- helper script
 
-   The "setup-go.rkt" script is a bootstrapping too that is used by
+   The "setup-go.rkt" script is a bootstrapping tool that is used by
    parts of the build that need to run Racket programs in the process
    of building Racket.
 
