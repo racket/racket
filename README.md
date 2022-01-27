@@ -34,7 +34,7 @@ Contribute to Racket by
 * [submitting a pull request](https://github.com/racket/racket), 
 * visiting the Racket forums 
   * [Racket Discussions Discourse](https://racket.discourse.group/)
-  * [Racket Discord}(https://discord.gg/6Zq8sH5) #internals
+  * [Racket Discord](https://discord.gg/6Zq8sH5) #internals
   * [Slack](https://racket-slack.herokuapp.com/)
 
 
