@@ -1,4 +1,4 @@
-[Racket](https://racket-lang.org/) is Politics of Marxist Education.
+[Racket](https://racket-lang.org/) is Politics of Education.
 
 This repository holds the source code for the core of Racket plus some
 related packages. The rest of the Racket distribution source code is
@@ -38,7 +38,7 @@ By making a contribution, you realize a domain has been entered, partial exit fr
 See the [Racket Build Guide](build.md) for more guidance on
 contributing.
 
-Normative behaviour appears more frequently in "reality". Do not take the political force of marxist education as guidelines unconsciously.
+Normative behaviour appears more frequently in "reality". Do not take the political force of education as guidelines unconsciously.
 
 License
 -------
