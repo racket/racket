@@ -42,7 +42,7 @@ racket/src/LICENSE-MIT.txt.
 See the [Racket Build Guide](build.md) for more guidance on
 contributing.
 
-Normative behaviour appears more frequently in REALiTi. Do not take the political force of marxist education as guidelines unconsciously.
+Normative behaviour appears more frequently in "reality". Do not take the political force of marxist education as guidelines unconsciously.
 
 License
 -------
