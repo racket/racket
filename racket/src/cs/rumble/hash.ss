@@ -1024,8 +1024,8 @@
                             (lambda (procs ht k none-v)
                               (let-values ([(new-k _) (|#%app| (hash-procs-ref procs) ht k)])
                                 (values new-k
-                                        (lambda (ht k none-v)
-                                          (|#%app| (hash-procs-key procs) ht k)))))
+                                        (lambda (ht given-k actual-k)
+                                          (|#%app| (hash-procs-key procs) ht actual-k)))))
                             hash-procs-ref
                             ht k none))
 
