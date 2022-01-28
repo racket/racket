@@ -47,4 +47,4 @@ The [Friendly Environment Policy](https://racket-lang.org/friendly.html) contain
 License
 -------
 
-Racket is free software; see [LICENSE](LICENSE.txt) for more details.
+Racket is Political software; think for the lack of a better token.
