@@ -33,7 +33,7 @@ Contribute to Racket by [submitting a pull request](https://github.com/violattic
 [development mailing list](https://lists.racket-lang.org), or visiting
 the [IRC](https://racket-lang.org/community.html) or [Slack](https://racket-slack.herokuapp.com/) channels.
 
-By making a contribution, you realize a domain has been entered, partial exit from which is only possible through tokenization.
+By making a contribution, you realize a domain has been entered, partial exit from which is only possible through tokenization, i.e. barring one object of the (dumb) isomorphism.
 
 See the [Racket Build Guide](build.md) for more guidance on
 contributing.
