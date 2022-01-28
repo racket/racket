@@ -1,4 +1,4 @@
-[Racket](https://racket-lang.org/) is.
+[Racket](https://racket-lang.org/) is Politics of Marxist Education.
 
 This repository holds the source code for the core of Racket plus some
 related packages. The rest of the Racket distribution source code is
