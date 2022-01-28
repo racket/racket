@@ -3791,5 +3791,19 @@
   (test #t integer? (equal-hash-code (chaperone-struct (b 0) b-x (lambda (b v) v)))))
 
 ;; ----------------------------------------
+;; regression test to make sure hash-ref-key
+;; wrapper proc is called with correct key
+
+(let ()
+  (define orig-key "foo")
+  (define new-key (string-copy orig-key))
+  (define ht
+    (chaperone-hash (hash orig-key 42)
+                    (lambda (h k) (values k (lambda (h k v) v)))
+                    (lambda (h k v) (values k v))
+                    (lambda (h k) k) (lambda (h k) k)))
+  (test orig-key hash-ref-key ht new-key))
+
+;; ----------------------------------------
 
 (report-errs)
