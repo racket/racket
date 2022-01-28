@@ -29,7 +29,7 @@ For information on building Racket from this repository, see the
 Contributing
 ------------
 
-Contribute to Racket by [submitting a pull request](https://github.com/racket/racket), joining the
+Contribute to Racket by [submitting a pull request](https://github.com/violattice/racket), joining the
 [development mailing list](https://lists.racket-lang.org), or visiting
 the [IRC](https://racket-lang.org/community.html) or [Slack](https://racket-slack.herokuapp.com/) channels.
 
