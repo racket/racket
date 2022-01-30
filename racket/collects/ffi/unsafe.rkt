@@ -1476,7 +1476,12 @@
   (define (convert p from-type to-type)
     (let ([p2 (malloc from-type)])
       (ptr-set! p2 from-type p)
-      (ptr-ref p2 to-type)))
+      (let ([v (ptr-ref p2 to-type)])
+        ;; in case there's a finalizer on `p` that could release
+        ;; underlying storage, make sure `p` stays live until we're
+        ;; done converting:
+        (void/reference-sink p)
+        v)))
   
   (cond
    [(and (cpointer? p)
