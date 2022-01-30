@@ -89,7 +89,10 @@ int main() {
 /* From list at:
    https://dev.to/yumetodo/list-of-mscver-and-mscfullver-8nd
    */
-#if _MSC_VER >= 1920
+#if _MSC_VER >= 1930
+  /* VS 2022 */
+  vers = "143";
+#elif _MSC_VER >= 1920
   /* VS 2019 */
   vers = "142";
 #elif _MSC_VER >= 1910

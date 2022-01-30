@@ -7,10 +7,15 @@ set VCMODE=%1
 set Applications=%ProgramFiles(x86)%
 if "%Applications%" == "" set Applications=%ProgramFiles%
 
-set VCVARBAT=%Applications%\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat
+set VCVARBAT=%Applications%\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat
+
+if not exist "%VCVARBAT%" set VCVARBAT=%Applications%\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat
+if not exist "%VCVARBAT%" set VCVARBAT=%Applications%\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvarsall.bat
+if not exist "%VCVARBAT%" set VCVARBAT=%Applications%\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvarsall.bat
 
 if not exist "%VCVARBAT%" set VCVARBAT=%Applications%\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat
 if not exist "%VCVARBAT%" set VCVARBAT=%Applications%\Microsoft Visual Studio\2019\Professional\VC\Auxiliary\Build\vcvarsall.bat
+if not exist "%VCVARBAT%" set VCVARBAT=%Applications%\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat
 if not exist "%VCVARBAT%" set VCVARBAT=%Applications%\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvarsall.bat
 
 if not exist "%VCVARBAT%" set VCVARBAT=%Applications%\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build\vcvarsall.bat
