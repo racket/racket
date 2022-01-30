@@ -244,6 +244,12 @@
                  dups
                  #f)])])])))
 
+;; precondition: xs is a list with at least one element
+(define (last xs)
+  (if (null? (cdr xs))
+      (car xs)
+      (last (cdr xs))))
+
 ;; Partial expansion is complete, so assumble the result as a
 ;; `letrec-values` form and continue expanding
 (define (finish-expanding-body body-ctx frame-id def-ctx-scopes
@@ -259,10 +265,9 @@
   (when (or (null? done-bodys)
             just-saw-define-syntaxes?)
     (raise-syntax-error (string->symbol "begin (possibly implicit)")
-                        "no expression after a sequence of internal definitions"
+                        "the last form is not an expression"
                         (datum->syntax #f (cons 'begin init-bodys) s)
-                        #f
-                        init-bodys))
+                        (if (null? init-bodys) #f (last init-bodys))))
   ;; As we finish expanding, we're no longer in a definition context
   (define finish-ctx (struct*-copy expand-context (accumulate-def-ctx-scopes body-ctx def-ctx-scopes)
                                    [context 'expression]

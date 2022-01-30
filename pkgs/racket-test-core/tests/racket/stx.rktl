@@ -175,9 +175,9 @@
 
 (syntax-test #'(syntax-case (syntax x) [x (define x 1)]))
 (syntax-test #'(syntax-case (syntax x) () [x (define x 1)])
-             #rx"stx.rktl:.*no expression after a sequence of internal definitions")
+             #rx"stx.rktl:.*the last form is not an expression")
 (syntax-test #'(syntax-case* (syntax x) () eq? [x (define x 1)])
-             #rx"stx.rktl:.*no expression after a sequence of internal definitions")
+             #rx"stx.rktl:.*the last form is not an expression")
 
 
 ;; ----------------------------------------
