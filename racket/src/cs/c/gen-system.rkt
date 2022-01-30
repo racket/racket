@@ -4,6 +4,7 @@
 
   (define-values (target-machine) (string->symbol (vector-ref (current-command-line-arguments) 1)))
   (define-values (machine) (string->symbol (vector-ref (current-command-line-arguments) 2)))
+  (define-values (cross-target-machine) (vector-ref (current-command-line-arguments) 3))
   (define-values (srcdir) (vector-ref (current-command-line-arguments) 4))
   (define-values (slsp-suffix) (vector-ref (current-command-line-arguments) 5))
 
@@ -133,7 +134,7 @@
                          '#(supported scalable low-latency #f)
                          ;; Warning: not necessarily right for cross compilation:
                          (system-type 'fs-change))
-          'target-machine (if (equal? "any" (vector-ref (current-command-line-arguments) 2))
+          'target-machine (if (equal? "any" cross-target-machine)
                               #f
                               target-machine)))
 
