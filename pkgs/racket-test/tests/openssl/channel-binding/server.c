@@ -79,7 +79,16 @@ int main(void)
 
   {
     CHECK(gnutls_init(&session, GNUTLS_SERVER));
-    CHECK(gnutls_priority_set(session, priority_cache));
+
+    /* Channel binding support for TLS 1.3 is currently (v3.7.3) BROKEN; see
+     * - https://gitlab.com/gnutls/gnutls/-/issues/1041
+     * - https://gitlab.com/gnutls/gnutls/-/merge_requests/1422
+     * - https://gitlab.com/gnutls/gnutls/-/merge_requests/1293
+     * So disable TLS 1.3 via priority string.
+     */
+    // CHECK(gnutls_priority_set(session, priority_cache));
+    CHECK(gnutls_set_default_priority_append(session, "-VERS-TLS1.3", NULL, 0));
+
     CHECK(gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE,
                                  x509_cred));
     gnutls_certificate_server_set_request(session,
