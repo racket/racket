@@ -92,29 +92,37 @@
 
 ;; ----------------------------------------
 
+(begin ;; removed in v1.1.0
+  (define-ssl SSLeay (_fun -> _ulong) #:fail (lambda () (lambda () 0))))
+(begin ;; added in v1.1.0
+  (define-ssl OpenSSL_version_num (_fun -> _ulong) #:fail (lambda () SSLeay)))
+
+(define v1.0.1/later? (>= (OpenSSL_version_num) #x10001000)) ;; MNNPPxxx
+(define v1.0.2/later? (>= (OpenSSL_version_num) #x10002000))
+(define v1.1.0/later? (>= (OpenSSL_version_num) #x10100000))
+(define v1.1.1/later? (>= (OpenSSL_version_num) #x10101000))
+(define v3.0.0/later? (>= (OpenSSL_version_num) #x30000000)) ;; MNN00PP0
+
 ;; Since v1.1.0, version-specific *_{client,server}_methods are
 ;; deprecated, use TLS_{client,server}_method instead.
-
-(begin ;; Deprecated in v1.1.0:
+(begin ;; deprecated in v1.1.0
   (define-ssl SSLv23_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
-  (define-ssl SSLv23_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f)))
-
-(define-ssl TLS_client_method (_fun -> _SSL_METHOD*)
-  #:fail (lambda () SSLv23_client_method))
-(define-ssl TLS_server_method (_fun -> _SSL_METHOD*)
-  #:fail (lambda () SSLv23_server_method))
-
-;; Deprecated in v1.1.0:
-(define-ssl SSLv2_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
-(define-ssl SSLv2_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
-(define-ssl SSLv3_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
-(define-ssl SSLv3_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
-(define-ssl TLSv1_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
-(define-ssl TLSv1_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
-(define-ssl TLSv1_1_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
-(define-ssl TLSv1_1_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
-(define-ssl TLSv1_2_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
-(define-ssl TLSv1_2_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+  (define-ssl SSLv23_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+  (define-ssl SSLv2_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+  (define-ssl SSLv2_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+  (define-ssl SSLv3_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+  (define-ssl SSLv3_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+  (define-ssl TLSv1_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+  (define-ssl TLSv1_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+  (define-ssl TLSv1_1_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+  (define-ssl TLSv1_1_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+  (define-ssl TLSv1_2_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+  (define-ssl TLSv1_2_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f)))
+(begin ;; added in v1.1.0
+  (define-ssl TLS_client_method (_fun -> _SSL_METHOD*)
+    #:fail (lambda () SSLv23_client_method))
+  (define-ssl TLS_server_method (_fun -> _SSL_METHOD*)
+    #:fail (lambda () SSLv23_server_method)))
 
 (define-crypto DH_free (_fun _DH* -> _void) #:wrap (deallocator))
 (define-crypto EC_KEY_free (_fun _EC_KEY* -> _void) #:wrap (deallocator))
@@ -199,12 +207,9 @@
 (define-crypto ERR_get_error (_fun -> _long))
 (define-crypto ERR_error_string_n (_fun _long _bytes _long -> _void))
 
-(define-ssl SSL_library_init (_fun -> _void)
-  ;; No SSL_library_init for 1.1 or later:
-  #:fail (lambda () void))
-(define-ssl SSL_load_error_strings (_fun -> _void)
-  ;; No SSL_load_error_strings for 1.1 or later:
-  #:fail (lambda () void))
+(begin ;; removed in v1.1.0
+  (define-ssl SSL_library_init (_fun -> _void) #:fail (lambda () void))
+  (define-ssl SSL_load_error_strings (_fun -> _void) #:fail (lambda () void)))
 
 (define-crypto GENERAL_NAME_free _fpointer)
 (define-crypto PEM_read_bio_DHparams (_fun _BIO* _pointer _pointer _pointer -> _DH*) #:wrap (allocator DH_free))
@@ -275,7 +280,8 @@
 (define-crypto EVP_sha256 (_fun -> _EVP_MD*/null))
 (define-crypto EVP_sha384 (_fun -> _EVP_MD*/null))
 (define-crypto EVP_sha512 (_fun -> _EVP_MD*/null))
-(define-crypto EVP_MD_size (_fun _EVP_MD* -> _int))
+(define-crypto EVP_MD_size (_fun _EVP_MD* -> _int)
+  #:fail (lambda () (get-ffi-obj 'EVP_MD_get_size libcrypto (_fun _EVP_MD* -> _int))))
 
 (define-ssl OBJ_find_sigid_algs
   (_fun _int (alg : (_ptr o _int)) (_pointer = #f) -> (r : _int)
