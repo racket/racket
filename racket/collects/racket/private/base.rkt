@@ -27,7 +27,9 @@
                               with-output-to-file
                               directory-list
                               regexp-replace*
-                              new-apply-proc)
+                              new-apply-proc
+                              do-raise-syntax-error
+                              raise-syntax-error)
              struct
              (all-from-except "hash.rkt" paired-fold)
              (all-from "list.rkt")
@@ -53,5 +55,6 @@
              (rename -with-input-from-file with-input-from-file)
              (rename -with-output-to-file with-output-to-file)
              (rename -directory-list directory-list)
+             (rename -raise-syntax-error raise-syntax-error)
              call-with-input-file*
              call-with-output-file*))

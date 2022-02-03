@@ -105,6 +105,7 @@
                       syntax-serialize
                       syntax-deserialize
 
+                      do-raise-syntax-error
                       raise-syntax-error
                       struct:exn:fail:syntax
                       exn:fail:syntax
