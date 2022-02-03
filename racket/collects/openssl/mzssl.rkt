@@ -435,7 +435,7 @@ TO DO:
 
 (define protocol-versions
   ;; (protocol security-level min-proto max-proto supported?)
-  `((secure 2 0                0                #t)
+  `((secure 2 ,TLS1_2_VERSION  0                #t)
     (auto   2 0                0                #t)
     (sslv3  1 ,SSL3_VERSION    ,SSL3_VERSION    ,(and SSLv3_client_method #t))
     (tls    2 ,TLS1_VERSION    ,TLS1_VERSION    ,(and TLSv1_client_method #t))
