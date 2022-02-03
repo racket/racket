@@ -457,7 +457,8 @@ for error-message adjustments.
                              [expr any/c #f]
                              [sub-expr any/c #f]
                              [extra-sources (listof syntax?) null]
-                             [message-suffix string? ""])
+                             [message-suffix string? ""]
+                             [#:exn exn (-> (listof syntax?) string? continuation-mark-set? exn:fail:syntax?) exn:fail:syntax])
          any]{
 
 Creates an @racket[exn:fail:syntax] value and @racket[raise]s it as an
@@ -519,7 +520,18 @@ message. If not @racket[""], it should normally start with a newline
 and two spaces to add extra fields to the message (see
 @secref["err-msg-conventions"]).
 
-@history[#:changed "6.90.0.18" @elem{Added the @racket[message-suffix] optional argument.}]}
+If specified, the @racket[exn] argument should be a constructor or function that
+consumes a list of syntax, a string, and a continuation mark set;
+and it should produce a @racket[exn:fail:syntax?].
+
+
+@examples[
+  (eval:error (raise-syntax-error #f "bad syntax" '(bad syntax)))
+  (eval:error (raise-syntax-error #f "unbound identifier" 'unbound-id #:exn exn:fail:syntax:unbound))
+]
+
+@history[#:changed "6.90.0.18" @elem{Added the @racket[message-suffix] optional argument.}
+         #:changed "8.4.0.6" @elem{Added the @racket[exn] optional argument.}]}
 
 
 @deftogether[(

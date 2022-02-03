@@ -9,6 +9,8 @@
          make-exn:fail:syntax
          (struct-out exn:fail:syntax:unbound)
          make-exn:fail:syntax:unbound
+
+         do-raise-syntax-error
          
          raise-syntax-error
          raise-unbound-syntax-error
@@ -89,22 +91,26 @@
              (or (extract-source-location sub-expr)
                  (extract-source-location expr)))
         ""))
-  (raise (exn:fail:syntax
-          (string-append src-loc-str
-                         name ": "
-                         message
-                         unbound-message
-                         at-message
-                         in-message
-                         message-suffix)
-          (current-continuation-marks)
-          (map syntax-taint
-               (if (or sub-expr expr)
-                   ;; accomodate `datum->syntax` failure similar to `->datum`:
-                   (with-handlers ([exn:fail:contract? (lambda (exn) extra-sources)])
-                     (cons (datum->syntax #f (or sub-expr expr))
-                           extra-sources))
-                   extra-sources)))))
+  (define e
+    (exn:fail:syntax
+     (string-append src-loc-str
+                    name ": "
+                    message
+                    unbound-message
+                    at-message
+                    in-message
+                    message-suffix)
+     (current-continuation-marks)
+     (map syntax-taint
+          (if (or sub-expr expr)
+              ;; accomodate `datum->syntax` failure similar to `->datum`:
+              (with-handlers ([exn:fail:contract? (lambda (exn) extra-sources)])
+                (cons (datum->syntax #f (or sub-expr expr))
+                      extra-sources))
+              extra-sources))))
+  (unless (exn:fail:syntax? e)
+    (raise-result-error who "exn:fail:syntax?" e))
+  (raise e))
 
 (define (extract-form-name s)
   (cond

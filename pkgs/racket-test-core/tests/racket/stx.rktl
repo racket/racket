@@ -2411,6 +2411,17 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(let ()
+  (err/rt-test (raise-syntax-error 'something "" #:exn exn:fail:syntax:unbound)
+               exn:fail:syntax:unbound?
+               #rx"^something:")
+
+  (err/rt-test (raise-syntax-error 'something "" #:exn (λ (a b c) 1))
+               exn:fail:contract?
+               #rx"raise-syntax-error: contract violation"))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (test #t procedure? error-syntax->string-handler)
 (test "(lambda (x) x)" (error-syntax->string-handler) #'(lambda (x) x) #f)
 (test "(lambda (x) x)" (error-syntax->string-handler) '(lambda (x) x) #f)

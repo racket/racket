@@ -10,7 +10,8 @@
             [call-with-input-file   -call-with-input-file]
             [call-with-output-file  -call-with-output-file]
             [with-input-from-file   -with-input-from-file]
-            [with-output-to-file    -with-output-to-file])
+            [with-output-to-file    -with-output-to-file]
+            [raise-syntax-error     -raise-syntax-error])
            call-with-input-file*
            call-with-output-file*
            (rename-out
@@ -161,4 +162,14 @@
                            path<?)])
         (if build?
             (map (lambda (i) (build-path dir i)) content)
-            content)))))
+            content))))
+
+  (define (raise-syntax-error given-name message
+                              [expr #f] [sub-expr #f]
+                              [extra-sources null]
+                              [message-suffix ""]
+                              #:exn [exn exn:fail:syntax])
+    (do-raise-syntax-error 'raise-syntax-error exn given-name message
+                           expr sub-expr
+                           extra-sources
+                           message-suffix)))
