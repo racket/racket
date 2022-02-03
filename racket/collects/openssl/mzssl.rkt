@@ -526,10 +526,12 @@ TO DO:
                                  #:certificate-chain [cert-chain #f])
   (cond [(and (eq? protocol-symbol 'secure) (not priv-key) (not cert-chain))
          (ssl-secure-client-context)]
-        [else
-         (define ctx (make-context 'ssl-make-client-context protocol-symbol #t priv-key cert-chain))
-         (when (eq? protocol-symbol 'secure) (secure-client-context! ctx))
-         ctx]))
+        [else (make-client-context* protocol-symbol priv-key cert-chain)]))
+
+(define (make-client-context* protocol-symbol priv-key cert-chain)
+  (define ctx (make-context 'ssl-make-client-context protocol-symbol #t priv-key cert-chain))
+  (when (eq? protocol-symbol 'secure) (secure-client-context! ctx))
+  ctx)
 
 (define (ssl-make-server-context [protocol-symbol default-encrypt]
                                  #:private-key [priv-key #f]
@@ -856,8 +858,7 @@ TO DO:
   (let ([locs (ssl-default-verify-sources)])
     (define (reset)
       (let* ([now (current-seconds)]
-             [ctx (ssl-make-client-context 'auto)])
-        (secure-client-context! ctx)
+             [ctx (make-client-context* 'secure #f #f)])
         (set! context-cache (list (make-weak-box ctx) locs now))
         ctx))
     (let* ([cached context-cache]
