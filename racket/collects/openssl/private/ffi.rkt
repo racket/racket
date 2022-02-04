@@ -60,6 +60,8 @@
 (define SSL_CTRL_SET_TLSEXT_HOSTNAME 55)
 (define SSL_CTRL_SET_TMP_DH 3)
 (define SSL_CTRL_SET_TMP_ECDH 4)
+(define SSL_CTRL_SET_MIN_PROTO_VERSION 123)
+(define SSL_CTRL_SET_MAX_PROTO_VERSION 124)
 
 (define SSL_OP_NO_SSLv2    #x01000000)
 (define SSL_OP_NO_SSLv3    #x02000000)
@@ -84,6 +86,12 @@
 (define NID_sha512 674)
 
 (define SSL_ST_ACCEPT #x2000)
+
+(define SSL3_VERSION    #x0300)
+(define TLS1_VERSION    #x0301)
+(define TLS1_1_VERSION  #x0302)
+(define TLS1_2_VERSION  #x0303)
+(define TLS1_3_VERSION  #x0304)
 
 ;; ----------------------------------------
 
@@ -177,6 +185,16 @@
 (define-ssl SSL_load_client_CA_file (_fun _path -> _X509_NAME*/null))
 (define-ssl SSL_CTX_set_cipher_list (_fun _SSL_CTX* _string -> _int))
 
+(begin ;; added in v1.1.0
+  (define-ssl SSL_CTX_get_security_level (_fun _SSL_CTX* -> _int)
+    #:fail (lambda () (lambda (ctx) 2 #|default security level|#)))
+  (define-ssl SSL_CTX_set_security_level (_fun _SSL_CTX* _int -> _void)
+    #:fail (lambda () (lambda (ctx) 1 #|success|#)))
+  (define (SSL_CTX_set_min_proto_version ctx version)
+    (SSL_CTX_ctrl ctx SSL_CTRL_SET_MIN_PROTO_VERSION version #f))
+  (define (SSL_CTX_set_max_proto_version ctx version)
+    (SSL_CTX_ctrl ctx SSL_CTRL_SET_MAX_PROTO_VERSION version #f)))
+
 (define-ssl SSL_free (_fun _SSL* -> _void)
   #:wrap (deallocator))
 (define-ssl SSL_new (_fun _SSL_CTX* -> _SSL*)
@@ -198,6 +216,7 @@
 (define-ssl SSL_ctrl/bytes (_fun _SSL* _int _long _bytes/nul-terminated -> _long)
   #:c-id SSL_ctrl)
 (define-ssl SSL_set_SSL_CTX (_fun _SSL* _SSL_CTX* -> _SSL_CTX*))
+(define-ssl SSL_version (_fun _SSL* -> _int))
 
 (define-crypto X509_free (_fun _X509* -> _void)
   #:wrap (deallocator))
