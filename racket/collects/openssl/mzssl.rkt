@@ -51,7 +51,7 @@ TO DO:
   (log-openssl-error "OpenSSL library too old, version 1.0.2 or later required."))
 
 (define protocol-symbol/c
-  (or/c 'secure 'auto 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12))
+  (or/c 'secure 'auto 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12 'tls13))
 
 (define (alpn-protocol-bytes/c v)
   (and (bytes? v) (< 0 (bytes-length v) 256)))
@@ -93,6 +93,7 @@ TO DO:
 
 (provide
  ssl-dh4096-param-bytes
+ (rename-out [protocol-symbol/c ssl-protocol-symbol/c])
  (contract-out
   [ssl-available? boolean?]
   [ssl-load-fail-reason (or/c #f string?)]
@@ -428,61 +429,27 @@ TO DO:
 
 (define default-encrypt 'auto)
 
-(define (encrypt->method who e client?)
-  (define f
-    (case e
-      [(secure auto sslv2-or-v3)
-       (if client? TLS_client_method TLS_server_method)]
-      [(sslv2)
-       (if client? SSLv2_client_method SSLv2_server_method)]
-      [(sslv3)
-       (if client? SSLv3_client_method SSLv3_server_method)]
-      [(tls)
-       (if client? TLSv1_client_method TLSv1_server_method)]
-      [(tls11)
-       (if client? TLSv1_1_client_method TLSv1_1_server_method)]
-      [(tls12)
-       (if client? TLSv1_2_client_method TLSv1_2_server_method)]
-      [else
-       (error 'encrypt->method "internal error, unknown encrypt: ~e" e)]))
-  (unless f
-    (raise (exn:fail:unsupported
-            (format "~a: requested protocol not supported~a\n  requested: ~e"
-                    who
-                    (if ssl-available?
-                        ""
-                        ";\n SSL not available; check `ssl-load-fail-reason'")
-                    e)
-            (current-continuation-marks))))
-  (f))
+;; In v1.1.0 and later, there does not seem to be a reliable way of testing
+;; dynamically whether a protocol version is supported. So use version tests.
+;; FIXME: Drop 'sslv3, 'tls1, and 'tls11 (deprecated by RFC 8996).
 
-(define (filter-available l)
-  (cond
-   [(null? l) null]
-   [(cadr l) (cons (car l) (filter-available (cddr l)))]
-   [else (filter-available (cddr l))]))
+(define protocol-versions
+  ;; (protocol security-level min-proto max-proto supported?)
+  `((secure 2 0                0                #t)
+    (auto   2 0                0                #t)
+    (sslv3  1 ,SSL3_VERSION    ,SSL3_VERSION    ,(and SSLv3_client_method #t))
+    (tls    2 ,TLS1_VERSION    ,TLS1_VERSION    ,(and TLSv1_client_method #t))
+    (tls11  2 ,TLS1_1_VERSION  ,TLS1_1_VERSION  ,(and TLSv1_1_client_method #t))
+    (tls12  2 ,TLS1_2_VERSION  ,TLS1_2_VERSION  ,(or v1.0.1/later? (and TLSv1_2_client_method #t)))
+    (tls13  2 ,TLS1_3_VERSION  ,TLS1_3_VERSION  ,(or v1.1.1/later?))))
 
 ;; Keep symbols in best-last order for ssl-max-{client,server}-protocol.
-(define (supported-client-protocols)
-  (filter-available
-   (list 'secure TLS_client_method
-         'auto TLS_client_method
-         'sslv2-or-v3 TLS_client_method
-         ;; 'sslv2 SSLv2_client_method --- always fails in modern OpenSSL
-         'sslv3 SSLv3_client_method
-         'tls TLSv1_client_method
-         'tls11 TLSv1_1_client_method
-         'tls12 TLSv1_2_client_method)))
-(define (supported-server-protocols)
-  (filter-available
-   (list 'secure TLS_server_method
-         'auto TLS_server_method
-         'sslv2-or-v3 TLS_server_method
-         ;; 'sslv2 SSLv2_server_method --- always fails in modern OpenSSL
-         'sslv3 SSLv3_server_method
-         'tls TLSv1_server_method
-         'tls11 TLSv1_1_server_method
-         'tls12 TLSv1_2_server_method)))
+(define the-supported-protocols
+  (for/list ([pinfo (in-list protocol-versions)] #:when (list-ref pinfo 4))
+    (car pinfo)))
+
+(define (supported-client-protocols) the-supported-protocols)
+(define (supported-server-protocols) the-supported-protocols)
 
 (define (ssl-max-client-protocol)
   (let ([protocols (supported-client-protocols)])
@@ -510,11 +477,45 @@ TO DO:
      (let ([ctx (SSL_CTX_new meth)])
        (check-valid ctx who "context creation")
        ctx)))
-  (unless (memq protocol-symbol '(sslv2 sslv3))
-    (SSL_CTX_set_options ctx (bitwise-ior SSL_OP_NO_SSLv2 SSL_OP_NO_SSLv3)))
   (SSL_CTX_set_mode ctx (bitwise-ior SSL_MODE_ENABLE_PARTIAL_WRITE
                                      SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER))
+  (when v1.1.0/later?
+    (define proto-info (assq protocol-symbol protocol-versions))
+    (let ([security-level (max (cadr proto-info) (SSL_CTX_get_security_level ctx))]
+          [min-proto (caddr proto-info)]
+          [max-proto (cadddr proto-info)])
+      (SSL_CTX_set_security_level ctx security-level)
+      (unless (and (= 1 (SSL_CTX_set_min_proto_version ctx min-proto))
+                   (= 1 (SSL_CTX_set_max_proto_version ctx max-proto)))
+        (error who "failed setting min/max protocol versions: ~e" protocol-symbol))))
   ctx)
+
+(define (encrypt->method who e client?)
+  (unless (memq e (if client? (supported-client-protocols) (supported-server-protocols)))
+    (raise-protocol-not-supported who e))
+  (define f
+    (if v1.1.0/later?
+        (if client? TLS_client_method TLS_server_method)
+        (case e
+          [(secure auto sslv2-or-v3) (if client? TLS_client_method TLS_server_method)]
+          [(sslv2) (if client? SSLv2_client_method SSLv2_server_method)]
+          [(sslv3) (if client? SSLv3_client_method SSLv3_server_method)]
+          [(tls) (if client? TLSv1_client_method TLSv1_server_method)]
+          [(tls11) (if client? TLSv1_1_client_method TLSv1_1_server_method)]
+          [(tls12) (if client? TLSv1_2_client_method TLSv1_2_server_method)]
+          [else #f])))
+  (unless f (raise-protocol-not-supported who e))
+  (f))
+
+(define (raise-protocol-not-supported who e)
+  (raise (exn:fail:unsupported
+          (format "~a: requested protocol not supported~a\n  requested: ~e"
+                  who
+                  (if ssl-available?
+                      ""
+                      ";\n SSL not available; check `ssl-load-fail-reason'")
+                  e)
+          (current-continuation-marks))))
 
 (define (need-ctx-free? context-or-encrypt-method)
   (and (symbol? context-or-encrypt-method)

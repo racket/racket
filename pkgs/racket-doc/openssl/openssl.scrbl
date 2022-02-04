@@ -76,10 +76,7 @@ using the functions described in @secref["cert-procs"].
 @defproc[(ssl-connect [hostname string?]
                       [port-no (integer-in 1 65535)]
                       [client-protocol
-                       (or/c ssl-client-context?
-                             'secure
-                             'auto
-                             'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
+                       (or/c ssl-client-context? ssl-protocol-symbol/c)
                        'auto]
                       [#:alpn alpn-protocols (listof bytes?) null])
          (values input-port? output-port?)]{
@@ -136,9 +133,7 @@ whether the other end is supposed to be sending or reading data.
           [hostname string?]
 	  [port-no (integer-in 1 65535)]
 	  [client-protocol
-	   (or/c ssl-client-context?
-                 'secure 'auto
-                 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
+	   (or/c ssl-client-context? ssl-protocol-symbol/c)
            'auto])
          (values input-port? output-port?)]{
 
@@ -181,9 +176,7 @@ chain to it. If client credentials are required, use
 
 
 @defproc[(ssl-make-client-context
-          [protocol (or/c 'secure 'auto
-                          'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
-                    'auto]
+          [protocol ssl-protocol-symbol/c 'auto]
           [#:private-key private-key
                          (or/c (list/c 'pem path-string?)
                                (list/c 'der path-string?)
@@ -209,19 +202,18 @@ The @racket[protocol] should be one of the following:
 from those that this library considers sufficiently secure---currently
 TLS versions 1.0 and higher, but subject to change.}
 @item{@racket['tls12] : Only TLS protocol version 1.2.}
+@item{@racket['tls13] : Only TLS protocol version 1.3.}
 ]
-Note that later TLS versions are supported, but there is no corresponding
-@racket[protocol] symbol; using @racket['secure] is best and forward-compatible.
 The following @racket[protocol] symbols are deprecated but still supported:
 @itemlist[
 @item{@racket['sslv2-or-v3] : Alias for @racket['auto]. Note that
 despite the name, neither SSL 2.0 nor 3.0 are considered sufficiently
 secure, so this @racket[protocol] no longer allows either of them.}
-@item{@racket['sslv2] : SSL protocol version 2.0. @bold{Insecure.}
+@item{@racket['sslv2] : SSL protocol version 2.0. @bold{Deprecated by RFC 6176 (2011).}
 Note that SSL 2.0 support has been removed from many platforms.}
-@item{@racket['sslv3] : SSL protocol version 3.0. @bold{Insecure.}}
-@item{@racket['tls] : Only TLS protocol version 1.0.}
-@item{@racket['tls11] : Only TLS protocol version 1.1.}
+@item{@racket['sslv3] : SSL protocol version 3.0. @bold{Deprecated by RFC 7568 (2015).}}
+@item{@racket['tls] : Only TLS protocol version 1.0. @bold{Deprecated by RFC 8996 (2021).}}
+@item{@racket['tls11] : Only TLS protocol version 1.1. @bold{Deprecated by RFC 8996 (2021).}}
 ]
 
 Not all protocol versions are supported by all servers. The
@@ -247,10 +239,21 @@ in other kind of servers.
 arguments.}
 ]}
 
+@defthing[ssl-protocol-symbol/c contract?
+          #:value (or/c 'secure 'auto 'sslv2-or-v3
+                        'sslv2 'sslv3 'tls 'tls11 'tls12 'tls13)]{
+
+Contract for symbols representing SSL/TLS protocol versions. See
+@racket[ssl-make-client-context] for an explanation of how the symbols are
+interpreted.
+
+@history[
+#:added "8.6.0.4"
+#:changed "8.6.0.4" @elem{Added @racket['tls13].}
+]}
 
 @defproc[(supported-client-protocols)
-         (listof (or/c 'secure 'auto
-                       'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12))]{
+         (listof ssl-protocol-symbol/c)]{
 
 Returns a list of symbols representing protocols that are supported
 for clients on the current platform.
@@ -265,7 +268,7 @@ Returns @racket[#t] if @racket[v] is a value produced by
 
 @history[#:added "6.0.1.3"]}
 
-@defproc[(ssl-max-client-protocol) (or/c 'sslv2 'sslv3 'tls 'tls11 'tls12 #f)]{
+@defproc[(ssl-max-client-protocol) (or/c ssl-protocol-symbol/c #f)]{
 
 Returns the most recent SSL/TLS protocol version supported by the
 current platform for client connections.
@@ -283,9 +286,7 @@ current platform for client connections.
 	  [reuse? any/c #f]
 	  [hostname-or-#f (or/c string? #f) #f]
 	  [server-protocol
-	   (or/c ssl-server-context? 
-                 'secure 'auto
-                 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
+	   (or/c ssl-server-context?  ssl-protocol-symbol/c)
            'auto])
 	 ssl-listener?]{
 
@@ -356,9 +357,7 @@ Returns @racket[#t] of @racket[v] is an SSL port produced by
 
 
 @defproc[(ssl-make-server-context
-          [protocol (or/c 'secure 'auto
-                          'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
-                    'auto]
+          [protocol ssl-protocol-symbol/c 'auto]
           [#:private-key private-key
                          (or/c (list/c 'pem path-string?)
                                (list/c 'der path-string?)
@@ -388,8 +387,7 @@ Returns @racket[#t] if @racket[v] is a value produced by
 @racket[ssl-make-server-context], @racket[#f] otherwise.}
 
 @defproc[(supported-server-protocols)
-         (listof (or/c 'secure 'auto
-                       'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12))]{
+         (listof ssl-protocol-symbol/c)]{
 
 Returns a list of symbols representing protocols that are supported
 for servers on the current platform.
@@ -397,7 +395,7 @@ for servers on the current platform.
 @history[#:added "6.0.1.3"
          #:changed "6.3.0.12" @elem{Added @racket['secure].}]}
 
-@defproc[(ssl-max-server-protocol) (or/c 'sslv2 'sslv3 'tls 'tls11 'tls12 #f)]{
+@defproc[(ssl-max-server-protocol) (or/c ssl-protocol-symbol/c #f)]{
 
 Returns the most recent SSL/TLS protocol version supported by the
 current platform for server connections.
@@ -419,9 +417,7 @@ current platform for server connections.
                            ssl-make-server-context 
                            ssl-make-client-context)
                        protocol)]
-	   [#:encrypt protocol (or/c 'secure 'auto
-                                     'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
-                      'auto]
+	   [#:encrypt protocol ssl-protocol-symbol/c 'auto]
 	   [#:close-original? close-original? boolean? #f]
 	   [#:shutdown-on-close? shutdown-on-close? boolean? #f]
 	   [#:error/ssl error procedure? error]
