@@ -1390,10 +1390,19 @@ TO DO:
                [(verify-hostname?)
                 (cond [(ssl-context? context-or-encrypt-method)
                        (ssl-context-verify-hostname? context-or-encrypt-method)]
-                      [else #f])])
+                      [else (eq? context-or-encrypt-method 'secure)])])
+    (define verify? (not (zero? (bitwise-and (SSL_get_verify_mode ssl) SSL_VERIFY_PEER))))
+    (when verify-hostname?
+      (unless hostname
+        (error/ssl who "~a failed (hostname not provided for verification)"
+                   (if connect? "connect" "accept"))))
     (when (string? hostname)
       (SSL_ctrl/bytes ssl SSL_CTRL_SET_TLSEXT_HOSTNAME
-                      TLSEXT_NAMETYPE_host_name (string->bytes/latin-1 hostname)))
+                      TLSEXT_NAMETYPE_host_name (string->bytes/latin-1 hostname))
+      (when (and verify? verify-hostname?)
+        ;; If verify? and verify-hostname? are true, then let OpenSSL
+        ;; do hostname verification automatically during negotiation.
+        (SSL_set1_host ssl hostname)))
     (when (pair? alpn)
       (unless (eq? connect/accept 'connect)
         (error who "#:alpn argument is supported only in connect mode~a"
@@ -1438,12 +1447,13 @@ TO DO:
                                (if connect? "connect" "accept")
                                estr)]))))))
         (when verify-hostname?
-          (unless hostname
-            (error/ssl who "~a failed (hostname not provided for verification)"
-                       (if connect? "connect" "accept")))
-          (unless (hostname-in-cert? hostname (SSL_get_peer_certificate ssl))
-            (error/ssl who "~a failed (certificate not valid for hostname)"
-                       (if connect? "connect" "accept"))))
+          ;; If verify? is true, then hostname already verified via SSL_set1_host.
+          ;; Otherwise, check now.
+          (unless verify?
+            (unless (hostname-in-cert? hostname (SSL_get_peer_certificate ssl))
+              (SSL_shutdown ssl) ;; FIXME: peer doesn't get failure alert
+              (error/ssl who "~a failed (certificate not valid for hostname)"
+                         (if connect? "connect" "accept")))))
         ;; Connection complete; make ports
         (values (register (make-ssl-input-port mzssl) mzssl #t)
           (register (make-ssl-output-port mzssl) mzssl #f))))))
@@ -1521,8 +1531,7 @@ TO DO:
 
 ;; hostname-in-cert? : string Cert -> boolean
 (define (hostname-in-cert? hostname cert)
-  (for/or ([cert-hostname (in-list (cert->names cert))])
-    (check-hostname hostname cert-hostname)))
+  (= 1 (X509_check_host cert (string->bytes/latin-1 hostname) 0)))
 
 (define (cert->names cert)
   ;; RFC 2818 (section 3.1) says use subjectAltName dNSName extensions
@@ -1571,25 +1580,6 @@ TO DO:
                      [else acc]))))])
     (when namestack (sk_pop_free namestack GENERAL_NAME_free))
     names))
-
-(define (check-hostname cx-name cert-name-pattern)
-  (let* ([cx-parts (string-split cx-name "." #:trim? #f)]
-         [cert-parts (string-split cert-name-pattern "." #:trim? #f)])
-    (and (equal? (length cx-parts)
-                 (length cert-parts))
-         (andmap check-hostname-part cx-parts cert-parts))))
-
-(define (check-hostname-part cx-part cert-part)
-  (cond [(equal? cert-part "*")
-         #t]
-        [(for/or ([c (in-string cert-part)]) (eqv? c #\*))
-         (regexp-match? (glob->regexp cert-part) cx-part)]
-        [else (string-ci=? cx-part cert-part)]))
-
-(define (glob->regexp glob)
-  (let* ([lit-parts (string-split glob #rx"[*]" #:trim? #f)]
-         [lit-rxs (for/list ([part (in-list lit-parts)]) (regexp-quote part #f))])
-    (regexp (string-join lit-rxs ".*"))))
 
 (define (ssl-channel-binding p type)
   ;; Reference: https://tools.ietf.org/html/rfc5929
