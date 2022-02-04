@@ -173,7 +173,7 @@
 (define bad-hosts
   '(;; Invalid certificate
     expired.badssl.com
-    ;; wrong.host.badssl.com
+    wrong.host.badssl.com
     self-signed.badssl.com
     untrusted-root.badssl.com
     ;; revoked.badssl.com

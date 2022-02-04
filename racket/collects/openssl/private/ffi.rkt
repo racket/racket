@@ -109,6 +109,7 @@
 (define-cpointer-type _EC_KEY*)
 (define-cstruct _GENERAL_NAME ([type _int] [d _ASN1_STRING*]))
 (define-cpointer-type _EVP_MD*)
+(define-cpointer-type _X509_VERIFY_PARAM*)
 
 ;; ----------------------------------------
 
@@ -217,6 +218,7 @@
   #:c-id SSL_ctrl)
 (define-ssl SSL_set_SSL_CTX (_fun _SSL* _SSL_CTX* -> _SSL_CTX*))
 (define-ssl SSL_version (_fun _SSL* -> _int))
+(define-ssl SSL_get_verify_mode (_fun _SSL* -> _int))
 
 (define-crypto X509_free (_fun _X509* -> _void)
   #:wrap (deallocator))
@@ -327,3 +329,34 @@
 
 (define-ssl X509_digest
   (_fun _X509* _EVP_MD* _pointer (_ptr i _uint) -> _int))
+
+(begin ;; added in v1.0.2
+  (define-crypto X509_check_host
+    (_fun [cert : _X509*]
+          [name : _bytes]
+          [namelen : _size = (bytes-length name)]
+          [flags : _uint]
+          [peername : _pointer = #f]
+          -> _int))
+  (define-ssl SSL_get0_param
+    (_fun _SSL* -> _X509_VERIFY_PARAM*))
+  (define-crypto X509_VERIFY_PARAM_set1_host
+    (_fun [param : _X509_VERIFY_PARAM*]
+          [name : _bytes]
+          [namelen : _size = (bytes-length name)]
+          -> _int))
+  (define-crypto X509_VERIFY_PARAM_set_hostflags
+    (_fun _X509_VERIFY_PARAM* _uint -> _void)))
+
+(begin ;; added in v1.1.0
+  (define-ssl SSL_set_hostflags
+    (_fun _SSL* _uint -> _void)
+    #:fail (lambda ()
+             (lambda (ssl flags)
+               (X509_VERIFY_PARAM_set_hostflags (SSL_get0_param ssl) flags))))
+  (define-ssl SSL_set1_host
+    (_fun _SSL* _string/latin-1 -> _void)
+    #:fail (lambda ()
+             (lambda (ssl host)
+               (X509_VERIFY_PARAM_set1_host (SSL_get0_param ssl)
+                                            (string->bytes/latin-1 host))))))
