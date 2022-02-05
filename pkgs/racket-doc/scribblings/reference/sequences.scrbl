@@ -144,7 +144,41 @@ time that a sequence is @deftech{initiate}d by a @racket[for] form,
 @racket[sequence->stream], @racket[sequence-generate], or
 @racket[sequence-generate*]. Concretely, the thunk passed to
 @racket[make-do-sequence] is called to @tech{initiate} the sequence
-each time the sequence is used.
+each time the sequence is used. Accordingly, different sequences behave
+differently when they are @tech{initiate}d multiple times.
+
+@examples[#:eval sequence-evaluator
+          #:label #f
+          (define (double-initiate s1)
+            (code:comment "initiate the sequence twice")
+            (define-values (more?.1 next.1) (sequence-generate s1))
+            (define-values (more?.2 next.2) (sequence-generate s1))
+            (code:comment "alternate fetching from sequence via the two initiations")
+            (list (next.1) (next.2) (next.1) (next.2)))
+
+          (double-initiate (open-input-string "abcdef"))
+          (double-initiate (list 97 98 99 100))
+          (double-initiate (in-naturals 97))]
+
+Also, subsequent elements in a sequence may be ``consumed'' just by calling the
+first result of @racket[sequence-generate], even if the second
+result is never called.
+
+@examples[#:eval sequence-evaluator
+          #:label #f
+          (define (double-initiate-and-use-more? s1)
+            (code:comment "initiate the sequence twice")
+            (define-values (more?.1 next.1) (sequence-generate s1))
+            (define-values (more?.2 next.2) (sequence-generate s1))
+            (code:comment "alternate fetching from sequence via the two initiations")
+            (code:comment "but this time call `more?` in between")
+            (list (next.1) (more?.1) (next.2) (more?.2)
+                  (next.1) (more?.1) (next.2) (more?.2)))
+
+          (double-initiate-and-use-more? (open-input-string "abcdef"))]
+
+In this example, the state embedded in the first call to @racket[sequence-generate]
+``takes'' the @racket[98] just by virtue of the invocation of @racket[_more?.1].
 
 Individual elements of a sequence typically correspond to single
 values, but an element may also correspond to multiple values.  For
@@ -754,7 +788,7 @@ each element in the sequence.
       value(s). This function is checked on each position before
       @racket[_pos->element] is used.}
     @item{The sixth (or fifth) result is a @racket[_continue-with-val?] function
-      that is like the fourth result, but it takes the current element
+      that is like the fifth (or fourth) result, but it takes the current element
       value(s) instead of the current position.  Alternatively, the
       sixth (or fifth) result can be @racket[#f] to indicate that the sequence
       should always include the value(s) at the current position.}
