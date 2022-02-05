@@ -458,10 +458,15 @@ for error-message adjustments.
                              [sub-expr any/c #f]
                              [extra-sources (listof syntax?) null]
                              [message-suffix string? ""]
-                             [#:exn exn (-> (listof syntax?) string? continuation-mark-set? exn:fail:syntax?) exn:fail:syntax])
+                             [#:exn exn
+                              (-> string?
+                                  continuation-mark-set?
+                                  (listof syntax?)
+                                  exn:fail:syntax?)
+                              exn:fail:syntax])
          any]{
 
-Creates an @racket[exn:fail:syntax] value and @racket[raise]s it as an
+Creates an @racket[exn:fail:syntax?] value and @racket[raise]s it as an
 exception.  Macros use this procedure to report syntax errors.
 
 The @racket[name] argument is usually @racket[#f] when @racket[expr]
@@ -521,7 +526,7 @@ and two spaces to add extra fields to the message (see
 @secref["err-msg-conventions"]).
 
 If specified, the @racket[exn] argument should be a constructor or function that
-consumes a list of syntax, a string, and a continuation mark set;
+consumes a string, a continuation mark set, and a list of syntax;
 and it should produce a @racket[exn:fail:syntax?].
 
 
