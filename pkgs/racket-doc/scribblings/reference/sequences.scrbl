@@ -138,7 +138,7 @@ side-effect on the original sequence value; for example, extracting
 the sequence of elements from a list does not change the list.  For
 other sequence types, each extraction implies a side effect; for
 example, extracting the sequence of bytes from a port causes the bytes
-to be read from the port. A sequence's state may either span all uses
+to be read from the port. @elemtag["sequence-state"]{A} sequence's state may either span all uses
 of the sequence, as for a port, or it may be confined to each distinct
 time that a sequence is @deftech{initiate}d by a @racket[for] form,
 @racket[sequence->stream], @racket[sequence-generate], or
@@ -842,7 +842,23 @@ each element in the sequence.
   then the effect is performed each time that either
   @racket[stream-first] or @racket[stream-rest] is first used to
   access or skip an element.
-}
+
+  Note that a @elemref["sequence-state"]{sequence itself can have
+  state}, so multiple calls to @racket[sequence->stream] on the same
+  @racket[seq] are not necessarily independent.
+
+  @examples[
+  #:eval sequence-evaluator
+  (define inport (open-input-bytes (bytes 1 2 3 4 5)))
+  (define strm (sequence->stream inport))
+  (stream-first strm)
+  (stream-first (stream-rest strm))
+  (stream-first strm)
+
+  (define strm2 (sequence->stream inport))
+  (stream-first strm2)
+  (stream-first (stream-rest strm2))
+ ]}
 
 @defproc[(sequence-generate [seq sequence?])
          (values (-> boolean?) (-> any))]{
@@ -851,7 +867,23 @@ each element in the sequence.
   values are available for the sequence.  The second returns the next
   element (which may be multiple values) from the sequence; if no more
   elements are available, the @exnraise[exn:fail:contract].
-}
+
+  Note that a @elemref["sequence-state"]{sequence itself can have
+  state}, so multiple calls to @racket[sequence-generate] on the same
+  @racket[seq] are not necessarily independent.
+
+  @examples[
+  #:eval sequence-evaluator
+  (define inport (open-input-bytes (bytes 1 2 3 4 5)))
+  (define-values (more? get) (sequence-generate inport))
+  (more?)
+  (get)
+  (get)
+
+  (define-values (more2? get2) (sequence-generate inport))
+  (list (get2) (get2) (get2))
+  (more2?)
+ ]}
 
 @defproc[(sequence-generate* [seq sequence?])
          (values (or/c list? #f)
