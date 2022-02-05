@@ -3028,7 +3028,7 @@
   (test-use-unsafe-fxbinary 'fxmin 'unsafe-fxmin)
   (test-use-unsafe-fxbinary 'fxmax 'unsafe-fxmax))
 
-(unless (eq? 'chez-scheme (system-type 'vm)) ; cptypes doesn't currently convert to fixnum ops
+(unless (eq? 'chez-scheme (system-type 'vm)) ; in these cases, cptypes converts zero? to fxzero?
   (test-comp '(lambda (vx)
                 (let ([x (string-length vx)])
                   (zero? x)))
@@ -3048,36 +3048,57 @@
                 (when (and (fixnum? x) (zero? (random 2)))
                   (unsafe-fx= x 0)))))
 
-(unless (eq? 'chez-scheme (system-type 'vm)) ; cptypes doesn't currently convert to fixnum ops
-  ;test special case for bitwise-and and fixnum?
-  (test-comp '(lambda (x)
-                (let ([y (bitwise-and x 2)])
-                  (list y y (fixnum? y))))
-             '(lambda (x)
-                (let ([y (bitwise-and x 2)])
-                  (list y y #t))))
-  (test-comp '(lambda (x)
-                (let ([y (bitwise-and x 2)])
-                  (fixnum? x)))
-             '(lambda (x)
-                (let ([y (bitwise-and x 2)])
-                  #t))
-             #f))
+;test special case for bitwise-and and fixnum?
+(test-comp '(lambda (x)
+              (let ([y (bitwise-and x 2)])
+                (list y y (fixnum? y))))
+           '(lambda (x)
+              (let ([y (bitwise-and x 2)])
+                (list y y #t))))
+(test-comp '(lambda (x)
+              (let ([y (bitwise-and x 2)])
+                (fixnum? x)))
+           '(lambda (x)
+              (let ([y (bitwise-and x 2)])
+                #t))
+           #f)
+(test-comp #:except 'racket
+           '(lambda (x)
+              (let ([y (bitwise-ior x -2)])
+                (list y y (fixnum? y))))
+           '(lambda (x)
+              (let ([y (bitwise-ior x -2)])
+                (list y y #t))))
+(test-comp '(lambda (x)
+              (let ([y (bitwise-ior x -2)])
+                (fixnum? x)))
+           '(lambda (x)
+              (let ([y (bitwise-ior x -2)])
+                #t))
+           #f)
 
-(unless (eq? 'chez-scheme (system-type 'vm)) ; no literal specializations right now
-  ;; Make sure that `bitwise-and` is known to return a fixnum for non-negative
-  ;; fixnum arguments but not for a negative one
+;; Make sure that `bitwise-and` is known to return a fixnum for non-negative
+;; fixnum arguments but not for a negative one
 
-  (test-comp '(lambda (x)
-                (bitwise-ior (bitwise-and x 7) 1))
-             '(lambda (x)
-                (unsafe-fxior (bitwise-and x 7) 1)))
-  (test-comp '(lambda (x)
-                (bitwise-ior (bitwise-and x -7) 1))
-             '(lambda (x)
-                (unsafe-fxior (bitwise-and x -7) 1))
-             #f))
-
+(test-comp '(lambda (x)
+              (bitwise-ior (bitwise-and x 7) 1))
+           '(lambda (x)
+              (unsafe-fxior (bitwise-and x 7) 1)))
+(test-comp '(lambda (x)
+              (bitwise-ior (bitwise-and x -7) 1))
+           '(lambda (x)
+              (unsafe-fxior (bitwise-and x -7) 1))
+           #f)
+(test-comp #:except 'racket
+           '(lambda (x)
+              (bitwise-ior (bitwise-ior x -7) 1))
+           '(lambda (x)
+              (unsafe-fxior (bitwise-ior x -7) 1)))
+(test-comp '(lambda (x)
+              (bitwise-ior (bitwise-ior x 7) 1))
+           '(lambda (x)
+              (unsafe-fxior (bitwise-ior x 7) 1))
+           #f)
 
 (test-comp `(lambda (x)
               (thread (lambda () (set! x 5)))
