@@ -9,6 +9,7 @@ pb_dir="$dir/ChezScheme/boot/pb"
 use_cs=maybe
 use_bc=maybe
 supplied_racket=no
+supplied_scheme=no
 enable_boothelp=
 
 # We don't have to detect conflicts like `--enable-csdefault --enable-bcdefault`,
@@ -33,6 +34,9 @@ for arg in $*; do
             ;;
         --enable-racket=*)
             supplied_racket=yes
+            ;;
+        --enable-scheme=*)
+            supplied_scheme=yes
             ;;
         --help | -h)
             echo $0:
@@ -70,8 +74,8 @@ elif test "$use_cs" = "maybe" ; then
 fi
 
 if test "$use_cs" = "yes" ; then
-    if test $use_bc = no  -a $supplied_racket = no -a ! -d "$pb_dir" ; then
-        echo $0: must have $pb_dir or --enable-racket=... for --enable-csonly
+    if test $use_bc = no  -a $supplied_racket = no  -a $supplied_scheme = no  -a ! -d "$pb_dir" ; then
+        echo $0: must have $pb_dir, --enable-racket=... or --enable-scheme=... for --enable-csonly
         exit 1
     fi
 

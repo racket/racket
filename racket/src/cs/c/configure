@@ -656,6 +656,9 @@ MINGW
 NOT_OSX
 OSX
 SETUP_BOOT_MODE
+USE_SCHEME_MODE
+MAKE_SCHEME_SCHEME
+MAKE_SCHEME_MODE
 TT_CROSS_MODE
 T_CROSS_MODE
 CROSS_MODE
@@ -1453,7 +1456,7 @@ Optional Features:
   --enable-docs           build docs on install (enabled by default)
   --enable-usersetup      setup user-specific files on install
   --enable-racket=<path>  use <path> as Racket for build; or "auto" to create
-  --enable-scheme=<path>  use <path> as host's build directory for cross
+  --enable-scheme=<path>  use <path> as host build for cross
   --enable-mach=<mach>    use Chez Scheme machine type <mach>
   --enable-target=<mach>  cross-build for Chez Scheme machine type <mach>
   --enable-pb             build for platform without native-code backend
@@ -2884,7 +2887,7 @@ show_explicitly_enabled "${enable_xonx}" "Unix style"
 show_explicitly_enabled "${enable_libzo}" 'Compiled ".zo" files moved to lib'
 
 show_explicitly_set "${enable_racket}" "Racket"
-show_explicitly_set "${enable_scheme}" "Chez Scheme build directory"
+show_explicitly_set "${enable_scheme}" "Chez Scheme for build"
 show_explicitly_set "${enable_mach}" "machine type"
 show_explicitly_set "${enable_target}" "cross-build machine type"
 show_explicitly_set "${enable_pb}" "pb machine type"
@@ -4782,9 +4785,21 @@ esac
 
 SCHEME_DIR=${srcdir}/../../ChezScheme
 MAKE_BUILD_SCHEME=checkout
+USE_SCHEME_MODE="_built"
+MAKE_SCHEME_MODE="${T_CROSS_MODE}"
 
 if test "${enable_scheme}" != "" ; then
-  CS_HOST_WORKAREA_PREFIX="${enable_scheme}/"
+   if test -d "${enable_scheme}" ; then
+     # Directory exists, so use it as a build directory
+     echo "Using supplied Scheme path as a build directory"
+     CS_HOST_WORKAREA_PREFIX="${enable_scheme}/"
+   else
+     # Directory does not exist, so assume it's an executable
+     echo "Using supplied Scheme path as an executable"
+     MAKE_SCHEME_MODE="${T_CROSS_MODE}-via-scheme"
+     MAKE_SCHEME_SCHEME="${enable_scheme}"
+     USE_SCHEME_MODE="_existing"
+   fi
 fi
 
 if test "${enable_racket}" != "" ; then
@@ -6084,6 +6099,9 @@ done
 
 SCHEME_CONFIG_ARGS="--machine=${KERNEL_MACH} --disable-x11 ${disable_curses_arg} ${cs_auto_flags} ${extra_scheme_config_args}"
 SCHEME_CROSS_CONFIG_ARGS="--machine=${KERNEL_TARGET_MACH} --disable-x11 ${cs_auto_flags} ${disable_curses_arg} ${extra_scheme_config_args}"
+
+
+
 
 
 

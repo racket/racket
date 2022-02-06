@@ -12,7 +12,9 @@ CS_HOST_WORKAREA_PREFIX = @CS_HOST_WORKAREA_PREFIX@
 SCHEME_HOST_WORKAREA = $(CS_HOST_WORKAREA_PREFIX)$(SCHEME_WORKAREA)
 SCHEME_BIN = $(SCHEME_HOST_WORKAREA)/$(MACH)/bin/$(MACH)/scheme
 SCHEME_INC = $(SCHEME_HOST_WORKAREA)/$(MACH)/boot/$(MACH)
-SCHEME = $(SCHEME_BIN) -B $(SCHEME_INC)/petite.boot -B $(SCHEME_INC)/scheme.boot
+SCHEME_built = $(SCHEME_BIN) -B $(SCHEME_INC)/petite.boot -B $(SCHEME_INC)/scheme.boot
+SCHEME_existing = @MAKE_SCHEME_SCHEME@
+SCHEME = $(SCHEME@USE_SCHEME_MODE@)
 
 TARGET_MACH = @TARGET_MACH@
 SCHEME_TARGET_INC = $(SCHEME_WORKAREA)/$(TARGET_MACH)/boot/$(TARGET_MACH)
@@ -89,7 +91,7 @@ mainsrcdir = @srcdir@/../..
 @INCLUDEDEP@ @srcdir@/../../version/version.mak
 
 cs:
-	$(MAKE) scheme@T_CROSS_MODE@
+	$(MAKE) scheme@MAKE_SCHEME_MODE@
 	$(MAKE) racket-so
 	cd rktio; $(MAKE)
 	$(MAKE) racketcs
@@ -122,9 +124,13 @@ racket-so:
 
 RACKET_SO_ENV = @CONFIGURE_RACKET_SO_COMPILE@
 
+TARGET_MACH_built = $(TARGET_MACH)
+TARGET_MACH_existing = xc-$(TARGET_MACH)
+XPATCH_FILE = $(SCHEME_WORKAREA)/$(TARGET_MACH@USE_SCHEME_MODE@)/s/xpatch
+
 CS_PROGS = SCHEME="$(SCHEME)"
 CS_OPTS = COMPRESS_COMP=@COMPRESS_COMP@ @ENABLE_OR_DISABLE_WPO@
-CS_OPTScross = $(CS_OPTS) CSO=$(MACH) CROSS_COMP="--xpatch $(SCHEME_WORKAREA)/$(TARGET_MACH)/s/xpatch"
+CS_OPTScross = $(CS_OPTS) CSO=$(MACH) CROSS_COMP="--xpatch $(XPATCH_FILE)"
 PASS_COMPILE_DEPS = EXTRA_COMPILE_DEPS="$(SCHEME_INC)/petite.boot $(SCHEME_INC)/scheme.boot"
 
 build-racket-so:
@@ -164,6 +170,15 @@ pb-bootquick:
 	cd $(SCHEME_WORKAREA) && $(MAKE) reset
 	$(SHELL) $(srcdir)/ready_boot.sh $(MACH) $(SCHEME_WORKAREA)
 
+scheme-via-scheme:
+	$(MAKE) $(SCHEME_WORKAREA)/boot/$(MACH)/scheme.boot
+	$(MAKE) mach-make
+
+$(SCHEME_WORKAREA)/boot/$(MACH)/scheme.boot:
+	mkdir -p $(SCHEME_WORKAREA)
+	$(MAKE) config-scheme CONFIG_SCHEME_MODE="$(CONFIG_SCHEME_MODE) --force"
+	cd $(SCHEME_WORKAREA) && $(MAKE) $(MACH).boot Scheme="$(SCHEME)" SCHEMEHEAPDIRS=: o=3 d=0 what=all
+
 mach-make:
 	$(MAKE) config-scheme
 	cd $(SCHEME_WORKAREA) && $(MAKE)
@@ -183,24 +198,33 @@ config-scheme:
 
 scheme-cross:
 	env MAKE_BOOT_FOR_CROSS=yes SCHEME_SRC="$(SCHEME_DIR)" SCHEME_WORKAREA=$(SCHEME_WORKAREA) MACH="$(TARGET_MACH)" $(BOOTSTRAP_RACKET) "$(SCHEME_DIR)"/rktboot/make-boot.rkt
+	$(MAKE) finish-scheme-cross
+
+finish-scheme-cross:
 	$(SHELL) $(srcdir)/reset_boot.sh $(TARGET_MACH) $(SCHEME_WORKAREA)
 	cd $(SCHEME_WORKAREA) && "$(UP_SCHEME_DIR)"/configure $(CONFIG_SCHEME_MODE) @SCHEME_CROSS_CONFIG_ARGS@ $(SCHEME_CONFIG_VARS)
 	cd $(SCHEME_WORKAREA)/$(TARGET_MACH)/c && $(CHOST_HACK@T_CROSS_MODE@) $(MAKE) o=o cross=t
-	$(MAKE) $(SCHEME_WORKAREA)/$(TARGET_MACH)/s/xpatch
+	$(MAKE) $(XPATCH_FILE)
+
+scheme-cross-via-scheme:
+	$(MAKE) $(SCHEME_WORKAREA)/boot/$(TARGET_MACH)/scheme.boot MACH=$(TARGET_MACH)
+	$(MAKE) finish-scheme-cross
 
 # Rebuild patch file and cross "petite.boot" and "scheme.boot" when older
-# than the build-host "scheme.boot" or when "make-boot.rkt" touchs dummy boot files
-XPATCH_DEPS = $(SCHEME_HOST_WORKAREA)/$(MACH)/boot/$(MACH)/scheme.boot \
-              $(SCHEME_WORKAREA)/boot/$(TARGET_MACH)/scheme.boot
+# than the build-<host "scheme.boot" or when "make-boot.rkt" touchs dummy boot files
+XPATCH_DEPS_built = $(SCHEME_HOST_WORKAREA)/$(MACH)/boot/$(MACH)/scheme.boot \
+                    $(SCHEME_WORKAREA)/boot/$(TARGET_MACH)/scheme.boot
+XPATCH_DEPS_existing = 
+XPATCH_DEPS = $(XPATCH_DEPS@USE_SCHEME_MODE@)
 
-$(SCHEME_WORKAREA)/$(TARGET_MACH)/s/xpatch: $(XPATCH_DEPS)
+$(XPATCH_FILE): $(XPATCH_DEPS)
 	$(MAKE) bounce TARGET=build-xpatch-using-host
 
 build-xpatch-using-host:
 	cd $(SCHEME_WORKAREA)/$(TARGET_MACH)/s && $(MAKE) -f Mf-cross m=$(MACH) xm=$(TARGET_MACH) Scheme="$(SCHEME_BIN)" SCHEMEHEAPDIRS="$(SCHEME_INC)"
 
 XPATCH =
-XPATCHcross = --xpatch $(SCHEME_WORKAREA)/$(TARGET_MACH)/s/xpatch
+XPATCHcross = --xpatch $(XPATCH_FILE)
 
 racket.boot: racket.so
 	$(SCHEME) --script $(srcdir)/convert-to-boot.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) racket.so racket.boot $(TARGET_MACH)
@@ -431,7 +455,7 @@ install-cross:
 	$(MAKE) compile-xpatch.$(TARGET_MACH)
 	$(MAKE) library-xpatch.$(TARGET_MACH)
 
-SCHEME_XPATCH = $(SCHEME_WORKAREA)/$(TARGET_MACH)/s/xpatch
+SCHEME_XPATCH = $(XPATCH_FILE)
 
 CROSS_SERVE_DEPS = $(srcdir)/mk-cross-serve.ss $(srcdir)/cross-serve.ss \
                    $(srcdir)/../expander/env.ss $(srcdir)/../linklet/config.ss

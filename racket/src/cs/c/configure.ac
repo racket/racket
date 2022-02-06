@@ -23,7 +23,7 @@ AC_ARG_ENABLE(compressmore, [  --enable-compressmore   compress compiled code ev
 AC_ARG_ENABLE(compressboot, [  --enable-compressboot   compress boot files])
 m4_include(../ac/path_arg.m4)
 AC_ARG_ENABLE(racket,     [  --enable-racket=<path>  use <path> as Racket for build; or "auto" to create])
-AC_ARG_ENABLE(scheme,     [  --enable-scheme=<path>  use <path> as host's build directory for cross])
+AC_ARG_ENABLE(scheme,     [  --enable-scheme=<path>  use <path> as host build for cross])
 AC_ARG_ENABLE(mach,       [  --enable-mach=<mach>    use Chez Scheme machine type <mach>])
 AC_ARG_ENABLE(target,     [  --enable-target=<mach>  cross-build for Chez Scheme machine type <mach>])
 AC_ARG_ENABLE(pb,         [  --enable-pb             build for platform without native-code backend])
@@ -83,7 +83,7 @@ show_explicitly_disabled "${enable_compressboot}" "Compressed boot files"
 show_explicitly_enabled "${enable_xonx}" "Unix style"
 m4_include(../ac/path_show.m4)
 show_explicitly_set "${enable_racket}" "Racket"
-show_explicitly_set "${enable_scheme}" "Chez Scheme build directory"
+show_explicitly_set "${enable_scheme}" "Chez Scheme for build"
 show_explicitly_set "${enable_mach}" "machine type"
 show_explicitly_set "${enable_target}" "cross-build machine type"
 show_explicitly_set "${enable_pb}" "pb machine type"
@@ -526,9 +526,21 @@ esac
 
 SCHEME_DIR=${srcdir}/../../ChezScheme
 MAKE_BUILD_SCHEME=checkout
+USE_SCHEME_MODE="_built"
+MAKE_SCHEME_MODE="${T_CROSS_MODE}"
 
 if test "${enable_scheme}" != "" ; then
-  CS_HOST_WORKAREA_PREFIX="${enable_scheme}/"
+   if test -d "${enable_scheme}" ; then
+     # Directory exists, so use it as a build directory
+     echo "Using supplied Scheme path as a build directory"
+     CS_HOST_WORKAREA_PREFIX="${enable_scheme}/"
+   else
+     # Directory does not exist, so assume it's an executable
+     echo "Using supplied Scheme path as an executable"
+     MAKE_SCHEME_MODE="${T_CROSS_MODE}-via-scheme"
+     MAKE_SCHEME_SCHEME="${enable_scheme}"
+     USE_SCHEME_MODE="_existing"
+   fi     
 fi
 
 if test "${enable_racket}" != "" ; then
@@ -872,6 +884,9 @@ AC_SUBST(DIFF_MACH)
 AC_SUBST(CROSS_MODE)
 AC_SUBST(T_CROSS_MODE)
 AC_SUBST(TT_CROSS_MODE)
+AC_SUBST(MAKE_SCHEME_MODE)
+AC_SUBST(MAKE_SCHEME_SCHEME)
+AC_SUBST(USE_SCHEME_MODE)
 AC_SUBST(SETUP_BOOT_MODE)
 AC_SUBST(OSX)
 AC_SUBST(NOT_OSX)

@@ -355,6 +355,10 @@ variant of MinGW without "libdelayimp.a", get the implementation of
 ========================================================================
 
 Cross-compilation requires at least two flags to `configure`:
+`--host=OS` and either `--enable-racket=RACKET` or (for Racket CS)
+`--enable-scheme-SCHEME`.
+
+More information:
 
  * `--host=OS`, where OS is something like `i386-gnu-linux` to
    indicate the target platform.
@@ -375,11 +379,27 @@ Cross-compilation requires at least two flags to `configure`:
    run `configure` again (with no arguments) in a "local" subdirectory
    to create a build for the current platform.
 
-An additional flag is needed for building Racket CS, unless the flag
-`--enable-racket=auto` is used:
+ * `--enable-scheme=SCHEME`, where SCHEME is a Chez Scheme executable
+   executable that runs on the build platform; the executable must be
+   the same version as used in Racket built for the target platform.
+ 
+   Supplying `--enable-scheme=DIR` is also supported in cross-build
+   mode, where DIR is a path that has a "ChezScheme" directory where
+   Chez Scheme is built for the host system.
 
- * `--enable-scheme=DIR`, where DIR is a path that has a "ChezScheme"
-   directory where Chez Scheme is built for the host system.
+The `--enable-racket=RACKET` and `--enable-scheme=SCHEME` flags are
+allowed for non-cross builds, too:
+
+ * For Racket CS, supplying either selects a Racket or Chez Scheme
+   implementation used to create boot files to the build platform.
+   Suppling Chez Scheme is a much more direct path, but when Racket is
+   supplied, its version does not have to match the version being
+   built.
+
+ * For Racket BC, `--enable-racket=RACKET` selects a Racket for
+   prepare C sources to cooperate with garbage collection. Its version
+   needs to be close to the one being built, and potentially exactly
+   the same version.
 
 Some less commonly needed `configure` flags are for Racket BC:
 
