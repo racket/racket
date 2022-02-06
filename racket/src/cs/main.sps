@@ -631,7 +631,7 @@
    (define-values (struct:gc-info make-gc-info gc-info? gc-info-ref gc-info-set!)
      (make-struct-type 'gc-info #f 10 0 #f null 'prefab #f '(0 1 2 3 4 5 6 7 8 9)))
    (define (K plus n)
-     (let* ([s (number->string (quotient (abs n) 1000))]
+     (let* ([s (number->string (quotient (abs n) 1024))]
             [len (string-length s)]
             [len2 (+ len
                      (quotient (sub1 len) 3)
@@ -714,9 +714,9 @@
           (when gcs-on-exit?
             (collect-garbage)
             (collect-garbage))
-          (let ([debug-GC? (log-level?* root-logger 'debug 'GC)]
-                [debug-GC:major? (log-level?* root-logger 'debug 'GC:major)])
-            (when (or debug-GC? debug-GC:major?)
+          (let ([info-GC? (log-level?* root-logger 'info 'GC)]
+                [info-GC:major? (log-level?* root-logger 'info 'GC:major)])
+            (when (or info-GC? info-GC:major?)
               (let ([msg (chez:format "GC: 0:atexit peak ~a(~a); alloc ~a; major ~a; minor ~a; ~ams"
                                       (K "" peak-mem)
                                       (K "+" (- (maximum-memory-bytes) peak-mem))
@@ -726,9 +726,9 @@
                                       (let ([t (sstats-gc-cpu (statistics))])
                                         (+ (* (time-second t) 1000)
                                            (quotient (time-nanosecond t) 1000000))))])
-                (when debug-GC?
+                (when info-GC?
                   (log-message root-logger 'info 'GC msg #f #f))
-                (when debug-GC:major?
+                (when info-GC:major?
                   (log-message root-logger 'info 'GC:major msg #f #f)))))
           (linklet-performance-report!)
           (custodian-shutdown-root-at-exit)
