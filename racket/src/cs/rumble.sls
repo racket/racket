@@ -860,6 +860,9 @@
   (define-virtual-registers-init init-virtual-registers)
   (init-virtual-registers)
 
+  ;; in case of early pauses to check for GC:
+  (timer-interrupt-handler void)
+  
   (set-no-locate-source!)
   ;; Note: if there's a bug in `rumble` that causes exception handling to error,
   ;; the the following line will cause the error to loop with another error, etc.,

@@ -511,12 +511,7 @@
 (define/who (make-phantom-bytes k)
   (check who exact-nonnegative-integer? k)
   (guard-large-allocation who "byte string" k 1)
-  (let ([ph (create-phantom-bytes (make-phantom-bytevector k))])
-    (when (or (>= (bytes-allocated) trigger-major-gc-allocated)
-              (>= (current-memory-bytes) trigger-major-gc-allocated+overhead))
-      ;; pause to let a garbage collection fire:
-      (set-timer 1))
-    ph))
+  (create-phantom-bytes (make-phantom-bytevector k)))
 
 (define/who (set-phantom-bytes! phantom-bstr k)
   (check who phantom-bytes? phantom-bstr)
