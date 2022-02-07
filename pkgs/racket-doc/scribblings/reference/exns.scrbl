@@ -525,10 +525,8 @@ message. If not @racket[""], it should normally start with a newline
 and two spaces to add extra fields to the message (see
 @secref["err-msg-conventions"]).
 
-If specified, the @racket[exn] argument should be a constructor or function that
-consumes a string, a continuation mark set, and a list of syntax;
-and it should produce a @racket[exn:fail:syntax?].
-
+If specified, @racket[exn] should be a constructor or function that
+has the same signature as the @racket[exn:fail:syntax] constructor.
 
 @examples[
   (eval:error (raise-syntax-error #f "bad syntax" '(bad syntax)))
