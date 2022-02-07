@@ -137,7 +137,7 @@
           ;; `post-allocated+overhead` seems to be too long a wait, because
           ;; that value may include underused pages that have locked objects.
           ;; Using just `post-allocated` is too small, because it may force an
-            ;; immediate major GC too soon. Split the difference.
+          ;; immediate major GC too soon. Split the difference.
           (set! trigger-major-gc-allocated (* GC-TRIGGER-FACTOR (- post-allocated (bytes-finalized))))
           (set! trigger-major-gc-allocated+overhead (* GC-TRIGGER-FACTOR post-allocated+overhead)))
         (update-eq-hash-code-table-size!)
@@ -210,7 +210,12 @@
                 (#%format "out of memory making ~a\n  length: ~a"
                           what len)
                 (current-continuation-marks))))
-      (immediate-allocation-check n))))
+      (immediate-allocation-check n)
+      ;; Watch out for radiply growing memory use that isn't captured
+      ;; fast enough by regularly scheduled event checking because it's
+      ;; allocated in large chunks
+      (when (>= (bytes-allocated) trigger-major-gc-allocated)
+        (set-timer 1)))))
 
 (define (set-incremental-collection-enabled! on?)
   (set! disable-incremental? (not on?)))
@@ -509,7 +514,8 @@
   (let ([ph (create-phantom-bytes (make-phantom-bytevector k))])
     (when (or (>= (bytes-allocated) trigger-major-gc-allocated)
               (>= (current-memory-bytes) trigger-major-gc-allocated+overhead))
-      (collect-garbage))
+      ;; pause to let a garbage collection fire:
+      (set-timer 1))
     ph))
 
 (define/who (set-phantom-bytes! phantom-bstr k)
