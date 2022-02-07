@@ -133,34 +133,34 @@
               [post-time (real-time)]
               [post-cpu-time (cpu-time)])
           (when (= gen (collect-maximum-generation))
-          ;; Trigger a major GC when twice as much memory is used. Twice
-          ;; `post-allocated+overhead` seems to be too long a wait, because
-          ;; that value may include underused pages that have locked objects.
-          ;; Using just `post-allocated` is too small, because it may force an
-          ;; immediate major GC too soon. Split the difference.
-          (set! trigger-major-gc-allocated (* GC-TRIGGER-FACTOR (- post-allocated (bytes-finalized))))
-          (set! trigger-major-gc-allocated+overhead (* GC-TRIGGER-FACTOR post-allocated+overhead)))
-        (update-eq-hash-code-table-size!)
-        (update-struct-procs-table-sizes!)
-        (poll-foreign-guardian)
-        (when maybe-finish-accounting
-          (maybe-finish-accounting))
-        (run-collect-callbacks cdr)
-        (garbage-collect-notify gen
-                                pre-allocated pre-allocated+overhead pre-time pre-cpu-time
-                                post-allocated post-allocated+overhead post-time post-cpu-time
-                                (real-time) (cpu-time)))
-      (when (and (= req-gen (collect-maximum-generation))
-                 (currently-in-engine?))
-        ;; This `set-timer` doesn't necessarily penalize the right thread,
-        ;; but it's likely to penalize a thread that is allocating quickly:
-        (set-timer 1))
-      (cond
-       [(= gen (collect-maximum-generation))
-        (set! non-full-gc-counter 0)]
-       [else
-        (set! non-full-gc-counter (add1 non-full-gc-counter))])
-      (void)))))
+            ;; Trigger a major GC when twice as much memory is used. Twice
+            ;; `post-allocated+overhead` seems to be too long a wait, because
+            ;; that value may include underused pages that have locked objects.
+            ;; Using just `post-allocated` is too small, because it may force an
+            ;; immediate major GC too soon. Split the difference.
+            (set! trigger-major-gc-allocated (* GC-TRIGGER-FACTOR (- post-allocated (bytes-finalized))))
+            (set! trigger-major-gc-allocated+overhead (* GC-TRIGGER-FACTOR post-allocated+overhead)))
+          (update-eq-hash-code-table-size!)
+          (update-struct-procs-table-sizes!)
+          (poll-foreign-guardian)
+          (when maybe-finish-accounting
+            (maybe-finish-accounting))
+          (run-collect-callbacks cdr)
+          (garbage-collect-notify gen
+                                  pre-allocated pre-allocated+overhead pre-time pre-cpu-time
+                                  post-allocated post-allocated+overhead post-time post-cpu-time
+                                  (real-time) (cpu-time)))
+        (when (and (= req-gen (collect-maximum-generation))
+                   (currently-in-engine?))
+          ;; This `set-timer` doesn't necessarily penalize the right thread,
+          ;; but it's likely to penalize a thread that is allocating quickly:
+          (set-timer 1))
+        (cond
+          [(= gen (collect-maximum-generation))
+           (set! non-full-gc-counter 0)]
+          [else
+           (set! non-full-gc-counter (add1 non-full-gc-counter))])
+        (void)))))
 
 (define collect-garbage
   (case-lambda
