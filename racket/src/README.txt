@@ -355,10 +355,6 @@ variant of MinGW without "libdelayimp.a", get the implementation of
 ========================================================================
 
 Cross-compilation requires at least two flags to `configure`:
-`--host=OS` and either `--enable-racket=RACKET` or (for Racket CS)
-`--enable-scheme-SCHEME`.
-
-More information:
 
  * `--host=OS`, where OS is something like `i386-gnu-linux` to
    indicate the target platform.
@@ -379,13 +375,15 @@ More information:
    run `configure` again (with no arguments) in a "local" subdirectory
    to create a build for the current platform.
 
+For Racket CS, an additional flag is required:
+
  * `--enable-scheme=SCHEME`, where SCHEME is a Chez Scheme executable
    executable that runs on the build platform; the executable must be
    the same version as used in Racket built for the target platform.
  
-   Supplying `--enable-scheme=DIR` is also supported in cross-build
-   mode, where DIR is a path that has a "ChezScheme" directory where
-   Chez Scheme is built for the host system.
+   Supplying `--enable-scheme=DIR` is also supported, where DIR is a
+   path that has a "ChezScheme" directory where Chez Scheme is built
+   for the host system (but not necessarily installed).
 
 The `--enable-racket=RACKET` and `--enable-scheme=SCHEME` flags are
 allowed for non-cross builds, too:
