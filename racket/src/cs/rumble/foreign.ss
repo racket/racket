@@ -1297,7 +1297,7 @@
 (define (normalized-malloc size mode)
   (unless (and (fixnum? size)
                (fx<? size 4096))
-    (guard-large-allocation 'malloc "allocation" size size))
+    (guard-large-allocation 'malloc "allocation" size 1))
   (cond
    [(eqv? size 0) #f]
    [(eq? mode 'raw)
