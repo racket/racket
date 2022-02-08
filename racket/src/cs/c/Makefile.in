@@ -163,6 +163,7 @@ scheme-via-pb:
 	$(SHELL) $(srcdir)/check_boot.sh $(MACH) "$(SCHEME_DIR)" $(SCHEME_WORKAREA)
 	if [ -f boot_pending ] ; then $(MAKE) pb-bootquick ; fi
 	$(MAKE) mach-make
+	$(MAKE) check-bootstrap-same
 
 pb-bootquick:
 	$(MAKE) config-scheme MACH=pb CONFIG_SCHEME_MODE=--pb
@@ -184,6 +185,10 @@ $(SCHEME_WORKAREA)/boot/$(MACH)/scheme.boot:
 mach-make:
 	$(MAKE) config-scheme
 	cd $(SCHEME_WORKAREA) && $(MAKE)
+
+check-bootstrap-same:
+	$(SCHEME) --script $(srcdir)/same-boot.ss $(SCHEME_WORKAREA)/boot/$(MACH)/petite.boot $(SCHEME_WORKAREA)/$(MACH)/boot/$(MACH)/petite.boot
+	$(SCHEME) --script $(srcdir)/same-boot.ss $(SCHEME_WORKAREA)/boot/$(MACH)/scheme.boot $(SCHEME_WORKAREA)/$(MACH)/boot/$(MACH)/scheme.boot
 
 # Makes cross compilation work more reliably for zlib, because
 # it causes zlib/configure to use given AR, etc.
