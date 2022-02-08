@@ -352,10 +352,11 @@ messages:
 
  @item{@tech{paths} (for any platform);}
 
- @item{@tech{pairs}, @tech{lists}, @tech{vectors}, and immutable
+ @item{@tech{pairs}, @tech{lists}, @tech{box}es, @tech{vectors}, and immutable
        @tech{prefab} structures containing message-allowed values,
-       where a mutable vector is automatically replaced by an
-       immutable vector and where @tech{impersonators} of vectors and
+       where a mutable box is automatically replaced by an
+       immutable box, a mutable vector is automatically replaced by an
+       immutable vector and where @tech{impersonators} of boxes, vectors and
        @tech{prefab} structures are copied;}
 
  @item{@tech{hash tables} where mutable hash tables are automatically
@@ -376,9 +377,9 @@ messages:
  @item{values produced by @racket[shared-flvector],
        @racket[make-shared-flvector], @racket[shared-fxvector],
        @racket[make-shared-fxvector], @racket[shared-bytes], and
-       @racket[make-shared-bytes].}
-
-]}
+       @racket[make-shared-bytes].}]
+       
+@history[#:changed "8.4.0.7" @elem{include @racket[boxes].}]}
 
 @deftogether[(
 @defthing[prop:place-location struct-type-property?]

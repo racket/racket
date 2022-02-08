@@ -54,6 +54,9 @@
     (test #t equal? us (car r2))
     (test #t equal? us2 (cdr r2)))
 
+  (place-channel-put out (make-prefab-struct 'bx (box 1) (box 2)))
+  (test (make-prefab-struct 'bx (box 1) (box 2)) place-channel-get in)
+
   (place-channel-put out (make-prefab-struct 'vec (vector) (vector)))
   (test (make-prefab-struct 'vec (vector) (vector)) place-channel-get in))
 
@@ -99,7 +102,9 @@
                (string->unreadable-symbol "grape"))])
   (test #t place-message-allowed? v)
   (test #t place-message-allowed? (list v))
+  (test #t place-message-allowed? (box v))
   (test #t place-message-allowed? (vector v)))
+(test #t place-message-allowed? (box #f))
 (test #t place-message-allowed? (vector))
 
 (for ([v (list (lambda () 10)
@@ -108,6 +113,7 @@
   (test (not (place-enabled?)) place-message-allowed? (list v))
   (test (not (place-enabled?)) place-message-allowed? (cons 1 v))
   (test (not (place-enabled?)) place-message-allowed? (cons v 1))
+  (test (not (place-enabled?)) place-message-allowed? (box v))
   (test (not (place-enabled?)) place-message-allowed? (vector v)))
 
 (let ()

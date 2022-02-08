@@ -2915,7 +2915,7 @@
                                                  (if or-part_8
                                                    or-part_8
                                                    (let ((or-part_9
-                                                          (if (vector? v_0)
+                                                          (if (box? v_0)
                                                             (if (let ((or-part_9
                                                                        (not
                                                                         direct?2_0)))
@@ -2939,262 +2939,295 @@
                                                                           graph_0
                                                                           v_0
                                                                           #t)))
-                                                                    (call-with-values
-                                                                     (lambda ()
-                                                                       (begin
-                                                                         (check-vector
-                                                                          v_0)
-                                                                         (values
-                                                                          v_0
-                                                                          (unsafe-vector-length
-                                                                           v_0))))
-                                                                     (case-lambda
-                                                                      ((vec_0
-                                                                        len_0)
-                                                                       (begin
-                                                                         #f
-                                                                         (letrec*
-                                                                          ((for-loop_0
-                                                                            (|#%name|
-                                                                             for-loop
-                                                                             (lambda (result_0
-                                                                                      pos_0)
-                                                                               (begin
-                                                                                 (if (unsafe-fx<
-                                                                                      pos_0
-                                                                                      len_0)
-                                                                                   (let ((e_0
-                                                                                          (unsafe-vector-ref
-                                                                                           vec_0
-                                                                                           pos_0)))
-                                                                                     (let ((result_1
-                                                                                            (let ((result_1
-                                                                                                   (loop_0
-                                                                                                    e_0
-                                                                                                    graph_1)))
-                                                                                              (values
-                                                                                               result_1))))
-                                                                                       (if (if (not
-                                                                                                (let ((x_0
-                                                                                                       (list
-                                                                                                        e_0)))
-                                                                                                  (not
-                                                                                                   result_1)))
-                                                                                             #t
-                                                                                             #f)
-                                                                                         (for-loop_0
-                                                                                          result_1
-                                                                                          (unsafe-fx+
-                                                                                           1
-                                                                                           pos_0))
-                                                                                         result_1)))
-                                                                                   result_0))))))
-                                                                          (for-loop_0
-                                                                           #t
-                                                                           0))))
-                                                                      (args
-                                                                       (raise-binding-result-arity-error
-                                                                        2
-                                                                        args)))))))
+                                                                    (loop_0
+                                                                     (unbox
+                                                                      v_0)
+                                                                     graph_1))))
                                                               #f)
                                                             #f)))
                                                      (if or-part_9
                                                        or-part_9
                                                        (let ((or-part_10
-                                                              (if (immutable-prefab-struct-key
-                                                                   v_0)
-                                                                (let ((or-part_10
-                                                                       (hash-ref
-                                                                        graph_0
-                                                                        v_0
-                                                                        #f)))
-                                                                  (if or-part_10
-                                                                    or-part_10
-                                                                    (let ((graph_1
-                                                                           (hash-set
-                                                                            graph_0
-                                                                            v_0
-                                                                            #t)))
-                                                                      (call-with-values
-                                                                       (lambda ()
-                                                                         (let ((vec_0
-                                                                                (struct->vector
-                                                                                 v_0)))
+                                                              (if (vector? v_0)
+                                                                (if (let ((or-part_10
+                                                                           (not
+                                                                            direct?2_0)))
+                                                                      (if or-part_10
+                                                                        or-part_10
+                                                                        (if (immutable?
+                                                                             v_0)
+                                                                          (not
+                                                                           (impersonator?
+                                                                            v_0))
+                                                                          #f)))
+                                                                  (let ((or-part_10
+                                                                         (hash-ref
+                                                                          graph_0
+                                                                          v_0
+                                                                          #f)))
+                                                                    (if or-part_10
+                                                                      or-part_10
+                                                                      (let ((graph_1
+                                                                             (hash-set
+                                                                              graph_0
+                                                                              v_0
+                                                                              #t)))
+                                                                        (call-with-values
+                                                                         (lambda ()
                                                                            (begin
                                                                              (check-vector
-                                                                              vec_0)
+                                                                              v_0)
                                                                              (values
-                                                                              vec_0
+                                                                              v_0
                                                                               (unsafe-vector-length
-                                                                               vec_0)))))
-                                                                       (case-lambda
-                                                                        ((vec_0
-                                                                          len_0)
-                                                                         (begin
-                                                                           #f
-                                                                           (letrec*
-                                                                            ((for-loop_0
-                                                                              (|#%name|
-                                                                               for-loop
-                                                                               (lambda (result_0
-                                                                                        pos_0)
-                                                                                 (begin
-                                                                                   (if (unsafe-fx<
-                                                                                        pos_0
-                                                                                        len_0)
-                                                                                     (let ((e_0
-                                                                                            (unsafe-vector-ref
-                                                                                             vec_0
-                                                                                             pos_0)))
-                                                                                       (let ((result_1
-                                                                                              (let ((result_1
-                                                                                                     (loop_0
-                                                                                                      e_0
-                                                                                                      graph_1)))
-                                                                                                (values
-                                                                                                 result_1))))
-                                                                                         (if (if (not
-                                                                                                  (let ((x_0
-                                                                                                         (list
-                                                                                                          e_0)))
-                                                                                                    (not
-                                                                                                     result_1)))
-                                                                                               #t
-                                                                                               #f)
-                                                                                           (for-loop_0
-                                                                                            result_1
-                                                                                            (unsafe-fx+
-                                                                                             1
-                                                                                             pos_0))
-                                                                                           result_1)))
-                                                                                     result_0))))))
-                                                                            (for-loop_0
-                                                                             #t
-                                                                             0))))
-                                                                        (args
-                                                                         (raise-binding-result-arity-error
-                                                                          2
-                                                                          args)))))))
+                                                                               v_0))))
+                                                                         (case-lambda
+                                                                          ((vec_0
+                                                                            len_0)
+                                                                           (begin
+                                                                             #f
+                                                                             (letrec*
+                                                                              ((for-loop_0
+                                                                                (|#%name|
+                                                                                 for-loop
+                                                                                 (lambda (result_0
+                                                                                          pos_0)
+                                                                                   (begin
+                                                                                     (if (unsafe-fx<
+                                                                                          pos_0
+                                                                                          len_0)
+                                                                                       (let ((e_0
+                                                                                              (unsafe-vector-ref
+                                                                                               vec_0
+                                                                                               pos_0)))
+                                                                                         (let ((result_1
+                                                                                                (let ((result_1
+                                                                                                       (loop_0
+                                                                                                        e_0
+                                                                                                        graph_1)))
+                                                                                                  (values
+                                                                                                   result_1))))
+                                                                                           (if (if (not
+                                                                                                    (let ((x_0
+                                                                                                           (list
+                                                                                                            e_0)))
+                                                                                                      (not
+                                                                                                       result_1)))
+                                                                                                 #t
+                                                                                                 #f)
+                                                                                             (for-loop_0
+                                                                                              result_1
+                                                                                              (unsafe-fx+
+                                                                                               1
+                                                                                               pos_0))
+                                                                                             result_1)))
+                                                                                       result_0))))))
+                                                                              (for-loop_0
+                                                                               #t
+                                                                               0))))
+                                                                          (args
+                                                                           (raise-binding-result-arity-error
+                                                                            2
+                                                                            args)))))))
+                                                                  #f)
                                                                 #f)))
                                                          (if or-part_10
                                                            or-part_10
                                                            (let ((or-part_11
-                                                                  (if (hash?
+                                                                  (if (immutable-prefab-struct-key
                                                                        v_0)
-                                                                    (if (let ((or-part_11
-                                                                               (not
-                                                                                direct?2_0)))
-                                                                          (if or-part_11
-                                                                            or-part_11
-                                                                            (if (immutable?
-                                                                                 v_0)
-                                                                              (not
-                                                                               (impersonator?
-                                                                                v_0))
-                                                                              #f)))
-                                                                      (let ((or-part_11
-                                                                             (hash-ref
-                                                                              graph_0
-                                                                              v_0
-                                                                              #f)))
-                                                                        (if or-part_11
-                                                                          or-part_11
-                                                                          (let ((graph_1
-                                                                                 (hash-set
-                                                                                  graph_0
-                                                                                  v_0
-                                                                                  #t)))
-                                                                            (begin
-                                                                              (letrec*
-                                                                               ((for-loop_0
-                                                                                 (|#%name|
-                                                                                  for-loop
-                                                                                  (lambda (result_0
-                                                                                           i_0)
-                                                                                    (begin
-                                                                                      (if i_0
-                                                                                        (call-with-values
-                                                                                         (lambda ()
-                                                                                           (hash-iterate-key+value
-                                                                                            v_0
-                                                                                            i_0))
-                                                                                         (case-lambda
-                                                                                          ((k_0
-                                                                                            v_1)
+                                                                    (let ((or-part_11
+                                                                           (hash-ref
+                                                                            graph_0
+                                                                            v_0
+                                                                            #f)))
+                                                                      (if or-part_11
+                                                                        or-part_11
+                                                                        (let ((graph_1
+                                                                               (hash-set
+                                                                                graph_0
+                                                                                v_0
+                                                                                #t)))
+                                                                          (call-with-values
+                                                                           (lambda ()
+                                                                             (let ((vec_0
+                                                                                    (struct->vector
+                                                                                     v_0)))
+                                                                               (begin
+                                                                                 (check-vector
+                                                                                  vec_0)
+                                                                                 (values
+                                                                                  vec_0
+                                                                                  (unsafe-vector-length
+                                                                                   vec_0)))))
+                                                                           (case-lambda
+                                                                            ((vec_0
+                                                                              len_0)
+                                                                             (begin
+                                                                               #f
+                                                                               (letrec*
+                                                                                ((for-loop_0
+                                                                                  (|#%name|
+                                                                                   for-loop
+                                                                                   (lambda (result_0
+                                                                                            pos_0)
+                                                                                     (begin
+                                                                                       (if (unsafe-fx<
+                                                                                            pos_0
+                                                                                            len_0)
+                                                                                         (let ((e_0
+                                                                                                (unsafe-vector-ref
+                                                                                                 vec_0
+                                                                                                 pos_0)))
                                                                                            (let ((result_1
                                                                                                   (let ((result_1
-                                                                                                         (if (loop_0
-                                                                                                              k_0
-                                                                                                              graph_1)
-                                                                                                           (loop_0
-                                                                                                            v_1
-                                                                                                            graph_1)
-                                                                                                           #f)))
+                                                                                                         (loop_0
+                                                                                                          e_0
+                                                                                                          graph_1)))
                                                                                                     (values
                                                                                                      result_1))))
                                                                                              (if (if (not
                                                                                                       (let ((x_0
                                                                                                              (list
-                                                                                                              k_0
-                                                                                                              v_1)))
+                                                                                                              e_0)))
                                                                                                         (not
                                                                                                          result_1)))
                                                                                                    #t
                                                                                                    #f)
                                                                                                (for-loop_0
                                                                                                 result_1
-                                                                                                (hash-iterate-next
-                                                                                                 v_0
-                                                                                                 i_0))
+                                                                                                (unsafe-fx+
+                                                                                                 1
+                                                                                                 pos_0))
                                                                                                result_1)))
-                                                                                          (args
-                                                                                           (raise-binding-result-arity-error
-                                                                                            2
-                                                                                            args))))
-                                                                                        result_0))))))
-                                                                               (for-loop_0
-                                                                                #t
-                                                                                (hash-iterate-first
-                                                                                 v_0)))))))
-                                                                      #f)
+                                                                                         result_0))))))
+                                                                                (for-loop_0
+                                                                                 #t
+                                                                                 0))))
+                                                                            (args
+                                                                             (raise-binding-result-arity-error
+                                                                              2
+                                                                              args)))))))
                                                                     #f)))
                                                              (if or-part_11
                                                                or-part_11
-                                                               (if (not
-                                                                    direct?2_0)
-                                                                 (let ((or-part_12
-                                                                        (cpointer?
-                                                                         v_0)))
-                                                                   (if or-part_12
-                                                                     or-part_12
+                                                               (let ((or-part_12
+                                                                      (if (hash?
+                                                                           v_0)
+                                                                        (if (let ((or-part_12
+                                                                                   (not
+                                                                                    direct?2_0)))
+                                                                              (if or-part_12
+                                                                                or-part_12
+                                                                                (if (immutable?
+                                                                                     v_0)
+                                                                                  (not
+                                                                                   (impersonator?
+                                                                                    v_0))
+                                                                                  #f)))
+                                                                          (let ((or-part_12
+                                                                                 (hash-ref
+                                                                                  graph_0
+                                                                                  v_0
+                                                                                  #f)))
+                                                                            (if or-part_12
+                                                                              or-part_12
+                                                                              (let ((graph_1
+                                                                                     (hash-set
+                                                                                      graph_0
+                                                                                      v_0
+                                                                                      #t)))
+                                                                                (begin
+                                                                                  (letrec*
+                                                                                   ((for-loop_0
+                                                                                     (|#%name|
+                                                                                      for-loop
+                                                                                      (lambda (result_0
+                                                                                               i_0)
+                                                                                        (begin
+                                                                                          (if i_0
+                                                                                            (call-with-values
+                                                                                             (lambda ()
+                                                                                               (hash-iterate-key+value
+                                                                                                v_0
+                                                                                                i_0))
+                                                                                             (case-lambda
+                                                                                              ((k_0
+                                                                                                v_1)
+                                                                                               (let ((result_1
+                                                                                                      (let ((result_1
+                                                                                                             (if (loop_0
+                                                                                                                  k_0
+                                                                                                                  graph_1)
+                                                                                                               (loop_0
+                                                                                                                v_1
+                                                                                                                graph_1)
+                                                                                                               #f)))
+                                                                                                        (values
+                                                                                                         result_1))))
+                                                                                                 (if (if (not
+                                                                                                          (let ((x_0
+                                                                                                                 (list
+                                                                                                                  k_0
+                                                                                                                  v_1)))
+                                                                                                            (not
+                                                                                                             result_1)))
+                                                                                                       #t
+                                                                                                       #f)
+                                                                                                   (for-loop_0
+                                                                                                    result_1
+                                                                                                    (hash-iterate-next
+                                                                                                     v_0
+                                                                                                     i_0))
+                                                                                                   result_1)))
+                                                                                              (args
+                                                                                               (raise-binding-result-arity-error
+                                                                                                2
+                                                                                                args))))
+                                                                                            result_0))))))
+                                                                                   (for-loop_0
+                                                                                    #t
+                                                                                    (hash-iterate-first
+                                                                                     v_0)))))))
+                                                                          #f)
+                                                                        #f)))
+                                                                 (if or-part_12
+                                                                   or-part_12
+                                                                   (if (not
+                                                                        direct?2_0)
                                                                      (let ((or-part_13
-                                                                            (if (let ((or-part_13
-                                                                                       (fxvector?
-                                                                                        v_0)))
-                                                                                  (if or-part_13
-                                                                                    or-part_13
-                                                                                    (let ((or-part_14
-                                                                                           (flvector?
+                                                                            (cpointer?
+                                                                             v_0)))
+                                                                       (if or-part_13
+                                                                         or-part_13
+                                                                         (let ((or-part_14
+                                                                                (if (let ((or-part_14
+                                                                                           (fxvector?
                                                                                             v_0)))
                                                                                       (if or-part_14
                                                                                         or-part_14
-                                                                                        (bytes?
-                                                                                         v_0)))))
-                                                                              (place-shared?
-                                                                               v_0)
-                                                                              #f)))
-                                                                       (if or-part_13
-                                                                         or-part_13
-                                                                         (if (place-message?
-                                                                              v_0)
-                                                                           (if (|#%app|
-                                                                                (place-message-ref
-                                                                                 v_0)
-                                                                                v_0)
-                                                                             #t
-                                                                             #f)
-                                                                           #f)))))
-                                                                 #f))))))))))))))))))))))))))))))
+                                                                                        (let ((or-part_15
+                                                                                               (flvector?
+                                                                                                v_0)))
+                                                                                          (if or-part_15
+                                                                                            or-part_15
+                                                                                            (bytes?
+                                                                                             v_0)))))
+                                                                                  (place-shared?
+                                                                                   v_0)
+                                                                                  #f)))
+                                                                           (if or-part_14
+                                                                             or-part_14
+                                                                             (if (place-message?
+                                                                                  v_0)
+                                                                               (if (|#%app|
+                                                                                    (place-message-ref
+                                                                                     v_0)
+                                                                                    v_0)
+                                                                                 #t
+                                                                                 #f)
+                                                                               #f)))))
+                                                                     #f))))))))))))))))))))))))))))))))
         (loop_0 v4_0 hash2610))))))
 (define place-message-allowed-direct? (lambda (v_0) (allowed?.1 #t v_0)))
 (define 1/place-message-allowed?
@@ -3268,159 +3301,106 @@
                                               (cons
                                                app_0
                                                (loop_0 (cdr v_1)))))))
-                                       (if (vector? v_1)
+                                       (if (box? v_1)
                                          (let ((ph_0 (make-placeholder #f)))
                                            (begin
                                              (hash-set! graph_0 v_1 ph_0)
                                              (maybe-ph_0
                                               ph_0
                                               v_1
-                                              (let ((len_0
-                                                     (vector-length v_1)))
-                                                (begin
-                                                  (if (exact-nonnegative-integer?
-                                                       len_0)
-                                                    (void)
-                                                    (raise-argument-error
-                                                     'for/vector
-                                                     "exact-nonnegative-integer?"
-                                                     len_0))
-                                                  (let ((v_2
-                                                         (make-vector
-                                                          len_0
-                                                          0)))
-                                                    (begin
-                                                      (if (zero? len_0)
-                                                        (void)
-                                                        (call-with-values
-                                                         (lambda ()
-                                                           (begin
-                                                             (check-vector v_1)
-                                                             (values
-                                                              v_1
-                                                              (unsafe-vector-length
-                                                               v_1))))
-                                                         (case-lambda
-                                                          ((vec_0 len_1)
-                                                           (begin
-                                                             #f
-                                                             (letrec*
-                                                              ((for-loop_0
-                                                                (|#%name|
-                                                                 for-loop
-                                                                 (lambda (i_0
-                                                                          pos_0)
-                                                                   (begin
-                                                                     (if (unsafe-fx<
-                                                                          pos_0
-                                                                          len_1)
-                                                                       (let ((e_0
-                                                                              (unsafe-vector-ref
-                                                                               vec_0
-                                                                               pos_0)))
-                                                                         (let ((i_1
-                                                                                (let ((i_1
-                                                                                       (begin
-                                                                                         (unsafe-vector*-set!
-                                                                                          v_2
-                                                                                          i_0
-                                                                                          (loop_0
-                                                                                           e_0))
-                                                                                         (unsafe-fx+
-                                                                                          1
-                                                                                          i_0))))
-                                                                                  (values
-                                                                                   i_1))))
-                                                                           (if (if (not
-                                                                                    (let ((x_0
-                                                                                           (list
-                                                                                            e_0)))
-                                                                                      (unsafe-fx=
-                                                                                       i_1
-                                                                                       len_0)))
-                                                                                 #t
-                                                                                 #f)
-                                                                             (for-loop_0
-                                                                              i_1
-                                                                              (unsafe-fx+
-                                                                               1
-                                                                               pos_0))
-                                                                             i_1)))
-                                                                       i_0))))))
-                                                              (for-loop_0
-                                                               0
-                                                               0))))
-                                                          (args
-                                                           (raise-binding-result-arity-error
-                                                            2
-                                                            args)))))
-                                                      v_2)))))))
-                                         (let ((c1_0
-                                                (immutable-prefab-struct-key
-                                                 v_1)))
-                                           (if c1_0
-                                             (let ((ph_0
-                                                    (make-placeholder #f)))
-                                               (begin
-                                                 (hash-set! graph_0 v_1 ph_0)
-                                                 (maybe-ph_0
-                                                  ph_0
-                                                  v_1
-                                                  (apply
-                                                   make-prefab-struct
-                                                   c1_0
-                                                   (reverse$1
-                                                    (call-with-values
-                                                     (lambda ()
-                                                       (unsafe-normalise-inputs
-                                                        unsafe-vector-length
-                                                        (struct->vector v_1)
-                                                        1
-                                                        #f
-                                                        1))
-                                                     (case-lambda
-                                                      ((v*_0
-                                                        start*_0
-                                                        stop*_0
-                                                        step*_0)
-                                                       (begin
-                                                         #t
-                                                         (letrec*
-                                                          ((for-loop_0
-                                                            (|#%name|
-                                                             for-loop
-                                                             (lambda (fold-var_0
-                                                                      idx_0)
-                                                               (begin
-                                                                 (if (unsafe-fx<
-                                                                      idx_0
-                                                                      stop*_0)
-                                                                   (let ((e_0
-                                                                          (unsafe-vector-ref
-                                                                           v*_0
-                                                                           idx_0)))
-                                                                     (let ((fold-var_1
-                                                                            (let ((fold-var_1
-                                                                                   (cons
-                                                                                    (loop_0
-                                                                                     e_0)
-                                                                                    fold-var_0)))
-                                                                              (values
-                                                                               fold-var_1))))
-                                                                       (for-loop_0
-                                                                        fold-var_1
-                                                                        (unsafe-fx+
-                                                                         idx_0
-                                                                         1))))
-                                                                   fold-var_0))))))
-                                                          (for-loop_0
-                                                           null
-                                                           start*_0))))
-                                                      (args
-                                                       (raise-binding-result-arity-error
-                                                        4
-                                                        args)))))))))
-                                             (if (hash? v_1)
+                                              (box (loop_0 (unbox v_1))))))
+                                         (if (vector? v_1)
+                                           (let ((ph_0 (make-placeholder #f)))
+                                             (begin
+                                               (hash-set! graph_0 v_1 ph_0)
+                                               (maybe-ph_0
+                                                ph_0
+                                                v_1
+                                                (let ((len_0
+                                                       (vector-length v_1)))
+                                                  (begin
+                                                    (if (exact-nonnegative-integer?
+                                                         len_0)
+                                                      (void)
+                                                      (raise-argument-error
+                                                       'for/vector
+                                                       "exact-nonnegative-integer?"
+                                                       len_0))
+                                                    (let ((v_2
+                                                           (make-vector
+                                                            len_0
+                                                            0)))
+                                                      (begin
+                                                        (if (zero? len_0)
+                                                          (void)
+                                                          (call-with-values
+                                                           (lambda ()
+                                                             (begin
+                                                               (check-vector
+                                                                v_1)
+                                                               (values
+                                                                v_1
+                                                                (unsafe-vector-length
+                                                                 v_1))))
+                                                           (case-lambda
+                                                            ((vec_0 len_1)
+                                                             (begin
+                                                               #f
+                                                               (letrec*
+                                                                ((for-loop_0
+                                                                  (|#%name|
+                                                                   for-loop
+                                                                   (lambda (i_0
+                                                                            pos_0)
+                                                                     (begin
+                                                                       (if (unsafe-fx<
+                                                                            pos_0
+                                                                            len_1)
+                                                                         (let ((e_0
+                                                                                (unsafe-vector-ref
+                                                                                 vec_0
+                                                                                 pos_0)))
+                                                                           (let ((i_1
+                                                                                  (let ((i_1
+                                                                                         (begin
+                                                                                           (unsafe-vector*-set!
+                                                                                            v_2
+                                                                                            i_0
+                                                                                            (loop_0
+                                                                                             e_0))
+                                                                                           (unsafe-fx+
+                                                                                            1
+                                                                                            i_0))))
+                                                                                    (values
+                                                                                     i_1))))
+                                                                             (if (if (not
+                                                                                      (let ((x_0
+                                                                                             (list
+                                                                                              e_0)))
+                                                                                        (unsafe-fx=
+                                                                                         i_1
+                                                                                         len_0)))
+                                                                                   #t
+                                                                                   #f)
+                                                                               (for-loop_0
+                                                                                i_1
+                                                                                (unsafe-fx+
+                                                                                 1
+                                                                                 pos_0))
+                                                                               i_1)))
+                                                                         i_0))))))
+                                                                (for-loop_0
+                                                                 0
+                                                                 0))))
+                                                            (args
+                                                             (raise-binding-result-arity-error
+                                                              2
+                                                              args)))))
+                                                        v_2)))))))
+                                           (let ((c1_0
+                                                  (immutable-prefab-struct-key
+                                                   v_1)))
+                                             (if c1_0
                                                (let ((ph_0
                                                       (make-placeholder #f)))
                                                  (begin
@@ -3428,62 +3408,72 @@
                                                    (maybe-ph_0
                                                     ph_0
                                                     v_1
-                                                    (if (hash-eq? v_1)
-                                                      (begin
-                                                        (letrec*
-                                                         ((for-loop_0
-                                                           (|#%name|
-                                                            for-loop
-                                                            (lambda (table_0
-                                                                     i_0)
-                                                              (begin
-                                                                (if i_0
-                                                                  (call-with-values
-                                                                   (lambda ()
-                                                                     (hash-iterate-key+value
-                                                                      v_1
-                                                                      i_0))
-                                                                   (case-lambda
-                                                                    ((k_0 v_2)
-                                                                     (let ((table_1
-                                                                            (let ((table_1
-                                                                                   (call-with-values
-                                                                                    (lambda ()
-                                                                                      (let ((app_0
-                                                                                             (loop_0
-                                                                                              k_0)))
-                                                                                        (values
-                                                                                         app_0
-                                                                                         (loop_0
-                                                                                          v_2))))
-                                                                                    (case-lambda
-                                                                                     ((key_0
-                                                                                       val_0)
-                                                                                      (hash-set
-                                                                                       table_0
-                                                                                       key_0
-                                                                                       val_0))
-                                                                                     (args
-                                                                                      (raise-binding-result-arity-error
-                                                                                       2
-                                                                                       args))))))
-                                                                              (values
-                                                                               table_1))))
-                                                                       (for-loop_0
-                                                                        table_1
-                                                                        (hash-iterate-next
-                                                                         v_1
-                                                                         i_0))))
-                                                                    (args
-                                                                     (raise-binding-result-arity-error
-                                                                      2
-                                                                      args))))
-                                                                  table_0))))))
-                                                         (for-loop_0
-                                                          hash2610
-                                                          (hash-iterate-first
-                                                           v_1))))
-                                                      (if (hash-eqv? v_1)
+                                                    (apply
+                                                     make-prefab-struct
+                                                     c1_0
+                                                     (reverse$1
+                                                      (call-with-values
+                                                       (lambda ()
+                                                         (unsafe-normalise-inputs
+                                                          unsafe-vector-length
+                                                          (struct->vector v_1)
+                                                          1
+                                                          #f
+                                                          1))
+                                                       (case-lambda
+                                                        ((v*_0
+                                                          start*_0
+                                                          stop*_0
+                                                          step*_0)
+                                                         (begin
+                                                           #t
+                                                           (letrec*
+                                                            ((for-loop_0
+                                                              (|#%name|
+                                                               for-loop
+                                                               (lambda (fold-var_0
+                                                                        idx_0)
+                                                                 (begin
+                                                                   (if (unsafe-fx<
+                                                                        idx_0
+                                                                        stop*_0)
+                                                                     (let ((e_0
+                                                                            (unsafe-vector-ref
+                                                                             v*_0
+                                                                             idx_0)))
+                                                                       (let ((fold-var_1
+                                                                              (let ((fold-var_1
+                                                                                     (cons
+                                                                                      (loop_0
+                                                                                       e_0)
+                                                                                      fold-var_0)))
+                                                                                (values
+                                                                                 fold-var_1))))
+                                                                         (for-loop_0
+                                                                          fold-var_1
+                                                                          (unsafe-fx+
+                                                                           idx_0
+                                                                           1))))
+                                                                     fold-var_0))))))
+                                                            (for-loop_0
+                                                             null
+                                                             start*_0))))
+                                                        (args
+                                                         (raise-binding-result-arity-error
+                                                          4
+                                                          args)))))))))
+                                               (if (hash? v_1)
+                                                 (let ((ph_0
+                                                        (make-placeholder #f)))
+                                                   (begin
+                                                     (hash-set!
+                                                      graph_0
+                                                      v_1
+                                                      ph_0)
+                                                     (maybe-ph_0
+                                                      ph_0
+                                                      v_1
+                                                      (if (hash-eq? v_1)
                                                         (begin
                                                           (letrec*
                                                            ((for-loop_0
@@ -3536,88 +3526,145 @@
                                                                         args))))
                                                                     table_0))))))
                                                            (for-loop_0
-                                                            hash2589
+                                                            hash2610
                                                             (hash-iterate-first
                                                              v_1))))
-                                                        (begin
-                                                          (letrec*
-                                                           ((for-loop_0
-                                                             (|#%name|
-                                                              for-loop
-                                                              (lambda (table_0
-                                                                       i_0)
-                                                                (begin
-                                                                  (if i_0
-                                                                    (call-with-values
-                                                                     (lambda ()
-                                                                       (hash-iterate-key+value
-                                                                        v_1
-                                                                        i_0))
-                                                                     (case-lambda
-                                                                      ((k_0
-                                                                        v_2)
-                                                                       (let ((table_1
-                                                                              (let ((table_1
-                                                                                     (call-with-values
-                                                                                      (lambda ()
-                                                                                        (let ((app_0
-                                                                                               (loop_0
-                                                                                                k_0)))
-                                                                                          (values
-                                                                                           app_0
-                                                                                           (loop_0
-                                                                                            v_2))))
-                                                                                      (case-lambda
-                                                                                       ((key_0
-                                                                                         val_0)
-                                                                                        (hash-set
-                                                                                         table_0
-                                                                                         key_0
-                                                                                         val_0))
-                                                                                       (args
-                                                                                        (raise-binding-result-arity-error
-                                                                                         2
-                                                                                         args))))))
-                                                                                (values
-                                                                                 table_1))))
-                                                                         (for-loop_0
-                                                                          table_1
-                                                                          (hash-iterate-next
-                                                                           v_1
-                                                                           i_0))))
-                                                                      (args
-                                                                       (raise-binding-result-arity-error
-                                                                        2
-                                                                        args))))
-                                                                    table_0))))))
-                                                           (for-loop_0
-                                                            hash2725
-                                                            (hash-iterate-first
-                                                             v_1)))))))))
-                                               (if (cpointer? v_1)
-                                                 (ptr-add v_1 0)
-                                                 (if (if (let ((or-part_0
-                                                                (fxvector?
-                                                                 v_1)))
-                                                           (if or-part_0
-                                                             or-part_0
-                                                             (flvector? v_1)))
-                                                       (place-shared? v_1)
-                                                       #f)
-                                                   v_1
-                                                   (if (place-message? v_1)
-                                                     (let ((make-unmessager_0
+                                                        (if (hash-eqv? v_1)
+                                                          (begin
+                                                            (letrec*
+                                                             ((for-loop_0
+                                                               (|#%name|
+                                                                for-loop
+                                                                (lambda (table_0
+                                                                         i_0)
+                                                                  (begin
+                                                                    (if i_0
+                                                                      (call-with-values
+                                                                       (lambda ()
+                                                                         (hash-iterate-key+value
+                                                                          v_1
+                                                                          i_0))
+                                                                       (case-lambda
+                                                                        ((k_0
+                                                                          v_2)
+                                                                         (let ((table_1
+                                                                                (let ((table_1
+                                                                                       (call-with-values
+                                                                                        (lambda ()
+                                                                                          (let ((app_0
+                                                                                                 (loop_0
+                                                                                                  k_0)))
+                                                                                            (values
+                                                                                             app_0
+                                                                                             (loop_0
+                                                                                              v_2))))
+                                                                                        (case-lambda
+                                                                                         ((key_0
+                                                                                           val_0)
+                                                                                          (hash-set
+                                                                                           table_0
+                                                                                           key_0
+                                                                                           val_0))
+                                                                                         (args
+                                                                                          (raise-binding-result-arity-error
+                                                                                           2
+                                                                                           args))))))
+                                                                                  (values
+                                                                                   table_1))))
+                                                                           (for-loop_0
+                                                                            table_1
+                                                                            (hash-iterate-next
+                                                                             v_1
+                                                                             i_0))))
+                                                                        (args
+                                                                         (raise-binding-result-arity-error
+                                                                          2
+                                                                          args))))
+                                                                      table_0))))))
+                                                             (for-loop_0
+                                                              hash2589
+                                                              (hash-iterate-first
+                                                               v_1))))
+                                                          (begin
+                                                            (letrec*
+                                                             ((for-loop_0
+                                                               (|#%name|
+                                                                for-loop
+                                                                (lambda (table_0
+                                                                         i_0)
+                                                                  (begin
+                                                                    (if i_0
+                                                                      (call-with-values
+                                                                       (lambda ()
+                                                                         (hash-iterate-key+value
+                                                                          v_1
+                                                                          i_0))
+                                                                       (case-lambda
+                                                                        ((k_0
+                                                                          v_2)
+                                                                         (let ((table_1
+                                                                                (let ((table_1
+                                                                                       (call-with-values
+                                                                                        (lambda ()
+                                                                                          (let ((app_0
+                                                                                                 (loop_0
+                                                                                                  k_0)))
+                                                                                            (values
+                                                                                             app_0
+                                                                                             (loop_0
+                                                                                              v_2))))
+                                                                                        (case-lambda
+                                                                                         ((key_0
+                                                                                           val_0)
+                                                                                          (hash-set
+                                                                                           table_0
+                                                                                           key_0
+                                                                                           val_0))
+                                                                                         (args
+                                                                                          (raise-binding-result-arity-error
+                                                                                           2
+                                                                                           args))))))
+                                                                                  (values
+                                                                                   table_1))))
+                                                                           (for-loop_0
+                                                                            table_1
+                                                                            (hash-iterate-next
+                                                                             v_1
+                                                                             i_0))))
+                                                                        (args
+                                                                         (raise-binding-result-arity-error
+                                                                          2
+                                                                          args))))
+                                                                      table_0))))))
+                                                             (for-loop_0
+                                                              hash2725
+                                                              (hash-iterate-first
+                                                               v_1)))))))))
+                                                 (if (cpointer? v_1)
+                                                   (ptr-add v_1 0)
+                                                   (if (if (let ((or-part_0
+                                                                  (fxvector?
+                                                                   v_1)))
+                                                             (if or-part_0
+                                                               or-part_0
+                                                               (flvector?
+                                                                v_1)))
+                                                         (place-shared? v_1)
+                                                         #f)
+                                                     v_1
+                                                     (if (place-message? v_1)
+                                                       (let ((make-unmessager_0
+                                                              (|#%app|
+                                                               (place-message-ref
+                                                                v_1)
+                                                               v_1)))
+                                                         (if make-unmessager_0
+                                                           (message-ized1.1
                                                             (|#%app|
-                                                             (place-message-ref
-                                                              v_1)
-                                                             v_1)))
-                                                       (if make-unmessager_0
-                                                         (message-ized1.1
-                                                          (|#%app|
-                                                           make-unmessager_0))
-                                                         (|#%app| fail_0)))
-                                                     (|#%app|
-                                                      fail_0))))))))))))))))))))
+                                                             make-unmessager_0))
+                                                           (|#%app| fail_0)))
+                                                       (|#%app|
+                                                        fail_0)))))))))))))))))))))
                   (loop_0 v_0))))
             (message-ized1.1 new-v_0)))))))
 (define un-message-ize
@@ -3650,158 +3697,118 @@
                 (if (pair? v_1)
                   (let ((app_0 (loop_0 (car v_1))))
                     (cons app_0 (loop_0 (cdr v_1))))
-                  (if (vector? v_1)
-                    (vector->immutable-vector
-                     (let ((len_0 (vector-length v_1)))
-                       (begin
-                         (if (exact-nonnegative-integer? len_0)
-                           (void)
-                           (raise-argument-error
-                            'for/vector
-                            "exact-nonnegative-integer?"
-                            len_0))
-                         (let ((v_2 (make-vector len_0 0)))
-                           (begin
-                             (if (zero? len_0)
-                               (void)
-                               (call-with-values
-                                (lambda ()
-                                  (begin
-                                    (check-vector v_1)
-                                    (values v_1 (unsafe-vector-length v_1))))
-                                (case-lambda
-                                 ((vec_0 len_1)
-                                  (begin
-                                    #f
-                                    (letrec*
-                                     ((for-loop_0
-                                       (|#%name|
-                                        for-loop
-                                        (lambda (i_0 pos_0)
-                                          (begin
-                                            (if (unsafe-fx< pos_0 len_1)
-                                              (let ((e_0
-                                                     (unsafe-vector-ref
-                                                      vec_0
-                                                      pos_0)))
-                                                (let ((i_1
-                                                       (let ((i_1
-                                                              (begin
-                                                                (unsafe-vector*-set!
-                                                                 v_2
-                                                                 i_0
-                                                                 (loop_0 e_0))
-                                                                (unsafe-fx+
-                                                                 1
-                                                                 i_0))))
-                                                         (values i_1))))
-                                                  (if (if (not
-                                                           (let ((x_0
-                                                                  (list e_0)))
-                                                             (unsafe-fx=
-                                                              i_1
-                                                              len_0)))
-                                                        #t
-                                                        #f)
-                                                    (for-loop_0
-                                                     i_1
-                                                     (unsafe-fx+ 1 pos_0))
-                                                    i_1)))
-                                              i_0))))))
-                                     (for-loop_0 0 0))))
-                                 (args
-                                  (raise-binding-result-arity-error 2 args)))))
-                             v_2)))))
-                    (let ((c3_0 (immutable-prefab-struct-key v_1)))
-                      (if c3_0
-                        (apply
-                         make-prefab-struct
-                         c3_0
-                         (reverse$1
-                          (call-with-values
-                           (lambda ()
-                             (unsafe-normalise-inputs
-                              unsafe-vector-length
-                              (struct->vector v_1)
-                              1
-                              #f
-                              1))
-                           (case-lambda
-                            ((v*_0 start*_0 stop*_0 step*_0)
+                  (if (box? v_1)
+                    (box-immutable (loop_0 (unbox v_1)))
+                    (if (vector? v_1)
+                      (vector->immutable-vector
+                       (let ((len_0 (vector-length v_1)))
+                         (begin
+                           (if (exact-nonnegative-integer? len_0)
+                             (void)
+                             (raise-argument-error
+                              'for/vector
+                              "exact-nonnegative-integer?"
+                              len_0))
+                           (let ((v_2 (make-vector len_0 0)))
                              (begin
-                               #t
-                               (letrec*
-                                ((for-loop_0
-                                  (|#%name|
-                                   for-loop
-                                   (lambda (fold-var_0 idx_0)
-                                     (begin
-                                       (if (unsafe-fx< idx_0 stop*_0)
-                                         (let ((e_0
-                                                (unsafe-vector-ref
-                                                 v*_0
-                                                 idx_0)))
-                                           (let ((fold-var_1
-                                                  (let ((fold-var_1
-                                                         (cons
-                                                          (loop_0 e_0)
-                                                          fold-var_0)))
-                                                    (values fold-var_1))))
-                                             (for-loop_0
-                                              fold-var_1
-                                              (unsafe-fx+ idx_0 1))))
-                                         fold-var_0))))))
-                                (for-loop_0 null start*_0))))
-                            (args
-                             (raise-binding-result-arity-error 4 args))))))
-                        (if (hash? v_1)
-                          (if (hash-eq? v_1)
-                            (begin
-                              (letrec*
-                               ((for-loop_0
-                                 (|#%name|
-                                  for-loop
-                                  (lambda (table_0 i_0)
+                               (if (zero? len_0)
+                                 (void)
+                                 (call-with-values
+                                  (lambda ()
                                     (begin
-                                      (if i_0
-                                        (call-with-values
-                                         (lambda ()
-                                           (hash-iterate-key+value v_1 i_0))
-                                         (case-lambda
-                                          ((k_0 v_2)
-                                           (let ((table_1
-                                                  (let ((table_1
-                                                         (call-with-values
-                                                          (lambda ()
-                                                            (let ((app_0
+                                      (check-vector v_1)
+                                      (values v_1 (unsafe-vector-length v_1))))
+                                  (case-lambda
+                                   ((vec_0 len_1)
+                                    (begin
+                                      #f
+                                      (letrec*
+                                       ((for-loop_0
+                                         (|#%name|
+                                          for-loop
+                                          (lambda (i_0 pos_0)
+                                            (begin
+                                              (if (unsafe-fx< pos_0 len_1)
+                                                (let ((e_0
+                                                       (unsafe-vector-ref
+                                                        vec_0
+                                                        pos_0)))
+                                                  (let ((i_1
+                                                         (let ((i_1
+                                                                (begin
+                                                                  (unsafe-vector*-set!
+                                                                   v_2
+                                                                   i_0
                                                                    (loop_0
-                                                                    k_0)))
-                                                              (values
-                                                               app_0
-                                                               (loop_0 v_2))))
-                                                          (case-lambda
-                                                           ((key_0 val_0)
-                                                            (hash-set
-                                                             table_0
-                                                             key_0
-                                                             val_0))
-                                                           (args
-                                                            (raise-binding-result-arity-error
-                                                             2
-                                                             args))))))
-                                                    (values table_1))))
-                                             (for-loop_0
-                                              table_1
-                                              (hash-iterate-next v_1 i_0))))
-                                          (args
-                                           (raise-binding-result-arity-error
-                                            2
-                                            args))))
-                                        table_0))))))
-                               (for-loop_0
-                                hash2610
-                                (hash-iterate-first v_1))))
-                            (if (hash-eqv? v_1)
+                                                                    e_0))
+                                                                  (unsafe-fx+
+                                                                   1
+                                                                   i_0))))
+                                                           (values i_1))))
+                                                    (if (if (not
+                                                             (let ((x_0
+                                                                    (list
+                                                                     e_0)))
+                                                               (unsafe-fx=
+                                                                i_1
+                                                                len_0)))
+                                                          #t
+                                                          #f)
+                                                      (for-loop_0
+                                                       i_1
+                                                       (unsafe-fx+ 1 pos_0))
+                                                      i_1)))
+                                                i_0))))))
+                                       (for-loop_0 0 0))))
+                                   (args
+                                    (raise-binding-result-arity-error
+                                     2
+                                     args)))))
+                               v_2)))))
+                      (let ((c3_0 (immutable-prefab-struct-key v_1)))
+                        (if c3_0
+                          (apply
+                           make-prefab-struct
+                           c3_0
+                           (reverse$1
+                            (call-with-values
+                             (lambda ()
+                               (unsafe-normalise-inputs
+                                unsafe-vector-length
+                                (struct->vector v_1)
+                                1
+                                #f
+                                1))
+                             (case-lambda
+                              ((v*_0 start*_0 stop*_0 step*_0)
+                               (begin
+                                 #t
+                                 (letrec*
+                                  ((for-loop_0
+                                    (|#%name|
+                                     for-loop
+                                     (lambda (fold-var_0 idx_0)
+                                       (begin
+                                         (if (unsafe-fx< idx_0 stop*_0)
+                                           (let ((e_0
+                                                  (unsafe-vector-ref
+                                                   v*_0
+                                                   idx_0)))
+                                             (let ((fold-var_1
+                                                    (let ((fold-var_1
+                                                           (cons
+                                                            (loop_0 e_0)
+                                                            fold-var_0)))
+                                                      (values fold-var_1))))
+                                               (for-loop_0
+                                                fold-var_1
+                                                (unsafe-fx+ idx_0 1))))
+                                           fold-var_0))))))
+                                  (for-loop_0 null start*_0))))
+                              (args
+                               (raise-binding-result-arity-error 4 args))))))
+                          (if (hash? v_1)
+                            (if (hash-eq? v_1)
                               (begin
                                 (letrec*
                                  ((for-loop_0
@@ -3846,61 +3853,116 @@
                                               args))))
                                           table_0))))))
                                  (for-loop_0
-                                  hash2589
+                                  hash2610
                                   (hash-iterate-first v_1))))
-                              (begin
-                                (letrec*
-                                 ((for-loop_0
-                                   (|#%name|
-                                    for-loop
-                                    (lambda (table_0 i_0)
-                                      (begin
-                                        (if i_0
-                                          (call-with-values
-                                           (lambda ()
-                                             (hash-iterate-key+value v_1 i_0))
-                                           (case-lambda
-                                            ((k_0 v_2)
-                                             (let ((table_1
-                                                    (let ((table_1
-                                                           (call-with-values
-                                                            (lambda ()
-                                                              (let ((app_0
-                                                                     (loop_0
-                                                                      k_0)))
-                                                                (values
-                                                                 app_0
-                                                                 (loop_0
-                                                                  v_2))))
-                                                            (case-lambda
-                                                             ((key_0 val_0)
-                                                              (hash-set
-                                                               table_0
-                                                               key_0
-                                                               val_0))
-                                                             (args
-                                                              (raise-binding-result-arity-error
-                                                               2
-                                                               args))))))
-                                                      (values table_1))))
-                                               (for-loop_0
-                                                table_1
-                                                (hash-iterate-next v_1 i_0))))
-                                            (args
-                                             (raise-binding-result-arity-error
-                                              2
-                                              args))))
-                                          table_0))))))
-                                 (for-loop_0
-                                  hash2725
-                                  (hash-iterate-first v_1))))))
-                          (if (if (cpointer? v_1)
-                                (if v_1 (not (bytes? v_1)) #f)
-                                #f)
-                            (ptr-add v_1 0)
-                            (if (message-ized? v_1)
-                              (|#%app| (message-ized-unmessage v_1))
-                              v_1)))))))))))))
+                              (if (hash-eqv? v_1)
+                                (begin
+                                  (letrec*
+                                   ((for-loop_0
+                                     (|#%name|
+                                      for-loop
+                                      (lambda (table_0 i_0)
+                                        (begin
+                                          (if i_0
+                                            (call-with-values
+                                             (lambda ()
+                                               (hash-iterate-key+value
+                                                v_1
+                                                i_0))
+                                             (case-lambda
+                                              ((k_0 v_2)
+                                               (let ((table_1
+                                                      (let ((table_1
+                                                             (call-with-values
+                                                              (lambda ()
+                                                                (let ((app_0
+                                                                       (loop_0
+                                                                        k_0)))
+                                                                  (values
+                                                                   app_0
+                                                                   (loop_0
+                                                                    v_2))))
+                                                              (case-lambda
+                                                               ((key_0 val_0)
+                                                                (hash-set
+                                                                 table_0
+                                                                 key_0
+                                                                 val_0))
+                                                               (args
+                                                                (raise-binding-result-arity-error
+                                                                 2
+                                                                 args))))))
+                                                        (values table_1))))
+                                                 (for-loop_0
+                                                  table_1
+                                                  (hash-iterate-next
+                                                   v_1
+                                                   i_0))))
+                                              (args
+                                               (raise-binding-result-arity-error
+                                                2
+                                                args))))
+                                            table_0))))))
+                                   (for-loop_0
+                                    hash2589
+                                    (hash-iterate-first v_1))))
+                                (begin
+                                  (letrec*
+                                   ((for-loop_0
+                                     (|#%name|
+                                      for-loop
+                                      (lambda (table_0 i_0)
+                                        (begin
+                                          (if i_0
+                                            (call-with-values
+                                             (lambda ()
+                                               (hash-iterate-key+value
+                                                v_1
+                                                i_0))
+                                             (case-lambda
+                                              ((k_0 v_2)
+                                               (let ((table_1
+                                                      (let ((table_1
+                                                             (call-with-values
+                                                              (lambda ()
+                                                                (let ((app_0
+                                                                       (loop_0
+                                                                        k_0)))
+                                                                  (values
+                                                                   app_0
+                                                                   (loop_0
+                                                                    v_2))))
+                                                              (case-lambda
+                                                               ((key_0 val_0)
+                                                                (hash-set
+                                                                 table_0
+                                                                 key_0
+                                                                 val_0))
+                                                               (args
+                                                                (raise-binding-result-arity-error
+                                                                 2
+                                                                 args))))))
+                                                        (values table_1))))
+                                                 (for-loop_0
+                                                  table_1
+                                                  (hash-iterate-next
+                                                   v_1
+                                                   i_0))))
+                                              (args
+                                               (raise-binding-result-arity-error
+                                                2
+                                                args))))
+                                            table_0))))))
+                                   (for-loop_0
+                                    hash2725
+                                    (hash-iterate-first v_1))))))
+                            (if (if (cpointer? v_1)
+                                  (if v_1 (not (bytes? v_1)) #f)
+                                  #f)
+                              (ptr-add v_1 0)
+                              (if (message-ized? v_1)
+                                (|#%app| (message-ized-unmessage v_1))
+                                v_1))))))))))))))
        (loop_0 v_0)))))
 (define finish_2216
   (make-struct-type-install-properties

@@ -41,6 +41,13 @@
                  (let ([graph (hash-set graph v #t)])
                    (and (loop (car v) graph)
                         (loop (cdr v) graph)))))
+        (and (box? v)
+             (or (not direct?)
+                 (and (immutable? v)
+                      (not (impersonator? v))))
+             (or (hash-ref graph v #f)
+                 (let ([graph (hash-set graph v #t)])
+                   (loop (unbox v) graph))))
         (and (vector? v)
              (or (not direct?)
                  (and (immutable? v)
@@ -125,6 +132,10 @@
             (hash-set! graph v ph)
             (maybe-ph ph v (cons (loop (car v))
                                  (loop (cdr v))))]
+           [(box? v)
+            (define ph (make-placeholder #f))
+            (hash-set! graph v ph)
+            (maybe-ph ph v (box (loop (unbox v))))]
            [(vector? v)
             (define ph (make-placeholder #f))
             (hash-set! graph v ph)
@@ -191,6 +202,9 @@
           ph])]
       [(pair? v)
        (cons (loop (car v)) (loop (cdr v)))]
+      [(box? v)
+       (box-immutable
+        (loop (unbox v)))]
       [(vector? v)
        (vector->immutable-vector
         (for/vector #:length (vector-length v) ([e (in-vector v)])
@@ -237,6 +251,8 @@
   (test #f (place-message-allowed-direct? (string-copy "apple")))
   (test #f (place-message-allowed-direct? (cons 1 (string-copy "apple"))))
 
+  (test #t (place-message-allowed? (box "car")))
+
   (test #t (place-message-allowed-direct? '(a . b)))
   (test #t (place-message-allowed-direct? '#(a b)))
   (test #t (place-message-allowed-direct? '#hasheq((a . b))))
@@ -245,24 +261,36 @@
   (define direct-cyclic (read (open-input-string "#0=(1 #0# 2)")))
   (test #t (place-message-allowed-direct? direct-cyclic))
 
+  (test #t (place-message-allowed? (make-prefab-struct 'bx (box #f) (box #f))))
+  (test #f (place-message-allowed-direct? (make-prefab-struct 'bx (box #f) (box #f))))
+
   (define stateful-cyclic (make-reader-graph
                            (let ([ph (make-placeholder #f)]
                                  [ph2 (make-placeholder #f)]
                                  [ph3 (make-placeholder #f)])
                              (define (as ph v) (placeholder-set! ph v) v)
                              (as ph2 (vector (as ph (cons ph (string-copy "apple")))
+                                             (box (box 2))
                                              ph2
                                              (as ph3 (hasheq 'a 1 'b ph3))
                                              '#s(pre 4 5)))
                              ph)))
   (test #f (place-message-allowed-direct? stateful-cyclic))
   (test #t (place-message-allowed? stateful-cyclic))
-  (test stateful-cyclic (un-message-ize (message-ize stateful-cyclic)))
-
+  (test stateful-cyclic (un-message-ize (message-ize stateful-cyclic
+                                                     (lambda ()
+                                                       (raise-argument-error #f
+                                                                             "test-error"
+                                                                             stateful-cyclic)))))
+  
   (define ext (external 'x))
   (test #t (place-message-allowed? ext))
   (test #f (place-message-allowed-direct? ext))
-  (define ext2 (un-message-ize (message-ize ext)))
+  (define ext2 (un-message-ize (message-ize ext
+                                            (lambda ()
+                                              (raise-argument-error #f
+                                                                    "test-error"
+                                                                    ext)))))
   (test #t (external? ext2)) 
   (test #f (eq? ext ext2))
   (test 'x (external-a ext2))
