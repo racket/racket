@@ -404,13 +404,13 @@ $(RAW_RKT_DLL): $(BOOT_OBJ_DEPS) libres.o
 MemoryModule.o: $(srcdir)/../../start/MemoryModule.c
 	$(CC) -c $(CFLAGS) -o MemoryModule.o $(srcdir)/../../start/MemoryModule.c
 
-rres.o: $(srcdir)/../../worksp/racket/racket.rc $(srcdir)/../../worksp/racket/racket.ico
+rres.o: $(srcdir)/../../worksp/racket/racket.rc $(srcdir)/../../worksp/racket/racket.ico  $(srcdir)/../../version/racket_version.h
 	@WINDRES@ -i $(srcdir)/../../worksp/racket/racket.rc -o rres.o
 
-grres.o: $(srcdir)/../../worksp/gracket/gracket.rc $(srcdir)/../../worksp/gracket/gracket.ico
+grres.o: $(srcdir)/../../worksp/gracket/gracket.rc $(srcdir)/../../worksp/gracket/gracket.ico  $(srcdir)/../../version/racket_version.h
 	@WINDRES@ -i $(srcdir)/../../worksp/gracket/gracket.rc -o grres.o
 
-libres.o: $(srcdir)/../../worksp/cs/libracket.rc
+libres.o: $(srcdir)/../../worksp/cs/libracket.rc  $(srcdir)/../../version/racket_version.h
 	@WINDRES@ -i $(srcdir)/../../worksp/cs/libracket.rc -o libres.o
 
 starter@MINGW@:
