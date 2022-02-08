@@ -8,6 +8,7 @@
               (newline (current-error-port))]]
        (#%$fasl-file-equal? (car (command-line-arguments))
                             (cadr (command-line-arguments))
+                            #t
                             #t)
        ;; if we get here, there was no error
        (printf "Boot file ~s was correctly created as a fixpoint\n"
