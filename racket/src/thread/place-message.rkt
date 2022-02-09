@@ -264,6 +264,11 @@
   (test #t (place-message-allowed? (make-prefab-struct 'bx (box #f) (box #f))))
   (test #f (place-message-allowed-direct? (make-prefab-struct 'bx (box #f) (box #f))))
 
+  (struct unallowed
+    (a b))
+  (test #f (place-message-allowed? (unallowed 1 2)))
+  (test #f (place-message-allowed? (box (unallowed 1 2))))
+  
   (define stateful-cyclic (make-reader-graph
                            (let ([ph (make-placeholder #f)]
                                  [ph2 (make-placeholder #f)]
@@ -271,6 +276,7 @@
                              (define (as ph v) (placeholder-set! ph v) v)
                              (as ph2 (vector (as ph (cons ph (string-copy "apple")))
                                              (box (box 2))
+                                             (box (vector "string" (box 'symbol)))
                                              ph2
                                              (as ph3 (hasheq 'a 1 'b ph3))
                                              '#s(pre 4 5)))
@@ -282,7 +288,7 @@
                                                        (raise-argument-error #f
                                                                              "test-error"
                                                                              stateful-cyclic)))))
-  
+
   (define ext (external 'x))
   (test #t (place-message-allowed? ext))
   (test #f (place-message-allowed-direct? ext))

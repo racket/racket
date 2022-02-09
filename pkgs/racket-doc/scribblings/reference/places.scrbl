@@ -378,7 +378,7 @@ messages:
        @racket[make-shared-flvector], @racket[shared-fxvector],
        @racket[make-shared-fxvector], @racket[shared-bytes], and
        @racket[make-shared-bytes].}]
-       
+
 @history[#:changed "8.4.0.7" @elem{include @racket[boxes].}]}
 
 @deftogether[(
