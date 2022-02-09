@@ -1489,6 +1489,7 @@ static Scheme_Object *places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
   
   /* lifted variables for xform*/
   Scheme_Object *pair;
+  Scheme_Object *box;
   Scheme_Object *vec;
   Scheme_Object *nht;
   Scheme_Object *hti;
@@ -1610,6 +1611,39 @@ DEEP_DO_FIN_PAIR_L:
         SCHEME_CDR(pair) = GET_R0();
         new_so = pair;
       }
+      RETURN;
+      break;
+
+      /* --------- box ----------- */
+    case scheme_box_type:
+      if ((mode == mzPDC_COPY) || (mode == mzPDC_UNCOPY) || (mode == mzPDC_DIRECT_UNCOPY))
+        box = scheme_box(0);
+      else
+        box = so;
+
+      /* handle cycles: */
+      scheme_hash_set(*ht, so, box);
+
+      IFS_PUSH(box);
+      IFS_PUSH(so);
+
+      SET_R0(SCHEME_BOX_VAL(so));
+      GOTO_NEXT_CONT(DEEP_DO, DEEP_BOX1);
+
+DEEP_BOX1_L:
+      box  = IFS_GET(1);
+      if (set_mode) {
+        SCHEME_BOX_VAL(box) = GET_R0();
+      }
+
+      so   = IFS_POP;
+      box  = IFS_POP;
+
+      if (set_mode) {
+        SCHEME_SET_IMMUTABLE(box);
+        new_so = box;
+      } else
+        new_so = box;
       RETURN;
       break;
 
@@ -1922,6 +1956,7 @@ DEEP_RETURN_L:
     switch(SCHEME_INT_VAL(IFS_POP)) {
       case DEEP_DO_CDR:      goto DEEP_DO_CDR_L;
       case DEEP_DO_FIN_PAIR: goto DEEP_DO_FIN_PAIR_L;
+      case DEEP_BOX1:        goto DEEP_BOX1_L;
       case DEEP_VEC1:        goto DEEP_VEC1_L;
       case DEEP_ST1:         goto DEEP_ST1_L;
       case DEEP_ST2:         goto DEEP_ST2_L;
