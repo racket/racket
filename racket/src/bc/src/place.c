@@ -1502,15 +1502,16 @@ static Scheme_Object *places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
 
 #define DEEP_DO_CDR       1
 #define DEEP_DO_FIN_PAIR  2
-#define DEEP_VEC1         3
-#define DEEP_ST1          4   
-#define DEEP_ST2          5
-#define DEEP_SST1         6
-#define DEEP_SST2         7      
-#define DEEP_HT1          8
-#define DEEP_HT2          9      
-#define DEEP_RETURN      10
-#define DEEP_DONE        11
+#define DEEP_BOX1         3
+#define DEEP_VEC1         4
+#define DEEP_ST1          5
+#define DEEP_ST2          6
+#define DEEP_SST1         7
+#define DEEP_SST2         8
+#define DEEP_HT1          9
+#define DEEP_HT2         10
+#define DEEP_RETURN      11
+#define DEEP_DONE        12
 #define RETURN do { goto DEEP_RETURN_L; } while(0);
 #define ABORT do { goto DEEP_DONE_L; } while(0);
 #define IFS_PUSH(x) inf_push(&inf_stack, x, &inf_stack_depth, &inf_max_depth, gcable)
@@ -1978,6 +1979,7 @@ DEEP_DONE_L:
 
 #undef DEEP_DO_CDR
 #undef DEEP_DO_FIN_PAIR
+#undef DEEP_BOX1
 #undef DEEP_VEC1
 #undef DEEP_ST1
 #undef DEEP_ST2
