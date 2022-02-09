@@ -138,6 +138,11 @@
         o
         (lambda ()
           (cons (dcw (car o)) (dcw (cdr o)))))]
+      [(box? o)
+       (define new-b (box (unbox o)))
+       (define r (record o new-b))
+       (set-box! new-b (dcw (unbox r)))
+       r]
       [(vector? o)
        (define new-v (make-vector (vector-length o)))
        (vector-copy! new-v 0 o)
@@ -206,6 +211,8 @@
       [(ormap (lambda (x) (x o)) (list number? char? boolean? null? void? string? symbol? keyword? TH-place-channel?
                                        path? bytes? fxvector? flvector? TH-place?)) #t]
       [(pair? o) (and (dcw (car o)) (dcw (cdr o)))]
+      [(box? o)
+       (dcw (unbox o))]
       [(vector? o)
        (for/fold ([nh #t]) ([i (in-vector o)])
         (and nh (dcw i)))]
