@@ -429,8 +429,8 @@
   (let ()
     (define ht #f)
     
-    (let ([lst (build-list 10 add1)])
-      (set! ht (make-weak-hash `((,lst . val)))))
+    (define lst (build-list 10 add1))
+    (set! ht (make-weak-hash `((,lst . val))))
     
     (define i (hash-iterate-first ht))
     
@@ -443,6 +443,9 @@
           (call-with-values (lambda () (hash-iterate-key+value ht i)) cons)
           '((1 2 3 4 5 6 7 8 9 10) . val))
     (test #f hash-iterate-next ht i)
+
+    ;; keep `lst` live until here
+    (test #t eq? lst (hash-iterate-key ht i))
 
     (unless (eq? 'cgc (system-type 'gc))
       ;; collect key, everything should error
