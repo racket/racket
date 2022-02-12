@@ -398,7 +398,7 @@
              (define line (read-line))
              (or (and (string? line)
                       (let ([m (regexp-match
-                                #rx"nameserver[ \t]+([0-9]+[.][0-9]+[.][0-9]+[.][0-9]+)"
+                                #rx"^[^#]*nameserver[ \t]+([0-9]+[.][0-9]+[.][0-9]+[.][0-9]+)"
                                 line)])
                         (and m (cadr m))))
                  (and (not (eof-object? line))
