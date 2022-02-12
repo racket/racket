@@ -326,4 +326,4 @@
   (check-range who start-pos end-pos (string-length str) str)
   (maybe-flush-stdout in)
   (let ([in (->core-input-port in)])
-    (do-peek-string! who str in start-pos end-pos skip-k)))
+    (do-peek-string! who in str start-pos end-pos skip-k)))

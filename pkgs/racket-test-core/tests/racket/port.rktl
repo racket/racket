@@ -1192,5 +1192,14 @@
   (delete-file f2))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Regression test for peek-string! issue #4156.
+
+(let ()
+  (define in (open-input-string "hello"))
+  (define str (make-string 10))
+  (test 5 peek-string! str 0 in)
+  (test "hello" substring str 0 5))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
