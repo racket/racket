@@ -22,7 +22,7 @@ if test "${skip_curses_check}" = "no" ; then
       if test "${enable_curses}" = "no" ; then
         if test "${enable_portable}" = "yes" ; then
           if test "${curses_portable_link}" != "" ; then
-            # Try adding portabel link flags
+            # Try adding portable link flags
             ORIG_LIBS="$LIBS"
             ORIG_CPPFLAGS="$CPPFLAGS"
             ORIG_PREFLAGS="$PREFLAGS"
@@ -62,7 +62,24 @@ if test "${skip_curses_check}" = "no" ; then
           LIBS="$ORIG_LIBS"
           curses_lib_flag=""
         fi
-      fi      
+      fi
+      if test "${enable_curses}" = "no" ; then
+        # Try adding -lncurses -ltinfo
+        ORIG_LIBS="$LIBS"
+        curses_lib_flag=" -lncurses -ltinfo"
+        LIBS="$LIBS $curses_lib_flag"
+        AC_TRY_LINK(
+        [#include <curses.h>]
+        [#include <term.h>],
+[        int errret; ]
+[        setupterm("", 0, &errret);]
+         return 0;
+         , enable_curses=yes, enable_curses=no)
+        if test "${enable_curses}" = "no" ; then
+          LIBS="$ORIG_LIBS"
+          curses_lib_flag=""
+        fi
+      fi
     fi
   fi
  fi

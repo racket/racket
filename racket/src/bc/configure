@@ -5991,7 +5991,7 @@ rm -f core conftest.err conftest.$ac_objext \
       if test "${enable_curses}" = "no" ; then
         if test "${enable_portable}" = "yes" ; then
           if test "${curses_portable_link}" != "" ; then
-            # Try adding portabel link flags
+            # Try adding portable link flags
             ORIG_LIBS="$LIBS"
             ORIG_CPPFLAGS="$CPPFLAGS"
             ORIG_PREFLAGS="$PREFLAGS"
@@ -6034,6 +6034,38 @@ rm -f core conftest.err conftest.$ac_objext \
         # Try adding -lncurses
         ORIG_LIBS="$LIBS"
         curses_lib_flag=" -lncurses"
+        LIBS="$LIBS $curses_lib_flag"
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <curses.h>
+        #include <term.h>
+int
+main ()
+{
+        int errret;
+        setupterm("", 0, &errret);
+         return 0;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  enable_curses=yes
+else
+  enable_curses=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+        if test "${enable_curses}" = "no" ; then
+          LIBS="$ORIG_LIBS"
+          curses_lib_flag=""
+        fi
+      fi
+      if test "${enable_curses}" = "no" ; then
+        # Try adding -lncurses -ltinfo
+        ORIG_LIBS="$LIBS"
+        curses_lib_flag=" -lncurses -ltinfo"
         LIBS="$LIBS $curses_lib_flag"
         cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
