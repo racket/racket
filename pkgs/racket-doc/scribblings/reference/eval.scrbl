@@ -151,6 +151,7 @@ If the second argument to the load handler is a symbol, then:
        (read-accept-compiled #t)
        (read-accept-bar-quote #t)
        (read-accept-graph #t)
+       (read-syntax-accept-graph #f)
        (read-decimal-as-inexact #t)
        (read-accept-dot #t)
        (read-accept-infix-dot #t)

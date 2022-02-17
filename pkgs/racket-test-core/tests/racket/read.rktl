@@ -569,6 +569,28 @@
 (test #t (lambda (x) (and (vector? x) (eq? (vector-ref x 1) (vector-ref x 2)))) (readstr "#3(#0=(1 2) #0#)"))
 (test '(1 1 1) readstr "(#0=1 #1=#0# #1#)")
 
+(err/rt-test (read-syntax #f (open-input-string "(#0=1 #1=#0# #1#)")) exn:fail:read?)
+(let ()
+  (define (stx-placeholder-get* stx)
+    (if (placeholder? (syntax-e stx))
+        (stx-placeholder-get* (placeholder-get (syntax-e stx)))
+        stx))
+
+  (let ()
+    (define stxs (syntax->list
+                  (parameterize ([read-accept-graph #f]
+                                 [read-syntax-accept-graph #t])
+                    (read-syntax #f (open-input-string "(#0=1 #1=#0# #1#)")))))
+    (test #t (lambda (xs) (andmap (lambda (x) (placeholder? (syntax-e x))) xs)) stxs)
+    (test '(1 1 1) (lambda (xs) (map (lambda (x) (syntax-e (stx-placeholder-get* x))) xs)) stxs))
+
+  (test #t
+        (lambda (stx)
+          (define lst-stx (placeholder-get (syntax-e stx)))
+          (eq? lst-stx (placeholder-get (syntax-e (cdr (syntax-e lst-stx))))))
+        (parameterize ([read-syntax-accept-graph #t])
+          (read-syntax #f (open-input-string "#0=(1 . #0#)")))))
+
 ;; Show that syntax, expansion, etc. do not preserve vector sharing
 (test #f 
       (lambda (x) (and (vector? x) (eq? (vector-ref x 0) (vector-ref x 1)))) 

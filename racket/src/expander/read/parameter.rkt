@@ -44,6 +44,7 @@
     (check-parameter read-curly-brace-with-tag config)
     (check-parameter read-cdot config)
     (check-parameter read-accept-graph config)
+    (check-parameter read-syntax-accept-graph config)
     (check-parameter read-accept-compiled config)
     (check-parameter read-accept-box config)
     (check-parameter read-accept-bar-quote config)
