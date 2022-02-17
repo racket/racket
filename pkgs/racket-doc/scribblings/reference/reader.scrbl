@@ -871,18 +871,29 @@ as constructed by @racket[pregexp], @litchar{#rx#} as constructed by
 
 A @graph-defn[] tags the following datum for reference via
 @graph-ref[], which allows the reader to produce a datum that
-has graph structure. Neither form is allowed in
-@racket[read-syntax] mode.
+has graph structure.
 
-For a specific @graph-tag[] in a single read result, each @graph-ref[]
-reference is replaced by the datum read for the corresponding
-@graph-defn[]; the definition @graph-defn[] also produces just the
-datum after it. A @graph-defn[] definition can appear at most once,
-and a @graph-defn[] definition must appear before a @graph-ref[]
-reference appears, otherwise the @exnraise[exn:fail:read]. If the
-@racket[read-accept-graph] parameter is set to @racket[#f], then
+In @racket[read] mode, for a specific @graph-tag[] in a single read
+result, each @graph-ref[] reference is replaced by the datum read for
+the corresponding @graph-defn[]; the definition @graph-defn[] also
+produces just the datum after it. A @graph-defn[] definition can appear
+at most once, and a @graph-defn[] definition must appear before a
+@graph-ref[] reference appears, otherwise the @exnraise[exn:fail:read].
+If the @racket[read-accept-graph] parameter is set to @racket[#f], then
 @graph-defn[] or @graph-ref[] triggers a @racket[exn:fail:read]
 exception.
+
+In @racket[read-syntax] mode, graph structure is parsed the same way
+as in @racket[read] mode. However, since @tech{syntax objects} made
+from plain S-expressions may not contain cycles, each @graph-defn[]
+definition and @graph-ref[] reference is replaced with a
+@tech{placeholder} in the result that contains the referenced value.
+Since such syntax objects are not directly useful (they cannot be
+marshaled to compiled code and are therefore rejected by the default
+@tech{compilation handler}), parsing of graph structure in
+@racket[read-syntax] mode is controlled by the separate
+@racket[read-syntax-accept-graph] parameter, which is initially set
+to @racket[#f].
 
 Although a comment parsed via @litchar{#;} discards the datum
 afterward, @graph-defn[] definitions in the discarded datum
@@ -895,6 +906,11 @@ neither defines nor uses graph tags for other top-level forms.
 "(#1=100 #1# #1#)"
 "#0=(1 . #0#)"
 ]
+
+@history[
+ #:changed "8.4.0.8" @elem{Added support for reading graph structure
+                           in @racket[read-syntax] mode if enabled by
+                           @racket[read-syntax-accept-graph].}]
 
 @local-table-of-contents[]
 

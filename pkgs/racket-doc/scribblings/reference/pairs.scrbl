@@ -1536,12 +1536,12 @@ produces a true value.
 @defproc[(make-reader-graph [v any/c])
          any/c]{
 
-Returns a value like @racket[v], with placeholders created by
-@racket[make-placeholder] replaced with the values that they contain,
-and with placeholders created by @racket[make-hash-placeholder] with an
-immutable hash table.  No part of @racket[v] is mutated; instead, parts
-of @racket[v] are copied as necessary to construct the resulting graph,
-where at most one copy is created for any given value.
+Returns a value like @racket[v], with @deftech{placeholders} created by
+@racket[make-placeholder] replaced with the values that they contain, and
+with @deftech{hash placeholders} created by @racket[make-hash-placeholder]
+with an immutable hash table.  No part of @racket[v] is mutated; instead,
+parts of @racket[v] are copied as necessary to construct the resulting
+graph, where at most one copy is created for any given value.
 
 Since the copied values can be immutable, and since the copy is also
 immutable, @racket[make-reader-graph] can create cycles involving only
@@ -1578,15 +1578,15 @@ the same sort of cyclic values as @racket[read].
 @defproc[(placeholder? [v any/c])
          boolean?]{
 
-Returns @racket[#t] if @racket[v] is a placeholder created by
+Returns @racket[#t] if @racket[v] is a @tech{placeholder} created by
 @racket[make-placeholder], @racket[#f] otherwise.}
 
 
 @defproc[(make-placeholder [v any/c])
          placeholder?]{
 
-Returns a placeholder for use with @racket[placeholder-set!]  and
-@racket[make-reader-graph]. The @racket[v] argument supplies the
+Returns a @tech{placeholder} for use with @racket[placeholder-set!]
+and @racket[make-reader-graph]. The @racket[v] argument supplies the
 initial value for the placeholder.}
 
 
@@ -1605,26 +1605,26 @@ Returns the value of @racket[ph].}
 @defproc[(hash-placeholder? [v any/c])
          boolean?]{
 
-Returns @racket[#t] if @racket[v] is a placeholder created by
-@racket[make-hash-placeholder], @racket[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is a @tech{hash placeholder} created
+by @racket[make-hash-placeholder], @racket[#f] otherwise.}
 
 
 @defproc[(make-hash-placeholder [assocs (listof pair?)])
          hash-placeholder?]{
 
-Like @racket[make-immutable-hash], but produces a table placeholder
+Like @racket[make-immutable-hash], but produces a @tech{hash placeholder}
 for use with @racket[make-reader-graph].}
 
 
 @defproc[(make-hasheq-placeholder [assocs (listof pair?)])
          hash-placeholder?]{
 
-Like @racket[make-immutable-hasheq], but produces a table placeholder
+Like @racket[make-immutable-hasheq], but produces a @tech{hash placeholder}
 for use with @racket[make-reader-graph].}
 
 
 @defproc[(make-hasheqv-placeholder [assocs (listof pair?)])
          hash-placeholder?]{
 
-Like @racket[make-immutable-hasheqv], but produces a table placeholder
+Like @racket[make-immutable-hasheqv], but produces a @tech{hash placeholder}
 for use with @racket[make-reader-graph].}

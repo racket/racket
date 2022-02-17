@@ -26,6 +26,7 @@
 (define-boolean-parameter read-curly-brace-with-tag #f)
 (define-boolean-parameter read-cdot #f)
 (define-boolean-parameter read-accept-graph #t)
+(define-boolean-parameter read-syntax-accept-graph #f)
 (define-boolean-parameter read-accept-compiled #f)
 (define-boolean-parameter read-accept-box #t)
 ;; (define-boolean-parameter read-accept-bar-quote #t) - shared with printer

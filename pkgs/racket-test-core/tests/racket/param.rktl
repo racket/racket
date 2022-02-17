@@ -217,6 +217,11 @@
 		      '(read (open-input-string "#0=(1 . #0#)"))
 		      exn:fail:read?
 		      #f)
+                (list read-syntax-accept-graph
+		      (list #t #f)
+		      '(read-syntax #f (open-input-string "#0=(1 . #0#)"))
+		      exn:fail:read?
+		      #f)
 		(list read-accept-compiled
 		      (list #t #f)
 		      `(let ([p (open-input-file ,temp-compiled-file)])
