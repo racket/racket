@@ -355,12 +355,16 @@
                        #,((make-interned-syntax-introducer (syntax-e #'space))
                           (syntax-local-introduce (datum->syntax #f (syntax-e #'id)))))]))
   
-  (define (make-soup-module #:with-default? with-default?)
+  (define (make-soup-module #:with-default? with-default?
+                            #:all-defined-out? [all-defined-out? #f])
     `(module soup-kettle racket/base
        (require (for-syntax racket/base))
-       (provide (for-space soup kettle) ,@(if with-default?
-                                              '(kettle)
-                                              '()))
+       (provide (for-space soup ,(if all-defined-out?
+                                     '(all-defined-out)
+                                     'kettle))
+                ,@(if with-default?
+                      '(kettle)
+                      '()))
        (define-syntax (define-soup stx)
          (syntax-case stx ()
            [(_ id rhs)
@@ -405,6 +409,16 @@
                (require 'soup-kettle)
                (provide (all-from-out 'soup-kettle))))
       (eval '(require 'also-soup-kettle))
+      (test 'soup eval (namespace-syntax-introduce (in-space soup kettle)))
+      (if with-default?
+          (test 'default eval 'kettle)
+          (err/rt-test/once (eval 'kettle) exn:fail:contract:variable?))))
+
+    ;; check all-defined-out and spaces
+  (for ([with-default? '(#f #t)])
+    (parameterize ([current-namespace (make-base-namespace)])
+      (eval (make-soup-module #:with-default? with-default? #:all-defined-out? #t))
+      (eval '(require 'soup-kettle))
       (test 'soup eval (namespace-syntax-introduce (in-space soup kettle)))
       (if with-default?
           (test 'default eval 'kettle)

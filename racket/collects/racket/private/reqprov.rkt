@@ -918,11 +918,19 @@
                               [(eq? mode 0) free-identifier=?]
                               [(eq? mode 1) free-transformer-identifier=?]
                               [else (lambda (a b)
-                                      (free-identifier=?/mode a b abs-mode))]))])
+                                      (free-identifier=?/mode a b abs-mode))]))]
+                           [right-space?
+                            (let ([space (phase+space-space mode)])
+                              (if space
+                                  (let ([intro (make-interned-syntax-introducer space)])
+                                    (lambda (id)
+                                      (not (free-identifier=? (intro id 'add) (intro id 'remove)))))
+                                  (lambda (id) #t)))])
                       (map (lambda (id)
                              (make-export id (syntax-e id) mode #f stx))
                            (filter (lambda (id)
                                      (and (same-ctx-in-phase? id)
+                                          (right-space? id)
                                           (let-values ([(v id) (syntax-local-value/immediate
                                                                 id
                                                                 (lambda () (values #f #f)))])
@@ -931,7 +939,7 @@
                                                   (syntax-property 
                                                    (rename-transformer-target v)
                                                    'not-provide-all-defined))))))
-                                   (hash-ref ht abs-mode null)))))
+                                   (hash-ref ht (phase+space-phase abs-mode) null)))))
                   modes)))]))))
 
   (define-syntax all-from-out
