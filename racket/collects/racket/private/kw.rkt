@@ -1360,7 +1360,15 @@
                  (syntax-property wrap-id alias-of 
                                   (cons (syntax-taint (syntax-local-introduce #'self))
                                         (syntax-taint (syntax-local-introduce wrap-id))))]
-                [n-opt (length opt-not-supplieds)])
+                [n-opt (length opt-not-supplieds)]
+                [convert-default-expr (lambda (e)
+                                        ;; default-value expressions get quoted along the way,
+                                        ;; instead of syntax-quoted; in the case of `unsafe-undefined`,
+                                        ;; we need to switch back to a reference that has this module's
+                                        ;; inspector to allow access in an untrusted context
+                                        (if (eq? e 'unsafe-undefined)
+                                            #'unsafe-undefined
+                                            e))])
             (if (free-identifier=? #'new-app (datum->syntax stx '#%app))
                 (parse-app (datum->syntax #f (cons #'new-app stx) stx)
                            (lambda (n)
@@ -1431,20 +1439,20 @@
                                                            (cons (cdar kw-args)
                                                                  (loop (cdr kw-args) (cdr all-kws)))]
                                                           [else
-                                                           (cons (list-ref (car all-kws) 4)
+                                                           (cons (convert-default-expr (list-ref (car all-kws) 4))
                                                                  (loop kw-args (cdr all-kws)))]))
                                                    ;; required arguments:
                                                    #,@(let loop ([i n-req] [args args])
                                                         (if (zero? i)
                                                             null
-                                                            (cons (car args)
+                                                            (cons (convert-default-expr (car args))
                                                                   (loop (sub1 i) (cdr args)))))
                                                    ;; optional arguments:
                                                    #,@(let loop ([opt-not-supplieds opt-not-supplieds] [args (list-tail args n-req)])
                                                         (cond
                                                           [(null? opt-not-supplieds) null]
                                                           [(null? args)
-                                                           (cons (car opt-not-supplieds)
+                                                           (cons (convert-default-expr (car opt-not-supplieds))
                                                                  (loop (cdr opt-not-supplieds) null))]
                                                           [else
                                                            (cons (car args) (loop (cdr opt-not-supplieds) (cdr args)))]))

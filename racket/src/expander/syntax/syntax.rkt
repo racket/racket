@@ -266,7 +266,7 @@
   (cond
    [(syntax? s) s]
    [else
-    (define insp (if (syntax? s) 'not-needed (current-module-code-inspector)))
+    (define insp (current-module-code-inspector))
     (define (wrap content)
       (let ([content (datum-intern-literal content)])
         (immediate-datum->syntax stx-c content stx-l empty-props insp)))

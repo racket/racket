@@ -2518,5 +2518,16 @@
              exn:fail:contract:arity?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Regression test to make that an ok reference to `unsafe-undefined`
+;; isn't mangled to a disallowed reference:
+
+(parameterize ([current-code-inspector (current-code-inspector)])
+  (parameterize ([current-namespace (make-base-namespace)])
+    (eval '(module test racket/base
+             (provide t)
+             (define (t #:a [a "12345678"]) (list a))
+             (t)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
