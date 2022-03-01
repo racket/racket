@@ -197,13 +197,13 @@
                [(relative-module-path? collapsed)
                 ;; Instead of using `collapsed`, use the original steps in `source`,
                 ;; because an executable created by `raco exe` may need the individual
-                ;; steps to find the right module (i.e., it resolve through relative
-                ;; references].
+                ;; steps to find the right module (i.e., it resolves through relative
+                ;; references).
                 #`(relative-source (variable-reference->module-path-index
                                     (#%variable-reference))
                                    '#,(let loop ([mp source])
                                         (cond
-                                          [(self-mpi? mp) '()]
+                                          [(or (not mp) (self-mpi? mp)) '()]
                                           [else
                                            (define-values (name base) (module-path-index-split mp))
                                            (cons name (loop base))])))]
