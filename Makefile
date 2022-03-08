@@ -14,8 +14,8 @@ SETUP_MACHINE_FLAGS =
 RUN_RACKET = $(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G racket/etc -X racket/collects
 RUN_RACO = $(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G racket/etc -X racket/collects -N raco -l- raco
 DEFAULT_SRC_CATALOG = https://pkgs.racket-lang.org
-PKG_UPDATE_OPTIONS = 
-PLT_SETUP_OPTIONS = 
+PKG_UPDATE_OPTIONS =
+PLT_SETUP_OPTIONS =
 CPUS =
 VM = cs
 INITIAL_SETUP_MODE = minimal
@@ -24,7 +24,7 @@ ALL_PKG_UPDATE_OPTIONS = --all --auto --no-setup --scope installation $(PKG_UPDA
 ALL_PKG_INSTALL_OPTIONS = $(JOB_OPTIONS) --no-setup --pkgs --skip-installed --scope installation --deps search-auto $(REQUIRED_PKGS) $(PKGS)
 ALL_PLT_SETUP_OPTIONS = $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 IN_PLACE_SETUP_OPTIONS =
-PREFIX = 
+PREFIX =
 CONFIG_PREFIX_ARGS = --prefix=$(PREFIX) --enable-macprefix
 UNIXSTYLE_CONFIG_qq = MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --prefix=$(PREFIX) --enable-macprefix" CONFIG_IN_PLACE_ARGS=""
 UNIX_CATALOG = build/local/catalog
@@ -32,8 +32,8 @@ UNIX_RACO_ARGS = $(JOB_OPTIONS) --catalog build/local/catalog --auto -i
 UNIX_BASE_ARGS = SELF_ROOT_CONFIG_FLAG="-Z" SKIP_DESTDIR_FIX="skip"
 LOC_CATALOG = build/local/pkgs-catalog
 CONFIGURE_ARGS_qq =
-CONFIGURE_ARGS = 
-MORE_CONFIGURE_ARGS = 
+CONFIGURE_ARGS =
+MORE_CONFIGURE_ARGS =
 SELF_ROOT_CONFIG_FLAG = -G
 SELF_FLAGS_qq = SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)"
 PLT_SETUP_OPTIONS_qq = PLT_SETUP_OPTIONS="$(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)"
@@ -52,14 +52,14 @@ PB_REPO = https://github.com/racket/pb
 SINGLE_BRANCH_FLAG = --single-branch
 EXTRA_REPOS_BASE =
 CS_CROSS_SUFFIX =
-CS_HOST_WORKAREA_PREFIX = 
+CS_HOST_WORKAREA_PREFIX =
 CS_CONFIGURE_ARGS = $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
 PB_DIR = racket/src/ChezScheme/boot/pb
 WIN32_BOOT_ARGS = SETUP_BOOT_MODE=--boot WIN32_BUILD_LEVEL=bc PLAIN_RACKET=racket\racketbc
 WIN32_SETUP_BOOT = -O "info@compiler/cm" -l- setup $(SETUP_BOOT_MODE) racket/src/setup-go.rkt racket/src/build/compiled ignored racket/src/build/ignored.d
 CSBUILD_ARGUMENTS = --pull --racketcs-suffix "$(RACKETCS_SUFFIX)" $(DISABLE_STATIC_LIBS) --boot-mode "$(SETUP_BOOT_MODE)" --extra-repos-base "$(EXTRA_REPOS_BASE)"
 SRC_CATALOG = $(DEFAULT_SRC_CATALOG)
-DOC_SEARCH = 
+DOC_SEARCH =
 SERVER = localhost
 SERVER_PORT = 9440
 SERVER_URL_SCHEME = http
@@ -79,16 +79,16 @@ INSTALLER_POST_PROCESS_BASE64 =
 DIST_NAME = Racket
 DIST_BASE = racket
 DIST_DIR = racket
-DIST_SUFFIX = 
+DIST_SUFFIX =
 DIST_DESC =
 DIST_CATALOGS_q = ""
-BUILD_STAMP = 
+BUILD_STAMP =
 INSTALL_NAME =
 SIGN_IDENTITY =
 NOTARIZATION_CONFIG =
 OSSLSIGNCODE_ARGS_BASE64 =
 README = $(SERVER_URL_SCHEME)://$(SVR_PRT)/README.txt
-UPLOAD = 
+UPLOAD =
 CONFIG = build/site.rkt
 CONFIG_MODE = default
 CLEAN_MODE =
@@ -122,7 +122,7 @@ PKGS_CATALOG = -U -G build/config -l- pkg/dirs-catalog --link --check-metadata -
 PKGS_CONFIG = -U -G build/config racket/src/pkgs-config.rkt
 SERVER_COMPILE_MACHINE = -M
 ANY_COMPILE_MACHINE_ARGS_qq = SETUP_MACHINE_FLAGS="-MCR `pwd`/build/zo:" MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-crossany"
-NEXT_TARGET = 
+NEXT_TARGET =
 PACK_BUILT_OPTIONS =
 CLIENT_BASE = base
 WIN32_CLIENT_BASE = win-base
@@ -244,7 +244,7 @@ win-remove-setup-dlls:
 bc-configure:
 	$(MAKE) racket/src/build/bc/Makefile CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" CS_CONFIGURE_ARGS="$(CS_CONFIGURE_ARGS)" MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS)"
 	cd racket/src/build/bc && $(MAKE) reconfigure MORE_CONFIGURE_ARGS="$(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)"
-racket/src/build/bc/Makefile: racket/src/bc/configure racket/src/bc/Makefile.in racket/src/cfg-bc racket/src/Makefile.in 
+racket/src/build/bc/Makefile: racket/src/bc/configure racket/src/bc/Makefile.in racket/src/cfg-bc racket/src/Makefile.in
 	mkdir -p racket/src/build/bc
 	cd racket/src/build/bc && ../../bc/configure $(CONFIGURE_ARGS_qq) $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
 	cd racket/src/build && ../cfg-bc $(CONFIGURE_ARGS_qq) $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
@@ -294,7 +294,7 @@ cs-base:
 cs-configure:
 	$(MAKE) racket/src/build/cs/c/Makefile CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS)"
 	cd racket/src/build/cs/c && $(MAKE) reconfigure MORE_CONFIGURE_ARGS="$(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)"
-racket/src/build/cs/c/Makefile: racket/src/cs/c/configure racket/src/cs/c/Makefile.in racket/src/cfg-cs racket/src/Makefile.in 
+racket/src/build/cs/c/Makefile: racket/src/cs/c/configure racket/src/cs/c/Makefile.in racket/src/cfg-cs racket/src/Makefile.in
 	mkdir -p racket/src/build/cs/c
 	cd racket/src/build/cs/c && ../../../cs/c/configure $(CONFIGURE_ARGS_qq) $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
 	cd racket/src/build && ../cfg-cs $(CONFIGURE_ARGS_qq) $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
@@ -366,7 +366,7 @@ clean:
 	@echo "  git clean -d -x -f ."
 	@exit 1
 pkgs-catalog:
-	$(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G racket/etc -X racket/collects -U -G build/config -l- pkg/dirs-catalog --link --check-metadata --immediate racket/share/pkgs-catalog pkgs racket/src/expander
+	$(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G racket/etc -X racket/collects -U -G build/config -l- pkg/dirs-catalog --link --check-metadata --immediate racket/share/pkgs-catalog pkgs racket/src/expander racket/src/zuo/zuo-doc
 	$(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G racket/etc -X racket/collects -U -G build/config racket/src/pkgs-config.rkt "$(DEFAULT_SRC_CATALOG)" "$(SRC_CATALOG)"
 	$(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G racket/etc -X racket/collects racket/src/pkgs-check.rkt racket/share/pkgs-catalog
 with-setup-flags:

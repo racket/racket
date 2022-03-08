@@ -1,0 +1,97 @@
+#lang zuo
+(require (only-in "s/main.zuo"
+                  [targets-at s-targets-at])
+         (only-in "c/main.zuo"
+                  [targets-at c-targets-at])
+         "makefiles/lib.zuo")
+
+(define (targets-at at-dir [vars (hash)])
+  (define Mf-config (at-dir "Mf-config"))
+  (unless (file-exists? Mf-config)
+    (error "no \"Mf-config\" - not running from a build directory?"))
+  (define config (config-file->hash Mf-config))
+
+  (define m (hash-ref config 'm))
+
+  ;; subdirectories where we create a "main.zuo" that bounce to
+  ;; one in the source area
+  (define bounce-dirs
+    '("c" "s"))
+  (define bounce-files
+    (map (lambda (d) (at-dir d "main.zuo")) bounce-dirs))
+
+  (define boot-file-names
+    '(;; the boot files proper
+      "petite.boot" "scheme.boot"
+      ;; machine-specific header files:
+      "scheme.h" "equates.h"
+      ;; GC traversal functions
+      "gc-ocd.inc" "gc-oce.inc" "gc-par.inc" "heapcheck.inc"))
+
+  (define boot-files
+    (map (lambda (file) (at-dir "boot" m file)) boot-file-names))
+
+  (define c-config-file
+    (at-dir "c" "config.h"))
+  (define c-config-keys
+    '(disablecurses disablex11 enablelibffi alwaysUseBootFile))
+
+  (make-targets
+   `([:target build (workarea)
+              ,(lambda (token)
+                 (build (find-target "build" (c-targets-at (make-at-dir (at-dir "c")))))
+                 (build (find-target "bootstrap" (s-targets-at (make-at-dir (at-dir "s"))))))]
+
+     ;; Builds out an initial workarea, with links to book files, the "c/config.h", etc.
+     [:target workarea (,@bounce-files ,c-config-file ,@boot-files)
+              ,void
+              :quiet]
+
+     ,@(map (lambda (dir file)
+              `[:target ,file ()
+                        ,(lambda (path token)
+                           (mkdir* (at-dir dir))
+                           (define s
+                             (~a "#lang zuo\n"
+                                 (~s '(require ,(at-source dir "main.zuo"))) "\n"
+                                 (~a '(build/command-line* targets-at at-source))))
+                           (display-to-file s path))])
+            bounce-dirs
+            bounce-files)
+
+     [:target ,c-config-file (,(input-data-target 'c-config
+                                                  (cons c-config-keys
+                                                        (map (lambda (key) (hash-ref config key))
+                                                             c-config-keys))))
+              ,(lambda (path token)
+                 (mkdir* (at-dir "c"))
+                 (define (line s) (if s (~a s "\n") ""))
+                 (define s
+                   (~a (line (and (equal? (hash-ref config 'disablecurses #f) "yes")
+                                  "#define DISABLE_CURSES"))
+                       (line (and (equal? (hash-ref config 'disablex11 #f) "yes")
+                                  "#define DISABLE_X11"))
+                       (line (and (equal? (hash-ref config 'enablelibffi #f) "yes")
+                                  "#define ENABLE_LIBFFI"))
+                       (line (and (not (equal? (hash-ref config 'alwaysUseBootFile "") ""))
+                                  (~a "#define ALWAYS_USE_BOOT_FILE " (~s (hash-ref config 'alwaysUseBootFile)))))))
+                 (display-to-file s path))]
+
+     ,@(map (lambda (name dest)
+              `[:target ,dest ()
+                        ,(lambda (path token)
+                           (define here-dir (at-dir ".." "boot" m))
+                           (define dir (if (directory-exists? here-dir)
+                                           here-dir
+                                           (at-source "boot" m)))
+                           (define src (build-path dir name))
+                           (unless (file-exists? src)
+                             (error "missing prebuilt boot file" src))
+                           (mkdir* (at-dir "boot" m))
+                           (cp/ln src dest))])
+            boot-file-names
+            boot-files)
+
+     #;(end-make-targets))))
+
+(provide-targets targets-at)

@@ -1,0 +1,7 @@
+#lang zuo/hygienic
+
+(require "harness-hygienic.zuo")
+
+(alert "syntactic forms, hygienic expander")
+
+(include "form-common.zuo")

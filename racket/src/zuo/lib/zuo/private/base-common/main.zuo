@@ -1,0 +1,25 @@
+#lang zuo/datum
+
+(require "and-or.zuo"
+         "syntax-error.zuo"
+         "../pair.zuo"
+         "../list.zuo"
+         "let.zuo"
+         "define.zuo"
+         "opt-lambda.zuo"
+         "quasiquote.zuo"
+         "more-syntax.zuo"
+         "../more.zuo"
+         "struct.zuo")
+
+(provide (all-from-out "and-or.zuo"
+                       "syntax-error.zuo"
+                       "../pair.zuo"
+                       "../list.zuo"
+                       "let.zuo"
+                       "define.zuo"
+                       "opt-lambda.zuo"
+                       "quasiquote.zuo"
+                       "more-syntax.zuo"
+                       "../more.zuo"
+                       "struct.zuo"))

@@ -1,0 +1,12 @@
+# `configure` adds lines before to record configuration
+
+.PHONY: zuos-to-run-and-install
+zuos-to-run-and-install: zuo
+	./zuo . zuos-to-run-and-install
+
+zuo: $(srcdir)/zuo.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DZUO_LIB_PATH='"'"$(srcdir)/lib"'"' -o zuo $(srcdir)/zuo.c $(LDFLAGS) $(LIBS)
+
+.PHONY: install
+install: zuo
+	./zuo . install

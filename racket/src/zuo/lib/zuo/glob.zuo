@@ -1,0 +1,156 @@
+#lang zuo/base
+
+(provide glob-match?
+         glob->matcher)
+
+(define (glob-match? glob str)
+  (unless (string? glob) (arg-error 'glob-match? "string" glob))
+  (unless (string? str) (arg-error 'glob-match? "string" str))
+  ((compile-glob 'glob-match? glob #f) str))
+
+(define (glob->matcher glob)
+  (unless (string? glob) (arg-error 'glob->matcher "string" glob))
+  (let ([m (compile-glob 'glob->matcher glob #f)])
+    (lambda (str)
+      (unless (string? str) (error "glob matcher: not a string" str))
+      (m str))))
+
+(define (compile-glob who glob no-dot?)
+  (let ([glen (string-length glob)])
+    (let loop ([i 0] [k (lambda (pred len)
+                          (if len
+                              (lambda (str)
+                                (and (= len (string-length str))
+                                     (pred str 0)))
+                              (lambda (str)
+                                (pred str 0))))])
+      (cond
+        [(= i (string-length glob))
+         (k (lambda (str pos) #t)
+            0)]
+        [(literal? glob i glen)
+         (let ([literal (substring glob i glen)])
+           (k (lambda (str pos)
+                (string=? literal (substring str pos (string-length str))))
+              (- glen i)))]
+        [else
+         (let ([c (string-ref glob i)])
+           (cond
+             [(= (char "?") c)
+              (loop (+ i 1)
+                    (lambda (next len)
+                      (if len
+                          (k (if (and no-dot? (= i 0))
+                                 (lambda (str pos) (if (= (char ".") (string-ref str pos))
+                                                       #f
+                                                       (next str (+ pos 1))))
+                                 (lambda (str pos) (next str (+ pos 1))))
+                             (+ len 1))
+                          (k (if (and no-dot? (= i 0))
+                                 (lambda (str pos) (and (< pos (string-length str))
+                                                        (if (= (char ".") (string-ref str pos))
+                                                            #f
+                                                            (next str (+ pos 1)))))
+                                 (lambda (str pos) (and (< pos (string-length str))
+                                                        (next str (+ pos 1)))))
+                             #f))))]
+             [(= (char "*") c)
+              (loop (+ i 1)
+                    (lambda (next len)
+                      (k (let ([here (if len
+                                         (lambda (str pos)
+                                           (and (>= (string-length str) (+ pos len))
+                                                (next str (- (string-length str) len))))
+                                         (letrec ([star (lambda (str pos)
+                                                          (or (next str pos)
+                                                              (and (< pos (string-length str))
+                                                                   (star str (+ pos 1)))))])
+                                           star))])
+                           (if (and no-dot? (= i 0))
+                               (lambda (str pos) (and (> (string-length str) pos)
+                                                      (not (= (char ".") (string-ref str pos)))
+                                                      (here str pos)))
+                               here))
+                         #f)))]
+             [(= (char "[") c)
+              (let* ([j (let loop ([j (+ i 1)] [mode 'start])
+                          (if (= j glen)
+                              (error (~a who ": unclosed square bracket in glob" glob))
+                              (let ([c (string-ref glob j)])
+                                (cond
+                                  [(= (char "]") c)
+                                   (if (eq? mode 'inside)
+                                       j
+                                       (loop (+ j 1) 'inside))]
+                                  [(= (char "^") c)
+                                   (if (eq? mode 'start)
+                                       (loop (+ j 1) 'second)
+                                       (loop (+ j 1) 'inside))]
+                                  [else (loop (+ j 1) 'inside)]))))]
+                     [invert? (and (> j (+ i 1))
+                                   (= (char "^") (string-ref glob (+ i 1))))]
+                     [ranges (substring glob (+ i (if invert? 2 1)) j)]
+                     [make-str (lambda (n c)
+                                 (let loop ([n n])
+                                   (cond
+                                     [(= n 0) ""]
+                                     [(= n 1) (string c)]
+                                     [else (let ([a (quotient n 2)])
+                                             (~a (loop a) (loop (- n a))))])))]
+                     [table (make-str 256 (if invert? (char "y") (char "n")))]
+                     [table (if (and no-dot? (= i 0))
+                                (~a (substring table 0 (char ".")) "n" (substring table (+ (char ".") 1) 256))
+                                table)]
+                     [table (let loop ([table table] [k 0])
+                              (cond
+                                [(= k (string-length ranges)) table]
+                                [(and (<= k (- (string-length ranges) 3))
+                                      (= (char "-") (string-ref ranges (+ k 1))))
+                                 (let ([start (string-ref ranges k)]
+                                       [end (string-ref ranges (+ k 2))])
+                                   (unless (<= start end)
+                                     (error (~a who ": bad range in glob") glob))
+                                   (loop (~a (substring table 0 start)
+                                             (make-str (- (+ end 1) start) (if invert? (char "n") (char "y")))
+                                             (substring table (+ end 1) 256))
+                                         (+ k 3)))]
+                                [else (let ([c (string-ref ranges k)])
+                                        (loop (~a (substring table 0 c)
+                                                  (if invert? "n" "y")
+                                                  (substring table (+ c 1) 256))
+                                              (+ k 1)))]))])
+                (loop (+ j 1)
+                      (lambda (next len)
+                        (if len
+                            (k (lambda (str pos)
+                                 (and (= (char "y") (string-ref table (string-ref str pos)))
+                                      (next str (+ pos 1))))
+                               (+ len 1))
+                            (k (lambda (str pos)
+                                 (and (< pos (string-length str))
+                                      (= (char "y") (string-ref table (string-ref str pos)))
+                                      (next str (+ pos 1))))
+                               #f)))))]
+             [else (loop (+ i 1)
+                         (lambda (next len)
+                           (if len
+                               (k (lambda (str pos)
+                                    (and (= c (string-ref str pos))
+                                         (next str (+ pos 1))))
+                                  (+ len 1))
+                               (k (lambda (str pos)
+                                    (and (< pos (string-length str))
+                                         (= c (string-ref str pos))
+                                         (next str (+ pos 1))))
+                                  #f))))]))]))))
+
+(define (literal? glob start end)
+  (let loop ([start start])
+    (cond
+      [(= start end) #t]
+      [else
+       (let ([c (string-ref glob start)])
+         (and (not (or (= c (char "*"))
+                       (= c (char "?"))
+                       (= c (char "["))))
+              (loop (+ start 1))))])))

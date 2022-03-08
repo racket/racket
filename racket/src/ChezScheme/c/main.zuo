@@ -2,7 +2,7 @@
 (require "lib.zuo")
 
 (define (targets at-dir [vars (hash)])
-  (define config (config-file->hash (at-dir "../Makefile")))
+  (define config (config-file->hash (at-dir "../Mf-config")))
   (define (lookup key) (or (hash-ref vars key #f)
                            (hash-ref config key #f)))
 
@@ -10,7 +10,7 @@
 
   (define (at-mach file)
     (at-dir (build-path "../boot" m file)))
-  
+
   ;; sources for "kernel.o":
   (define kernel-srcs
     (map at-source
@@ -45,7 +45,7 @@
           (at-dir "config.h")))
 
   (define gc-wrap (list (at-source "gc.c")))
-  
+
   (define extra-dependencies
     `(("scheme.c" ,(at-source "itest.c"))
       ("gc-011.c" ,@gc-wrap ,(at-mach "gc-ocd.inc"))
@@ -167,7 +167,7 @@
                                                (target-shell lz4-lib))))))))
 
   (define exe
-    (target (at-dir (build-path "../bin" m "bin" "scheme"))
+    (target (at-dir (build-path "../bin" m "scheme"))
             (lambda (path token)
               (rule (cons kernel-lib main-objs)
                     (lambda ()
@@ -179,6 +179,12 @@
                                                  zlib-lib
                                                  lz4-lib)))
                               config))))))
+
+  (define build
+    (target 'build
+            (lambda (token)
+              (phony-rule (list exe)
+                          void))))
 
   (define run
     (target 'run
@@ -194,6 +200,6 @@
                             (process-wait (hash-ref p 'process)))))
             (hash 'command? #t)))
 
-  (list exe kernel-lib kernel.o run))
+  (list exe kernel-lib kernel.o run build))
 
 (provide-targets targets)

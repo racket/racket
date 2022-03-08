@@ -1,4 +1,5 @@
 #lang zuo
+(require "../makefiles/lib.zuo")
 
 (provide m->arch
          arch->backend
@@ -9,11 +10,12 @@
   (let* ([uni (if (= (char "t") (string-ref m 0))
                   (substring m 1)
                   m)])
-    (ormap (lambda (arch)
-             (and (> (string-length uni) (string-length arch))
-                  (string=? (substring uni 0 (string-length arch)) arch)
-                  arch))
-           '("a6" "i3" "arm64" "arm32" "ppc32" "pb"))))
+    (or (ormap (lambda (arch)
+                 (and (>= (string-length uni) (string-length arch))
+                      (string=? (substring uni 0 (string-length arch)) arch)
+                      arch))
+               '("a6" "i3" "arm64" "arm32" "ppc32" "pb"))
+        (error "could not extract architecture" m))))
 
 (define (arch->backend arch)
   (cond
@@ -29,12 +31,15 @@
   (define uni (if threaded? (substring m 1) m))
   (cond
     [(string=? arch "pb")
-     (append (cond
-               [(string=? m "pb") (list (cons "pb.def" cp/ln)
-                                        "pbcommon64.def")]
-               [(string=? m "tpb") (list (cons "tpb.def" cp/ln)
-                                         "pbcommon64.def")]
-               [else (error "fixme")])
+     (append (let ([mk (lambda (name)
+                         (cons name (lambda (dest token)
+                                      (cp/ln (at-source name) dest))))])
+               (cond
+                 [(string=? m "pb") (list (mk "pb.def")
+                                          "pbcommon64.def")]
+                 [(string=? m "tpb") (list (mk "tpb.def")
+                                           "pbcommon64.def")]
+                 [else (error "fixme")]))
              (list "pbcommon.def"
                    "default.def"))]
     [else
@@ -76,8 +81,3 @@
                              (loop i i))))]
                     [else (loop (+ i 1) start)])))
   (display-to-file new-s dest :truncate))
-
-(define (cp/ln src dest)
-  (if (eq? 'windows (hash-ref (runtime-env) 'system-type))
-      (cp src dest)
-      (ln (find-relative-path (path-only dest) src) dest)))

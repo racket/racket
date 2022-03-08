@@ -67,7 +67,7 @@
    'pps #f))
 
 (define (targets-at at-dir [vars (hash)])
-  (define config (config-file->hash (at-dir "../Makefile")))
+  (define config (config-file->hash (at-dir "../Mf-config")))
   (define (lookup key) (or (hash-ref vars key #f)
                            (hash-ref config key #f)))
   (define (opt key) (let ([v (hash-ref default-options key)]
@@ -169,6 +169,14 @@
           "np-register.ss" "np-info.ss" "np-help.ss"))
   (define cpnanopass-srcs
     (map at-source cpnanopass-src-files))
+  (define cpnanopass-src-copies
+    (map at-dir cpnanopass-src-files))
+
+  (define unicode-src-names
+    '("../unicode/unicode-char-cases.ss"
+      "../unicode/unicode-charinfo.ss"))
+  (define unicode-src-copies
+    (map at-dir unicode-src-names))
 
   (define included-srcs
     ;; all files that are `include`d by other files:
@@ -203,6 +211,7 @@
 
   (define (run-scheme/status what script inputs)
     (define scheme.exe (build-path host-workarea "bin" host-m "scheme"))
+
     (displayln (~a "running " scheme.exe " to build " what))
     (define env (cons
                  (cons "SCHEMEHEAPDIRS" (path->complete-path
@@ -426,8 +435,7 @@
                           ,(lambda (path token)
                              (mkdir* (path-only path))
                              (cp/ln src path))])
-              '("../unicode/unicode-char-cases.ss"
-                "../unicode/unicode-charinfo.ss"))
+              unicode-src-names)
 
        [:target ,machine.def (,(input-data-target 'machine m)
                               ,@(map at-source (cons (caar mach-src+dep+more-srcs)
@@ -495,7 +503,7 @@
                    (cat (map at-dir patch-names) path))]
 
        ,(include-dep "cptypes" (list "fxmap.ss" "cptypes-lattice.ss"))
-       ,(include-dep "5_4" (list "../unicode/unicode-char-cases.ss" "../unicode/unicode-charinfo.ss"))
+       ,(include-dep "5_4" unicode-src-names)
        ,(include-dep "strip" (list "strip-types.ss"))
        ,(include-dep "vfasl" (list "strip-types.ss"))
        ,(include-dep "pbchunk" (list "strip-types.ss"))
@@ -538,18 +546,22 @@
        ;; independent of whether dependencies changed:
        [:target all (bootall ,@output-headers)
                 ,void]
-       [:target bootall (,@all-srcs ,@macro-objs ,nanopass.so)
+       [:target bootall (,@all-srcs ,@macro-objs ,nanopass.so ,@type-src-copies
+                                    ,@cpnanopass-src-copies ,@unicode-src-copies)
                 ,(lambda (token)
                    (run-scheme "all at once"
                                (make-compile-at-once-script base-srcs base-objs petite.boot
                                                             compiler-srcs compiler-objs scheme.boot)
-                               (add-patchfile macro-objs)))]
+                               (add-patchfile macro-objs)))
+                :quiet]
 
        ;; This target uses a "bootstrap" stamp file to trigger a separate `build` run,
        ;; and it iterates up to three times to find a fixpoint
        [:target ,(at-dir "bootstrap") ,all-srcs
                 ,(lambda (path token)
                    (look-for-fixpoint 3 (lambda () (build (find-target "bootall" the-targets))))
+                   (build (map (lambda (file) (find-target file the-targets))
+                               (list scheme.h equates.h gc-ocd.inc gc-oce.inc gc-par.inc heapcheck.inc)))
                    (fd-close (fd-open-output path :truncate)))]
 
        #;(end-make-targets))))

@@ -1,0 +1,91 @@
+#lang zuo/datum
+
+;; simple transparent structs
+(define (make-maker tag) (lambda (v) (cons tag v)))
+(define (make-? tag) (lambda (v) (and (pair? v) (eq? tag (car v)))))
+(define (make-?? tag1 tag2) (lambda (v) (and (pair? v) (or (eq? tag1 (car v))
+                                                           (eq? tag2 (car v))))))
+(define any-ref cdr) ; not bothering to check a tag
+
+;; A binding that's a core form recognized by the expander
+(define make-core-form (make-maker 'core-form))
+(define core-form? (make-? 'core-form))
+(define form-id any-ref)
+
+;; A binding for a local variable
+(define make-local (make-maker 'local))
+(define local? (make-? 'local))
+(define local-id any-ref)
+
+;; A binding for a definition
+(define make-defined (make-maker 'defined))
+(define defined? (make-? 'defined))
+
+;; A `letrec` bindind or an imported definition
+(define make-local-variable (make-maker 'local-variable))
+
+;; A `variable` is a definition or `letrec`
+(define variable? (make-?? 'local-variable 'defined))
+(define variable-var any-ref)
+
+;; A macro is specifically an imported macro:
+(define make-macro (make-maker macro-protocol))
+(define macro-implementation any-ref)
+
+;; A macro defined in the current moddule:
+(define make-defined-macro (make-maker 'defined-macro))
+(define defined-macro? (make-? 'defined-macro))
+(define defined-macro-proc any-ref)
+
+;; Imported or current-module macro
+(define macro? (make-?? macro-protocol 'defined-macro))
+
+;; A `literal` wrapper is needed for a pair as a value; any
+;; other kind of value is distinct from our "record"s
+(define make-literal (make-maker 'literal))
+(define literal? (make-? 'literal))
+(define literal-val any-ref)
+
+;; Wraps a binding to indicate that's from the initial import,
+;; so it's shadowable by `require`
+(define make-initial-import (make-maker 'initial))
+(define initial-import? (make-? 'initial))
+(define initial-import-bind any-ref)
+
+;; Wraps a binding to give it an identity that persists across
+;; imports
+(define make-specific (make-maker 'specific))
+(define specific? (make-? 'specific))
+(define (specific-label s) (cdr (any-ref s)))
+
+(define (unwrap-specific v)
+  (if (specific? v)
+      (car (any-ref v))
+      v))
+
+(define (as-specific v)
+  (make-specific (cons v (string->uninterned-symbol "u"))))
+
+(define (specific=? a b)
+  (if (specific? a)
+      (if (specific? b)
+          (eq? (specific-label a) (specific-label b))
+          #f)
+      (eq? a b)))
+
+;; bubbles `specific` outside `initial-import`
+(define (initial-import bind)
+  (let* ([label (and (specific? bind)
+                     (specific-label bind))]
+         [bind (unwrap-specific bind)]
+         [bind (make-initial-import bind)])
+    (if label
+        (make-specific (cons bind label))
+        bind)))
+
+(define context-consumer-key (string->uninterned-symbol "ctxer"))
+(define (context-consumer proc)
+  (unless (procedure? proc) (error "context-consumer: not a procedure" proc))
+  (opaque context-consumer-key proc))
+(define (context-consumer? v) (and (opaque-ref context-consumer-key v #f) #t))
+(define (context-consumer-procedure v) (opaque-ref context-consumer-key v #f))

@@ -1,0 +1,50 @@
+#lang zuo/private/base
+
+;; This module could be implemented in either `base` or
+;; `base-hygienic`, but use use `base` to keep it faster
+;; (at least for `base`-only programs)
+
+(provide caar
+         cadr
+         cdar
+         cddr)
+
+(define bad
+  (lambda (who v)
+    (error (~a who ": not a valid argument") v)))
+
+(define caar
+  (lambda (v)
+    (if (pair? v)
+        (let ([a (car v)])
+          (if (pair? a)
+              (car a)
+              (bad 'caar v)))
+        (bad 'caar v))))
+
+(define cadr
+  (lambda (v)
+    (if (pair? v)
+        (let ([d (cdr v)])
+          (if (pair? d)
+              (car d)
+              (bad 'cadr v)))
+        (bad 'cadr v))))
+
+(define cdar
+  (lambda (v)
+    (if (pair? v)
+        (let ([a (car v)])
+          (if (pair? a)
+              (cdr a)
+              (bad 'cdar v)))
+        (bad 'cdar v))))
+
+(define cddr
+  (lambda (v)
+    (if (pair? v)
+        (let ([d (cdr v)])
+          (if (pair? d)
+              (cdr d)
+              (bad 'cddr v)))
+        (bad 'cddr v))))

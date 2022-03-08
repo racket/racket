@@ -1,0 +1,18 @@
+#lang zuo/base
+
+(require zuo/cmdline
+         zuo/config
+         zuo/thread
+         zuo/build
+         zuo/shell
+         zuo/c
+         zuo/glob)
+
+(provide (all-from-out zuo/private/base/main
+                       zuo/cmdline
+                       zuo/config
+                       zuo/thread
+                       zuo/build
+                       zuo/shell
+                       zuo/c
+                       zuo/glob))

@@ -1,0 +1,5 @@
+#lang zuo/private/base
+
+(provide (all-from-out zuo/private/base))
+
+(include "../base-common/main.zuo")

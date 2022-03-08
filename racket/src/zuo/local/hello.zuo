@@ -1,0 +1,9 @@
+#lang zuo
+
+"Hello, world!"
+
+;; If you don't want the quotes:
+;;  (alert "Hello, world!")
+
+;; If you don't want it in blue:
+;;  (displayln "Hello, world!")

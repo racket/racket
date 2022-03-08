@@ -64,10 +64,10 @@ RUN_RACO == $(RUN_RACKET) -N raco -l- raco
 DEFAULT_SRC_CATALOG = https://pkgs.racket-lang.org
 
 # Options passed along to any `raco pkg update` run:
-PKG_UPDATE_OPTIONS = 
+PKG_UPDATE_OPTIONS =
 
 # Options passed along to any `raco setup` run:
-PLT_SETUP_OPTIONS = 
+PLT_SETUP_OPTIONS =
 
 # Makefile parallelism propoagated to `raco setup`:
 CPUS =
@@ -141,7 +141,7 @@ win-as-is:
 # ------------------------------------------------------------
 # Unix-style build (Unix and Mac OS, only)
 
-PREFIX = 
+PREFIX =
 
 CONFIG_PREFIX_ARGS == --prefix=$(PREFIX) --enable-macprefix
 UNIXSTYLE_CONFIG_qq == MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) $(CONFIG_PREFIX_ARGS)" CONFIG_IN_PLACE_ARGS=""
@@ -191,10 +191,10 @@ set-src-catalog:
 CONFIGURE_ARGS_qq :=
 
 # A variant of `CONFIGURE_ARGS` that propagates, but does not support quotes:
-CONFIGURE_ARGS = 
+CONFIGURE_ARGS =
 
 # Rules in this makefile add configuration arguments here:
-MORE_CONFIGURE_ARGS = 
+MORE_CONFIGURE_ARGS =
 
 # Arrange for `raco setup` to run at first without packages by
 # pointing to a configuration in "build/etc"; the `-G` flag can be
@@ -301,7 +301,7 @@ bc-configure:
 	$(MAKE) racket/src/build/bc/Makefile
 	cd racket/src/build/bc && $(MAKE) reconfigure MORE_CONFIGURE_ARGS="$(BC_CONFIGURE_ARGS)"
 
-racket/src/build/bc/Makefile: racket/src/bc/configure racket/src/bc/Makefile.in racket/src/cfg-bc racket/src/Makefile.in 
+racket/src/build/bc/Makefile: racket/src/bc/configure racket/src/bc/Makefile.in racket/src/cfg-bc racket/src/Makefile.in
 	mkdir -p racket/src/build/bc
 	cd racket/src/build/bc && ../../bc/configure $(CONFIGURE_ARGS_qq) $(BC_CONFIGURE_ARGS)
 	cd racket/src/build && ../cfg-bc $(CONFIGURE_ARGS_qq) $(CS_CONFIGURE_ARGS)
@@ -360,7 +360,7 @@ CS_CROSS_SUFFIX =
 # Points a cross build at a directory containing a host build; this path
 # can be relative to the cross build directory, but it needs to end in
 # a separator if non-empty
-CS_HOST_WORKAREA_PREFIX = 
+CS_HOST_WORKAREA_PREFIX =
 
 cs:
 	$(MAKE) cs-in-place
@@ -418,7 +418,7 @@ cs-configure:
 	$(MAKE) racket/src/build/cs/c/Makefile
 	cd racket/src/build/cs/c && $(MAKE) reconfigure MORE_CONFIGURE_ARGS="$(CS_CONFIGURE_ARGS)"
 
-racket/src/build/cs/c/Makefile: racket/src/cs/c/configure racket/src/cs/c/Makefile.in racket/src/cfg-cs racket/src/Makefile.in 
+racket/src/build/cs/c/Makefile: racket/src/cs/c/configure racket/src/cs/c/Makefile.in racket/src/cfg-cs racket/src/Makefile.in
 	mkdir -p racket/src/build/cs/c
 	cd racket/src/build/cs/c && ../../../cs/c/configure $(CONFIGURE_ARGS_qq) $(CS_CONFIGURE_ARGS)
 	cd racket/src/build && ../cfg-cs $(CONFIGURE_ARGS_qq) $(CS_CONFIGURE_ARGS)
@@ -565,7 +565,7 @@ SRC_CATALOG = $(DEFAULT_SRC_CATALOG)
 # A URL embedded in documentation for remote searches, where a Racket
 # version and search key are added as query fields to the URL, and ""
 # is replaced by default:
-DOC_SEARCH = 
+DOC_SEARCH =
 
 # Server for built packages (i.e., the host where you'll run the
 # server):
@@ -636,7 +636,7 @@ DIST_BASE = racket
 DIST_DIR = racket
 # An extra suffix for the installer name, usually used to specify
 # a variant of an OS:
-DIST_SUFFIX = 
+DIST_SUFFIX =
 # A human-readable description (spaces allowed) of the generated
 # installer, usually describing a platform, used for upload:
 DIST_DESC =
@@ -648,7 +648,7 @@ DIST_CATALOGS_q := ""
 
 # An identifier for this build; if not specified, a build identifier
 # is inferred from the date and git repository
-BUILD_STAMP = 
+BUILD_STAMP =
 
 # "Name" of the installation used for `user' package scope by default
 # in an installation from an installer, where an empty value leaves
@@ -676,7 +676,7 @@ README = $(SERVER_URL_SCHEME)://$(SVR_PRT)/README.txt
 # URL destination to upload an installer file after it is created
 # (empty for no upload, spaces allowed); the file name is added to the
 # end of the URL, and DIST_DESC is passed as a "Description:" header:
-UPLOAD = 
+UPLOAD =
 
 # Configuration module that describes a build, normally implemented
 # with `#lang distro-build/config':
@@ -746,7 +746,7 @@ PKGS_CATALOG == -U -G build/config -l- pkg/dirs-catalog --link --check-metadata 
 PKGS_CONFIG == -U -G build/config racket/src/pkgs-config.rkt
 
 pkgs-catalog:
-	$(RUN_RACKET) $(PKGS_CATALOG) racket/share/pkgs-catalog pkgs racket/src/expander
+	$(RUN_RACKET) $(PKGS_CATALOG) racket/share/pkgs-catalog pkgs racket/src/expander racket/src/zuo/zuo-doc
 	$(RUN_RACKET) $(PKGS_CONFIG) "$(DEFAULT_SRC_CATALOG)" "$(SRC_CATALOG)"
 	$(RUN_RACKET) racket/src/pkgs-check.rkt racket/share/pkgs-catalog
 
@@ -759,7 +759,7 @@ ANY_COMPILE_MACHINE_ARGS_qq == SETUP_MACHINE_FLAGS="-MCR `pwd`/build/zo:" \
 
 # Target selector: `plain-server`, `plain-client-from-site`, `plain-installers-from-built`, \
 #                  `plain-site-from-installers`, or `plain-snapshot-at-site`
-NEXT_TARGET = 
+NEXT_TARGET =
 
 with-setup-flags:
 	if [ "$(SERVER_COMPILE_MACHINE)" = "-M" ] ; \

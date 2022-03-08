@@ -1,0 +1,15 @@
+#lang zuo
+
+(provide cp/ln
+         make-at-dir)
+
+(define (cp/ln src dest)
+  (if (eq? 'windows (system-type))
+      (cp src dest)
+      (begin
+        (when (file-exists? dest) (rm dest))
+        (ln (find-relative-path (path-only dest) src) dest))))
+
+(define (make-at-dir s)
+  (lambda paths
+    (apply build-path (cons s paths))))

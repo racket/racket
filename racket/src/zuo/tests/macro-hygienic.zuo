@@ -1,0 +1,28 @@
+#lang zuo/hygienic
+
+(require "harness-hygienic.zuo")
+
+(alert "macros, hygienic expander")
+
+(define lang-name 'zuo/hygienic)
+
+(include "macro-common.zuo")
+
+(define module-five 5)
+(define-syntax (let-module-five stx)
+  (list (quote-syntax let)
+        (list (list (cadr stx) 'module-five)) ; coerced to defining context
+        (cadr (cdr stx))))
+(check (let-module-five x (list x x)) '(5 5))
+(check (let-module-five x (let ([module-five 10]) (list x x))) '(5 5))
+(check (let ([module-five 10]) (let-module-five x (list x x))) '(5 5))
+
+(let ([five 5])
+  (define-syntax (let-five stx)
+    (list (quote-syntax let)
+          (list (list (cadr stx) (datum->syntax (car stx) 'five))) ; non-hygienic
+          (cadr (cdr stx))))
+  (check (let-five x (list x x)) '(5 5))
+  (check (let-five x (let ([five 10]) (list x x))) '(5 5))
+  (check (let ([five 10]) (let-five x (list x x))) '(10 10)))
+

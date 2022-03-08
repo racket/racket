@@ -1,0 +1,5 @@
+#lang zuo/hygienic
+
+(define language-name 'zuo/hygienic)
+
+(include "harness-common.zuo")

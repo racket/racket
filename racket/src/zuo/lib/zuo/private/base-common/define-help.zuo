@@ -1,0 +1,53 @@
+#lang zuo/datum
+
+(require "../pair.zuo"
+         "and-or.zuo"
+         "syntax-error.zuo"
+         "../list.zuo"
+         "let.zuo"
+         "check-dups.zuo")
+
+(provide check-args
+         make-define)
+
+(define check-args
+  (lambda (stx args)
+    (let ([arg-names
+           (let loop ([args args] [must-opt? #f])
+             (cond
+               [(identifier? args) ; rest arg
+                (list args)]
+               [(pair? args)
+                (cond
+                  [(and (identifier? (car args))
+                        (not must-opt?))
+                   (cons (car args) (loop (cdr args) #f))]
+                  [(and (list? (car args))
+                        (= 2 (length (car args)))
+                        (identifier? (caar args)))
+                   (cons (caar args) (loop (cdr args) #t))]
+                  [else
+                   (syntax-error (~a (syntax-e (car stx)) ": bad syntax at argument")
+                                 (car args))])]
+               [(null? args) '()]
+               [else (bad-syntax stx)]))])
+      (check-duplicates arg-names)
+      arg-names)))
+
+(define make-define
+  (lambda (orig-define opt-lambda)
+    (lambda (stx)
+      (unless (and (list? stx) (>= (length stx) 3)) (bad-syntax stx))
+      (let ([head (cadr stx)])
+        (cond
+          [(identifier? head)
+           ;; regular define
+           (cons orig-define (cdr stx))]
+          [(and (pair? head)
+                (identifier? (car head)))
+           ;; procedure shorthand
+           (let* ([name (car head)]
+                  [args (cdr head)])
+             (check-args stx args)
+             (list orig-define name (list* opt-lambda args (cddr stx))))]
+          [else (bad-syntax stx)])))))

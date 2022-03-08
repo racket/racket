@@ -1,0 +1,19 @@
+#lang zuo
+
+(require "harness.zuo")
+
+(alert "macros")
+
+(define lang-name 'zuo)
+
+(include "macro-common.zuo")
+
+(let ([five 5])
+  (define-syntax (let-five stx)
+    (list (quote-syntax let)
+          (list (list (cadr stx) 'five)) ; can get captured
+          (cadr (cdr stx))))
+  (check (let-five x (list x x)) '(5 5))
+  (check (let-five x (let ([five 10]) (list x x))) '(5 5))
+  (check (let ([five 10]) (let-five x (list x x))) '(10 10)))
+

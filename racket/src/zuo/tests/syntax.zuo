@@ -1,0 +1,35 @@
+#lang zuo
+
+(require "harness.zuo")
+
+(alert "syntax objects")
+
+(check (identifier? (quote-syntax x)))
+(check (identifier? 'x))
+(check (not (identifier? #f)))
+(check (not (identifier? (quote-syntax (x y)))))
+(check (not (identifier? '(x y))))
+(check (andmap identifier? (quote-syntax (x y))))
+
+(check (syntax-e (quote-syntax x)) 'x)
+(check (syntax-e 'x) 'x)
+(check-arg-fail (syntax-e #f) "not a syntax object")
+(check-arg-fail (syntax-e '(x y)) "not a syntax object")
+
+(check (syntax->datum 'x) 'x)
+(check (syntax->datum (quote-syntax x)) 'x)
+(check (syntax->datum (quote-syntax (x y))) '(x y))
+(check (syntax->datum '(1 #f)) '(1 #f))
+
+(check (datum->syntax 'x 'y) 'y)
+(check (datum->syntax (quote-syntax x) 'y) 'y)
+(check (syntax-e (datum->syntax (quote-syntax x) 'y)) 'y)
+(check-arg-fail (datum->syntax '(x) 'y) "not a syntax object")
+
+(check (bound-identifier=? 'x 'x))
+(check (bound-identifier=? (quote-syntax x) (quote-syntax x)))
+(check (not (bound-identifier=? (quote-syntax x) (quote-syntax y))))
+(check (not (bound-identifier=? 'x (quote-syntax x))))
+(check-arg-fail (bound-identifier=? '(x) 'x) "not a syntax object")
+(check-arg-fail (bound-identifier=? 'x '(x)) "not a syntax object")
+

@@ -1,0 +1,15 @@
+#lang zuo
+
+(require "harness.zuo")
+
+(alert "opaque records")
+
+(check (not (pair? (opaque 'hello "hi"))))
+
+(check (opaque-ref 'hello (opaque 'hello "hi") #f) "hi")
+(check (opaque-ref 'not-hello (opaque 'hello "hi") #f) #f)
+(check (opaque-ref (string->uninterned-symbol "hello") (opaque 'hello "hi") #f) #f)
+(check (opaque-ref 'hello (opaque (string->uninterned-symbol "hello") "hi") #f) #f)
+(check (opaque-ref (opaque 'hello "hi") 'hello #f) #f)
+(check (opaque-ref 10 10 #f) #f)
+(check (opaque-ref 10 10 'no) 'no)

@@ -1,0 +1,138 @@
+#lang zuo
+
+(require "harness.zuo")
+
+(alert "pairs")
+
+(check (null? '()))
+(check (null? 10) #f)
+(check (null? '(1)) #f)
+
+(check (pair? '()) #f)
+(check (pair? 10) #f)
+(check (pair? '(1)))
+
+(check (list? '()))
+(check (list? 10) #f)
+(check (list? '(1)))
+(check (list? '(1 2 3 4 5 6 7)))
+(check (list? '(1 . 2)) #f)
+(check (list? '(1 2 3 4 5 6 . 7)) #f)
+
+(check (cons 1 2) '(1 . 2))
+
+(check (car '(1 2)) 1)
+(check (car '(1 . 2)) 1)
+(check-arg-fail (car '()) "not a pair")
+(check-arg-fail (car 'apple) "not a pair")
+
+(check (cdr '(1 . 2)) 2)
+(check (cdr '(1 2)) '(2))
+(check-arg-fail (cdr '()) "not a pair")
+(check-arg-fail (cdr 'apple) "not a pair")
+
+(check (list) '())
+(check (list 1 2 3) '(1 2 3))
+
+(check (list* 1) 1)
+(check (list* 1 2 3) '(1 2 . 3))
+(check-fail (list*) arity)
+
+(check (append) '())
+(check (append 1) 1)
+(check (append '(1 2)) '(1 2))
+(check (append '(1 2) 3) '(1 2 . 3))
+(check (append '(1 2) '(3 4)) '(1 2 3 4))
+(check (append '(1 2) '(3 4) 5) '(1 2 3 4 . 5))
+
+(check (reverse '()) '())
+(check (reverse '(1 2 3)) '(3 2 1))
+(check-arg-fail (reverse 1) "not a list")
+(check-arg-fail (reverse '(1 . 2)) "not a list")
+
+(check (list-ref '(1) 0) 1)
+(check (list-ref '(1 . 2) 0) 1)
+(check (list-ref '(1 2 3 . 4) 2) 3)
+(check-arg-fail (list-ref '(1 . 2) 1) "encountered a non-pair")
+
+(check (list-set '(1) 0 'x) '(x))
+(check (list-set '(1 . 2) 0 'x) '(x . 2))
+(check (list-set '(1 2 3 . 4) 2 'x) '(1 2 x . 4))
+(check-arg-fail (list-set '(1 . 2) 1 'x) "encountered a non-pair")
+
+(check (list-tail '() 0) '())
+(check (list-tail 1 0) 1)
+(check (list-tail '(1 . 2) 1) 2)
+(check (list-tail '(1 2 3 . 4) 2) '(3 . 4))
+(check-arg-fail (list-tail '(1 . 2) 2) "encountered a non-pair")
+
+(check (caar '((1) (2))) 1)
+(check-arg-fail (caar 1) "not a valid argument")
+(check-arg-fail (caar '(1)) "not a valid argument")
+
+(check (cadr '((1 2) (3 4))) '(3 4))
+(check-arg-fail (cadr 1) "not a valid argument")
+(check-arg-fail (cadr '(1)) "not a valid argument")
+
+(check (cdar '((1 2) (3 4))) '(2))
+(check-arg-fail (cdar 1) "not a valid argument")
+(check-arg-fail (cdar '(1 . 2)) "not a valid argument")
+
+(check (cddr '((1 2) (3 4) (5 6))) '((5 6)))
+(check-arg-fail (cddr 1) "not a valid argument")
+(check-arg-fail (cddr '(1 . 2)) "not a valid argument")
+
+(check (map (lambda (x) (+ x 1)) '(0 1 2)) '(1 2 3))
+(check (map (lambda (x y) (+ x y)) '(1 2 3) '(-10 -20 -30)) '(-9 -18 -27))
+(check-arg-fail (map 1 '()) "not a procedure")
+(check-arg-fail (map (lambda (a) a) 1) "not a list")
+(check-arg-fail (map (lambda (a) a) '(1) 1) "not a list")
+(check-arg-fail (map (lambda (a b) a) '(1) '(1 2)) "lists have different lengths")
+
+(check (for-each (lambda (x) x) '(1 2 3)) (void))
+(check-output (for-each alert '(1 2 3)) "1\n2\n3\n")
+(check-arg-fail (for-each (lambda (a) a) 1) "not a list")
+(check-arg-fail (for-each 9 '(1 2)) "not a procedure")
+
+(check (foldl (lambda (x a) (+ a x)) 7 '(0 1 2)) 10)
+(check-arg-fail (foldl (lambda (x a) (+ a x)) 7 7) "not a list")
+(check-arg-fail (foldl 10 0 '(1)) "not a procedure")
+
+(check (andmap integer? '(1 2 3)))
+(check (andmap integer? '()))
+(check (andmap (lambda (x) (< x 10)) '(1 2 3)))
+(check (andmap (lambda (x) (< x 3)) '(1 2 3)) #f)
+(check (andmap (lambda (x) (< x 3)) '(1 2 3 "oops")) #f)
+(check-arg-fail (andmap 10 '(1)) "not a procedure")
+(check-arg-fail (andmap (lambda (x) (< x 3)) '(1 2 3 . "oops")) "not a list")
+
+(check (ormap integer? '(1 2 3)))
+(check (ormap string? '(1 2 3)) #f)
+(check (ormap string? '("a" 2 3)) #t)
+(check (ormap (lambda (x) (< x 10)) '(1 "oops")))
+(check-arg-fail (ormap 10 '(1)) "not a procedure")
+(check-arg-fail (ormap (lambda (x) (< x 3)) '(1 2 3 . "oops")) "not a list")
+
+(check (member "x" '()) #f)
+(check (member "x" '("x" y z)) '("x" y z))
+(check (member "x" '(x "x" y z)) '("x" y z))
+(check-arg-fail (member "x" "y") "not a list")
+
+(check (assoc "x" '()) #f)
+(check (assoc "x" '(("x" . x) y z)) '("x" . x))
+(check (assoc "x" '((x . x) ("x" . x) y z)) '("x" . x))
+(check-arg-fail (assoc "x" "y") "not a list")
+(check-arg-fail (assoc "y" '((x . x) ("x" . x) y z)) "non-pair found in list")
+
+(check (filter (lambda (x) (> x 7)) '()) '())
+(check (filter (lambda (x) (> x 7)) '(1 11 2 12 3 13 4)) '(11 12 13))
+(check-arg-fail (filter "x" '()) "not a procedure")
+(check-arg-fail (filter (lambda (x) #t) "y") "not a list")
+
+(check (sort '() <) '())
+(check (sort '(1 2 3 4) <) '(1 2 3 4))
+(check (sort '(3 4 2 1) <) '(1 2 3 4))
+(check (sort '("z" "d" "a" "m" "p" "q" "w" "f" "b") string<?)
+       '("a" "b" "d" "f" "m" "p" "q" "w" "z"))
+(check-arg-fail (sort "x" <) "not a list")
+(check-arg-fail (sort '() "x") "not a procedure")

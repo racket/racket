@@ -1,0 +1,26 @@
+#lang zuo
+
+(provide compile-c)
+
+(define (compile-c exe-file c-file c-flags config compile-wait)
+  (define (lookup key) (hash-ref config key ""))
+  (define exe-h (cleanable-file exe-file))
+  (define command (string-join
+                   (filter
+                    (lambda (s) (not (equal? s "")))
+                    (list (lookup 'CC)
+                          (string-join (map string->shell c-flags))
+                          (lookup 'CPPFLAGS)
+                          (lookup 'CFLAGS)
+                          (if (eq? 'windows (hash-ref (runtime-env) 'system-type)) "/Fe:" "-o")
+			  (string->shell exe-file)
+                          (string->shell c-file)
+                          (lookup 'LDFLAGS)
+                          (lookup 'LIBS)))))
+  (displayln command)
+  (define p (shell command))
+  (compile-wait (hash-ref p 'process))
+  (unless (= 0 (process-status (hash-ref p 'process)))
+    (error "error from C compiler"))
+  (cleanable-cancel exe-h))
+

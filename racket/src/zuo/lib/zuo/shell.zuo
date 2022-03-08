@@ -1,0 +1,37 @@
+#lang zuo/base
+(require "thread.zuo")
+
+(provide shell
+         shell/wait
+         build-shell)
+
+(define (shell command [options (hash)])
+  (unless (string? command) (arg-error 'shell "string" command))
+  (unless (hash? options) (arg-error 'shell "hash table" options))
+  (cond
+    [(eq? (hash-ref (runtime-env) 'system-type) 'unix)
+     (apply process (append '("/bin/sh" "-c") (list command options)))]
+    [else
+     (let ([cmd (build-path (hash-ref (runtime-env) 'sys-dir) "cmd.exe")])
+       (process cmd (~a cmd " /c \"" command "\"") (hash-set options 'exact? #t)))]))
+
+(define (shell/wait command [options (hash)] [what "shell command"])
+  (unless (string? command) (arg-error 'shell/wait "string" command))
+  (unless (hash? options) (arg-error 'shell/wait "hash table" options))
+  (unless (string? what) (arg-error 'shell/wait "string" what))
+  (unless (hash-ref options 'quiet? #f)
+    (displayln (let ([dir (hash-ref options 'dir #f)])
+                 (if dir
+                     (~a "cd " (string->shell dir) " && " command)
+                     command))))
+  (define p (shell command (hash-remove options 'quiet?)))
+  (thread-process-wait (hash-ref p 'process))
+  (unless (= 0 (process-status (hash-ref p 'process)))
+    (error (~a what " failed"))))
+
+(define (build-shell . strs)
+  (string-join (filter
+                (lambda (s)
+                  (unless (string? s) (arg-error 'build-shell "string" s))
+                  (not (equal? s "")))
+                strs)))

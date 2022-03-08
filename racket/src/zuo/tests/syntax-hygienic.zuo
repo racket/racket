@@ -1,0 +1,32 @@
+#lang zuo/hygienic
+
+(require "harness-hygienic.zuo")
+
+(alert "hygienic syntax")
+
+(check (identifier? (quote-syntax x)))
+(check (not (identifier? 'x)))
+(check (not (identifier? #f)))
+(check (not (identifier? (quote-syntax (x y)))))
+(check (not (identifier? '(x y))))
+(check (andmap identifier? (quote-syntax (x y))))
+
+(check (syntax-e (quote-syntax x)) 'x)
+(check-fail (syntax-e 'x) "not a syntax object")
+
+(check (syntax->datum 'x) 'x)
+(check (syntax->datum (quote-syntax x)) 'x)
+(check (syntax->datum (quote-syntax (x y))) '(x y))
+(check (syntax->datum '(1 #f)) '(1 #f))
+
+(check (not (symbol? (datum->syntax (quote-syntax x) 'y))))
+(check (syntax-e (datum->syntax (quote-syntax x) 'y)) 'y)
+(check-fail (datum->syntax 'x 'y) "not a syntax object")
+
+(check (bound-identifier=? (quote-syntax x) (quote-syntax x)))
+(check (not (bound-identifier=? (quote-syntax x) (quote-syntax y))))
+
+(check-fail (syntax-e #f) "not a syntax object")
+(check-fail (syntax-e '(x y)) "not a syntax object")
+(check-fail (bound-identifier=? '(x) 'x) "not a syntax object")
+(check-fail (bound-identifier=? 'x '(x)) "not a syntax object")
