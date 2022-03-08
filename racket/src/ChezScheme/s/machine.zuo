@@ -1,0 +1,83 @@
+#lang zuo
+
+(provide m->arch
+         arch->backend
+         get-machine-files
+         cp/ln)
+
+(define (m->arch m)
+  (let* ([uni (if (= (char "t") (string-ref m 0))
+                  (substring m 1)
+                  m)])
+    (ormap (lambda (arch)
+             (and (> (string-length uni) (string-length arch))
+                  (string=? (substring uni 0 (string-length arch)) arch)
+                  arch))
+           '("a6" "i3" "arm64" "arm32" "ppc32" "pb"))))
+
+(define (arch->backend arch)
+  (cond
+    [(string=? arch "a6") "x86_64"]
+    [(string=? arch "i3") "x86"]
+    [else arch]))
+
+;; Get or synthesize a "machine.def" file and supporting files,
+;; returns
+;;    (list (cons dep-name build) dep-input-name ...)
+(define (get-machine-files m arch)
+  (define threaded? (= (char "t") (string-ref m 0)))
+  (define uni (if threaded? (substring m 1) m))
+  (cond
+    [(string=? arch "pb")
+     (append (cond
+               [(string=? m "pb") (list (cons "pb.def" cp/ln)
+                                        "pbcommon64.def")]
+               [(string=? m "tpb") (list (cons "tpb.def" cp/ln)
+                                         "pbcommon64.def")]
+               [else (error "fixme")])
+             (list "pbcommon.def"
+                   "default.def"))]
+    [else
+     (define os (substring uni (string-length arch)))
+     (define m.def (~a m ".def"))
+     (define arch.def (~a arch ".def"))
+     (define os.def (~a os ".def"))
+     (define src (at-source m.def))
+     (cons (if (file-exists? src)
+               (cons m.def
+                     (lambda (dest token)
+                       (cp/ln src dest)))
+               (let ([src (if threaded? "tunix.def" "unix.def")])
+                 (cons src
+                       (lambda (dest token)
+                         (fill-template (at-source src) dest
+                                        (hash 'M m 'March arch))))))
+           (append
+            (list "default.def"
+                  arch.def)
+            (if (file-exists? (at-source os.def))
+                (list os.def)
+                '())))]))
+
+(define (fill-template src dest vars)
+  (define s (file->string src))
+  (define new-s (let loop ([i 0] [start 0])
+                  (cond
+                    [(= i (string-length s)) (substring s start i)]
+                    [(= (char "$") (string-ref s i))
+                     (let ([var (substring s (+ i 2)
+                                           (let loop ([i (+ i 2)])
+                                             (if (= (char ")") (string-ref s i))
+                                                 i
+                                                 (loop (+ i 1)))))])
+                       (~a (substring s start i)
+                           (hash-ref vars (string->symbol var))
+                           (let ([i (+ i 3 (string-length var))])
+                             (loop i i))))]
+                    [else (loop (+ i 1) start)])))
+  (display-to-file new-s dest :truncate))
+
+(define (cp/ln src dest)
+  (if (eq? 'windows (hash-ref (runtime-env) 'system-type))
+      (cp src dest)
+      (ln (find-relative-path (path-only dest) src) dest)))

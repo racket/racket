@@ -1,0 +1,195 @@
+#lang zuo
+(require "lib.zuo")
+
+(define (targets at-dir)
+  (define config (config-file->hash (at-dir "../Makefile")))
+  (define (lookup key) (hash-ref config key #f))
+
+  (define m (hash-ref config 'm))
+
+  (define (at-mach file)
+    (at-dir (build-path "../boot" m file)))
+  
+  ;; sources for "kernel.o":
+  (define kernel-srcs
+    (map at-source
+         (list "statics.c" "segment.c" "alloc.c" "symbol.c" "intern.c"
+               "gcwrapper.c" "gc-011.c" "gc-par.c" "gc-ocd.c" "gc-oce.c"
+               "number.c" "schsig.c" "io.c" "new-io.c" "print.c" "fasl.c" "vfasl.c"
+               "stats.c" "foreign.c" "prim.c" "prim5.c" "flushcache.c"
+               "schlib.c" "thread.c" "expeditor.c" "scheme.c" "compress-io.c"
+               "random.c" "ffi.c"
+               (~a (hash-ref config 'mdarchsrc) ".c"))))
+
+  ;; every kernel object depends on these:
+  (define kernel-hdrs
+    (map input-file-target
+         (append
+          (map at-source
+               (list "system.h" "types.h" "version.h" "globals.h" "externs.h" "segment.h"
+                     "atomic.h" "thread.h" "sort.h" "compress-io.h"
+                     "nocurses.h" "popcount.h"))
+          (map at-dir
+               (list "config.h"))
+          (map at-mach
+               (list "equates.h"
+                     "scheme.h")))))
+
+  (define main-srcs
+    (map at-source
+         '("main.c")))
+
+  (define main-hdrs
+    (list (at-mach "scheme.h")
+          (at-dir "config.h")))
+
+  (define gc-wrap (list (at-source "gc.c")))
+  
+  (define extra-dependencies
+    `(("scheme.c" ,(at-source "itest.c"))
+      ("gc-011.c" ,@gc-wrap ,(at-mach "gc-ocd.inc"))
+      ("gc-par.c" ,@gc-wrap ,(at-mach "gc-par.inc"))
+      ("gc-ocd.c" ,@gc-wrap ,(at-mach "gc-ocd.inc"))
+      ("gc-oce.c" ,@gc-wrap ,(at-mach "gc-oce.inc"))
+      ("gcwrapper.c" ,(at-mach "heapcheck.inc"))
+      ("pb.c" ,(at-source "pb.h"))))
+
+  (define (compile-target .c deps)
+    (target
+     (at-dir (.c->.o (file-name-from-path .c)))
+     (lambda (.o token)
+       (rule (cons .c deps)
+             (lambda ()
+               (c-compile .o .c
+                          (let* ([config (config-define config (lookup 'Cpu))]
+                                 [config (config-merge config 'CPPFLAGS (or (lookup 'mdinclude) ""))])
+                            (config-include config
+                                            (at-dir (build-path "../boot" m))
+                                            (at-dir ".")
+                                            (at-dir "../lz4/lib")      ; FIXME
+                                            (at-dir "../zlib"))))))))) ; FIXME
+
+  (define (get-kernel-objs lib-deps)
+    (map (lambda (.c)
+           (compile-target
+            .c
+            (append kernel-hdrs
+                    lib-deps
+                    (let ([a (assoc (file-name-from-path .c)
+                                    extra-dependencies)])
+                      (if a (cdr a) '())))))
+         kernel-srcs))
+
+  (define main-objs
+    (map (lambda (.c)
+           (compile-target .c main-hdrs))
+         main-srcs))
+
+  (define (config-to-env)
+    (foldl (lambda (key env)
+             (replace (cons (~a key) (hash-ref config key))
+                      env))
+           (hash-ref (runtime-env) 'env)
+           '(CC CFLAGS CPPFLAGS AR ARFLAGS RANLIB LDFLAGS)))
+
+  (define (add-to-env vars env)
+    (foldl (lambda (var=val env)
+             (replace (glob-split "=*" var=val)
+                      env))
+           env
+           (shell->strings vars)))
+
+  (define zlib-lib
+    (target (at-dir "../zlib/libz.a")
+            (lambda (path token)
+              (rule (source-tree (at-source "../zlib"))
+                    (lambda ()
+                      (cp* (at-source "../zlib") (at-dir "../zlib"))
+                      (define zlib-dir (at-dir "../zlib"))
+                      (define configure-command
+                        (build-shell "./configure" (hash-ref config 'zlibConfigureFlags)))
+                      (shell/wait configure-command
+                                  (hash 'dir zlib-dir
+                                        'env (add-to-env
+                                              (hash-ref config 'zlibConfigureEnv)
+                                              (config-to-env)))
+                                  "libz configure")
+                      (define make-command (hash-ref config 'MAKE "make"))
+                      (shell/wait make-command
+                                  (hash 'dir zlib-dir)
+                                  "zlib make"))))))
+
+  (define lz4-lib
+    (target (at-dir "../lz4/lib/liblz4.a")
+            (lambda (path token)
+              (rule (map at-source
+                         ;; LZ4 is simple enough that we can list all
+                         ;; the files that matter:
+                         (list "../lz4/lib/lz4.h" "../lz4/lib/lz4frame.h"
+                               "../lz4/lib/lz4.c" "../lz4/lib/lz4frame.c"
+                               "../lz4/lib/lz4hc.c" "../lz4/lib/xxhash.c"))
+                    (lambda ()
+                      (cp* (at-source "../lz4") (at-dir "../lz4"))
+                      (define command (build-shell (hash-ref config 'MAKE "make") "liblz4.a"))
+                      (define lz4-lib-dir (at-dir "../lz4/lib"))
+                      (shell/wait command
+                                  (hash 'dir lz4-lib-dir
+                                        'env (config-to-env))
+                                  "lz4 make"))))))
+
+  (define kernel-objs (get-kernel-objs
+                       ;; libs as a proxy for the associated header files:
+                       (list zlib-lib lz4-lib)))
+
+  (define kernel-lib
+    (target (at-dir (build-path "../boot" m "libkernel.a"))
+            (lambda (path token)
+              (rule kernel-objs
+                    (lambda ()
+                      (c-ar path
+                            (map target-path kernel-objs)
+                            config))))))
+
+  (define kernel.o
+    (target (at-dir (build-path "../boot" m "kernel.o"))
+            (lambda (path token)
+              (rule (append (list zlib-lib lz4-lib) kernel-objs)
+                    (lambda ()
+                      (mkdir* (path-only path))
+                      (shell/wait (build-shell (lookup 'LD)
+                                               "-r"
+                                               "-X"
+                                               (or (lookup 'mdldflags) "")
+                                               "-o" (string->shell path)
+                                               (string-join (map target-shell kernel-objs))
+                                               (target-shell zlib-lib)
+                                               (target-shell lz4-lib))))))))
+
+  (define exe
+    (target (at-dir (build-path "../bin" m "bin" "scheme"))
+            (lambda (path token)
+              (rule (append kernel-objs main-objs)
+                    (lambda ()
+                      (mkdir* (path-only path))
+                      (c-link path
+                              (map target-path
+                                   (append main-objs
+                                           kernel-objs
+                                           (list zlib-lib
+                                                 lz4-lib)))
+                              config))))))
+
+  (define run
+    (target 'run
+            (lambda (token)
+              (phony-rule '()
+                          (lambda ()
+                            (define p (process (target-path exe)
+                                               (hash 'env (cons
+                                                           (cons "SCHEMEHEAPDIRS" (at-dir (build-path "../boot/" m)))
+                                                           (hash-ref (runtime-env) 'env)))))
+                            (process-wait (hash-ref p 'process)))))))
+
+  (list exe kernel-lib kernel.o run))
+
+(provide-targets targets)
