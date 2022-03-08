@@ -1,9 +1,10 @@
 #lang zuo
 (require "lib.zuo")
 
-(define (targets at-dir)
+(define (targets at-dir [vars (hash)])
   (define config (config-file->hash (at-dir "../Makefile")))
-  (define (lookup key) (hash-ref config key #f))
+  (define (lookup key) (or (hash-ref vars key #f)
+                           (hash-ref config key #f)))
 
   (define m (hash-ref config 'm))
 
@@ -168,27 +169,30 @@
   (define exe
     (target (at-dir (build-path "../bin" m "bin" "scheme"))
             (lambda (path token)
-              (rule (append kernel-objs main-objs)
+              (rule (cons kernel-lib main-objs)
                     (lambda ()
                       (mkdir* (path-only path))
                       (c-link path
                               (map target-path
                                    (append main-objs
-                                           kernel-objs
-                                           (list zlib-lib
+                                           (list kernel-lib
+                                                 zlib-lib
                                                  lz4-lib)))
                               config))))))
 
   (define run
     (target 'run
-            (lambda (token)
+            (lambda (token . args)
               (phony-rule '()
                           (lambda ()
-                            (define p (process (target-path exe)
-                                               (hash 'env (cons
-                                                           (cons "SCHEMEHEAPDIRS" (at-dir (build-path "../boot/" m)))
-                                                           (hash-ref (runtime-env) 'env)))))
-                            (process-wait (hash-ref p 'process)))))))
+                            (define p (process/args (target-path exe)
+                                                    args
+                                                    (hash 'exec? (eq? 'unix (system-type))
+                                                          'env (cons
+                                                                (cons "SCHEMEHEAPDIRS" (at-dir (build-path "../boot/" m)))
+                                                                (hash-ref (runtime-env) 'env)))))
+                            (process-wait (hash-ref p 'process)))))
+            (hash 'command? #t)))
 
   (list exe kernel-lib kernel.o run))
 

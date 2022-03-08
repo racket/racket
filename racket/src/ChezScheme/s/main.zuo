@@ -66,15 +66,30 @@
    ;; pps determines whether pass timings are printed
    'pps #f))
 
-(define (targets at-dir [options default-options])
+(define (targets-at at-dir [vars (hash)])
   (define config (config-file->hash (at-dir "../Makefile")))
-  (define (lookup key) (hash-ref config key #f))
-  (define (opt k) (or (hash-ref options k #f)
-                      (hash-ref default-options k #f)))
+  (define (lookup key) (or (hash-ref vars key #f)
+                           (hash-ref config key #f)))
+  (define (opt key) (let ([v (hash-ref default-options key)]
+                          [cv (lookup key)])
+                      (if cv
+                          (cond
+                            [(boolean? v)
+                             (cond
+                               [(equal? cv "t") #t]
+                               [(equal? cv "f") #f]
+                               [else (error (~a "value for " key " is not \"t\" or \"f\"")
+                                            cv)])]
+                            [(integer? v)
+                             (or (string->integer cv)
+                                 (error (~a "value for " key " is not an integer")
+                                        cv))]
+                            [else (string->symbol cv)])
+                          v)))
 
-  (define m (hash-ref config 'm))
-  (define host-m (hash-ref options 'host-m m))
-  (define host-workarea (hash-ref options 'host-workarea (at-dir "..")))
+  (define m (lookup 'm))
+  (define host-m (or (lookup 'host-m) m))
+  (define host-workarea (or (lookup 'host-workarea) (at-dir "..")))
   (define arch (m->arch m))
   (define arch.ss (~a (arch->backend arch) ".ss"))
 
@@ -136,7 +151,7 @@
     (map at-source compiler-names))
 
   (define compiler-objs
-    (map (lambda (s) (path-replace-suffix s (~a "." m)))
+    (map (lambda (s) (at-dir (path-replace-suffix s (~a "." m))))
          compiler-names))
 
   (define type-src-files
@@ -186,17 +201,22 @@
       (lambda (p)
         (find-relative-path will-be-dir p))))
 
-  (define (run-scheme/status what script inputs dir)
-    (define scheme.exe (at-dir (build-path host-workarea "bin" host-m "scheme")))
+  (define (run-scheme/status what script inputs)
+    (define scheme.exe (build-path host-workarea "bin" host-m "scheme"))
     (displayln (~a "running " scheme.exe " to build " what))
     (define env (cons
-                 (cons "SCHEMEHEAPDIRS" (build-path host-workarea "boot" host-m))
+                 (cons "SCHEMEHEAPDIRS" (path->complete-path
+                                         (build-path host-workarea "boot" host-m)))
                  (hash-ref (runtime-env) 'env)))
     (define p (apply process
                      (cons (at-cwd scheme.exe)
                            (append (list "-q")
-                                   inputs
-                                   (list (hash 'dir dir
+                                   (map (lambda (s)
+                                          (if (= (char "-") (string-ref s 0))
+                                              s
+                                              (at-cwd s)))
+                                        inputs)
+                                   (list (hash 'dir (at-dir ".")
                                                'stdin 'pipe
                                                'env env))))))
     (define to (hash-ref p 'stdin))
@@ -206,7 +226,7 @@
     (process-status (hash-ref p 'process)))
 
   (define (run-scheme what script inputs)
-    (unless (= 0 (run-scheme/status what script inputs (at-dir ".")))
+    (unless (= 0 (run-scheme/status what script inputs))
       (error "failed")))
 
   (define (cp0+gc-control)
@@ -329,7 +349,7 @@
     (mkdir* (path-only tmp))
     (run-scheme dest
                 `((reset-handler abort)
-                  ,@(make-script tmp))
+                  ,@(make-script (at-cwd tmp)))
                 (append macro-objs mk.so*))
     (if (and (file-exists? dest)
              (equal? (file->string dest)
@@ -356,11 +376,10 @@
                               `((reset-handler abort)
                                 (base-exception-handler (lambda (c) (fresh-line) (display-condition c) (newline) (reset)))
                                 (begin
-                                  (,(string->symbol "#%$fasl-file-equal?") ,sbb ,petite.boot)
-                                  (,(string->symbol "#%$fasl-file-equal?") ,scb ,scheme.boot)
+                                  (,(string->symbol "#%$fasl-file-equal?") ,(at-cwd sbb) ,(at-cwd petite.boot))
+                                  (,(string->symbol "#%$fasl-file-equal?") ,(at-cwd scb) ,(at-cwd scheme.boot))
                                   (void)))
-                              `("-B" ,sbb)
-                              "."))
+                              `("-B" ,sbb)))
          (mv sbb petite.boot)
          (mv scb scheme.boot)
          (cond
@@ -537,4 +556,4 @@
 
   the-targets)
 
-(provide-targets targets)
+(provide-targets targets-at)
