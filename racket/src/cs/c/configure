@@ -622,60 +622,41 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
-INSTALL_NAME_TOOL
+RKTIO_CONFIGURE_ARGS
 PLT_CS_SLSP_SUFFIX
 INSTALL_LIBS_ENABLE
 INSTALL_SETUP_RACKET_FLAGS
 INSTALL_SETUP_FLAGS
-RUN_RACKET
 PBCHUNK_MODE
-CS_HOST_WORKAREA_PREFIX
-CROSS_COMPILE_TARGET_KIND
-COMP_SUBDIR_CONFIGURE_ARGS
-ENABLE_OR_DISABLE_WPO
+SCHEME_LIBFFI
+DISABLE_WPO
 CS_COMPILED_SUBDIR
 CS_INSTALLED
+CROSS_COMPILE_TARGET_KIND
 FRAMEWORK_REL_INSTALL
-FRAMEWORK_PREFIX
 FRAMEWORK_INSTALL_DIR
-CONFIG_MAIN_SCHEME_MODE
-SCHEME_CROSS_CONFIG_ARGS
-SCHEME_CONFIG_ARGS
-MAKE_BUILD_SCHEME
 BOOT_COMPRESS_COMP
 COMPRESS_COMP
 CONFIGURE_RACKET_SO_COMPILE
-LZ4_LIB_UNPACK
+DISABLE_CURSES
+DISABLE_ICONV
 LZ4_LIB
-LZ4_LIB_DEP
-Z_LIB_UNPACK
 Z_LIB
-Z_LIB_DEP
-NOT_MINGW
 MINGW
-NOT_OSX
 OSX
 SETUP_BOOT_MODE
-USE_SCHEME_MODE
-MAKE_SCHEME_SCHEME
-MAKE_SCHEME_MODE
-TT_CROSS_MODE
-T_CROSS_MODE
 CROSS_MODE
-DIFF_MACH
 KERNEL_TARGET_MACH
 TARGET_MACH
 MACH
 SCHEME_DIR
+SCHEME
 BOOTFILE_RACKET
 RACKET
 RKTL_POST
 RKTL_PRE
-INCLUDEDEP
 POST_LINKER
 RKTLINKER
-RESTORE_SIGNATURE
-STRIP_SIGNATURE
 STRIP_LIB_DEBUG
 STRIP_DEBUG
 ICP_LIB
@@ -686,7 +667,6 @@ ARFLAGS
 AR
 LINK_DYNAMIC
 LD
-upsrcdir
 EGREP
 GREP
 CPP
@@ -819,9 +799,12 @@ enable_libs
 enable_noopt
 enable_ubsan
 enable_asan
-enable_bcdefault
-enable_csonly
 enable_csdefault
+enable_csonly
+enable_cs
+enable_bcdefault
+enable_bconly
+enable_bc
 enable_crossany
 enable_libz
 enable_liblz4
@@ -1480,10 +1463,12 @@ Optional Features:
   --enable-strip          strip debug on install (usually enabled by default)
   --enable-ubsan          compile with -fsanitize=undefined
   --enable-asan           compile with -fsanitize=address
-  --enable-bcdefault      install BC without suffix
-  --enable-bconly         BC default, and skip CS build
   --enable-csdefault      install CS without suffix
   --enable-csonly         CS default, and skip BC build
+  --enable-cs             CS enabled
+  --enable-bcdefault      install BC without suffix
+  --enable-bconly         BC default, and skip CS build
+  --enable-bc             BC enabled
   --enable-crossany       Record own cross target as machine-independent
   --enable-libz           use installed libz if available
   --enable-liblz4         use installed liblz4 if available
@@ -2771,16 +2756,6 @@ if test "${enable_asan+set}" = set; then :
 fi
 
 
-# Check whether --enable-bcdefault was given.
-if test "${enable_bcdefault+set}" = set; then :
-  enableval=$enable_bcdefault;
-fi
-
-# Check whether --enable-csonly was given.
-if test "${enable_csonly+set}" = set; then :
-  enableval=$enable_csonly;
-fi
-
 # Check whether --enable-csdefault was given.
 if test "${enable_csdefault+set}" = set; then :
   enableval=$enable_csdefault;
@@ -2789,6 +2764,26 @@ fi
 # Check whether --enable-csonly was given.
 if test "${enable_csonly+set}" = set; then :
   enableval=$enable_csonly;
+fi
+
+# Check whether --enable-cs was given.
+if test "${enable_cs+set}" = set; then :
+  enableval=$enable_cs;
+fi
+
+# Check whether --enable-bcdefault was given.
+if test "${enable_bcdefault+set}" = set; then :
+  enableval=$enable_bcdefault;
+fi
+
+# Check whether --enable-bconly was given.
+if test "${enable_bconly+set}" = set; then :
+  enableval=$enable_bconly;
+fi
+
+# Check whether --enable-bc was given.
+if test "${enable_bc+set}" = set; then :
+  enableval=$enable_bc;
 fi
 
 
@@ -3069,9 +3064,9 @@ fi
 
 show_explicitly_disabled "${enable_wpo}" "Agressive core optimization"
 if test "${enable_wpo}" = "no" ; then
-  ENABLE_OR_DISABLE_WPO="WHEN_WPO=no_ UNLESS_WPO="
+  DISABLE_WPO=t
 else
-  ENABLE_OR_DISABLE_WPO=""
+  DISABLE_WPO=f
 fi
 
 ############## Install targets ################
@@ -3274,35 +3269,28 @@ skip_curses_check=no
 use_flag_pthread=yes
 use_flag_posix_pthread=no
 
-INCLUDEDEP="#"
-OSX="not_osx"
-NOT_OSX=""
-MINGW="not_mingw"
-NOT_MINGW=""
+OSX="f"
+MINGW="f"
 CONFIGURE_RACKET_SO_COMPILE=""
 COMPRESS_COMP=""
 BOOT_COMPRESS_COMP=""
-POST_LINKER="echo"
+POST_LINKER=""
 
 FRAMEWORK_INSTALL_DIR='$(libpltdir)'
 FRAMEWORK_PREFIX='@executable_path/../lib/'
 
-RACKET='$(DEFAULT_RACKET)'
-BOOTFILE_RACKET='$(RACKET)'
-RUN_RACKET='$(RUN_THIS_RACKET)'
+RACKET=
+BOOTFILE_RACKET=
 SETUP_BOOT_MODE=--boot
 
 INSTALL_SETUP_FLAGS="--no-user"
 INSTALL_SETUP_RACKET_FLAGS=
 
-Z_LIB_DEP='$(OWN_Z_LIB)'
-Z_LIB='$(OWN_Z_LIB)'
-Z_LIB_UNPACK='$(AR) x $(OWN_Z_LIB)'
-LZ4_LIB_DEP='$(OWN_LZ4_LIB)'
-LZ4_LIB='$(OWN_LZ4_LIB)'
-LZ4_LIB_UNPACK='$(AR) x $(OWN_LZ4_LIB)'
+Z_LIB=''
+LZ4_LIB=''
 
-CS_HOST_WORKAREA_PREFIX=
+DISABLE_ICONV=no
+DISABLE_CURSES=no
 
 PLT_CS_SLSP_SUFFIX=
 
@@ -3314,6 +3302,7 @@ cs_auto_flags=--disable-auto-flags
 
 COPY_NEW_CFLAGS_TO_CPPFLAGS=no
 
+SCHEME_LIBFFI=no
 PBCHUNK_MODE=plain
 
 ###### Autoconfigure #######
@@ -4385,14 +4374,6 @@ fi
 
 WINDRES=windres
 
-
-if test "${enable_racket}" != "" ; then
-  INSTALL_NAME_TOOL='$(INSTALL_NAME_TOOL_VIA_RACKET)'
-else
-  INSTALL_NAME_TOOL=install_name_tool
-fi
-
-
 ############## platform tests ################
 
 # At first, `MACH` means the target that we're building for. In
@@ -4466,8 +4447,7 @@ case "$host_os" in
     use_flag_pthread=no
     MACH_OS=nt
     LIBS="${LIBS} -lshell32 -luser32 -lole32 -lrpcrt4 -luuid -lws2_32 -ladvapi32 -lwinmm"
-    MINGW=""
-    NOT_MINGW="mingw"
+    MINGW="t"
     compress_boot_files_by_default=yes
     if `which ${host}-windres > /dev/null` ; then
       WINDRES="${host}-windres"
@@ -4485,11 +4465,9 @@ case "$host_os" in
     LIBS="${LIBS} -framework CoreFoundation"
     LDFLAGS="${LDFLAGS} -Wl,-headerpad_max_install_names"
     if test "${enable_xonx}" = "no" ; then
-      INCLUDEDEP="-include"
-      OSX=""
-      NOT_OSX="osx"
+      OSX="t"
     else
-      CONFIGURE_RACKET_SO_COMPILE="env PLT_CS_MAKE_UNIX_STYLE_MACOS=y"
+      CONFIGURE_RACKET_SO_COMPILE="PLT_CS_MAKE_UNIX_STYLE_MACOS=y"
       CPPFLAGS="${CPPFLAGS} -DRACKET_XONX"
       strip_needs_dash_s=yes
     fi
@@ -4590,24 +4568,16 @@ case "$host_os" in
     if test "${enable_libfw}" = "yes" ; then
       FRAMEWORK_INSTALL_DIR=/Library/Frameworks
       FRAMEWORK_REL_INSTALL=no
-      FRAMEWORK_PREFIX=''
     elif test "${enable_userfw}" = "yes" ; then
       FRAMEWORK_INSTALL_DIR=~/Library/Frameworks
       FRAMEWORK_REL_INSTALL=no
-      FRAMEWORK_PREFIX=''
     else
       FRAMEWORK_INSTALL_DIR='${libpltdir}'
       FRAMEWORK_REL_INSTALL=yes
-      if test "${libpltdir_rel}" = "" ; then
-        FRAMEWORK_PREFIX='$(FRAMEWORK_ABS_PREFIX)'
-      else
-        FRAMEWORK_PREFIX='$(FRAMEWORK_REL_PREFIX)'
-      fi
     fi
 
     if test "${enable_mac64}" = "no"; then
       MACH_HOST_CPU="x86"
-      extra_scheme_config_args="--32"
     fi
 
     # -pthread is not needed and triggers a warning
@@ -4759,54 +4729,29 @@ else
   CROSS_MODE=""
 fi
 
-if test "${CROSS_MODE}" = "cross" ; then
-  T_CROSS_MODE="-cross"
-  TT_CROSS_MODE="--cross"
-  RUN_RACKET='$(RACKET)'
-else
-  T_CROSS_MODE=""
-  TT_CROSS_MODE=""
-fi
-
 # From this point on, `MACH` means the build machine, and
 # `TARGET_MACH` is the target that we're building for (which
 # is different in cross-build mode).
 
 ############## Racket and Chez Scheme ################
 
-case "$srcdir" in
-    /*)
-        upsrcdir=$srcdir
-        ;;
-    *)
-        upsrcdir=../$srcdir
-        ;;
-esac
-
-SCHEME_DIR=${srcdir}/../../ChezScheme
-MAKE_BUILD_SCHEME=checkout
-USE_SCHEME_MODE="_built"
-MAKE_SCHEME_MODE="${T_CROSS_MODE}"
+SCHEME_SRC_DIR=${srcdir}/../../ChezScheme
 
 if test "${enable_scheme}" != "" ; then
    if test -d "${enable_scheme}" ; then
      # Directory exists, so use it as a build directory
      echo "Using supplied Scheme path as a build directory"
-     CS_HOST_WORKAREA_PREFIX="${enable_scheme}/"
+     SCHEME_DIR="${enable_scheme}/ChezScheme"
    else
      # Directory does not exist, so assume it's an executable
      echo "Using supplied Scheme path as an executable"
-     MAKE_SCHEME_MODE="${T_CROSS_MODE}-via-scheme"
-     MAKE_SCHEME_SCHEME="${enable_scheme}"
-     USE_SCHEME_MODE="_existing"
+     SCHEME="${enable_scheme}"
    fi
 fi
 
 if test "${enable_racket}" != "" ; then
-  if test "${enable_racket}" = "auto" ; then
-    # See also "configure-parent.ac"
-    enable_racket="`pwd`/../../local/cs/c/racketcs"
-    CS_HOST_WORKAREA_PREFIX=../../local/cs/c/
+  if test "${enable_racket}" != "auto" ; then
+    SETUP_BOOT_MODE=--chain
   fi
   # In non-cross mode, we interpret `--enable-racket` to supply a
   # Racket used only for generating Chez Scheme boot files
@@ -4815,7 +4760,6 @@ if test "${enable_racket}" != "" ; then
   else
     BOOTFILE_RACKET="${enable_racket}"
   fi
-  SETUP_BOOT_MODE=--chain
 fi
 
 if test "${enable_compress}" != "no" ; then
@@ -4831,11 +4775,6 @@ elif test "${compress_boot_files_by_default}" = "yes" ; then
   if test "${enable_compressboot}" != "no" ; then
     BOOT_COMPRESS_COMP="--compress"
   fi
-fi
-
-DIFF_MACH=skip
-if test "${MACH}" != "${TARGET_MACH}" ; then
-  DIFF_MACH=
 fi
 
 ############## Strip tool ################
@@ -4985,34 +4924,11 @@ $as_echo "$set_strip_lib" >&6; }
   ICP_STRIP_FLAG=" -s"
 fi
 
-case "$host_os" in
-  darwin*)
-    if test "${enable_codesign}" = "yes" ; then
-      case "$host_cpu" in
-         aarch64)
-           STRIP_SIGNATURE="codesign --remove-signature"
-           RESTORE_SIGNATURE="codesign -s - --entitlements"
-         ;;
-         *)
-          # Check whether `codesign` can remove signatures
-          touch sig-test-file
-          if `codesign --remove-signature sig-test-file > /dev/null 2>&1` ; then
-             STRIP_SIGNATURE="codesign --remove-signature"
-          fi
-          rm sig-test-file
-          ;;
-      esac
-   else
-     STRIP_SIGNATURE='$(STRIP_SIGNATURE_VIA_RACKET)'
-     RESTORE_SIGNATURE='$(RESTORE_SIGNATURE_VIA_RACKET)'
-   fi
-esac
-
 
 ############## natipkg ################
 
 if test "${enable_natipkg}" = "yes" ; then
-  CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} env PLT_CS_SLSP_SUFFIX=-natipkg"
+  CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_SLSP_SUFFIX=-natipkg"
   PLT_CS_SLSP_SUFFIX="-natipkg"
 fi
 
@@ -5041,20 +4957,6 @@ if test "${enable_asan}" = "yes" ; then
    LDFLAGS="$LDFLAGS $ASAN"
 fi
 
-
-############## Makefile includes ################
-
-if test "$INCLUDEDEP" = "#" ; then
-  is_gmake=`make -v no-such-target-we-hope 2>&1 | grep "GNU Make"`
-  if test "$is_gmake" != "" ; then
-     INCLUDEDEP="-include"
-  fi
-fi
-
-if test "$INCLUDEDEP" != "#" ; then
-  RKTL_PRE="compiled/"
-  RKTL_POST=".rktl"
-fi
 
 ############## C flags ################
 
@@ -5544,7 +5446,7 @@ if test "${enable_iconv}" = "no" ; then
 
 $as_echo "#define RKTIO_NO_ICONV 1" >>confdefs.h
 
-  extra_scheme_config_args="${extra_scheme_config_args} --disable-iconv"
+  DISABLE_ICONV=yes
   add_iconv_lib=
 fi
 
@@ -5751,9 +5653,9 @@ fi
 
 if test "${enable_curses}" = "no" ; then
   add_curses_lib=
-  disable_curses_arg=--disable-curses
+  DISABLE_CURSES=yes
 else
-  disable_curses_arg=
+  DISABLE_CURSES=no
 fi
 
 # when `add_curses_lib` is set, then `skip_curses_check`
@@ -5781,14 +5683,14 @@ fi
 ############## zlib and LZ4 ################
 
 if test "${enable_libz}" != "no" ; then
-  if test ! -d "$SCHEME_DIR/zlib" ; then
+  if test ! -d "$SCHEME_SRC_DIR/zlib" ; then
     echo "No libz in Scheme directory, so trying installed"
     enable_libz=yes
   fi
 fi
 
 if test "${enable_liblz4}" != "no" ; then
-  if test ! -d "$SCHEME_DIR/lz4" ; then
+  if test ! -d "$SCHEME_SRC_DIR/lz4" ; then
     echo "No lz4 in Scheme directory, so trying installed"
     enable_liblz4=yes
   fi
@@ -5825,10 +5727,7 @@ $as_echo "$have_zlib" >&6; }
     LIBS="${OLD_LIBS}"
     echo "Building own libz"
   else
-    Z_LIB_DEP=""
     Z_LIB="-lz"
-    Z_LIB_UNPACK='$(NOOP)'
-    extra_scheme_config_args="${extra_scheme_config_args} ZLIB=-lz"
   fi
 fi
 
@@ -5863,10 +5762,7 @@ $as_echo "$have_lz4" >&6; }
     LIBS="${OLD_LIBS}"
     echo "Building own liblz4"
   else
-    LZ4_LIB_DEP=""
     LZ4_LIB="-llz4"
-    LZ4_LIB_UNPACK='$(NOOP)'
-    extra_scheme_config_args="${extra_scheme_config_args} LZ4=-llz4"
   fi
 fi
 
@@ -5878,20 +5774,15 @@ KERNEL_TARGET_MACH="${TARGET_MACH}"
 if test "${enable_pb}" = "yes" ; then
   enable_libffi=yes
   enable_foreign=yes
-  CONFIG_MAIN_SCHEME_MODE="--pbarch --enable-libffi"
+  SCHEME_LIBFFI=yes
   TARGET_MACH=${pb_machine_name}
   if test "${CROSS_MODE}" != "cross" ; then
     MACH=${pb_machine_name}
-  fi
-  if test "${CONFIGURE_RACKET_SO_COMPILE}" = "" ; then
-    CONFIGURE_RACKET_SO_COMPILE="env"
   fi
   CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_MACHINE_TYPE=${KERNEL_TARGET_MACH}"
   if test "${enable_pbchunk}" != "no" ; then
     PBCHUNK_MODE=pbchunk
   fi
-else
-  CONFIG_MAIN_SCHEME_MODE=""
 fi
 
 libffi_unavailable_message="did not find working configuration"
@@ -6087,18 +5978,18 @@ if test "${enable_shared}" = "yes" ; then
   LIBSFX=la
   ICP_LIB="${LIBTOOLPROG} --mode=install install${ICP_STRIP_FLAG}"
 
-  CONFIGURE_RACKET_SO_COMPILE="env PLT_CS_MAKE_LINK_SHARED=y"
+  CONFIGURE_RACKET_SO_COMPILE="PLT_CS_MAKE_LINK_SHARED=y"
 else
   ICP=cp
   LTO="o"
   LTA="a"
-  RKTLINKER='$(CC)'
+  RKTLINKER="${CC}"
   STATIC_AR="$AR"
   LIBSFX=so
   ICP_LIB=cp
   if test "${make_darwin_dylib}" = "yes" ; then
      LIBSFX="dylib"
-     AR='$(RKTLINKER) --shared -o'
+     AR="${RKTLINKER} --shared -o"
      ARFLAGS=""
      LIBS="${LIBS} -framework CoreFoundation"
      ICP_LIB=cp
@@ -6129,8 +6020,7 @@ do
 done
 
 
-SCHEME_CONFIG_ARGS="--machine=${KERNEL_MACH} --disable-x11 ${disable_curses_arg} ${cs_auto_flags} ${extra_scheme_config_args}"
-SCHEME_CROSS_CONFIG_ARGS="--machine=${KERNEL_TARGET_MACH} --disable-x11 ${cs_auto_flags} ${disable_curses_arg} ${extra_scheme_config_args}"
+RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
 
 
 
@@ -6184,27 +6074,7 @@ SCHEME_CROSS_CONFIG_ARGS="--machine=${KERNEL_TARGET_MACH} --disable-x11 ${cs_aut
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-makefiles="Makefile"
+makefiles="Mf-config"
 
 ac_config_files="$ac_config_files $makefiles"
 
@@ -7481,7 +7351,4 @@ $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
 
 
-mkdir -p rktio
-abssrcdir=`(cd ${srcdir}; pwd)`
-echo "=== configuring in rktio (${abssrcdir}/../../rktio)"
-cd rktio; eval "${abssrcdir}/../../rktio/configure ${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
+cp ${srcdir}/buildmain.zuo main.zuo

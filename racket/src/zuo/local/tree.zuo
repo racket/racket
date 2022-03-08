@@ -1,0 +1,78 @@
+#lang zuo
+
+;; This module implements a simple version of the `tree` program,
+;; which shows the content of a directory in tree form.
+
+;; Another script could use this `tree` function...
+(provide tree)
+
+;; ... but if this script is the main one passed to Zuo,
+;; then the `main` submodule is run, which parses command-line
+;; arguments and call `tree`.
+(module+ main
+  ;; Imitates Racket's `command-line` form, but we have to explicitly
+  ;; thread through `accum`, because there's no state
+  (command-line
+   :init (hash) ; initial accumulator (but `(hash)` is the default, anyway)
+   :once-each
+   ;; Each flag clause starts with the accumulator id
+   [accum ("-a") "Include names that start with `.`"
+          (hash-set accum 'all? #t)]
+   [accum ("-h") "Show file sizes human-readable"
+          (hash-set accum 'h-size? #t)]
+   :args ([dir "."])
+   (lambda (accum) ; args handler as procedure to receive the accumulator
+     (if (directory-exists? dir)
+         (tree dir
+               (hash-ref accum 'all? #f)
+               (hash-ref accum 'h-size? #f))
+         (error (~a (hash-ref (runtime-env) 'script)
+                    ": no such directory: "
+                    dir))))))
+
+;; Recur using `ls` to get a directory's content
+(define (tree dir show-all? show-size?)
+  (displayln dir)
+  (let tree ([dir dir] [depth 0])
+    (define elems (sort (ls dir) string<?))
+    (let in-dir ([elems (if show-all? elems (filter not-dot? elems))])
+      (unless (null? elems)
+        (define elem (car elems))
+        (define elem-path (build-path dir elem))
+        (define s (stat elem-path))
+
+        (let loop ([depth depth])
+          (unless (= depth 0)
+            (display "│  ")
+            (loop (- depth 1))))
+        (if (null? (cdr elems))
+            (display "└─ ")
+            (display "├─ "))
+
+        (when show-size?
+          (display (~a "[" (human-readable (hash-ref s 'size)) "] ")))
+        (displayln elem)
+
+        (when (eq? (hash-ref s 'type) 'dir)
+          (tree elem-path (+ depth 1)))
+        (in-dir (cdr elems))))))
+
+(define not-dot?
+  (let ([dot? (glob->matcher ".*")])
+    (lambda (s) (not (dot? s)))))
+
+;; Arithmetic is not Zuo's strong suit, since it supports only
+;; 64-bit signed integers
+(define (human-readable n)
+  (define (decimal n)
+    (define d (quotient 1024 10))
+    (define dec (quotient (+ (modulo n 1024) (quotient d 2)) d))
+    (~a (quotient n (* 1024)) "." dec))
+  (define s
+    (cond
+      [(< n 1024) (~a n)]
+      [(< n (quotient (* 1024 1024) 10)) (~a (decimal n) "K")]
+      [else (~a (decimal (quotient n 1024)) "M")]))
+  (if (< (string-length s) 4)
+      (~a (substring "    " (string-length s)) s)
+      s))

@@ -1,0 +1,123 @@
+# This makefile-form configuration template is instantiated in a build
+# directory to communicate configuration decisions from "configure" to
+# "build.zuo". See "../cs/c/Mf-config" for more information; here we
+# describe only the parts that are specific to a BC build
+
+srcdir = @srcdir@
+
+CC = @CC@
+CPP = @CPP@
+XFORMFLAGS = @XFORMFLAGS@
+
+# Stays a plain compiler even if libtool is used for `CC`
+PLAIN_CC = @PLAIN_CC@
+
+# Liker for executables; usually the same as `CC`, but needs to be
+# different when using libtool
+MZLINKER = @MZLINKER@
+
+# We use `PREFLAGS` instead of `CPPFLAGS` for historical reasons
+CFLAGS = @CFLAGS@
+PREFLAGS = @PREFLAGS@
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
+AR = @AR@
+ARFLAGS = @ARFLAGS@
+RANLIB = @RANLIB@
+
+# More like `CPPFLAGS`/`PREFLAGS`, but some apply to subsets
+OPTIONS = @OPTIONS@
+GC2OPTIONS = @GC2OPTIONS@
+MZOPTIONS = @MZOPTIONS@
+DYN_CFLAGS = @DYN_CFLAGS@
+
+# Windows
+DLLTOOL = @DLLTOOL@
+WINDRES = @WINDRES@
+
+STRIP_DEBUG = @STRIP_DEBUG@
+STRIP_LIB_DEBUG = @STRIP_LIB_DEBUG@
+
+# To cooperate with libtool, parameterize over ".o" versus ".lo"
+# and ".a" versus ".la"
+LTO = @LTO@
+LTA = @LTA@
+
+LIBFFI_CONFIGURE_ARGS = @LIBFFI_CONFIGURE_ARGS@
+RKTIO_CONFIGURE_ARGS = @RKTIO_CONFIGURE_ARGS@
+
+FOREIGN_ENABLED = @FOREIGN_ENABLED@
+LIBFFI_BUILD_ENABLED = @LIBFFI_BUILD_ENABLED@
+FOREIGN_CONVENIENCE = @FOREIGN_CONVENIENCE@
+
+RACKET = @RACKET@
+
+ENABLE_CIFY = @ENABLE_CIFY@
+
+# Whether building for Mac OS ("t" or "f"), and how the framework is
+# configured and installed
+OSX=@OSX@
+MACLIBRKT_LINK_MODE = @MACLIBRKT_LINK_MODE@
+FRAMEWORK_INSTALL_DIR = @FRAMEWORK_INSTALL_DIR@
+FRAMEWORK_REL_INSTALL = @FRAMEWORK_REL_INSTALL@
+NEED_STRIP_SIGNATURE = @NEED_STRIP_SIGNATURE@
+
+# Building with MinGW? ("t" or "f")
+MINGW = @MINGW@
+
+# Suffixes for installed CGC and 3m, in case-folded
+# and (potentially) upcased variants
+CGC_INSTALLED = @CGC_INSTALLED@
+MMM_INSTALLED = @MMM_INSTALLED@
+CGC_CAP_INSTALLED = @CGC_CAP_INSTALLED@
+MMM_CAP_INSTALLED = @MMM_CAP_INSTALLED@
+
+INSTALL_LIBS_ENABLE = @INSTALL_LIBS_ENABLE@
+
+CROSS_COMPILE_TARGET_KIND = @CROSS_COMPILE_TARGET_KIND@
+
+SETUP_BOOT_MODE = @SETUP_BOOT_MODE@
+
+INSTALL_SETUP_FLAGS = @INSTALL_SETUP_FLAGS@
+INSTALL_SETUP_RACKET_FLAGS = @INSTALL_SETUP_RACKET_FLAGS@
+SETUP_MACHINE_FLAGS = 
+
+COLLECTS_PATH = @COLLECTS_PATH@
+CONFIG_PATH = @CONFIG_PATH@
+
+# Whether to build GRacket ("gracket" or "no")
+MAKE_GRACKET = @MAKE_GRACKET@
+
+# -------------------------------------------
+# Installation configuration
+
+PACKAGE = racket
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+datarootdir = @datarootdir@
+bindir = @bindir@
+libdir = @libdir@
+includepltdir = @includepltdir@
+libpltdir = @libpltdir@
+libpltdir_rel = @libpltdir_rel@
+etcpltdir = @etcpltdir@
+sharepltdir = @sharepltdir@
+collectsdir = @collectsdir@
+configdir = @etcpltdir@
+pkgsdir = @pkgsdir@
+docdir = @docdir@
+appsdir = @appsdir@
+mandir = @mandir@
+
+MAKE_COPYTREE = @MAKE_COPYTREE@
+INSTALL_ORIG_TREE = @INSTALL_ORIG_TREE@
+
+MAKE_INSTALL_PKGSCOPE = @MAKE_INSTALL_PKGSCOPE@
+INSTALL_PKGSCOPE = @INSTALL_PKGSCOPE@
+
+INSTALL_LIBZO = @INSTALL_LIBZO@
+
+ICP=@ICP@
+ICP_LIB=@ICP_LIB@
+ICP_STATIC_LIB=@ICP_STATIC_LIB@

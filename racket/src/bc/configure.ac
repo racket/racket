@@ -1,8 +1,8 @@
 
-##################################################################
-# This is the source for the `cfg-racket' script, to be compiled #
-# by autoconf (use `../ac/make-configure`).                      #
-##################################################################
+#################################################################
+# This is the source for the `configure' script, to be compiled #
+# by autoconf (use `../ac/make-configure`).                     #
+#################################################################
 
 # Remember:
 #  CFLAGS - C compilation only
@@ -12,7 +12,6 @@
 #  OPTIONS - C flags, not needed for configure-time tests
 #  MZOPTIONS - Racket-only flags
 #  MROPTIONS - GRacket-only flags
-#  CGCOPTIONS - Boehm-GC-only flags
 #  GC2OPTIONS - GC2-only flags
 #
 # Note: we use CPPFLAGS for configure-time testing only because
@@ -234,12 +233,7 @@ if test "${enable_racket}" != "" ; then
   if test "${enable_racket}" = "auto" ; then
     echo "=== Creating and using local Racket executable"
   else
-    if test ! -f "${enable_racket}"; then
-      echo "cannot find racket executable in ${enable_racket}"
-      exit 1
-    else
-      echo "=== Using Racket executable ${enable_racket}"
-    fi	
+    echo "=== Using Racket executable ${enable_racket}"
   fi 
 fi
 
@@ -259,9 +253,10 @@ MZINSTALLTARGET=unix-install
 MZINSTALLBINDIR='$(bindir)'
 
 MZOPTIONS=
-CGCOPTIONS=
 GC2OPTIONS=
 DYN_CFLAGS=
+
+RACKET=
 
 WXVARIANT="wx_xt"
 
@@ -309,18 +304,12 @@ try_no_nullability_completeness=no
 check_for_unwind=no
 
 if test "${enable_cify}" = "yes" ; then
-  STARTUP_AS_BYTECODE=_bytecode
-  STARTUP_AS_C=
-  STARTUP_AS_AUTO=_auto
+  ENABLE_CIFY=yes
 else
   if test "${enable_cify}" = "no" ; then
-    STARTUP_AS_BYTECODE=
-    STARTUP_AS_C=_c
-    STARTUP_AS_AUTO=_auto
+    ENABLE_CIFY=no
   else
-    STARTUP_AS_BYTECODE=_bytecode
-    STARTUP_AS_C=_c
-    STARTUP_AS_AUTO=
+    ENABLE_CIFY=auto
   fi
 fi
 
@@ -508,8 +497,6 @@ if test "${enable_jit}" = "yes" ; then
   check_for_mprotect=yes
 fi
 
-m4_include(../ac/install_name.m4)
-
 ############## platform tests ################
 
 # for flags we don't want to use in config tests:
@@ -519,11 +506,8 @@ EXTRALIBS=
 EXTRA_GMP_OBJ=
 EXTRA_GMP_DEP=
 
-# For Racket targets:
-OSX=".osx"
-NOT_OSX=""
-MINGW=".mingw"
-NOT_MINGW=""
+OSX="f"
+MINGW="f"
 CGC_X86_64=""
 
 case "$host_os" in
@@ -616,7 +600,6 @@ case "$host_os" in
       CFLAGS="$CFLAGS -Wp,-H,64000"
       PREFLAGS="$PREFLAGS -D_HPUX_SOURCE"
       COMPFLAGS="$COMPFLAGS -Aa +Z"
-      CGCOPTIONS="$CGCOPTIONS +ESdbgasm"
       MZOPTIONS="$MZOPTIONS +e"
     fi
     LIBS="$LIBS -Wl,-E"
@@ -627,15 +610,12 @@ case "$host_os" in
     use_flag_pthread=no
     skip_curses_check=yes
     MZOPTIONS="$MZOPTIONS -fno-omit-frame-pointer" # to make JIT backtraces work
-    MINGW=""
-    NOT_MINGW=".other"
+    MINGW="t"
     MZINSTALLTARGET=mingw-install
     MZINSTALLBINDIR="${MZINSTALLBINDIR}/.."
     EXE_SUFFIX=".exe"
     COLLECTS_PATH="collects"
-    GUI_COLLECTS_PATH="../collects"
     CONFIG_PATH="etc"
-    GUI_CONFIG_PATH="../etc"
     skip_iconv_check=yes
     check_for_mprotect=no
     # ".a" is typically not useful, since we always build a DLL:
@@ -674,6 +654,8 @@ case "$host_os" in
       i386|x86_64)
        enable_parallel_by_default=yes
        ;;
+      aarch64*|arm64*)
+       ;;       
       *)
        ;;
     esac
@@ -698,30 +680,25 @@ case "$host_os" in
       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LD="'"'"${LD}"'"'
     fi
 
+    LDFLAGS="$LDFLAGS -Wl,-headerpad_max_install_names"
+    LIBS="$LIBS -framework CoreFoundation"
+
     if test "${enable_quartz}" = "yes" ; then
       WXVARIANT="wx_mac"
       INCLUDEDEP="-include"
       OPTIONS="$OPTIONS -fno-common"
-      OSX=""
-      NOT_OSX=".other"
+      OSX="t"
       MZINSTALLTARGET=osx-install
       DYN_CFLAGS=""
       if test "${enable_libfw}" = "yes" ; then
         FRAMEWORK_INSTALL_DIR=/Library/Frameworks
         FRAMEWORK_REL_INSTALL=no
-        FRAMEWORK_PREFIX=''
       elif test "${enable_userfw}" = "yes" ; then
         FRAMEWORK_INSTALL_DIR=~/Library/Frameworks
         FRAMEWORK_REL_INSTALL=no
-        FRAMEWORK_PREFIX=''
       else
         FRAMEWORK_INSTALL_DIR='${libpltdir}'
         FRAMEWORK_REL_INSTALL=yes
-        if test "${libpltdir_rel}" = "" ; then
-          FRAMEWORK_PREFIX='$(FRAMEWORK_ABS_PREFIX)'
-        else
-          FRAMEWORK_PREFIX='$(FRAMEWORK_REL_PREFIX)'
-        fi
       fi
       if test "${enable_embedfw}" = "yes" ; then
         strip_needs_dash_s=yes
@@ -1239,23 +1216,11 @@ fi
 
 ############## Racket for Racket ################
 
-if test "${enable_racket}" = "auto" ; then
-  # See also "configure-parent.ac"
-  enable_racket="`pwd`/../local/bc/racket3m"
-fi
-
 if test "${enable_racket}" = "" ; then
-  RUN_RACKET_CGC='$(RUN_THIS_RACKET_CGC)'
-  RUN_RACKET_MMM='$(RUN_THIS_RACKET_MMM)'
-  RUN_RACKET_MAIN_VARIANT='$(RUN_THIS_RACKET_MAIN_VARIANT)'
-  CGC_IF_NEEDED_FOR_MMM="cgc"
-  BOOT_MODE="--boot"
+  SETUP_BOOT_MODE="--boot"
 else
-  RUN_RACKET_CGC="${enable_racket}"
-  RUN_RACKET_MMM="${enable_racket}"
-  RUN_RACKET_MAIN_VARIANT="${enable_racket}"
-  CGC_IF_NEEDED_FOR_MMM="no-cgc-needed"
-  BOOT_MODE="--chain"
+  RACKET="${enable_racket}"
+  SETUP_BOOT_MODE="--chain"
 fi
 
 ############## libtool ################
@@ -1266,7 +1231,6 @@ if test "${enable_shared}" = "yes" ; then
   abssrcdir=`(cd ${srcdir}; pwd)`
 
   # Try to convert libdir to an absolute path:
-  # (Is this necessary anymore?)
   if test -d "${libdir}" ; then
     abslibdir=`(cd ${libdir}; pwd)`
   else
@@ -1291,26 +1255,22 @@ if test "${enable_shared}" = "yes" ; then
     fi
   fi
 
-  if test "$INCLUDEDEP" = "-include" ; then
-    plt_lib_version="\$(FWVERSION)"
-  else
-    VERSION_X=`grep 'define MZSCHEME_VERSION_X ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
-    VERSION_Y=`grep 'define MZSCHEME_VERSION_Y ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
-    VERSION_Z=`grep 'define MZSCHEME_VERSION_Z ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
-    VERSION_W=`grep 'define MZSCHEME_VERSION_W ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
+  VERSION_X=`grep 'define MZSCHEME_VERSION_X ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
+  VERSION_Y=`grep 'define MZSCHEME_VERSION_Y ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
+  VERSION_Z=`grep 'define MZSCHEME_VERSION_Z ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
+  VERSION_W=`grep 'define MZSCHEME_VERSION_W ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
 
-    if test "${VERSION_W}" != "0" ; then
-      plt_lib_version="${VERSION_X}.${VERSION_Y}.${VERSION_Z}.${VERSION_W}"
+  if test "${VERSION_W}" != "0" ; then
+    plt_lib_version="${VERSION_X}.${VERSION_Y}.${VERSION_Z}.${VERSION_W}"
+  else
+    if test "${VERSION_Z}" != "0" ; then
+      plt_lib_version="${VERSION_X}.${VERSION_Y}.${VERSION_Z}"
     else
-      if test "${VERSION_Z}" != "0" ; then
-        plt_lib_version="${VERSION_X}.${VERSION_Y}.${VERSION_Z}"
-      else
-        plt_lib_version="${VERSION_X}.${VERSION_Y}"
-      fi
+      plt_lib_version="${VERSION_X}.${VERSION_Y}"
     fi
   fi
 
-  AR="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc}${ar_libtool_no_undefined} -release ${plt_lib_version} -rpath ${abslibdir} \$(ARLIBFLAGS) -o"
+  AR="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc}${ar_libtool_no_undefined} -release ${plt_lib_version} -rpath ${abslibdir} -o"
   STATIC_AR="${LIBTOOLPROG} --mode=link --tag=CC $CC -o"
   ARFLAGS=""
   RANLIB=":"
@@ -1341,9 +1301,9 @@ else
   LIBFINISH=echo
   LTO="o"
   LTA="a"
-  MZLINKER='$(CC)'
+  MZLINKER='${CC}'
   STATIC_AR="$AR"
-  PLAIN_CC='$(CC)'
+  PLAIN_CC='${CC}'
   FOREIGN_CONVENIENCE=""
   FOREIGN_OBJSLIB="\$(FOREIGN_OBJS)"
 fi
@@ -1352,6 +1312,44 @@ fi
 if test "${enable_werror}" = "yes"; then
   CFLAGS="-Werror ${CFLAGS}"
 fi
+
+############## subconfigures ################
+
+# Make sure the --enable-shared default is propagated:
+if test "${enable_shared}" = "yes" ; then
+  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --enable-shared"
+fi
+
+# Make sure the --enable-pthread result is propagated:
+if test "${enable_pthread}" = "yes" ; then
+  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --enable-pthread"
+else
+  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --disable-pthread"
+fi
+
+# Make sure the --enable-iconv result is propagated:
+if test "${enable_iconv}" = "yes" ; then
+  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --enable-iconv"
+else
+  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --disable-iconv"
+fi
+
+if test -d "${srcdir}/foreign" && test "${enable_foreign}" = "yes" ; then
+  FOREIGN_ENABLED=yes
+  if test "${have_libffi}" != "yes" ; then
+    LIBFFI_BUILD_ENABLED=yes
+  else
+    LIBFFI_BUILD_ENABLED=no
+  fi
+else
+  FOREIGN_ENABLED=no
+  MZOPTIONS="$MZOPTIONS -DDONT_USE_FOREIGN"
+fi
+
+m4_include(../ac/rktio_keep.m4)
+
+LIBFFI_CONFIGURE_ARGS="$keep_configure_args$LIBFFI_CONFIGURE_EXTRAS$SUB_CONFIGURE_EXTRAS"
+RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
 
 ############## final output ################
 
@@ -1389,7 +1387,6 @@ AC_SUBST(X_EXTRA_LIBS)
 
 AC_SUBST(OPTIONS)
 AC_SUBST(MZOPTIONS)
-AC_SUBST(CGCOPTIONS)
 AC_SUBST(GC2OPTIONS)
 AC_SUBST(MROPTIONS)
 AC_SUBST(GCDIR)
@@ -1400,12 +1397,9 @@ AC_SUBST(MZINSTALLBINDIR)
 AC_SUBST(EXTRA_GMP_OBJ)
 AC_SUBST(EXTRA_GMP_DEP)
 AC_SUBST(OSX)
-AC_SUBST(NOT_OSX)
 AC_SUBST(MINGW)
-AC_SUBST(NOT_MINGW)
 AC_SUBST(FRAMEWORK_INSTALL_DIR)
 AC_SUBST(FRAMEWORK_REL_INSTALL)
-AC_SUBST(FRAMEWORK_PREFIX)
 AC_SUBST(EXE_SUFFIX)
 AC_SUBST(SO_SUFFIX)
 AC_SUBST(OWN_LIBFFI)
@@ -1417,6 +1411,8 @@ AC_SUBST(ICP)
 AC_SUBST(ICP_LIB)
 AC_SUBST(ICP_STATIC_LIB)
 AC_SUBST(MRLIBINSTALL)
+
+AC_SUBST(MAKE_GRACKET)
 
 AC_SUBST(MAKE_FINISH)
 
@@ -1434,6 +1430,9 @@ AC_SUBST(DLLTOOL)
 AC_SUBST(OSKHOME)
 AC_SUBST(EXTRA_OSK_LIBS)
 
+AC_SUBST(FOREIGN_ENABLED)
+AC_SUBST(LIBFFI_BUILD_ENABLED)
+
 AC_SUBST(FOREIGN_IF_USED)
 AC_SUBST(FOREIGN_OBJSLIB)
 AC_SUBST(FOREIGN_CONVENIENCE)
@@ -1449,83 +1448,25 @@ AC_SUBST(INSTALL_SETUP_RACKET_FLAGS)
 
 AC_SUBST(INSTALL_LIBS_ENABLE)
 
-AC_SUBST(RUN_RACKET_CGC)
-AC_SUBST(RUN_RACKET_MMM)
-AC_SUBST(RUN_RACKET_MAIN_VARIANT)
-AC_SUBST(CGC_IF_NEEDED_FOR_MMM)
-AC_SUBST(BOOT_MODE)
+AC_SUBST(RACKET)
+AC_SUBST(SETUP_BOOT_MODE)
 
-AC_SUBST(STARTUP_AS_BYTECODE)
-AC_SUBST(STARTUP_AS_C)
-AC_SUBST(STARTUP_AS_AUTO)
+AC_SUBST(ENABLE_CIFY)
 
 AC_SUBST(CROSS_COMPILE_TARGET_KIND)
 
 AC_SUBST(INSTALL_NAME_TOOL)
 
-mk_needed_dir()
-{
-  if test ! -d "$1" ; then
-    mkdir "$1"
-  fi
-}
+AC_SUBST(LIBFFI_CONFIGURE_ARGS)
+AC_SUBST(RKTIO_CONFIGURE_ARGS)
 
-makefiles="Makefile
-             src/Makefile dynsrc/Makefile
-             sgc/Makefile gc2/Makefile"
-
-# Make sure the --enable-shared default is propagated:
-if test "${enable_shared}" = "yes" ; then
-  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --enable-shared"
-fi
-
-# Make sure the --enable-pthread result is propagated:
-if test "${enable_pthread}" = "yes" ; then
-  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --enable-pthread"
-else
-  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --disable-pthread"
-fi
-
-# Make sure the --enable-iconv result is propagated:
-if test "${enable_iconv}" = "yes" ; then
-  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --enable-iconv"
-else
-  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --disable-iconv"
-fi
-
-FOREIGNTARGET=
-FOREIGN_IF_USED="FOREIGN_NOT_USED"
-if test -d "${srcdir}/foreign" && test "${enable_foreign}" = "yes" ; then
-  if test "${have_libffi}" != "yes" ; then
-    AC_CONFIG_AUX_DIR( foreign/libffi )
-    AC_CONFIG_SUBDIRS( foreign/libffi )
-    # Smooth transition from libffi v3.1 to v3.3:
-    if test -h foreign/libffi/include/ffitarget.h ; then
-       rm foreign/libffi/include/ffitarget.h
-    fi
-  fi
-  FOREIGNTARGET="foreign-stuff"
-  FOREIGN_IF_USED="FOREIGN_USED"
-else
-  FOREIGNTARGET="foreign-stub"
-  MZOPTIONS="$MZOPTIONS -DDONT_USE_FOREIGN"
-fi
-makefiles="$makefiles foreign/Makefile"
-
-m4_include(../ac/rktio_keep.m4)
-
-# Add in `SUB_CONFIGURE_EXTRAS'
-ac_configure_args="$keep_configure_args$LIBFFI_CONFIGURE_EXTRAS$SUB_CONFIGURE_EXTRAS"
-
-if test "${enable_gracket}" = "yes" ; then
-  makefiles="$makefiles
-             gracket/Makefile
-               gracket/gc2/Makefile"
-fi
+makefiles="Mf-config"
 
 AC_OUTPUT($makefiles)
 
-mkdir -p rktio
-abssrcdir=`(cd ${srcdir}; pwd)`
-echo "=== configuring in rktio (${abssrcdir}/rktio)"
-cd rktio; eval "${abssrcdir}/../rktio/configure ${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
+# mkdir -p rktio
+# abssrcdir=`(cd ${srcdir}; pwd)`
+# echo "=== configuring in rktio (${abssrcdir}/rktio)"
+# cd rktio; eval "${abssrcdir}/../rktio/configure ${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
+
+cp ${srcdir}/buildmain.zuo main.zuo

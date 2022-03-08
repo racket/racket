@@ -1,0 +1,3 @@
+#lang zuo/private/base
+
+(include "../base-common/struct.zuo")

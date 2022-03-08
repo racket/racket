@@ -1,0 +1,53 @@
+#lang zuo
+
+(require "harness.zuo")
+
+;; We need certain things to work for checking even to work, but all
+;; we can do is assume that things work...
+
+(alert "equal") 
+
+(check #t)
+(check (not #f))
+(check (eq? 'apple 'apple))
+(check (not (eq? 'apple 'banana)))
+(check (not (eq? 'apple "apple")))
+
+(check (string=? "apple" "apple"))
+(check (not (string=? "apple" "banana")))
+(check (string-ci=? "apple" "aPPle"))
+(check (not (string-ci=? "apple" "banana")))
+
+(check (= 1 1))
+(check (not (= 1 -1)))
+
+(check (equal? 1 1))
+(check (equal? "apple" "apple"))
+
+(check (equal? "apple" "apple"))
+(check (equal? '("apple") '("apple")))
+(check (equal? '(0 "apple") '(0 "apple")))
+(check (not (equal? '("apple") '("banana"))))
+(check (not (equal? '(0 "apple") '(0 "banana"))))
+
+(check (equal? (hash 'a 1) (hash 'a 1)))
+(check (not (equal? (hash 'a 1) (hash 'b 1))))
+(check (not (equal? (hash 'a 1) (hash 'a 2))))
+
+(check (not (equal? "apple" 'other)))
+(check (not (equal? 'other "apple")))
+(check (not (equal? 1 'other)))
+(check (not (equal? 'other 1)))
+(check (not (equal? 1 (hash 'a 1))))
+(check (not (equal? (hash 'a 1) 1)))
+
+(check-fail (= 1 'apple) not-integer)
+(check-fail (= 'apple 1) not-integer)
+(check-arg-fail (string=? 1 "apple") not-string)
+(check-arg-fail (string=? "apple" 1) not-string)
+(check-arg-fail (string-ci=? 1 "apple") not-string)
+(check-arg-fail (string-ci=? "apple" 1) not-string)
+
+(check (eq? (void) (void)))
+(check (void? (void)))
+(check (not (void? 'void)))

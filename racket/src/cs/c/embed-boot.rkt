@@ -32,7 +32,7 @@
  (define use-src-file
    (if (equal? src-file "")
        (let ([src-file (path-add-suffix dest-file #"_tmp")])
-         (rename-file-or-directory dest-file src-file)
+         (rename-file-or-directory dest-file src-file #t)
          src-file)
        src-file))
  (define (clean-src)

@@ -1,0 +1,18 @@
+#lang zuo/private/stitcher
+
+;; Instantiates the expander for hygienic, set-of-scopes macros
+
+(define macro-protocol 'scope-sets)
+(define merge-bindings-export-key 'scope-sets-bindings)
+(define language-mod-path 'zuo/private/base-hygienic)
+
+(include "base-common/lib.zuo")
+(include "base-common/bind-struct.zuo")
+(include "base-common/state.zuo")
+
+(include "base-hygienic/syntax.zuo")
+
+(include "base-common/dynamic.zuo")
+(include "base-common/bind.zuo")
+(include "base-common/parse.zuo")
+(include "base-common/entry.zuo")

@@ -1,0 +1,18 @@
+#lang zuo/datum
+
+;; The classic toy benchmark
+(provide fib)
+
+(define input
+  (let ([args (hash-ref (runtime-env) 'args)])
+    (if (null? args)
+        30
+        (string->integer (car args)))))
+
+(define (fib n)
+  (cond
+    [(= n 0) 1]
+    [(= n 1) 1]
+    [else (+ (fib (- n 1)) (fib (- n 2)))]))
+
+(fib input)

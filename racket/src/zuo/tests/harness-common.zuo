@@ -1,0 +1,138 @@
+#lang zuo/datum
+
+(provide check
+         check-fail
+         check-fail*
+         check-arg-fail
+         check-output
+
+         run-zuo*
+         run-zuo
+         contains?
+         
+         bad-stx
+         arity
+         not-integer
+         not-string
+         not-path
+
+         tmp-dir)
+
+(define (check* e a b)
+  (unless (equal? a b)
+    (error (~a "failed: "
+               (~s e)
+               "\n  result: " (~v a)
+               "\n  result: " (~v b)))))
+
+(define-syntax (check stx)
+  (unless (list? stx) (bad-syntax stx))
+  (list* (quote-syntax check*)
+         (list (quote-syntax quote) stx)
+         (let ([len (length (cdr stx))])
+           (cond
+             [(= 1 len) (cons #t (cdr stx))]
+             [(= 2 len) (cdr stx)]
+             [else (bad-syntax stx)]))))
+
+(define (run-zuo* args input k)
+  (define p (apply process
+                   (cons (hash-ref (runtime-env) 'exe #f)
+                         (append args
+                                 (list (hash 'stdin 'pipe 'stdout 'pipe 'stderr 'pipe))))))
+  (fd-write (hash-ref p 'stdin) input)
+  (fd-close (hash-ref p 'stdin))
+  (define out (fd-read (hash-ref p 'stdout) eof))
+  (define err (fd-read (hash-ref p 'stderr) eof))
+  (fd-close (hash-ref p 'stdout))
+  (fd-close (hash-ref p 'stderr))
+  (process-wait (hash-ref p 'process))
+  (k (process-status (hash-ref p 'process)) out err))
+
+(define (run-zuo e k)
+  (run-zuo* '("") (~a "#lang " language-name " " (~s e)) k))
+
+(define (contains? err msg)
+  (let loop ([i 0])
+    (and (not (> i (- (string-length err) (string-length msg))))
+         (or (string=? (substring err i (+ i (string-length msg))) msg)
+             (loop (+ i 1))))))
+
+(define (check-fail* e who msg)
+  (run-zuo
+   e
+   (lambda (status out err)
+     (when (= 0 status)
+       (error (~a "check-fail: failed to fail: " (~s e)
+                  "\n  stdout: " (~s out)
+                  "\n  stderr: " (~s err))))
+     (unless (contains? err msg)
+       (error (~a "check-fail: didn't find expected message: " (~s e)
+                  "\n  expected: " (~s msg)
+                  "\n  stderr: " (~s err))))
+     (when who
+       (let* ([who (symbol->string who)]
+              [len (string-length who)])
+         (unless (and (> (string-length err) len)
+                      (string=? (substring err 0 len) who))
+           (error (~a "check-fail: didn't find expected who: " (~s e)
+                      "\n  expected: " who
+                      "\n  stderr: " (~s err)))))))))
+
+(define-syntax (check-fail stx)
+  (unless (and (list? stx) (= 3 (length stx))) (bad-syntax stx))
+  (list (quote-syntax check-fail*)
+        (list (quote-syntax quasiquote) (cadr stx))
+        #f
+        (cadr (cdr stx))))
+
+(define-syntax (check-arg-fail stx)
+  (unless (and (list? stx) (= 3 (length stx))
+               (pair? (cadr stx)) (identifier? (car (cadr stx))))
+    (bad-syntax stx))
+  (list (quote-syntax check-fail*)
+        (list (quote-syntax quasiquote) (cadr stx))
+        (list (quote-syntax quote) (car (cadr stx)))
+        (cadr (cdr stx))))
+
+(define (check-output* e stdout stderr)
+  (run-zuo
+   e
+   (lambda (status out err)
+     (unless ((if (equal? stderr "") (lambda (v) v) not)
+              (= 0 status))
+       (error (~a "check-output: process failed: " (~s e)
+                  "\n  stdout: " (~s out)
+                  "\n  stderr: " (~s err))))
+     (unless (and (equal? out stdout)
+                  (equal? err stderr))
+       (error (~a "check-output: process failed: " (~s e)
+                  "\n  stdout: " (~s out)
+                  "\n  expect: " (~s stdout)
+                  "\n  stderr: " (~s err)
+                  "\n  expect: " (~s stderr)))))))
+
+(define-syntax (check-output stx)
+  (unless (list? stx) (bad-syntax stx))
+  (cond
+    [(= 3 (length stx))
+     (list (quote-syntax check-output*)
+           (list (quote-syntax quote) (cadr stx))
+           (list-ref stx 2)
+           "")]
+    [(= 4 (length stx))
+     (list (quote-syntax check-output*)
+           (list (quote-syntax quote) (cadr stx))
+           (list-ref stx 2)
+           (list-ref stx 3))]
+    [else (bad-syntax stx)]))
+
+;; Some common error messages
+(define bad-stx "bad syntax")
+(define arity "wrong number of arguments")
+(define not-integer "not an integer")
+(define not-string "not a string")
+(define not-path "not a path string")
+
+(define tmp-dir (build-path (car (split-path (quote-module-path))) ".." "build" "tmp"))
+(mkdir-p tmp-dir)

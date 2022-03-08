@@ -1,0 +1,77 @@
+#! /bin/sh
+
+srcdir=`dirname "$0"`
+installprefix=/usr/local
+: ${CC:="cc"}
+: ${CFLAGS:="-O2"}
+embed=zuo
+LIB_PATH=lib
+
+while [ $# != 0 ] ; do
+  case $1 in
+    --embed=*)
+      embed=`echo $1 | sed -e 's/^--embed=//'`
+      ;;
+    --big)
+      embed="zuo zuo/hygienic"
+      ;;
+    --prefix=*)
+      installprefix=`echo $1 | sed -e 's/^--prefix=//'`
+      LIB_PATH=${installprefix}/share/zuo
+      ;;
+    --help)
+      help=yes
+      ;;
+    CC=*)
+      CC=`echo $1 | sed -e 's/^CC=//'`
+      ;;
+    CPPFLAGS=*)
+      CPPFLAGS=`echo $1 | sed -e 's/^CPPFLAGS=//'`
+      ;;
+    CFLAGS=*)
+      CFLAGS=`echo $1 | sed -e 's/^CFLAGS=//'`
+      cflagsset=yes
+      ;;
+    LDFLAGS=*)
+      LDFLAGS=`echo $1 | sed -e 's/^LDFLAGS=//'`
+      ;;
+    LIBS=*)
+      LIBS=`echo $1 | sed -e 's/^LIBS=//'`
+      ;;
+    *)
+      echo "option '$1' unrecognized or missing an argument; try $0 --help"
+      exit 1
+      ;;
+  esac
+  shift
+done
+
+if [ "$help" = "yes" ]; then
+  echo ""
+  echo "Options (defaults shown in parens):"
+  echo "  --prefix=<pathname>               installation root ($installprefix)"
+  echo "  --embed=\"<lib> ...\"               embed <lib>s in executable (zuo)"
+  echo "  --big                             shorthand for --embed=\"zuo zuo/hygienic\""
+  echo "  CC=<C compiler>                   C compiler"
+  echo "  CPPFLAGS=<C preprocessor flags>   C preprocessor flags"
+  echo "  CFLAGS=<C compiler flags>         C compiler flags"
+  echo "  LDFLAGS=<linker flags>            additional linker flags"
+  echo "  LIBS=<libraries>                  additional libraries"
+  echo ""
+  echo ""
+  exit 0
+fi
+
+echo "srcdir = ${srcdir}" > Makefile
+echo "EMBED_LIBS = ${embed}" >> Makefile
+echo "CC = ${CC}" >> Makefile
+echo "CPPFLAGS = ${CPPFLAGS}" >> Makefile
+echo "CFLAGS = ${CFLAGS}" >> Makefile
+echo "LDFLAGS = ${LDFLAGS}" >> Makefile
+echo "LIBS = ${LIBS}" >> Makefile
+echo "INSTALL_PREFIX = ${installprefix}" >> Makefile
+cat ${srcdir}/Makefile.in >> Makefile
+
+echo "#lang zuo" > main.zuo
+echo "(require "'"'"${srcdir}/build.zuo"'"'")" >> main.zuo
+echo "(build/command-line* targets-at at-source)" >> main.zuo

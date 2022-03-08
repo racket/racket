@@ -1,0 +1,71 @@
+#lang zuo
+
+(require "harness.zuo")
+
+(alert "reading and printing")
+
+(check (string-read "  1 (apple) \n 2   \n\n" 0) '(1 (apple) 2))
+(check (string-read "  1 (apple) \n 2   \n\n" 3) '((apple) 2))
+(check (string-read "" 0) '())
+(check (string-read "x" 1) '())
+(check-fail (string-read "(" 0) "missing closer")
+(check-fail (string-read 'apple 0) not-string)
+(check-fail (string-read "x" "y") not-integer)
+(check-fail (string-read "x" 2) "out of bounds")
+(check-fail (string-read "x" -2) "out of bounds")
+
+(check (~v 1 '(apple) "banana") "1 (list 'apple) \"banana\"")
+(check (~v 1 '(apple . pie) (string->uninterned-symbol "banana")) "1 (cons 'apple 'pie) #<symbol:banana>")
+(check (~s 1 '(apple) "banana") "1 (apple) \"banana\"")
+(check (~s 1 '(apple . pie) (string->uninterned-symbol "banana")) "1 (apple . pie) #<symbol:banana>")
+(check (~a 1 '(apple) "banana") "1(apple)banana")
+(check (~a 1 '(apple . pie) (string->uninterned-symbol "banana")) "1(apple . pie)banana")
+
+(define table
+  (list
+   (list #t "#t" "#t" "#t")
+   (list #f "#f" "#f" "#f")
+   (list 1 "1" "1" "1")
+   (list 0 "0" "0" "0")
+   (list -1 "-1" "-1" "-1")
+   (list 'apple "'apple" "apple" "apple")
+   (list (string->uninterned-symbol "banana") "#<symbol:banana>" "#<symbol:banana>" "banana")
+   (list "cherry" "\"cherry\"" "\"cherry\"" "cherry")
+   (list (cons "cherry" 'pie) "(cons \"cherry\" 'pie)" "(\"cherry\" . pie)" "(cherry . pie)")
+   (list (list* 1 2 3) "(list* 1 2 3)" "(1 2 . 3)" "(1 2 . 3)")
+   (list (hash 'a "x") "(hash 'a \"x\")" "#hash((a . \"x\"))" "#hash((a . x))")
+   (list apply "#<procedure:apply>" "#<procedure:apply>" "#<procedure:apply>")
+   (list call/cc "#<procedure:call/cc>" "#<procedure:call/cc>" "#<procedure:call/cc>")
+   (list (let ([f (lambda (x) x)]) f) "#<procedure:f>" "#<procedure:f>" "#<procedure:f>")
+   (list (opaque 'donut 5) "#<donut>" "#<donut>" "#<donut>")
+   (list (variable 'elderberry) "#<variable:elderberry>" "#<variable:elderberry>" "#<variable:elderberry>")
+   (list (void) "#<void>" "#<void>" "#<void>")))
+
+(for-each (lambda (row)
+            (apply (lambda (v pr wr di)
+                     (check (~v v) pr)
+                     (check (~s v) wr)
+                     (check (~a v) di))
+                   row))
+          table)
+
+(check-output (alert "hello" 'x) "hello: 'x\n")
+(check-output (alert 'hello 'x) "'hello 'x\n")
+(check-output (alert 'hello 'x 3 4) "'hello 'x 3 4\n")
+(check-output (error "hello" 'x) "" "hello: 'x\n")
+(check-output (error 'hello 'x) "" "'hello 'x\n")
+(check-output (error 'hello 'x 3 4) "" "'hello 'x 3 4\n")
+
+(check-fail (arity-error 'hello '()) not-string)
+(check-fail (arity-error "hello" 'oops) "not a list")
+(check-output (arity-error "hello" '(1 () "apple")) "" "hello: wrong number of arguments: 1 '() \"apple\"\n")
+
+(check (~s (let loop ([i 10000])
+             (if (= i 0)
+                 '()
+                 (list (loop (- i 1))))))
+       (apply ~a
+              (let loop ([i 10000] [accum '()])
+                (if (= i 0)
+                    (cons "()" accum)
+                    (cons "(" (loop (- i 1) (cons ")" accum)))))))

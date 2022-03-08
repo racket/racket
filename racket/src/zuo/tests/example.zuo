@@ -1,0 +1,3 @@
+#lang zuo
+
+(include "example-common.zuo")

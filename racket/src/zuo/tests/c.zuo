@@ -1,0 +1,17 @@
+#lang zuo
+
+(require "harness.zuo")
+
+(alert "c")
+
+(check (config-merge (hash 'CFLAGS "-O2") 'CFLAGS "-g")
+       (hash 'CFLAGS "-O2 -g"))
+
+(check (config-define (hash 'CFLAGS "-O2") "ZUO")
+       (hash 'CFLAGS "-O2" 'CPPFLAGS "-DZUO"))
+
+(check (config-define (hash 'CPPFLAGS "-DSLOW") "ZUO")
+       (hash 'CPPFLAGS "-DSLOW -DZUO"))
+
+(check (config-include (hash 'CPPFLAGS "-DSLOW") "zuo/private")
+       (hash 'CPPFLAGS "-DSLOW -Izuo/private"))

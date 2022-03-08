@@ -126,9 +126,9 @@ fi
 
 show_explicitly_disabled "${enable_wpo}" "Agressive core optimization"
 if test "${enable_wpo}" = "no" ; then
-  ENABLE_OR_DISABLE_WPO="WHEN_WPO=no_ UNLESS_WPO="
+  DISABLE_WPO=t
 else  
-  ENABLE_OR_DISABLE_WPO=""
+  DISABLE_WPO=f
 fi
 
 ############## Install targets ################
@@ -144,35 +144,28 @@ skip_curses_check=no
 use_flag_pthread=yes
 use_flag_posix_pthread=no
 
-INCLUDEDEP="#"
-OSX="not_osx"
-NOT_OSX=""
-MINGW="not_mingw"
-NOT_MINGW=""
+OSX="f"
+MINGW="f"
 CONFIGURE_RACKET_SO_COMPILE=""
 COMPRESS_COMP=""
 BOOT_COMPRESS_COMP=""
-POST_LINKER="echo"
+POST_LINKER=""
 
 FRAMEWORK_INSTALL_DIR='$(libpltdir)'
 FRAMEWORK_PREFIX='@executable_path/../lib/'
 
-RACKET='$(DEFAULT_RACKET)'
-BOOTFILE_RACKET='$(RACKET)'
-RUN_RACKET='$(RUN_THIS_RACKET)'
+RACKET=
+BOOTFILE_RACKET=
 SETUP_BOOT_MODE=--boot
 
 INSTALL_SETUP_FLAGS="--no-user"
 INSTALL_SETUP_RACKET_FLAGS=
 
-Z_LIB_DEP='$(OWN_Z_LIB)'
-Z_LIB='$(OWN_Z_LIB)'
-Z_LIB_UNPACK='$(AR) x $(OWN_Z_LIB)'
-LZ4_LIB_DEP='$(OWN_LZ4_LIB)'
-LZ4_LIB='$(OWN_LZ4_LIB)'
-LZ4_LIB_UNPACK='$(AR) x $(OWN_LZ4_LIB)'
+Z_LIB=''
+LZ4_LIB=''
 
-CS_HOST_WORKAREA_PREFIX=
+DISABLE_ICONV=no
+DISABLE_CURSES=no
 
 PLT_CS_SLSP_SUFFIX=
 
@@ -184,6 +177,7 @@ cs_auto_flags=--disable-auto-flags
 
 COPY_NEW_CFLAGS_TO_CPPFLAGS=no
 
+SCHEME_LIBFFI=no
 PBCHUNK_MODE=plain
 
 ###### Autoconfigure #######
@@ -218,8 +212,6 @@ if test "$ARFLAGS" = '' ; then
 fi
 
 WINDRES=windres
-
-m4_include(../ac/install_name.m4)
 
 ############## platform tests ################
 
@@ -294,8 +286,7 @@ case "$host_os" in
     use_flag_pthread=no
     MACH_OS=nt
     LIBS="${LIBS} -lshell32 -luser32 -lole32 -lrpcrt4 -luuid -lws2_32 -ladvapi32 -lwinmm"
-    MINGW=""
-    NOT_MINGW="mingw"
+    MINGW="t"
     compress_boot_files_by_default=yes
     if `which ${host}-windres > /dev/null` ; then
       WINDRES="${host}-windres"
@@ -313,11 +304,9 @@ case "$host_os" in
     LIBS="${LIBS} -framework CoreFoundation"
     LDFLAGS="${LDFLAGS} -Wl,-headerpad_max_install_names"
     if test "${enable_xonx}" = "no" ; then
-      INCLUDEDEP="-include"
-      OSX=""
-      NOT_OSX="osx"
+      OSX="t"
     else
-      CONFIGURE_RACKET_SO_COMPILE="env PLT_CS_MAKE_UNIX_STYLE_MACOS=y"
+      CONFIGURE_RACKET_SO_COMPILE="PLT_CS_MAKE_UNIX_STYLE_MACOS=y"
       CPPFLAGS="${CPPFLAGS} -DRACKET_XONX"
       strip_needs_dash_s=yes
     fi
@@ -331,24 +320,16 @@ case "$host_os" in
     if test "${enable_libfw}" = "yes" ; then
       FRAMEWORK_INSTALL_DIR=/Library/Frameworks
       FRAMEWORK_REL_INSTALL=no
-      FRAMEWORK_PREFIX=''
     elif test "${enable_userfw}" = "yes" ; then
       FRAMEWORK_INSTALL_DIR=~/Library/Frameworks
       FRAMEWORK_REL_INSTALL=no
-      FRAMEWORK_PREFIX=''
     else
       FRAMEWORK_INSTALL_DIR='${libpltdir}'
       FRAMEWORK_REL_INSTALL=yes
-      if test "${libpltdir_rel}" = "" ; then
-        FRAMEWORK_PREFIX='$(FRAMEWORK_ABS_PREFIX)'
-      else
-        FRAMEWORK_PREFIX='$(FRAMEWORK_REL_PREFIX)'
-      fi
     fi
 
     if test "${enable_mac64}" = "no"; then
       MACH_HOST_CPU="x86"
-      extra_scheme_config_args="--32"
     fi
 
     # -pthread is not needed and triggers a warning
@@ -500,54 +481,29 @@ else
   CROSS_MODE=""
 fi
 
-if test "${CROSS_MODE}" = "cross" ; then
-  T_CROSS_MODE="-cross"
-  TT_CROSS_MODE="--cross"
-  RUN_RACKET='$(RACKET)'
-else
-  T_CROSS_MODE=""
-  TT_CROSS_MODE=""
-fi
-
 # From this point on, `MACH` means the build machine, and
 # `TARGET_MACH` is the target that we're building for (which
 # is different in cross-build mode).
 
 ############## Racket and Chez Scheme ################
 
-case "$srcdir" in
-    /*)
-        upsrcdir=$srcdir
-        ;;
-    *)
-        upsrcdir=../$srcdir
-        ;;
-esac
-
-SCHEME_DIR=${srcdir}/../../ChezScheme
-MAKE_BUILD_SCHEME=checkout
-USE_SCHEME_MODE="_built"
-MAKE_SCHEME_MODE="${T_CROSS_MODE}"
+SCHEME_SRC_DIR=${srcdir}/../../ChezScheme
 
 if test "${enable_scheme}" != "" ; then
    if test -d "${enable_scheme}" ; then
      # Directory exists, so use it as a build directory
      echo "Using supplied Scheme path as a build directory"
-     CS_HOST_WORKAREA_PREFIX="${enable_scheme}/"
+     SCHEME_DIR="${enable_scheme}/ChezScheme"
    else
      # Directory does not exist, so assume it's an executable
      echo "Using supplied Scheme path as an executable"
-     MAKE_SCHEME_MODE="${T_CROSS_MODE}-via-scheme"
-     MAKE_SCHEME_SCHEME="${enable_scheme}"
-     USE_SCHEME_MODE="_existing"
+     SCHEME="${enable_scheme}"
    fi     
 fi
 
 if test "${enable_racket}" != "" ; then
-  if test "${enable_racket}" = "auto" ; then
-    # See also "configure-parent.ac"
-    enable_racket="`pwd`/../../local/cs/c/racketcs"
-    CS_HOST_WORKAREA_PREFIX=../../local/cs/c/
+  if test "${enable_racket}" != "auto" ; then
+    SETUP_BOOT_MODE=--chain
   fi
   # In non-cross mode, we interpret `--enable-racket` to supply a
   # Racket used only for generating Chez Scheme boot files
@@ -556,7 +512,6 @@ if test "${enable_racket}" != "" ; then
   else
     BOOTFILE_RACKET="${enable_racket}"
   fi
-  SETUP_BOOT_MODE=--chain
 fi
 
 if test "${enable_compress}" != "no" ; then
@@ -574,11 +529,6 @@ elif test "${compress_boot_files_by_default}" = "yes" ; then
   fi
 fi
 
-DIFF_MACH=skip
-if test "${MACH}" != "${TARGET_MACH}" ; then
-  DIFF_MACH=
-fi
-
 ############## Strip tool ################
 
 m4_include(../ac/strip.m4)
@@ -586,7 +536,7 @@ m4_include(../ac/strip.m4)
 ############## natipkg ################
 
 if test "${enable_natipkg}" = "yes" ; then
-  CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} env PLT_CS_SLSP_SUFFIX=-natipkg"
+  CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_SLSP_SUFFIX=-natipkg"
   PLT_CS_SLSP_SUFFIX="-natipkg"
 fi
 
@@ -598,20 +548,6 @@ m4_include(../ac/ubsan.m4)
 
 m4_include(../ac/asan.m4)
 
-############## Makefile includes ################
-
-if test "$INCLUDEDEP" = "#" ; then
-  is_gmake=`make -v no-such-target-we-hope 2>&1 | grep "GNU Make"`
-  if test "$is_gmake" != "" ; then
-     INCLUDEDEP="-include"
-  fi
-fi
-
-if test "$INCLUDEDEP" != "#" ; then
-  RKTL_PRE="compiled/"
-  RKTL_POST=".rktl"
-fi
-
 ############## C flags ################
 
 AC_LANG_C
@@ -621,7 +557,7 @@ AC_LANG_C
 m4_include(../ac/iconv.m4)
 if test "${enable_iconv}" = "no" ; then
   AC_DEFINE(RKTIO_NO_ICONV,1,[Do not use iconv])
-  extra_scheme_config_args="${extra_scheme_config_args} --disable-iconv"
+  DISABLE_ICONV=yes
   add_iconv_lib=
 fi
 
@@ -659,14 +595,14 @@ fi
 ############## zlib and LZ4 ################
 
 if test "${enable_libz}" != "no" ; then
-  if test ! -d "$SCHEME_DIR/zlib" ; then
+  if test ! -d "$SCHEME_SRC_DIR/zlib" ; then
     echo "No libz in Scheme directory, so trying installed"
     enable_libz=yes
   fi
 fi
 
 if test "${enable_liblz4}" != "no" ; then
-  if test ! -d "$SCHEME_DIR/lz4" ; then
+  if test ! -d "$SCHEME_SRC_DIR/lz4" ; then
     echo "No lz4 in Scheme directory, so trying installed"
     enable_liblz4=yes
   fi
@@ -687,10 +623,7 @@ if test "${enable_libz}" = "yes" ; then
     LIBS="${OLD_LIBS}"
     echo "Building own libz"
   else
-    Z_LIB_DEP=""
     Z_LIB="-lz"
-    Z_LIB_UNPACK='$(NOOP)'
-    extra_scheme_config_args="${extra_scheme_config_args} ZLIB=-lz"
   fi
 fi
 
@@ -709,10 +642,7 @@ if test "${enable_liblz4}" = "yes" ; then
     LIBS="${OLD_LIBS}"
     echo "Building own liblz4"
   else
-    LZ4_LIB_DEP=""
     LZ4_LIB="-llz4"
-    LZ4_LIB_UNPACK='$(NOOP)'
-    extra_scheme_config_args="${extra_scheme_config_args} LZ4=-llz4"
   fi
 fi
 
@@ -724,20 +654,15 @@ KERNEL_TARGET_MACH="${TARGET_MACH}"
 if test "${enable_pb}" = "yes" ; then
   enable_libffi=yes
   enable_foreign=yes
-  CONFIG_MAIN_SCHEME_MODE="--pbarch --enable-libffi"
+  SCHEME_LIBFFI=yes
   TARGET_MACH=${pb_machine_name}
   if test "${CROSS_MODE}" != "cross" ; then
     MACH=${pb_machine_name}
-  fi
-  if test "${CONFIGURE_RACKET_SO_COMPILE}" = "" ; then
-    CONFIGURE_RACKET_SO_COMPILE="env"
   fi
   CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_MACHINE_TYPE=${KERNEL_TARGET_MACH}"
   if test "${enable_pbchunk}" != "no" ; then
     PBCHUNK_MODE=pbchunk
   fi
-else
-  CONFIG_MAIN_SCHEME_MODE=""
 fi
 
 libffi_unavailable_message="did not find working configuration"
@@ -825,18 +750,18 @@ if test "${enable_shared}" = "yes" ; then
   LIBSFX=la
   ICP_LIB="${LIBTOOLPROG} --mode=install install${ICP_STRIP_FLAG}"
 
-  CONFIGURE_RACKET_SO_COMPILE="env PLT_CS_MAKE_LINK_SHARED=y"
+  CONFIGURE_RACKET_SO_COMPILE="PLT_CS_MAKE_LINK_SHARED=y"
 else
   ICP=cp
   LTO="o"
   LTA="a"
-  RKTLINKER='$(CC)'
+  RKTLINKER="${CC}"
   STATIC_AR="$AR"
   LIBSFX=so
   ICP_LIB=cp
   if test "${make_darwin_dylib}" = "yes" ; then
      LIBSFX="dylib"
-     AR='$(RKTLINKER) --shared -o'
+     AR="${RKTLINKER} --shared -o"
      ARFLAGS=""
      LIBS="${LIBS} -framework CoreFoundation"
      ICP_LIB=cp
@@ -847,10 +772,8 @@ fi
 
 m4_include(../ac/rktio_keep.m4)
 
-SCHEME_CONFIG_ARGS="--machine=${KERNEL_MACH} --disable-x11 ${disable_curses_arg} ${cs_auto_flags} ${extra_scheme_config_args}"
-SCHEME_CROSS_CONFIG_ARGS="--machine=${KERNEL_TARGET_MACH} --disable-x11 ${cs_auto_flags} ${disable_curses_arg} ${extra_scheme_config_args}"
+RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
 
-AC_SUBST(upsrcdir)
 AC_SUBST(CC)
 AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)
@@ -867,66 +790,44 @@ AC_SUBST(ICP)
 AC_SUBST(ICP_LIB)
 AC_SUBST(STRIP_DEBUG)
 AC_SUBST(STRIP_LIB_DEBUG)
-AC_SUBST(STRIP_SIGNATURE)
-AC_SUBST(RESTORE_SIGNATURE)
 AC_SUBST(RKTLINKER)
 AC_SUBST(POST_LINKER)
-AC_SUBST(INCLUDEDEP)
 AC_SUBST(RKTL_PRE)
 AC_SUBST(RKTL_POST)
 AC_SUBST(RACKET)
 AC_SUBST(BOOTFILE_RACKET)
+AC_SUBST(SCHEME)
 AC_SUBST(SCHEME_DIR)
 AC_SUBST(MACH)
 AC_SUBST(TARGET_MACH)
 AC_SUBST(KERNEL_TARGET_MACH)
-AC_SUBST(DIFF_MACH)
 AC_SUBST(CROSS_MODE)
-AC_SUBST(T_CROSS_MODE)
-AC_SUBST(TT_CROSS_MODE)
-AC_SUBST(MAKE_SCHEME_MODE)
-AC_SUBST(MAKE_SCHEME_SCHEME)
-AC_SUBST(USE_SCHEME_MODE)
 AC_SUBST(SETUP_BOOT_MODE)
 AC_SUBST(OSX)
-AC_SUBST(NOT_OSX)
 AC_SUBST(MINGW)
-AC_SUBST(NOT_MINGW)
-AC_SUBST(Z_LIB_DEP)
 AC_SUBST(Z_LIB)
-AC_SUBST(Z_LIB_UNPACK)
-AC_SUBST(LZ4_LIB_DEP)
 AC_SUBST(LZ4_LIB)
-AC_SUBST(LZ4_LIB_UNPACK)
+AC_SUBST(DISABLE_ICONV)
+AC_SUBST(DISABLE_CURSES)
 AC_SUBST(CONFIGURE_RACKET_SO_COMPILE)
 AC_SUBST(COMPRESS_COMP)
 AC_SUBST(BOOT_COMPRESS_COMP)
-AC_SUBST(MAKE_BUILD_SCHEME)
-AC_SUBST(SCHEME_CONFIG_ARGS)
-AC_SUBST(SCHEME_CROSS_CONFIG_ARGS)
-AC_SUBST(CONFIG_MAIN_SCHEME_MODE)
 AC_SUBST(FRAMEWORK_INSTALL_DIR)
-AC_SUBST(FRAMEWORK_PREFIX)
 AC_SUBST(FRAMEWORK_REL_INSTALL)
+AC_SUBST(CROSS_COMPILE_TARGET_KIND)
 AC_SUBST(CS_INSTALLED)
 AC_SUBST(CS_COMPILED_SUBDIR)
-AC_SUBST(ENABLE_OR_DISABLE_WPO)
-AC_SUBST(COMP_SUBDIR_CONFIGURE_ARGS)
-AC_SUBST(CROSS_COMPILE_TARGET_KIND)
-AC_SUBST(CS_HOST_WORKAREA_PREFIX)
+AC_SUBST(DISABLE_WPO)
+AC_SUBST(SCHEME_LIBFFI)
 AC_SUBST(PBCHUNK_MODE)
-AC_SUBST(RUN_RACKET)
 AC_SUBST(INSTALL_SETUP_FLAGS)
 AC_SUBST(INSTALL_SETUP_RACKET_FLAGS)
 AC_SUBST(INSTALL_LIBS_ENABLE)
 AC_SUBST(PLT_CS_SLSP_SUFFIX)
-AC_SUBST(INSTALL_NAME_TOOL)
+AC_SUBST(RKTIO_CONFIGURE_ARGS)
 
-makefiles="Makefile"
+makefiles="Mf-config"
 
 AC_OUTPUT($makefiles)
 
-mkdir -p rktio
-abssrcdir=`(cd ${srcdir}; pwd)`
-echo "=== configuring in rktio (${abssrcdir}/../../rktio)"
-cd rktio; eval "${abssrcdir}/../../rktio/configure ${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
+cp ${srcdir}/buildmain.zuo main.zuo

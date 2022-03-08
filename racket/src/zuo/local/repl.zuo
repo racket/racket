@@ -1,0 +1,29 @@
+#lang zuo
+
+;; Zuo is really not for interctive evaluation, but `kernel-eval` does
+;; exist...
+
+(alert "REPL for single-line kernel expressions:")
+(define in (fd-open-input 'stdin))
+(define out (fd-open-output 'stdout (hash)))
+(fd-write out "> ")
+(let loop ([pending ""])
+  (define line-end (let loop ([i 0])
+                     (cond
+                       [(= i (string-length pending)) #f]
+                       [(= (string-ref pending i) (char "\n")) (+ i 1)]
+                       [else (loop (+ i 1))])))
+  (define (read-and-eval s)
+    (for-each (lambda (e)
+                (alert (~v (kernel-eval e))))
+              (string-read s)))
+  (cond
+    [line-end
+     (read-and-eval (substring pending 0 line-end))
+     (fd-write out "> ")
+     (loop (substring pending line-end (string-length pending)))]
+    [else
+     (define input (fd-read in 1))
+     (if (eq? input eof)
+         (read-and-eval pending)
+         (loop (~a pending input)))]))

@@ -1,0 +1,22 @@
+#lang zuo/datum
+
+(provide syntax-error
+         bad-syntax
+         misplaced-syntax
+         duplicate-identifier)
+
+(define syntax-error
+  (lambda (msg stx)
+    (error (~a msg ": " (~s (syntax->datum stx))))))
+
+(define bad-syntax
+  (lambda (stx)
+    (syntax-error "bad syntax" stx)))
+
+(define misplaced-syntax
+  (lambda (stx)
+    (syntax-error "misplaced syntax" stx)))
+
+(define duplicate-identifier
+  (lambda (stx)
+    (syntax-error "duplicate identifier" stx)))

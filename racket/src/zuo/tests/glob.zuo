@@ -1,0 +1,88 @@
+#lang zuo
+
+(require "harness.zuo")
+
+(alert "glob")
+
+(check (glob-match? "apple" "apple"))
+(check (glob-match? "apple" "banana") #f)
+
+(check (glob-match? "" ""))
+(check (glob-match? "" "x") #f)
+(check (glob-match? "x" "") #f)
+
+(check (glob-match? "a*le" "apple"))
+(check (glob-match? "a*le" "ale"))
+(check (glob-match? "a*le" "aple"))
+(check (glob-match? "a*le" "a//p//le"))
+(check (glob-match? "a*le" "appe") #f)
+(check (glob-match? "a*le" "pple") #f)
+
+(check (glob-match? "a*?le" "apple"))
+(check (glob-match? "a*?le" "aple"))
+(check (glob-match? "a*?le" "ale") #f)
+
+(check (glob-match? "*le" "apple"))
+(check (glob-match? "*le" ".apple"))
+
+(check (glob-match? "*le" "apple"))
+(check (glob-match? "*le" ".apple"))
+
+(check (glob-match? "x[a-c]x" "x0x") #f)
+(check (glob-match? "x[a-c]x" "xax"))
+(check (glob-match? "x[a-c]x" "xbx"))
+(check (glob-match? "x[a-c]x" "xcx"))
+(check (glob-match? "x[a-c]x" "xdx") #f)
+(check (glob-match? "x[a-c]x" "x[x") #f)
+(check (glob-match? "x[a-c]x" "x]x") #f)
+
+(check (glob-match? "x[0-9][A-Z]x" "x0Ax"))
+(check (glob-match? "x[0-9][A-Z]x" "x9Zx"))
+(check (glob-match? "x[0-9][A-Z]x" "xA0x") #f)
+
+(check (glob-match? "x[0-9a]x" "x0x"))
+(check (glob-match? "x[0-9a]x" "xax"))
+(check (glob-match? "x[0-9a]x" "xbx") #f)
+(check (glob-match? "x[0-9a]x" "x-x") #f)
+(check (glob-match? "x[-0-9a]x" "x-x"))
+(check (glob-match? "x[0-9a-]x" "x-x"))
+(check (glob-match? "x[]0-9a]x" "x]x"))
+(check (glob-match? "x[]0-9a]x" "x0x"))
+(check (glob-match? "x[]0-9a]x" "x[x") #f)
+(check (glob-match? "x[a-]x" "x-x"))
+(check (glob-match? "x[a-]x" "x.x") #f)
+
+(check (glob-match? "x[^0-9a]x" "x_x"))
+(check (glob-match? "x[^0-9a]x" "x0x") #f)
+(check (glob-match? "x[^0-9a]x" "x5x") #f)
+(check (glob-match? "x[^0-9a]x" "x9x") #f)
+(check (glob-match? "x[^0-9a]x" "xax") #f)
+(check (glob-match? "x[^0-9a]x" "xbx"))
+(check (glob-match? "x[^0-9a]x" "xbx"))
+(check (glob-match? "x[^^]x" "xbx"))
+(check (glob-match? "x[^^]x" "x^x") #f)
+(check (glob-match? "x[^-]x" "x-x") #f)
+(check (glob-match? "x[^x]x" "x-x"))
+(check (glob-match? "x[^]]x" "x]x") #f)
+(check (glob-match? "x[^]]x" "x-x"))
+
+(check (glob-match? "**e" "apple"))
+(check (glob-match? "**" "apple"))
+(check (glob-match? "**z" "apple") #f)
+
+(check (procedure? (glob->matcher "a*c")))
+(check ((glob->matcher "a*c") "abxyzc"))
+
+(define-syntax (check-glob-fail stx)
+  `(check-fail (begin
+                 (require zuo/glob)
+                 ,(cadr stx))
+               ,(list-ref stx 2)))
+
+(check-glob-fail (glob-match? 10 "a") not-string)
+(check-glob-fail (glob-match? "a" 10) not-string)
+(check-glob-fail (glob->matcher 10) not-string)
+(check-glob-fail (glob->matcher "[") "unclosed square bracket")
+(check-glob-fail (glob->matcher "[]") "unclosed square bracket")
+(check-glob-fail (glob->matcher "[^]") "unclosed square bracket")
+(check-glob-fail (glob->matcher "[z-a]") "bad range")

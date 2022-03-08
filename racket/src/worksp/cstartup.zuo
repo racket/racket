@@ -1,0 +1,40 @@
+#lang zuo
+
+(provide convert-to-character-array)
+
+;; 65535 characters should be enough for any string --- or so says
+;; MSVC. Convert "startup.inc" to a character array.
+(define (convert-to-character-array src dest)
+  (define str (file->string src))
+  (define out (fd-open-output dest :truncate))
+
+  (fd-write out "#define EVAL_STARTUP EVAL_ONE_STR((char *)startup_source)\n")
+  (fd-write out "static unsigned char startup_source[] = {\n")
+
+  (let loop ([i 0] [col 0])
+    (define e (let find-str ([i i])
+                (cond
+                  [(= i (string-length str)) i]
+                  [(= (char "\"") (string-ref str i)) i]
+                  [else (find-str (+ i 1))])))
+    (cond
+      [(= e (string-length str))
+       (fd-write out "\n 0 };\n")
+       (fd-close out)]
+      [else
+       (let convert ([i (+ e 1)] [col col])
+         (cond
+           [(= (char "\"") (string-ref str i))
+            (loop (+ i 1) col)]
+           [(= (char "\\") (string-ref str i))
+            (fd-write out (~a (string-ref str (+ i 1)) ","))
+            (convert (+ i 2) col)]
+           [else
+            (fd-write out (~a (string-ref str i) ","))
+            (let ([col (+ col 1)])
+              (cond
+                [(= col 20)
+                 (fd-write out "\n")
+                 (convert (+ i 1) 0)]
+                [else
+                 (convert (+ i 1) col)]))]))])))

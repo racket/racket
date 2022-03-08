@@ -1,0 +1,6 @@
+#lang zuo/hygienic/base
+
+(require zuo/hygienic/cmdline)
+
+(provide (all-from-out zuo/private/base-hygienic/main
+                       zuo/hygienic/cmdline))

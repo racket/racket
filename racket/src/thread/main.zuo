@@ -1,0 +1,62 @@
+#lang zuo
+(require "../lib.zuo"
+         (only-in "../expander/main.zuo"
+                  expander-target
+                  expander-main
+                  register-expansion-dependencies))
+
+(provide-targets targets-at)
+
+(define (targets-at at-dir
+                    [vars (hash)]
+                    [expander (expander-target (make-at-dir (at-dir "../expander")) vars)])
+
+  (define thread.rktl (at-dir "compiled/thread.rktl"))
+  (define thread-dep.rktd (at-dir "compiled/thread-dep.rktd"))
+  
+  (make-targets
+   `([:target thread-src (,thread.rktl) ,void]
+
+     [:target ,thread.rktl (,expander)
+              ,(lambda (path token)
+                 (racket vars
+                         (expander-main)
+                         "-t" (at-source "main.rkt")
+                         "-c" (at-dir "compiled/cache-src")
+                         "-k" (at-source "../..")
+                         "-s" "-x"
+                         "--depends" thread-dep.rktd
+                         ;; When flattening, replace a dynamic lookup from a primitive table to
+                         ;; a direct use of the primitive name:
+                         "++direct" "pthread"
+                         ;; Make sure that the flattened form doesn't use `error`:
+                         "++disallow" "error"
+                         ;; Enable the sanity check for global state (to be avoided in
+                         ;; favor of place-local state), but declare some initialized-once
+                         ;; global state to be ok:
+                         "--no-global"
+                         "++global-ok" "the-sandman"
+                         "++global-ok" "post-shutdown-action"
+                         "++global-ok" "get-subprocesses-time"
+                         "++global-ok" "pre-poll-callbacks"
+                         "++global-ok" "queued-shutdowns"
+                         "++global-ok" "compute-memory-sizes"
+                         "++global-ok" "computed-memory-sizes?"
+                         "++global-ok" "custodians-with-limits"
+                         "++global-ok" "make-place-ports+fds"
+                         "++global-ok" "pthread-count"
+                         "++global-ok" "logging-future-events?"
+                         "++global-ok" "log-future-event"
+                         "++global-ok" "logging-place-events?"
+                         "++global-ok" "log-place-event"
+                         "++global-ok" "thread-engine-for-roots"
+                         "++global-ok" "TICKS"
+                         "-o" path)
+                 (register-expansion-dependencies thread-dep.rktd token))]
+
+     [:target demo ()
+              ,(lambda (token)
+                 (raco vars "make" (at-source "demo.rkt"))
+                 (racket vars (at-source "demo.rkt")))]
+
+     [:db-dir ,(at-dir "compiled")])))

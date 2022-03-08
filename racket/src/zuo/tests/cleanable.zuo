@@ -1,0 +1,82 @@
+#lang zuo
+
+(require "harness.zuo")
+
+(alert "cleanables")
+
+(define adios-file (build-path tmp-dir "adios.txt"))
+
+(define (check-cleaned pre post expect-status expect-exist?)
+  (run-zuo* '("")
+            (~a "#lang zuo\n"
+                (~s
+                 `(begin
+                    ,@pre
+                    (define cl (cleanable-file ,adios-file))
+                    ,@post)))
+            (lambda (status out err)
+              (check status expect-status)))
+  (check (file-exists? adios-file) expect-exist?))
+
+(fd-close (fd-open-output adios-file :truncate))
+(check-cleaned '()
+               '()
+               0
+               #f)
+(check-cleaned `((void (fd-open-output ,adios-file :truncate)))
+               '()
+               0
+               #f)
+(check-cleaned `((void (fd-open-output ,adios-file :truncate)))
+               '((car '()))
+               1
+               #f)
+(check-cleaned `((void (fd-open-output ,adios-file :truncate)))
+               '((cleanable-cancel cl))
+               0
+               #t)
+
+;; check that a process doesn't exit before a subprocess,
+;; even when it doesn't explicitly wait, or that it does exit
+;; in no-wait mode
+(define (check-sub no-wait?)
+  (define sub.zuo (build-path tmp-dir "sub.zuo"))
+  (define inner.zuo (build-path tmp-dir "inner.zuo"))
+  (let ([o (fd-open-output sub.zuo :truncate)])
+    (fd-write o (~a "#lang zuo\n"
+                    (~s `(void (process (hash-ref (runtime-env) 'exe)
+                                        ,inner.zuo
+                                        ,(if no-wait?
+                                             '(hash 'cleanable? #f)
+                                             '(hash)))))))
+    (fd-close o))
+  (let ([o (fd-open-output inner.zuo :truncate)])
+    (fd-write o (~a "#lang zuo\n"
+                    (~s `(let ([in (fd-open-input 'stdin)]
+                               [out (fd-open-output 'stdout)])
+                           (define s (fd-read in 1))
+                           (fd-write out s)
+                           (fd-read in 1)))))
+    (fd-close o))
+  (define p (process (hash-ref (runtime-env) 'exe)
+                     sub.zuo
+                     (hash 'stdin 'pipe 'stdout 'pipe)))
+  (define to (hash-ref p 'stdin))
+  (define from (hash-ref p 'stdout))
+  (cond
+    [no-wait? (process-wait (hash-ref p 'process))]
+    [else (check (process-status (hash-ref p 'process)) 'running)])
+  (fd-write to "x")
+  (check (fd-read from 1) "x")
+  (unless no-wait?
+    (check (process-status (hash-ref p 'process)) 'running))
+  (fd-write to "y")
+  (process-wait (hash-ref p 'process))
+  (check (process-status (hash-ref p 'process)) 0))
+
+(check-sub #f)
+(check-sub #f)
+(check-sub #t)
+
+(check-arg-fail (cleanable-file 10) not-path)
+(check-arg-fail (cleanable-cancel 10) "cleanable handle")

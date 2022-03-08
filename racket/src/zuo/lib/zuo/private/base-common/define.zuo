@@ -1,0 +1,13 @@
+#lang zuo/datum
+
+(require "define-help.zuo"
+         "opt-lambda.zuo")
+
+(provide (rename-out [define-var-or-proc define]
+                     [define-syntax-var-or-proc define-syntax]))
+
+(define-syntax define-var-or-proc
+  (make-define (quote-syntax define) (quote-syntax lambda)))
+
+(define-syntax define-syntax-var-or-proc
+  (make-define (quote-syntax define-syntax) (quote-syntax lambda)))

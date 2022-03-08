@@ -1991,7 +1991,7 @@ static wchar_t *convert_output_wtext(const char *buffer, intptr_t *_towrite,
     count = MultiByteToWideChar(CP_UTF8, 0, src_buffer, i, dest_buffer, count);
     if (!count) {
       /* force progress */
-      src_buffer[0] = 0xFFFD;
+      ((wchar_t *)src_buffer)[0] = 0xFFFD;
       count = 1;
     }
   }

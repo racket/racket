@@ -1,0 +1,67 @@
+#lang zuo/datum
+
+;; Creation of the initial bindings and managing imports/exports
+
+;; A binding can be any non-pair value or one of the record
+;; types described in "struct.zuo"
+
+(define (make-core-initial-bind bind)
+  (as-specific (make-initial-import bind)))
+
+;; Start with kernel-supplied primitives
+(define kernel-provides
+  (let* ([ht (kernel-env)])
+    (foldl (lambda (sym provides)
+             (hash-set provides sym (make-core-initial-bind (hash-ref ht sym #f))))
+           (hash)
+           (hash-keys ht))))
+
+;; Add expander-defined syntactic forms
+(define top-form-provides
+  (foldl (lambda (sym provides)
+           (hash-set provides sym (make-core-initial-bind (make-core-form sym))))
+         kernel-provides
+         '(lambda let letrec quote if begin
+                  define define-syntax require provide module+
+                  quote-syntax quote-module-path
+                  include)))
+
+;; Add some functions/constants defined in the expander
+(define top-provides
+  (let* ([provides top-form-provides]
+         [add (lambda (provides name val) (hash-set provides name (make-core-initial-bind val)))]
+         [provides (add provides 'identifier? identifier?)]
+         [provides (add provides 'syntax-e checked-syntax-e)]
+         [provides (add provides 'syntax->datum checked-syntax->datum)]
+         [provides (add provides 'datum->syntax checked-datum->syntax)]
+         [provides (add provides 'bound-identifier=? bound-identifier=?)]
+         [provides (add provides 'context-consumer context-consumer)]
+         [provides (add provides 'context-consumer? context-consumer?)]
+         [provides (add provides 'dynamic-require dynamic-require)])
+    provides))
+
+;; Used to convert a local binding into one that goes in a provides
+;; table, so suitable to import into another module
+(define (export-bind bind ctx binds)
+  (let* ([label (and (specific? bind)
+                     (specific-label bind))]
+         [bind (unwrap-specific bind)]
+         [bind (if (initial-import? bind)
+                   (initial-import-bind bind)
+                   bind)]
+         [bind (cond
+                 [(defined? bind)
+                  (make-local-variable (variable-var bind))]
+                 [(defined-macro? bind)
+                  (make-exported-macro (defined-macro-proc bind) ctx)]
+                 [else bind])])
+    (if label
+        (make-specific (cons bind label))
+        bind)))
+
+;; in case `all-from-out` is used on the initial import,
+;; adds all the current ids in `binds` as nominally imported
+(define (initial-nominals mod-path provides)
+  (list (cons mod-path
+              (map (lambda (sym) (cons sym (hash-ref provides sym #f)))
+                   (hash-keys provides)))))

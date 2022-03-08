@@ -1,6 +1,6 @@
 (module mksystem '#%kernel
   ;; Arguments are
-  ;;   <output-file> [<cpp-command> <3m-exe-suffix> <cross-target-kind> <run-racket-command> <this-racket-command>]
+  ;;   <output-file> [<cpp-command> <3m-exe-suffix> <cross-target-kind> <cross-or-native>]
   (define-values (args) (current-command-line-arguments))
 
   (define-values (mi-target?)
@@ -11,8 +11,7 @@
   (define-values (ht)
     (if (if (= (vector-length args) 1)
             #t
-            (equal? (vector-ref args (- (vector-length args) 1))
-                    (vector-ref args (- (vector-length args) 2))))
+            (equal? (vector-ref args 4) "native"))
         ;; Not cross-compiling
         (hash 'os (system-type 'os)
               'os* (system-type 'os*)
@@ -36,7 +35,7 @@
         (begin
           (printf "Extracting system information for cross-compile\n")
           (let-values ([(p out in err)
-                        (subprocess #f #f #f "/bin/sh" "-c" (vector-ref args 1))])
+                        (subprocess #f #f (current-error-port) "/bin/sh" "-c" (vector-ref args 1))])
             (close-output-port in)
             (letrec-values ([(read-all) (lambda ()
                                           (let-values ([(s) (read-bytes 4096 out)])
