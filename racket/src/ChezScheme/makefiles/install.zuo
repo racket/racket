@@ -1,0 +1,193 @@
+#lang zuo
+
+(provide install)
+
+(define (install at-workarea [vars (hash)] [uninstall? #f])
+  (define config (config-file->hash (at-workarea "Mf-config")))
+  (define (lookup key) (or (hash-ref vars key #f)
+                           (hash-ref config key #f)))
+
+  (define-syntax (define-var stx)
+    `(define ,(cadr stx) (or (lookup ',(cadr stx))
+                             ,(list-ref stx 2))))
+
+  (define m (lookup 'm))
+
+  ;; The following variables determine where the executables, boot files,
+  ;; example programs, and manual pages are installed.
+
+  ;; executable directory
+  (define-var InstallBin "/usr/bin")
+
+  ;; library directory
+  (define-var InstallLib "/usr/lib")
+
+  ;; man page directory
+  (define-var InstallMan "/usr/man/man1")
+
+  ;; installation owner
+  (define-var InstallOwner "")
+
+  ;; installation group
+  (define-var InstallGroup "")
+
+  ;; Files are actually installed at ${TempRoot}${InstallBin},
+  ;; ${TempRoot}${InstallLib}, and ${TempRoot}${InstallMan}.
+  ;; This useful for testing the install process and for building
+  ;; installation scripts
+  (define-var TempRoot "")
+
+  ;; compress man pages?
+  (define-var GzipManPages "yes")
+
+  ;; executable names
+  (define-var InstallSchemeName "scheme")
+  (define-var InstallPetiteName "petite")
+  (define-var InstallScriptName "scheme-script")
+
+  ;; Whether to install "kernel.o" or "libkernel.a"
+  (define-var Kernel "KernelLib") ; or "KernelO"
+
+  ;; Empty lib vars mean install libz.a and liblz4.a
+  (define-var zlibLib "")
+  (define-var LZ4Lib "")
+
+  ;; Everything after here is derived from the configuration
+
+  (define Version (let* ([str (file->string (at-source "../s/cmacros.ss"))]
+                         [def "(define-constant scheme-version #x"]
+                         [end (- (string-length str) (string-length def))])
+                    (let loop ([i 0])
+                      (cond
+                        [(> i end) (error "did not find version in cmacro.ss")]
+                        [(and (= (string-ref str i) (string-ref def 0))
+                              (string=? (substring str i (+ i (string-length def))) def))
+                         (let ([hex (substring str
+                                               (+ i (string-length def))
+                                               (+ i (string-length def) 8))])
+                           (define (hex-digit-val c) (cond
+                                                       [(>= c (char "a")) (+ (- c (char "a") 10))]
+                                                       [(>= c (char "A")) (+ (- c (char "A") 10))]
+                                                       [else (- c (char "0"))]))
+                           (define (hex-val i) (+ (* 16 (hex-digit-val (string-ref hex i)))
+                                                  (hex-digit-val (string-ref hex (+ i 1)))))
+                           (~a "csv" (hex-val 0) "." (hex-val 2) "." (hex-val 4) "." (hex-val 6)))]
+                        [else (loop (+ i 1))]))))
+
+  (define Include (at-workarea "boot" m))
+  (define PetiteBoot (at-workarea "boot" m "petite.boot"))
+  (define SchemeBoot (at-workarea "boot" m "scheme.boot"))
+  ;; (define Revision (at-workarea "boot" m "revision"))
+  (define Scheme (at-workarea "bin" m "scheme"))
+  (define InstallLibExamples (build-path InstallLib Version "examples"))
+  (define InstallLibBin (build-path InstallLib Version "m"))
+
+  (define (prefix-path prefix path)
+    (if (string=? prefix "")
+        path
+        (apply build-path (cons prefix (let loop ([path path] [accum '()])
+                                         (define l (split-path path))
+                                         (if (not (car l))
+                                             accum
+                                             (loop (car l) (cons (cdr l) accum))))))))
+
+  (define Bin (prefix-path TempRoot InstallBin))
+  (define Lib (prefix-path TempRoot (build-path InstallLib Version)))
+  (define LibExamples (prefix-path TempRoot InstallLibExamples))
+  (define LibBin (prefix-path TempRoot InstallLibBin))
+  (define Man (prefix-path TempRoot InstallMan))
+  (define PetitePath (build-path Bin InstallPetiteName))
+  (define SchemePath (build-path Bin InstallSchemeName))
+  (define SchemeScriptPath (build-path Bin InstallScriptName))
+
+  (define (I . args)
+    (apply shell/wait
+           (list* (at-source "installsh")
+                  "-o" InstallOwner "-g" InstallGroup
+                  args)))
+  (define (rm-f f)
+    (shell/wait "rm" "-f" f))
+  (define (rm-rf d)
+    (shell/wait "rm" "-rf" d))
+  (define (ln-f from to)
+    (shell/wait "ln" "-f" from to))
+
+  (cond
+    [uninstall?
+     (rm-rf Lib)
+     (rm-f PetitePath)
+     (rm-f SchemePath)
+     (rm-f SchemeScriptPath)
+     (rm-f (build-path Man (~a InstallPetiteName ".1")))
+     (rm-f (build-path Man (~a InstallPetiteName ".1.gz")))
+     (rm-f (build-path Man (~a InstallSchemeName ".1")))
+     (rm-f (build-path Man (~a InstallSchemeName ".1.gz")))]
+    [else
+     (for-each (lambda (d)
+                 (unless (directory-exists? d)
+                   (I "-d" "-m" "755" d)))
+               (list Lib LibBin LibExamples Bin Man))
+
+     ;; bin
+     (rm-f SchemePath)
+     (rm-f PetitePath)
+     (rm-f SchemeScriptPath)
+     (I "-m" "555" Scheme SchemePath)
+     (ln-f SchemePath PetitePath)
+     (ln-f SchemePath SchemeScriptPath)
+
+     ;; lib
+     (I "-m" "444" PetiteBoot (build-path LibBin "petite.boot"))
+     (when (not (string=? InstallPetiteName "petite"))
+       (rm-f (build-path LibBin (~a InstallPetiteName ".boot")))
+       (ln-f (build-path LibBin "petite.boot") (build-path LibBin (~a InstallPetiteName ".boot"))))
+     (I "-m" "444" SchemeBoot (build-path LibBin "scheme.boot"))
+     (when (not (string=? InstallSchemeName "scheme"))
+       (rm-f (build-path LibBin (~a InstallSchemeName ".boot")))
+       (ln-f (build-path LibBin "scheme.boot") (build-path LibBin (~a InstallSchemeName ".boot"))))
+     (ln-f (build-path LibBin "scheme.boot") (build-path LibBin (~a InstallScriptName ".boot")))
+     (I "-m" "444" (build-path Include "main.o") LibBin)
+     (I "-m" "444" (build-path Include "scheme.h") LibBin)
+     #;(I "-m" "444" Revision (build-path LibBin "revision"))
+
+     ;; man
+     (shell/wait "sed"
+                 "-e" (~a "s;{InstallBin};" InstallBin ";g")
+                 "-e" (~a "s;{InstallLibExamples};" InstallLibExamples ";g")
+                 "-e" (~a "s;{InstallLibBin};" InstallLibBin ";g")
+                 "-e" (~a "s;{InstallPetiteName};" InstallPetiteName ";g")
+                 "-e" (~a "s;{InstallSchemeName};" InstallSchemeName ";g")
+                 "-e" (~a "s;{InstallScriptName};" InstallScriptName ";g")
+                 (at-source "../scheme.1.in")
+                 (literal ">")
+                 (at-workarea "scheme.1"))
+     (for-each (lambda (manpage)
+                 (I "-m" "444" (at-workarea "scheme.1") manpage)
+                 (when (string=? GzipManPages "yes") (shell/wait "gzip" "-f" manpage)))
+               (list (build-path Man (~a InstallSchemeName ".1"))
+                     (build-path Man (~a InstallPetiteName ".1"))))
+
+     (let ([kernel (if (string=? Kernel "KernelO") "kernel.o" "libkernel.a")])
+       (I "-m" "444" (build-path Include kernel) LibBin))
+
+     (when (string=? Kernel "KernelLib")
+       (when (string=? zlibLib "")
+         (I "-m" "444" (at-workarea "zlib/libz.a") LibBin))
+       (when (string=? LZ4Lib "")
+         (I "-m" "444" (at-workarea "lz4/lib/liblz4.a") LibBin)))
+
+     (apply I (list* "-m" "444" (append (ls* (at-source "../examples")) (list LibExamples))))]))
+
+(struct literal (content))
+
+(define (shell/wait cmd . args)
+  (define command (apply build-shell (map (lambda (s)
+                                            (if (literal? s)
+                                                (literal-content s)
+                                                (string->shell s)))
+                                          (cons cmd args))))
+  (displayln command)
+  (define p (shell command))
+  (process-wait (hash-ref p 'process))
+  (unless (= 0 (process-status (hash-ref p 'process)))
+    (error "failed")))

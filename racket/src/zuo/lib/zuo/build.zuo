@@ -28,7 +28,11 @@
          build/recur
 
          find-target
+         make-at-dir
          provide-targets
+
+         command-target?
+         command-target->target
 
          make-targets)
 
@@ -448,10 +452,7 @@
           (cond
             [(and target1 (hash-ref (target-options target1) 'command? #f))
              ;; provide extra arguments to the target:
-             (build (target-set-get-rule target1 (let ([get-rule (target-get-rule target1)])
-                                                   (lambda (path token)
-                                                     (apply get-rule (list* path token (cdr args))))))
-                    opts)]
+             (build (command-target->target target1 (cdr args)) opts)]
             [else
              ;; treat all arguments as targets:
              (let ([run-targets (map (lambda (arg)
@@ -513,6 +514,28 @@
                       (= (char "\\") (string-ref t-name (- start 1)))))))))
   (ormap (lambda (t) (and (matches? (target-name t)) t))
          targets))
+
+(define (command-target? t)
+  (and (target? t)
+       (and (hash-ref (target-options t) 'command? #f) #t)))
+
+(define (command-target->target t args)
+  (unless (command-target? t) (arg-error 'command-target->target "command target" t))
+  (unless (list? args) (arg-error 'command-target->target "list" args))
+  (let ([new-get-rule (let ([get-rule (target-get-rule t)])
+                        (lambda (path token)
+                          (apply get-rule (list* path token args))))])
+    (target-set-options (target-set-get-rule t new-get-rule)
+                        (hash-remove (target-options t) 'command?))))
+
+(define (make-at-dir s)
+  (lambda paths
+    (for-each (lambda (path)
+                (unless (and (path-string? path)
+                             (relative-path? path))
+                  (arg-error 'at-dir "relative path string" path)))
+              paths)
+    (apply build-path (cons s paths))))
 
 ;; Exports `targets`, which is a function that takes an `at-dir`
 ;; function, while also setting up a `main` submodule to call
@@ -735,10 +758,10 @@
                                   [get-deps (lambda () (map dep->target (reverse (hash-ref deps key '()))))]
                                   [t (make-target name
                                                   (if (symbol? name)
-                                                      (lambda (token)
+                                                      (lambda (token . args)
                                                         (make-phony-rule (get-deps)
                                                                          (lambda ()
-                                                                           ((list-ref spec 3) token))))
+                                                                           (apply (list-ref spec 3) (cons token args)))))
                                                       (lambda (path token)
                                                         (make-rule (get-deps)
                                                                    (lambda ()

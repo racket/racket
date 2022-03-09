@@ -1,11 +1,106 @@
 
+workarea=$(w)
+
 include $(workarea)/Mf-config
 
-ZUO=./zuo
+ZUO=bin/zuo
 
 .PHONY: build
 build: $(ZUO)
 	$(ZUO) $(workarea)
 
+.PHONY: run
+run: $(ZUO)
+	$(ZUO) $(workarea) run
+
+.PHONY: kernel
+kernel: $(ZUO)
+	$(ZUO) $(workarea) kernel
+
+.PHONY: install
+install: $(ZUO)
+	$(ZUO) $(workarea) install
+
+.PHONY: uninstall
+uninstall: $(ZUO)
+	$(ZUO) $(workarea) uninstall
+
+.PHONY: test
+test: $(ZUO)
+	$(ZUO) $(workarea) test
+
+.PHONY: test-some
+test-some: $(ZUO)
+	$(ZUO) $(workarea) test-some
+
+.PHONY: test-more
+test-more: $(ZUO)
+	$(ZUO) $(workarea) test-more
+
+.PHONY: coverage
+coverage: $(ZUO)
+	$(ZUO) $(workarea) coverage
+
+.PHONY: bootfiles
+bootfiles: $(ZUO)
+	$(ZUO) $(workarea) bootfiles
+
+.PHONY: reset
+reset: $(ZUO)
+	$(ZUO) $(workarea) reset
+
+# <machine>.boot to build boot files for <machine>
+%.boot: $(ZUO)
+	$(ZUO) $(workarea) cross-boot $*
+
+auto.boot: $(ZUO)
+	$(ZUO) $(workarea) cross-boot
+
+# <machine>.bootquick to build boot files for <machine>
+# with o=3 d=0 for the cross compiler, and only after
+# building the kernel for the configured machine
+%.bootquick: $(ZUO)
+	$(ZUO) $(workarea) cross-boot-quick $*
+
+auto.bootquick: $(ZUO)
+	$(ZUO) $(workarea) cross-boot-quick
+
+# <machine>-<tag>.boot to repackage boot files for
+# <machine> with pbchunk sources, including additional
+# boot files
+%.bootpbchunk: $(ZUO)
+	$(ZUO) $(workarea) boot-pbchunk $* $(ARGS)
+
+# Supply ORIG=<dir> to build using existing at <dir>
+.PHONY: from-orig
+from-orig: $(ZUO)
+	$(ZUO) $(workarea) from-orig $(ORIG)
+
+.PHONY: docs
+docs: build $(ZUO)
+	$(ZUO) $(workarea) docs
+
+.PHONY: bintar
+bintar: $(ZUO)
+	$(ZUO) $(workarea) bintar
+
+.PHONY: rpm
+rpm: $(ZUO)
+	$(ZUO) $(workarea) rpm
+
+.PHONY: pkg
+pkg: $(ZUO)
+	$(ZUO) $(workarea) pkg
+
+.PHONY: clean
+clean: $(ZUO)
+	$(ZUO) $(workarea) clean
+
+.PHONY: distclean
+distclean:
+	$(ZUO) $(workarea) distclean
+
+# We expect this rule to fire only if $(ZUO) is "bin/zuo"
 $(ZUO): $(srcdir)/../zuo/zuo.c
-	$(HOSTCC) -DZUO_LIB_PATH='"'"$(srcdir)/../zuo/lib"'"' -o $(ZUO) $(srcdir)/../zuo/zuo.c
+	mkdir -p bin
+	$(HOSTCC) -DZUO_LIB_PATH='"'"$(srcdir)/../../zuo/lib"'"' -o $(ZUO) $(srcdir)/../zuo/zuo.c

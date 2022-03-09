@@ -37,10 +37,13 @@
     '(disablecurses disablex11 enablelibffi alwaysUseBootFile))
 
   (make-targets
-   `([:target build (workarea)
+   `([:target build (workarea kernel)
               ,(lambda (token)
-                 (build (find-target "build" (c-targets-at (make-at-dir (at-dir "c")))))
                  (build (find-target "bootstrap" (s-targets-at (make-at-dir (at-dir "s"))))))]
+
+     [:target kernel (workarea)
+              ,(lambda (token)
+                 (build (find-target "build" (c-targets-at (make-at-dir (at-dir "c"))))))]
 
      ;; Builds out an initial workarea, with links to book files, the "c/config.h", etc.
      [:target workarea (,@bounce-files ,c-config-file ,@boot-files)
@@ -91,6 +94,47 @@
                            (cp/ln src dest))])
             boot-file-names
             boot-files)
+
+     [:target cross-boot-quick ()
+              ,(lambda (token . args)
+                 (unless (<= (length args) 1) (error "expected optional <machine>" args))
+                 (define xm (if (null? args)
+                                (hash-ref config 'defaultm)
+                                (car args)))
+                 (define dir (at-dir ".." (~a "xc-" xm)))
+                 (define s-dir (build-path dir "s"))
+                 (mkdir* s-dir)
+                 (display-to-file (~a "m=" xm "\n"
+                                      "hostm=" m "\n"
+                                      "hostworkarea=" (build-path "../.." m) "\n")
+                                  (build-path dir "Mf-config")
+                                  :truncate)
+                 (build (find-target "all" (s-targets-at (make-at-dir s-dir))))
+                 (define boot-xm-dir (at-dir "../boot" xm))
+                 (mkdir* boot-xm-dir)
+                 (for-each (lambda (file)
+                             (cp (build-path dir "boot" xm file)
+                                 (build-path boot-xm-dir file)))
+                           boot-file-names))
+              :command]
+
+     [:target run ()
+              ,(lambda (token . args)
+                 (define t (find-target "run" (s-targets-at (make-at-dir (at-dir "s")))))
+                 (build (command-target->target t args)))
+              :command]
+
+     [:target install ()
+              ,(lambda (token)
+                 ((dynamic-require (at-source "makefiles/install.zuo") 'install)
+                  at-dir))]
+
+     [:target uninstall ()
+              ,(lambda (token)
+                 ((dynamic-require (at-source "makefiles/install.zuo") 'install)
+                  at-dir
+                  (hash)
+                  #t))]
 
      #;(end-make-targets))))
 

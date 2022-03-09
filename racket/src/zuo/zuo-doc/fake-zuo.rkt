@@ -23,7 +23,7 @@
     unquote
     unquote-splicing
     quote-syntax
-    
+
     define
     define-syntax
     include
@@ -31,7 +31,7 @@
     provide
     module+
     quote-module-path
-    
+
     pair?
     null?
     integer?
@@ -51,7 +51,7 @@
     call/cc
     context-consumer
     context-consumer?
-    
+
     cons
     car
     cdr
@@ -155,7 +155,7 @@
     path-only
     file-name-from-path
     path->complete-path
-    rm* cp* mkdir*
+    ls* rm* cp* mkdir*
     :error :truncate :must-truncate :append :update :can-update
     cleanable-file
     cleanable-cancel
@@ -166,7 +166,7 @@
     find-executable-path
     shell->strings
     string->shell
-    
+
     error
     alert
     ~v
@@ -209,6 +209,10 @@
     build/recur
     provide-targets
     find-target
+    make-at-dir
+    make-targets
+    command-target?
+    command-target->target
 
     shell
     shell/wait

@@ -29,6 +29,7 @@
          file-name-from-path
          path->complete-path
 
+         ls*
          mkdir*
          rm*
          cp*
@@ -241,6 +242,10 @@
   (if (relative-path? p)
       (build-path (hash-ref (runtime-env) 'dir) p)
       p))
+
+(define (ls* dir)
+  (unless (path-string? dir) (arg-error 'ls* "path string" dir))
+  (map (lambda (p) (build-path dir p)) (ls dir)))
 
 (define (mkdir* p)
   (unless (path-string? p) (arg-error 'mkdir* "path string" p))

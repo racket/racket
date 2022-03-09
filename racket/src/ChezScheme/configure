@@ -385,6 +385,12 @@ if [ "$bits" = "" ] ; then
 fi
 
 if [ "$threads" = "" ] ; then
+    defaultthreads=yes
+else
+    defaultthreads=$threads
+fi
+
+if [ "$threads" = "" ] ; then
     if [ "$pb" = "yes" ] ; then
         if [ "$pbarch" = "yes" ] ; then
             threads=yes
@@ -397,9 +403,9 @@ if [ "$threads" = "" ] ; then
 fi
 
 if [ $bits = 64 ] ; then
-  if [ $threads = yes ] ; then defaultm=$tm64 ; else defaultm=$m64 ; fi
+  if [ $defaultthreads = yes ] ; then defaultm=$tm64 ; else defaultm=$m64 ; fi
 else
-  if [ $threads = yes ] ; then defaultm=$tm32 ; else defaultm=$m32 ; fi
+  if [ $defaultthreads = yes ] ; then defaultm=$tm32 ; else defaultm=$m32 ; fi
 fi
 
 if [ "$m" = "" ] ; then
@@ -627,34 +633,6 @@ if [ "$cflagsset" = "no" ] ; then
   esac
 fi
 
-# architecture-specific for Mf-unix
-case "${muni}" in
-  pb*)
-      Cpu=PORTABLE_BYTECODE
-      mdarchsrc=pb
-      ;;
-  a6*)
-      Cpu=X86_64
-      mdarchsrc=i3le
-      ;;
-  i3*)
-      Cpu=I386
-      mdarchsrc=i3le
-      ;;
-  arm32*)
-      Cpu=ARMV6
-      mdarchsrc=arm32le
-      ;;
-  arm64*)
-      Cpu=AARCH64
-      mdarchsrc=arm32le
-      ;;
-  ppc32*)
-      Cpu=PPC32
-      mdarchsrc=ppc32
-      ;;
-esac
-
 # Add automatic thread compilation flags, unless suppressed by --disable-auto-flags
 if [ "$addflags" = "yes" ] ; then
     if [ "$threads" = "yes" ] ; then
@@ -734,7 +712,7 @@ mdinclude=
 mdcppflags=
 mdcflags=
 mdldflags=
-mdlinkflags= 
+mdlinkflags=
 zlibConfigureEnv=
 zlibConfigureFlags=
 exeExtraDeps=
@@ -906,12 +884,20 @@ else
 fi
 
 # Makefile to build and launch Zuo
-sed -e 's/$(workarea)/'$w'/g'\
+sed -e 's/$(w)/'$w'/g'\
     "$srcdir"/makefiles/$topMakefile > Makefile
 
 mkdir -p $w
 
-# Stub Zuo script to lanch the real one:
+# Stub Zuo script to lanch the real one, using "Makefile"
+# to locate the workarea
+cat > main.zuo << END
+#lang zuo
+(define config (config-file->hash (at-source "Makefile")))
+(void (module->hash (at-source (hash-ref config 'workarea) "main.zuo")))
+END
+
+# Some thing, but in the workarea:
 cat > $w/main.zuo << END
 #lang zuo
 (define config (config-file->hash (at-source "Mf-config")))
@@ -926,7 +912,7 @@ END
 cat > $w/Mf-config << END
 srcdir=$srcdir
 m=$m
-defaultm=$m
+defaultm=$defaultm
 Cpu=$Cpu
 mdarchsrc=$mdarchsrc
 mdinclude=$mdinclude
@@ -965,4 +951,18 @@ disablecurses=$disablecurses
 disablex11=$disablex11
 enablelibffi=$libffi
 alwaysUseBootFile=$alwaysUseBootFile
+
+InstallBin=$installbin
+InstallLib=$installlib
+InstallMan=$installman/man1
+InstallOwner=$installowner
+InstallGroup=$installgroup
+TempRoot=$temproot
+GzipManPages=$gzipmanpages
+InstallSchemeName=$installschemename
+InstallPetiteName=$installpetitename
+InstallScriptName=$installscriptname
+InstallKernelTarget=$installkerneltarget
+InstallZlibTarget=$installzlibtarget
+InstallLZ4Target=.*$;InstallLZ4Target=$installlz4target
 END

@@ -106,7 +106,7 @@ bound to a macro.}
 @deftogether[(
 @defform*[[(let ([id val-expr] ...) body ...+)
            (let proc-id ([id init-expr] ...) body ...+)]]
-@defform[(let* ([id val-expr] ...) body ...+)]           
+@defform[(let* ([id val-expr] ...) body ...+)]
 @defform[(letrec ([id val-expr] ...) body ...+)]
 )]{
 
@@ -354,7 +354,7 @@ representation.
          any/c]
 @defproc*[([(append [lst list?] ...) list?]
            [(append [lst list?] ... [v any/c]) any/c])]
-@defproc[(reverse [lst list?]) list?]           
+@defproc[(reverse [lst list?]) list?]
 @defproc[(length [lst list?]) integer?]
 @defproc[(list-ref [lst pair?] [pos integer?]) any/c]
 @defproc[(list-set [lst pair?] [pos integer?] [v any/c]) any/c]
@@ -416,7 +416,7 @@ Zuo @deftech{strings} are sequences of bytes.
 @defproc[(string [char integer?] ...) string?]
 @defproc[(string-length [str string?]) integer?]
 @defproc[(string-ref [str string?] [k integer?]) integer?]
-@defproc[(substring [str string?] 
+@defproc[(substring [str string?]
                     [start integer?]
                     [end integer? (string-length str)]) string?]
 @defproc[(string=? [str1 string?] [str2 string?]) boolean?]
@@ -714,6 +714,13 @@ elements or a @litchar{.zuo} suffix.}
 Loads @racket[mod-path] if it has not been loaded already, and returns
 the @tech{hash table} representation of the loaded module. See also
 Secref["module-protocol"]}
+
+@defproc[(dynamic-require [mod-path module-path?] [export symbol?]) any/c]{
+
+Like @racket[module->hash], but extracts an exported value. The module
+referenced by @racket[mod-path] must be implemented in
+@racketmodname[zuo], @racketmodname[zuo/hygienic], or a derived
+compatible language.}
 
 @defproc[(kernel-eval [s-exp any/c]) any/c]{
 
@@ -1115,7 +1122,7 @@ with only certain keys per platform:
        @racket['access-time-nanoseconds],
        @racket['modify-time-nanoseconds], and
        @racket['change-time-nanoseconds]}
- 
+
  @item{Windows: @racket['device-id], @indexed-racket['inode],
        @racket['mode] (read and write bits only), @racket['type]
        (abbreviated), @racket['hardlink-count], @racket['size],
@@ -1124,7 +1131,7 @@ with only certain keys per platform:
        @racket['access-time-nanoseconds],
        @racket['modify-time-nanoseconds], and
        @racket['creation-time-nanoseconds]}
- 
+
 ]
 
 The abbreviated @racket['type] field contains @racket['file],
@@ -1134,6 +1141,11 @@ only when @racket[follow-links?] is @racket[#f].}
 @defproc[(ls [dir path-string?]) list?]{
 
 Returns a list of path strings for files in @racket[dir].}
+
+@defproc[(ls* [dir path-string?]) list?]{
+
+Like @racket[ls], but builds a path using @racket[dir] for each
+element of the result list.}
 
 @defproc[(rm [name path-string?]) void?]{
 

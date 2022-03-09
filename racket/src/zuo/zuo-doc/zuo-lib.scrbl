@@ -400,7 +400,6 @@ The @racket[targets-at] procedure is applied to @racket[at-dir] and a
 hash table of variables, where each variable name is converted to a
 symbol and the value is left exact as after @litchar{=}.}
 
-
 @defproc[(find-target [name string?] [targets (listof target?)]) (or/c target? #f)]{
 
 Finds the first target in @racket[targets] that is a match for
@@ -408,6 +407,23 @@ Finds the first target in @racket[targets] that is a match for
 @racket[name] matches when it is the same as n entire symbol or path
 target name or when it matches a suffix that is preceded by
 @litchar{/} or @litchar{\\}.}
+
+@defproc[(make-at-dir [path path-string?]) (path-string?  ... . -> . path-string?)]{
+
+Creates a function that is similar to on created by @racket[at-source],
+but relative to @racket[path].}
+
+@deftogether[(
+@defproc[(command-target? [v any/c]) boolean?]
+@defproc[(command-target->target [target command-target?]
+                                 [args list?])
+         target?]
+)]{
+
+The @racket[command-target?] predicate recognizes a target with the
+@racket['target?] option, and @racket[command-target->target] converts
+such a target to one where @racket[args] are the argument when the
+target is built.}
 
 @deftogether[(
 @defproc[(file-sha1 [file path-string?] [token (or/c token? #f)]) sha1?]

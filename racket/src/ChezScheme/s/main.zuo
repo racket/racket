@@ -88,8 +88,8 @@
                           v)))
 
   (define m (lookup 'm))
-  (define host-m (or (lookup 'host-m) m))
-  (define host-workarea (or (lookup 'host-workarea) (at-dir "..")))
+  (define host-m (or (lookup 'hostm) m))
+  (define host-workarea (at-dir (or (lookup 'hostworkarea) "..")))
   (define arch (m->arch m))
   (define arch.ss (~a (arch->backend arch) ".ss"))
 
@@ -211,7 +211,6 @@
 
   (define (run-scheme/status what script inputs)
     (define scheme.exe (build-path host-workarea "bin" host-m "scheme"))
-
     (displayln (~a "running " scheme.exe " to build " what))
     (define env (cons
                  (cons "SCHEMEHEAPDIRS" (path->complete-path
@@ -546,9 +545,10 @@
        ;; independent of whether dependencies changed:
        [:target all (bootall ,@output-headers)
                 ,void]
-       [:target bootall (,@all-srcs ,@macro-objs ,nanopass.so ,@type-src-copies
+       [:target bootall (,@all-srcs ,@(add-patchfile macro-objs) ,nanopass.so ,@type-src-copies
                                     ,@cpnanopass-src-copies ,@unicode-src-copies)
                 ,(lambda (token)
+                   (mkdir* (at-boot "."))
                    (run-scheme "all at once"
                                (make-compile-at-once-script base-srcs base-objs petite.boot
                                                             compiler-srcs compiler-objs scheme.boot)
@@ -563,6 +563,17 @@
                    (build (map (lambda (file) (find-target file the-targets))
                                (list scheme.h equates.h gc-ocd.inc gc-oce.inc gc-par.inc heapcheck.inc)))
                    (fd-close (fd-open-output path :truncate)))]
+
+       [:target run ()
+                ,(lambda (token . args)
+                   (define scheme.exe (build-path host-workarea "bin" host-m "scheme"))
+                   (define env (cons
+                                (cons "SCHEMEHEAPDIRS" (path->complete-path
+                                                        (build-path host-workarea "boot" host-m)))
+                                (hash-ref (runtime-env) 'env)))
+                   (process/args scheme.exe args (hash 'env env
+                                                       'exec? (eq? 'unix (system-type)))))
+                :command]
 
        #;(end-make-targets))))
 
