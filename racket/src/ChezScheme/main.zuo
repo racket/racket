@@ -19,6 +19,17 @@
     '("c" "s"))
   (define bounce-files
     (map (lambda (d) (at-dir d "main.zuo")) bounce-dirs))
+  (define bounce-scripts
+    (map (lambda (d)
+           (~a "#lang zuo\n"
+               (~s `(define config (config-file->hash (at-source ".." "Mf-config")))) "\n"
+               (~s `(build/command-line* (dynamic-require (build-path ((make-at-dir (at-source ".." ".."))
+                                                                       (hash-ref config 'srcdir))
+                                                                      ,d
+                                                                      "main.zuo")
+                                                          'targets-at)
+                                         at-source))))
+         bounce-dirs))
 
   (define boot-file-names
     '(;; the boot files proper
@@ -50,17 +61,14 @@
               ,void
               :quiet]
 
-     ,@(map (lambda (dir file)
-              `[:target ,file ()
+     ,@(map (lambda (dir file script)
+              `[:target ,file (,(input-data-target 'script script))
                         ,(lambda (path token)
                            (mkdir* (at-dir dir))
-                           (define s
-                             (~a "#lang zuo\n"
-                                 (~s '(require ,(at-source dir "main.zuo"))) "\n"
-                                 (~a '(build/command-line* targets-at at-source))))
-                           (display-to-file s path))])
+                           (display-to-file script path :truncate))])
             bounce-dirs
-            bounce-files)
+            bounce-files
+            bounce-scripts)
 
      [:target ,c-config-file (,(input-data-target 'c-config
                                                   (cons c-config-keys
@@ -78,20 +86,21 @@
                                   "#define ENABLE_LIBFFI"))
                        (line (and (not (equal? (hash-ref config 'alwaysUseBootFile "") ""))
                                   (~a "#define ALWAYS_USE_BOOT_FILE " (~s (hash-ref config 'alwaysUseBootFile)))))))
-                 (display-to-file s path))]
+                 (display-to-file s path :truncate))]
 
      ,@(map (lambda (name dest)
               `[:target ,dest ()
-                        ,(lambda (path token)
-                           (define here-dir (at-dir ".." "boot" m))
-                           (define dir (if (directory-exists? here-dir)
-                                           here-dir
-                                           (at-source "boot" m)))
-                           (define src (build-path dir name))
-                           (unless (file-exists? src)
-                             (error "missing prebuilt boot file" src))
-                           (mkdir* (at-dir "boot" m))
-                           (cp/ln src dest))])
+                        ,(lambda (dest token)
+                           (unless (file-exists? dest)
+                             (define here-dir (at-dir ".." "boot" m))
+                             (define dir (if (directory-exists? here-dir)
+                                             here-dir
+                                             (at-source "boot" m)))
+                             (define src (build-path dir name))
+                             (unless (file-exists? src)
+                               (error "missing prebuilt boot file" src))
+                             (mkdir* (at-dir "boot" m))
+                             (cp/ln src dest)))])
             boot-file-names
             boot-files)
 
@@ -135,6 +144,9 @@
                   at-dir
                   (hash)
                   #t))]
+
+     ;; Needed to keep the initial-boot-file info here instead of in "boot"
+     [:db-dir ,(at-dir ".")]
 
      #;(end-make-targets))))
 

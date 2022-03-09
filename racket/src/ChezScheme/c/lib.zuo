@@ -1,9 +1,6 @@
 #lang zuo
 
-(provide build-shell
-         shell/wait
-
-         replace
+(provide replace
          glob-split
 
          source-tree)

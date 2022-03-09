@@ -1,21 +1,8 @@
 #lang zuo
 (require "../makefiles/lib.zuo")
 
-(provide m->arch
-         arch->backend
-         get-machine-files
-         cp/ln)
-
-(define (m->arch m)
-  (let* ([uni (if (= (char "t") (string-ref m 0))
-                  (substring m 1)
-                  m)])
-    (or (ormap (lambda (arch)
-                 (and (>= (string-length uni) (string-length arch))
-                      (string=? (substring uni 0 (string-length arch)) arch)
-                      arch))
-               '("a6" "i3" "arm64" "arm32" "ppc32" "pb"))
-        (error "could not extract architecture" m))))
+(provide arch->backend
+         get-machine-files)
 
 (define (arch->backend arch)
   (cond

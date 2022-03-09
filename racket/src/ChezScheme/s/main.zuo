@@ -1,5 +1,6 @@
 #lang zuo
-(require "machine.zuo")
+(require "../makefiles/lib.zuo"
+         "machine.zuo")
 
 (define default-options
   (hash
@@ -528,7 +529,7 @@
                                                `((mkscheme.h ,tmp ',(string->symbol m))))
                                              (list mkheader.so)))]
        [:target ,equates.h (,mkheader.so ,@macro-objs)
-                ,(lambda (scheme.h token)
+                ,(lambda (equates.h token)
                    (run-scheme-header-script equates.h
                                              (lambda (tmp) `((mkequates.h ,tmp)))
                                              (list mkheader.so)))]
@@ -574,6 +575,9 @@
                    (process/args scheme.exe args (hash 'env env
                                                        'exec? (eq? 'unix (system-type)))))
                 :command]
+
+       ;; keep "_zuo.db" and "_zuo_tc.db" here instead of in "boot" directories
+       [:db-dir ,(at-dir ".")]
 
        #;(end-make-targets))))
 

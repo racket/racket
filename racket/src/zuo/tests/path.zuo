@@ -108,6 +108,10 @@
        (build-path ".." ".."))
 (check (find-relative-path "../bin/tarm64osx/bin/" "main.o")
        (build-path ".." ".." ".." (cdr (split-path (hash-ref (runtime-env) 'dir))) "main.o"))
+(let ([l (reverse (explode-path (hash-ref (runtime-env) 'dir)))])
+  (when (> (length l) 3)
+    (check (find-relative-path "../../../bin/tarm64osx/bin/" "../main.o")
+           (build-path ".." ".." ".." (list-ref l 2) (list-ref l 1) "main.o"))))
 (check-arg-fail (find-relative-path "/home/zuo/src" "tmp/cache")
                 "both relative or both absolute")
 

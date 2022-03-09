@@ -46,7 +46,7 @@
 
 (struct target (key       ; shortcut: `string->symbol` of the path
                 name      ; a symbol or path relative to the current directory
-                get-rule  ; (name token -> rule), where `path` is relative to current directory
+                get-rule  ; (name token -> rule), where `name` is relative to current directory
                 kind      ; 'normal, 'input, or 'phony
                 options)) ; 'precious? or 'command?
 
@@ -175,6 +175,9 @@
         (error "target-shell: target does not have a path name" t)
         (string->shell n))))
 
+(define (target-db-dir t)
+  (hash-ref (target-options t) 'db-dir #f))
+
 ;; ------------------------------------------------------------
 ;; Build state and loop
 
@@ -188,6 +191,9 @@
 ;; The `time-cache` field of a build state is a shortcut for getting
 ;; input-file SHA-1s on the assumption that a SHA-1 recorded last time
 ;; is still right if the file's timestamp hasn't changed.
+
+;; Where the contracts below say "dep-sha1s", that's a hash table
+;; mapping a dependency's key to a SHA-1.
 
 (struct build-state (ch            ; channel to hold the state while target is running
                      target-state  ; key -> (cons sha1 dep-sha1s) | 'pending | channel
@@ -266,7 +272,6 @@
 ;; Starts a build for a specific target
 (define (build-unbuilt t state top?)
   (define path (target-name t))
-  (define target-dir (dir-part path))
   (define dep-top? (and top?
                         (symbol? path)
                         (not (hash-ref (target-options t) 'quiet? #f))))
@@ -326,7 +331,7 @@
   ;; extract results, assemble in a hash table: <rel-path> -> <sha1>
   (define dep-reported-sha1s
     (foldl (lambda (dep dep-sha1s)
-             (add-dependent-target-state dep dep-sha1s target-dir new-state))
+             (add-dependent-target-state dep dep-sha1s new-state))
            (hash)
            deps))
   (define dep-sha1s
@@ -350,14 +355,12 @@
   (define more-deps
     (if same-so-far?
         (foldl (lambda (dep-key more-sha1s)
+                 ;; currently, we assume that any additional dependencies
+                 ;; added in the build phase were and would be inputs
                  (if (or (hash-ref dep-sha1s dep-key #f)
                          (symbol-key? dep-key))
                      more-sha1s
-                     (cons (input-file-target
-                            (let ([path (symbol->string dep-key)])
-                              (if (relative-path? path)
-                                  (build-path target-dir path)
-                                  path)))
+                     (cons (input-file-target (symbol->string dep-key))
                            more-sha1s)))
                '()
                (hash-keys prev-dep-sha1s))
@@ -372,7 +375,7 @@
            more-deps))
   (define all-dep-sha1s
     (foldl (lambda (dep dep-sha1s)
-             (add-dependent-target-state dep dep-sha1s target-dir newer-state))
+             (add-dependent-target-state dep dep-sha1s newer-state))
            dep-sha1s
            more-deps))
 
@@ -562,25 +565,15 @@
 (define (target-state state t)
   (hash-ref (build-state-target-state state) (target-key t) #f))
 
-(define (add-dependent-target-state dep dep-sha1s target-dir state)
-  (define dep-local-path (target-name dep))
-  (define dep-path (cond
-                     [(symbol? dep-local-path) dep-local-path]
-                     [(relative-path? dep-local-path)
-                      (find-relative-path target-dir
-                                          (if (relative-path? target-dir)
-                                              dep-local-path
-                                              (path->absolute-path dep-local-path)))]
-                     [else dep-local-path]))
+(define (add-dependent-target-state dep dep-sha1s state)
   (define ts (target-state state dep))
-  (define dep-key (if (symbol? dep-path) dep-path (string->symbol dep-path)))
   (define sha1 (car ts))
-  (hash-set dep-sha1s dep-key (if (eq? sha1 phony-sha1) no-sha1 sha1)))
+  (hash-set dep-sha1s (target-key dep) (if (eq? sha1 phony-sha1) no-sha1 sha1)))
 
 (define (record-target-accumulated state for-t t)
   (let* ([accum-key (target-key for-t)]
          [dep-sha1s (hash-ref (build-state-target-accum state) accum-key (hash))]
-         [dep-sha1s (add-dependent-target-state t dep-sha1s (dir-part (target-name for-t)) state)])
+         [dep-sha1s (add-dependent-target-state t dep-sha1s state)])
     (build-state-set-target-accum state (hash-set (build-state-target-accum state) accum-key dep-sha1s))))
 
 (define (merge-target-accumulated state t ts)
@@ -605,13 +598,14 @@
   (update-target-state state t ts))
 
 (define (record-target-sha1s state t ts)
-  (db-record-target-sha1s (split-path (target-name t)) ts))
+  (db-record-target-sha1s (target-db-dir t) (target-name t) ts))
 
 (define (load-sha1s state t path)
   (cond
     [(symbol? path) state]
     [else
-     (define db+tc (db-load-sha1s (split-path path)
+     (define db+tc (db-load-sha1s (target-db-dir t)
+                                  path
                                   (build-state-db state)
                                   (build-state-time-cache state)))
      (if db+tc
@@ -694,21 +688,25 @@
   (for-each (lambda (spec)
               (unless (and (list? spec)
                            (pair? spec)
-                           (or (and (eq? (car spec) ':target)
-                                    (>= (length spec) 4)
-                                    (procedure? (list-ref spec 3))
-                                    (or (path-string? (list-ref spec 1))
-                                        (symbol? (list-ref spec 1)))
-                                    (andmap (lambda (t) (hash-ref keyword-to-option t #f))
-                                            (list-tail spec 4)))
-                               (and (eq? (car spec) ':depend)
-                                    (= 3 (length spec))
-                                    (or (path-string? (list-ref spec 1))
-                                        (and (list? (list-ref spec 1))
-                                             (andmap path-string? (list-ref spec 1))))))
-                           (list? (list-ref spec 2))
-                           (andmap (lambda (dep) (or (path-string? dep) (symbol? dep) (target? dep)))
-                                   (list-ref spec 2)))
+                           (or (and (eq? (car spec) ':db-dir)
+                                    (= 2 (length spec))
+                                    (path-string? (list-ref spec 1)))
+                               (and
+                                (or (and (eq? (car spec) ':target)
+                                         (>= (length spec) 4)
+                                         (procedure? (list-ref spec 3))
+                                         (or (path-string? (list-ref spec 1))
+                                             (symbol? (list-ref spec 1)))
+                                         (andmap (lambda (t) (hash-ref keyword-to-option t #f))
+                                                 (list-tail spec 4)))
+                                    (and (eq? (car spec) ':depend)
+                                         (= 3 (length spec))
+                                         (or (path-string? (list-ref spec 1))
+                                             (and (list? (list-ref spec 1))
+                                                  (andmap path-string? (list-ref spec 1))))))
+                                (list? (list-ref spec 2))
+                                (andmap (lambda (dep) (or (path-string? dep) (symbol? dep) (target? dep)))
+                                        (list-ref spec 2)))))
                 (error "make-targets: bad specification line" spec)))
             specs)
   (define target-specs (filter (lambda (spec) (eq? ':target (car spec))) specs))
@@ -724,16 +722,22 @@
                                    (error "make-targets: missing phony target for dependency" name))
                                (string->symbol name)))
   (define deps (foldl (lambda (spec deps)
-                        (foldl (lambda (path deps)
-                                 (let ([key (name->key path)])
-                                   (hash-set deps key
-                                             (append (reverse (list-ref spec 2))
-                                                     (hash-ref deps key '())))))
-                               deps
-                               (let ([ps (list-ref spec 1)])
-                                 (if (list? ps)
-                                     ps
-                                     (list ps)))))
+                        (cond
+                          [(eq? (car spec) ':db-dir)
+                           (when (hash-ref deps ':db-dir #f)
+                             (error "make-targets: multiple `:db-dir` lines"))
+                           (hash-set deps ':db-dir (list-ref spec 1))]
+                          [else
+                           (foldl (lambda (path deps)
+                                    (let ([key (name->key path)])
+                                      (hash-set deps key
+                                                (append (reverse (list-ref spec 2))
+                                                        (hash-ref deps key '())))))
+                                  deps
+                                  (let ([ps (list-ref spec 1)])
+                                    (if (list? ps)
+                                        ps
+                                        (list ps))))]))
                       (hash)
                       specs))
   (define target-vars (foldl (lambda (spec target-vars)
@@ -751,6 +755,10 @@
                               (if var
                                   (variable-ref var)
                                   (input-file-target dep))))))
+  (define shared-options (let ([db-dir (hash-ref deps ':db-dir #f)])
+                           (if db-dir
+                               (hash 'db-dir db-dir)
+                               (hash))))
   (define targets (foldl (lambda (spec targets)
                            (let* ([name (list-ref spec 1)]
                                   [key (name->key name)]
@@ -768,7 +776,7 @@
                                                                      ((list-ref spec 3) path token)))))
                                                   (foldl (lambda (tag options)
                                                            (hash-set options (hash-ref keyword-to-option tag) #t))
-                                                         (hash)
+                                                         shared-options
                                                          (if (eq? (car spec) ':target)
                                                              (list-tail spec 4)
                                                              '())))])

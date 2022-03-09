@@ -173,11 +173,13 @@ exports @racketidfont{targets-at} and creates a @racket[main]
 @subsection{Recording Results}
 
 Build results are stored in a @filepath{_zuo.db} file in the same
-directory as a target. Cached SHA-1 results with associated file
-timestamps are stored in a @filepath{_zuo_tc.db} in the same directory
-(i.e., the cached value for dependency is kept with the target, which
-is in a writable build space, while an input-file target might be in a
-read-only source space).
+directory as a target by default. Cached SHA-1 results with associated
+file timestamps are stored in a @filepath{_zuo_tc.db} in the same
+directory (i.e., the cached value for dependency is kept with the
+target, which is in a writable build space, while an input-file target
+might be in a read-only source space). A target's options can specify
+an alternative directory to use for @filepath{_zuo.db} and
+@filepath{_zuo_tc.db}.
 
 In the unfortunate case that a @filepath{_zuo.db} or
 @filepath{_zuo_tc.db} file gets mangled, then it may trigger an error
@@ -288,6 +290,11 @@ The following keys are recognized in @racket[options]:
       via @racket[alert] when the target is up to date, unless the
       target is also noisy. When a phony target is quiet, it builds
       its dependencies as quiet.}
+
+@item{@racket['db-dir] mapped to a path or @racket[#f]: if
+      non-@racket[#f], build information for the target is stored in
+      @filepath{_zuo.db} and @filepath{_zuo_tc.db} files in the
+      specified directory, instead of the directory of @racket[path].}
 
 ]}
 
@@ -466,6 +473,7 @@ line has one of the following shapes:
   `[:target ,_path (,_dep-path-or-target ...) ,_build-proc ,_option ...]
   `[:depend ,_path (,_dep-path-or-target ...)]
   `[:depend ,(_path ...) (,_dep-path-or-target ...)]
+  `[:db-dir ,path]
 ]
 
 A @racket[:target] line defines a build rule that is implemented by
@@ -473,8 +481,14 @@ A @racket[:target] line defines a build rule that is implemented by
 dependencies for a @racket[_path] that also has a @racket[:target]
 line. A @racket[:depend] line with multiple @racket[_path]s is the
 same as a sequence of @racket[:depend] lines with the same
-@racket[_dep-path-or-target] list. A @racket[_path] is normally a path
-string, but it can be a symbol for a @tech{phony} target.
+@racket[_dep-path-or-target] list. A @racket[:db-dir] line (appearing
+at most once) specifies where build information should be recorded for
+all targets; otherwise the build result for each target is stored in the
+target's directory.
+
+In @racket[:target] and @racket[:depend] lines, a @racket[_path] is
+normally a path string, but it can be a symbol for a @tech{phony}
+target.
 
 A @racket[_build-proc] accepts a path (if not phony) and a @tech{build
 token}, just like a @racket[_get-deps] procedure for @racket[target],

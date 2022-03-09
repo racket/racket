@@ -160,18 +160,26 @@
 (define (simple-form-path p)
   (apply build-path (explode-path p)))
 
-(define (convert-wrt wrts wrt)
+(define (convert-wrt wrts wrt ups)
   (cond
     [(equal? (car wrts) "..")
-     (let loop ([wrts wrts] [here (hash-ref (runtime-env) 'dir)] [accum '()])
-       (cond
-         [(and (pair? wrts)
-               (equal? (car wrts) ".."))
-          (define l (split-path here))
-          (if (not (car l))
-              (error "find-relative-path: too many ups" wrt)
-              (loop (cdr wrts) (car l) (cons (cdr l) accum)))]
-         [else (append (map (lambda (p) "..") wrts) (reverse accum))]))]
+     (let ([here (let loop ([here (hash-ref (runtime-env) 'dir)] [ups ups])
+                   (cond
+                     [(= ups 0) here]
+                     [else
+                      (let ([l (split-path here)])
+                        (if (not (car l))
+                            (error "find-relative-path: too many ups" wrt)
+                            (loop (car l) (- ups 1))))]))])
+       (let loop ([wrts wrts] [here here] [accum '()])
+         (cond
+           [(and (pair? wrts)
+                 (equal? (car wrts) ".."))
+            (let ([l (split-path here)])
+              (if (not (car l))
+                  (error "find-relative-path: too many ups" wrt)
+                  (loop (cdr wrts) (car l) (cons (cdr l) accum))))]
+           [else (append (map (lambda (p) "..") wrts) accum)])))]
     [else (map (lambda (p) "..") wrts)]))
 
 (define (find-relative-path wrt p)
@@ -188,12 +196,14 @@
     [else
      (define ps (explode-path p))
      (if (or rel? (equal? (car ps) (car wrts)))
-         (let loop ([ps (if (string=? (car ps) ".") (cdr ps) ps)] [wrts wrts])
+         ;; The `ups` accumulator effectively counts shared ".."s at the front of `wrts`
+         ;; and `ps`, which is needed if `wrts` has more ".."s
+         (let loop ([ps (if (string=? (car ps) ".") (cdr ps) ps)] [wrts wrts] [ups 0])
            (cond
              [(null? wrts) (if (null? ps) "." (apply build-path ps))]
-             [(null? ps) (apply build-path (convert-wrt wrts wrt))]
-             [(equal? (car ps) (car wrts)) (loop (cdr ps) (cdr wrts))]
-             [else (apply build-path (append (convert-wrt wrts wrt) ps))]))
+             [(null? ps) (apply build-path (convert-wrt wrts wrt ups))]
+             [(equal? (car ps) (car wrts)) (loop (cdr ps) (cdr wrts) (+ ups 1))]
+             [else (apply build-path (append (convert-wrt wrts wrt ups) ps))]))
          p)]))
 
 (define (path-replace-suffix path-in suffix)

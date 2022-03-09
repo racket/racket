@@ -1,6 +1,7 @@
 #lang zuo
 
-(provide cp/ln)
+(provide cp/ln
+         m->arch)
 
 (define (cp/ln src dest)
   (if (eq? 'windows (system-type))
@@ -8,3 +9,14 @@
       (begin
         (when (file-exists? dest) (rm dest))
         (ln (find-relative-path (path-only dest) src) dest))))
+
+(define (m->arch m)
+  (let* ([uni (if (= (char "t") (string-ref m 0))
+                  (substring m 1)
+                  m)])
+    (or (ormap (lambda (arch)
+                 (and (>= (string-length uni) (string-length arch))
+                      (string=? (substring uni 0 (string-length arch)) arch)
+                      arch))
+               '("a6" "i3" "arm64" "arm32" "ppc32" "pb"))
+        (error "could not extract architecture" m))))

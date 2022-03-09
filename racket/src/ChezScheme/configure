@@ -901,8 +901,9 @@ END
 cat > $w/main.zuo << END
 #lang zuo
 (define config (config-file->hash (at-source "Mf-config")))
-(build/command-line* (dynamic-require (build-path (hash-ref config 'srcdir)
-                                                  "main.zuo")
+(build/command-line* (dynamic-require ((make-at-dir (at-source ".."))
+                                       (hash-ref config 'srcdir)
+                                        "main.zuo")
                                       'targets-at)
                      at-source)
 END
@@ -913,8 +914,6 @@ cat > $w/Mf-config << END
 srcdir=$srcdir
 m=$m
 defaultm=$defaultm
-Cpu=$Cpu
-mdarchsrc=$mdarchsrc
 mdinclude=$mdinclude
 mdcppflags=$mdcppflags
 mdldflags=$mdldflags
@@ -938,10 +937,6 @@ RANLIB=$RANLIB
 WINDRES=$WINDRES
 cursesLib=$cursesLib
 ncursesLib=$ncursesLib
-zlibInc=$zlibInc
-LZ4Inc=$LZ4Inc
-zlibDep=$zlibDep
-LZ4Dep=$LZ4Dep
 zlibLib=$zlibLib
 LZ4Lib=$LZ4Lib
 warningFlags=$warningFlags
@@ -962,7 +957,4 @@ GzipManPages=$gzipmanpages
 InstallSchemeName=$installschemename
 InstallPetiteName=$installpetitename
 InstallScriptName=$installscriptname
-InstallKernelTarget=$installkerneltarget
-InstallZlibTarget=$installzlibtarget
-InstallLZ4Target=.*$;InstallLZ4Target=$installlz4target
 END
