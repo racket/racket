@@ -272,9 +272,8 @@
 ;; Starts a build for a specific target
 (define (build-unbuilt t state top?)
   (define path (target-name t))
-  (define dep-top? (and top?
-                        (symbol? path)
-                        (not (hash-ref (target-options t) 'quiet? #f))))
+  (define alert-top? (and top? (not (hash-ref (target-options t) 'quiet? #f))))
+  (define dep-top? (and alert-top? (symbol? path)))
 
   ;; delete a target file if we don't finish:
   (define path-handle (and (path-string? path)
@@ -390,7 +389,7 @@
                   (hash-keys all-dep-sha1s)))
      ;; no need to rebuild
      (when path-handle (cleanable-cancel path-handle))
-     (when (and (or top? (hash-ref (target-options t) 'noisy? #f))
+     (when (and (or alert-top? (hash-ref (target-options t) 'noisy? #f))
                 (equal? prev-sha1 sha1)
                 (not (equal? sha1 phony-sha1)))
        (alert (~a (target-name t) " is up to date")))

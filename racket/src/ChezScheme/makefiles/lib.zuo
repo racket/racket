@@ -1,7 +1,8 @@
 #lang zuo
 
 (provide cp/ln
-         m->arch)
+         m->arch
+         hash-set*)
 
 (define (cp/ln src dest)
   (if (eq? 'windows (system-type))
@@ -20,3 +21,10 @@
                       arch))
                '("a6" "i3" "arm64" "arm32" "ppc32" "pb"))
         (error "could not extract architecture" m))))
+
+(define (hash-set* ht . keys+vals)
+  (let loop ([ht ht] [keys+vals keys+vals])
+    (if (null? keys+vals)
+        ht
+        (loop (hash-set ht (car keys+vals) (cadr keys+vals))
+              (cddr keys+vals)))))

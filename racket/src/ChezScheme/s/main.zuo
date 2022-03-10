@@ -67,7 +67,10 @@
    ;; pps determines whether pass timings are printed
    'pps #f))
 
-(define (targets-at at-dir [vars (hash)])
+;; The `compiler-compiler-options` argument overrides certain `var` and config-file
+;; options for building preamble files, which is useful for compiling a cross-compiler
+;; in safe mode (but having the final cross-built compiler built in unsafe mode)
+(define (targets-at at-dir [vars (hash)] [compiler-compiler-options (hash)])
   (define config (config-file->hash (at-dir "../Mf-config")))
   (define (lookup key) (or (hash-ref vars key #f)
                            (hash-ref config key #f)))
@@ -87,6 +90,20 @@
                                         cv))]
                             [else (string->symbol cv)])
                           v)))
+  (define (ccopt key) (hash-ref compiler-compiler-options key (opt key)))
+
+  ;; Note options that are non-default:
+  (define relevant-config
+    (foldl (lambda (k relevant-config)
+             (let ([v (lookup k)])
+               (cond
+                 [v
+                  (alert (~a "using " k "=" v))
+                  (hash-set relevant-config k v)]
+                 [else relevant-config])))
+           (hash)
+           (hash-keys default-options)))
+  (define options-t (input-data-target 'options (cons relevant-config compiler-compiler-options)))
 
   (define m (lookup 'm))
   (define host-m (or (lookup 'hostm) m))
@@ -98,8 +115,8 @@
 
   (define (at-boot s) (at-dir (build-path "../boot/" m s)))
 
-  (define petite.boot (at-boot "petite.boot"))
-  (define scheme.boot (at-boot "scheme.boot"))
+  (define petite.boot (at-boot (or (lookup 'PETITE_BOOT) "petite.boot")))
+  (define scheme.boot (at-boot (or (lookup 'SCHEME_BOOT) "scheme.boot")))
 
   (define scheme.h (at-boot "scheme.h"))
   (define equates.h (at-boot "equates.h"))
@@ -210,29 +227,35 @@
       (lambda (p)
         (find-relative-path will-be-dir p))))
 
-  (define (run-scheme/status what script inputs)
+  (define (call-with-scheme k)
     (define scheme.exe (build-path host-workarea "bin" host-m "scheme"))
-    (displayln (~a "running " scheme.exe " to build " what))
     (define env (cons
                  (cons "SCHEMEHEAPDIRS" (path->complete-path
-                                         (build-path host-workarea "boot" host-m)))
+                                         (or (lookup 'SCHEMEHEAPDIRS)
+                                             (build-path host-workarea "boot" host-m))))
                  (hash-ref (runtime-env) 'env)))
-    (define p (apply process
-                     (cons (at-cwd scheme.exe)
-                           (append (list "-q")
-                                   (map (lambda (s)
-                                          (if (= (char "-") (string-ref s 0))
-                                              s
-                                              (at-cwd s)))
-                                        inputs)
-                                   (list (hash 'dir (at-dir ".")
-                                               'stdin 'pipe
-                                               'env env))))))
-    (define to (hash-ref p 'stdin))
-    (fd-write to (string-join (map ~s script)))
-    (fd-close to)
-    (thread-process-wait (hash-ref p 'process))
-    (process-status (hash-ref p 'process)))
+    (k scheme.exe env))
+
+  (define (run-scheme/status what script inputs)
+    (call-with-scheme
+     (lambda (scheme.exe env)
+       (displayln (~a "running " scheme.exe " to build " what))
+       (define p (apply process
+                        (cons (at-cwd scheme.exe)
+                              (append (list "-q")
+                                      (map (lambda (s)
+                                             (if (= (char "-") (string-ref s 0))
+                                                 s
+                                                 (at-cwd s)))
+                                           inputs)
+                                      (list (hash 'dir (at-dir ".")
+                                                  'stdin 'pipe
+                                                  'env env))))))
+       (define to (hash-ref p 'stdin))
+       (fd-write to (string-join (map ~s script)))
+       (fd-close to)
+       (thread-process-wait (hash-ref p 'process))
+       (process-status (hash-ref p 'process)))))
 
   (define (run-scheme what script inputs)
     (unless (= 0 (run-scheme/status what script inputs))
@@ -308,13 +331,13 @@
     `((reset-handler abort)
       (base-exception-handler (lambda (c) (fresh-line) (display-condition c) (newline) (reset)))
       (keyboard-interrupt-handler (lambda () (display "interrupted---aborting\n") (reset)))
-      (optimize-level ,(opt 'o))
-      (debug-level ,(opt 'd))
+      (optimize-level ,(ccopt 'o))
+      (debug-level ,(ccopt 'd))
       (commonization-level (or ,(opt 'cl) (commonization-level)))
       (fasl-compressed ,(opt 'fc))
       (compress-format (or ,(opt 'xf) (compress-format)))
       (compress-level (or ,(opt 'xl) (compress-level)))
-      (generate-inspector-information ,(opt 'i))
+      (generate-inspector-information ,(ccopt 'i))
       ,@(cond
           [(eq? mode 'normal)
            `((subset-mode 'system)
@@ -335,7 +358,7 @@
 
   (define (cat srcs dest)
     (let ([s (apply ~a (map file->string srcs))])
-      (display-to-file s dest)))
+      (display-to-file s dest :truncate)))
 
   ;; Create a `:target` for files like "cmacros.so", which are compiled
   ;; to compile the compiler
@@ -372,7 +395,11 @@
     (define scb (build-path (path-only scheme.boot) "scb"))
     (let loop ([i 0])
       (cond
-        [(= i n) (error "failed to arrive at a fixpoint")]
+        [(= i n) (error (~a "failed to arrive at a fixpoint"
+                            (let ([o (opt 'o)])
+                              (if (equal? o 3)
+                                  o
+                                  (~a " (not unexpected with o=" o ")")))))]
         [(and (file-exists? petite.boot)
               (file-exists? scheme.boot))
          (mv petite.boot sbb)
@@ -385,20 +412,40 @@
                               `((reset-handler abort)
                                 (base-exception-handler (lambda (c) (fresh-line) (display-condition c) (newline) (reset)))
                                 (begin
-                                  (,(string->symbol "#%$fasl-file-equal?") ,(at-cwd sbb) ,(at-cwd petite.boot))
-                                  (,(string->symbol "#%$fasl-file-equal?") ,(at-cwd scb) ,(at-cwd scheme.boot))
+                                  (,(string->symbol "#%$fasl-file-equal?") ,(at-cwd sbb) ,(at-cwd petite.boot) #t)
+                                  (,(string->symbol "#%$fasl-file-equal?") ,(at-cwd scb) ,(at-cwd scheme.boot) #t)
                                   (void)))
                               `("-B" ,sbb)))
-         (mv sbb petite.boot)
-         (mv scb scheme.boot)
          (cond
            [(= result 0)
+            (mv sbb petite.boot)
+            (mv scb scheme.boot)
             (alert "done (unchanged after rebuild)")]
            [else
+            (rm sbb)
+            (rm scb)
             (loop (+ i 1))])]
         [else
          (rebuild)
          (loop (+ i 1))])))
+
+  (define (pretty-clean)
+    (map rm* (append
+              (filter (let ([gs (map (lambda (sfx) (glob->matcher (~a "*." sfx))) (list m "patch" "so" "covin" "asm" "html"))])
+                        (lambda (f)
+                          (ormap (lambda (g) (g f)) gs)))
+                      (ls* (at-dir ".")))
+              (map at-dir
+                   (list "xpatch" "nanopass")))))
+
+  (define (profile-clean)
+    (pretty-clean)
+    (rm* (at-dir profile-dump-source))
+    (rm* (at-dir profile-dump-block)))
+
+  (define (clean)
+    (profile-clean)
+    (rm* (at-dir "bootstrap")))
 
   (define machine.def (at-dir "machine.def"))
   (define cmacros.so (at-dir "cmacros.so"))
@@ -425,7 +472,105 @@
 
   (define the-targets
     (make-targets
-     `([:target default (,petite.boot ,scheme.boot ,@output-headers) ,void]
+     `(;; The default target builds object files individually:
+       [:target default (,petite.boot ,scheme.boot ,@output-headers) ,void]
+
+       ;; These targets rebuild boot files in all-at-once mode, but
+       ;; independent of whether dependencies changed:
+       [:target all (bootall ,@output-headers)
+                ,void]
+       [:target bootall (,@all-srcs ,@(add-patchfile macro-objs) ,nanopass.so ,@type-src-copies
+                                    ,@cpnanopass-src-copies ,@unicode-src-copies)
+                ,(lambda (token)
+                   (mkdir* (at-boot "."))
+                   (run-scheme "all at once"
+                               (make-compile-at-once-script base-srcs base-objs petite.boot
+                                                            compiler-srcs compiler-objs scheme.boot)
+                               (add-patchfile macro-objs)))
+                :quiet]
+
+       ;; The `bootstrap` target uses a "bootstrap" stamp file to trigger a separate `build` run,
+       ;; and it iterates up to three times to find a fixpoint
+       [:target ,(at-dir "bootstrap") (,options-t ,@all-srcs)
+                ,(lambda (path token)
+                   (look-for-fixpoint 3 (lambda () (build (find-target "bootall" the-targets))))
+                   (build (map (lambda (file) (find-target file the-targets))
+                               (list scheme.h equates.h gc-ocd.inc gc-oce.inc gc-par.inc heapcheck.inc)))
+                   (fd-close (fd-open-output path :truncate)))]
+
+       ;; The `profiled` target goes through the involved process of
+       ;; building a profile-optimized boot file
+       [:target profiled ()
+                ,(lambda (token)
+                   (profile-clean)
+                   (build (find-target "all" (targets-at at-dir (hash-set vars
+                                                                          'p "t"))))
+                   (pretty-clean)
+                   (build (find-target (~a "io." m) (targets-at at-dir (hash-set vars
+                                                                                 'dumpspd "t"))))
+                   (pretty-clean)
+                   (mkdir* (at-boot "profile"))
+                   (build (find-target "all" (targets-at at-dir (hash-set* vars
+                                                                           'loadspd "t"
+                                                                           'bp "t"
+                                                                           'PETITE_BOOT "profile/petite.boot"
+                                                                           'SCHEME_BOOT "profile/scheme.boot"))))
+                   (pretty-clean)
+                   (build (find-target (~a "io." m) (targets-at at-dir (hash-set* vars
+                                                                                  'loadspd "t"
+                                                                                  'dumpbpd "t"
+                                                                                  'SCHEMEHEAPDIRS (build-path host-workarea "boot" host-m "profile")))))
+                   (rm* (at-boot "profile"))
+                   (pretty-clean)
+                   (build (find-target "all" (targets-at at-dir (hash-set* vars
+                                                                           'loadspd "t"
+                                                                           'loadbpd "t")))))]
+
+       ;; The usual `clean` target:
+       [:target clean ()
+                ,(lambda (token)
+                   (clean))]
+
+       ;; The `reset` target discards the results in "boot" and puts back links to (or copies of)
+       ;; to the versions that were used to seed the build
+       [:target reset ()
+                ,(lambda (token)
+                   (let ([targets ((dynamic-require (at-source "../main.zuo") 'targets-at) (make-at-dir (at-dir "..")))])
+                     (build (find-target "reset" targets))))]
+
+       ;; The `run` target runs the built `scheme`, and extra arguments provided after the target
+       ;; are passed along to `scheme`
+       [:target run ()
+                ,(lambda (token . args)
+                   (call-with-scheme
+                    (lambda (scheme.exe env)
+                      (process/args scheme.exe args (hash 'env env
+                                                          'exec? (eq? 'unix (system-type)))))))
+                :command]
+
+       [:target examples ()
+                ,(lambda (token)
+                   (define examples-dir (at-dir "../examples"))
+                   (mkdir* examples-dir)
+                   (define names (ls (at-source "../examples")))
+                   (build (map (lambda (name)
+                                 (define src (at-source "../examples" name))
+                                 (define dest (build-path examples-dir name))
+                                 (target dest (lambda (path token)
+                                                (rule (list src)
+                                                      (lambda () (cp/ln src dest))))
+                                         (hash 'quiet? #t)))
+                               names))
+                   (define (at-examples p)
+                     (find-relative-path examples-dir p))
+                   (call-with-scheme
+                    (lambda (scheme.exe env)
+                      (shell/wait (build-shell "make" "all"
+                                               (~a "Scheme=" (at-examples scheme.exe)))
+                                  (hash 'dir examples-dir
+                                        'env env)))))]
+
+       ;; Internal targets ----------------------------------------
 
        ,@(map copy-target included-srcs)
 
@@ -446,7 +591,7 @@
                                (cp/ln (at-source name) (at-dir name)))
                              (cdr mach-src+dep+more-srcs)))]
 
-       ,(compilation-preamble-target cmacros.so (list machine.def (at-dir "layout.ss"))
+       ,(compilation-preamble-target cmacros.so (list machine.def (at-dir "layout.ss") options-t)
                                      (list))
 
        ,(compilation-preamble-target priminfo.so (list (at-dir "primdata.ss"))
@@ -541,40 +686,6 @@
                                                        (list mkheader.so mkgc.so)))])
               (list gc-ocd.inc gc-oce.inc gc-par.inc heapcheck.inc)
               (list 'mkgc-ocd.inc 'mkgc-oce.inc 'mkgc-par.inc 'mkheapcheck.inc))
-
-       ;; These targets rebuild boot files in all-at-once mode, but
-       ;; independent of whether dependencies changed:
-       [:target all (bootall ,@output-headers)
-                ,void]
-       [:target bootall (,@all-srcs ,@(add-patchfile macro-objs) ,nanopass.so ,@type-src-copies
-                                    ,@cpnanopass-src-copies ,@unicode-src-copies)
-                ,(lambda (token)
-                   (mkdir* (at-boot "."))
-                   (run-scheme "all at once"
-                               (make-compile-at-once-script base-srcs base-objs petite.boot
-                                                            compiler-srcs compiler-objs scheme.boot)
-                               (add-patchfile macro-objs)))
-                :quiet]
-
-       ;; This target uses a "bootstrap" stamp file to trigger a separate `build` run,
-       ;; and it iterates up to three times to find a fixpoint
-       [:target ,(at-dir "bootstrap") ,all-srcs
-                ,(lambda (path token)
-                   (look-for-fixpoint 3 (lambda () (build (find-target "bootall" the-targets))))
-                   (build (map (lambda (file) (find-target file the-targets))
-                               (list scheme.h equates.h gc-ocd.inc gc-oce.inc gc-par.inc heapcheck.inc)))
-                   (fd-close (fd-open-output path :truncate)))]
-
-       [:target run ()
-                ,(lambda (token . args)
-                   (define scheme.exe (build-path host-workarea "bin" host-m "scheme"))
-                   (define env (cons
-                                (cons "SCHEMEHEAPDIRS" (path->complete-path
-                                                        (build-path host-workarea "boot" host-m)))
-                                (hash-ref (runtime-env) 'env)))
-                   (process/args scheme.exe args (hash 'env env
-                                                       'exec? (eq? 'unix (system-type)))))
-                :command]
 
        ;; keep "_zuo.db" and "_zuo_tc.db" here instead of in "boot" directories
        [:db-dir ,(at-dir ".")]

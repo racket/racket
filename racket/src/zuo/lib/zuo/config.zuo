@@ -5,7 +5,7 @@
 (define (config-file->hash path)
   (unless (path-string? path) (arg-error 'config->hash "path string" path))
   (define content (file->string path))
-  (define lines (string-split content "\n"))
+  (define lines (string-split (string-join (string-split content "\\\n") "") "\n"))
   (foldl (lambda (line accum)
            (define positions ; (list var-start var-end =-pos) or #f
              (let loop ([i 0] [start #f] [end #f])

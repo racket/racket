@@ -51,25 +51,25 @@ reset: $(ZUO)
 
 # <machine>.boot to build boot files for <machine>
 %.boot: $(ZUO)
-	$(ZUO) $(workarea) cross-boot $*
+	$(ZUO) $(workarea) boot $*
 
 auto.boot: $(ZUO)
-	$(ZUO) $(workarea) cross-boot
+	$(ZUO) $(workarea) boot
 
 # <machine>.bootquick to build boot files for <machine>
 # with o=3 d=0 for the cross compiler, and only after
 # building the kernel for the configured machine
 %.bootquick: $(ZUO)
-	$(ZUO) $(workarea) cross-boot-quick $*
+	$(ZUO) $(workarea) bootquick $*
 
 auto.bootquick: $(ZUO)
-	$(ZUO) $(workarea) cross-boot-quick
+	$(ZUO) $(workarea) bootquick
 
 # <machine>-<tag>.boot to repackage boot files for
 # <machine> with pbchunk sources, including additional
 # boot files
 %.bootpbchunk: $(ZUO)
-	$(ZUO) $(workarea) boot-pbchunk $* $(ARGS)
+	$(ZUO) $(workarea) bootpbchunk $* $(ARGS)
 
 # Supply ORIG=<dir> to build using existing at <dir>
 .PHONY: from-orig

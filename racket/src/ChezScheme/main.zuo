@@ -47,107 +47,137 @@
   (define c-config-keys
     '(disablecurses disablex11 enablelibffi alwaysUseBootFile))
 
-  (make-targets
-   `([:target build (workarea kernel)
-              ,(lambda (token)
-                 (build (find-target "bootstrap" (s-targets-at (make-at-dir (at-dir "s"))))))]
+  ;; Cross-builds for a machine type that is specified as an argument;
+  ;; the machine type defaults to the `defaultm` configuration entry, and
+  ;; that default is normally useful if the current machine type is "pb"
+  (define (cross-build-boot args ccopts make-targets)
+    (unless (<= (length args) 1) (error "expected optional <machine>" args))
+    (define xm (if (null? args)
+                   (hash-ref config 'defaultm)
+                   (car args)))
+    (define dir (at-dir ".." (~a "xc-" xm)))
+    (define s-dir (build-path dir "s"))
+    (mkdir* s-dir)
+    (display-to-file (~a "m=" xm "\n"
+                         "hostm=" m "\n"
+                         "hostworkarea=" (build-path "../.." m) "\n")
+                     (build-path dir "Mf-config")
+                     :truncate)
+    (let ([targets (s-targets-at (make-at-dir s-dir)
+                                 vars
+                                 ccopts)])
+      (build (map (lambda (t) (find-target t targets)) make-targets)))
+    (define boot-xm-dir (at-dir "../boot" xm))
+    (mkdir* boot-xm-dir)
+    (for-each (lambda (file)
+                (cp (build-path dir "boot" xm file)
+                    (build-path boot-xm-dir file)))
+              boot-file-names))
 
-     [:target kernel (workarea)
-              ,(lambda (token)
-                 (build (find-target "build" (c-targets-at (make-at-dir (at-dir "c"))))))]
+  (define the-targets
+    (make-targets
+     `(;; Builds the kernel (C code) and boot files (Scheme code):
+       [:target build (workarea kernel)
+                ,(lambda (token)
+                   (build (find-target "bootstrap" (s-targets-at (make-at-dir (at-dir "s")) vars))))]
 
-     ;; Builds out an initial workarea, with links to book files, the "c/config.h", etc.
-     [:target workarea (,@bounce-files ,c-config-file ,@boot-files)
-              ,void
-              :quiet]
+       ;; Builds just the kernel (C code):
+       [:target kernel (workarea)
+                ,(lambda (token)
+                   (build (find-target "build" (c-targets-at (make-at-dir (at-dir "c")) vars))))]
 
-     ,@(map (lambda (dir file script)
-              `[:target ,file (,(input-data-target 'script script))
-                        ,(lambda (path token)
-                           (mkdir* (at-dir dir))
-                           (display-to-file script path :truncate))])
-            bounce-dirs
-            bounce-files
-            bounce-scripts)
+       [:target install ()
+                ,(lambda (token)
+                   ((dynamic-require (at-source "makefiles/install.zuo") 'install)
+                    at-dir))]
 
-     [:target ,c-config-file (,(input-data-target 'c-config
-                                                  (cons c-config-keys
-                                                        (map (lambda (key) (hash-ref config key))
-                                                             c-config-keys))))
-              ,(lambda (path token)
-                 (mkdir* (at-dir "c"))
-                 (define (line s) (if s (~a s "\n") ""))
-                 (define s
-                   (~a (line (and (equal? (hash-ref config 'disablecurses #f) "yes")
-                                  "#define DISABLE_CURSES"))
-                       (line (and (equal? (hash-ref config 'disablex11 #f) "yes")
-                                  "#define DISABLE_X11"))
-                       (line (and (equal? (hash-ref config 'enablelibffi #f) "yes")
-                                  "#define ENABLE_LIBFFI"))
-                       (line (and (not (equal? (hash-ref config 'alwaysUseBootFile "") ""))
-                                  (~a "#define ALWAYS_USE_BOOT_FILE " (~s (hash-ref config 'alwaysUseBootFile)))))))
-                 (display-to-file s path :truncate))]
+       [:target uninstall ()
+                ,(lambda (token)
+                   ((dynamic-require (at-source "makefiles/install.zuo") 'install)
+                    at-dir
+                    (hash)
+                    #t))]
 
-     ,@(map (lambda (name dest)
-              `[:target ,dest ()
-                        ,(lambda (dest token)
-                           (unless (file-exists? dest)
-                             (define here-dir (at-dir ".." "boot" m))
-                             (define dir (if (directory-exists? here-dir)
-                                             here-dir
-                                             (at-source "boot" m)))
-                             (define src (build-path dir name))
-                             (unless (file-exists? src)
-                               (error "missing prebuilt boot file" src))
-                             (mkdir* (at-dir "boot" m))
-                             (cp/ln src dest)))])
-            boot-file-names
-            boot-files)
+       [:target run ()
+                ,(lambda (token . args)
+                   (define t (find-target "run" (s-targets-at (make-at-dir (at-dir "s")) vars)))
+                   (build (command-target->target t args)))
+                :command]
 
-     [:target cross-boot-quick ()
-              ,(lambda (token . args)
-                 (unless (<= (length args) 1) (error "expected optional <machine>" args))
-                 (define xm (if (null? args)
-                                (hash-ref config 'defaultm)
-                                (car args)))
-                 (define dir (at-dir ".." (~a "xc-" xm)))
-                 (define s-dir (build-path dir "s"))
-                 (mkdir* s-dir)
-                 (display-to-file (~a "m=" xm "\n"
-                                      "hostm=" m "\n"
-                                      "hostworkarea=" (build-path "../.." m) "\n")
-                                  (build-path dir "Mf-config")
-                                  :truncate)
-                 (build (find-target "all" (s-targets-at (make-at-dir s-dir))))
-                 (define boot-xm-dir (at-dir "../boot" xm))
-                 (mkdir* boot-xm-dir)
-                 (for-each (lambda (file)
-                             (cp (build-path dir "boot" xm file)
-                                 (build-path boot-xm-dir file)))
-                           boot-file-names))
-              :command]
+       ;; See `cross-build-boot`: builds cross-compiler in unsafe mode, skips examples
+       [:target bootquick ()
+                ,(lambda (token . args)
+                   (cross-build-boot args (hash) '("all")))
+                :command]
 
-     [:target run ()
-              ,(lambda (token . args)
-                 (define t (find-target "run" (s-targets-at (make-at-dir (at-dir "s")))))
-                 (build (command-target->target t args)))
-              :command]
+       ;; See `cross-build-boot`: builds cross-compiler in safe mode, skips examples
+       [:target boot ()
+                ,(lambda (token . args)
+                   (cross-build-boot args (hash 'o 2 'd 3 'i #t) '("all" "examples")))
+                :command]
 
-     [:target install ()
-              ,(lambda (token)
-                 ((dynamic-require (at-source "makefiles/install.zuo") 'install)
-                  at-dir))]
+       ;; The `reset` target discards the results in "boot" and puts back links to (or copies of)
+       ;; to the versions that are used to seed the build
+       [:target reset ()
+                ,(lambda (token)
+                   (for-each (lambda (f) (when (file-exists? f) (rm f))) boot-files)
+                   (build (map (lambda (f) (find-target f the-targets)) boot-files)))]
 
-     [:target uninstall ()
-              ,(lambda (token)
-                 ((dynamic-require (at-source "makefiles/install.zuo") 'install)
-                  at-dir
-                  (hash)
-                  #t))]
+       ;; Internal targets ----------------------------------------
 
-     ;; Needed to keep the initial-boot-file info here instead of in "boot"
-     [:db-dir ,(at-dir ".")]
+       ;; Builds out an initial workarea, with links to book files, the "c/config.h", etc.
+       [:target workarea (,@bounce-files ,c-config-file ,@boot-files)
+                ,void
+                :quiet]
 
-     #;(end-make-targets))))
+       ,@(map (lambda (dir file script)
+                `[:target ,file (,(input-data-target 'script script))
+                          ,(lambda (path token)
+                             (mkdir* (at-dir dir))
+                             (display-to-file script path :truncate))])
+              bounce-dirs
+              bounce-files
+              bounce-scripts)
+
+       [:target ,c-config-file (,(input-data-target 'c-config
+                                                    (cons c-config-keys
+                                                          (map (lambda (key) (hash-ref config key))
+                                                               c-config-keys))))
+                ,(lambda (path token)
+                   (mkdir* (at-dir "c"))
+                   (define (line s) (if s (~a s "\n") ""))
+                   (define s
+                     (~a (line (and (equal? (hash-ref config 'disablecurses #f) "yes")
+                                    "#define DISABLE_CURSES"))
+                         (line (and (equal? (hash-ref config 'disablex11 #f) "yes")
+                                    "#define DISABLE_X11"))
+                         (line (and (equal? (hash-ref config 'enablelibffi #f) "yes")
+                                    "#define ENABLE_LIBFFI"))
+                         (line (and (not (equal? (hash-ref config 'alwaysUseBootFile "") ""))
+                                    (~a "#define ALWAYS_USE_BOOT_FILE " (~s (hash-ref config 'alwaysUseBootFile)))))))
+                   (display-to-file s path :truncate))]
+
+       ,@(map (lambda (name dest)
+                `[:target ,dest ()
+                          ,(lambda (dest token)
+                             (unless (file-exists? dest)
+                               (define here-dir (at-dir ".." "boot" m))
+                               (define dir (if (directory-exists? here-dir)
+                                               here-dir
+                                               (at-source "boot" m)))
+                               (define src (build-path dir name))
+                               (unless (file-exists? src)
+                                 (error "missing prebuilt boot file" src))
+                               (mkdir* (at-dir "boot" m))
+                               (cp/ln src dest)))])
+              boot-file-names
+              boot-files)
+
+       ;; Needed to keep the initial-boot-file info here instead of in "boot"
+       [:db-dir ,(at-dir ".")]
+
+       #;(end-make-targets))))
+
+  the-targets)
 
 (provide-targets targets-at)
