@@ -105,7 +105,7 @@
                 :command]
 
        ;; See `cross-build-boot`: builds cross-compiler in unsafe mode, skips examples
-       [:target bootquick ()
+       [:target bootquick (kernel)
                 ,(lambda (token . args)
                    (cross-build-boot args (hash) '("all")))
                 :command]
