@@ -883,6 +883,15 @@ else
   exit 1
 fi
 
+case "$srcdir" in
+    /*)
+        upsrcdir=$srcdir
+        ;;
+    *)
+        upsrcdir=../$srcdir
+        ;;
+esac
+
 # Makefile to build and launch Zuo
 sed -e 's/$(w)/'$w'/g'\
     "$srcdir"/makefiles/$topMakefile > Makefile
@@ -897,13 +906,13 @@ cat > main.zuo << END
 (void (module->hash (at-source (hash-ref config 'workarea) "main.zuo")))
 END
 
-# Some thing, but in the workarea:
+# Some idea, but in the workarea, so it refers to "workarea.zuo" here:
 cat > $w/main.zuo << END
 #lang zuo
 (define config (config-file->hash (at-source "Mf-config")))
 (build/command-line* (dynamic-require ((make-at-dir (at-source ".."))
                                        (hash-ref config 'srcdir)
-                                        "main.zuo")
+                                        "workmain.zuo")
                                       'targets-at)
                      at-source)
 END
@@ -912,6 +921,7 @@ END
 # and the Zuo build script takes it from there
 cat > $w/Mf-config << END
 srcdir=$srcdir
+upsrcdir=$upsrcdir
 m=$m
 defaultm=$defaultm
 mdinclude=$mdinclude

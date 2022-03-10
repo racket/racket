@@ -535,7 +535,7 @@
        ;; to the versions that were used to seed the build
        [:target reset ()
                 ,(lambda (token)
-                   (let ([targets ((dynamic-require (at-source "../main.zuo") 'targets-at) (make-at-dir (at-dir "..")))])
+                   (let ([targets ((dynamic-require (at-source "../workmain.zuo") 'targets-at) (make-at-dir (at-dir "..")))])
                      (build (find-target "reset" targets))))]
 
        ;; The `run` target runs the built `scheme`, and extra arguments provided after the target
