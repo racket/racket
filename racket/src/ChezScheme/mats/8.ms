@@ -11254,7 +11254,7 @@
     (begin
       (load-library "testfile-li3.so")
       (library-object-filename '(testfile-li3)))
-    "testfile-li3.so")
+    (find-source "testfile-li3.so"))
 )
 
 (mat rnrs-eval
@@ -11666,7 +11666,7 @@
                    (call-with-values (lambda () (locate-source (source-object-sfd source) (source-object-bfp source))) vector)
                    (call-with-values (lambda () (locate-source (source-object-sfd source) (source-object-efp source))) vector)))])
       (load "testfile.ss"))
-    '(#("testfile.ss" 2 12) . #("testfile.ss" 2 13)))
+    (cons (vector (find-source "testfile.ss") 2 12) (vector (find-source "testfile.ss") 2 13)))
   (equal?
     (let ([sfd (source-file-descriptor (source-file-descriptor-path sfd) (source-file-descriptor-checksum sfd) )])
       (let ([source (make-source-object sfd 2 3)])
@@ -11678,7 +11678,7 @@
                        (call-with-values (lambda () (locate-source (source-object-sfd source) (source-object-bfp source))) vector)
                        (call-with-values (lambda () (locate-source (source-object-sfd source) (source-object-efp source))) vector)))])
           (load "testfile.ss"))))
-    '(#("testfile.ss" 2 12) . #("testfile.ss" 2 13)))
+    (cons (vector (find-source "testfile.ss") 2 12) (vector (find-source "testfile.ss") 2 13)))
 
   (error? ; not a source object
    (locate-source-object-source "spam" #t #t))

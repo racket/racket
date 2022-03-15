@@ -244,8 +244,11 @@
         (errorf 'mat-file "~s is not a string" mat))
       (let ([ifn (format "~a.ms" mat)] [ofn (format "~a.mo" mat)])
         (parameterize ([current-directory dir]
-                       [source-directories (cons ".." (source-directories))]
-                       [library-directories (cons ".." (library-directories))])
+                       ;; If `dir` is not the current directory, a caller
+                       ;; is responsible for ensuring that the path lists
+                       ;; below have absolute paths
+                       [source-directories (cons "." (source-directories))]
+                       [library-directories (cons "." (library-directories))])
           (printf "matting ~a with output to ~a/~a~%" ifn dir ofn)
           (delete-file ofn #f)
           (parameterize ([mat-output (open-output-file ofn)])
@@ -563,6 +566,20 @@
           (sleep (make-time 'time-duration 1000000 1))
           (loop))))
     #t))
+
+(define find-source
+  (lambda (fn)
+    (or (ormap (lambda (dir)
+                 (let ([fn (cond
+                             [(equal? dir ".") fn]
+                             [(and (equal? ".." (path-first fn))
+                                   (not (equal? dir (path-parent dir))))
+                              (format "~a~a~a" (path-parent dir) (directory-separator) (path-rest fn))]
+                             [else
+                              (format "~a~a~a" dir (directory-separator) fn)])])
+                   (and (file-exists? fn) fn)))
+               (source-directories))
+        (format "~a/~a" *mats-dir* fn))))
 
 (define preexisting-profile-dump-entry?
   (let ([ht (make-eq-hashtable)])

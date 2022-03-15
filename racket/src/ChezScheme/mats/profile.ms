@@ -1,3 +1,12 @@
+
+(define ($just-file fn l)
+  (filter (lambda (x) x)
+          (map (lambda (x)
+                 (and (or (equal? (cadr x) fn)
+                          (equal? (cadr x) (find-source fn)))
+                      (list* (car x) fn (cddr x))))
+               l)))
+
 (mat compile-profile
   (error? ; invalid argument
     (compile-profile 'src))
@@ -174,7 +183,7 @@
 
   (eqv? ($qw 0 0) 0.0) ; bfp, efp combination not in database
   (eqv? ; file not in database
-    (let* ([fn (format "~a/Mf-base" *mats-dir*)]
+    (let* ([fn (find-source "main.zuo")]
            [ip (open-file-input-port fn)]
            [sfd (make-source-file-descriptor fn ip)])
       (close-port ip)
@@ -293,7 +302,7 @@
     ($frumble (make-list 100 5))
     9860761315262647567646607066034827870915080438862787559628486633300781)
   (equal?
-    (filter (lambda (x) (equal? (cadr x) "testfile-cp1.ss")) (profile-dump-list))
+    ($just-file "testfile-cp1.ss" (profile-dump-list))
     '((101 "testfile-cp1.ss" 36 258 3 5)
       (101 "testfile-cp1.ss" 40 50 3 9)
       (101 "testfile-cp1.ss" 41 46 3 10)
@@ -338,7 +347,7 @@
           ($return ans))))
     0)
   (equal?
-    (filter (lambda (x) (equal? (cadr x) "testfile-cp1.ss")) (profile-dump-list))
+    ($just-file "testfile-cp1.ss" (profile-dump-list))
     '((152 "testfile-cp1.ss" 36 258 3 5)
       (152 "testfile-cp1.ss" 40 50 3 9)
       (152 "testfile-cp1.ss" 41 46 3 10)
@@ -382,7 +391,7 @@
         ($retry 1)))
     111022302462515654042363166809082031)
   (equal?
-    (filter (lambda (x) (equal? (cadr x) "testfile-cp1.ss")) (profile-dump-list))
+    ($just-file "testfile-cp1.ss" (profile-dump-list))
     '((152 "testfile-cp1.ss" 36 258 3 5)
       (152 "testfile-cp1.ss" 40 50 3 9)
       (152 "testfile-cp1.ss" 41 46 3 10)
@@ -424,7 +433,7 @@
     (profile-release-counters) ; drop proile information for the dropped code object
     #t)
   (equal?
-    (filter (lambda (x) (equal? (cadr x) "testfile-cp1.ss")) (profile-dump-list))
+    ($just-file "testfile-cp1.ss" (profile-dump-list))
     '((152 "testfile-cp1.ss" 36 258 3 5)
       (152 "testfile-cp1.ss" 40 50 3 9)
       (152 "testfile-cp1.ss" 41 46 3 10)
@@ -480,7 +489,7 @@
     #t)
   (eqv? (cp2-fib 10) 89)
   (equal?
-    (filter (lambda (x) (equal? (cadr x) "testfile-cp2.ss")) (profile-dump-list))
+    ($just-file "testfile-cp2.ss" (profile-dump-list))
     '((177 "testfile-cp2.ss" 49 146 4 7)
       (177 "testfile-cp2.ss" 64 73 5 10)
       (177 "testfile-cp2.ss" 65 68 5 11)
@@ -515,7 +524,7 @@
     (profile-release-counters) ; drop proile information for the dropped code object
     #t)
   (equal?
-    (filter (lambda (x) (equal? (cadr x) "testfile-cp2.ss")) (profile-dump-list))
+    ($just-file "testfile-cp2.ss" (profile-dump-list))
     '((177 "testfile-cp2.ss" 49 146 4 7)
       (177 "testfile-cp2.ss" 64 73 5 10)
       (177 "testfile-cp2.ss" 65 68 5 11)
@@ -629,8 +638,7 @@
     #t)
   (equal?
     (sort (lambda (x y) (< (list-ref x 2) (list-ref y 2)))
-      (filter (lambda (x) (equal? (list-ref x 1) "testfile-cp4.ss"))
-        (profile-dump-list)))
+          ($just-file "testfile-cp4.ss" (profile-dump-list)))
     '((1 "testfile-cp4.ss" 31 232 3 5)     ; first transformer count ...
       (2 "testfile-cp4.ss" 72 102 5 9)
       (7 "testfile-cp4.ss" 94 101 6 11)
@@ -656,8 +664,7 @@
     "((64 36 49) ((25 9 0 81)))\n")
   (equal?
     (sort (lambda (x y) (< (list-ref x 2) (list-ref y 2)))
-      (filter (lambda (x) (equal? (list-ref x 1) "testfile-cp4.ss"))
-        (profile-dump-list)))
+          ($just-file "testfile-cp4.ss" (profile-dump-list)))
     '((1 "testfile-cp4.ss" 0 299 1 1)      ; top-level let
       (1 "testfile-cp4.ss" 236 298 11 3)   ; pretty-print call ...
       (1 "testfile-cp4.ss" 237 249 11 4)   ; ... and subforms
@@ -731,8 +738,8 @@
   (equal?
     (sort
       ; sort by bfp
-      (lambda (x y) (< (list-ref x 2) (list-ref y 2)))
-      (filter (lambda (x) (equal? (list-ref x 1) "testfile-triv.ss")) (profile-dump-list)))
+     (lambda (x y) (< (list-ref x 2) (list-ref y 2)))
+     ($just-file "testfile-triv.ss" (profile-dump-list)))
     '((1 "testfile-triv.ss" 0 29 1 1)
       (10 "testfile-triv.ss" 13 28 1 14)
       (1 "testfile-triv.ss" 30 60 2 1)

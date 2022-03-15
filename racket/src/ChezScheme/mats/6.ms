@@ -15,7 +15,8 @@
 
 ;;; sections 6-1 and 6-2:
 
-(define prettytest.ss (format "~a/prettytest.ss" *mats-dir*))
+(define prettytest.ss (find-source "prettytest.ss"))
+(define mat.so (find-source "mat.so"))
 
 (mat current-input-port
    (port? (current-input-port))
@@ -3088,8 +3089,8 @@
        (eqv? (get-mode "../mats") (get-mode "../mats/.")))
   ; access times are unreliable on contemporary file systems
   (time? (file-access-time "mat.ss"))
-  (time<=? (file-change-time "mat.ss") (file-change-time "mat.so"))
-  (time<=? (file-modification-time "mat.ss") (file-modification-time "mat.so"))
+  (time<=? (file-change-time "mat.ss") (file-change-time mat.so))
+  (time<=? (file-modification-time "mat.ss") (file-modification-time mat.so))
   (equal?
     (list (time? (file-access-time "../mats"))
           (time? (file-change-time "../mats"))
@@ -3116,10 +3117,14 @@
       (and (time? (file-access-time "\\\\?\\c:\\"))
            (time? (file-change-time "\\\\?\\c:\\"))
            (time? (file-modification-time "\\\\?\\c:\\"))))
+  ;; We don't create links anymore, so these don't work as-is:
+  #;
   (or (windows?) (embedded?)
       (time=? (file-access-time "Makefile") (file-access-time "Mf-unix")))
+  #;
   (or (windows?) (embedded?)
       (time=? (file-change-time "Makefile") (file-change-time "Mf-unix")))
+  #;
   (or (windows?) (embedded?)
       (time=? (file-modification-time "Makefile") (file-modification-time "Mf-unix")))
 )

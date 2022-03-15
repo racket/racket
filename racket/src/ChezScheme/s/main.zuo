@@ -1,6 +1,8 @@
 #lang zuo
 (require "../makefiles/lib.zuo"
-         "machine.zuo")
+         "machine.zuo"
+         (only-in "../examples/main.zuo"
+                  [targets-at examples-targets-at]))
 
 (define default-options
   (hash
@@ -72,38 +74,12 @@
 ;; in safe mode (but having the final cross-built compiler built in unsafe mode)
 (define (targets-at at-dir [vars (hash)] [compiler-compiler-options (hash)])
   (define config (config-file->hash (at-dir "../Mf-config")))
-  (define (lookup key) (or (hash-ref vars key #f)
-                           (hash-ref config key #f)))
-  (define (opt key) (let ([v (hash-ref default-options key)]
-                          [cv (lookup key)])
-                      (if cv
-                          (cond
-                            [(boolean? v)
-                             (cond
-                               [(equal? cv "t") #t]
-                               [(equal? cv "f") #f]
-                               [else (error (~a "value for " key " is not \"t\" or \"f\"")
-                                            cv)])]
-                            [(integer? v)
-                             (or (string->integer cv)
-                                 (error (~a "value for " key " is not an integer")
-                                        cv))]
-                            [else (string->symbol cv)])
-                          v)))
+  (define lookup (make-lookup vars config))
+  (define opt (make-opt-lookup lookup default-options))
   (define (ccopt key) (hash-ref compiler-compiler-options key (opt key)))
 
-  ;; Note options that are non-default:
-  (define relevant-config
-    (foldl (lambda (k relevant-config)
-             (let ([v (lookup k)])
-               (cond
-                 [v
-                  (alert (~a "using " k "=" v))
-                  (hash-set relevant-config k v)]
-                 [else relevant-config])))
-           (hash)
-           (hash-keys default-options)))
-  (define options-t (input-data-target 'options (cons relevant-config compiler-compiler-options)))
+  (define options-t (input-data-target 'options (cons (relevant-config opt default-options)
+                                                      compiler-compiler-options)))
 
   (define m (lookup 'm))
   (define host-m (or (lookup 'hostm) m))
@@ -178,8 +154,6 @@
           "fasl-helpers.ss" "hashtable-types.ss" "strip-types.ss"))
   (define type-srcs
     (map at-source type-src-files))
-  (define type-src-copies
-    (map at-dir type-src-files))
 
   (define cpnanopass-src-files
     ;; files that are `include`d by "cpnanopass.ss" and "cpprim.ss"
@@ -187,14 +161,12 @@
           "np-register.ss" "np-info.ss" "np-help.ss"))
   (define cpnanopass-srcs
     (map at-source cpnanopass-src-files))
-  (define cpnanopass-src-copies
-    (map at-dir cpnanopass-src-files))
 
   (define unicode-src-names
     '("../unicode/unicode-char-cases.ss"
       "../unicode/unicode-charinfo.ss"))
-  (define unicode-src-copies
-    (map at-dir unicode-src-names))
+  (define unicode-srcs
+    (map at-source unicode-src-names))
 
   (define included-srcs
     ;; all files that are `include`d by other files:
@@ -218,48 +190,12 @@
   (define profile-dump-source "source.pd")
   (define profile-dump-block "block.pd")
 
-  ;; We'll run `scheme` with the build directory as the current
-  ;; directory, because we need to generate "machine.def" there;
-  ;; use `at-cwd` to convert a path from the current directory
-  ;; to the will-be-current directory
-  (define at-cwd
-    (let ([will-be-dir (at-dir ".")])
-      (lambda (p)
-        (find-relative-path will-be-dir p))))
-
-  (define (call-with-scheme k)
-    (define scheme.exe (build-path host-workarea "bin" host-m "scheme"))
-    (define env (cons
-                 (cons "SCHEMEHEAPDIRS" (path->complete-path
-                                         (or (lookup 'SCHEMEHEAPDIRS)
-                                             (build-path host-workarea "boot" host-m))))
-                 (hash-ref (runtime-env) 'env)))
-    (k scheme.exe env))
-
-  (define (run-scheme/status what script inputs)
-    (call-with-scheme
-     (lambda (scheme.exe env)
-       (displayln (~a "running " scheme.exe " to build " what))
-       (define p (apply process
-                        (cons (at-cwd scheme.exe)
-                              (append (list "-q")
-                                      (map (lambda (s)
-                                             (if (= (char "-") (string-ref s 0))
-                                                 s
-                                                 (at-cwd s)))
-                                           inputs)
-                                      (list (hash 'dir (at-dir ".")
-                                                  'stdin 'pipe
-                                                  'env env))))))
-       (define to (hash-ref p 'stdin))
-       (fd-write to (string-join (map ~s script)))
-       (fd-close to)
-       (thread-process-wait (hash-ref p 'process))
-       (process-status (hash-ref p 'process)))))
-
-  (define (run-scheme what script inputs)
-    (unless (= 0 (run-scheme/status what script inputs))
-      (error "failed")))
+  (define-values (call-with-scheme run-scheme/status run-scheme)
+    (make-run-scheme at-source at-dir lookup
+                     host-workarea host-m
+                     (list (at-source "../unicode"))
+                     (list (cons (at-source "../nanopass")
+                                 (at-dir ".")))))
 
   (define (cp0+gc-control)
     `((run-cp0 (lambda (cp0 x)
@@ -277,10 +213,10 @@
     `((reset-handler abort)
       (optimize-level ,(opt 'o))
       (debug-level ,(opt 'd))
-      (commonization-level (or ,(opt 'cl) (commonization-level)))
+      (commonization-level (or ,(opt 'cl 'integer) (commonization-level)))
       (fasl-compressed ,(opt 'fc))
-      (compress-format (or ,(opt 'xf) (compress-format)))
-      (compress-level (or ,(opt 'xl) (compress-level)))
+      (compress-format (or ,(opt 'xf 'symbol) (compress-format)))
+      (compress-level (or ,(opt 'xl 'integer) (compress-level)))
       (when ,(opt 'p) (compile-profile 'source))
       (when ,(opt 'bp) (compile-profile 'block))
       (when ,(opt 'loadspd) (profile-load-data ,profile-dump-source))
@@ -293,11 +229,11 @@
       (generate-covin-files ,(opt 'c))
       ,@(cp0+gc-control)
       ,@(map (lambda (dest)
-               `(begin (delete-file ,(at-cwd (path-replace-suffix dest ".covin"))) (void)))
+               `(begin (delete-file ,(path-replace-suffix dest ".covin")) (void)))
              dests)
       (time (let ()
               ,@(map (lambda (src dest)
-                       `(,(if asm? 'compile-with-asm (opt 'compile)) ,(at-cwd src) ,(at-cwd dest) ',(string->symbol m)))
+                       `(,(if asm? 'compile-with-asm (opt 'compile)) ,src ,dest ',(string->symbol m)))
                      srcs
                      dests)))
       (printf "    ~a bytes peak memory use~n" (maximum-memory-bytes))
@@ -319,7 +255,7 @@
 
   (define (make-bootfile-step-script .boot pre-boots dests)
     `((begin (delete-file ,(path-replace-suffix .boot ".covin")) (void))
-      (,(string->symbol "#%$make-boot-file") ,(at-cwd .boot) ',(string->symbol m) ',pre-boots ,@(map at-cwd dests))))
+      (,(string->symbol "#%$make-boot-file") ,.boot ',(string->symbol m) ',pre-boots ,@dests)))
 
   (define (make-bootfile-script .boot pre-boots dests)
     `((reset-handler abort)
@@ -333,28 +269,21 @@
       (keyboard-interrupt-handler (lambda () (display "interrupted---aborting\n") (reset)))
       (optimize-level ,(ccopt 'o))
       (debug-level ,(ccopt 'd))
-      (commonization-level (or ,(opt 'cl) (commonization-level)))
+      (commonization-level (or ,(opt 'cl 'integer) (commonization-level)))
       (fasl-compressed ,(opt 'fc))
-      (compress-format (or ,(opt 'xf) (compress-format)))
-      (compress-level (or ,(opt 'xl) (compress-level)))
+      (compress-format (or ,(opt 'xf 'symbol) (compress-format)))
+      (compress-level (or ,(opt 'xl 'integer) (compress-level)))
       (generate-inspector-information ,(ccopt 'i))
       ,@(cond
           [(eq? mode 'normal)
            `((subset-mode 'system)
-             (compile-file ,(at-cwd src) ,(at-cwd dest)))]
+             (compile-file , src , dest))]
           [(eq? mode 'patch)
            `(,@(cp0+gc-control)
-             (time (compile-file ,(at-cwd src) ,(at-cwd dest) ',(string->symbol host-m)))
+             (time (compile-file ,src ,dest ',(string->symbol host-m)))
              (printf "    ~a bytes peak memory use~n" (maximum-memory-bytes)))]
           [(eq? mode 'library)
-           `((compile-library ,(at-cwd src) ,(at-cwd dest)))])))
-
-  ;; Create a `:target` line for files that are `include`d, were need a link or copy
-  ;; in the build directory
-  (define (copy-target src)
-    `[:target ,(at-dir (file-name-from-path src)) (,src)
-              ,(lambda (path token)
-                 (cp/ln src path))])
+           `((compile-library ,src ,dest))])))
 
   (define (cat srcs dest)
     (let ([s (apply ~a (map file->string srcs))])
@@ -373,7 +302,7 @@
   ;; Create a `:depend` line for a file that `include`s other files
   (define (include-dep name src-names)
     `[:depend (,(at-dir (~a name "." m)) ,(at-dir (~a name ".so")) ,(at-dir (~a name ".patch")))
-              ,(map at-dir src-names)])
+              ,(map at-source src-names)])
 
   (define (run-scheme-header-script dest make-script mk.so*)
     (define tmp (~a dest ".next"))
@@ -381,7 +310,7 @@
     (mkdir* (path-only tmp))
     (run-scheme dest
                 `((reset-handler abort)
-                  ,@(make-script (at-cwd tmp)))
+                  ,@(make-script tmp))
                 (append macro-objs mk.so*))
     (if (and (file-exists? dest)
              (equal? (file->string dest)
@@ -412,8 +341,8 @@
                               `((reset-handler abort)
                                 (base-exception-handler (lambda (c) (fresh-line) (display-condition c) (newline) (reset)))
                                 (begin
-                                  (,(string->symbol "#%$fasl-file-equal?") ,(at-cwd sbb) ,(at-cwd petite.boot) #t)
-                                  (,(string->symbol "#%$fasl-file-equal?") ,(at-cwd scb) ,(at-cwd scheme.boot) #t)
+                                  (,(string->symbol "#%$fasl-file-equal?") ,sbb ,petite.boot #t)
+                                  (,(string->symbol "#%$fasl-file-equal?") ,scb ,scheme.boot #t)
                                   (void)))
                               `("-B" ,sbb)))
          (cond
@@ -479,8 +408,8 @@
        ;; independent of whether dependencies changed:
        [:target all (bootall ,@output-headers)
                 ,void]
-       [:target bootall (,@all-srcs ,@(add-patchfile macro-objs) ,nanopass.so ,@type-src-copies
-                                    ,@cpnanopass-src-copies ,@unicode-src-copies)
+       [:target bootall (,@all-srcs ,@(add-patchfile macro-objs) ,nanopass.so ,@type-srcs
+                                    ,@cpnanopass-srcs ,@unicode-srcs)
                 ,(lambda (token)
                    (mkdir* (at-boot "."))
                    (run-scheme "all at once"
@@ -550,66 +479,36 @@
 
        [:target examples ()
                 ,(lambda (token)
-                   (define examples-dir (at-dir "../examples"))
-                   (mkdir* examples-dir)
-                   (define names (ls (at-source "../examples")))
-                   (build (map (lambda (name)
-                                 (define src (at-source "../examples" name))
-                                 (define dest (build-path examples-dir name))
-                                 (target dest (lambda (path token)
-                                                (rule (list src)
-                                                      (lambda () (cp/ln src dest))))
-                                         (hash 'quiet? #t)))
-                               names))
-                   (define (at-examples p)
-                     (find-relative-path examples-dir p))
-                   (call-with-scheme
-                    (lambda (scheme.exe env)
-                      (shell/wait (build-shell "make" "all"
-                                               (~a "Scheme=" (at-examples scheme.exe)))
-                                  (hash 'dir examples-dir
-                                        'env env)))))]
+                   (mkdir* (at-dir "../examples"))
+                   (build (find-target "all" (examples-targets-at (make-at-dir (at-dir "../examples")) vars))))]
 
        ;; Internal targets ----------------------------------------
-
-       ,@(map copy-target included-srcs)
-
-       ,@(map (lambda (file)
-                (define src (at-source file))
-                `[:target ,(at-dir file) (,src)
-                          ,(lambda (path token)
-                             (mkdir* (path-only path))
-                             (cp/ln src path))])
-              unicode-src-names)
 
        [:target ,machine.def (,(input-data-target 'machine m)
                               ,@(map at-source (cons (caar mach-src+dep+more-srcs)
                                                      (cdr mach-src+dep+more-srcs))))
                 ,(lambda (dest token)
-                   ((cdar mach-src+dep+more-srcs) dest token)
-                   (for-each (lambda (name)
-                               (cp/ln (at-source name) (at-dir name)))
-                             (cdr mach-src+dep+more-srcs)))]
+                   ((cdar mach-src+dep+more-srcs) dest token))]
 
-       ,(compilation-preamble-target cmacros.so (list machine.def (at-dir "layout.ss") options-t)
+       ,(compilation-preamble-target cmacros.so (list machine.def (at-source "layout.ss") options-t)
                                      (list))
 
-       ,(compilation-preamble-target priminfo.so (list (at-dir "primdata.ss"))
+       ,(compilation-preamble-target priminfo.so (list (at-source "primdata.ss"))
                                      (list cmacros.so))
 
-       ,(compilation-preamble-target env.so (list (at-dir "primref.ss"))
+       ,(compilation-preamble-target env.so (list (at-source "primref.ss"))
                                      (list cmacros.so priminfo.so))
 
-       ,(compilation-preamble-target primvars.so (list (at-dir "primref.ss"))
+       ,(compilation-preamble-target primvars.so (list (at-source "primref.ss"))
                                      (list cmacros.so priminfo.so))
 
-       ,(compilation-preamble-target setup.so (list (at-dir "primref.ss") (at-dir "debug.ss"))
+       ,(compilation-preamble-target setup.so (list (at-source "primref.ss") (at-source "debug.ss"))
                                      (list cmacros.so priminfo.so))
 
-       ,(compilation-preamble-target mkheader.so type-src-copies
+       ,(compilation-preamble-target mkheader.so type-srcs
                                      (list cmacros.so priminfo.so primvars.so env.so))
 
-       ,(compilation-preamble-target mkgc.so type-src-copies
+       ,(compilation-preamble-target mkgc.so type-srcs
                                      (list cmacros.so priminfo.so primvars.so env.so mkheader.so))
        [:target ,nanopass.so ,(cons nanopass.ss
                                     (let ([np-dir (at-source "../nanopass/nanopass")])
@@ -617,15 +516,10 @@
                 ,(lambda (path token)
                    (run-scheme path
                                (make-compiler-compile-script nanopass.ss path 'library)
-                               (list "--libdirs" (~a (at-source "../nanopass")
-                                                     (if (eq? 'windows (system-type))
-                                                         ";;"
-                                                         "::")
-                                                     ".")
-                                     "--compile-imported-libraries")))]
+                               (list "--compile-imported-libraries")))]
 
        ,@(map (lambda (src obj)
-                `[:target ,obj ,(list* src nanopass.so (append macro-objs type-src-copies))
+                `[:target ,obj ,(list* src nanopass.so (append macro-objs type-srcs))
                           ,(lambda (obj token)
                              (run-scheme obj
                                          (make-compile-single-script src obj #f)
@@ -636,7 +530,7 @@
        ,@(map (lambda (name)
                 (let ([src (at-source (path-replace-suffix name ".ss"))]
                       [obj (at-dir name)])
-                  `[:target ,obj ,(list* src nanopass.so (append macro-objs type-src-copies))
+                  `[:target ,obj ,(list* src nanopass.so (append macro-objs type-srcs))
                             ,(lambda (obj token)
                                (run-scheme obj
                                            (make-compiler-compile-script src obj 'patch)

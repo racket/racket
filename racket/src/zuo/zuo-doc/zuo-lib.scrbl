@@ -675,9 +675,12 @@ The following keys are recognized in a tool configuration:
 ]
 
 
-@defproc[(c-compile [.o path-string?] [.c path-string?] [config hash?]) void?]{
+@defproc*[([(c-compile [.o path-string?] [.c path-string?] [config hash?]) void?]
+           [(c-compile [out path-string?] [ins (listof path-string?)] [config hash?]) void?]
 
-Compiles @racket[.c] to @racket[.o] using the @tech{tool configuration}
+Compiles @racket[.c] to @racket[.o] using the @tech{tool
+configuration} @racket[config], or combines compiling and linking by
+with @racket[ins] compiled and linked to @racket[out] using
 @racket[config].}
 
 @defproc[(c-link [.exe path-string?] [ins (listof path-string?)] [config hash?]) void?]{
@@ -733,9 +736,11 @@ in the @tech{tool configuration} @racket[config].}
 Parses @racket[file] as having configuration lines of the form
 @nonterm{name} @litchar{=} @nonterm{value}, with any number of ignored
 spaces at the start of the line, end of the line, or around the
-@litchar{=}. Each @nonterm{name} consists of alphanumeric characters
-and @litchar{_}; the symbol form of the name is used as a key in the
-resulting hash table, mapped to the @nonterm{value} as a string. Lines
-in @racket[file] that do not match the configuration format are
-ignored. If a same @nonterm{name} is configured multiple times, the
-last mapping overrides earlier ones.}
+@litchar{=}, and with a trailing @litchar{\} on a line deleted along
+with its newline (to create a single line). Each @nonterm{name}
+consists of alphanumeric characters and @litchar{_}; the symbol form
+of the name is used as a key in the resulting hash table, mapped to
+the @nonterm{value} as a string. Lines in @racket[file] that do not
+match the configuration format are ignored. If a same @nonterm{name}
+is configured multiple times, the last mapping overrides earlier
+ones.}

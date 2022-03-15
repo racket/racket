@@ -16,7 +16,7 @@
   ;; subdirectories where we create a "main.zuo" that bounce to
   ;; one in the source area
   (define bounce-dirs
-    '("c" "s"))
+    '("c" "s" "mats" "examples"))
   (define bounce-files
     (map (lambda (d) (at-dir d "main.zuo")) bounce-dirs))
   (define bounce-scripts

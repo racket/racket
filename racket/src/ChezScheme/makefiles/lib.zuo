@@ -2,8 +2,26 @@
 
 (provide cp/ln
          m->arch
-         hash-set*)
+         define-values
+         hash-set*
+         file->lines
+         make-lookup
+         make-opt-lookup
+         make-run-scheme
+         relevant-config)
 
+(define-syntax (define-values stx)
+  (unless (and (list? stx) (= 3 (length stx))) (bad-syntax stx))
+  (define vals-id (string->uninterned-symbol "vals"))
+  `(,(quote-syntax begin)
+    (,(quote-syntax define) ,vals-id ,(list-ref stx 2))
+    ,@(let loop ([ids (cadr stx)] [index 0])
+        (cond
+          [(null? ids) '()]
+          [else
+           (cons `(,(quote-syntax define) ,(car ids) (,(quote-syntax list-ref) ,vals-id ,index))
+                 (loop (cdr ids) (+ index 1)))]))))
+  
 (define (cp/ln src dest)
   (if (eq? 'windows (system-type))
       (cp src dest)
@@ -28,3 +46,90 @@
         ht
         (loop (hash-set ht (car keys+vals) (cadr keys+vals))
               (cddr keys+vals)))))
+
+(define (file->lines file)
+  (string-split (file->string file) "\n"))
+
+(define (make-lookup vars config)
+  (lambda (key)
+    (or (hash-ref vars key #f)
+        (hash-ref config key #f))))
+
+(define (make-opt-lookup lookup default-options)
+  (lambda (key [format #f])
+    (let ([v (hash-ref default-options key)]
+          [cv (lookup key)])
+      (if cv
+          (cond
+            [(and (not format) (boolean? v))
+             (cond
+               [(equal? cv "t") #t]
+               [(equal? cv "f") #f]
+               [else (error (~a "value for " key " is not \"t\" or \"f\"")
+                            cv)])]
+            [(or (eq? format 'integer)
+                 (integer? v))
+             (or (string->integer cv)
+                 (error (~a "value for " key " is not an integer")
+                        cv))]
+            [else (string->symbol cv)])
+          v))))
+
+(define (make-run-scheme at-source at-dir lookup
+                         host-workarea host-m
+                         [extra-source-dirs '()]
+                         [extra-library-dirs '()])
+  (define (call-with-scheme k)
+    (define scheme.exe (build-path host-workarea "bin" host-m (.exe "scheme")))
+    (define env (cons
+                 (cons "SCHEMEHEAPDIRS" (path->complete-path
+                                         (or (lookup 'SCHEMEHEAPDIRS)
+                                             (build-path host-workarea "boot" host-m))))
+                 (hash-ref (runtime-env) 'env)))
+    (k scheme.exe env))
+
+  (define (run-scheme/status what script inputs [options (hash)])
+    (call-with-scheme
+     (lambda (scheme.exe env)
+       (displayln (~a "running " scheme.exe " to build " what))
+       (define p (apply process
+                        (cons scheme.exe
+                              (append (list "-q")
+                                      inputs
+                                      (list (hash 'stdin 'pipe
+                                                  'stdout (or (hash-ref options 'stdout #f)
+                                                              (fd-open-output 'stdout))
+                                                  'stderr (or (hash-ref options 'stderr #f)
+                                                              (fd-open-output 'stderr))
+                                                  'env env))))))
+       (define to (hash-ref p 'stdin))
+       (fd-write to (~s `(source-directories '(,(path->complete-path (at-dir "."))
+                                               ,(path->complete-path (at-source "."))
+                                               ,@extra-source-dirs))))
+       (fd-write to (~s `(library-directories '(,@extra-library-dirs
+                                                ,(cons (path->complete-path (at-source "."))
+                                                       (path->complete-path (at-dir ".")))))))
+       (fd-write to (string-join (map ~s script)))
+       (fd-close to)
+       (thread-process-wait (hash-ref p 'process))
+       (process-status (hash-ref p 'process)))))
+
+  (define (run-scheme what script inputs [options (hash)])
+    (unless (= 0 (run-scheme/status what script inputs options))
+      (error "failed")))
+
+  (list call-with-scheme
+        run-scheme/status
+        run-scheme))
+
+(define (relevant-config lookup default-options)
+  ;; Note options that are non-default:
+  (foldl (lambda (k relevant-config)
+           (let ([v (lookup k)])
+             (cond
+               [(not (equal? v (hash-ref default-options k)))
+                (alert (~a "using " k "=" v))
+                (hash-set relevant-config k v)]
+               [else relevant-config])))
+         (hash)
+         (hash-keys default-options)))

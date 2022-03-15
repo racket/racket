@@ -15,7 +15,9 @@
 
 (define (c-compile .o .c config)
   (unless (path-string? .o) (arg-error 'c-compile "path string" .o))
-  (unless (path-string? .c) (arg-error 'c-compile "path string" .c))
+  (unless (or (path-string? .c)
+              (and (list? .c) (andmap path-string? .c)))
+    (arg-error 'c-compile "path string or list of paths strings" .c))
   (unless (hash? config) (arg-error 'c-compile "hash table" config))
   (define windows? (eq? (hash-ref (runtime-env) 'system-type) 'windows))
   (define lookup (make-lookup config))
@@ -27,7 +29,9 @@
                  (or (lookup 'CPPFLAGS) "")
                  (or (lookup 'CFLAGS) "")
                  (if windows? "/Fe:" "-o") (string->shell .o)
-                 "-c" (string->shell .c)))
+                 (if (string? .c)
+                     (build-shell "-c" (string->shell .c))
+                     (apply build-shell (map string->shell .c)))))
   (shell/wait command (hash) "compile"))
 
 (define (c-link .exe ins config)

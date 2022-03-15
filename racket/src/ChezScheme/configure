@@ -926,6 +926,7 @@ m=$m
 defaultm=$defaultm
 mdinclude=$mdinclude
 mdcppflags=$mdcppflags
+mdcflags=$mdcflags
 mdldflags=$mdldflags
 mdlinkflags=$mdlinkflags
 exeExtraDeps=$exeExtraDeps

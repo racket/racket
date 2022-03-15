@@ -1,0 +1,409 @@
+#lang zuo
+(require "../makefiles/lib.zuo"
+         (only-in "../examples/main.zuo"
+                  [targets-at examples-targets-at]))
+
+(define default-options
+  (hash
+   ;; o is the optimize level at which the mats should be run
+   'o 0
+
+   ;; p determines whether profiling is enabled
+   'p #f
+
+   ;; pdhtml determines whether profile-dump-html is called at end of a run;
+   ;; NB: beware of lost profile information due to mats that call profile-clear
+   'pdhtml #f
+
+   ;; cp0 determines whether cp0 is run
+   'cp0 #f
+   
+   ;; eval is the evaluator to use
+   'eval 'compile
+
+   ;; ctb is the value to which collect-trip-bytes is set (#f means the default)
+   'ctb #f
+
+   ;; cn defines the value to which collect-notify is set
+   'cn #f
+
+   ;; cgr is the value to which collect-generation-radix is set (#f means the default)
+   'cgr #f
+
+   ;; cmg is the value to which collect-maximum-generation is set (#f means the default)
+   'cmg #f
+
+   ;; ipmg is the value to which in-place-minimum-generation is set (#f means the default)
+   'ipmg #f
+
+   ;; rmg is the value to which release-minimum-generation is set (#f means the default)
+   'rmg #f
+
+   ;; cis defines the value to which compile-interpret-simple is set
+   'cis #f
+
+   ;; spi defines the value to which suppress-primitive-inlining is set
+   'spi #f
+
+   ;; hci defines the value to which heap-check-interval (mat.ss) is set, 0 disables
+   'hci 0
+
+   ;; eoc determines whether object counts are enabled
+   'eoc #t
+
+   ;; cl determines the commonization level, #f for default
+   'cl #f
+
+   ;; ecpf determines whether the compiler checks prelex flags
+   'ecpf #f
+
+   ;; c determines whether mat coverage (.covout) files are created
+   'c #f))
+
+(define (tf x) (if x "t" "f"))
+
+(define (targets-at at-dir [vars (hash)])
+  (define config (config-file->hash (at-dir "../Mf-config")))
+  (define lookup (make-lookup vars config))
+  (define opt (make-opt-lookup lookup default-options))
+
+  (define m (lookup 'm))
+
+  (define options-t (input-data-target 'options (relevant-config opt default-options)))
+
+  (define mat-names
+    '(;; all tests
+      "primvars" "3" "4" "5_1" "5_2" "5_3" "5_4" "5_5"
+      "bytevector" "thread" "profile" "misc" "cp0" "cptypes"
+      "5_6" "5_7" "5_8" "6" "io" "format" "7"
+      "record" "hash" "enum" "8" "fx" "fl" "cfl"
+      "foreign" "ftype" "unix" "windows" "examples"
+      "ieee" "date" "exceptions" "oop"))
+  
+  (define conf (~a (opt 'eval 'symbol) "-" (opt 'o) "-" (tf (opt 'spi)) "-" (tf (opt 'cp0)) "-" (tf (opt 'cis))))
+  (define out-dir (at-dir (~a "output-" conf)))
+
+  (define mat-srcs
+    (map (lambda (name) (at-source (~a name ".ms")))
+         mat-names))
+  (define mat-objs
+    (map (lambda (name) (build-path out-dir (~a name ".mo")))
+         mat-names))
+  (define mat-here-objs
+    (map (lambda (name) (at-dir (~a name ".mo")))
+         mat-names))
+
+  (define mat.ss (at-source "mat.ss"))
+  (define mat.so (at-dir "mat.so"))
+
+  (define pretty-files
+    (map at-source
+         '(;; prettysrc is src to use for pretty-print test; we leave out mat files
+           ;; with cycles, e.g., primvars.ms, misc.ms, 4.ms, 5_1.ms, hash.ms
+           "3.ms" "5_3.ms" "5_4.ms" "5_5.ms" "bytevector.ms" "thread.ms" "profile.ms"
+           "5_6.ms" "5_7.ms" "5_8.ms" "6.ms" "io.ms" "format.ms" "7.ms" "record.ms" "enum.ms" "8.ms"
+           "fx.ms" "fl.ms" "cfl.ms" "foreign.ms" "unix.ms" "windows.ms" "examples.ms" "ieee.ms" "date.ms"
+           "exceptions.ms")))
+
+  (define foreign1.so (at-dir "foreign1.so"))
+  (define foreign-srcs
+    (map at-source
+         '("foreign1.c" "foreign2.c" "foreign3.c" "foreign4.c")))
+
+  (define cat_flush.c (at-source "cat_flush.c"))
+  (define cat_flush.exe (at-dir (.exe "cat_flush")))
+
+  (define prettytest.ss (at-dir "prettytest.ss"))
+  (define build-examples-stamp (at-dir "build-examples"))
+
+  (define experr-compile-$o-f-f-f (~a "experr-compile-" (opt 'o) "-f-f-f"))
+  (define root-experr-compile-$o-f-f-f (~a "root-" experr-compile-$o-f-f-f))
+
+  (define experr-compile-$o-t-f-f (~a "experr-compile-" (opt 'o) "-t-f-f"))
+  (define patch-compile-$o-t-f-f (~a "patch-compile-" (opt 'o) "-t-f-f"))
+
+  (define experr-compile-$o-$spi-f-f (~a "experr-compile-" (opt 'o) "-" (tf (opt 'spi)) "-f-f"))
+
+  (define experr-compile-$o-$spi-t-f (~a "experr-compile-" (opt 'o) "-" (tf (opt 'spi)) "-t-f"))
+  (define patch-compile-$o-$spi-t-f (~a "patch-compile-" (opt 'o) "-" (tf (opt 'spi)) "-t-f"))
+
+  (define experr-compile-$o-$spi-$cp0-f (~a "experr-compile-" (opt 'o) "-" (tf (opt 'spi)) "-" (tf (opt 'cp0)) "-f"))
+  
+  (define experr-compile-$o-$spi-$cp0-t (~a "experr-compile-" (opt 'o) "-" (tf (opt 'spi)) "-" (tf (opt 'cp0)) "-t"))
+  (define patch-compile-$o-$spi-$cp0-t (~a "patch-compile-" (opt 'o) "-" (tf (opt 'spi)) "-" (tf (opt 'cp0)) "-t"))
+
+  (define patch-interpret-$o-$spi-$cp0-t (~a "patch-interpret-" (opt 'o) "-" (tf (opt 'spi)) "-" (tf (opt 'cp0)) "-t"))
+  (define patch-interpret-$o-$spi-$cp0-f (~a "patch-interpret-" (opt 'o) "-" (tf (opt 'spi)) "-" (tf (opt 'cp0)) "-f"))
+
+  (define experr-interpret-$o-$spi-$cp0-$cis (~a "experr-interpret-" (opt 'o) "-" (tf (opt 'spi)) "-" (tf (opt 'cp0)) "-" (tf (opt 'cis))))
+  (define patch-interpret-$o-$spi-$cp0-$cis (~a "patch-interpret-" (opt 'o) "-" (tf (opt 'spi)) "-" (tf (opt 'cp0)) "-" (tf (opt 'cis))))
+
+  (define (patch dest patch)
+    (shell/wait (build-shell "patch" (string->shell dest) (string->shell patch))))
+
+  (define (diff a b dest)
+    (define out (fd-open-output dest :truncate))
+    (shell/wait (build-shell "diff" (string->shell a) (string->shell b))
+                (hash 'stdout out))
+    (fd-close out))
+
+  (define-values (call-with-scheme run-scheme/status run-scheme)
+    (make-run-scheme at-source at-dir lookup
+                     (at-dir "..") m
+                     (list (path->complete-path (at-dir "../s"))
+                           (path->complete-path (at-source "../s"))
+                           (path->complete-path (at-dir "../examples"))
+                           (path->complete-path (at-source "../examples")))))
+
+  (define (make-config-script)
+    `((optimize-level ,(opt 'o))
+      (,(string->symbol "#%$suppress-primitive-inlining") ,(opt 'spi))
+      (heap-check-interval ,(opt 'hci))
+      (,(string->symbol "#%$enable-check-prelex-flags") ,(opt 'ecpf))
+      (compile-profile ,(opt 'p))
+      (collect-notify ,(opt 'cn))
+      (collect-trip-bytes (or ,(opt 'ctb 'integer) (collect-trip-bytes)))
+      (collect-generation-radix (or ,(opt 'cgr 'integer) (collect-generation-radix)))
+      (collect-maximum-generation (or ,(opt 'cmg) (collect-maximum-generation)))
+      (in-place-minimum-generation (or ,(opt 'ipmg) (in-place-minimum-generation)))
+      (enable-object-counts ,(opt 'eoc))
+      (commonization-level (or ,(opt 'cl 'integer) (commonization-level)))
+      (release-minimum-generation (or ,(opt 'rmg 'integer) (release-minimum-generation)))
+      (compile-interpret-simple ,(opt 'cis))
+      (enable-cp0 ,(opt 'cp0))
+      (set! *scheme* ,(path->complete-path (at-dir "../bin" m (.exe "scheme"))))
+      (set! *mats-dir* ,(path->complete-path (at-source ".")))
+      (set! $cat_flush ,(path->complete-path cat_flush.exe))
+      (library-directories (list ,(path->complete-path (at-dir "."))
+                                 ,(path->complete-path (at-source "."))))
+      (current-eval ,(opt 'eval))
+      (when ,(opt 'c) (coverage-table (load-coverage-files ,(path->complete-path (at-dir "../boot" m "petite.covin"))
+                                                           ,(path->complete-path (at-dir "../boot" m "scheme.covin")))))))
+
+  (define (make-check-error-script)
+    `((unless (= (,(string->symbol "#%$check-heap-errors")) 0)
+        (fprintf (console-error-port) "check heap detected errors---grep standard output for !!!\n")
+        (abort))))
+  
+  (define (run-mat name dest dir)
+    (mkdir* dir)
+    (define out-file (at-dir (~a name ".out")))
+    (define out (fd-open-output out-file :truncate))
+    (run-scheme (~a dest " with output to " out-file)
+                `(,@(make-config-script)
+                  ((mat-file ,dir) ,name)
+                  ,@(make-check-error-script))
+                (list mat.so)
+                (hash 'stdout out 'stderr out))
+    (fd-close out))
+
+  (define (run-all-mat dir report-dir)
+    (mkdir* dir)
+    (define out-file (build-path dir "make.out"))
+    (define out (fd-open-output out-file :truncate))
+    (run-scheme (~a "all with output to " out-file)
+                `(,@(make-config-script)
+                  (record-run-coverage
+                   ,(build-path dir "run.covout")
+                   (lambda ()
+                     ,@(map (lambda (name)
+                              `(time ((mat-file ,dir) ,name)))
+                            mat-names)
+                     (when ,(opt 'pdhtml) (profile-dump-html))))
+                  ,@(make-check-error-script))
+                (list "--verbose" mat.so)
+                (hash 'stdout out 'stderr out))
+    (fd-close out)
+    (define lines (apply append
+                         (map (lambda (name)
+                                (file->lines (build-path dir (~a name ".mo"))))
+                              mat-names)))
+    (define report-lines
+      (let ([err? (glob->matcher "Error*")]
+            [bug? (glob->matcher "Bug*")]
+            [warning? (glob->matcher "Warning*")]
+            [expected? (glob->matcher "Expected*")])
+        (apply append
+               (map (lambda (name)
+                      (define lines (file->lines (build-path dir (~a name ".mo"))))
+                      (define report-lines
+                        (filter (lambda (line)
+                                  (or (err? line) (bug? line) (warning? line) (expected? line)))
+                                lines))
+                      (map (lambda (line)
+                             (~a name ".mo:" line))
+                           report-lines))
+                    mat-names))))
+    (display-to-file (string-join (append report-lines '("")) "\n")
+                     (build-path report-dir (~a "errors-" conf))
+                     :truncate)
+    (diff (build-path report-dir (~a "errors-" conf))
+          (at-dir (~a "experr-" conf))
+          (build-path report-dir (~a "report-" conf))))
+        
+  (define (grep-for-failure obj)
+    (define lines (file->lines obj))
+    (let ([bug? (glob->matcher "Bug*")]
+          [err? (glob->matcher "Error*")]
+          [invalid? (glob->matcher "invalid memory*")])
+      (when (foldl (lambda (line saw-err?)
+                     (or (and (or (bug? line)
+                                  (err? line)
+                                  (invalid? line))
+                              (begin
+                                (alert line)
+                                #t))
+                         saw-err?))
+                   #f
+                   lines)
+        (error "failed"))))
+
+  (define (mo-depend .mos deps)
+    `[:depend ,(apply append
+                      (map (lambda (.mo)
+                             (list (at-dir .mo) (build-path out-dir .mo)))
+                           .mos))
+              ,deps])
+
+  (make-targets
+   `([:target each ,mat-here-objs ,void]
+
+     [:target all (,mat.so
+                   ,build-examples-stamp
+                   ,prettytest.ss ,foreign1.so ,cat_flush.exe
+                   ,@(map at-source '("m4test.in" "m4test.out" "freq.in" "freq.out"
+                                                  "oop.ss" "ftype.h" "ht.ss"))
+                   ,(at-dir (~a "experr-" conf)))
+              ,(lambda (token)
+                 (run-all-mat out-dir (at-dir ".")))]
+
+     ;; for ".mo" written to immediate build directory 
+     ,@(map (lambda (obj src name)
+              `[:target ,obj (,src ,mat.so ,options-t)
+                        ,(lambda (path token)
+                           (run-mat name obj (at-dir "."))
+                           (grep-for-failure obj))
+                        ;; keep output on failure:
+                        :precious])
+            mat-here-objs
+            mat-srcs
+            mat-names)
+
+     ;; for ".mo" written to an "out-" subdirectory:
+     ,@(map (lambda (obj src name)
+              `[:target ,obj (,src ,mat.so ,options-t)
+                        ,(lambda (path token)
+                           (run-mat name obj out-dir))
+                        ;; keep output on failure:
+                        :precious])
+            mat-objs
+            mat-srcs
+            mat-names)
+
+     [:target ,mat.so (,mat.ss)
+              ,(lambda (path token)
+                 (run-scheme "compile"
+                             `((reset-handler abort)
+                               (compile-file ,mat.ss ,path))
+                             '()))]
+
+     ,(mo-depend '("foreign.mo" "thread.mo") (list foreign1.so))
+     ,(mo-depend '("examples.mo") (list (at-source "m4test.in") (at-source "m4test.out")
+                                        (at-source "freq.in") (at-source "freq.out")
+                                        build-examples-stamp))
+     ,(mo-depend '("6.mo" "bytevector.mo" "io.mo") (list prettytest.ss))
+     ,(mo-depend '("unix.mo" "io.mo" "6.mo") (list cat_flush.exe))
+     ,(mo-depend '("oop.mo") (list (at-source "oop.ss")))
+     ,(mo-depend '("ftype.mo") (list (at-source "ftype.h")))
+     ,(mo-depend '("hash.mo") (list (at-source "ht.ss")))
+
+     [:target ,prettytest.ss ,pretty-files
+              ,(lambda (path token)
+                 (display-to-file (apply ~a (map file->string pretty-files))
+                                  path
+                                  :truncate))]
+
+     [:target ,cat_flush.exe (,cat_flush.c)
+              ,(lambda (path token)
+                 (c-compile cat_flush.exe (list cat_flush.c)
+                            (let* ([config (config-merge config 'CPPFLAGS (or (lookup 'mdinclude) ""))])
+                              (config-include config
+                                              (at-dir (build-path "../boot" m))
+                                              (at-dir ".")))))]
+
+     [:target ,foreign1.so ,foreign-srcs
+              ,(lambda (path token)
+                 (c-compile foreign1.so foreign-srcs
+                            (let* ([config (config-merge config 'CPPFLAGS (or (lookup 'mdinclude) ""))]
+                                   [config (config-merge config 'CFLAGS (or (lookup 'mdcflags) ""))])
+                              (config-include config
+                                              (at-dir (build-path "../boot" m))
+                                              (at-dir ".")))))]
+     [:target ,build-examples-stamp ()
+              ,(lambda (path token)
+                 (mkdir* (at-dir "../examples"))
+                 (build (find-target "all" (examples-targets-at (make-at-dir (at-dir "../examples")) vars)))
+                 (fd-close (fd-open-output build-examples-stamp :truncate)))]
+
+     [:target clean ()
+              ,(lambda (token)
+                 (map rm* (append
+                           (filter (let ([gs (append
+                                              (map (lambda (sfx) (glob->matcher (~a "*." sfx)))
+                                                   (list "o" "so" "mo" "covout" "html" "rej" "orig"))
+                                              (map (lambda (pfx) (glob->matcher (~a pfx "*")))
+                                                   (list "experr" "errors" "report" "testfile"
+                                                         "testdir" "output-")))])
+                                     (lambda (f)
+                                       (and (ormap (lambda (g) (g f)) gs)
+                                            (at-dir f))))
+                                   (ls (at-dir ".")))
+                           (map at-dir
+                                (list "sumary" "testscript"))
+                           (list prettytest.ss cat_flush.exe build-examples-stamp)))
+                 (when (directory-exists? (at-dir "../examples"))
+                   (build (find-target "clean" (examples-targets-at (make-at-dir (at-dir "../examples")) vars)))))]
+
+     ;; rules for generating various experr files
+
+     ;; everything starts with the root experr files with default
+     ;; settings for the various parameters
+     [:target ,(at-dir experr-compile-$o-f-f-f) (,(at-source root-experr-compile-$o-f-f-f))
+              ,(lambda (path token)
+                 (cp (at-source root-experr-compile-$o-f-f-f) path))]
+
+     ;; derive spi=t experr files by patching spi=f experr files
+     ;; cp first in case patch is empty, since patch produces an empty output
+     ;; file rather than a copy of the input file if the patch file is empty
+     [:target ,(at-dir experr-compile-$o-t-f-f) (,(at-dir experr-compile-$o-f-f-f)
+                                                 ,(at-source patch-compile-$o-t-f-f))
+              ,(lambda (path token)
+                 (cp (at-dir experr-compile-$o-f-f-f) path)
+                 (patch path (at-source patch-compile-$o-t-f-f)))]
+
+     ;; derive cp0=t experr files by patching cp0=f experr files
+     [:target ,(at-dir experr-compile-$o-$spi-t-f) (,(at-dir experr-compile-$o-$spi-f-f)
+                                                    ,(at-source patch-compile-$o-$spi-t-f))
+              ,(lambda (path token)
+                 (cp (at-dir experr-compile-$o-$spi-f-f) path)
+                 (patch path (at-source patch-compile-$o-$spi-t-f)))]
+
+     ;; derive cis=t experr files by patching cis=f experr files
+     [:target ,(at-dir experr-compile-$o-$spi-$cp0-t) (,(at-dir experr-compile-$o-$spi-$cp0-f)
+                                                       ,(at-source patch-compile-$o-$spi-$cp0-t))
+              ,(lambda (path token)
+                 (cp (at-dir experr-compile-$o-$spi-$cp0-f) path)
+                 (patch path (at-source patch-compile-$o-$spi-$cp0-t)))]
+
+     ;; derive eval=interpret experr files by patching eval=compile experr files
+     ;; (with cis=f, since compile-interpret-simple does not affect interpret)
+     [:target ,(at-dir experr-interpret-$o-$spi-$cp0-$cis) (,(at-dir experr-compile-$o-$spi-$cp0-f)
+                                                            ,(at-source patch-interpret-$o-$spi-$cp0-f))
+              ,(lambda (path token)
+                 (cp (at-dir experr-compile-$o-$spi-$cp0-f) path)
+                 (patch path (at-source patch-interpret-$o-$spi-$cp0-f)))]
+     
+     #;
+     (end-make-targets))))
+
+(provide-targets targets-at)

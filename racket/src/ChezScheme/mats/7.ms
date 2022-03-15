@@ -1120,13 +1120,13 @@
           out)))
     "(aye captain)\n")
   (equal?
-    (begin
-      (unless (or (embedded?) (equal? *scheme* (format "~a/bin/~a/scheme~a" (path-parent *mats-dir*) (machine-type) (if (windows?) ".exe" ""))))
-        (errorf #f "not testing boot file based on ../boot/~a/petite.boot, since *scheme* isn't ../bin/~a/scheme~a"
-          (machine-type) (machine-type) (if (windows?) ".exe" "")))
+    (let ([would-be-scheme (find-source (format "../bin/~a/scheme~a" (machine-type) (if (windows?) ".exe" "")))])
+      (unless (or (embedded?) (equal? *scheme* would-be-scheme))
+        (errorf #f "not testing boot file based on ../boot/~a/petite.boot, since *scheme* ~a isn't ~a"
+          (machine-type) *scheme* would-be-scheme))
       (parameterize ([optimize-level 2])
         (make-boot-file "testfile.boot" '()
-          (format "~a/boot/~a/petite.boot" (path-parent *mats-dir*) (machine-type))
+          (find-source (format "../boot/~a/petite.boot" (machine-type)))
           "testfile-1.so"
           "testfile-2.so"
           "testfile-3.ss"
@@ -1151,10 +1151,10 @@
   (or
    (case (machine-type) [(pb tpb pb32 tpb32) #t] [else #f]) ; callables not always in pb
    (equal?
-    (begin
-      (unless (or (embedded?) (equal? *scheme* (format "~a/bin/~a/scheme~a" (path-parent *mats-dir*) (machine-type) (if (windows?) ".exe" ""))))
-        (errorf #f "not testing boot file based on ../boot/~a/petite.boot, since *scheme* isn't ../bin/~a/scheme~a"
-          (machine-type) (machine-type) (if (windows?) ".exe" "")))
+    (let ([would-be-scheme (find-source (format "../bin/~a/scheme~a" (machine-type) (if (windows?) ".exe" "")))])
+      (unless (or (embedded?) (equal? *scheme* would-be-scheme))
+        (errorf #f "not testing boot file based on ../boot/~a/petite.boot, since *scheme* ~a isn't ~a"
+          (machine-type) *scheme* would-be-scheme))
       (mkfile "testfile.ss"
         '(scheme-start
            (lambda ()

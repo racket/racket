@@ -1971,7 +1971,7 @@
 )
 
 (mat $fasl-file-equal?
-  (let ([fn (format "~a/fatfib.ss" *examples-directory*)])
+  (let ([fn (find-source "fatfib.ss")])
     (parameterize ([generate-inspector-information #t])
       (compile-file fn "testfile-fatfib1.so"))
     (parameterize ([generate-inspector-information #t])

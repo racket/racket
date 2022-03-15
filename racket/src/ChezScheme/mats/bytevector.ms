@@ -11322,7 +11322,7 @@
                                                  (cons (bitwise-and i 255)
                                                        (loop (+ i 1)))))))
     (round-trip-bytevector-compress 
-      (call-with-port (open-file-input-port (format "~a/prettytest.ss" *mats-dir*)) get-bytevector-all))
+      (call-with-port (open-file-input-port (find-source "prettytest.ss")) get-bytevector-all))
     (error?
      ;; Need at least 8 bytes for result size
      (bytevector-uncompress '#vu8()))
