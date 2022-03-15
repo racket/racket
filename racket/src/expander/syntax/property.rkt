@@ -57,7 +57,7 @@
 
 (define/who (syntax-property-remove s key)
   (check who syntax? s)
-  (if (hash-ref (syntax-props s) key #f)
+  (if (hash-has-key? (syntax-props s) key)
       (struct-copy syntax s
                    [props (hash-remove (syntax-props s) key)])
       s))
