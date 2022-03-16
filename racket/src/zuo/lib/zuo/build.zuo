@@ -399,33 +399,45 @@
     [else
      (unless to-build
        (error "build: out-of-date target has no build procedure" (target-name t)))
-     ;; always run a build for a dependency in its own thread
-     (let ([ch (channel)])
-       (thread (lambda ()
-                 (acquire-resource newer-state) ; limits process parallelism
-                 (let* ([maybe-sha1 (to-build)] ; build!
-                        [sha1 (if build-to-sha1?
-                                  maybe-sha1
-                                  (file-sha1 path tok))])
-                   (unless (sha1? sha1)
-                     (error "build: target-build result is not a sha1" sha1))
-                   (when (equal? sha1 no-sha1)
-                     (error "rule for target did not create it" path))
-                   (when path-handle (cleanable-cancel path-handle))
-                   (release-resource newer-state)
-
-                   ;; record result:
-                   (let* ([state (channel-get (build-state-ch newer-state))]
-                          [ts (if (eq? sha1 phony-sha1)
-                                  (cons no-sha1 (hash))
-                                  (cons sha1 dep-sha1s))]
-                          [ts (merge-target-accumulated state t ts)]
-                          [state (update-target-state/record-sha1s state t ts)])
-                     (channel-put (build-state-ch state) state))
-
-                   (channel-put ch 'done))))
-       ;; meanwhile, record a channel as the start's current build state
-       (update-target-state newer-state t ch))]))
+     (define (build-one finish)
+       (let* ([maybe-sha1 (to-build)] ; build!
+              [sha1 (if build-to-sha1?
+                        maybe-sha1
+                        (file-sha1 path tok))])
+         (unless (sha1? sha1)
+           (error "build: target-build result is not a sha1" sha1))
+         (when (equal? sha1 no-sha1)
+           (error "rule for target did not create it" path))
+         (when path-handle (cleanable-cancel path-handle))
+         (finish
+          (lambda (state)
+            ;; record result:
+            (let* ([ts (if (eq? sha1 phony-sha1)
+                           (cons no-sha1 (hash))
+                           (cons sha1 dep-sha1s))]
+                   [ts (merge-target-accumulated state t ts)]
+                   [state (update-target-state/record-sha1s state t ts)])
+              state)))))
+     (let ([state-ch (build-state-ch newer-state)])
+       (cond
+         [(hash-ref (target-options t) 'eager? #f)
+          ;; run build in this thread
+          (channel-put state-ch newer-state)
+          (build-one (lambda (proc) (proc (channel-get state-ch))))]
+         [else
+          ;; run build in its own thread
+          (let ([ch (channel)])
+            (thread (lambda ()
+                      (acquire-resource newer-state) ; limits process parallelism
+                      (build-one
+                       (lambda (proc)
+                         (release-resource newer-state)
+                         (let* ([state (channel-get state-ch)]
+                                [state (proc state)])
+                           (channel-put state-ch state)
+                           (channel-put ch 'done))))))
+            ;; meanwhile, record a channel as the start's current build state
+            (update-target-state newer-state t ch))]))]))
 
 ;; Alternative entry point suitable for use from a script's `main`
 (define (build/command-line targets [opts (hash)])
@@ -791,4 +803,5 @@
   (hash ':precious 'precious?
         ':command 'command?
         ':noisy 'noisy?
-        ':quiet 'quiet?))
+        ':quiet 'quiet?
+        ':eager 'eager?))

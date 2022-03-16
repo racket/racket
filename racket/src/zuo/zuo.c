@@ -4938,7 +4938,7 @@ static zuo_t *zuo_cp(zuo_t *src_path, zuo_t *dest_path) {
   /* Permissions may be reduced by umask, but the intent here is to
      make sure the file doesn't have more permissions than it will end
      up with: */
-  dest_fd = open(ZUO_STRING_PTR(dest_path), O_WRONLY | O_CREAT, st_buf.st_mode);
+  dest_fd = open(ZUO_STRING_PTR(dest_path), O_WRONLY | O_CREAT | O_TRUNC, st_buf.st_mode);
 
   if (dest_fd == -1)
     zuo_fail1w_errno(who, "destination open failed", dest_path);

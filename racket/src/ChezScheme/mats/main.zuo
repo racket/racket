@@ -3,6 +3,72 @@
          (only-in "../examples/main.zuo"
                   [targets-at examples-targets-at]))
 
+;; Run an indvidual "<test>.ms" test-matrix set with
+;;
+;;   zuo . <test>.mo
+;;
+;; Test output is written to "<test>.mo", and other output redirected
+;; to "<test>.out". The build step ends by grepping the ".mo" file for
+;; "Bug", "Error" (not "Expected"), or "invalid memory", any of which
+;; would indicate a test failure. This mode *doesn't* check that tests
+;; intended to provoke an exception in fact provoke the intended
+;; exception message (i.e., that "Expected" output is exactly as
+;; expected).
+;;
+;; When running a single test, you can specify a configuration variant
+;; for the test by suplying variable arguments alongside the target.
+;; For example,
+;;
+;;   zuo . <test>.mo o=3
+;;
+;; tests in unsafe mode (i.e., optimization level 3). See
+;; `default-options` below for a list of available configuration
+;; options.
+;;
+;; If a test has been run and the configuration is the same as before,
+;; then making "<test>.mo" will not run the test again. (A test is not
+;; considered built if it has an error, however, even when a ".mo"
+;; file was generated.) Running just `zuo` will build all the
+;; indvidual "<test>.mo" targets.
+;;
+;; Running `zuo . all` runs all of the tests and produces a report of
+;; bugs and errors, including checking that exception-provoking tests
+;; provoke the expected error message. This mode of running puts
+;; output ".mo" files in a
+;;
+;;   output-<eval>-<o>-<spi>-<cp0>-<cis>
+;;
+;; directory, so separate from the output of just `make`, and all
+;; tests are run even if there have been no changes since the last
+;; run. Also, a report file is generated as
+;;
+;;   report-<eval>-<o>-<spi>-<cp0>-<cis>
+;;
+;; where the report is a diff of the exception output of tests
+;; intended to trigger errors against the actual "Expected" output.
+;; The output directory and report file's names are based on a subset
+;; of configuration options that imply a set of expected exception
+;; messages.
+;;
+;; The "Expected" output for exception-triggering tests has been
+;; previously recorded in "root-experr-..." files plus a relevant set
+;; of "patch-..." files. The root file and patches are combined to
+;; create an "experr-..." file, where the "..." is a
+;; "<eval>-<o>-<spi>-<cp0>-<cis>" combination. When tests change,
+;; sometimes the "root-experr-..." or "patch-..." files need to be
+;; updated; see "../IMPLEMENTATION.md".
+;;
+;; When you build the `test-some`, `test`, or `test-more` targets, all
+;; tests are run across a set of configurations. (Use `-j` to run
+;; those sets in parallel.) The output for each configuration goes to
+;;
+;;   output-<eval>-<o>-<spi>-<cp0>-<cis>-<name>
+;;
+;; where the extra "<name>" part distinguishes the rest of the
+;; configration from other configurations. The target ends by showing
+;; each configuration and its report, where an empty report for a
+;; configuration means that the configuration passed.
+
 (define default-options
   (hash
    ;; o is the optimize level at which the mats should be run
@@ -60,6 +126,10 @@
    ;; c determines whether mat coverage (.covout) files are created
    'c "f"))
 
+;; Other options to control the run:
+;;
+;;   noisy=t : don't redirect output to an ".out" file
+
 (define some-test-options
   (list
    (hash 'o "0" 'eoc "f" 'name "simple")
@@ -91,7 +161,7 @@
             (hash-set c 'o "3")))
     (list
      (hash 'spi "t" 'cp0 "f" 'name "spi")
-     (hash 'spi "f" 'cp0 "f" 'cl 9 'ctb "(/ (collect-trip-bytes) 64)" 'hci "503" 'name "ctb")
+     (hash 'spi "f" 'cp0 "f" 'cl "9" 'ctb "(/ (collect-trip-bytes) 64)" 'hci "503" 'name "ctb")
      (hash 'spi "t" 'cp0 "f" 'cis "t" 'cmg "1" 'name "cis")
      (hash 'spi "f" 'cp0 "f" 'cis "t" 'cmg "6" 'hci "101" 'name "hci-cis")
      (hash 'spi "t" 'cp0 "t" 'ctb "(/ (collect-trip-bytes) 64)" 'cgr "6" 'name "ctb-cgr")
@@ -170,13 +240,16 @@
   (define build-examples-stamp (at-dir "build-examples"))
 
   (define (patch dest patch)
-    (shell/wait (build-shell "patch" (string->shell dest) (string->shell patch))))
+    (shell/wait (build-shell "patch" (string->shell dest) (string->shell patch))
+                (hash 'no-thread? #t)))
 
   (define (diff a b dest)
     (define out (fd-open-output dest :truncate))
-    (shell/wait (build-shell "diff" (string->shell a) (string->shell b))
-                (hash 'stdout out))
-    (fd-close out))
+    (define p (shell (build-shell "diff" (string->shell a) (string->shell b))
+                     (hash 'stdout out)))
+    (process-wait (hash-ref p 'process))
+    (fd-close out)
+    (process-status (hash-ref p 'process)))
 
   (define-values (call-with-scheme run-scheme/status run-scheme)
     (make-run-scheme at-source at-dir lookup
@@ -193,7 +266,7 @@
       (,(string->symbol "#%$enable-check-prelex-flags") ,(opt 'ecpf))
       (compile-profile ,(opt 'p))
       (collect-notify ,(opt 'cn))
-      (collect-trip-bytes (or ,(opt 'ctb 'integer) (collect-trip-bytes)))
+      (collect-trip-bytes (or ,(opt 'ctb 's-exp) (collect-trip-bytes)))
       (collect-generation-radix (or ,(opt 'cgr 'integer) (collect-generation-radix)))
       (collect-maximum-generation (or ,(opt 'cmg 'integer) (collect-maximum-generation)))
       (in-place-minimum-generation (or ,(opt 'ipmg 'integer) (in-place-minimum-generation)))
@@ -215,37 +288,54 @@
     `((unless (= (,(string->symbol "#%$check-heap-errors")) 0)
         (fprintf (console-error-port) "check heap detected errors---grep standard output for !!!\n")
         (abort))))
-  
+
+  (define (call-with-output out-file proc)
+    (cond
+      [(equal? (lookup 'noisy) "t")
+       (proc (fd-open-output 'stdout)
+             (fd-open-output 'stderr)
+             #t)]
+      [else
+       (define out (fd-open-output out-file :truncate))
+       (proc out out #f)
+       (fd-close out)]))
+       
   (define (run-mat name dest dir)
     (mkdir* dir)
     (define out-file (at-dir (~a name ".out")))
-    (define out (fd-open-output out-file :truncate))
-    (run-scheme (~a dest " with output to " out-file)
-                `(,@(make-config-script opt)
-                  ((mat-file ,dir) ,name)
-                  ,@(make-check-error-script))
-                (list mat.so)
-                (hash 'stdout out 'stderr out))
-    (fd-close out))
+    (call-with-output
+     out-file
+     (lambda (stdout stderr noisy?)
+       (run-scheme (~a dest (if noisy?
+                                ""
+                                (~a " with output to " out-file)))
+                   `(,@(make-config-script opt)
+                     ((mat-file ,dir) ,name)
+                     ,@(make-check-error-script))
+                   (list mat.so)
+                   (hash 'stdout stdout 'stderr stderr)))))
 
-  (define (run-all-mat opt dir report-dir)
+  (define (run-all-mat opt dir report-dir report-mode)
     (mkdir* dir)
     (define conf (conf-name opt))
     (define out-file (build-path dir "make.out"))
-    (define out (fd-open-output out-file :truncate))
-    (run-scheme (~a "all with output to " out-file)
-                `(,@(make-config-script opt)
-                  (record-run-coverage
-                   ,(build-path dir "run.covout")
-                   (lambda ()
-                     ,@(map (lambda (name)
-                              `(time ((mat-file ,dir) ,name)))
-                            mat-names)
-                     (when ,(opt 'pdhtml) (profile-dump-html))))
-                  ,@(make-check-error-script))
-                (list "--verbose" mat.so)
-                (hash 'stdout out 'stderr out))
-    (fd-close out)
+    (call-with-output
+     out-file
+     (lambda (stdout stderr noisy?)
+       (run-scheme (~a "all" (if noisy?
+                                 ""
+                                 (~a " with output to " out-file)))
+                   `(,@(make-config-script opt)
+                     (record-run-coverage
+                      ,(build-path dir "run.covout")
+                      (lambda ()
+                        ,@(map (lambda (name)
+                                 `(time ((mat-file ,dir) ,name)))
+                               mat-names)
+                        (when ,(opt 'pdhtml) (profile-dump-html))))
+                     ,@(make-check-error-script))
+                   (list "--verbose" mat.so)
+                   (hash 'stdout stdout 'stderr stderr))))
     (define lines (apply append
                          (map (lambda (name)
                                 (file->lines (build-path dir (~a name ".mo"))))
@@ -269,9 +359,44 @@
     (display-to-file (string-join (append report-lines '("")) "\n")
                      (build-path report-dir (~a "errors-" conf))
                      :truncate)
-    (diff (build-path report-dir (~a "errors-" conf))
-          (at-dir (~a "experr-" conf))
-          (build-path report-dir (~a "report-" conf))))
+    (define diff-out (build-path report-dir (~a "report-" conf)))
+    (define diff-status
+      (diff (build-path report-dir (~a "errors-" conf))
+            (at-dir (~a "experr-" conf))
+            diff-out))
+    (when (eq? report-mode 'report-diff)
+      (unless (= 0 diff-status)
+        (alert (file->string diff-out))
+        (error "output differs from expected"))))
+
+  (define (summarize-results done-options)
+    (define out (fd-open-output 'stdout))
+    (define all-ok?
+      (foldl (lambda (options all-ok?)
+               (define opt (make-opt-lookup options default-options))
+               (define conf (conf-name opt))
+               (define report-dir (at-dir (~a "output-" conf "-" (hash-ref options 'name))))
+               (define diff-out (build-path report-dir (~a "report-" conf)))
+               (alert
+                (~a "-------- o=" (hash-ref options 'o)
+                    (apply
+                     ~a
+                     (map (lambda (key)
+                            (let ([v (hash-ref options key #f)])
+                              (if (and v
+                                       (not (equal? v (hash-ref default-options key))))
+                                  (~a " " key "=" v)
+                                  "")))
+                          '(o spu hci ecpf cp0 cis p eval ctb cgr cmg eoc cl rmg)))
+                    " " (hash-ref options 'name) " --------"))
+               (define delta (file->string diff-out))
+               (fd-write out delta)
+               (and (string=? "" delta)
+                    all-ok?))
+             #t
+             done-options))
+    (unless all-ok?
+      (error "some output differs from expected")))
         
   (define (grep-for-failure obj)
     (define lines (file->lines obj))
@@ -309,12 +434,21 @@
 
      [:target all (,(at-dir (~a "experr-" conf)) ,@all-deps)
               ,(lambda (token)
-                 (run-all-mat opt out-dir report-dir))
+                 (run-all-mat opt out-dir report-dir 'report-diff))
               :quiet]
 
-     [:target test-some ,(map options-name some-test-options) ,void :quiet]
-     [:target test ,(map options-name test-options) ,void :quiet]
-     [:target test-more ,(map options-name more-test-options) ,void :quiet]
+     [:target test-some ,(map options-name some-test-options)
+              ,(lambda (target)
+                 (summarize-results some-test-options))
+              :quiet]
+     [:target test ,(map options-name test-options)
+              ,(lambda (target)
+                 (summarize-results test-options))
+              :quiet]
+     [:target test-more ,(map options-name more-test-options)
+              ,(lambda (target)
+                 (summarize-results more-test-options))
+              :quiet]
 
      ,@(map (lambda (options)
               (define opt (make-opt-lookup options default-options))
@@ -322,7 +456,7 @@
               (define out-dir (at-dir (~a "output-" conf "-" (hash-ref options 'name))))
               `[:target ,(options-name options) (,(at-dir (~a "experr-" conf)) ,@all-deps)
                         ,(lambda (token)
-                           (run-all-mat opt out-dir out-dir))])
+                           (run-all-mat opt out-dir out-dir 'record-diff))])
             (append (filter (lambda (options)
                               (not (member options test-options)))
                             some-test-options)
@@ -433,7 +567,9 @@
               ;; settings for the various parameters
               [:target ,(at-dir experr-compile-$o-f-f-f) (,(at-source root-experr-compile-$o-f-f-f))
                        ,(lambda (path token)
-                          (cp (at-source root-experr-compile-$o-f-f-f) path))]
+                          (cp (at-source root-experr-compile-$o-f-f-f) path))
+                       ;; `:eager` lets all experrs build before `run-all-mat`s
+                       :eager]
 
               ;; derive spi=t experr files by patching spi=f experr files
               ;; cp first in case patch is empty, since patch produces an empty output
@@ -442,7 +578,8 @@
                                                           ,(at-source patch-compile-$o-t-f-f))
                        ,(lambda (path token)
                           (cp (at-dir experr-compile-$o-f-f-f) path)
-                          (patch path (at-source patch-compile-$o-t-f-f)))])
+                          (patch path (at-source patch-compile-$o-t-f-f)))
+                       :eager])
             targets)
            '(#t #f)
            (lambda (spi_ targets)
@@ -458,7 +595,8 @@
                                                                 ,(at-source patch-compile-$o-$spi-t-f))
                           ,(lambda (path token)
                              (cp (at-dir experr-compile-$o-$spi-f-f) path)
-                             (patch path (at-source patch-compile-$o-$spi-t-f)))])
+                             (patch path (at-source patch-compile-$o-$spi-t-f)))
+                          :eager])
                targets)
               '(#t #f)
               (lambda (cp0_ targets)
@@ -477,7 +615,8 @@
                                                                       ,(at-source patch-compile-$o-$spi-$cp0-t))
                              ,(lambda (path token)
                                 (cp (at-dir experr-compile-$o-$spi-$cp0-f) path)
-                                (patch path (at-source patch-compile-$o-$spi-$cp0-t)))])
+                                (patch path (at-source patch-compile-$o-$spi-$cp0-t)))
+                             :eager])
                   targets)
                  '(#t #f)
                  (lambda (cis_ targets)
@@ -491,7 +630,8 @@
                                                                              ,(at-source patch-interpret-$o-$spi-$cp0-f))
                                ,(lambda (path token)
                                   (cp (at-dir experr-compile-$o-$spi-$cp0-f) path)
-                                  (patch path (at-source patch-interpret-$o-$spi-$cp0-f)))])
+                                  (patch path (at-source patch-interpret-$o-$spi-$cp0-f)))
+                               :eager])
                     targets)))))))))
      
      #;

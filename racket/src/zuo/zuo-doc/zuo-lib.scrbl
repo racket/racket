@@ -291,6 +291,11 @@ The following keys are recognized in @racket[options]:
       target is also noisy. When a phony target is quiet, it builds
       its dependencies as quiet.}
 
+@item{@racket['eager?] mapped to any value: if non-@racket[#f], then
+      the target's build step is not run in a separate thread, which
+      has the effect of ordering the build step before others that do
+      run in a separate thread.}
+
 @item{@racket['db-dir] mapped to a path or @racket[#f]: if
       non-@racket[#f], build information for the target is stored in
       @filepath{_zuo.db} and @filepath{_zuo_tc.db} files in the
@@ -503,8 +508,8 @@ to an input-file target. A @racket[_dep-path-or-target] can also be a
 target that is created outside the @racket[make-targets] call.
 
 An @racket[_option] can be @racket[:precious], @racket[:command],
-@racket[:noisy], or @racket[:quiet] to set the corresponding option
-(see @racket[target]) in a target.}
+@racket[:noisy], @racket[:quiet], or @racket[:eager] to set the
+corresponding option (see @racket[target]) in a target.}
 
 @; ------------------------------------------------------------
 
@@ -618,14 +623,17 @@ Like @racket[process], but runs @racket[command] as a shell command
          void?]{
 
 Like @racket[shell], but first @racket[displayln]s the command string,
-uses @racket[thread-process-wait] to wait on the shell process, and
-reports an error if the process has a non-@racket[0] exit code. The
-@racket[what] string is use when constructing an error.
+uses @racket[thread-process-wait] (or @racket[process-wait] if
+@racket[options] has a true value for @racket['no-thread?]) to wait on
+the shell process, and reports an error if the process has a
+non-@racket[0] exit code. The @racket[what] string is use when
+constructing an error.
 
 If @racket[options] includes @racket['quiet?] mapped to a true value,
 then @racket[command] is not shown using @racket[displayln], and
-@racket['quiet?] is removed before passing it one to
-@racket[process].}
+@racket['quiet?] is removed before passing it on to @racket[process].
+Similarly, @racket['no-thread?] is removed from @racket[options]
+before passing it on to @racket[process].}
 
 @defproc[(build-shell [shell-str string?] ...) string?]{
 
@@ -676,7 +684,7 @@ The following keys are recognized in a tool configuration:
 
 
 @defproc*[([(c-compile [.o path-string?] [.c path-string?] [config hash?]) void?]
-           [(c-compile [out path-string?] [ins (listof path-string?)] [config hash?]) void?]
+           [(c-compile [out path-string?] [ins (listof path-string?)] [config hash?]) void?])]{
 
 Compiles @racket[.c] to @racket[.o] using the @tech{tool
 configuration} @racket[config], or combines compiling and linking by

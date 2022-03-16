@@ -24,8 +24,10 @@
                  (if dir
                      (~a "cd " (string->shell dir) " && " command)
                      command))))
-  (define p (shell command (hash-remove options 'quiet?)))
-  (thread-process-wait (hash-ref p 'process))
+  (define p (shell command (hash-remove (hash-remove options 'quiet?) 'no-thread?)))
+  (if (hash-ref options 'no-thread? #f)
+      (process-wait (hash-ref p 'process))
+      (thread-process-wait (hash-ref p 'process)))
   (unless (= 0 (process-status (hash-ref p 'process)))
     (error (~a what " failed"))))
 
