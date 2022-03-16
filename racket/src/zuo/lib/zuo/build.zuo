@@ -229,7 +229,9 @@
   (unless (token? token) (arg-error 'build/recur "build token" token))
   (let ([t (coerce-to-target t-in)])
     (unless (target? t) (arg-error 'build/recur "target" t-in))
-    (when (symbol? (target-name t)) (error "build/recur: cannot recur with a data target"))
+    (when (and (symbol? (target-name t))
+               (not (symbol? (target-name (token-target token)))))
+      (error "build/recur: cannot recur with a phony or data target"))
     (let* ([state (channel-get (token-ch token))]
            [state (force-build t (do-build t state #t))]
            [state (record-target-accumulated state (token-target token) t)])

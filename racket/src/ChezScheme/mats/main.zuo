@@ -6,66 +6,108 @@
 (define default-options
   (hash
    ;; o is the optimize level at which the mats should be run
-   'o 0
+   'o "0"
 
    ;; p determines whether profiling is enabled
-   'p #f
+   'p "f"
 
    ;; pdhtml determines whether profile-dump-html is called at end of a run;
    ;; NB: beware of lost profile information due to mats that call profile-clear
-   'pdhtml #f
+   'pdhtml "f"
 
    ;; cp0 determines whether cp0 is run
-   'cp0 #f
+   'cp0 "f"
    
    ;; eval is the evaluator to use
-   'eval 'compile
+   'eval "compile"
 
-   ;; ctb is the value to which collect-trip-bytes is set (#f means the default)
-   'ctb #f
+   ;; ctb is the value to which collect-trip-bytes is set ("" means the default)
+   'ctb ""
 
    ;; cn defines the value to which collect-notify is set
-   'cn #f
+   'cn "f"
 
-   ;; cgr is the value to which collect-generation-radix is set (#f means the default)
-   'cgr #f
+   ;; cgr is the value to which collect-generation-radix is set ("" means the default)
+   'cgr ""
 
-   ;; cmg is the value to which collect-maximum-generation is set (#f means the default)
-   'cmg #f
+   ;; cmg is the value to which collect-maximum-generation is set ("" means the default)
+   'cmg ""
 
-   ;; ipmg is the value to which in-place-minimum-generation is set (#f means the default)
-   'ipmg #f
+   ;; ipmg is the value to which in-place-minimum-generation is set ("" means the default)
+   'ipmg ""
 
-   ;; rmg is the value to which release-minimum-generation is set (#f means the default)
-   'rmg #f
+   ;; rmg is the value to which release-minimum-generation is set ("" means the default)
+   'rmg ""
 
    ;; cis defines the value to which compile-interpret-simple is set
-   'cis #f
+   'cis "f"
 
    ;; spi defines the value to which suppress-primitive-inlining is set
-   'spi #f
+   'spi "f"
 
    ;; hci defines the value to which heap-check-interval (mat.ss) is set, 0 disables
-   'hci 0
+   'hci "0"
 
    ;; eoc determines whether object counts are enabled
-   'eoc #t
+   'eoc "t"
 
-   ;; cl determines the commonization level, #f for default
-   'cl #f
+   ;; cl determines the commonization leve ("" means the default)
+   'cl ""
 
    ;; ecpf determines whether the compiler checks prelex flags
-   'ecpf #f
+   'ecpf "f"
 
    ;; c determines whether mat coverage (.covout) files are created
-   'c #f))
+   'c "f"))
+
+(define some-test-options
+  (list
+   (hash 'o "0" 'eoc "f" 'name "simple")
+   (hash 'o "3" 'eoc "f" 'name "simple")
+   (hash 'o "3" 'cp0 "t" 'name "cp0")
+   (hash 'o "3" 'eval "interpret" 'cp0 "t" 'rmg "2" 'name "rmg2")))
+
+(define test-options
+  (list
+   (hash 'o "0" 'eoc "f" 'name "simple")
+   (hash 'o "3" 'eoc "f" 'name "simple")
+   (hash 'o "0" 'cp0 "t" 'cl "3" 'name "cl3")
+   (hash 'o "3" 'cp0 "t" 'cl "3" 'name "cl3")
+   (hash 'o "0" 'spi "t" 'rmg "2" 'p "t" 'name "spi-rmg")
+   (hash 'o "3" 'spi "t" 'rmg "2" 'p "t" 'name "spi-rmg")
+   (hash 'o "0" 'eval "interpret" 'cl "6" 'name "cl6")
+   (hash 'o "3" 'eval "interpret" 'cl "6" 'name "cl6")
+   (hash 'o "0" 'eval "interpret" 'cp0 "t" 'rmg "2" 'name "rmg2")
+   (hash 'o "3" 'eval "interpret" 'cp0 "t" 'rmg "2" 'name "rmg2")
+   (hash 'o "0" 'eoc "f" 'hci "101" 'cl "9" 'name "hci-cl")
+   (hash 'o "3" 'eval "interpret" 'hci "101" 'rmg "2" 'name "hci-rmg")))
+
+(define more-test-options
+  (apply
+   append
+   (map
+    (lambda (c)
+      (list (hash-set c 'o "0")
+            (hash-set c 'o "3")))
+    (list
+     (hash 'spi "t" 'cp0 "f" 'name "spi")
+     (hash 'spi "f" 'cp0 "f" 'cl 9 'ctb "(/ (collect-trip-bytes) 64)" 'hci "503" 'name "ctb")
+     (hash 'spi "t" 'cp0 "f" 'cis "t" 'cmg "1" 'name "cis")
+     (hash 'spi "f" 'cp0 "f" 'cis "t" 'cmg "6" 'hci "101" 'name "hci-cis")
+     (hash 'spi "t" 'cp0 "t" 'ctb "(/ (collect-trip-bytes) 64)" 'cgr "6" 'name "ctb-cgr")
+     (hash 'spi "t" 'cp0 "f" 'p "t" 'eoc "f" 'hci "101" 'name "hci-p")
+     (hash 'spi "f" 'cp0 "t" 'cl "9" 'p "t" 'hci "101" 'name "hci-cl-p")
+     (hash 'eval "interpret" 'spi "f" 'cp0 "f" 'name "spi")
+     (hash 'eval "interpret" 'spi "f" 'cp0 "t" 'name "spi-cp0")
+     (hash 'eval "interpret" 'spi "t" 'cp0 "f" 'ctb "(/ (collect-trip-bytes) 64)" 'hci "503" 'name "spi-ctb")
+     (hash 'eval "interpret" 'spi "t" 'cp0 "t" 'cgr "2" 'hci "101" 'p "t" 'name "chi-cgr-p")))))
 
 (define (tf x) (if x "t" "f"))
 
 (define (targets-at at-dir [vars (hash)])
   (define config (config-file->hash (at-dir "../Mf-config")))
   (define lookup (make-lookup vars config))
-  (define opt (make-opt-lookup lookup default-options))
+  (define opt (make-opt-lookup vars default-options))
 
   (define m (lookup 'm))
 
@@ -79,9 +121,20 @@
       "record" "hash" "enum" "8" "fx" "fl" "cfl"
       "foreign" "ftype" "unix" "windows" "examples"
       "ieee" "date" "exceptions" "oop"))
+
+  (define (conf-name opt)
+    (~a (opt 'eval 'symbol) "-" (opt 'o 'integer) "-" (tf (opt 'spi)) "-" (tf (opt 'cp0)) "-" (tf (opt 'cis))))
   
-  (define conf (~a (opt 'eval 'symbol) "-" (opt 'o) "-" (tf (opt 'spi)) "-" (tf (opt 'cp0)) "-" (tf (opt 'cis))))
+  (define conf (conf-name opt))
   (define out-dir (at-dir (~a "output-" conf)))
+  (define report-dir (at-dir "."))
+
+  (define (options-name options)
+    (string->symbol
+     (~a (conf-name (make-opt-lookup options default-options))
+         "-" (hash-ref options 'name))))
+
+  (define (fold-options accum opts proc) (foldl proc accum opts))
 
   (define mat-srcs
     (map (lambda (name) (at-source (~a name ".ms")))
@@ -116,28 +169,6 @@
   (define prettytest.ss (at-dir "prettytest.ss"))
   (define build-examples-stamp (at-dir "build-examples"))
 
-  (define experr-compile-$o-f-f-f (~a "experr-compile-" (opt 'o) "-f-f-f"))
-  (define root-experr-compile-$o-f-f-f (~a "root-" experr-compile-$o-f-f-f))
-
-  (define experr-compile-$o-t-f-f (~a "experr-compile-" (opt 'o) "-t-f-f"))
-  (define patch-compile-$o-t-f-f (~a "patch-compile-" (opt 'o) "-t-f-f"))
-
-  (define experr-compile-$o-$spi-f-f (~a "experr-compile-" (opt 'o) "-" (tf (opt 'spi)) "-f-f"))
-
-  (define experr-compile-$o-$spi-t-f (~a "experr-compile-" (opt 'o) "-" (tf (opt 'spi)) "-t-f"))
-  (define patch-compile-$o-$spi-t-f (~a "patch-compile-" (opt 'o) "-" (tf (opt 'spi)) "-t-f"))
-
-  (define experr-compile-$o-$spi-$cp0-f (~a "experr-compile-" (opt 'o) "-" (tf (opt 'spi)) "-" (tf (opt 'cp0)) "-f"))
-  
-  (define experr-compile-$o-$spi-$cp0-t (~a "experr-compile-" (opt 'o) "-" (tf (opt 'spi)) "-" (tf (opt 'cp0)) "-t"))
-  (define patch-compile-$o-$spi-$cp0-t (~a "patch-compile-" (opt 'o) "-" (tf (opt 'spi)) "-" (tf (opt 'cp0)) "-t"))
-
-  (define patch-interpret-$o-$spi-$cp0-t (~a "patch-interpret-" (opt 'o) "-" (tf (opt 'spi)) "-" (tf (opt 'cp0)) "-t"))
-  (define patch-interpret-$o-$spi-$cp0-f (~a "patch-interpret-" (opt 'o) "-" (tf (opt 'spi)) "-" (tf (opt 'cp0)) "-f"))
-
-  (define experr-interpret-$o-$spi-$cp0-$cis (~a "experr-interpret-" (opt 'o) "-" (tf (opt 'spi)) "-" (tf (opt 'cp0)) "-" (tf (opt 'cis))))
-  (define patch-interpret-$o-$spi-$cp0-$cis (~a "patch-interpret-" (opt 'o) "-" (tf (opt 'spi)) "-" (tf (opt 'cp0)) "-" (tf (opt 'cis))))
-
   (define (patch dest patch)
     (shell/wait (build-shell "patch" (string->shell dest) (string->shell patch))))
 
@@ -155,17 +186,17 @@
                            (path->complete-path (at-dir "../examples"))
                            (path->complete-path (at-source "../examples")))))
 
-  (define (make-config-script)
-    `((optimize-level ,(opt 'o))
+  (define (make-config-script opt)
+    `((optimize-level ,(opt 'o 'integer))
       (,(string->symbol "#%$suppress-primitive-inlining") ,(opt 'spi))
-      (heap-check-interval ,(opt 'hci))
+      (heap-check-interval ,(opt 'hci 'integer))
       (,(string->symbol "#%$enable-check-prelex-flags") ,(opt 'ecpf))
       (compile-profile ,(opt 'p))
       (collect-notify ,(opt 'cn))
       (collect-trip-bytes (or ,(opt 'ctb 'integer) (collect-trip-bytes)))
       (collect-generation-radix (or ,(opt 'cgr 'integer) (collect-generation-radix)))
-      (collect-maximum-generation (or ,(opt 'cmg) (collect-maximum-generation)))
-      (in-place-minimum-generation (or ,(opt 'ipmg) (in-place-minimum-generation)))
+      (collect-maximum-generation (or ,(opt 'cmg 'integer) (collect-maximum-generation)))
+      (in-place-minimum-generation (or ,(opt 'ipmg 'integer) (in-place-minimum-generation)))
       (enable-object-counts ,(opt 'eoc))
       (commonization-level (or ,(opt 'cl 'integer) (commonization-level)))
       (release-minimum-generation (or ,(opt 'rmg 'integer) (release-minimum-generation)))
@@ -176,7 +207,7 @@
       (set! $cat_flush ,(path->complete-path cat_flush.exe))
       (library-directories (list ,(path->complete-path (at-dir "."))
                                  ,(path->complete-path (at-source "."))))
-      (current-eval ,(opt 'eval))
+      (current-eval ,(opt 'eval 'symbol))
       (when ,(opt 'c) (coverage-table (load-coverage-files ,(path->complete-path (at-dir "../boot" m "petite.covin"))
                                                            ,(path->complete-path (at-dir "../boot" m "scheme.covin")))))))
 
@@ -190,19 +221,20 @@
     (define out-file (at-dir (~a name ".out")))
     (define out (fd-open-output out-file :truncate))
     (run-scheme (~a dest " with output to " out-file)
-                `(,@(make-config-script)
+                `(,@(make-config-script opt)
                   ((mat-file ,dir) ,name)
                   ,@(make-check-error-script))
                 (list mat.so)
                 (hash 'stdout out 'stderr out))
     (fd-close out))
 
-  (define (run-all-mat dir report-dir)
+  (define (run-all-mat opt dir report-dir)
     (mkdir* dir)
+    (define conf (conf-name opt))
     (define out-file (build-path dir "make.out"))
     (define out (fd-open-output out-file :truncate))
     (run-scheme (~a "all with output to " out-file)
-                `(,@(make-config-script)
+                `(,@(make-config-script opt)
                   (record-run-coverage
                    ,(build-path dir "run.covout")
                    (lambda ()
@@ -265,19 +297,39 @@
                            .mos))
               ,deps])
 
+  (define all-deps
+    `(,mat.so
+      ,build-examples-stamp
+      ,prettytest.ss ,foreign1.so ,cat_flush.exe
+      ,@(map at-source '("m4test.in" "m4test.out" "freq.in" "freq.out"
+                                     "oop.ss" "ftype.h" "ht.ss"))))
+
   (make-targets
    `([:target each ,mat-here-objs ,void]
 
-     [:target all (,mat.so
-                   ,build-examples-stamp
-                   ,prettytest.ss ,foreign1.so ,cat_flush.exe
-                   ,@(map at-source '("m4test.in" "m4test.out" "freq.in" "freq.out"
-                                                  "oop.ss" "ftype.h" "ht.ss"))
-                   ,(at-dir (~a "experr-" conf)))
+     [:target all (,(at-dir (~a "experr-" conf)) ,@all-deps)
               ,(lambda (token)
-                 (run-all-mat out-dir (at-dir ".")))]
+                 (run-all-mat opt out-dir report-dir))
+              :quiet]
 
-     ;; for ".mo" written to immediate build directory 
+     [:target test-some ,(map options-name some-test-options) ,void :quiet]
+     [:target test ,(map options-name test-options) ,void :quiet]
+     [:target test-more ,(map options-name more-test-options) ,void :quiet]
+
+     ,@(map (lambda (options)
+              (define opt (make-opt-lookup options default-options))
+              (define conf (conf-name opt))
+              (define out-dir (at-dir (~a "output-" conf "-" (hash-ref options 'name))))
+              `[:target ,(options-name options) (,(at-dir (~a "experr-" conf)) ,@all-deps)
+                        ,(lambda (token)
+                           (run-all-mat opt out-dir out-dir))])
+            (append (filter (lambda (options)
+                              (not (member options test-options)))
+                            some-test-options)
+                    test-options
+                    more-test-options))
+
+     ;; for individual ".mo" written to immediate build directory 
      ,@(map (lambda (obj src name)
               `[:target ,obj (,src ,mat.so ,options-t)
                         ,(lambda (path token)
@@ -289,7 +341,7 @@
             mat-srcs
             mat-names)
 
-     ;; for ".mo" written to an "out-" subdirectory:
+     ;; for individual ".mo" written to an "out-" subdirectory (but is this used?):
      ,@(map (lambda (obj src name)
               `[:target ,obj (,src ,mat.so ,options-t)
                         ,(lambda (path token)
@@ -365,43 +417,82 @@
                    (build (find-target "clean" (examples-targets-at (make-at-dir (at-dir "../examples")) vars)))))]
 
      ;; rules for generating various experr files
+     ,@(fold-options
+        '()
+        '(0 3)
+        (lambda (o_ targets)
+          (define experr-compile-$o-f-f-f (~a "experr-compile-" o_ "-f-f-f"))
+          (define root-experr-compile-$o-f-f-f (~a "root-" experr-compile-$o-f-f-f))
 
-     ;; everything starts with the root experr files with default
-     ;; settings for the various parameters
-     [:target ,(at-dir experr-compile-$o-f-f-f) (,(at-source root-experr-compile-$o-f-f-f))
-              ,(lambda (path token)
-                 (cp (at-source root-experr-compile-$o-f-f-f) path))]
+          (define experr-compile-$o-t-f-f (~a "experr-compile-" o_ "-t-f-f"))
+          (define patch-compile-$o-t-f-f (~a "patch-compile-" o_ "-t-f-f"))
 
-     ;; derive spi=t experr files by patching spi=f experr files
-     ;; cp first in case patch is empty, since patch produces an empty output
-     ;; file rather than a copy of the input file if the patch file is empty
-     [:target ,(at-dir experr-compile-$o-t-f-f) (,(at-dir experr-compile-$o-f-f-f)
-                                                 ,(at-source patch-compile-$o-t-f-f))
-              ,(lambda (path token)
-                 (cp (at-dir experr-compile-$o-f-f-f) path)
-                 (patch path (at-source patch-compile-$o-t-f-f)))]
+          (fold-options
+           (append
+            `(;; everything starts with the root experr files with default
+              ;; settings for the various parameters
+              [:target ,(at-dir experr-compile-$o-f-f-f) (,(at-source root-experr-compile-$o-f-f-f))
+                       ,(lambda (path token)
+                          (cp (at-source root-experr-compile-$o-f-f-f) path))]
 
-     ;; derive cp0=t experr files by patching cp0=f experr files
-     [:target ,(at-dir experr-compile-$o-$spi-t-f) (,(at-dir experr-compile-$o-$spi-f-f)
-                                                    ,(at-source patch-compile-$o-$spi-t-f))
-              ,(lambda (path token)
-                 (cp (at-dir experr-compile-$o-$spi-f-f) path)
-                 (patch path (at-source patch-compile-$o-$spi-t-f)))]
+              ;; derive spi=t experr files by patching spi=f experr files
+              ;; cp first in case patch is empty, since patch produces an empty output
+              ;; file rather than a copy of the input file if the patch file is empty
+              [:target ,(at-dir experr-compile-$o-t-f-f) (,(at-dir experr-compile-$o-f-f-f)
+                                                          ,(at-source patch-compile-$o-t-f-f))
+                       ,(lambda (path token)
+                          (cp (at-dir experr-compile-$o-f-f-f) path)
+                          (patch path (at-source patch-compile-$o-t-f-f)))])
+            targets)
+           '(#t #f)
+           (lambda (spi_ targets)
+             (define experr-compile-$o-$spi-f-f (~a "experr-compile-" o_ "-" (tf spi_) "-f-f"))
 
-     ;; derive cis=t experr files by patching cis=f experr files
-     [:target ,(at-dir experr-compile-$o-$spi-$cp0-t) (,(at-dir experr-compile-$o-$spi-$cp0-f)
-                                                       ,(at-source patch-compile-$o-$spi-$cp0-t))
-              ,(lambda (path token)
-                 (cp (at-dir experr-compile-$o-$spi-$cp0-f) path)
-                 (patch path (at-source patch-compile-$o-$spi-$cp0-t)))]
+             (define experr-compile-$o-$spi-t-f (~a "experr-compile-" o_ "-" (tf spi_) "-t-f"))
+             (define patch-compile-$o-$spi-t-f (~a "patch-compile-" o_ "-" (tf spi_) "-t-f"))
 
-     ;; derive eval=interpret experr files by patching eval=compile experr files
-     ;; (with cis=f, since compile-interpret-simple does not affect interpret)
-     [:target ,(at-dir experr-interpret-$o-$spi-$cp0-$cis) (,(at-dir experr-compile-$o-$spi-$cp0-f)
-                                                            ,(at-source patch-interpret-$o-$spi-$cp0-f))
-              ,(lambda (path token)
-                 (cp (at-dir experr-compile-$o-$spi-$cp0-f) path)
-                 (patch path (at-source patch-interpret-$o-$spi-$cp0-f)))]
+             (fold-options
+              (append
+               `(;; derive cp0=t experr files by patching cp0=f experr files
+                 [:target ,(at-dir experr-compile-$o-$spi-t-f) (,(at-dir experr-compile-$o-$spi-f-f)
+                                                                ,(at-source patch-compile-$o-$spi-t-f))
+                          ,(lambda (path token)
+                             (cp (at-dir experr-compile-$o-$spi-f-f) path)
+                             (patch path (at-source patch-compile-$o-$spi-t-f)))])
+               targets)
+              '(#t #f)
+              (lambda (cp0_ targets)
+                (define experr-compile-$o-$spi-$cp0-f (~a "experr-compile-" o_ "-" (tf spi_) "-" (tf cp0_) "-f"))
+
+                (define experr-compile-$o-$spi-$cp0-t (~a "experr-compile-" o_ "-" (tf spi_) "-" (tf cp0_) "-t"))
+                (define patch-compile-$o-$spi-$cp0-t (~a "patch-compile-" o_ "-" (tf spi_) "-" (tf cp0_) "-t"))
+
+                (define patch-interpret-$o-$spi-$cp0-t (~a "patch-interpret-" o_ "-" (tf spi_) "-" (tf cp0_) "-t"))
+                (define patch-interpret-$o-$spi-$cp0-f (~a "patch-interpret-" o_ "-" (tf spi_) "-" (tf cp0_) "-f"))
+
+                (fold-options
+                 (append
+                  `(;; derive cis=t experr files by patching cis=f experr files
+                    [:target ,(at-dir experr-compile-$o-$spi-$cp0-t) (,(at-dir experr-compile-$o-$spi-$cp0-f)
+                                                                      ,(at-source patch-compile-$o-$spi-$cp0-t))
+                             ,(lambda (path token)
+                                (cp (at-dir experr-compile-$o-$spi-$cp0-f) path)
+                                (patch path (at-source patch-compile-$o-$spi-$cp0-t)))])
+                  targets)
+                 '(#t #f)
+                 (lambda (cis_ targets)
+                   (define experr-interpret-$o-$spi-$cp0-$cis (~a "experr-interpret-" o_ "-" (tf spi_) "-" (tf cp0_) "-" (tf cis_)))
+                   (define patch-interpret-$o-$spi-$cp0-$cis (~a "patch-interpret-" o_ "-" (tf spi_) "-" (tf cp0_) "-" (tf cis_)))
+
+                   (append
+                    `(;; derive eval=interpret experr files by patching eval=compile experr files
+                      ;; (with cis=f, since compile-interpret-simple does not affect interpret)
+                      [:target ,(at-dir experr-interpret-$o-$spi-$cp0-$cis) (,(at-dir experr-compile-$o-$spi-$cp0-f)
+                                                                             ,(at-source patch-interpret-$o-$spi-$cp0-f))
+                               ,(lambda (path token)
+                                  (cp (at-dir experr-compile-$o-$spi-$cp0-f) path)
+                                  (patch path (at-source patch-interpret-$o-$spi-$cp0-f)))])
+                    targets)))))))))
      
      #;
      (end-make-targets))))

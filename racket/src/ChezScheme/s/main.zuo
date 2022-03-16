@@ -1,4 +1,4 @@
-#lang zuo
+sem#lang zuo
 (require "../makefiles/lib.zuo"
          "machine.zuo"
          (only-in "../examples/main.zuo"
@@ -7,67 +7,69 @@
 (define default-options
   (hash
    ;; o determines the optimize level
-   'o 3
+   'o "3"
 
    ;; d is the debug level at which the system should be built
-   'd 0
+   'd "0"
 
-   ;; cl determines the commonization level (#f means the default)
-   'cl #f
+   ;; cl determines the commonization level (empty means the default)
+   'cl ""
 
-   ;; i determines whether inspector-information is generated
-   'i #f
+   ;; i determines whether inspector-information is generated (t/f)
+   'i "f"
 
    ;; cp0 determines the number of cp0 (source optimizer) iterations run
-   'cp0 2
+   'cp0 "2"
 
-   ;; fc determines whether fasl objects are compressed
-   'fc #t
+   ;; fc determines whether fasl objects are compressed (t/f)
+   'fc "t"
 
-   ;; xf determines the compression format (#f means the default)
-   'xf #f
+   ;; xf determines the compression format (empty means the default)
+   'xf ""
 
-   ;; xl determine the compression level (#f means the default)
-   'xl #f
+   ;; xl determine the compression level (empty means the default)
+   'xl ""
 
-   ;; p (xp) determines whether source profiling is enabled
-   'p #f
-   'xp #f
+   ;; p (xp) determines whether source profiling is enabled (t/f)
+   'p "f"
+   'xp "f"
 
-   ;; bp (xpb) determines whether binary profiling is enabled
-   'bp #f
-   'xbp #f
+   ;; bp (xpb) determines whether binary profiling is enabled (t/f)
+   'bp "f"
+   'xbp "f"
 
-   ;; c determines whether covin files are generated
-   'c #f
+   ;; c determines whether covin files are generated (t/f)
+   'c "f"
 
-   ;; loadspd determines whether source-profile data is loaded
-   'loadspd #f
+   ;; loadspd determines whether source-profile data is loaded (t/f)
+   'loadspd "f"
 
-   ;; dumpspd determines whether source-profile data is dumped
-   'dumpspd #f
+   ;; dumpspd determines whether source-profile data is dumped (t/f)
+   'dumpspd "f"
 
-   ;; loadbpd determines whether binary-profile data is loaded
-   'loadbpd #f
+   ;; loadbpd determines whether binary-profile data is loaded (t/f)
+   'loadbpd "f"
 
-   ;; dumpbpd determines whether binary-profile data is dumped
-   'dumpbpd #f
+   ;; dumpbpd determines whether binary-profile data is dumped (t/f)
+   'dumpbpd "f"
 
-   ;; compile determines the entry point for compilng files
-   ;; another useful value for this is compile-with-asm, defined in debug.ss
-   'compile 'compile-file
+   ;; compile determines the entry point for compilng files another
+   ;; useful value for this is "compile-with-asm", defined in
+   ;; "debug.ss"
+   'compile "compile-file"
 
-   ;; pdhtml determines whether profile-dump-html is called at the end of a build
-   'pdhtml #f
+   ;; pdhtml determines whether profile-dump-html is called at the end
+   ;; of a build (t/f)
+   'pdhtml "f"
 
-   ;; gac determines whether cost-center allocation counts are generated
-   'gac #f
+   ;; gac determines whether cost-center allocation counts are generated (t/f)
+   'gac "f"
 
-   ;; gic determines whether cost-center instruction counts are generated
-   'gic #f
+   ;; gic determines whether cost-center instruction counts are generated (t/f)
+   'gic "f"
 
-   ;; pps determines whether pass timings are printed
-   'pps #f))
+   ;; pps determines whether pass timings are printed (t/f)
+   'pps "f"))
 
 ;; The `compiler-compiler-options` argument overrides certain `var` and config-file
 ;; options for building preamble files, which is useful for compiling a cross-compiler
@@ -75,7 +77,7 @@
 (define (targets-at at-dir [vars (hash)] [compiler-compiler-options (hash)])
   (define config (config-file->hash (at-dir "../Mf-config")))
   (define lookup (make-lookup vars config))
-  (define opt (make-opt-lookup lookup default-options))
+  (define opt (make-opt-lookup vars default-options))
   (define (ccopt key) (hash-ref compiler-compiler-options key (opt key)))
 
   (define options-t (input-data-target 'options (cons (relevant-config opt default-options)
@@ -233,7 +235,7 @@
              dests)
       (time (let ()
               ,@(map (lambda (src dest)
-                       `(,(if asm? 'compile-with-asm (opt 'compile)) ,src ,dest ',(string->symbol m)))
+                       `(,(if asm? 'compile-with-asm (opt 'compile 's-exp)) ,src ,dest ',(string->symbol m)))
                      srcs
                      dests)))
       (printf "    ~a bytes peak memory use~n" (maximum-memory-bytes))

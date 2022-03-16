@@ -55,25 +55,33 @@
     (or (hash-ref vars key #f)
         (hash-ref config key #f))))
 
-(define (make-opt-lookup lookup default-options)
-  (lambda (key [format #f])
-    (let ([v (hash-ref default-options key)]
-          [cv (lookup key)])
-      (if cv
-          (cond
-            [(and (not format) (boolean? v))
-             (cond
-               [(equal? cv "t") #t]
-               [(equal? cv "f") #f]
-               [else (error (~a "value for " key " is not \"t\" or \"f\"")
-                            cv)])]
-            [(or (eq? format 'integer)
-                 (integer? v))
+(define (make-opt-lookup options default-options)
+  (lambda (key [format 'boolean])
+    (let ([cv (or (hash-ref options key #f)
+                  (hash-ref default-options key))])
+      (cond
+        [(eq? format 'raw) cv]
+        [(eq? format 'boolean)
+         (cond
+           [(equal? cv "t") #t]
+           [(equal? cv "f") #f]
+           [else (error (~a "value for " key " is not \"t\" or \"f\"")
+                        cv)])]
+        [(eq? format 'integer)
+         (if (string=? cv "")
+             #f
              (or (string->integer cv)
                  (error (~a "value for " key " is not an integer")
-                        cv))]
-            [else (string->symbol cv)])
-          v))))
+                        cv)))]
+        [(eq? format 'symbol)
+         (if (string=? cv "")
+             #f
+             (string->symbol cv))]
+        [(eq? format 's-exp)
+         (if (string=? cv "")
+             #f
+             (car (string-read cv)))]
+        [else (error "unknown format" format)]))))
 
 (define (make-run-scheme at-source at-dir lookup
                          host-workarea host-m
@@ -122,12 +130,13 @@
         run-scheme/status
         run-scheme))
 
-(define (relevant-config lookup default-options)
+(define (relevant-config opt default-options)
   ;; Note options that are non-default:
   (foldl (lambda (k relevant-config)
-           (let ([v (lookup k)])
+           (let* ([default-v (hash-ref default-options k)]
+                  [v (opt k 'raw)])
              (cond
-               [(not (equal? v (hash-ref default-options k)))
+               [(not (equal? v default-v))
                 (alert (~a "using " k "=" v))
                 (hash-set relevant-config k v)]
                [else relevant-config])))
