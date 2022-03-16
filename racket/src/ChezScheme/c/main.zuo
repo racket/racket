@@ -15,11 +15,11 @@
   (define arch (m->arch m))
 
   (define (or-windows .c)
-    (if (lookup 'forWindows)
+    (if (for-windows? config)
 	"windows.c"
 	.c))
   (define (add-windows l)
-    (if (and (lookup 'forWindows)
+    (if (and (for-windows? config)
              (not (member "windows.c" l)))
         (cons "windows.c" l)
         l))
@@ -106,9 +106,14 @@
 
   (define gc-wrap (list (at-source "gc.c")))
 
-  (define exe (at-dir (build-path "../bin" m (.exe "scheme"))))
+  (define exe (at-dir (build-path "../bin" m (if (for-windows? config)
+                                                 "scheme.exe"
+                                                 (.exe "scheme")))))
   (define kernel-lib (at-dir (build-path "../boot" m (.a "kernel"))))
   (define kernel.o (at-dir (build-path "../boot" m "kernel.o")))
+  (define kernel-dep (if (equal? (lookup 'Kernel) "KernelO")
+                         kernel.o
+                         kernel-lib))
 
   (define zlib-lib (at-dir (.a (~a "../zlib/" (if (eq? 'windows (system-type)) "zlib" "z")))))
   (define lz4-lib (at-dir (.a (~a "../lz4/lib/" (if (eq? 'windows (system-type)) "liblz4" "lz4")))))
@@ -120,17 +125,31 @@
                                "../lz4/lib/lz4.c" "../lz4/lib/lz4frame.c"
                                "../lz4/lib/lz4hc.c" "../lz4/lib/xxhash.c")))
 
-  (define lib-deps (list zlib-lib lz4-lib))
+  (define zlib-system-lib (let ([lib (or (lookup 'zlibLib) "")])
+                            (and (not (equal? lib "")) lib)))
+  (define lz4-system-lib (let ([lib (or (lookup 'LZ4Lib) "")])
+                           (and (not (equal? lib "")) lib)))
+
+  (define lib-deps (append (if zlib-system-lib '() (list zlib-lib))
+                           (if lz4-system-lib '() (list lz4-lib))))
 
   (define (compile-one .c .o)
     (c-compile .o .c
                (let* ([config (config-define config cpu)]
-                      [config (config-merge config 'CPPFLAGS (or (lookup 'mdinclude) ""))])
-                 (config-include config
-                                 (at-dir (build-path "../boot" m))
-                                 (at-dir ".")
-                                 (at-dir "../lz4/lib")   ; FIXME
-                                 (at-dir "../zlib")))))  ; FIXME
+                      [config (config-merge config 'CPPFLAGS (or (lookup 'mdinclude) ""))]
+                      [config (config-merge config 'CFLAGS (or (lookup 'warningFlags) ""))]
+                      [config (config-include config
+                                              (at-dir (build-path "../boot" m))
+                                              (at-dir "."))]
+                      [config (if zlib-system-lib
+                                  config
+                                  (config-include config
+                                                  (at-dir "../zlib")))]
+                      [config (if (equal? (or (lookup 'LZ4Lib) "") "")
+                                  (config-include config
+                                                  (at-dir "../lz4/lib"))
+                                  config)])
+                 config)))
 
   (define (config-to-env)
     (foldl (lambda (key env)
@@ -153,14 +172,14 @@
    `([:target build (,exe)
               ,void]
 
-     [:target ,exe (,kernel-lib ,@main-objs)
+     [:target ,exe (,kernel-dep ,@main-objs)
               ,(lambda (path token)
                  (mkdir* (path-only path))
                  (c-link path
                          (append main-objs
-                                 (list kernel-lib
-                                       zlib-lib
-                                       lz4-lib))
+                                 (list kernel-dep
+                                       (or zlib-system-lib zlib-lib)
+                                       (or lz4-system-lib lz4-lib)))
                          config))]
 
      [:target ,kernel-lib (,@kernel-objs)
@@ -177,9 +196,11 @@
                                           "-X"
                                           (or (lookup 'mdldflags) "")
                                           "-o" (string->shell path)
-                                          (build-shell (map string->shell kernel-objs))
-                                          (string->shell zlib-lib)
-                                          (string->shell lz4-lib))))]
+                                          (apply build-shell (map string->shell kernel-objs))
+                                          (lookup 'LDFLAGS)
+                                          (string->shell (or zlib-system-lib zlib-lib))
+                                          (string->shell (or lz4-system-lib lz4-lib))
+                                          (lookup 'LIBS))))]
 
      [:target ,zlib-lib ,(source-tree (at-source "../zlib"))
               ,(lambda (path token)
@@ -191,12 +212,27 @@
 		  [else
                    (define configure-command
                      (build-shell "./configure" (hash-ref config 'zlibConfigureFlags)))
-                   (shell/wait configure-command
-                               (hash 'dir zlib-dir
-                                     'env (add-to-env
-                                           (hash-ref config 'zlibConfigureEnv)
-                                           (config-to-env)))
-                               "libz configure")
+                   (cond
+                     [(for-windows? config)
+                      ;; configure cross-compile for windows
+                      (display-to-file
+                       (~a "all:\n"
+                           (build-shell "\t$(MAKE) -f win32/Makefile.gcc"
+                                        (string->shell (~a "CC=" (hash-ref config 'CC)))
+                                        (string->shell (~a "CFLAGS=" (hash-ref config 'CFLAGS)))
+                                        (string->shell (~a "AR=" (hash-ref config 'AR)))
+                                        (string->shell (~a "RANLIB=" (hash-ref config 'RANLIB)))
+                                        (string->shell (~a "RC=" (hash-ref config 'WINDRES))))
+                           "\n")
+                       (at-dir "../zlib/Makefile")
+                       :truncate)]
+                     [else
+                      (shell/wait configure-command
+                                  (hash 'dir zlib-dir
+                                        'env (add-to-env
+                                              (hash-ref config 'zlibConfigureEnv)
+                                              (config-to-env)))
+                                  "libz configure")])
                    (define make-command (hash-ref config 'MAKE "make"))
                    (shell/wait make-command
                                (hash 'dir zlib-dir)
@@ -273,7 +309,7 @@
 
 (define (win-config config)
   (cond
-    [(hash-ref config 'forWindows #f)
+    [(on-windows? config)
      (let* ([config (hash-set config 'CFLAGS
                               (~a "/nologo "
                                   (if (as-dll? config)
@@ -290,3 +326,11 @@
 
 (define (as-dll? config)
   (equal? (hash-ref config 'LINK_AS #f) "DLL"))
+
+(define (on-windows? config)
+  (hash-ref config 'forWindows #f))
+
+(define (for-windows? config)
+  (or (hash-ref config 'forWindows #f)
+      (glob-match? "*nt" (hash-ref config 'm))
+      (glob-match? "*nt" (or (hash-ref config 'defaultm) ""))))

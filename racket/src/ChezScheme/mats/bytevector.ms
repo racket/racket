@@ -38,7 +38,9 @@
                 arm32le tarm32le arm64le tarm64le arm64osx tarm64osx)
           'little]
          [(ppc32le tppc32le ppc32osx tppc32osx) 'big]
-         [(pb tpb pb32 tpb32) (native-endianness)]
+         [(pb tpb) (native-endianness)]
+         [(pb64l tpb64l pb32l tpb32l) 'little]
+         [(pb64b tpb64b pb32b tpb32b) 'big]
          [else (errorf #f "unrecognized machine type")]))
 )
 

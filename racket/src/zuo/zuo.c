@@ -1482,6 +1482,9 @@ static void zuo_out(zuo_out_t *out, zuo_t *obj, zuo_print_mode_t mode) {
           } else if (c == '\r') {
             out_char(out, '\\');
             out_char(out, 'r');
+          } else if (c == '\t') {
+            out_char(out, '\\');
+            out_char(out, 't');
           } else if (isprint(c)) {
             out_char(out, c);
           } else {
@@ -2038,6 +2041,9 @@ static zuo_t *zuo_in(const unsigned char *s, zuo_int_t *_o, zuo_t *where, int sk
             (*_o) += 2;
           } else if (c2 == 'r') {
             s2[len++] = '\r';
+            (*_o) += 2;
+          } else if (c2 == 't') {
+            s2[len++] = '\t';
             (*_o) += 2;
           } else if (c2 == 'x') {
             s2[len++] = (hex_value(s, _o, 2, where) << 4) + hex_value(s, _o, 3, where);
