@@ -6,7 +6,12 @@
   (unless (path-string? path) (arg-error 'config->hash "path string" path))
   (define content (file->string path))
   (define lines (string-split (string-join (string-split content "\\\n") "") "\n"))
-  (foldl (lambda (line accum)
+  (foldl (lambda (maybe-cr-line accum)
+	   (define line (let ([len (string-length maybe-cr-line)])
+			  (if (and (> len 0)
+				   (= (char "\r") (string-ref maybe-cr-line (- len 1))))
+			      (substring maybe-cr-line 0 (- len 1))
+			      maybe-cr-line)))
            (define positions ; (list var-start var-end =-pos) or #f
              (let loop ([i 0] [start #f] [end #f])
                (cond

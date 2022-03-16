@@ -4753,6 +4753,7 @@ static zuo_t *zuo_mv(zuo_t *from_path, zuo_t *to_path) {
   {
     wchar_t *from_wp = zuo_to_wide(ZUO_STRING_PTR(from_path));
     wchar_t *to_wp = zuo_to_wide(ZUO_STRING_PTR(to_path));
+    (void)_wunlink(to_wp);
     if (_wrename(from_wp, to_wp) == 0) {
       free(from_wp);
       free(to_wp);

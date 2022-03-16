@@ -3,7 +3,7 @@
          "lib.zuo")
 
 (define (targets at-dir [vars (hash)])
-  (define config (config-file->hash (at-dir "../Mf-config")))
+  (define config (win-config (config-file->hash (at-dir "../Mf-config"))))
   (define (lookup key) (or (hash-ref vars key #f)
                            (hash-ref config key #f)))
 
@@ -14,20 +14,30 @@
 
   (define arch (m->arch m))
 
+  (define (or-windows .c)
+    (if (lookup 'forWindows)
+	"windows.c"
+	.c))
+  (define (add-windows l)
+    (if (and (lookup 'forWindows)
+             (not (member "windows.c" l)))
+        (cons "windows.c" l)
+        l))
+
   (define cpu+arch.c
     (cond
       [(string=? arch "a6")
        (cons "X86_64"
-             "i3le.c")]
+             (or-windows "i3le.c"))]
       [(string=? arch "i3")
        (cons "I386"
-             "i3le.c")]
+             (or-windows "i3le.c"))]
       [(string=? arch "arm32")
        (cons "ARMV6"
              "arm32le.c")]
       [(string=? arch "arm64")
        (cons "AARCH64"
-             "arm32le.c")]
+             (or-windows "arm32le.c"))]
       [(string=? arch "ppc32")
        (cons "PPC32"
              "ppc32.c")]
@@ -40,17 +50,35 @@
 
   ;; sources for "kernel.o":
   (define kernel-src-files
-    (list "statics.c" "segment.c" "alloc.c" "symbol.c" "intern.c"
-          "gcwrapper.c" "gc-011.c" "gc-par.c" "gc-ocd.c" "gc-oce.c"
-          "number.c" "schsig.c" "io.c" "new-io.c" "print.c" "fasl.c" "vfasl.c"
-          "stats.c" "foreign.c" "prim.c" "prim5.c" "flushcache.c"
-          "schlib.c" "thread.c" "expeditor.c" "scheme.c" "compress-io.c"
-          "random.c" "ffi.c"
-          arch.c))
+    (add-windows
+     (list "statics.c" "segment.c" "alloc.c" "symbol.c" "intern.c"
+           "gcwrapper.c" "gc-011.c" "gc-par.c" "gc-ocd.c" "gc-oce.c"
+           "number.c" "schsig.c" "io.c" "new-io.c" "print.c" "fasl.c" "vfasl.c"
+           "stats.c" "foreign.c" "prim.c" "prim5.c" "flushcache.c"
+           "schlib.c" "thread.c" "expeditor.c" "scheme.c" "compress-io.c"
+           "random.c" "ffi.c"
+           arch.c)))
   (define kernel-srcs
     (map at-source kernel-src-files))
+  (define kernel-srcobjs
+    (map at-dir (map .c->.o (append kernel-src-files))))
+
+  (define kernel-asm-files
+    (if (glob-match? "*nt" (or (lookup 'defaultm) m))
+	(cond
+	 [(string=? arch "a6")
+	  (list "a6nt-jump.asm")]
+	 [(string=? arch "arm64")
+	  (list "arm64nt-jump.asm")]
+	 [else '()])
+	'()))
+  (define kernel-asms
+    (map at-source kernel-asm-files))
+  (define kernel-asmobjs
+    (map at-dir (map .c->.o (append kernel-asm-files))))
+  
   (define kernel-objs
-    (map at-dir (map .c->.o kernel-src-files)))
+    (append kernel-srcobjs kernel-asmobjs))
 
   ;; every kernel object depends on these:
   (define kernel-hdrs
@@ -82,8 +110,8 @@
   (define kernel-lib (at-dir (build-path "../boot" m (.a "kernel"))))
   (define kernel.o (at-dir (build-path "../boot" m "kernel.o")))
 
-  (define zlib-lib (at-dir "../zlib/libz.a"))
-  (define lz4-lib (at-dir "../lz4/lib/liblz4.a"))
+  (define zlib-lib (at-dir (.a (~a "../zlib/" (if (eq? 'windows (system-type)) "zlib" "z")))))
+  (define lz4-lib (at-dir (.a (~a "../lz4/lib/" (if (eq? 'windows (system-type)) "liblz4" "lz4")))))
 
   (define lz4-files (map at-source
                          ;; LZ4 is simple enough that we can list all
@@ -106,8 +134,11 @@
 
   (define (config-to-env)
     (foldl (lambda (key env)
-             (replace (cons (~a key) (hash-ref config key))
-                      env))
+	     (let ([v (hash-ref config key #f)])
+	       (if v
+		   (replace (cons (~a key) v)
+			    env)
+		   env)))
            (hash-ref (runtime-env) 'env)
            '(CC CFLAGS CPPFLAGS AR ARFLAGS RANLIB LDFLAGS)))
 
@@ -154,34 +185,58 @@
               ,(lambda (path token)
                  (cp* (at-source "../zlib") (at-dir "../zlib"))
                  (define zlib-dir (at-dir "../zlib"))
-                 (define configure-command
-                   (build-shell "./configure" (hash-ref config 'zlibConfigureFlags)))
-                 (shell/wait configure-command
-                             (hash 'dir zlib-dir
-                                   'env (add-to-env
-                                         (hash-ref config 'zlibConfigureEnv)
-                                         (config-to-env)))
-                             "libz configure")
-                 (define make-command (hash-ref config 'MAKE "make"))
-                 (shell/wait make-command
-                             (hash 'dir zlib-dir)
-                             "zlib make"))]
+		 (cond
+		  [(eq? 'windows (system-type))
+		   ((dynamic-require (at-source "winlib.zuo") 'build-zlib) zlib-dir (as-dll? config))]
+		  [else
+                   (define configure-command
+                     (build-shell "./configure" (hash-ref config 'zlibConfigureFlags)))
+                   (shell/wait configure-command
+                               (hash 'dir zlib-dir
+                                     'env (add-to-env
+                                           (hash-ref config 'zlibConfigureEnv)
+                                           (config-to-env)))
+                               "libz configure")
+                   (define make-command (hash-ref config 'MAKE "make"))
+                   (shell/wait make-command
+                               (hash 'dir zlib-dir)
+                               "zlib make")]))]
 
      [:target ,lz4-lib (,@lz4-files)
               ,(lambda (path token)
-                 (cp* (at-source "../lz4") (at-dir "../lz4"))
-                 (define command (build-shell (hash-ref config 'MAKE "make") "liblz4.a"))
-                 (define lz4-lib-dir (at-dir "../lz4/lib"))
-                 (shell/wait command
-                             (hash 'dir lz4-lib-dir
-                                   'env (config-to-env))
-                             "lz4 make"))]
+		 (define lz4-dir (at-dir "../lz4"))
+                 (define lz4-lib-dir (build-path lz4-dir "lib"))
+                 (cp* (at-source "../lz4") lz4-dir)
+		 (cond
+		  [(eq? 'windows (system-type))
+		   ((dynamic-require (at-source "winlib.zuo") 'build-lz4) lz4-lib-dir config)]
+		  [else
+                   (define command (build-shell (hash-ref config 'MAKE "make") "liblz4.a"))
+                   (shell/wait command
+                               (hash 'dir lz4-lib-dir
+                                     'env (config-to-env))
+                               "lz4 make")]))]
 
      ,@(map (lambda (.c .o)
               `[:target ,.o (,.c ,@kernel-hdrs ,@lib-deps)
                         ,(lambda (.o target)
                            (compile-one .c .o))])
-            kernel-srcs kernel-objs)
+            kernel-srcs kernel-srcobjs)
+
+     ,@(map (lambda (.asm .o)
+              `[:target ,.o (,.asm)
+                        ,(lambda (.o target)
+                           (cond
+                             [(string=? arch "arm64")
+                              (shell/wait (build-shell "armasm64 -o"
+                                                       (string->shell .o)
+                                                       (string->shell .asm)))]
+                             [(string=? arch "a6")
+                              (shell/wait (build-shell "ml64 /c /Cx /Fo"
+                                                       (string->shell .o)
+                                                       (string->shell .asm)))]
+                             [else (error "don't know how to assemble")]))])
+            kernel-asms kernel-asmobjs)
 
      ,@(map (lambda (.c .o)
               `[:target ,.o (,.c ,@main-hdrs)
@@ -215,3 +270,23 @@
      #;(end-make-targets))))
 
 (provide-targets targets)
+
+(define (win-config config)
+  (cond
+    [(hash-ref config 'forWindows #f)
+     (let* ([config (hash-set config 'CFLAGS
+                              (~a "/nologo "
+                                  (if (as-dll? config)
+                                      "/MD"
+                                      "/MT")
+                                  " /Ox /W3 /Zi /DUSE_ANSI_PROTOTYPES /DWIN32 /D_CRT_SECURE_NO_WARNINGS"
+                                  (if (glob-match? "pb*" (hash-ref config 'm))
+                                      " /DFEATURE_WINDOWS"
+                                      "")))]
+            [config (hash-set config 'LDFLAGS (if (as-dll? config) "/MD" "/MT"))]
+            [config (hash-set config 'LIBS (if (as-dll? config) "" "rpcrt4.lib ole32.lib advapi32.lib User32.lib"))])
+       config)]
+    [else config]))
+
+(define (as-dll? config)
+  (equal? (hash-ref config 'LINK_AS #f) "DLL"))

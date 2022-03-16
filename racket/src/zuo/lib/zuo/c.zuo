@@ -28,7 +28,7 @@
                          "cc"))
                  (or (lookup 'CPPFLAGS) "")
                  (or (lookup 'CFLAGS) "")
-                 (if windows? "/Fe:" "-o") (string->shell .o)
+                 (if windows? (if (path-string? .o) "/Fo:" "/Fe:") "-o") (string->shell .o)
                  (if (string? .c)
                      (build-shell "-c" (string->shell .c))
                      (apply build-shell (map string->shell .c)))))
@@ -42,10 +42,10 @@
   (define lookup (make-lookup config))
   (define command
     (build-shell (or (lookup 'CC)
-                     (if (windows?)
+                     (if windows?
                          "cl.exe"
                          "cc"))
-                 "-o" (string->shell .exe)
+                 (if windows? "/Fe:" "-o") (string->shell .exe)
                  (string-join (map string->shell ins))
                  (or (lookup 'LDFLAGS) "")
                  (or (lookup 'LIBS) "")))
@@ -63,7 +63,7 @@
                         "lib.exe"
                         "ar"))
                 (or (lookup 'ARFLAGS) "")
-                (string->shell .a)
+                (string->shell (if windows? (~a "/OUT:" .a) .a))
                 (string-join (map string->shell ins)))
    (hash)
    "library creation"))

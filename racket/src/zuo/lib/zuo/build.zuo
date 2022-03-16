@@ -546,12 +546,18 @@
 
 (define (make-at-dir s)
   (lambda paths
+    (unless (null? paths)
+      (unless (path-string? (car paths))
+	(arg-error 'at-dir "path string" (car paths))))
     (for-each (lambda (path)
                 (unless (and (path-string? path)
                              (relative-path? path))
                   (arg-error 'at-dir "relative path string" path)))
-              paths)
-    (apply build-path (cons s paths))))
+              (if (null? paths) '() (cdr paths)))
+    (if (and (pair? paths)
+	     (not (relative-path? (car paths))))
+	(apply build-path paths)
+	(apply build-path (cons s paths)))))
 
 ;; Exports `targets`, which is a function that takes an `at-dir`
 ;; function, while also setting up a `main` submodule to call

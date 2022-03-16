@@ -1,4 +1,4 @@
-sem#lang zuo
+#lang zuo
 (require "../makefiles/lib.zuo"
          "machine.zuo"
          (only-in "../examples/main.zuo"
@@ -78,7 +78,11 @@ sem#lang zuo
   (define config (config-file->hash (at-dir "../Mf-config")))
   (define lookup (make-lookup vars config))
   (define opt (make-opt-lookup vars default-options))
-  (define (ccopt key) (hash-ref compiler-compiler-options key (opt key)))
+  (define ccopt (make-opt-lookup (foldl (lambda (key vars)
+                                          (hash-set vars (hash-ref compiler-compiler-options key)))
+                                        vars
+                                        (hash-keys compiler-compiler-options))
+                                 default-options))
 
   (define options-t (input-data-target 'options (cons (relevant-config opt default-options)
                                                       compiler-compiler-options)))
@@ -201,7 +205,7 @@ sem#lang zuo
 
   (define (cp0+gc-control)
     `((run-cp0 (lambda (cp0 x)
-                 (do ([i ,(opt 'cp0) (fx- i 1)] [x x (cp0 x)])
+                 (do ([i ,(opt 'cp0 'integer) (fx- i 1)] [x x (cp0 x)])
                      ((fx= i 0) x))))
       (collect-trip-bytes (expt 2 24))
       (collect-request-handler (lambda () (collect 0 1)))
@@ -213,8 +217,8 @@ sem#lang zuo
   (define (make-final-compile-script srcs dests asm? finish-steps)
     ;; Generate expressions for Chez Scheme to eval:
     `((reset-handler abort)
-      (optimize-level ,(opt 'o))
-      (debug-level ,(opt 'd))
+      (optimize-level ,(opt 'o 'integer))
+      (debug-level ,(opt 'd 'integer))
       (commonization-level (or ,(opt 'cl 'integer) (commonization-level)))
       (fasl-compressed ,(opt 'fc))
       (compress-format (or ,(opt 'xf 'symbol) (compress-format)))
@@ -269,8 +273,8 @@ sem#lang zuo
     `((reset-handler abort)
       (base-exception-handler (lambda (c) (fresh-line) (display-condition c) (newline) (reset)))
       (keyboard-interrupt-handler (lambda () (display "interrupted---aborting\n") (reset)))
-      (optimize-level ,(ccopt 'o))
-      (debug-level ,(ccopt 'd))
+      (optimize-level ,(ccopt 'o 'integer))
+      (debug-level ,(ccopt 'd 'integer))
       (commonization-level (or ,(opt 'cl 'integer) (commonization-level)))
       (fasl-compressed ,(opt 'fc))
       (compress-format (or ,(opt 'xf 'symbol) (compress-format)))
@@ -327,7 +331,7 @@ sem#lang zuo
     (let loop ([i 0])
       (cond
         [(= i n) (error (~a "failed to arrive at a fixpoint"
-                            (let ([o (opt 'o)])
+                            (let ([o (opt 'o 'integer)])
                               (if (equal? o 3)
                                   o
                                   (~a " (not unexpected with o=" o ")")))))]

@@ -141,7 +141,7 @@
 
        [:target ,c-config-file (,(input-data-target 'c-config
                                                     (cons c-config-keys
-                                                          (map (lambda (key) (hash-ref config key))
+                                                          (map (lambda (key) (hash-ref config key #f))
                                                                c-config-keys))))
                 ,(lambda (path token)
                    (mkdir* (at-dir "c"))
