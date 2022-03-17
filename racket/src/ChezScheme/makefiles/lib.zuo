@@ -4,6 +4,7 @@
          m->arch
          define-values
          hash-set*
+         for-each*
          file->lines
          make-lookup
          make-opt-lookup
@@ -46,6 +47,8 @@
         ht
         (loop (hash-set ht (car keys+vals) (cadr keys+vals))
               (cddr keys+vals)))))
+
+(define (for-each* list proc) (for-each proc list))
 
 (define (file->lines file)
   (string-split (file->string file) "\n"))

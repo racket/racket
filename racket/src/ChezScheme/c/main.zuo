@@ -307,13 +307,13 @@
 
      [:target run ()
               ,(lambda (token . args)
-                 (define p (process/args (target-path exe)
-                                         args
-                                         (hash 'exec? (eq? 'unix (system-type))
-                                               'env (cons
-                                                     (cons "SCHEMEHEAPDIRS" (at-dir (build-path "../boot/" m)))
-                                                     (hash-ref (runtime-env) 'env)))))
-                 (process-wait (hash-ref p 'process)))
+                 (define-values (call-with-scheme run-scheme/status run-scheme)
+                   (make-run-scheme at-source at-dir lookup
+                                    (at-dir "..") m))
+                 (call-with-scheme
+                  (lambda (scheme.exe env)
+                    (process/args scheme.exe args (hash 'env env
+                                                        'exec? (eq? 'unix (system-type)))))))
               :command]
 
      ;; keep "_zuo.db" and "_zuo_tc.db" here instead of in "boot" and "bin" directories
