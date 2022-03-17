@@ -123,16 +123,16 @@
   (begin (collect (collect-maximum-generation)) #t)
   (= (cp-fact 10) 3628800)
   (begin
-    (define (prefix=? prefix s)
-      (let ([n (string-length prefix)])
-        (and (>= (string-length s) n) (string=? (substring s 0 n) prefix))))
-    (define (sdir? x) (or (prefix=? "../s" (cadr x)) (prefix=? "../unicode" (cadr x))))
+    (define (suffix=? suffix s)
+      (let ([n (string-length suffix)]
+            [len (string-length s)])
+        (and (>= len n) (string=? suffix (substring s (- len n) len)))))
+    (define (sdir? x) (not (suffix=? "testfile.ss" (cadr x))))
     (define-values (pdl pdl2)
       (with-interrupts-disabled
-        (parameterize ([source-directories (cons* "../s" "../unicode" (source-directories))])
-          (values
-            (remp sdir? (profile-dump-list #t (profile-dump)))
-            (remp sdir? (profile-dump-list))))))
+        (values
+          (remp sdir? (profile-dump-list #t (profile-dump)))
+          (remp sdir? (profile-dump-list)))))
     #t)
   (equal? pdl pdl2)
   (not (null? pdl))
@@ -152,12 +152,10 @@
   (= (cp-fact-block 10) 3628800)
   (or (equal? (compile-profile) 'source)
       (equal?
-        (parameterize ([source-directories (cons* "../s" "../unicode" (source-directories))])
-          (remp sdir? (profile-dump-list)))
+        (remp sdir? (profile-dump-list))
         pdl))
   (begin
-    (parameterize ([source-directories (cons* "../s" "../unicode" (source-directories))])
-      (profile-dump-html))
+    (profile-dump-html)
     #t)
   (file-exists? "profile.html")
   (file-exists? "testfile.ss.html")
