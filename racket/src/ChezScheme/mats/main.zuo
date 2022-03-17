@@ -272,6 +272,9 @@
   (define prettytest.ss (at-dir "prettytest.ss"))
   (define build-examples-stamp (at-dir "build-examples"))
 
+  (define covin-files (list (path->complete-path (at-dir "../boot" m "petite.covin"))
+                            (path->complete-path (at-dir "../boot" m "scheme.covin"))))
+
   (define (patch dest patch)
     (shell/wait (build-shell "patch" (string->shell dest) (string->shell patch))
                 (hash 'no-thread? #t)))
@@ -319,8 +322,7 @@
       (library-directories (list ,(path->complete-path (at-dir "."))
                                  ,(path->complete-path (at-source "."))))
       (current-eval ,(opt 'eval 'symbol))
-      (when ,(opt 'c) (coverage-table (load-coverage-files ,(path->complete-path (at-dir "../boot" m "petite.covin"))
-                                                           ,(path->complete-path (at-dir "../boot" m "scheme.covin")))))))
+      (when ,(opt 'c) (coverage-table (load-coverage-files ,@covin-files)))))
 
   (define (make-check-error-script)
     `((unless (= (,(string->symbol "#%$check-heap-errors")) 0)
@@ -357,6 +359,9 @@
                    (hash 'stdout stdout 'stderr stderr)))))
 
   (define (run-all-mat opt dir report-dir report-mode)
+    (when (opt 'c 'boolean)
+      (when (glob-match? "t*" m)
+        (error "coverage doesn't work with threads enabled")))
     (mkdir* dir)
     (define conf (conf-name opt))
     (define out-file (build-path dir "make.out"))
@@ -405,10 +410,27 @@
       (diff (build-path report-dir (~a "errors-" conf))
             (at-dir (~a "experr-" conf))
             diff-out))
+    (when (opt 'c 'boolean)
+      (combine/report-coverage dir (eq? report-mode 'report-diff)))
     (when (eq? report-mode 'report-diff)
       (unless (= 0 diff-status)
         (alert (file->string diff-out))
         (error "output differs from expected"))))
+
+  (define (combine/report-coverage dir report?)
+    (define (step what e)
+      (run-scheme what
+                  `((reset-handler abort)
+                    ,e)
+                  (list mat.so)))
+    (step "combined coverage"
+          `(combine-coverage-files ,(build-path dir "all.covout")
+                                   ',(map (lambda (name)
+                                            (build-path dir (~a name ".covout")))
+                                          mat-names)))
+    (when report?
+      (step "report" `(coverage-percent ,(build-path out-dir "all.covout") ,@covin-files))
+      (step "report" `(coverage-percent ,(build-path out-dir "run.covout") ,@covin-files))))
 
   (define (summarize-results done-options)
     (define out (fd-open-output 'stdout))
@@ -436,8 +458,28 @@
                     all-ok?))
              #t
              done-options))
+    (when (opt 'c 'boolean)
+      (report-multi-coverage (map (lambda (options)
+                                    (define opt (make-opt-lookup options default-options))
+                                    (define conf (conf-name opt))
+                                    (at-dir (~a "output-" conf "-" (hash-ref options 'name))))
+                                  done-options)))
     (unless all-ok?
       (error "some output differs from expected")))
+
+  (define (report-multi-coverage dirs)
+    (define (step what e)
+      (run-scheme what
+                  `((reset-handler abort)
+                    ,e)
+                  (list mat.so)))
+    (define (combine kind)
+      (step (~a "combined " kind)
+            `(combine-coverage-files ,(at-dir (~a kind ".covout")) ',(map (lambda (dir) (build-path dir (~a kind ".covout"))) dirs)))
+      (step (~a "report " kind)
+            `(coverage-percent ,(at-dir (~a kind ".covout")) ,@covin-files)))
+    (combine "all")
+    (combine "run"))
         
   (define (grep-for-failure obj)
     (define lines (file->lines obj))
@@ -496,8 +538,10 @@
               :quiet]
 
      ,@(map (lambda (options)
-              (define opt (make-opt-lookup options default-options))
-              (define conf (conf-name opt))
+              (define o-opt (make-opt-lookup options (hash-set default-options
+                                                               ;; propagate coverage choice
+                                                               'c (opt 'c 'raw))))
+              (define conf (conf-name o-opt))
               (define out-dir (at-dir (~a "output-" conf "-" (hash-ref options 'name))))
               `[:target ,(options-name options) (,(at-dir (~a "experr-" conf)) ,@all-deps)
                         ,(lambda (token)

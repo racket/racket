@@ -6153,7 +6153,7 @@ evaluating module init
           (>= (bytes-allocated #f space) 0))
      (#%$spaces))
    (let ()
-     (define fudge (if (positive? (heap-check-interval)) 4000 2000))
+     (define fudge (if (or (positive? (heap-check-interval)) (> (collect-maximum-generation) 4)) 4000 2000))
      (define ~=
        (lambda (x y)
          (<= (abs (- x y)) fudge)))

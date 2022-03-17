@@ -243,12 +243,19 @@
       (unless (string? mat)
         (errorf 'mat-file "~s is not a string" mat))
       (let ([ifn (format "~a.ms" mat)] [ofn (format "~a.mo" mat)])
+        (define add-here
+          (let ([orig-dir (current-directory)])
+            (lambda (l)
+              (if (or (equal? dir ".")
+                      (equal? dir orig-dir))
+                  l
+                  (cons "." l)))))
         (parameterize ([current-directory dir]
                        ;; If `dir` is not the current directory, a caller
                        ;; is responsible for ensuring that the path lists
                        ;; below have absolute paths
-                       [source-directories (cons "." (source-directories))]
-                       [library-directories (cons "." (library-directories))])
+                       [source-directories (add-here (source-directories))]
+                       [library-directories (add-here (library-directories))])
           (printf "matting ~a with output to ~a/~a~%" ifn dir ofn)
           (delete-file ofn #f)
           (parameterize ([mat-output (open-output-file ofn)])

@@ -74,6 +74,12 @@
                     (build-path boot-xm-dir file)))
               boot-file-names))
 
+  (define (run-tests name [vars vars])
+    (build (find-target name
+                        ((dynamic-require (at-source "mats/main.zuo") 'targets-at)
+                         (make-at-dir (at-dir "mats"))
+                         vars))))
+
   (define the-targets
     (make-targets
      `(;; Builds the kernel (C code) and boot files (Scheme code):
@@ -116,12 +122,36 @@
                    (cross-build-boot args (hash 'o 2 'd 3 'i #t) '("all" "examples")))
                 :command]
 
+       [:target test-some () ,(lambda (token) (run-tests "test-some"))]
+       [:target test () ,(lambda (token) (run-tests "test"))]
+       [:target test-more () ,(lambda (token) (run-tests "test-more"))]
+
+       [:target coverage (kernel)
+                ,(lambda (token)
+                   (when (glob-match? "t*" m)
+                     (error "coverage doesn't work with threads enabled"))
+                   (let ([vars (hash-set vars 'c "t")])
+                     (build (find-target "bootstrap" (s-targets-at (make-at-dir (at-dir "s"))
+                                                                   (hash-set vars 'p "t"))))
+                     (run-tests "all" vars)
+                     (run-tests "coverage" vars)))]
+
        ;; The `reset` target discards the results in "boot" and puts back links to (or copies of)
        ;; to the versions that are used to seed the build
        [:target reset ()
                 ,(lambda (token)
                    (for-each (lambda (f) (when (file-exists? f) (rm f))) boot-files)
                    (build (map (lambda (f) (find-target f the-targets)) boot-files)))]
+
+       [:target docs ()
+                ,(lambda (token)
+                   (mkdir* (at-dir "csug"))
+                   (define mf (~a "m=" m "\n"
+                                  "srcdir=" (find-relative-path (at-dir "csug") (at-source "csug")) "\n"
+                                  (file->string (at-source "makefiles/Makefile-csug.in"))))
+                   (display-to-file mf (at-dir "csug/Makefile") :truncate)
+                   (shell/wait "make"
+                               (hash 'dir (at-dir "csug"))))]
 
        ;; Internal targets ----------------------------------------
 
