@@ -1,5 +1,6 @@
 #lang zuo
 (require "../makefiles/lib.zuo"
+         "../makefiles/version.zuo"
          (only-in "../examples/main.zuo"
                   [targets-at examples-targets-at]))
 
@@ -251,13 +252,16 @@
     (fd-close out)
     (process-status (hash-ref p 'process)))
 
+  (define (source-directories)
+    (list (path->complete-path (at-dir "../s"))
+          (path->complete-path (at-source "../s"))
+          (path->complete-path (at-dir "../examples"))
+          (path->complete-path (at-source "../examples"))))
+
   (define-values (call-with-scheme run-scheme/status run-scheme)
     (make-run-scheme at-source at-dir lookup
                      (at-dir "..") m
-                     (list (path->complete-path (at-dir "../s"))
-                           (path->complete-path (at-source "../s"))
-                           (path->complete-path (at-dir "../examples"))
-                           (path->complete-path (at-source "../examples")))))
+                     (source-directories)))
 
   (define (make-config-script opt)
     `((optimize-level ,(opt 'o 'integer))
@@ -289,6 +293,11 @@
         (fprintf (console-error-port) "check heap detected errors---grep standard output for !!!\n")
         (abort))))
 
+  (define (make-one-mat-script opt dir name)
+    `(,@(make-config-script opt)
+      ((mat-file ,dir) ,name)
+      ,@(make-check-error-script)))
+
   (define (call-with-output out-file proc)
     (cond
       [(equal? (lookup 'noisy) "t")
@@ -309,9 +318,7 @@
        (run-scheme (~a dest (if noisy?
                                 ""
                                 (~a " with output to " out-file)))
-                   `(,@(make-config-script opt)
-                     ((mat-file ,dir) ,name)
-                     ,@(make-check-error-script))
+                   (make-one-mat-script opt dir name)
                    (list mat.so)
                    (hash 'stdout stdout 'stderr stderr)))))
 
@@ -486,6 +493,20 @@
             mat-srcs
             mat-names)
 
+     [:target ,(at-dir "script.ss") ()
+              ,(lambda (path token)
+                 (define s (apply
+                            ~a
+                            (map (lambda (e)
+                                   (~a (~s e) "\n"))
+                                 (list*
+                                  `(source-directories ',(list* (at-dir ".")
+                                                                (at-source ".")
+                                                                (source-directories)))
+                                  `(load ,(at-dir "mat.so"))
+                                  (make-one-mat-script opt (at-dir ".") "changeme")))))
+                 (display-to-file s path :truncate))]
+
      [:target ,mat.so (,mat.ss)
               ,(lambda (path token)
                  (run-scheme "compile"
@@ -521,7 +542,19 @@
               ,(lambda (path token)
                  (c-compile foreign1.so foreign-srcs
                             (let* ([config (config-merge config 'CPPFLAGS (or (lookup 'mdinclude) ""))]
-                                   [config (config-merge config 'CFLAGS (or (lookup 'mdcflags) ""))])
+                                   [config (config-merge config 'CFLAGS (or (lookup 'mdcflags) ""))]
+				   [config (if (glob-match? "*nt" m)
+                                               (config-merge config 'LDFLAGS (build-shell "/LD" "/MD"))
+                                               config)]
+                                   [config (if (glob-match? "*nt" m)
+                                               (config-merge config 'LIBS
+                                                             (string->shell (at-dir "../bin" m
+                                                                                    (~a "csv" (get-dll-version)
+                                                                                        (if (equal? (lookup 'runtimeAs) "dll")
+                                                                                            "md"
+                                                                                            "mt")
+                                                                                        ".lib"))))
+                                               config)])
                               (config-include config
                                               (at-dir (build-path "../boot" m))
                                               (at-dir ".")))))]

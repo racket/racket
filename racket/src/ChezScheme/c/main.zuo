@@ -1,5 +1,6 @@
 #lang zuo
 (require "../makefiles/lib.zuo"
+         "../makefiles/version.zuo"
          "lib.zuo")
 
 (define (targets at-dir [vars (hash)])
@@ -23,6 +24,11 @@
              (not (member "windows.c" l)))
         (cons "windows.c" l)
         l))
+  (define (or-windows-lib lib)
+    (if (eq? 'windows (system-type))
+        (build-path ".." (if (as-scheme-dll? config) "bin" "boot") m 
+                    (~a "csv" (get-dll-version) (if (as-runtime-dll? config) "md" "mt") ".lib"))
+        lib))
 
   (define cpu+arch.c
     (cond
@@ -109,7 +115,7 @@
   (define exe (at-dir (build-path "../bin" m (if (for-windows? config)
                                                  "scheme.exe"
                                                  (.exe "scheme")))))
-  (define kernel-lib (at-dir (build-path "../boot" m (.a "kernel"))))
+  (define kernel-lib (at-dir (or-windows-lib (build-path "../boot" m (.a "kernel")))))
   (define kernel.o (at-dir (build-path "../boot" m "kernel.o")))
   (define kernel-dep (if (equal? (lookup 'Kernel) "KernelO")
                          kernel.o
@@ -180,13 +186,23 @@
                                  (list kernel-dep
                                        (or zlib-system-lib zlib-lib)
                                        (or lz4-system-lib lz4-lib)))
-                         config))]
+                         (exe-config arch config)))]
 
-     [:target ,kernel-lib (,@kernel-objs)
+     [:target ,kernel-lib (,@lib-deps ,@kernel-objs)
               ,(lambda (path token)
-                 (c-ar path
-                       kernel-objs
-                       config))]
+                 (cond
+                   [(and (eq? 'windows (system-type))
+                         (as-scheme-dll? config))
+                    (mkdir* (at-dir "../bin" m))
+                    (c-compile (path-replace-suffix kernel-lib ".dll")
+                               ;; ".lib" is also generated
+                               (append kernel-objs lib-deps)
+                               (config-merge config 'LDFLAGS
+                                             "/LD"))]
+                   [else
+                    (c-ar path
+                          kernel-objs
+                          config)]))]
 
      [:target ,kernel.o (,@kernel-objs ,@lib-deps)
               ,(lambda (path token)
@@ -208,7 +224,7 @@
                  (define zlib-dir (at-dir "../zlib"))
 		 (cond
 		  [(eq? 'windows (system-type))
-		   ((dynamic-require (at-source "winlib.zuo") 'build-zlib) zlib-dir (as-dll? config))]
+		   ((dynamic-require (at-source "winlib.zuo") 'build-zlib) zlib-dir (as-runtime-dll? config))]
 		  [else
                    (define configure-command
                      (build-shell "./configure" (hash-ref config 'zlibConfigureFlags)))
@@ -303,34 +319,57 @@
      ;; keep "_zuo.db" and "_zuo_tc.db" here instead of in "boot" and "bin" directories
      [:db-dir ,(at-dir ".")]
 
+     [:target clean ()
+              ,(lambda (token)
+                 (map rm* kernel-objs))]
+
      #;(end-make-targets))))
 
 (provide-targets targets)
 
 (define (win-config config)
   (cond
-    [(on-windows? config)
+    [(eq? 'windows (system-type))
      (let* ([config (hash-set config 'CFLAGS
-                              (~a "/nologo "
-                                  (if (as-dll? config)
-                                      "/MD"
-                                      "/MT")
+                              (~a "/nologo"
+                                  (if (as-runtime-dll? config)
+                                      " /MD"
+                                      " /MT")
+                                  (if (as-scheme-dll? config)
+                                      ""
+                                      " /DSCHEME_STATIC")
                                   " /Ox /W3 /Zi /DUSE_ANSI_PROTOTYPES /DWIN32 /D_CRT_SECURE_NO_WARNINGS"
                                   (if (glob-match? "pb*" (hash-ref config 'm))
                                       " /DFEATURE_WINDOWS"
                                       "")))]
-            [config (hash-set config 'LDFLAGS (if (as-dll? config) "/MD" "/MT"))]
-            [config (hash-set config 'LIBS (if (as-dll? config) "" "rpcrt4.lib ole32.lib advapi32.lib User32.lib"))])
+            [config (hash-set config 'LDFLAGS (if (as-runtime-dll? config) "/MD" "/MT"))]
+            [config (hash-set config 'LIBS "rpcrt4.lib ole32.lib advapi32.lib User32.lib")])
        config)]
     [else config]))
 
-(define (as-dll? config)
-  (equal? (hash-ref config 'LINK_AS #f) "DLL"))
+(define (exe-config arch config)
+  (cond
+    [(eq? 'windows (system-type))
+     (cond
+       [(string=? arch "arm64")
+        (config-merge config 'LDFLAGS
+                      "/link /STACK:0x1000000")]
+       [(string=? arch "a6")
+        (config-merge config 'LDFLAGS
+                      "/link /STACK:0x1000000")]
+       [(string=? arch "arm64")
+        (config-merge config 'LDFLAGS
+                      "/link /STACK:0x800000")]
+       [else config])]
+    [else config]))
 
-(define (on-windows? config)
-  (hash-ref config 'forWindows #f))
+(define (as-runtime-dll? config)
+  (equal? (hash-ref config 'runtimeAs #f) "dll"))
+
+(define (as-scheme-dll? config)
+  (not (equal? (hash-ref config 'linkAs #f) "exe")))
 
 (define (for-windows? config)
-  (or (hash-ref config 'forWindows #f)
+  (or (eq? 'windows (system-type))
       (glob-match? "*nt" (hash-ref config 'm))
       (glob-match? "*nt" (or (hash-ref config 'defaultm) ""))))

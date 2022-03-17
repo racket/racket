@@ -16,7 +16,6 @@
 ;;; sections 6-1 and 6-2:
 
 (define prettytest.ss (find-source "prettytest.ss"))
-(define mat.so (find-source "mat.so"))
 
 (mat current-input-port
    (port? (current-input-port))
@@ -3089,8 +3088,8 @@
        (eqv? (get-mode "../mats") (get-mode "../mats/.")))
   ; access times are unreliable on contemporary file systems
   (time? (file-access-time "mat.ss"))
-  (time<=? (file-change-time "mat.ss") (file-change-time mat.so))
-  (time<=? (file-modification-time "mat.ss") (file-modification-time mat.so))
+  (time<=? (file-change-time "mat.ss") (file-change-time (find-source "mat.so")))
+  (time<=? (file-modification-time "mat.ss") (file-modification-time (find-source "mat.so")))
   (equal?
     (list (time? (file-access-time "../mats"))
           (time? (file-change-time "../mats"))

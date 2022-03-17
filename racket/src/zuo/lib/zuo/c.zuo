@@ -28,10 +28,14 @@
                          "cc"))
                  (or (lookup 'CPPFLAGS) "")
                  (or (lookup 'CFLAGS) "")
-                 (if windows? (if (path-string? .o) "/Fo:" "/Fe:") "-o") (string->shell .o)
+                 (if windows? (if (path-string? .c) "/Fo:" "/Fe:") "-o") (string->shell .o)
                  (if (string? .c)
                      (build-shell "-c" (string->shell .c))
-                     (apply build-shell (map string->shell .c)))))
+                     (apply build-shell (map string->shell .c)))
+                 (if (string? .c)
+                     ""
+                     (build-shell (or (lookup 'LDFLAGS) "")
+                                  (or (lookup 'LIBS) "")))))
   (shell/wait command (hash) "compile"))
 
 (define (c-link .exe ins config)
