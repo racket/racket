@@ -50,7 +50,7 @@
   ;; Cross-builds for a machine type that is specified as an argument;
   ;; the machine type defaults to the `defaultm` configuration entry, and
   ;; that default is normally useful if the current machine type is "pb"
-  (define (cross-build-boot args ccopts make-targets)
+  (define (cross-build-boot token args ccopts make-targets)
     (unless (<= (length args) 1) (error "expected optional <machine>" args))
     (define xm (if (null? args)
                    (hash-ref config 'defaultm)
@@ -66,7 +66,9 @@
     (let ([targets (s-targets-at (make-at-dir s-dir)
                                  vars
                                  ccopts)])
-      (build (map (lambda (t) (find-target t targets)) make-targets)))
+      (build (map (lambda (t) (find-target t targets)) make-targets)
+             (hash)
+             token))
     (define boot-xm-dir (at-dir "../boot" xm))
     (mkdir* boot-xm-dir)
     (for-each (lambda (file)
@@ -74,23 +76,29 @@
                     (build-path boot-xm-dir file)))
               boot-file-names))
 
-  (define (run-tests name [vars vars])
+  (define (run-tests token name [vars vars])
     (build (find-target name
                         ((dynamic-require (at-source "mats/main.zuo") 'targets-at)
                          (make-at-dir (at-dir "mats"))
-                         vars))))
+                         vars))
+           (hash)
+           token))
 
   (define the-targets
     (make-targets
      `(;; Builds the kernel (C code) and boot files (Scheme code):
        [:target build (workarea kernel)
                 ,(lambda (token)
-                   (build (find-target "bootstrap" (s-targets-at (make-at-dir (at-dir "s")) vars))))]
+                   (build (find-target "bootstrap" (s-targets-at (make-at-dir (at-dir "s")) vars))
+                          (hash)
+                          token))]
 
        ;; Builds just the kernel (C code):
        [:target kernel (workarea)
                 ,(lambda (token)
-                   (build (find-target "build" (c-targets-at (make-at-dir (at-dir "c")) vars))))]
+                   (build (find-target "build" (c-targets-at (make-at-dir (at-dir "c")) vars))
+                          (hash)
+                          token))]
 
        [:target install ()
                 ,(lambda (token)
@@ -107,24 +115,26 @@
        [:target run ()
                 ,(lambda (token . args)
                    (define t (find-target "run" (s-targets-at (make-at-dir (at-dir "s")) vars)))
-                   (build (command-target->target t args)))
+                   (build (command-target->target t args)
+                          (hash)
+                          token))
                 :command]
 
        ;; See `cross-build-boot`: builds cross-compiler in unsafe mode, skips examples
        [:target bootquick (kernel)
                 ,(lambda (token . args)
-                   (cross-build-boot args (hash) '("all")))
+                   (cross-build-boot token args (hash) '("all")))
                 :command]
 
        ;; See `cross-build-boot`: builds cross-compiler in safe mode, skips examples
        [:target boot ()
                 ,(lambda (token . args)
-                   (cross-build-boot args (hash 'o 2 'd 3 'i #t) '("all" "examples")))
+                   (cross-build-boot token args (hash 'o 2 'd 3 'i #t) '("all" "examples")))
                 :command]
 
-       [:target test-some () ,(lambda (token) (run-tests "test-some"))]
-       [:target test () ,(lambda (token) (run-tests "test"))]
-       [:target test-more () ,(lambda (token) (run-tests "test-more"))]
+       [:target test-some () ,(lambda (token) (run-tests token "test-some"))]
+       [:target test () ,(lambda (token) (run-tests token "test"))]
+       [:target test-more () ,(lambda (token) (run-tests token "test-more"))]
 
        [:target coverage (kernel)
                 ,(lambda (token)
@@ -132,16 +142,20 @@
                      (error "coverage doesn't work with threads enabled"))
                    (let ([vars (hash-set vars 'c "t")])
                      (build (find-target "bootstrap" (s-targets-at (make-at-dir (at-dir "s"))
-                                                                   (hash-set vars 'p "t"))))
-                     (run-tests "all" vars)
-                     (run-tests "coverage" vars)))]
+                                                                   (hash-set vars 'p "t")))
+                            (hash)
+                            token)
+                     (run-tests token "all" vars)
+                     (run-tests token "coverage" vars)))]
 
        ;; The `reset` target discards the results in "boot" and puts back links to (or copies of)
        ;; to the versions that are used to seed the build
        [:target reset ()
                 ,(lambda (token)
                    (for-each (lambda (f) (when (file-exists? f) (rm f))) boot-files)
-                   (build (map (lambda (f) (find-target f the-targets)) boot-files)))]
+                   (build (map (lambda (f) (find-target f the-targets)) boot-files)
+                          (hash)
+                          token))]
 
        [:target docs ()
                 ,(lambda (token)
@@ -172,7 +186,9 @@
                                    (build (find-target "lib" (c-targets-at (make-at-dir var-dir)
                                                                            (hash-set* vars
                                                                                       'runtimeAs runtimeAs
-                                                                                      'linkAs linkAs))))))))))])
+                                                                                      'linkAs linkAs)))
+                                          (hash)
+                                          token)))))))])
              '())
 
        ;; Internal targets ----------------------------------------

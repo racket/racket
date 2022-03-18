@@ -342,7 +342,8 @@ build, @racket[#f] otherwise.}
 
 
 @defproc[(build [target (or/c target? path-string? (listof (or/c target? path-string?)))]
-                [options hash? (hash)])
+                [options hash? (hash)]
+                [token (or/c #f token?)])
          void?]{
 
 Builds @racket[target] as a fresh build process, independent of any
@@ -368,15 +369,23 @@ following keys are recognized:
       logging also can be enabled by setting the
       @envvar{ZUO_BUILD_LOG} environment variable}
 
-]}
+]
+
+If @racket[token] is not @racket[#f], it must be a @tech{build token}
+that was passed to a target's @racket[_get-deps] to represent a build
+in progress (but paused to run this one). The new build process uses
+parallelism available within the in-progress build for the new build
+process.}
+
 
 @defproc[(build/recur [target (or target? path-string?)] [token token?]) void?]{
 
 Like @racket[build], but continues a build in progress as represented
 by a @racket[token] that was passed to a target's @racket[_get-deps]
-or @racket[_rebuild] procedure. After @racket[target] is built, it is
-registered as a dependency of the target that received
-@racket[token].}
+or @racket[_rebuild] procedure. Targets reachable through
+@racket[target] may have been built or have be in progress already,
+for example. After @racket[target] is built, it is registered as a
+dependency of the target that received @racket[token].}
 
 
 @defproc[(build/command-line [targets (listof target?)] [options hash? (hash)]) void?]{

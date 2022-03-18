@@ -205,25 +205,33 @@
                      log?))        ; logging enabled?
 
 ;; Main entry point to build a target `t`
-(define (build t-in [options (hash)])
+(define (build t-in [options (hash)] [token #f])
   (let ([t (coerce-to-target* t-in)])
     (unless (target? t) (arg-error 'build "target or list of targets" t-in))
     (unless (hash? options) (arg-error 'build "hash table" options))
-    ;; Start a threading context, so we can have parallel build tasks
-    (call-in-main-thread
-     (lambda ()
-       (define ch (channel))
-       (define state (build-state ch
-                                  (hash)
-                                  (hash)
-                                  (hash)
-                                  (hash)
-                                  (hash)
-                                  (make-resources (hash-ref options 'jobs 1))
-                                  (or (hash-ref options 'log? #f)
-                                      (assoc "ZUO_BUILD_LOG" (hash-ref (runtime-env) 'env)))))
-       (force-build t (do-build t state #t))))
-    (void)))
+    (unless (or (not token) (token? token)) (arg-error 'build "build token or #f" token))
+    (let ([resource-ch (and token
+                            (let ([state (channel-get (token-ch token))])
+                              (channel-put (token-ch token) state)
+                              (release-resource state)
+                              (build-state-resource-ch state)))])
+      ;; Start a threading context, so we can have parallel build tasks
+      ((if token (lambda (th) (th)) call-in-main-thread)
+       (lambda ()
+         (define ch (channel))
+         (define state (build-state ch
+                                    (hash)
+                                    (hash)
+                                    (hash)
+                                    (hash)
+                                    (hash)
+                                    (or resource-ch
+                                        (make-resources (hash-ref options 'jobs 1)))
+                                    (or (hash-ref options 'log? #f)
+                                        (assoc "ZUO_BUILD_LOG" (hash-ref (runtime-env) 'env)))))
+         (force-build t (do-build t state #t))
+         (when resource-ch
+           (acquire-resource state)))))))
 
 (define (build/recur t-in token)
   (unless (token? token) (arg-error 'build/recur "build token" token))
