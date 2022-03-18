@@ -115,7 +115,7 @@
   (define main-objs
     (if (eq? 'windows (system-type))
         (map (windows-main-dest at-dir m config vars) main-src-files)
-        (map at-dir (map .c->.o main-src-files))))
+        (map (lambda (name) (at-dir "../boot" m (.c->.o name))) main-src-files)))
 
   (define main-hdrs
     (list (at-mach "scheme.h")
@@ -193,7 +193,7 @@
            (shell->strings vars)))
 
   (make-targets
-   `([:target build (,exe)
+   `([:target build (,exe revision)
               ,void]
 
      [:target ,exe (,kernel-dep ,@main-objs ,@res-deps ,@preload-files)
@@ -374,6 +374,23 @@
                     (process/args scheme.exe args (hash 'env env
                                                         'exec? (eq? 'unix (system-type)))))))
               :command]
+
+     [:target revision ()
+              ,(lambda (token)
+                 (let loop ([r (path->complete-path (at-source "."))])
+                   (cond
+                     [(directory-exists? (build-path r ".git"))
+                      ;; This step takes a while compared to other things in a no-change build
+                      (define p (shell "git describe --always --match=\"\" --abbrev=40 --dirty"
+                                       (hash 'stdout 'pipe)))
+                      (define rev (fd-read (hash-ref p 'stdout) eof))
+                      (process-wait (hash-ref p 'process))
+                      (fd-close (hash-ref p 'stdout))
+                      (display-to-file rev (at-mach "revision") :truncate)]
+                     [else
+                      (define l (split-path r))
+                      (when (car l)
+                        (loop (car l)))])))]
 
      ;; keep "_zuo.db" and "_zuo_tc.db" here instead of in "boot" and "bin" directories
      [:db-dir ,(at-dir ".")]

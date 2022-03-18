@@ -130,6 +130,12 @@
                     (hash)
                     #t))]
 
+       [:target bintar ()
+                ,(lambda (token)
+                   ((dynamic-require (at-source "bintar/main.zuo") 'make-bintar)
+                    at-dir
+                    m))]
+
        [:target run ()
                 ,(lambda (token . args)
                    (cond
@@ -187,13 +193,31 @@
        [:target docs ()
                 ,(lambda (token)
                    (check-not-kernel-only)
-                   (mkdir* (at-dir "csug"))
-                   (define mf (~a "m=" m "\n"
-                                  "srcdir=" (find-relative-path (at-dir "csug") (at-source "csug")) "\n"
-                                  (file->string (at-source "makefiles/Makefile-csug.in"))))
-                   (display-to-file mf (at-dir "csug/Makefile") :truncate)
+                   (define (do-doc name)
+                     (mkdir* (at-dir name))
+                     (define mf (~a "m=" m "\n"
+                                    "srcdir=" (find-relative-path (at-dir name) (at-source name)) "\n"
+                                    (file->string (at-source (~a "makefiles/Makefile-" name ".in")))))
+                     (display-to-file mf (at-dir name "Makefile") :truncate)
+                     (shell/wait "make"
+                                 (hash 'dir (at-dir name))))
+                   (do-doc "csug")
+                   (do-doc "release_notes"))]
+
+       [:target rpm ()
+                ,(lambda (token)
+                   (mkdir* (at-dir "rpm"))
+                   (cp/ln (at-source "rpm/Makefile") (at-dir "rpm/Makefile"))
                    (shell/wait "make"
-                               (hash 'dir (at-dir "csug"))))]
+                               (hash 'dir (at-dir "rpm"))))]
+
+       [:target pkg ()
+                ,(lambda (token)
+                   (mkdir* (at-dir "pkg"))
+                   (cp/ln (at-source "pkg/Makefile") (at-dir "pkg/Makefile"))
+                   (cp/ln (at-source "pkg/rmpkg") (at-dir "pkg/rmpkg"))
+                   (shell/wait "make"
+                               (hash 'dir (at-dir "pkg"))))]
 
        ,@(if (eq? 'windows (system-type))
              `([:target all-dlls (build)

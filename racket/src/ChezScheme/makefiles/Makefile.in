@@ -100,7 +100,6 @@ clean: $(ZUO)
 distclean:
 	$(ZUO) $(workarea) distclean
 
-# We expect this rule to fire only if $(ZUO) is "bin/zuo"
 $(ZUO): $(srcdir)/../zuo/zuo.c
 	mkdir -p bin
 	$(HOSTCC) -DZUO_LIB_PATH='"'"$(upsrcdir)/../zuo/lib"'"' -o $(ZUO) $(srcdir)/../zuo/zuo.c

@@ -441,7 +441,7 @@ machine for the target machine type, probably like this:
 Using that build, create a boot file "demo.boot":
 
  (compile-file "demo.ss" "demo.so")
- (make-boot-file "/tmp/demo.boot" (list "petite") "/tmp/demo.so")
+ (make-boot-file "demo.boot" (list "petite") "demo.so")
 
 Finally, configure the Emscripten build to use "demo.boot":
 

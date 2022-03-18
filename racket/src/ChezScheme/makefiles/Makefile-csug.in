@@ -1,4 +1,4 @@
-# srcsrc and m are added before
+# srcdir and m are added before
 Scheme=../bin/$m/scheme -b ../boot/$m/petite.boot -b ../boot/$m/scheme.boot
 STEXLIB=$(srcdir)/../stex
 installdir=/tmp/csug9.5
