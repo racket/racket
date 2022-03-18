@@ -900,6 +900,7 @@ srcdir=$srcdir
 upsrcdir=$upsrcdir
 m=$m
 defaultm=$defaultm
+mboot=$mboot
 buildKernelOnly=$buildKernelOnly
 mdinclude=$mdinclude
 mdcppflags=$mdcppflags

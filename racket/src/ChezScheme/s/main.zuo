@@ -587,6 +587,19 @@
               (list gc-ocd.inc gc-oce.inc gc-par.inc heapcheck.inc)
               (list 'mkgc-ocd.inc 'mkgc-oce.inc 'mkgc-par.inc 'mkheapcheck.inc))
 
+       [:target bootpbchunk ()
+                ,(lambda (token dest . args)
+                   (mkdir* (at-dir "../../boot" dest))
+                   (run-scheme dest
+                               '()
+                               (list* "--script"
+                                      (at-source "bootpbchunk.ss")
+                                      (at-source "..")
+                                      (at-dir "../..")
+                                      dest
+                                      args)))
+                :command]
+
        ;; keep "_zuo.db" and "_zuo_tc.db" here instead of in "boot" directories
        [:db-dir ,(at-dir ".")]
 

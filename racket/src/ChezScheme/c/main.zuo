@@ -9,6 +9,7 @@
                            (hash-ref config key #f)))
 
   (define m (hash-ref config 'm))
+  (define mboot (hash-ref config 'mboot m))
 
   (define (at-mach file)
     (at-dir (build-path "../boot" m file)))
@@ -70,9 +71,11 @@
            "random.c" "ffi.c"
            arch.c)))
   (define kernel-srcs
-    (map at-source kernel-src-files))
+    ((add-extra-c-sources at-dir mboot)
+     (map at-source kernel-src-files)))
   (define kernel-srcobjs
-    (map at-dir (map .c->.o (append kernel-src-files))))
+    (map (lambda (o) (at-dir (.c->.o (file-name-from-path o))))
+         kernel-srcs))
 
   (define kernel-asm-files
     (if (glob-match? "*nt" (or (lookup 'defaultm) m))
@@ -151,7 +154,7 @@
                            (if lz4-system-lib '() (list lz4-lib))))
   (define res-deps (if (eq? 'windows (system-type)) (list res-file) '()))
 
-  (define preload-files (get-preload-files config at-dir))
+  (define preload-files (get-preload-files config at-dir mboot))
 
   (define (compile-one .c .o)
     (c-compile .o .c
@@ -160,7 +163,8 @@
                       [config (config-merge config 'CFLAGS (or (lookup 'warningFlags) ""))]
                       [config (config-include config
                                               (at-dir (build-path "../boot" m))
-                                              (at-dir "."))]
+                                              (at-dir ".")
+                                              (at-source "."))]
                       [config (if zlib-system-lib
                                   config
                                   (config-include config
@@ -353,9 +357,11 @@
                                   "#define ENABLE_LIBFFI"))
                        (line (let ([alwaysUseBootFile
                                     (or (and (not (equal? (hash-ref config 'alwaysUseBootFile "") "")))
-                                        (infer-always-use-boot-file config at-dir m))])
+                                        (infer-always-use-boot-file preload-files))])
                                (and alwaysUseBootFile
-                                    (~a "#define ALWAYS_USE_BOOT_FILE " (~s alwaysUseBootFile)))))))
+                                    (~a "#define ALWAYS_USE_BOOT_FILE " (~s alwaysUseBootFile)))))
+                       (line (and (need-pbchunk-register? config at-dir mboot)
+                                  "#define CALL_PBCHUNK_REGISTER"))))
                  (display-to-file s path :truncate))]
 
      [:target run ()
@@ -459,11 +465,28 @@
         (.exe name)
         (~a name suffix))))
 
-(define (get-preload-files config at-dir)
-  (map (lambda (path)
-         (at-dir "../.." path))
-       (shell->strings (hash-ref config 'preloadBootFiles ""))))
-
+(define (get-preload-files config at-dir mboot)
+  (define preload-files
+    (map (lambda (path)
+           (at-dir "../.." path))
+         (shell->strings (hash-ref config 'preloadBootFiles ""))))
+  (cond
+    [(null? preload-files) '()]
+    [else
+     (append
+      preload-files
+      ;; There may be extra boot files at the soure directory, such as
+      ;; ones written by a bootpbchunk action; currently just assuming
+      ;; that all should be preloaded
+      (let ()
+        (define boot-src-dir (find-boot-src-dir at-dir mboot))
+        (define config-file (build-path boot-src-dir "Mf-config"))
+        (if (file-exists? config-file)
+            (map (lambda (name)
+                   (build-path boot-src-dir name))
+                 (shell->strings (hash-ref (config-file->hash config-file) 'extraBootFiles "")))
+            '())))]))
+  
 (define (add-preloads config preloads)
   (cond
     [(null? preloads)
@@ -479,18 +502,34 @@
                                                    (~a file "@" (file-name-from-path file))))
                                            preloads)))))]))
 
-(define (infer-always-use-boot-file config at-dir m)
-  (cond
-    [(hash-ref config 'preloadBootFiles #f)
-     (define boot-names (map file-name-from-path
-                             (shell->strings (hash-ref config 'preloadBootFiles ""))))
-     (define no-petite (remove "petite.boot" boot-names))
-     (define no-scheme (remove "scheme.boot" no-petite))
-     (define name (if (pair? no-scheme)
-                      (car no-scheme)
-                      (if (pair? no-petite)
-                          (car no-petite)
-                          (and (pair? boot-names)
-                               (car boot-names)))))
-     (and name (substring name 0 (- (string-length name) 5)))]
-    [else #f]))
+(define (infer-always-use-boot-file preload-files)
+  (define name (and (pair? preload-files)
+                    (file-name-from-path (car (reverse preload-files)))))
+  (and name
+       (glob-match? "*.boot" name)
+       (substring name 0 (- (string-length name) 5))))
+
+(define (find-boot-src-dir at-dir mboot)
+  (define here-boot-src-dir (at-dir ".." ".." "boot" mboot))
+  (if (directory-exists? here-boot-src-dir)
+      here-boot-src-dir
+      (at-source "../boot" mboot)))
+
+(define (add-extra-c-sources at-dir mboot)
+  (define boot-src-dir (find-boot-src-dir at-dir mboot))
+  (define config-file (build-path boot-src-dir "Mf-config"))
+  (lambda (l)
+     (if (file-exists? config-file)
+         (append
+          l
+          (map (lambda (name)
+                 (build-path boot-src-dir name))
+               (shell->strings (hash-ref (config-file->hash config-file) 'extraCSources ""))))
+         l)))
+
+(define (need-pbchunk-register? config at-dir mboot)
+  (define boot-src-dir (find-boot-src-dir at-dir mboot))
+  (define config-file (build-path boot-src-dir "Mf-config"))
+  (and (file-exists? config-file)
+       (member "pbchunk_register.c"
+               (shell->strings (hash-ref (config-file->hash config-file) 'extraCSources "")))))

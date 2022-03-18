@@ -12,6 +12,7 @@
   (define config (config-file->hash Mf-config))
 
   (define m (hash-ref config 'm))
+  (define mboot (hash-ref config 'mboot m))
 
   ;; subdirectories where we create a "main.zuo" that bounce to
   ;; one in the source area
@@ -31,13 +32,25 @@
                                          at-source))))
          bounce-dirs))
 
+  (define boot-src-dir
+    (let ([here-dir (at-dir ".." "boot" mboot)])
+      (if (directory-exists? here-dir)
+          here-dir
+          (at-source "boot" mboot))))
+
   (define boot-file-names
-    '(;; the boot files proper
-      "petite.boot" "scheme.boot"
-      ;; machine-specific header files:
-      "scheme.h" "equates.h"
-      ;; GC traversal functions
-      "gc-ocd.inc" "gc-oce.inc" "gc-par.inc" "heapcheck.inc"))
+    (append
+     '(;; the boot files proper
+       "petite.boot" "scheme.boot"
+       ;; machine-specific header files:
+       "scheme.h" "equates.h"
+       ;; GC traversal functions
+       "gc-ocd.inc" "gc-oce.inc" "gc-par.inc" "heapcheck.inc")
+     ;; extra boot files from source
+     (let ([config-file (build-path boot-src-dir "Mf-config")])
+       (if (file-exists? config-file)
+           (shell->strings (hash-ref (config-file->hash config-file) 'extraBootFiles ""))
+           '()))))
 
   (define boot-files
     (map (lambda (file) (at-dir "boot" m file)) boot-file-names))
@@ -225,11 +238,7 @@
                 `[:target ,dest ()
                           ,(lambda (dest token)
                              (unless (file-exists? dest)
-                               (define here-dir (at-dir ".." "boot" m))
-                               (define dir (if (directory-exists? here-dir)
-                                               here-dir
-                                               (at-source "boot" m)))
-                               (define src (build-path dir name))
+                               (define src (build-path boot-src-dir name))
                                (unless (file-exists? src)
                                  (error "missing prebuilt boot file" src))
                                (mkdir* (at-dir "boot" m))
