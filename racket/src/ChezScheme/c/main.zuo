@@ -54,6 +54,11 @@
   (define cpu (car cpu+arch.c))
   (define arch.c (cdr cpu+arch.c))
 
+  (define c-config-file
+    (at-dir "config.h"))
+  (define c-config-keys
+    '(disablecurses disablex11 enablelibffi alwaysUseBootFile preloadBootFiles))
+
   ;; sources for "kernel.o":
   (define kernel-src-files
     (add-windows
@@ -93,8 +98,7 @@
           (list "system.h" "types.h" "version.h" "globals.h" "externs.h" "segment.h"
                 "atomic.h" "thread.h" "sort.h" "compress-io.h"
                 "nocurses.h" "popcount.h"))
-     (map at-dir
-          (list "config.h"))
+     (list c-config-file)
      (map at-mach
           (list "equates.h"
                 "scheme.h"))))
@@ -112,13 +116,13 @@
 
   (define main-hdrs
     (list (at-mach "scheme.h")
-          (at-dir "config.h")))
+          c-config-file))
 
   (define gc-wrap (list (at-source "gc.c")))
 
   (define exe (at-dir (build-path "../bin" m (if (for-windows? config)
                                                  "scheme.exe"
-                                                 (.exe "scheme")))))
+                                                 (config-.exe config "scheme")))))
   (define kernel-lib (at-dir (or-windows-lib (build-path "../boot" m (.a "kernel")))))
   (define kernel.o (at-dir (build-path "../boot" m "kernel.o")))
   (define kernel-dep (if (equal? (lookup 'Kernel) "KernelO")
@@ -146,6 +150,8 @@
   (define lib-deps (append (if zlib-system-lib '() (list zlib-lib))
                            (if lz4-system-lib '() (list lz4-lib))))
   (define res-deps (if (eq? 'windows (system-type)) (list res-file) '()))
+
+  (define preload-files (get-preload-files config at-dir))
 
   (define (compile-one .c .o)
     (c-compile .o .c
@@ -186,16 +192,26 @@
    `([:target build (,exe)
               ,void]
 
-     [:target ,exe (,kernel-dep ,@main-objs ,@res-deps)
+     [:target ,exe (,kernel-dep ,@main-objs ,@res-deps ,@preload-files)
               ,(lambda (path token)
                  (mkdir* (path-only path))
                  (c-link path
                          (append main-objs
                                  res-deps
-                                 (list kernel-dep
-                                       (or zlib-system-lib zlib-lib)
-                                       (or lz4-system-lib lz4-lib)))
-                         (exe-config arch config)))]
+                                 (append
+                                  (list kernel-dep)
+                                  (if zlib-system-lib '() (list zlib-lib))
+                                  (if lz4-system-lib '() (list lz4-lib))))
+                         (let* ([config (config-merge (add-preloads config preload-files)
+                                                      'LDFLAGS
+                                                      (or (lookup 'mdlinkflags) ""))]
+                                [config (if zlib-system-lib
+                                            (config-merge config 'LIBS zlib-system-lib)
+                                            config)]
+                                [config (if lz4-system-lib
+                                            (config-merge config 'LIBS lz4-system-lib)
+                                            config)])
+                           (exe-config arch config))))]
 
      ;; for Windows linking variants:
      [:target lib (,kernel-dep ,@main-objs)
@@ -322,6 +338,26 @@
                  (shell/wait (build-shell "rc -r /fo" (string->shell res-file)
                                           "-DWIN32" (string->shell (at-source "scheme.rc")))))]
 
+     [:target ,c-config-file (,(input-data-target 'c-config
+                                                  (cons c-config-keys
+                                                        (map (lambda (key) (hash-ref config key #f))
+                                                             c-config-keys))))
+              ,(lambda (path token)
+                 (define (line s) (if s (~a s "\n") ""))
+                 (define s
+                   (~a (line (and (equal? (hash-ref config 'disablecurses #f) "yes")
+                                  "#define DISABLE_CURSES"))
+                       (line (and (equal? (hash-ref config 'disablex11 #f) "yes")
+                                  "#define DISABLE_X11"))
+                       (line (and (equal? (hash-ref config 'enablelibffi #f) "yes")
+                                  "#define ENABLE_LIBFFI"))
+                       (line (let ([alwaysUseBootFile
+                                    (or (and (not (equal? (hash-ref config 'alwaysUseBootFile "") "")))
+                                        (infer-always-use-boot-file config at-dir m))])
+                               (and alwaysUseBootFile
+                                    (~a "#define ALWAYS_USE_BOOT_FILE " (~s alwaysUseBootFile)))))))
+                 (display-to-file s path :truncate))]
+
      [:target run ()
               ,(lambda (token . args)
                  (define-values (call-with-scheme run-scheme/status run-scheme)
@@ -416,3 +452,45 @@
                                  "md.obj"
                                  "mt.obj")))
         (at-dir (.c->.o name)))))
+
+(define (config-.exe config name)
+  (let ([suffix (hash-ref config 'exeSuffix "")])
+    (if (string=? suffix "")
+        (.exe name)
+        (~a name suffix))))
+
+(define (get-preload-files config at-dir)
+  (map (lambda (path)
+         (at-dir "../.." path))
+       (shell->strings (hash-ref config 'preloadBootFiles ""))))
+
+(define (add-preloads config preloads)
+  (cond
+    [(null? preloads)
+     config]
+    [else
+     (config-merge config
+                   'LDFLAGS
+                   (apply build-shell
+                          (map string->shell
+                               (apply append
+                                      (map (lambda (file)
+                                             (list "--preload-file"
+                                                   (~a file "@" (file-name-from-path file))))
+                                           preloads)))))]))
+
+(define (infer-always-use-boot-file config at-dir m)
+  (cond
+    [(hash-ref config 'preloadBootFiles #f)
+     (define boot-names (map file-name-from-path
+                             (shell->strings (hash-ref config 'preloadBootFiles ""))))
+     (define no-petite (remove "petite.boot" boot-names))
+     (define no-scheme (remove "scheme.boot" no-petite))
+     (define name (if (pair? no-scheme)
+                      (car no-scheme)
+                      (if (pair? no-petite)
+                          (car no-petite)
+                          (and (pair? boot-names)
+                               (car boot-names)))))
+     (and name (substring name 0 (- (string-length name) 5)))]
+    [else #f]))

@@ -78,11 +78,12 @@ default_warning_flags="-Wpointer-arith -Wall -Wextra -Wno-implicit-fallthrough"
 zlibLib=
 LZ4Lib=
 Kernel=KernelLib
-topMakefile=Makefile.in
+buildKernelOnly=no
 pbendian=l
 emscripten=no
 empetite=no
-emBootFiles=
+moreBootFiles=
+preloadBootFiles=
 alwaysUseBootFile=
 
 # On WSL, set OS to "Windows_NT" (as already set in MSYS2) to create a
@@ -300,7 +301,7 @@ while [ $# != 0 ] ; do
       ;;
     --emboot=*)
       bootfilenames=`echo $1 | sed -e 's/^--emboot=//'`
-      emBootFiles="${emBootFiles} ${bootfilenames}"
+      moreBootFiles="${moreBootFiles} ${bootfilenames}"
       ;;
     --empetite)
       empetite=yes
@@ -452,7 +453,7 @@ else
         echo "Machine $m is not consistent with boot directory $magain"
         exit 1
     fi
-    topMakefile=Makefile-kernel.in
+    buildKernelOnly=yes
 fi
 
 if [ "$w" = "" ] ; then
@@ -553,7 +554,7 @@ optFlags=-O2
 
 if [ "$emscripten" = "yes" ]; then
     flagsm=em
-    topMakefile=Makefile-em.in
+    buildKernelOnly=yes
     disableiconv=yes
     disablecurses=yes
 fi
@@ -784,41 +785,12 @@ case "${flagsmuni}" in
         exePostStep='paxctl +m ${Scheme}'
         ;;
     em)
-        # emscripten linking to preload boot files
-        exeExtraDeps="$boofiles"
-        bootfiles="../boot/$m/petite.boot"
-        if [ "${empetite}" = "no" ] ; then
-            bootfiles="$bootfiles ../boot/$m/scheme.boot"
-        fi
-        bootfiles="$bootfiles $emBootFiles"
-
-        # find any extra boot files that are in $mboot
-        if [ -f boot/$mboot/scheme.boot ] ; then
-            bootdir=.
+        if [ "$empetite" == yes ]; then
+            preloadBootFiles="$w/boot/$m/petite.boot"
         else
-            bootdir="$srcdir"
+            preloadBootFiles="$w/boot/$m/petite.boot $w/boot/$m/scheme.boot"
         fi
-        for file in `(cd "$bootdir"/boot/"$mboot" ; echo *.boot)` ; do
-            if [ "$file" != "petite.boot" -a "$file" != "scheme.boot" ] ; then
-               bootfiles="$bootfiles ../boot/$m/$file"
-            fi
-        done
-
-        # set up preload of all boot files
-        for f in $bootfiles ; do
-            if [ "${exePreStep}" = ":" ] ; then
-                exePreStep=
-            else
-                exePreStep="${exePreStep} && "
-            fi
-            exePreStep="${exePreStep}cp $f `basename $f`"
-            exeExtraDeps="${exeExtraDeps} $f"
-            mdlinkflags="${mdlinkflags} --preload-file `basename $f`"
-            inferredAlwaysUseBootFile="`basename $f .boot`"
-        done
-        if [ "$alwaysUseBootFile" = "" ] ; then
-            alwaysUseBootFile="$inferredAlwaysUseBootFile"
-        fi
+        preloadBootFiles="$preloadBootFiles $moreBootFiles"
         exeSuffix=".html"
         ;;
 esac
@@ -826,7 +798,11 @@ esac
 # zlib configure flags for c/Mf-unix
 case "${flagsmuni}" in
     em)
-        zlibConfigureEnv="CROSS_PREFIX=em uname=wasm-em"
+        if  [ "$zlibLib" = "" ]; then
+            zlibLib="-s USE_ZLIB=1"
+            # not used, but this is how we might build our own zlib:
+            zlibConfigureEnv="CROSS_PREFIX=em uname=wasm-em"
+        fi
         ;;
 esac
 
@@ -894,7 +870,7 @@ esac
 
 # Makefile to build and launch Zuo
 sed -e 's/$(w)/'$w'/g'\
-    "$srcdir"/makefiles/$topMakefile > Makefile
+    "$srcdir"/makefiles/Makefile.in > Makefile
 
 mkdir -p $w
 
@@ -924,6 +900,7 @@ srcdir=$srcdir
 upsrcdir=$upsrcdir
 m=$m
 defaultm=$defaultm
+buildKernelOnly=$buildKernelOnly
 mdinclude=$mdinclude
 mdcppflags=$mdcppflags
 mdcflags=$mdcflags
@@ -956,6 +933,7 @@ installscriptname=$installscriptname
 disablecurses=$disablecurses
 disablex11=$disablex11
 enablelibffi=$libffi
+preloadBootFiles=$preloadBootFiles
 alwaysUseBootFile=$alwaysUseBootFile
 
 InstallBin=$installbin
