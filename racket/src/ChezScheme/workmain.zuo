@@ -90,6 +90,9 @@
                     (build-path boot-xm-dir file)))
               boot-file-names))
 
+  (define (cross-build-boot/safe+examples token args)
+    (cross-build-boot token args (hash 'o "2" 'd "3" 'i "t") '("all" "examples")))
+
   (define (run-tests token name [vars vars])
     (check-not-kernel-only)
     (build (find-target name
@@ -157,16 +160,24 @@
                    (cross-build-boot token args (hash) '("all")))
                 :command]
 
-       ;; See `cross-build-boot`: builds cross-compiler in safe mode, skips examples
+       ;; See `cross-build-boot`: builds cross-compiler in safe mode, includes examples
        [:target boot ()
                 ,(lambda (token . args)
                    (check-not-kernel-only)
-                   (cross-build-boot token args (hash 'o 2 'd 3 'i #t) '("all" "examples")))
+                   (cross-build-boot/safe+examples token args))
                 :command]
 
-       [:target test-some () ,(lambda (token) (run-tests token "test-some"))]
-       [:target test () ,(lambda (token) (run-tests token "test"))]
-       [:target test-more () ,(lambda (token) (run-tests token "test-more"))]
+       [:target bootfiles (build)
+                ,(lambda (token)
+                   (check-not-kernel-only)
+                   (for-each (lambda (mach)
+                               (cross-build-boot/safe+examples token (list mach)))
+                             (unique (append (ls (at-source "boot"))
+                                             (ls (at-dir "../boot"))))))]
+
+       [:target test-some (build) ,(lambda (token) (run-tests token "test-some"))]
+       [:target test (build) ,(lambda (token) (run-tests token "test"))]
+       [:target test-more (build) ,(lambda (token) (run-tests token "test-more"))]
 
        [:target coverage (kernel)
                 ,(lambda (token)
@@ -190,7 +201,7 @@
                           (hash)
                           token))]
 
-       [:target docs ()
+       [:target docs (build)
                 ,(lambda (token)
                    (check-not-kernel-only)
                    (define (do-doc name)
@@ -241,6 +252,14 @@
                                           (hash)
                                           token)))))))])
              '())
+
+       [:target clean ()
+                ,(lambda (token)
+                   (define keeps '("Mf-config" "main.zuo"))
+                   (for-each (lambda (name)
+                               (unless (member name keeps)
+                                 (rm* (at-dir name))))
+                             (ls (at-dir "."))))]
 
        ;; Internal targets ----------------------------------------
 

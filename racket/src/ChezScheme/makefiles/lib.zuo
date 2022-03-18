@@ -5,6 +5,7 @@
          define-values
          hash-set*
          for-each*
+         unique
          file->lines
          make-lookup
          make-opt-lookup
@@ -49,6 +50,12 @@
               (cddr keys+vals)))))
 
 (define (for-each* list proc) (for-each proc list))
+
+(define (unique l)
+  (cond
+    [(null? l) '()]
+    [(member (car l) (cdr l)) (unique (cdr l))]
+    [else (cons (car l) (unique (cdr l)))]))
 
 (define (file->lines file)
   (string-split (file->string file) "\n"))

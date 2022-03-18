@@ -79,7 +79,7 @@
   (define lookup (make-lookup vars config))
   (define opt (make-opt-lookup vars default-options))
   (define ccopt (make-opt-lookup (foldl (lambda (key vars)
-                                          (hash-set vars (hash-ref compiler-compiler-options key)))
+                                          (hash-set vars key (hash-ref compiler-compiler-options key)))
                                         vars
                                         (hash-keys compiler-compiler-options))
                                  default-options))

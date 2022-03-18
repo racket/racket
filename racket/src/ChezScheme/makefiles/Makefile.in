@@ -95,10 +95,7 @@ pkg: $(ZUO)
 .PHONY: clean
 clean: $(ZUO)
 	$(ZUO) $(workarea) clean
-
-.PHONY: distclean
-distclean:
-	$(ZUO) $(workarea) distclean
+	rm -f bin/zuo
 
 $(ZUO): $(srcdir)/../zuo/zuo.c
 	mkdir -p bin

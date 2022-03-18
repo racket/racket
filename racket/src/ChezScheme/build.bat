@@ -14,6 +14,7 @@ if "%WORKAREA%"=="" goto needargument
 shift
 set ARG=%1
 if defined ARG (
+  if "%ARG%"=="/dll" set LINKAS=dll && goto argloop
   if "%ARG%"=="/exe" set LINKAS=exe && goto argloop
   if "%ARG%"=="/MD" set RUNTIMEAS=dll && goto argloop
   if "%ARG%"=="/MT" set RUNTIMEAS=static && goto argloop
@@ -23,6 +24,7 @@ if defined ARG (
   exit /B 1
 )
 
+if "%M%"=="pb" set VSCONFIG=x86
 if "%M%"=="i3nt" set VSCONFIG=x86
 if "%M%"=="ti3nt" set VSCONFIG=x86
 if "%M%"=="a6nt" set VSCONFIG=amd64
