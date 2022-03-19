@@ -1536,7 +1536,7 @@
   (merge [sig [(procedure list list) -> (list)]] [flags true])
   (merge! [sig [(procedure list list) -> (list)]] [flags true])
   (mkdir [sig [(pathname) (pathname sub-uint) -> (void)]] [flags])
-  (multibyte->string [feature windows] [sig [(sub-uint bytevector) -> (string)]] [flags true discard])
+  (multibyte->string [feature windows] [sig [(sub-ptr bytevector) -> (string)]] [flags true discard])
   (mutable-box? [sig [(ptr) -> (boolean)]] [flags pure unrestricted mifoldable discard])
   (mutable-string? [sig [(ptr) -> (boolean)]] [flags pure unrestricted mifoldable discard])
   (mutable-bytevector? [sig [(ptr) -> (boolean)]] [flags pure unrestricted mifoldable discard])
@@ -1744,7 +1744,7 @@
   (stencil-vector-set! [sig [(stencil-vector uptr ptr) -> (void)]] [flags true])
   (stencil-vector-truncate! [sig [(stencil-vector uptr) -> (void)]] [flags true])
   (stencil-vector-update [sig [(stencil-vector uptr uptr ptr ...) -> (stencil-vector)]] [flags true])
-  (string->multibyte [feature windows] [sig [(sub-uint string) -> (bytevector)]] [flags true discard])
+  (string->multibyte [feature windows] [sig [(sub-ptr string) -> (bytevector)]] [flags true discard])
   (string->number [sig [(string) (string sub-ufixnum) -> (maybe-number)]] [flags discard]) ; radix not restricted to 2, 4, 8, 16
   (string-append-immutable [sig [(string ...) -> (string)]] [flags alloc safeongoodargs ieee r5rs])
   (string<=? [sig [(string string ...) -> (boolean)]] [flags mifoldable discard safeongoodargs])        ; not restricted to 2+ arguments
