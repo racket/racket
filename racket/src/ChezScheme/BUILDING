@@ -337,7 +337,7 @@ Microsoft Visual Studio command-line tools (perhaps using `c/vs.bat`).
 For example, to get from pb boot files to a ta6nt build:
 
  c\vs.bat x64
- build.bat pb /only
+ build.bat pb /kernel
  zuo . bootquick ta6nt
  build.bat ta6nt
 
@@ -354,10 +354,15 @@ after <machine type>:
    Configures for a machine type, including creating the
    `nmake`-compable "Makefile", but does not build.
 
+ * `/kernel`
+
+   Builds just the "scheme.exe" executable without rebuilding boot
+   files.
+
  * `/only`
 
-   Builds just the "scheme.exe" executable, instead of also building
-   DLLs and library variants.
+   Builds just the "scheme.exe" executable and boot files, instead of
+   also building DLLs and library variants.
 
  * '/dll'
 

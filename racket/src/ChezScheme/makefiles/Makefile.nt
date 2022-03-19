@@ -4,6 +4,9 @@
 build: zuo.exe
        .\zuo.exe
 
+kernel: zuo.exe
+       .\zuo.exe . kernel
+
 all-dlls: zuo.exe
 	 .\zuo.exe . all-dlls
 

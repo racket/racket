@@ -22,10 +22,10 @@ vcredist.wxs: locate-vcredist.bat
 
 .PHONY: workareas
 workareas:
-	cd ..; cmd.exe /c ./build.bat a6nt
-	cd ..; cmd.exe /c ./build.bat i3nt
-	cd ..; cmd.exe /c ./build.bat ta6nt
-	cd ..; cmd.exe /c ./build.bat ti3nt
+	cd ..; cmd.exe /c build.bat a6nt
+	cd ..; cmd.exe /c build.bat i3nt
+	cd ..; cmd.exe /c build.bat ta6nt
+	cd ..; cmd.exe /c build.bat ti3nt
 
 .PHONY: clean
 clean:

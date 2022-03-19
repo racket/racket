@@ -239,7 +239,9 @@
              dests)
       (time (let ()
               ,@(map (lambda (src dest)
-                       `(,(if asm? 'compile-with-asm (opt 'compile 's-exp)) ,src ,dest ',(string->symbol m)))
+                       `(begin
+			  (collect 1 2)
+			  (,(if asm? 'compile-with-asm (opt 'compile 's-exp)) ,src ,dest ',(string->symbol m))))
                      srcs
                      dests)))
       (printf "    ~a bytes peak memory use~n" (maximum-memory-bytes))
