@@ -4811,8 +4811,16 @@ evaluating module init
     "yes\n#<void>\n#<void>\n(#f #f #f #f)\nhello from B1, hello from C1\n(#t #f #t #f)\n")
   (error? ; mismatched compilation instance
     (separate-eval
-      '(parameterize ([library-directories '(("testdir-dist1" . "testdir-dist1"))])
-         (verify-loadability 'load "testdir-dist2/testfile-clA.so"))))
+     '(guard [x [#t (let* ([ps (condition-irritants x)]
+                           ;; rewrite error message to hide Window separator difference
+                           [new-ps (map (lambda (p)
+                                          (if (string? p)
+                                              (list->string (subst #\/ #\\ (string->list p)))
+                                              p))
+                                        ps)])
+                      (raise (condition (make-irritants-condition new-ps) x)))]]
+             (parameterize ([library-directories '(("testdir-dist1" . "testdir-dist1"))])
+               (verify-loadability 'load "testdir-dist2/testfile-clA.so")))))
   (error? ; mismatched compilation instance
     (separate-eval
       '(parameterize ([library-directories '(("testdir-dist1" . "testdir-dist1"))])

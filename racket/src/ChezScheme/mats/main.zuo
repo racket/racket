@@ -275,13 +275,44 @@
   (define covin-files (list (path->complete-path (at-dir "../boot" m "petite.covin"))
                             (path->complete-path (at-dir "../boot" m "scheme.covin"))))
 
+  (define (find-util name)
+    (cond
+      [(eq? 'windows (system-type))
+       (let ([dirs (list "C:\\MSys64\\usr\\bin"
+                         "C:\\Program Files (x86)\\Git\\usr\\bin"
+                         "C:\\Program Files\\Git\\usr\\bin"
+                         "C:\\Program Files\\Git (Arm)\\usr\\bin")])
+         (or (ormap (lambda (dir)
+                      (let ([f (build-path dir (.exe name))])
+                        (and (file-exists? f)
+                             (string->shell f))))
+                    dirs)
+             (error (~a "could not find " name ".exe in paths" dirs))))]
+      [else
+       name]))
+
+  ;; gets newline convention compatible with `file`
+  (define (newline-string file)
+    (define in (fd-open-input file))
+    (let loop ()
+      (let ([s (fd-read in 1)])
+        (cond
+          [(or (eq? s eof) (string=? s "\n"))
+           (fd-close in)
+           "\n"]
+          [(string=? s "\r")
+           (fd-close in)
+           "\r\n"]
+          [else (loop)]))))
+  
   (define (patch dest patch)
-    (shell/wait (build-shell "patch" (string->shell dest) (string->shell patch))
+    (shell/wait (build-shell (find-util "patch") (string->shell dest) (string->shell patch))
                 (hash 'no-thread? #t)))
 
   (define (diff a b dest [context? #f])
     (define out (fd-open-output dest :truncate))
-    (define p (shell (build-shell "diff" (if context? "--context" "")
+    (define p (shell (build-shell (find-util "diff")
+                                  (if context? "--context" "")
                                   (string->shell a)
                                   (string->shell b))
                      (hash 'stdout out)))
@@ -365,6 +396,7 @@
     (mkdir-p dir)
     (define conf (conf-name opt))
     (define out-file (build-path dir "make.out"))
+    (define experr-file (at-dir (~a "experr-" conf)))
     (call-with-output
      out-file
      (lambda (stdout stderr noisy?)
@@ -402,13 +434,13 @@
                              (~a name ".mo:" line))
                            report-lines))
                     mat-names))))
-    (display-to-file (string-join (append report-lines '("")) "\n")
+    (display-to-file (string-join (append report-lines '("")) (newline-string experr-file))
                      (build-path report-dir (~a "errors-" conf))
                      :truncate)
     (define diff-out (build-path report-dir (~a "report-" conf)))
     (define diff-status
       (diff (build-path report-dir (~a "errors-" conf))
-            (at-dir (~a "experr-" conf))
+            experr-file
             diff-out))
     (when (opt 'c 'boolean)
       (combine/report-coverage dir (eq? report-mode 'report-diff)))
