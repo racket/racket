@@ -413,9 +413,13 @@
     (when (opt 'c 'boolean)
       (combine/report-coverage dir (eq? report-mode 'report-diff)))
     (when (eq? report-mode 'report-diff)
+      (define summary-out (fd-open-output (at-dir "summary") :append))
+      (fd-write summary-out (~a (describe-configuration vars #f) "\n"))
       (unless (= 0 diff-status)
         (alert (file->string diff-out))
-        (error "output differs from expected"))))
+        (fd-write summary-out (file->string diff-out))
+        (error "output differs from expected"))
+      (fd-close summary-out)))
 
   (define (combine/report-coverage dir report?)
     (define (step what e)
@@ -432,32 +436,42 @@
       (step "report" `(coverage-percent ,(build-path out-dir "all.covout") ,@covin-files))
       (step "report" `(coverage-percent ,(build-path out-dir "run.covout") ,@covin-files))))
 
+  (define (describe-configuration options name?)
+    (~a "-------- o=" (hash-ref options 'o)
+        (apply
+         ~a
+         (map (lambda (key)
+                (let ([v (hash-ref options key #f)])
+                  (if (and v
+                           (not (equal? v (hash-ref default-options key))))
+                      (~a " " key "=" v)
+                      "")))
+              '(spi hci ecpf cp0 cis p eval ctb cgr cmg eoc cl rmg)))
+        (if name?
+            (~a " " (hash-ref options 'name))
+            "")
+        " --------"))
+
   (define (summarize-results done-options)
     (define out (fd-open-output 'stdout))
+    (define summary-out (fd-open-output (at-dir "summary") :truncate))
     (define all-ok?
       (foldl (lambda (options all-ok?)
                (define opt (make-opt-lookup options default-options))
                (define conf (conf-name opt))
                (define report-dir (at-dir (~a "output-" conf "-" (hash-ref options 'name))))
                (define diff-out (build-path report-dir (~a "report-" conf)))
-               (alert
-                (~a "-------- o=" (hash-ref options 'o)
-                    (apply
-                     ~a
-                     (map (lambda (key)
-                            (let ([v (hash-ref options key #f)])
-                              (if (and v
-                                       (not (equal? v (hash-ref default-options key))))
-                                  (~a " " key "=" v)
-                                  "")))
-                          '(spi hci ecpf cp0 cis p eval ctb cgr cmg eoc cl rmg)))
-                    " " (hash-ref options 'name) " --------"))
+               (define line (describe-configuration options #t))
+               (alert line)
+               (fd-write summary-out (~a line "\n"))
                (define delta (file->string diff-out))
                (fd-write out delta)
+               (fd-write summary-out delta)
                (and (string=? "" delta)
                     all-ok?))
              #t
              done-options))
+    (fd-close summary-out)
     (when (opt 'c 'boolean)
       (report-multi-coverage (map (lambda (options)
                                     (define opt (make-opt-lookup options default-options))
