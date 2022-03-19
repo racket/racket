@@ -226,7 +226,7 @@
                                     (hash)
                                     (hash)
                                     (or resource-ch
-                                        (make-resources (hash-ref options 'jobs 1)))
+                                        (make-resources (hash-ref options 'jobs (default-jobs))))
                                     (or (hash-ref options 'log? #f)
                                         (assoc "ZUO_BUILD_LOG" (hash-ref (runtime-env) 'env)))))
          (force-build t (do-build t state #t))
@@ -706,6 +706,11 @@
                      who)])
         (alert (~a who " changed")))))
   same?)
+
+(define (default-jobs)
+  (let ([a (assoc "ZUO_JOBS" (hash-ref (runtime-env) 'env '()))])
+    (or (and a (string->integer (cdr a)))
+        1)))
 
 ;; ------------------------------------------------------------
 ;; `make`-like target and dependency declaration

@@ -277,9 +277,10 @@ for every combination of options that might have different expected
 errors.
 
 To run *N* configurations in parallel, supply `-j` *N* to `zuo`, as in
-`zuo . -j 6 test`. You can also use the `test-some`, `test`, and
-`test-more` targets directly in your build directory, since that's a
-shortcut for running them in the "*machine-type*/mats" directory.
+`zuo . -j 6 test`, or set the `ZUO_JOBS` environment variable. You can
+also use the `test-some`, `test`, and `test-more` targets directly in
+your build directory, since that's a shortcut for running them in the
+"*machine-type*/mats" directory.
 
 To support parallel tests, targets like `test` write output in a
 collection of "output-*config*-*name*" directories within

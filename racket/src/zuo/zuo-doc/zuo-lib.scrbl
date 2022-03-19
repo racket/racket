@@ -196,7 +196,8 @@ A build runs in a @tech{threading context}, so a target's
 @racket[thread-process-wait] can be used to wait on a process. Doing
 so can enable parallelism among targets, depending on the
 @racket['jobs] option provided to @racket[build] or
-@racket[build/command-line].
+@racket[build/command-line] or the @envvar{ZUO_JOBS} environment
+variable.
 
 
 @subsection{Build API}
@@ -360,9 +361,11 @@ following keys are recognized:
 @itemlist[
 
 @item{@racket['jobs] mapped to a positive integer: controls the
-      maximum build steps that are allowed to proceed concurrently;
-      this concurrency turns into parallelism when a task uses a
-      process and @racket[thread-process-wait]}
+      maximum build steps that are allowed to proceed concurrently,
+      and this concurrency turns into parallelism when a task uses a
+      process and @racket[thread-process-wait]; the @envvar{ZUO_JOBS}
+      environment variable determines the default if it is set,
+      otherwise the default is 1}
 
 @item{@racket['log?] mapped to any value: enables logging of rebuild
       reasons via @racket[alert] when the value is not @racket[#f];
