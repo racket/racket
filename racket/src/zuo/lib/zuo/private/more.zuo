@@ -24,13 +24,13 @@
          explode-path
          simple-form-path
          find-relative-path
-         path-replace-suffix
+         path-replace-extension
          path-only
          file-name-from-path
          path->complete-path
 
          ls*
-         mkdir*
+         mkdir-p
          rm*
          cp*
 
@@ -206,15 +206,15 @@
              [else (apply build-path (append (convert-wrt wrts wrt ups) ps))]))
          p)]))
 
-(define (path-replace-suffix path-in suffix)
-  (unless (path-string? path-in) (arg-error 'path-replace-suffix "path string" path-in))
-  (unless (string? suffix) (arg-error 'path-replace-suffix "string" suffix))
+(define (path-replace-extension path-in suffix)
+  (unless (path-string? path-in) (arg-error 'path-replace-extension "path string" path-in))
+  (unless (string? suffix) (arg-error 'path-replace-extension "string" suffix))
   (define l (split-path path-in))
   (define path (cdr l))
   (define new-path
     (let loop ([i (string-length path)])
       (cond
-        [(= i 0) (~a path suffix)]
+        [(<= i 1) (~a path suffix)]
         [else
          (let ([i (- i 1)])
            (if (= (string-ref path i) (char "."))
@@ -257,11 +257,11 @@
   (unless (path-string? dir) (arg-error 'ls* "path string" dir))
   (map (lambda (p) (build-path dir p)) (ls dir)))
 
-(define (mkdir* p)
-  (unless (path-string? p) (arg-error 'mkdir* "path string" p))
+(define (mkdir-p p)
+  (unless (path-string? p) (arg-error 'mkdir-p "path string" p))
   (unless (directory-exists? p)
     (let ([l (split-path p)])
-      (when (car l) (mkdir* (car l)))
+      (when (car l) (mkdir-p (car l)))
       (mkdir p))))
 
 (define (rm* p)
@@ -288,7 +288,7 @@
       [(eq? type 'file) (cp src dest)]
       [(eq? type 'link)
        (when (stat dest #f) (rm dest))
-       (ln (readlink src) dest)]
+       (symlink (readlink src) dest)]
       [else
        (unless (directory-exists? dest) (mkdir dest))
        (for-each (lambda (e)

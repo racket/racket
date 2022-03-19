@@ -105,10 +105,10 @@
 (check (directory-exists? sub-dir) #f)
 (check-arg-fail (rm* 10) not-path)
 
-(mkdir* sub-sub-dir)
+(mkdir-p sub-sub-dir)
 (check (directory-exists? sub-sub-dir))
 (check (directory-exists? sub-dir))
-(check-arg-fail (mkdir* 10) not-path)
+(check-arg-fail (mkdir-p 10) not-path)
 
 (when (eq? 'unix (hash-ref (runtime-env) 'system-type))
   (let ([fd (fd-open-output (build-path sub-dir "high") :can-update)])
@@ -122,7 +122,7 @@
       (define v (fd-read fd eof))
       (fd-close fd)
       v))
-  (ln "low" (build-path sub-sub-dir "below"))
+  (symlink "low" (build-path sub-sub-dir "below"))
   (check (get (build-path sub-sub-dir "below")) "LOW")
   (check (readlink (build-path sub-sub-dir "below")) "low")
   (check (hash-ref (stat (build-path sub-sub-dir "below") #f) 'type) 'link)
@@ -131,13 +131,13 @@
   (check (rm (build-path sub-sub-dir "below")) (void))
   (check (get (build-path sub-sub-dir "low")) "LOW")
 
-  (ln "../high" (build-path sub-sub-dir "above"))
+  (symlink "../high" (build-path sub-sub-dir "above"))
   (check (get (build-path sub-sub-dir "above")) "HIGH")
   (check (readlink (build-path sub-sub-dir "above")) "../high")
   (check (rm (build-path sub-sub-dir "above")) (void))
   (check (get (build-path sub-dir "high")) "HIGH")
 
-  (ln ".." (build-path sub-sub-dir "again"))
+  (symlink ".." (build-path sub-sub-dir "again"))
   (check (link-exists? (build-path sub-sub-dir "again")))
   (check (hash-ref (stat (build-path sub-sub-dir "again") #f) 'type) 'link)
   (check (hash-ref (stat (build-path sub-sub-dir "again") #t) 'type) 'dir)
@@ -151,7 +151,7 @@
   (void))
 
 (check-arg-fail (readlink 10) not-path)
-(check-arg-fail (ln 10 "a") not-path)
-(check-arg-fail (ln "a" 10) not-path)
+(check-arg-fail (symlink 10 "a") not-path)
+(check-arg-fail (symlink "a" 10) not-path)
 
 (rm* sub-dir)

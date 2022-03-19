@@ -55,7 +55,7 @@
       ;; rebuild function (called if the output file is out of date):
       (lambda ()
         ;; get `embed-image` to tell us which module files it used:
-        (define deps-file (path-replace-suffix path ".dep"))
+        (define deps-file (path-replace-extension path ".dep"))
         ;; generated the output file
         (embed-image (let* ([cmd (hash-set cmd 'output path)]
                             [cmd (hash-set cmd 'deps deps-file)])

@@ -4911,7 +4911,7 @@ static zuo_t *zuo_readlink(zuo_t *link_path) {
 }
 
 static zuo_t *zuo_ln(zuo_t *target_path, zuo_t *link_path) {
-  const char *who = "ln";
+  const char *who = "symlink";
   check_path_string(who, target_path);
   check_path_string(who, link_path);
 #ifdef ZUO_UNIX
@@ -4919,7 +4919,7 @@ static zuo_t *zuo_ln(zuo_t *target_path, zuo_t *link_path) {
     return z.o_void;
 #endif
 #ifdef ZUO_WINDOWS
-  zuo_fail("ln: not supported on Windows");
+  zuo_fail("symlink: not supported on Windows");
 #endif
   zuo_fail1w_errno(who, "failed", zuo_cons(target_path, zuo_cons(link_path, z.o_null)));
   return z.o_undefined;
@@ -6404,7 +6404,7 @@ static void zuo_primitive_init(int will_load_image) {
   ZUO_TOP_ENV_SET_PRIMITIVE1("mkdir", zuo_mkdir);
   ZUO_TOP_ENV_SET_PRIMITIVE1("rmdir", zuo_rmdir);
   ZUO_TOP_ENV_SET_PRIMITIVE1("ls", zuo_ls);
-  ZUO_TOP_ENV_SET_PRIMITIVE2("ln", zuo_ln);
+  ZUO_TOP_ENV_SET_PRIMITIVE2("symlink", zuo_ln);
   ZUO_TOP_ENV_SET_PRIMITIVE1("readlink", zuo_readlink);
   ZUO_TOP_ENV_SET_PRIMITIVE2("cp", zuo_cp);
   ZUO_TOP_ENV_SET_PRIMITIVE0("current-time", zuo_current_time);

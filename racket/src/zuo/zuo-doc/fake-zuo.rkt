@@ -141,7 +141,7 @@
     display-to-file
 
     stat
-    ls rm mv mkdir rmdir ln readlink cp
+    ls rm mv mkdir rmdir symlink readlink cp
     current-time
     system-type
     file-exists?
@@ -151,11 +151,11 @@
     simple-form-path
     find-relative-path
     build-raw-path
-    path-replace-suffix
+    path-replace-extension
     path-only
     file-name-from-path
     path->complete-path
-    ls* rm* cp* mkdir*
+    ls* rm* cp* mkdir-p
     :error :truncate :must-truncate :append :update :can-update
     cleanable-file
     cleanable-cancel

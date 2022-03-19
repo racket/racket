@@ -346,7 +346,7 @@
        (fd-close out)]))
        
   (define (run-mat name dest dir)
-    (mkdir* dir)
+    (mkdir-p dir)
     (define out-file (at-dir (~a name ".out")))
     (call-with-output
      out-file
@@ -362,7 +362,7 @@
     (when (opt 'c 'boolean)
       (when (glob-match? "t*" m)
         (error "coverage doesn't work with threads enabled")))
-    (mkdir* dir)
+    (mkdir-p dir)
     (define conf (conf-name opt))
     (define out-file (build-path dir "make.out"))
     (call-with-output
@@ -646,7 +646,7 @@
                                               (at-dir ".")))))]
      [:target ,build-examples-stamp ()
               ,(lambda (path token)
-                 (mkdir* (at-dir "../examples"))
+                 (mkdir-p (at-dir "../examples"))
                  (build (find-target "all" (examples-targets-at (make-at-dir (at-dir "../examples")) vars)))
                  (fd-close (fd-open-output build-examples-stamp :truncate)))]
 

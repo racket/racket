@@ -77,9 +77,9 @@
 
 (define (.c->.o .c)
   (unless (path-string? .c) (arg-error '.c->.o "path string" .c))
-  (path-replace-suffix .c (if (eq? (hash-ref (runtime-env) 'system-type) 'windows)
-                              ".obj"
-                              ".o")))
+  (path-replace-extension .c (if (eq? (hash-ref (runtime-env) 'system-type) 'windows)
+                                 ".obj"
+                                 ".o")))
 
 (define (.exe name)
   (unless (path-string? name) (arg-error '.exe "string" name))

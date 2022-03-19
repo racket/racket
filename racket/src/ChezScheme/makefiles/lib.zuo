@@ -29,7 +29,7 @@
       (cp src dest)
       (begin
         (when (file-exists? dest) (rm dest))
-        (ln (find-relative-path (path-only dest) src) dest))))
+        (symlink (find-relative-path (path-only dest) src) dest))))
 
 (define (m->arch m)
   (let* ([uni (if (= (char "t") (string-ref m 0))

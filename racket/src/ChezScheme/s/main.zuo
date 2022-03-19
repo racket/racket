@@ -141,7 +141,7 @@
   (define base-srcs (map at-source base-names))
 
   (define base-objs
-    (map (lambda (s) (at-dir (path-replace-suffix s (~a "." m))))
+    (map (lambda (s) (at-dir (path-replace-extension s (~a "." m))))
          base-names))
 
   (define compiler-names
@@ -151,7 +151,7 @@
     (map at-source compiler-names))
 
   (define compiler-objs
-    (map (lambda (s) (at-dir (path-replace-suffix s (~a "." m))))
+    (map (lambda (s) (at-dir (path-replace-extension s (~a "." m))))
          compiler-names))
 
   (define type-src-files
@@ -235,7 +235,7 @@
       (generate-covin-files ,(opt 'c))
       ,@(cp0+gc-control)
       ,@(map (lambda (dest)
-               `(begin (delete-file ,(path-replace-suffix dest ".covin")) (void)))
+               `(begin (delete-file ,(path-replace-extension dest ".covin")) (void)))
              dests)
       (time (let ()
               ,@(map (lambda (src dest)
@@ -260,7 +260,7 @@
        ,@(make-bootfile-step-script scheme.boot '("petite") compiler-dests))))
 
   (define (make-bootfile-step-script .boot pre-boots dests)
-    `((begin (delete-file ,(path-replace-suffix .boot ".covin")) (void))
+    `((begin (delete-file ,(path-replace-extension .boot ".covin")) (void))
       (,(string->symbol "#%$make-boot-file") ,.boot ',(string->symbol m) ',pre-boots ,@dests)))
 
   (define (make-bootfile-script .boot pre-boots dests)
@@ -298,7 +298,7 @@
   ;; Create a `:target` for files like "cmacros.so", which are compiled
   ;; to compile the compiler
   (define (compilation-preamble-target .so deps loads)
-    (define .ss (at-source (path-replace-suffix (file-name-from-path .so) ".ss")))
+    (define .ss (at-source (path-replace-extension (file-name-from-path .so) ".ss")))
     `[:target ,.so (,.ss ,@deps ,@loads)
               ,(lambda (path token)
                  (run-scheme path
@@ -313,7 +313,7 @@
   (define (run-scheme-header-script dest make-script mk.so*)
     (define tmp (~a dest ".next"))
     (define tmp-h (cleanable-file tmp))
-    (mkdir* (path-only tmp))
+    (mkdir-p (path-only tmp))
     (run-scheme dest
                 `((reset-handler abort)
                   ,@(make-script tmp))
@@ -417,7 +417,7 @@
        [:target bootall (,@all-srcs ,@(add-patchfile macro-objs) ,nanopass.so ,@type-srcs
                                     ,@cpnanopass-srcs ,@unicode-srcs)
                 ,(lambda (token)
-                   (mkdir* (at-boot "."))
+                   (mkdir-p (at-boot "."))
                    (run-scheme "all at once"
                                (make-compile-at-once-script base-srcs base-objs petite.boot
                                                             compiler-srcs compiler-objs scheme.boot)
@@ -444,7 +444,7 @@
                    (build (find-target (~a "io." m) (targets-at at-dir (hash-set vars
                                                                                  'dumpspd "t"))))
                    (pretty-clean)
-                   (mkdir* (at-boot "profile"))
+                   (mkdir-p (at-boot "profile"))
                    (build (find-target "all" (targets-at at-dir (hash-set* vars
                                                                            'loadspd "t"
                                                                            'bp "t"
@@ -485,7 +485,7 @@
 
        [:target examples ()
                 ,(lambda (token)
-                   (mkdir* (at-dir "../examples"))
+                   (mkdir-p (at-dir "../examples"))
                    (build (find-target "all" (examples-targets-at (make-at-dir (at-dir "../examples")) vars))))]
 
        ;; Internal targets ----------------------------------------
@@ -534,7 +534,7 @@
               (append base-objs compiler-objs))
 
        ,@(map (lambda (name)
-                (let ([src (at-source (path-replace-suffix name ".ss"))]
+                (let ([src (at-source (path-replace-extension name ".ss"))]
                       [obj (at-dir name)])
                   `[:target ,obj ,(list* src nanopass.so (append macro-objs type-srcs))
                             ,(lambda (obj token)
@@ -589,7 +589,7 @@
 
        [:target bootpbchunk ()
                 ,(lambda (token dest . args)
-                   (mkdir* (at-dir "../../boot" dest))
+                   (mkdir-p (at-dir "../../boot" dest))
                    (run-scheme dest
                                '()
                                (list* "--script"

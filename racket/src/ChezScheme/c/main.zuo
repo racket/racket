@@ -198,7 +198,7 @@
 
      [:target ,exe (,kernel-dep ,@main-objs ,@res-deps ,@preload-files)
               ,(lambda (path token)
-                 (mkdir* (path-only path))
+                 (mkdir-p (path-only path))
                  (c-link path
                          (append main-objs
                                  res-deps
@@ -226,8 +226,8 @@
                  (cond
                    [(and (eq? 'windows (system-type))
                          (as-scheme-dll? config vars))
-                    (mkdir* (at-dir "../bin" m))
-                    (c-compile (path-replace-suffix kernel-lib ".dll")
+                    (mkdir-p (at-dir "../bin" m))
+                    (c-compile (path-replace-extension kernel-lib ".dll")
                                ;; ".lib" is also generated
                                (append kernel-objs lib-deps res-deps)
                                (config-merge config 'LDFLAGS
@@ -239,7 +239,7 @@
 
      [:target ,kernel.o (,@kernel-objs ,@lib-deps)
               ,(lambda (path token)
-                 (mkdir* (path-only path))
+                 (mkdir-p (path-only path))
                  (shell/wait (build-shell (lookup 'LD)
                                           "-r"
                                           "-X"
@@ -469,7 +469,7 @@
 (define (windows-main-dest at-dir m config vars)
   (lambda (name)
     (if (as-scheme-dll? config vars)
-        (at-dir "../boot" m (path-replace-suffix
+        (at-dir "../boot" m (path-replace-extension
                              name
                              (if (as-runtime-dll? config vars)
                                  "md.obj"

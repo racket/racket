@@ -135,4 +135,4 @@
 (define not-path "not a path string")
 
 (define tmp-dir (build-path (car (split-path (quote-module-path))) ".." "build" "tmp"))
-(mkdir* tmp-dir)
+(mkdir-p tmp-dir)

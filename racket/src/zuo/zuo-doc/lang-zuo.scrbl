@@ -629,10 +629,11 @@ otherwise.}
 Returns @racket[path] if it is absolute, otherwise returns
 @racket[(build-path (hash-ref (runtime-env) 'dir) path)].}
 
-@defproc[(path-replace-suffix [path path-string?] [suffix string?]) path-string?]{
+@defproc[(path-replace-extension [path path-string?] [suffix string?]) path-string?]{
 
 Removes any @litchar{.} suffix from the last element of @racket[path],
-and then appends @racket[suffix] to the end of the path.}
+and then appends @racket[suffix] to the end of the path. A @litchar{.}
+at the start of a path element does not count as a file suffix.}
 
 @defidform[at-source]{
 
@@ -1166,7 +1167,7 @@ Renames the file, directory, or link @racket[name] to @racket[new-name].}
 
 Creates a directory @racket[dir].}
 
-@defproc[(mkdir* [dir path-string?]) void?]{
+@defproc[(mkdir-p [dir path-string?]) void?]{
 
 Creates a directory @racket[dir] if it does not already exist, along
 with its ancector directories.}
@@ -1175,9 +1176,9 @@ with its ancector directories.}
 
 Deletes a directory @racket[dir].}
 
-@defproc[(ln [target path-string?] [name path-string?]) void?]{
+@defproc[(symlink [target path-string?] [name path-string?]) void?]{
 
-Creates a link @racket[name] with the content @racket[target]. This
+Creates a symbolic link @racket[name] with the content @racket[target]. This
 function is not supported on Windows.}
 
 @defproc[(readlink [name path-string?]) void?]{

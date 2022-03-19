@@ -46,7 +46,7 @@
                           (at-source "compile.zuo"))
                     (lambda ()
                       (define l (split-path path))
-                      (when (car l) (mkdir* (car l)))
+                      (when (car l) (mkdir-p (car l)))
                       (compile-c path
                                  (target-path image_zuo.c)
                                  (list (~a "-DZUO_LIB_PATH=" lib-path))
@@ -63,7 +63,8 @@
   (define (as-c-string path) (~s path)) ; probably a good enough approximation
 
   ;; The two executable targets
-  (define zuo-to-run (exe-target "to-run/zuo" (as-c-string (at-source ".." ".." "lib"))))
+  (define zuo-to-run (exe-target "to-run/zuo" (as-c-string (find-relative-path "to-run"
+                                                                               (at-source ".." "lib")))))
   (define zuo-to-install (exe-target "to-install/zuo" (as-c-string (build-path install-prefix "lib"))))
 
   ;; A phony target to build both executables, which we'll list first
@@ -83,12 +84,12 @@
                             (define (say-copy cp a b)
                               (displayln (~a "copying " a " to " b))
                               (cp a b))
-                            (mkdir* install-prefix)
-                            (mkdir* (build-path install-prefix "bin"))
+                            (mkdir-p install-prefix)
+                            (mkdir-p (build-path install-prefix "bin"))
                             (define dest-exe (build-path install-prefix "bin" "zuo"))
                             (when (file-exists? dest-exe) (rm dest-exe)) ; needed for macOS
                             (say-copy cp (target-name zuo-to-install) dest-exe)
-                            (mkdir* (build-path install-prefix "lib"))
+                            (mkdir-p (build-path install-prefix "lib"))
                             (say-copy cp*
                                       (at-source "lib" "zuo")
                                       (build-path install-prefix "lib" "zuo")))))))
