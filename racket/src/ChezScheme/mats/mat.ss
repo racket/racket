@@ -586,7 +586,7 @@
                               (format "~a~a~a" dir (directory-separator) fn)])])
                    (and (file-exists? fn) fn)))
                (source-directories))
-        (format "~a/~a" *mats-dir* fn))))
+        (format "~a~a~a" *mats-dir* (directory-separator) fn))))
 
 (define preexisting-profile-dump-entry?
   (let ([ht (make-eq-hashtable)])

@@ -1120,7 +1120,10 @@
           out)))
     "(aye captain)\n")
   (equal?
-    (let ([would-be-scheme (find-source (format "../bin/~a/scheme~a" (machine-type) (if (windows?) ".exe" "")))])
+    (let ([would-be-scheme (find-source (format "..~abin~a~a~ascheme~a" 
+                                                (directory-separator)
+                                                (directory-separator) (machine-type) (directory-separator)
+                                                (if (windows?) ".exe" "")))])
       (unless (or (embedded?) (equal? *scheme* would-be-scheme))
         (errorf #f "not testing boot file based on ../boot/~a/petite.boot, since *scheme* ~a isn't ~a"
           (machine-type) *scheme* would-be-scheme))
@@ -1151,7 +1154,10 @@
   (or
    (case (machine-type) [(pb tpb pb32 tpb32) #t] [else #f]) ; callables not always in pb
    (equal?
-    (let ([would-be-scheme (find-source (format "../bin/~a/scheme~a" (machine-type) (if (windows?) ".exe" "")))])
+    (let ([would-be-scheme (find-source (format "..~abin~a~a~ascheme~a" 
+                                                (directory-separator)
+                                                (directory-separator) (machine-type) (directory-separator)
+                                                (if (windows?) ".exe" "")))])
       (unless (or (embedded?) (equal? *scheme* would-be-scheme))
         (errorf #f "not testing boot file based on ../boot/~a/petite.boot, since *scheme* ~a isn't ~a"
           (machine-type) *scheme* would-be-scheme))

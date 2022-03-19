@@ -4801,9 +4801,9 @@
               (format
                 (if (directory-separator? (string-ref dir (fx- (string-length dir) 1)))
                     "~a~a~a"
-                    "~a/~a~a")
+		    (string-append "~a" (string (directory-separator)) "~a~a"))
                 dir rpath ext))))
-      (let ([rpath (format "~a~{/~a~}" (car path) (cdr path))])
+      (let ([rpath (format (string-append "~a~{" (string (directory-separator)) "~a~}") (car path) (cdr path))])
         (let dloop ([dir* (if (path-absolute? rpath)
                               (with-message (format "ignoring library-directories since ~s is absolute" rpath)
                                 '(("" . "")))

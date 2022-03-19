@@ -2,8 +2,9 @@
 (define ($just-file fn l)
   (filter (lambda (x) x)
           (map (lambda (x)
-                 (and (or (equal? (cadr x) fn)
-                          (equal? (cadr x) (find-source fn)))
+	         (define p (list->string (subst #\\ #\/ (string->list (cadr x)))))
+                 (and (or (equal? p fn)
+                          (equal? p (find-source fn)))
                       (list* (car x) fn (cddr x))))
                l)))
 

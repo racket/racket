@@ -1704,7 +1704,7 @@
                                      (string-ref dir
                                        (fx- (string-length dir) 1)))
                                    "~a~a"
-                                   "~a/~a")
+                                   (string-append "~a" (string (directory-separator)) "~a"))
                          dir name))))
                (search name (cdr dir*)))))
     (let ([name (source-file-descriptor-name sfd)])

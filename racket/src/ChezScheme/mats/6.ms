@@ -2765,7 +2765,7 @@
   (equal?
     (parameterize ([source-directories '("." "../examples")])
       (with-source-path 'test "fatfib.ss" list))
-    '("../examples/fatfib.ss"))
+    (list (format "../examples~afatfib.ss" (directory-separator))))
   (equal?
     (parameterize ([source-directories '("." "../examples")])
       (with-source-path 'test "./fatfib.ss" list))
@@ -2779,13 +2779,13 @@
     (call-with-values
       (lambda () (((inspect/object fatfib) 'code) 'source-path))
       list)
-    '("../examples/fatfib.ss" 16 4))
+    (list (format "../examples~afatfib.ss" (directory-separator)) 16 4))
   (equal? 
     (parameterize ([source-directories '("." "../examples")])
       (call-with-values
         (lambda () (((inspect/object fatfib) 'code) 'source-path))
         list))
-    '("../examples/fatfib.ss" 16 4))
+    (list (format "../examples~afatfib.ss" (directory-separator)) 16 4))
   (begin
     (load "../examples/fatfib.ss" compile)
     (procedure? fatfib))
@@ -2817,7 +2817,7 @@
       (call-with-values
         (lambda () (((inspect/object fatfib) 'code) 'source-path))
         list))
-    (list (format "~a/examples/fatfib.ss" (parameterize ([cd ".."]) (cd))) 16 4))
+    (list (format "~a~aexamples/fatfib.ss" (parameterize ([cd ".."]) (cd)) (directory-separator)) 16 4))
   (equal?
     (parameterize ([cd ".."] [source-directories '("examples")])
       (call-with-values

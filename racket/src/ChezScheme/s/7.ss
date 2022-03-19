@@ -119,7 +119,7 @@
                                           (string-ref dir
                                             (fx- (string-length dir) 1)))
                                         "~a~a"
-                                        "~a/~a")
+                                        (string-append "~a" (string (directory-separator)) "~a"))
                                     dir fn)))])
                   (if (guard (c [#t #f]) (close-input-port (open-input-file path)) #t)
                       (p path)

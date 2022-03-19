@@ -100,7 +100,7 @@
                                                 (directory-separator?
                                                   (string-ref dir (fx- n 1))))
                                            "~a~a"
-                                           "~a/~a")
+					   (string-append "~a" (string (directory-separator)) "~a"))
                                  dir path))
                              line)
                            (dirloop (cdr dir*))))))))

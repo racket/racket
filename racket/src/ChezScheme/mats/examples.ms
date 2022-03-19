@@ -45,15 +45,18 @@
    (lambda (fn1 fn2)
       (let ([p1 (open-input-file fn1)] [p2 (open-input-file fn2)])
          (let loop ()
-            (let ([c1 (read-char p1)] [c2 (read-char p2)])
-               (if (eof-object? c1)
-                   (begin
-                     (close-port p1)
-                     (close-port p2)
-                     (eof-object? c2))
-                   (and (not (eof-object? c2))
-                        (char=? c1 c2)
-                        (loop))))))))
+            (let cloop ([c1 (read-char p1)] [c2 (read-char p2)])
+              ;; discard CR characters to avoid Unix-vs.-Windows issues
+              (cond
+                [(eqv? c1 #\return) (cloop (read-char p1) c2)]
+                [(eqv? c2 #\return) (cloop c1 (read-char p2))]
+                [(eof-object? c1)
+                 (close-port p1)
+                 (close-port p2)
+                 (eof-object? c2)]
+                [else (and (not (eof-object? c2))
+                           (char=? c1 c2)
+                           (loop))]))))))
 
 (examples-mat def-edit ("def" "edit")
    (begin (def fact (lambda (x) (if (zero? x) 1 (* x (fact ( x 1))))))
