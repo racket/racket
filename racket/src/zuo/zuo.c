@@ -5894,9 +5894,10 @@ zuo_t *zuo_process_wait(zuo_t *pids_i) {
 
     for (l = pids_i; l != z.o_null; l = _zuo_cdr(l)) {
       zuo_t *p = _zuo_car(l);
-      if (((zuo_handle_t *)p)->u.h.status == zuo_handle_process_done_status)
+      if (((zuo_handle_t *)p)->u.h.status == zuo_handle_process_done_status) {
+	free(a);
         return p;
-      else {
+      } else {
 	HANDLE sci = ZUO_HANDLE_RAW(p);
 	DWORD w;
 	if (GetExitCodeProcess(sci, &w)) {
@@ -5907,6 +5908,7 @@ zuo_t *zuo_process_wait(zuo_t *pids_i) {
 	    ((zuo_handle_t *)p)->u.h.u.result = w;
             zuo_unregister_cleanable(p);
             zuo_resume_signal();
+	    free(a);
 	    return p;
 	  }
 	} else
@@ -5915,7 +5917,8 @@ zuo_t *zuo_process_wait(zuo_t *pids_i) {
       }
     }
 
-    (void)WaitForMultipleObjects(i, a, FALSE, 0);
+    (void)WaitForMultipleObjects(i, a, FALSE, INFINITE);
+    free(a);
   }
 #endif
 }

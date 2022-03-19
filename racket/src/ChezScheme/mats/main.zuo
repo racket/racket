@@ -437,7 +437,7 @@
       (step "report" `(coverage-percent ,(build-path out-dir "run.covout") ,@covin-files))))
 
   (define (describe-configuration options name?)
-    (~a "-------- o=" (hash-ref options 'o)
+    (~a "-------- o=" (hash-ref options 'o (hash-ref default-options 'o))
         (apply
          ~a
          (map (lambda (key)
