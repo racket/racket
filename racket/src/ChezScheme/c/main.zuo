@@ -215,7 +215,16 @@
                                 [config (if lz4-system-lib
                                             (config-merge config 'LIBS lz4-system-lib)
                                             config)])
-                           (exe-config arch config))))]
+                           (exe-config arch config)))
+                 (cond
+                   [(eq? 'windows (system-type))
+                    (shell/wait (build-shell "mt -manifest"
+                                             (string->shell (at-source "scheme.exe.manifest"))
+                                             (string->shell (~a "-outputresource:" path ";1"))))]
+                   [else
+                    (define post (lookup 'exePostStep))
+                    (when post
+                      (shell/wait (build-shell post (string->shell exe))))]))]
 
      ;; for Windows linking variants:
      [:target lib (,kernel-dep ,@main-objs)

@@ -1,5 +1,5 @@
 
-# Mf-config include is written above by "built.bat"
+# Mf-config include is written above by "build.bat"
 
 build: zuo.exe
        .\zuo.exe

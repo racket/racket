@@ -1,4 +1,4 @@
-
+# The `configure` script adjusts the next line:
 workarea=$(w)
 
 include $(workarea)/Mf-config
@@ -100,4 +100,3 @@ clean: $(ZUO)
 $(ZUO): $(srcdir)/../zuo/zuo.c
 	mkdir -p bin
 	$(HOSTCC) -DZUO_LIB_PATH='"'"$(upsrcdir)/../zuo/lib"'"' -o $(ZUO) $(srcdir)/../zuo/zuo.c
-

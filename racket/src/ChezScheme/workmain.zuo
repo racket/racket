@@ -5,6 +5,11 @@
                   [targets-at c-targets-at])
          "makefiles/lib.zuo")
 
+;; This is the main entry point to the Chez Scheme build. A build
+;; directory's "main.zuo" and a workarea directory's "main.zuo" both
+;; call `targets-at` with an `at-dir` that points to the workarea
+;; directory.
+
 (define (targets-at at-dir [vars (hash)])
   (define Mf-config (at-dir "Mf-config"))
   (unless (file-exists? Mf-config)

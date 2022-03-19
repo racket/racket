@@ -717,7 +717,6 @@ mdlinkflags=
 zlibConfigureEnv=
 zlibConfigureFlags=
 exeExtraDeps=
-exePreStep=":"
 exePostStep=":"
 exeSuffix=
 
@@ -782,7 +781,7 @@ esac
 # pre- and post-link-executable step for c/Mf-unix
 case "${flagsmuni}" in
     *nb)
-        exePostStep='paxctl +m ${Scheme}'
+        exePostStep='paxctl +m'
         ;;
     em)
         if [ "$empetite" == yes ]; then
@@ -896,7 +895,6 @@ mdcflags=$mdcflags
 mdldflags=$mdldflags
 mdlinkflags=$mdlinkflags
 exeExtraDeps=$exeExtraDeps
-exePreStep=$exePreStep
 exePostStep=$exePostStep
 exeSuffix=$exeSuffix
 zlibConfigureEnv=$zlibConfigureEnv
