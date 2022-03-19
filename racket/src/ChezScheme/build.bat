@@ -25,7 +25,7 @@ if defined ARG (
   exit /B 1
 )
 
-if "%M%"=="pb" set VSCONFIG=x86_amd64
+if "%M%"=="pb" set VSCONFIG=x86
 if "%M%"=="i3nt" set VSCONFIG=x86
 if "%M%"=="ti3nt" set VSCONFIG=x86
 if "%M%"=="a6nt" set VSCONFIG=x86_amd64

@@ -875,23 +875,11 @@ sed -e 's/$(w)/'$w'/g'\
 mkdir -p $w
 
 # Stub Zuo script to lanch the real one, using "Makefile"
-# to locate the workarea
-cat > main.zuo << END
-#lang zuo
-(define config (config-file->hash (at-source "Makefile")))
-(void (module->hash (at-source (hash-ref config 'workarea) "main.zuo")))
-END
+# to locate the workarea:
+cp "$srcdir"/makefiles/buildmain.zuo main.zuo
 
 # Some idea, but in the workarea, so it refers to "workarea.zuo" here:
-cat > $w/main.zuo << END
-#lang zuo
-(define config (config-file->hash (at-source "Mf-config")))
-(build/command-line* (dynamic-require ((make-at-dir (at-source ".."))
-                                       (hash-ref config 'srcdir)
-                                        "workmain.zuo")
-                                      'targets-at)
-                     at-source)
-END
+cp "$srcdir"/makefiles/workmain.zuo $w/main.zuo
 
 # The content of "$w/Makefile" records configuration decisions,
 # and the Zuo build script takes it from there
