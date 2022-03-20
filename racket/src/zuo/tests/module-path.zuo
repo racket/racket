@@ -21,7 +21,7 @@
 (check (module-path? "main.rkt"))
 (check (module-path? " main.zuo "))
 (check (module-path? "") #f)
-(check (module-path? "a\x00b") #f)
+(check (module-path? "a\0b") #f)
 
 (check (module-path? 1) #f)
 (check (module-path? '(zuo)) #f)

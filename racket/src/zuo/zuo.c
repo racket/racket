@@ -1489,15 +1489,13 @@ static void zuo_out(zuo_out_t *out, zuo_t *obj, zuo_print_mode_t mode) {
             out_char(out, c);
           } else {
             out_char(out, '\\');
-            out_char(out, 'x');
-            if (c > 0x90)
-              out_char(out, 'a' + ((c >> 4) - 10));
-            else
-              out_char(out, '0' + (c >> 4));
-            if ((c & 0xF) > 0x09)
-              out_char(out, 'a' + ((c & 0xF) - 10));
-            else
-              out_char(out, '0' + (c & 0xF));
+            if ((c == 0) && ((str->s[i+1] < '0') || (str->s[i+1] > '7')))
+              out_char(out, '0');
+            else {
+              out_char(out, '0' + ((c >> 6) & 0x7));
+              out_char(out, '0' + ((c >> 3) & 0x7));
+              out_char(out, '0' + ((c >> 0) & 0x7));
+            }
           }
         }
         out_string(out, "\"");
@@ -1828,21 +1826,6 @@ static void zuo_read_fail(const unsigned char *s, zuo_int_t *_o, zuo_t *where,
   zuo_read_fail2(s, _o, where, msg, "");
 }
 
-static int hex_value(unsigned const char *s, zuo_int_t *_o, int offset, zuo_t *where) {
-  int c = s[*_o + offset];
-
-  if ((c >= '0') && (c <= '9'))
-    return c - '0';
-  if ((c >= 'a') && (c <= 'f'))
-    return c - 'a' + 10;
-  if ((c >= 'A') && (c <= 'F'))
-    return c - 'A' + 10;
-
-  (*_o) += offset;
-  zuo_read_fail(s, _o, where, "bad hex digit");
-  return -1;
-}
-
 static int peek_input(const unsigned char *s, zuo_int_t *_o, const char *want) {
   int i, c;
   for (i = 0; want[i]; i++) {
@@ -2045,9 +2028,22 @@ static zuo_t *zuo_in(const unsigned char *s, zuo_int_t *_o, zuo_t *where, int sk
           } else if (c2 == 't') {
             s2[len++] = '\t';
             (*_o) += 2;
-          } else if (c2 == 'x') {
-            s2[len++] = (hex_value(s, _o, 2, where) << 4) + hex_value(s, _o, 3, where);
-            (*_o) += 4;
+          } else if ((c2 >= '0') && (c2 <= '7')) {
+            int v = c2 - '0', c3;
+            (*_o) += 2;
+            c3 = s[*_o];
+            if ((c3 >= '0') && (c3 <= '7')) {
+              v = (v << 3) + (c3 - '0');
+              (*_o) += 1;
+              if (c2 <= '3') {
+                c3 = s[*_o];
+                if ((c3 >= '0') && (c3 <= '7')) {
+                  v = (v << 3) + (c3 - '0');
+                  (*_o) += 1;
+                }
+              }
+            }
+            s2[len++] = v;
           } else
             zuo_read_fail(s, _o, where, "bad character after backslash");
         } else if (c == '\n') {

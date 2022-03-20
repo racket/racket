@@ -139,7 +139,7 @@
   (process-wait (hash-ref p 'process))
   (check s (~a"(" arg ")\n")))
 
-(check-process-arg "\xCE\xBB")
+(check-process-arg "\316\273")
 (check-process-arg "a b c")
 (check-process-arg "a \"b\" c")
 (check-process-arg "a \"b c")

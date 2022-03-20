@@ -6,7 +6,7 @@
 
 (check (path-string? "x"))
 (check (path-string? "") #f)
-(check (path-string? "xy\x00z") #f)
+(check (path-string? "xy\0z") #f)
 (check (path-string? 'apple) #f)
 
 (define unix? (eq? (hash-ref (runtime-env) 'system-type) 'unix))

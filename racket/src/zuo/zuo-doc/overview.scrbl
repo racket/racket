@@ -109,7 +109,8 @@ Zuo's kernel supports the following kinds of data:
 
  @item{integers as 64-bit two's complement with modular arithmetic}
 
- @item{string as byte strings;}
+ @item{strings as byte strings (with @litchar{\n}, @litchar{\r},
+       @litchar{\t}, @litchar{\"}, @litchar{\\}, and octal escapes);}
 
  @item{symbols, both interned (never garbage collected) and
        uninterned;}
