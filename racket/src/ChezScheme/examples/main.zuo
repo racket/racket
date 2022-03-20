@@ -2,8 +2,8 @@
 (require "../makefiles/lib.zuo")
 
 (define (targets-at at-dir [vars (hash)])
-  (define config (config-file->hash (at-dir "../Mf-config")))
-  (define lookup (make-lookup vars config))
+  (define config (config-file->hash (at-dir "../Mf-config") vars))
+  (define lookup (make-lookup config))
 
   (define mf (config-file->hash (at-source "Makefile")))
 

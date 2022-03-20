@@ -75,12 +75,12 @@
 ;; options for building preamble files, which is useful for compiling a cross-compiler
 ;; in safe mode (but having the final cross-built compiler built in unsafe mode)
 (define (targets-at at-dir [vars (hash)] [compiler-compiler-options (hash)])
-  (define config (config-file->hash (at-dir "../Mf-config")))
-  (define lookup (make-lookup vars config))
-  (define opt (make-opt-lookup vars default-options))
+  (define config (config-file->hash (at-dir "../Mf-config") vars))
+  (define lookup (make-lookup config))
+  (define opt (make-opt-lookup config default-options))
   (define ccopt (make-opt-lookup (foldl (lambda (key vars)
                                           (hash-set vars key (hash-ref compiler-compiler-options key)))
-                                        vars
+                                        config
                                         (hash-keys compiler-compiler-options))
                                  default-options))
 

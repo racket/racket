@@ -7,9 +7,8 @@
 ;; or that can be rendered as commands in a makefile-shaped script
 
 (define (install at-workarea [vars (hash)] [uninstall? #f] [script-to #f])
-  (define config (config-file->hash (at-workarea "Mf-config")))
-  (define (lookup key) (or (hash-ref vars key #f)
-                           (hash-ref config key #f)))
+  (define config (config-file->hash (at-workarea "Mf-config") vars))
+  (define (lookup key) (hash-ref config key #f))
 
   (define (out-raw s)
     (fd-write script-to s))

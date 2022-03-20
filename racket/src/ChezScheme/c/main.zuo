@@ -4,9 +4,8 @@
          "lib.zuo")
 
 (define (targets at-dir [vars (hash)])
-  (define config (win-config (config-file->hash (at-dir "../Mf-config")) vars))
-  (define (lookup key) (or (hash-ref vars key #f)
-                           (hash-ref config key #f)))
+  (define config (win-config (config-file->hash (at-dir "../Mf-config") vars)))
+  (define lookup (make-lookup config))
 
   (define m (hash-ref config 'm))
   (define mboot (hash-ref config 'mboot m))
@@ -27,8 +26,8 @@
         l))
   (define (or-windows-lib lib)
     (if (eq? 'windows (system-type))
-        (build-path ".." (if (as-scheme-dll? config vars) "bin" "boot") m 
-                    (~a "csv" (get-dll-version) (if (as-runtime-dll? config vars) "md" "mt") ".lib"))
+        (build-path ".." (if (as-scheme-dll? config) "bin" "boot") m 
+                    (~a "csv" (get-dll-version) (if (as-runtime-dll? config) "md" "mt") ".lib"))
         lib))
 
   (define cpu+arch.c
@@ -114,7 +113,7 @@
     (map at-source main-src-files))
   (define main-objs
     (if (eq? 'windows (system-type))
-        (map (windows-main-dest at-dir m config vars) main-src-files)
+        (map (windows-main-dest at-dir m config) main-src-files)
         (map (lambda (name) (at-dir "../boot" m (.c->.o name))) main-src-files)))
 
   (define main-hdrs
@@ -132,8 +131,8 @@
                          kernel.o
                          kernel-lib))
 
-  (define zlib-dir (at-dir (~a "../zlib" (lib-build-suffix config vars))))
-  (define lz4-dir (at-dir (~a "../lz4" (lib-build-suffix config vars))))
+  (define zlib-dir (at-dir (~a "../zlib" (lib-build-suffix config))))
+  (define lz4-dir (at-dir (~a "../lz4" (lib-build-suffix config))))
 
   (define zlib-lib (build-path zlib-dir (.a (~a (if (eq? 'windows (system-type)) "zlib" "z")))))
   (define lz4-lib (build-path lz4-dir (.a (~a "lib/" (if (eq? 'windows (system-type)) "liblz4" "lz4")))))
@@ -234,7 +233,7 @@
               ,(lambda (path token)
                  (cond
                    [(and (eq? 'windows (system-type))
-                         (as-scheme-dll? config vars))
+                         (as-scheme-dll? config))
                     (mkdir-p (at-dir "../bin" m))
                     (c-compile (path-replace-extension kernel-lib ".dll")
                                ;; ".lib" is also generated
@@ -265,7 +264,7 @@
                  (cp* (at-source "../zlib") zlib-dir)
 		 (cond
 		  [(eq? 'windows (system-type))
-		   ((dynamic-require (at-source "winlib.zuo") 'build-zlib) zlib-dir (as-runtime-dll? config vars))]
+		   ((dynamic-require (at-source "winlib.zuo") 'build-zlib) zlib-dir (as-runtime-dll? config))]
 		  [else
                    (define configure-command
                      (build-shell "./configure" (hash-ref config 'zlibConfigureFlags)))
@@ -412,22 +411,22 @@
 
 (provide-targets targets)
 
-(define (win-config config vars)
+(define (win-config config)
   (cond
     [(eq? 'windows (system-type))
      (let* ([config (hash-set config 'CFLAGS
                               (~a "/nologo"
-                                  (if (as-runtime-dll? config vars)
+                                  (if (as-runtime-dll? config)
                                       " /MD"
                                       " /MT")
-                                  (if (as-scheme-dll? config vars)
+                                  (if (as-scheme-dll? config)
                                       ""
                                       " /DSCHEME_STATIC")
                                   " /Ox /W3 /Zi /DUSE_ANSI_PROTOTYPES /DWIN32 /D_CRT_SECURE_NO_WARNINGS"
                                   (if (glob-match? "pb*" (hash-ref config 'm))
                                       " /DFEATURE_WINDOWS"
                                       "")))]
-            [config (hash-set config 'LDFLAGS (if (as-runtime-dll? config vars) "/MD" "/MT"))]
+            [config (hash-set config 'LDFLAGS (if (as-runtime-dll? config) "/MD" "/MT"))]
             [config (hash-set config 'LIBS "rpcrt4.lib ole32.lib advapi32.lib User32.lib")])
        config)]
     [else config]))
@@ -449,15 +448,13 @@
     [else config]))
 
 ;; /MD vs. /MT
-(define (as-runtime-dll? config vars)
-  (equal? (or (hash-ref vars 'runtimeAs #f)
-              (hash-ref config 'runtimeAs #f))
+(define (as-runtime-dll? config)
+  (equal? (hash-ref config 'runtimeAs #f)
           "dll"))
 
 ;; Link in one ".exe", or depend on ".dll"?
-(define (as-scheme-dll? config vars)
-  (not (equal? (or (hash-ref vars 'linkAs #f)
-                   (hash-ref config 'linkAs #f))
+(define (as-scheme-dll? config)
+  (not (equal? (hash-ref config 'linkAs #f)
                "exe")))
 
 (define (for-windows? config)
@@ -465,22 +462,22 @@
       (glob-match? "*nt" (hash-ref config 'm))
       (glob-match? "*nt" (or (hash-ref config 'defaultm) ""))))
 
-(define (lib-build-suffix config vars)
+(define (lib-build-suffix config)
   (if (eq? 'windows (system-type))
-      (~a (if (as-runtime-dll? config vars)
+      (~a (if (as-runtime-dll? config)
               "md"
               "mt")
-          (if (as-scheme-dll? config vars)
+          (if (as-scheme-dll? config)
               "d"
               "s"))
       ""))
 
-(define (windows-main-dest at-dir m config vars)
+(define (windows-main-dest at-dir m config)
   (lambda (name)
-    (if (as-scheme-dll? config vars)
+    (if (as-scheme-dll? config)
         (at-dir "../boot" m (path-replace-extension
                              name
-                             (if (as-runtime-dll? config vars)
+                             (if (as-runtime-dll? config)
                                  "md.obj"
                                  "mt.obj")))
         (at-dir (.c->.o name)))))

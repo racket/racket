@@ -751,7 +751,7 @@ in the @tech{tool configuration} @racket[config].}
 
 @defzuomodule[zuo/config]
 
-@defproc[(config-file->hash [file path-string?]) hash?]{
+@defproc[(config-file->hash [file path-string?] [overrides hash? (hash)]) hash?]{
 
 Parses @racket[file] as having configuration lines of the form
 @nonterm{name} @litchar{=} @nonterm{value}, with any number of ignored
@@ -763,4 +763,9 @@ of the name is used as a key in the resulting hash table, mapped to
 the @nonterm{value} as a string. Lines in @racket[file] that do not
 match the configuration format are ignored. If a same @nonterm{name}
 is configured multiple times, the last mapping overrides earlier
-ones.}
+ones.
+
+After reading @racket[file], keys from @racket[overrides] are merged
+to the result hash table, where values in @racket[overrides] replace
+ones read from @racket[file].}
+

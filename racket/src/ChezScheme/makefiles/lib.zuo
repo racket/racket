@@ -60,10 +60,9 @@
 (define (file->lines file)
   (string-split (file->string file) "\n"))
 
-(define (make-lookup vars config)
+(define (make-lookup config)
   (lambda (key)
-    (or (hash-ref vars key #f)
-        (hash-ref config key #f))))
+    (hash-ref config key #f)))
 
 (define (make-opt-lookup options default-options)
   (lambda (key [format 'boolean])

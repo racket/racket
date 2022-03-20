@@ -208,9 +208,9 @@
 (define (tf x) (if x "t" "f"))
 
 (define (targets-at at-dir [vars (hash)])
-  (define config (config-file->hash (at-dir "../Mf-config")))
-  (define lookup (make-lookup vars config))
-  (define opt (make-opt-lookup vars default-options))
+  (define config (config-file->hash (at-dir "../Mf-config") vars))
+  (define lookup (make-lookup config))
+  (define opt (make-opt-lookup config default-options))
 
   (define m (lookup 'm))
 
@@ -446,7 +446,7 @@
       (combine/report-coverage dir (eq? report-mode 'report-diff)))
     (when (eq? report-mode 'report-diff)
       (define summary-out (fd-open-output (at-dir "summary") :append))
-      (fd-write summary-out (~a (describe-configuration vars #f) "\n"))
+      (fd-write summary-out (~a (describe-configuration config #f) "\n"))
       (unless (= 0 diff-status)
         (alert (file->string diff-out))
         (fd-write summary-out (file->string diff-out))

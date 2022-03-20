@@ -364,9 +364,9 @@
                 [else (list* (car strs) sep (loop (cdr strs)))]))))
 
 (define (string-trim str [sep-str " "])
-  (unless (string? str) (arg-error 'string-split "string" str))
+  (unless (string? str) (arg-error 'string-trim "string" str))
   (unless (and (string? sep-str) (> (string-length sep-str) 0))
-    (arg-error 'string-split "nonempty string" sep-str))
+    (arg-error 'string-trim "nonempty string" sep-str))
   (let* ([len (string-length str)]
          [sep-len (string-length sep-str)]
          [match-at? (lambda (i)

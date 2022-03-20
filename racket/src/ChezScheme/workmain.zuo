@@ -104,7 +104,7 @@
                         ((dynamic-require (at-source "mats/main.zuo") 'targets-at)
                          (make-at-dir (at-dir "mats"))
                          vars))
-           (hash)
+           vars
            token))
 
   (define the-targets
@@ -114,14 +114,14 @@
                 ,(lambda (token)
                    (unless (build-kernel-only?)
                      (build (find-target "bootstrap" (s-targets-at (make-at-dir (at-dir "s")) vars))
-                            (hash)
+                            vars
                             token)))]
 
        ;; Builds just the kernel (C code):
        [:target kernel (workarea)
                 ,(lambda (token)
                    (build (find-target "build" (c-targets-at (make-at-dir (at-dir "c")) vars))
-                          (hash)
+                          vars
                           token))]
 
        [:target install ()
@@ -154,7 +154,7 @@
                      [else
                       (define t (find-target "run" (s-targets-at (make-at-dir (at-dir "s")) vars)))
                       (build (command-target->target t args)
-                             (hash)
+                             vars
                              token)]))
                 :command]
 
