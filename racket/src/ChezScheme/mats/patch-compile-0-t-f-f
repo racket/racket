@@ -6172,13 +6172,13 @@
   unix.mo:Expected error in mat file-operations: "file-access-time: failed for "testlink": no such file or directory".
   unix.mo:Expected error in mat file-operations: "file-change-time: failed for "testlink": no such file or directory".
   unix.mo:Expected error in mat file-operations: "file-modification-time: failed for "testlink": no such file or directory".
-! windows.mo:Expected error in mat registry: "incorrect number of arguments to #<procedure get-registry>".
-! windows.mo:Expected error in mat registry: "incorrect number of arguments to #<procedure get-registry>".
-! windows.mo:Expected error in mat registry: "incorrect number of arguments to #<procedure put-registry!>".
-! windows.mo:Expected error in mat registry: "incorrect number of arguments to #<procedure put-registry!>".
-! windows.mo:Expected error in mat registry: "incorrect number of arguments to #<procedure put-registry!>".
-! windows.mo:Expected error in mat registry: "incorrect number of arguments to #<procedure remove-registry!>".
-! windows.mo:Expected error in mat registry: "incorrect number of arguments to #<procedure remove-registry!>".
+! windows.mo:Expected error in mat registry: "incorrect number of arguments 0 to #<procedure get-registry>".
+! windows.mo:Expected error in mat registry: "incorrect number of arguments 2 to #<procedure get-registry>".
+! windows.mo:Expected error in mat registry: "incorrect number of arguments 1 to #<procedure put-registry!>".
+! windows.mo:Expected error in mat registry: "incorrect number of arguments 1 to #<procedure put-registry!>".
+! windows.mo:Expected error in mat registry: "incorrect number of arguments 3 to #<procedure put-registry!>".
+! windows.mo:Expected error in mat registry: "incorrect number of arguments 0 to #<procedure remove-registry!>".
+! windows.mo:Expected error in mat registry: "incorrect number of arguments 2 to #<procedure remove-registry!>".
   windows.mo:Expected error in mat registry: "get-registry: pooh is not a string".
   windows.mo:Expected error in mat registry: "put-registry!: 3 is not a string".
   windows.mo:Expected error in mat registry: "put-registry!: 3 is not a string".

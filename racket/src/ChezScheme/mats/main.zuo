@@ -84,7 +84,7 @@
 
    ;; cp0 determines whether cp0 is run
    'cp0 "f"
-   
+
    ;; eval is the evaluator to use
    'eval "compile"
 
@@ -118,7 +118,7 @@
    ;; eoc determines whether object counts are enabled
    'eoc "t"
 
-   ;; cl determines the commonization leve ("" means the default)
+   ;; cl determines the commonization level ("" means the default)
    'cl ""
 
    ;; ecpf determines whether the compiler checks prelex flags
@@ -227,7 +227,7 @@
 
   (define (conf-name opt)
     (~a (opt 'eval 'symbol) "-" (opt 'o 'integer) "-" (tf (opt 'spi)) "-" (tf (opt 'cp0)) "-" (tf (opt 'cis))))
-  
+
   (define conf (conf-name opt))
   (define out-dir (at-dir (~a "output-" conf)))
   (define report-dir (at-dir "."))
@@ -304,7 +304,7 @@
            (fd-close in)
            "\r\n"]
           [else (loop)]))))
-  
+
   (define (patch dest patch)
     (shell/wait (build-shell (find-util "patch") (string->shell dest) (string->shell patch))
                 (hash 'no-thread? #t)))
@@ -375,7 +375,7 @@
        (define out (fd-open-output out-file :truncate))
        (proc out out #f)
        (fd-close out)]))
-       
+
   (define (run-mat name dest dir)
     (mkdir-p dir)
     (define out-file (at-dir (~a name ".out")))
@@ -526,7 +526,7 @@
             `(coverage-percent ,(at-dir (~a kind ".covout")) ,@covin-files)))
     (combine "all")
     (combine "run"))
-        
+
   (define (grep-for-failure obj)
     (define lines (file->lines obj))
     (let ([bug? (glob->matcher "Bug*")]
@@ -599,7 +599,7 @@
                     more-test-options
                     experr-test-options))
 
-     ;; for individual ".mo" written to immediate build directory 
+     ;; for individual ".mo" written to immediate build directory
      ,@(map (lambda (obj src name)
               `[:target ,obj (,src ,mat.so ,options-t)
                         ,(lambda (path token)
@@ -871,7 +871,7 @@
                           (maybe-diff errors-compile-$o-$spi-$cp0-f
                                       errors-interpret-$o-$spi-$cp0-f
                                       (at-source (~a "patch-interpret-" o "-" spi "-" cp0 "-f"))))))))))]
-     
+
      #;
      (end-make-targets))))
 
