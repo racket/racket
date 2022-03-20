@@ -2725,6 +2725,45 @@ static zuo_t *zuo_string_ci_eql(zuo_t *n, zuo_t *m) {
   return z.o_true;
 }
 
+static zuo_t *zuo_string_split(zuo_t *str, zuo_t *find_str) {
+  const char *who = "string-split";
+  zuo_t *l = z.o_null;
+  zuo_int_t start, i, find_len;
+  const char *fs;
+  int keep_empty;
+
+  check_string(who, str);
+  if (find_str != z.o_undefined) {
+    if (find_str->tag == zuo_string_tag)
+      find_len = ZUO_STRING_LEN(find_str);
+    else
+      find_len = 0;
+    if (find_len < 1)
+      zuo_fail_arg(who, "nonempty string", find_str);
+    fs = ZUO_STRING_PTR(find_str);
+    keep_empty = 1;
+  } else {
+    fs = " ";
+    find_len = 1;
+    keep_empty = 0;
+  }
+
+  start = 0;
+  for (i = 0; i <= ZUO_STRING_LEN(str) - find_len; i++) {
+    if (!memcmp(ZUO_STRING_PTR(str) + i, fs, find_len)) {
+      if ((start < i) || keep_empty)
+        l = zuo_cons(zuo_sized_string(ZUO_STRING_PTR(str) + start, i - start), l);
+      i += (find_len-1);
+      start = i+1;
+    }
+  }
+
+  if ((start < ZUO_STRING_LEN(str)) || keep_empty)
+    l = zuo_cons(zuo_sized_string(ZUO_STRING_PTR(str) + start, ZUO_STRING_LEN(str) - start), l);
+
+  return zuo_reverse(l);
+}
+
 static zuo_t *zuo_tilde_v(zuo_t *objs) {
   return zuo_to_string(objs, zuo_print_mode);
 }
@@ -6364,6 +6403,7 @@ static void zuo_primitive_init(int will_load_image) {
   ZUO_TOP_ENV_SET_PRIMITIVEc("substring", zuo_substring);
   ZUO_TOP_ENV_SET_PRIMITIVE2("string=?", zuo_string_eql);
   ZUO_TOP_ENV_SET_PRIMITIVE2("string-ci=?", zuo_string_ci_eql);
+  ZUO_TOP_ENV_SET_PRIMITIVEb("string-split", zuo_string_split);
   ZUO_TOP_ENV_SET_PRIMITIVE1("string->symbol", zuo_string_to_symbol);
   ZUO_TOP_ENV_SET_PRIMITIVE1("string->uninterned-symbol", zuo_string_to_uninterned_symbol);
   ZUO_TOP_ENV_SET_PRIMITIVE1("symbol->string", zuo_symbol_to_string);

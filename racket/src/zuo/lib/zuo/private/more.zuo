@@ -44,7 +44,6 @@
          string<?
          string->integer
 
-         string-split
          string-join
          string-trim
 
@@ -353,33 +352,6 @@
                                 (and neg? (= (+ i 1) (string-length s)) (= n -9223372036854775808) n)
                                 (string->integer n (+ i 1))))]
                          [else #f]))])))))))
-
-(define (do-string-split who str sep-str)
-  (let* ([sep-len (string-length sep-str)]
-         [end (- (string-length str) sep-len)])
-    (let loop ([start 0] [i 0])
-      (cond
-        [(> i end)
-         (list (substring str start (string-length str)))]
-        [(and (= (string-ref str i) (string-ref sep-str 0))
-              (string=? (substring str i (+ i sep-len)) sep-str))
-         (cons (substring str start i)
-               (loop (+ i sep-len) (+ i sep-len)))]
-        [else (loop start (+ i 1))]))))
-
-(define (string-split str . args)
-  (unless (or (null? args) (null? (cdr args))) (arity-error 'string-split (cons str args)))
-  (unless (string? str) (arg-error 'string-split "string" str))
-  (cond
-    [(null? args)
-     (filter (lambda (s) (> (string-length s) 0))
-             (do-string-split "string-items" str " "))]
-    [else
-     (let ([sep-str (car args)])
-       (unless (and (string? sep-str)
-                    (> (string-length sep-str) 0))
-         (arg-error 'string-split "nonempty string" sep-str))
-       (do-string-split "string-split" str sep-str))]))
 
 (define (string-join strs [sep " "])
   (unless (and (list? strs) (andmap string? strs))
