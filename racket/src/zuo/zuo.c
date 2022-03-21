@@ -1907,6 +1907,70 @@ static zuo_t *zuo_in(const unsigned char *s, zuo_int_t *_o, zuo_t *where, int sk
         obj = z.o_undefined;
       }
       (*_o)++;
+    } else if ((c == '"') || ((c == '#') && (s[(*_o)+1] == '"'))) {
+      zuo_int_t sz = 32;
+      zuo_int_t len = 0;
+      char *s2 = malloc(sz);
+      if (c == '#')
+        (*_o)++;
+      (*_o)++;
+      while (1) {
+        if (sz == len) {
+          char *s3 = malloc(sz * 2);
+          memcpy(s3, s2, sz);
+          free(s2);
+          s2 = s3;
+          sz = sz * 2;
+        }
+        c = s[*_o];
+        if (c == 0) {
+          zuo_read_fail(s, _o, where, "missing closing doublequote");
+        } else if (c == '"') {
+          (*_o)++;
+          break;
+        } else if (c == '\\') {
+          int c2 = s[(*_o)+1];
+          if ((c2 == '\\') || (c2 == '"')) {
+            s2[len++] = c2;
+            (*_o) += 2;
+          } else if (c2 == 'n') {
+            s2[len++] = '\n';
+            (*_o) += 2;
+          } else if (c2 == 'r') {
+            s2[len++] = '\r';
+            (*_o) += 2;
+          } else if (c2 == 't') {
+            s2[len++] = '\t';
+            (*_o) += 2;
+          } else if ((c2 >= '0') && (c2 <= '7')) {
+            int v = c2 - '0', c3;
+            (*_o) += 2;
+            c3 = s[*_o];
+            if ((c3 >= '0') && (c3 <= '7')) {
+              v = (v << 3) + (c3 - '0');
+              (*_o) += 1;
+              if (c2 <= '3') {
+                c3 = s[*_o];
+                if ((c3 >= '0') && (c3 <= '7')) {
+                  v = (v << 3) + (c3 - '0');
+                  (*_o) += 1;
+                }
+              }
+            }
+            s2[len++] = v;
+          } else
+            zuo_read_fail(s, _o, where, "bad character after backslash");
+        } else if (c == '\n') {
+          zuo_read_fail(s, _o, where, "newline in string literal");
+        } else if (c == '\r') {
+          zuo_read_fail(s, _o, where, "carriage return in string literal");
+        } else {
+          s2[len++] = c;
+          (*_o)++;
+        }
+      }
+      obj = zuo_sized_string(s2, len);
+      free(s2);
     } else if (c == '#') {
       (*_o)++;
       if (peek_input(s, _o, "true")) {
@@ -1995,68 +2059,6 @@ static zuo_t *zuo_in(const unsigned char *s, zuo_int_t *_o, zuo_t *where, int sk
       sym = zuo_symbol(s2);
       free(s2);
       obj = sym;
-    } else if (c == '"') {
-      zuo_int_t sz = 32;
-      zuo_int_t len = 0;
-      char *s2 = malloc(sz);
-      (*_o)++;
-      while (1) {
-        if (sz == len) {
-          char *s3 = malloc(sz * 2);
-          memcpy(s3, s2, sz);
-          free(s2);
-          s2 = s3;
-          sz = sz * 2;
-        }
-        c = s[*_o];
-        if (c == 0) {
-          zuo_read_fail(s, _o, where, "missing closing doublequote");
-        } else if (c == '"') {
-          (*_o)++;
-          break;
-        } else if (c == '\\') {
-          int c2 = s[(*_o)+1];
-          if ((c2 == '\\') || (c2 == '"')) {
-            s2[len++] = c2;
-            (*_o) += 2;
-          } else if (c2 == 'n') {
-            s2[len++] = '\n';
-            (*_o) += 2;
-          } else if (c2 == 'r') {
-            s2[len++] = '\r';
-            (*_o) += 2;
-          } else if (c2 == 't') {
-            s2[len++] = '\t';
-            (*_o) += 2;
-          } else if ((c2 >= '0') && (c2 <= '7')) {
-            int v = c2 - '0', c3;
-            (*_o) += 2;
-            c3 = s[*_o];
-            if ((c3 >= '0') && (c3 <= '7')) {
-              v = (v << 3) + (c3 - '0');
-              (*_o) += 1;
-              if (c2 <= '3') {
-                c3 = s[*_o];
-                if ((c3 >= '0') && (c3 <= '7')) {
-                  v = (v << 3) + (c3 - '0');
-                  (*_o) += 1;
-                }
-              }
-            }
-            s2[len++] = v;
-          } else
-            zuo_read_fail(s, _o, where, "bad character after backslash");
-        } else if (c == '\n') {
-          zuo_read_fail(s, _o, where, "newline in string literal");
-        } else if (c == '\r') {
-          zuo_read_fail(s, _o, where, "carriage return in string literal");
-        } else {
-          s2[len++] = c;
-          (*_o)++;
-        }
-      }
-      obj = zuo_sized_string(s2, len);
-      free(s2);
     } else {
       char s[2];
       s[0] = c;

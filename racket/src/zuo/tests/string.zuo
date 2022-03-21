@@ -5,6 +5,7 @@
 (alert "strings")
 
 (check (string? "apple"))
+(check (string? #"apple"))
 (check (string? ""))
 (check (not (string? 'apple)))
 (check (not (string? 10)))

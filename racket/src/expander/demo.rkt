@@ -1767,8 +1767,8 @@ bread-and-butter2
                              (list (cadr (syntax-e stx)))
                              (list (quote-syntax lambda)
                                    (list (quote-syntax sstx))
-                                   #;
                                    (quote-syntax (quote-syntax secret))
+                                   #;
                                    (quote-syntax (datum->syntax
                                                   (quote-syntax secret)
                                                   'secret))))))))
