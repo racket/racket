@@ -44,126 +44,35 @@
     (error "failed")))
 
 (define (make-zo-target stamp-file src raco-driver)
-  (define (associated-file src rkt-config ext)
-    (define dir (or (path-only src) "."))
-    (build-path dir
-                (hash-ref rkt-config 'compiled-dir)
-                (path-replace-extension (file-name-from-path src) (~a "_rkt" ext))))
-
-  (define (traverse! src rkt-config token out)
-    (define finder (make-library-finder rkt-config))
-    (define (source! path)
-      (build/recur path token)
-      (when out
-        ;; writing the hash of every file to "stamp-file" means that
-        ;; we expect any change to effect the way that the compiled
-        ;; file runs:
-        (fd-write out (file-sha1 path token))))
-    (define (traverse! src seen)
-      (cond
-        [(hash-ref seen (string->symbol src) #f)
-         seen]
-        [(and (file-exists? (associated-file src rkt-config ".zo"))
-              (file-exists? (associated-file src rkt-config ".dep")))
-         (define dep (associated-file src rkt-config ".dep"))
-         (define h (cleanable-file dep))
-         (define content (string-read (file->string dep)))
-         (unless (and (list? content)
-                      (= 1 (length content))
-                      (>= (length (car content)) 3))
-           (error 'zo "bad content in dependency file" dep))
-         (cleanable-cancel h)
-         (define info (car content))
-         (cond
-           [(and (equal? (list-ref info 0) (hash-ref rkt-config 'version))
-                 (eq? (list-ref info 1) (hash-ref rkt-config 'machine)))
-            ;; we don't need to check `(list-ref info 2)`, because zuo/build
-            ;; takes care of that as we report all the sources and results
-            (source! src)
-            (source! dep)
-            (source! (path-replace-extension dep ".zo"))
-            (foldl (lambda (spec seen)
-                     (cond
-                       [(string? spec)
-                        (traverse! spec seen)]
-                       [(and (list? spec) (pair? spec) (eq? 'collects (car spec)))
-                        (traverse! (finder (cdr spec)) seen)]
-                       [(and (list? spec) (pair? spec) (eq? 'ext (car spec)))
-                        (build/recur (cadr spec) token)]
-                       [else seen]))
-                   (hash-set seen (string->symbol src) #t)
-                   (list-tail (car content) 3))]
-           [else
-            (error "missing" src)])]
-        [else
-         (error "missing" src)]))
-    (traverse! src (hash)))
-                                       
   (target stamp-file
           (lambda (path token)
             (rule (list (raco-driver-target raco-driver))
                   (lambda ()
-                    (raco/wait (raco-driver-vars raco-driver) "make" src)
-                    (fd-write (fd-open-output 'stdout) "gathering dependencies\n")
-                    (define rkt-config ((raco-driver-config-getter raco-driver)))
+                    (define vars (raco-driver-vars raco-driver))
+                    (raco/wait vars "make" src)
+                    (define paths (get-dependencies vars src))
                     (define out (fd-open-output stamp-file :truncate))
-                    (traverse! src rkt-config token out)
+                    (for-each
+                     (lambda (path)
+                       (build/recur path token)
+                       ;; writing the hash of every file to "stamp-file" means that
+                       ;; we expect any change to effect the way that the compiled
+                       ;; file runs:
+                       (fd-write out (file-sha1 path token)))
+                     paths)
                     (fd-close out))))))
 
-(define (make-library-finder rkt-config)
-  (define collects (map make-try-path (hash-ref rkt-config 'collects)))
-  (define links (hash-ref rkt-config 'links))
-  (define links-tables (map (lambda (link)
-                              (cond
-                                [(not link) #f]
-                                [else
-                                 (define str (file->string link))
-                                 (define content (car (string-read str)))
-                                 (define dir (or (path-only link) "."))
-                                 (define tries
-                                   (map (lambda (entry)
-                                          (define try
-                                            (make-try-path (let ([dest (cadr entry)])
-                                                             (if (string? dest)
-                                                                 (build-path dir dest)
-                                                                 (apply build-path (cons dir (map convert-path-elem dest)))))))
-                                          (cond
-                                            [(or (eq? (car entry) 'root)
-                                                 (eq? (car entry) 'static-root))
-                                             try]
-                                            [else
-                                             (lambda (spec)
-                                               (and (equal? (car spec) (car entry))
-                                                    (try (cdr spec))))]))
-                                        content))
-                                 (lambda (spec)
-                                   (ormap (lambda (try) (try spec)) tries))]))
-                            links))
-  (lambda (spec)
-    (ormap (lambda (links-table)
-             (cond
-               [(not links-table) (ormap (lambda (try) (try spec)) collects)]
-               [else (links-table spec)]))
-           links-tables)))
-
-(define (convert-path-elem e)
-  (cond
-    [(eq? e 'up) ".."]
-    [(eq? e 'same) "."]
-    [else e]))
-
-(define (make-try-path path)
-  (lambda (spec)
-    (let loop ([path path] [spec spec])
-      (cond
-        [(null? (cdr spec))
-         (let ([fn (build-path path (car spec))])
-           (and (file-exists? fn)
-                fn))]
-        [else
-         (let ([dir (build-path path (car spec))])
-           (and (directory-exists? dir)
-                (loop dir (cdr spec))))]))))
+(define (get-dependencies vars file)
+  (define p (racket vars
+                    (at-source "zuo-help.rkt")
+                    "--dependencies"
+                    file
+                    (hash 'stdout 'pipe)))
+  (define config-str (fd-read (hash-ref p 'stdout) eof))
+  (process-wait (hash-ref p 'process))
+  (unless (= 0 (process-status (hash-ref p 'process)))
+    (error "failed"))
+  (string-read config-str))
 
 (define (make-raco-driver vars racket-config.db)
   (raco-driver
@@ -178,10 +87,13 @@
 
 (define (extract-racket-configuration vars)
   (define p (racket vars
-                    (at-source "extract-config.rkt")
+                    (at-source "zuo-help.rkt")
+                    "--get-config"
                     (hash 'stdout 'pipe)))
   (define config-str (fd-read (hash-ref p 'stdout) eof))
   (process-wait (hash-ref p 'process))
+  (unless (= 0 (process-status (hash-ref p 'process)))
+    (error "failed"))
   (define l (string-read config-str))
   (foldl (lambda (a config)
            (hash-set config (car a) (cadr a)))
