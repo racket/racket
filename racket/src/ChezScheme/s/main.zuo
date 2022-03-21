@@ -561,13 +561,15 @@
                 ,(lambda (petite.boot token)
                    (run-scheme petite.boot
                                (make-bootfile-script petite.boot '() base-objs)
-                               (add-patchfile macro-objs)))]
+                               (add-patchfile macro-objs)))
+                :precious]
 
        [:target ,scheme.boot ,(add-patchfile compiler-objs)
                 ,(lambda (scheme.boot token)
                    (run-scheme scheme.boot
                                (make-bootfile-script scheme.boot '("petite") compiler-objs)
-                               (add-patchfile macro-objs)))]
+                               (add-patchfile macro-objs)))
+                :precious]
 
        [:target ,scheme.h (,mkheader.so ,@macro-objs)
                 ,(lambda (scheme.h token)

@@ -9923,8 +9923,8 @@
       (lambda (who path dir* all-ext*)
         (let-values ([(src-path obj-path obj-exists?)
                       (default-library-search-handler who path dir* all-ext*)])
-          (assert (equal? src-path (format "src2~alib.ss" (directory-separator))))
-          (assert (equal? obj-path (format "obj~alib.so"  (directory-separator))))
+          (assert (equal? src-path (path-build "src2" "lib.ss")))
+          (assert (equal? obj-path (path-build "obj" "lib.so")))
           (assert obj-exists?)
           (values src-path obj-path obj-exists?))))
     '(printf "~a\n" (let () (import (lib)) a))))
@@ -9981,8 +9981,8 @@
         (let-values ([(src-path obj-path obj-exists?)
                       (default-library-search-handler who path dir* all-ext*)])
           ;; user reordered library-directories since compiling the wpo file
-          (assert (equal? src-path (format "src1~alib.ss" (directory-separator))))
-          (assert (equal? obj-path (format "obj~alib.wpo" (directory-separator))))
+          (assert (equal? src-path (path-build "src1" "lib.ss")))
+          (assert (equal? obj-path (path-build "obj" "lib.wpo")))
           (assert obj-exists?))
         ;; ... we install a new handler that returns the object file instead
         (library-search-handler

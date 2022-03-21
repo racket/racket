@@ -581,12 +581,12 @@
                              [(equal? dir ".") fn]
                              [(and (equal? ".." (path-first fn))
                                    (not (equal? dir (path-parent dir))))
-                              (format "~a~a~a" (path-parent dir) (directory-separator) (path-rest fn))]
+                              (path-build (path-parent dir) (path-rest fn))]
                              [else
-                              (format "~a~a~a" dir (directory-separator) fn)])])
+                              (path-build dir fn)])])
                    (and (file-exists? fn) fn)))
                (source-directories))
-        (format "~a~a~a" *mats-dir* (directory-separator) fn))))
+        (format (path-build *mats-dir* fn)))))
 
 (define preexisting-profile-dump-entry?
   (let ([ht (make-eq-hashtable)])

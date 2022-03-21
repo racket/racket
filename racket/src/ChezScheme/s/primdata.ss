@@ -845,7 +845,6 @@
   ((csv7: record-type-descriptor) [sig [(record) -> (rtd)]] [flags pure mifoldable discard true cp02])
   ((csv7: record-type-field-decls) [sig [(rtd) -> (list)]] [flags pure mifoldable discard true cp02])
   ((csv7: record-type-field-names) [sig [(rtd) -> (list)]] [flags pure mifoldable discard true cp02])
-  ((csv7: record-type-field-indices) [sig [(rtd) -> (list)]] [flags pure mifoldable discard true])
   ((csv7: record-type-name) [sig [(rtd) -> (string)]] [flags pure mifoldable discard true cp02])
   ((csv7: record-type-symbol) [sig [(rtd) -> (symbol)]] [flags pure mifoldable discard true cp02])
 )
@@ -993,6 +992,7 @@
   (library-list [sig [() -> (list)]] [flags])
   (library-requirements [sig [(sub-list) -> (list)] [(sub-list library-requirements-options) -> (list)]] [flags])
   (library-search-handler [sig [() -> (procedure)] [(procedure) -> (void)]] [flags])
+  (library-timestamp-mode [sig [() -> (symbol)] [(sub-symbol) -> (void)]] [flags])
   (library-version [sig [(sub-list) -> (list)]] [flags])
   (optimize-level [sig [() -> (ufixnum)] [(sub-ufixnum) -> (void)]] [flags])
   (pretty-initial-indent [sig [() -> (ufixnum)] [(ufixnum) -> (void)]] [flags])
@@ -1565,6 +1565,7 @@
   (open-source-file [sig [(sfd) -> (maybe-textual-input-port)]] [flags])
   (ormap [sig [(procedure list list ...) -> (ptr ...)]] [flags cp03])
   (path-absolute? [sig [(pathname) -> (boolean)]] [flags #;cp02])         ; need cp0 handlers to fold path operators machine-independently
+  (path-build [sig [(pathname pathname) -> (pathname)]] [flags true #;cp02])
   (path-extension [sig [(pathname) -> (pathname)]] [flags true #;cp02])   ; it's probably not worth the effort
   (path-first [sig [(pathname) -> (pathname)]] [flags true #;cp02])
   (path-last [sig [(pathname) -> (pathname)]] [flags true #;cp02])
@@ -2343,6 +2344,7 @@
   ($record-type-descriptor [flags single-valued pure mifoldable discard true])
   ($record-type-field-offsets [flags single-valued pure mifoldable discard true])
   ($record-type-field-count [sig [(ptr) -> (fixnum)]] [flags single-valued pure mifoldable discard true])
+  ($record-type-field-indices [sig [(rtd) -> (list)]] [flags pure mifoldable discard true])
   ($reloc [flags single-valued])
   ($remake-rtd [flags single-valued])
   ($report-string [flags single-valued])

@@ -1,0 +1,271 @@
+#lang zuo
+
+(define (targets-at at-dir [vars (hash)])
+  (define config (let ([p (at-dir "../Mf-config")])
+                   (if (file-exists? p)
+                       (config-file->hash p vars)
+                       vars)))
+  (define lookup (lambda (k) (hash-ref config k #f)))
+
+  (define scheme (or (lookup 'scheme)
+                     (find-executable-path (.exe "scheme"))))
+  (define unsafe? #t)
+  (define compress? #f)
+  (define target-m #f)
+  (define wpo? #t)
+
+  (define cso ".so")
+  
+  (define compile-file-deps
+    (map at-source '("compile-file.ss" "include.ss" "place-register.ss")))
+
+  (define chezpart.so
+    (at-dir (~a "chezpart" cso)))
+
+  (define rumble.so
+    (at-dir (~a "rumble" cso)))
+  (define rumble-deps
+    (list chezpart.so))
+
+  (define thread.so
+    (at-dir (~a "thread" cso)))
+  (define thread-deps
+    (append rumble-deps (list rumble.so)))
+
+  (define io.so
+    (at-dir (~a "io" cso)))
+  (define io-deps
+    (append thread-deps (list thread.so)))
+
+  (define regexp.so
+    (at-dir (~a "regexp" cso)))
+  (define regexp-deps
+    (append io-deps (list io.so)))
+
+  (define schemify.so
+    (at-dir (~a "schemify" cso)))
+  (define schemify-deps
+    (append regexp-deps (list regexp.so)))
+
+  (define linklet.so
+    (at-dir (~a "linklet" cso)))
+  (define linklet-deps
+    (append schemify-deps (list schemify.so)))
+
+  (define expander.so
+    (at-dir (~a "expander" cso)))
+  (define expander-deps
+    (append linklet-deps (list linklet.so)))
+
+  (define main.so
+    (at-dir (~a "main" cso)))
+  (define main-deps
+    (append expander-deps (list expander.so)))
+
+  (define racket.so (at-dir "racket.so"))
+
+  (define racket-init-args
+    (list "false" (at-source "../../bin/racket") (at-source "../../bin/racket")
+          "../collects" "../etc" "" "0" "false" "false" "0" ""))
+
+  (define rumble-srcs
+    (cons
+     (at-source "../version/racket_version.h")
+     (map (lambda (name) (at-source "rumble" name))
+          '("virtual-register.ss"
+            "check.ss"
+            "syntax-rule.ss"
+            "name.ss"
+            "constant.ss"
+            "hash-code.ss"
+            "struct.ss"
+            "prefab.ss"
+            "procedure.ss"
+            "impersonator.ss"
+            "equal.ss"
+            "object-name.ss"
+            "arity.ss"
+            "intmap.ss"
+            "patricia.ss"
+            "hamt-stencil.ss"
+            "hamt-vector.ss"
+            "hash.ss"
+            "datum.ss"
+            "lock.ss"
+            "thread-local.ss"
+            "thread-cell.ss"
+            "parameter.ss"
+            "begin0.ss"
+            "value.ss"
+            "pthread.ss"
+            "control.ss"
+            "interrupt.ss"
+            "engine.ss"
+            "source.ss"
+            "error.ss"
+            "error-adjuster.ss"
+            "error-rewrite.ss"
+            "srcloc.ss"
+            "boolean.ss"
+            "bytes.ss"
+            "string.ss"
+            "char.ss"
+            "char-range.ss"
+            "symbol.ss"
+            "list.ss"
+            "vector.ss"
+            "box.ss"
+            "immutable.ss"
+            "keyword.ss"
+            "mpair.ss"
+            "number.ss"
+            "random.ss"
+            "flvector.ss"
+            "correlated.ss"
+            "graph.ss"
+            "time.ss"
+            "memory.ss"
+            "ephemeron.ss"
+            "will-executor.ss"
+            "system.ss"
+            "unsafe.ss"
+            "extfl.ss"
+            "place.ss"
+            "errno-data.ss"
+            "foreign.ss"
+            "async-callback.ss"
+            "future.ss"
+            "version.ss"
+            "inline.ss"))))
+
+  (define primitive-tables
+    (map (lambda (name) (at-source "primitive" name))
+         '("kernel.ss"
+           "unsafe.ss"
+           "flfxnum.ss"
+           "paramz.ss"
+           "extfl.ss"
+           "network.ss"
+           "futures.ss"
+           "foreign.ss"
+           "place.ss"
+           "linklet.ss"
+           "terminal.ss"
+           "internal.ss")))
+
+  (define linklet-srcs
+    (map (lambda (name) (at-source "linklet" name))
+         '("version.ss"
+           "read.ss"
+           "write.ss"
+           "check.ss"
+           "performance.ss"
+           "annotation.ss"
+           "compress.ss"
+           "config.ss"
+           "cross-compile.ss")))
+
+  (define (cat srcs dest)
+    (define s (apply ~a (map file->string srcs)))
+    (display-to-file s dest :truncate))
+
+  (define (run-racket main.so args)
+    (define p (process/args scheme
+                            (append
+                             (list "--disable-library-timestamps"
+                                   "--libdirs" (at-dir "."))
+                             (list "--script" main.so)
+                             racket-init-args
+                             args)
+                            (hash 'env (cons (cons "RACKET_IO_SOURCE_DIR" (at-source "."))
+                                             (hash-ref (runtime-env) 'env))
+                                  'exec? (not (eq? 'windows (system-type))))))
+    (process-wait (hash-ref p 'process)))
+
+  (define (compile-file src dest loads [whole-program? #f])
+    (define args (append (list scheme
+                               "--script"
+                               (at-source "compile-file.ss"))
+                         (if unsafe?
+                             (list "--unsafe")
+                             '())
+                         (if compress?
+                             (list "--compress")
+                             '())
+                         (if target-m
+                             (list "-m" target-m)
+                             '())
+                         (if whole-program?
+                             (list "--whole-program")
+                             '())
+                         (list "--src"
+                               (at-source ".")
+                               "--dest"
+                               (at-dir ".")
+                               src
+                               dest)
+                         loads))
+    (define p (apply process args))
+    (thread-process-wait (hash-ref p 'process))
+    (unless (= 0 (process-status (hash-ref p 'process)))
+      (error "failed")))
+
+  (define (library-target dest src import-deps more-srcs)
+    `[:target ,dest (,src ,@more-srcs ,@import-deps ,@compile-file-deps)
+              ,(lambda (path token)
+                 (compile-file src dest import-deps))])
+
+
+  (make-targets
+   `(
+
+     [:target ,racket.so (,main.so ,@compile-file-deps)
+              ,(lambda (path token)
+                 (if wpo?
+                     (compile-file main.so path (list (at-dir "main.wpo")) #t)
+                     (cat (append main-deps (list main.so)) path)))]
+
+     ,(library-target main.so (at-source "main.sps") main-deps
+                      (list (at-source "main/help.ss")))
+
+     ,(library-target expander.so (at-source "expander.sls") expander-deps
+                      (list* (at-source "schemified/schemify.scm") (at-source "expander/env.ss")
+                             primitive-tables))
+
+     ,(library-target linklet.so (at-source "linklet.sls") linklet-deps
+                      linklet-srcs)
+
+     ,(library-target schemify.so (at-source "schemify.sls") schemify-deps
+                      (list* (at-source "schemified/schemify.scm") (at-source "schemified/known.scm")
+                             primitive-tables))
+
+     ,(library-target regexp.so (at-source "regexp.sls") regexp-deps
+                      (list (at-source "schemified/regexp.scm")))
+
+     ,(library-target io.so (at-source "io.sls") io-deps
+                      (list (at-source "io/terminal.ss") (at-source "schemified/io.scm")))
+
+     ,(library-target thread.so (at-source "thread.sls") thread-deps
+                      (list (at-source "schemified/thread.scm")))
+
+     ,(library-target rumble.so (at-source "rumble.sls") rumble-deps
+                      rumble-srcs)
+
+     ,(library-target chezpart.so (at-source "chezpart.sls") '()
+                      '())
+
+     [:target run (,main.so)
+              ,(lambda (token . args)
+                 (run-racket main.so args))
+              :quiet
+              :command]
+
+     [:target run-wpo (,racket.so)
+              ,(lambda (token . args)
+                 (run-racket racket.so args))
+              :quiet
+              :command]
+
+     #;(end-of-make-targets))))
+
+(provide-targets targets-at)
