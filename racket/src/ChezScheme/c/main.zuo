@@ -3,7 +3,9 @@
          "../makefiles/version.zuo"
          "lib.zuo")
 
-(define (targets at-dir [vars (hash)])
+(provide-targets targets-at)
+
+(define (targets-at at-dir [vars (hash)])
   (define config (win-config (config-file->hash (at-dir "../Mf-config") vars)))
   (define lookup (make-lookup config))
 
@@ -408,8 +410,6 @@
                  (map rm* kernel-objs))]
 
      #;(end-make-targets))))
-
-(provide-targets targets)
 
 (define (win-config config)
   (cond

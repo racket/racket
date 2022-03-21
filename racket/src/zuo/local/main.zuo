@@ -2,10 +2,15 @@
 (require "image.zuo"
          "compile.zuo")
 
-;; The `targets` function generates targets, and `to-dir` determines
+;; Exports `targets` and also defines a `main` submodule
+;; that handles command-line arguments and builds a target
+;; in a `make`-like way
+(provide-targets targets-at)
+
+;; The `targets-at` function generates targets, and `to-dir` determines
 ;; the build directory --- so these targets could be used by another
 ;; build script that wants the output in a subdirectory, for example
-(define (targets at-dir [vars (hash)])
+(define (targets-at at-dir [vars (hash)])
   ;; The `configure` script writes configuration info to "Makefile", so
   ;; use that if it's available, or use defaults otherwise
   (define Makefile (at-dir "Makefile"))
@@ -100,8 +105,3 @@
         zuo-to-run
         zuo-to-install
         install))
-
-;; Exports `targets` and also defines a `main` submodule
-;; that handles command-line arguments and builds a target
-;; in a `make`-like way
-(provide-targets targets)

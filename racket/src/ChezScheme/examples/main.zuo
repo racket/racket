@@ -1,6 +1,8 @@
 #lang zuo
 (require "../makefiles/lib.zuo")
 
+(provide-targets targets-at)
+
 (define (targets-at at-dir [vars (hash)])
   (define config (config-file->hash (at-dir "../Mf-config") vars))
   (define lookup (make-lookup config))
@@ -46,5 +48,3 @@
               ,(lambda (token)
                  (map rm* objs)
                  (rm* "expr.md"))])))
-
-(provide-targets targets-at)

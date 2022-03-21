@@ -5,6 +5,8 @@
                   [targets-at c-targets-at])
          "makefiles/lib.zuo")
 
+(provide-targets targets-at)
+
 ;; This is the main entry point to the Chez Scheme build. A build
 ;; directory's "main.zuo" and a workarea directory's "main.zuo" both
 ;; call `targets-at` with an `at-dir` that points to the workarea
@@ -300,5 +302,3 @@
        #;(end-make-targets))))
 
   the-targets)
-
-(provide-targets targets-at)

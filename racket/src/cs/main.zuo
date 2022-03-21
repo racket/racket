@@ -1,5 +1,7 @@
 #lang zuo
 
+(provide-targets targets-at)
+
 (define (targets-at at-dir [vars (hash)])
   (define config (let ([p (at-dir "../Mf-config")])
                    (if (file-exists? p)
@@ -267,5 +269,3 @@
               :command]
 
      #;(end-of-make-targets))))
-
-(provide-targets targets-at)

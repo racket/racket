@@ -4,6 +4,8 @@
          (only-in "../examples/main.zuo"
                   [targets-at examples-targets-at]))
 
+(provide-targets targets-at)
+
 ;; Run an indvidual "<test>.ms" test-matrix set with
 ;;
 ;;   zuo . <test>.mo
@@ -874,5 +876,3 @@
 
      #;
      (end-make-targets))))
-
-(provide-targets targets-at)

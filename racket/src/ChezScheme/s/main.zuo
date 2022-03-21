@@ -4,6 +4,8 @@
          (only-in "../examples/main.zuo"
                   [targets-at examples-targets-at]))
 
+(provide-targets targets-at)
+
 (define default-options
   (hash
    ;; o determines the optimize level
@@ -610,5 +612,3 @@
        #;(end-make-targets))))
 
   the-targets)
-
-(provide-targets targets-at)

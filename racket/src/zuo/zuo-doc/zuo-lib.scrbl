@@ -164,10 +164,10 @@ variables (analogous to variables that a makefile might provide to
 another makefile via @tt{make} arguments).
 
 As a further convenience following the @racketidfont{targets-at}
-model, the @racket[provide-targets] form takes an expression for
-producing such a @racketidfont{targets-at} procedure, and it both
-exports @racketidfont{targets-at} and creates a @racket[main]
-@tech{submodule} that calls @racket[build/command-line*] on with the
+model, the @racket[provide-targets] form takes an identifier for such a
+@racketidfont{targets-at} procedure, and it both exports
+@racketidfont{targets-at} and creates a @racket[main] @tech{submodule}
+that calls @racket[build/command-line*] on with the
 @racketidfont{targets-at} procedure.
 
 @subsection{Recording Results}
@@ -466,14 +466,13 @@ The @racket[sha1?] predicate recognizes values that are either a
 The empty string represents a non-existent target or one that needs to
 be rebuilt.}
 
-@defform[(provide-targets targets-at-expr)]{
+@defform[(provide-targets targets-at-id)]{
 
-Binds a generated identifier to the result of
-@racket[targets-at-expr], provides it as @racketidfont{targets-at},
-and creates a @racketidfont{main} submodule that runs
-@racket[(build/command-line* @#,racketidfont{targets-at} build-path)].
-A script using @racket[provide-targets] thus works as a makefile-like
-script or as an input to a larger build.}
+Provides @racket[targets-at-id] as @racketidfont{targets-at}, and
+creates a @racketidfont{main} submodule that runs
+@racket[(build/command-line* targets-at-id build-path)]. A script
+using @racket[provide-targets] thus works as a makefile-like script or
+as an input to a larger build.}
 
 @defproc[(make-targets [specs list?]) list?]{
 
