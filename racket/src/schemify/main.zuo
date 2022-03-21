@@ -7,9 +7,9 @@
 
 (provide-targets targets-at)
 
-(define (targets-at at-dir [vars (hash)])
-  (define expander (expander-target (make-at-dir (at-dir "../expander")) vars))
-
+(define (targets-at at-dir
+                    [vars (hash)]
+                    [expander (expander-target (make-at-dir (at-dir "../expander")) vars)])
   (define schemify.rktl (at-dir "compiled/schemify.rktl"))
   (define schemify-dep.rktd (at-dir "compiled/schemify-dep.rktd"))
   

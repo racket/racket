@@ -7,9 +7,9 @@
 
 (provide-targets targets-at)
 
-(define (targets-at at-dir [vars (hash)])
-  (define expander (expander-target (make-at-dir (at-dir "../expander")) vars))
-
+(define (targets-at at-dir
+                    [vars (hash)]
+                    [expander (expander-target (make-at-dir (at-dir "../expander")) vars)])
   (define io.rktl (at-dir "compiled/io.rktl"))
   (define io-dep.rktd (at-dir "compiled/io-dep.rktd"))
   

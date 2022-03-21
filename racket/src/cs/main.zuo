@@ -1,4 +1,16 @@
 #lang zuo
+(require "../lib.zuo"
+         (only-in "../expander/main.zuo"
+                  expander-target
+                  [targets-at expander-targets-at])
+         (only-in "../thread/main.zuo"
+                  [targets-at thread-targets-at])
+         (only-in "../io/main.zuo"
+                  [targets-at io-targets-at])
+         (only-in "../regexp/main.zuo"
+                  [targets-at regexp-targets-at])
+         (only-in "../schemify/main.zuo"
+                  [targets-at schemify-targets-at]))
 
 (provide-targets targets-at)
 
@@ -15,6 +27,7 @@
   (define compress? #f)
   (define target-m #f)
   (define wpo? #t)
+  (define schemify? (not (equal? (lookup 'schemify) "f")))
 
   (define cso ".so")
   
@@ -69,6 +82,10 @@
   (define racket-init-args
     (list "false" (at-source "../../bin/racket") (at-source "../../bin/racket")
           "../collects" "../etc" "" "0" "false" "false" "0" ""))
+
+  (define expander
+    (and schemify?
+         (expander-target (make-at-dir (at-dir "../expander")) vars)))
 
   (define rumble-srcs
     (cons
@@ -167,6 +184,13 @@
            "config.ss"
            "cross-compile.ss")))
 
+  (define thread.scm (at-source "schemified/thread.scm"))
+  (define io.scm (at-source "schemified/io.scm"))
+  (define regexp.scm (at-source "schemified/regexp.scm"))
+  (define schemify.scm (at-source "schemified/schemify.scm"))
+  (define known.scm (at-source "schemified/known.scm"))
+  (define expander.scm (at-source "schemified/expander.scm"))
+
   (define (cat srcs dest)
     (define s (apply ~a (map file->string srcs)))
     (display-to-file s dest :truncate))
@@ -217,11 +241,21 @@
               ,(lambda (path token)
                  (compile-file src dest import-deps))])
 
+  (define (converter src-target [skip-export? #f])
+    (lambda (path token)
+      (apply racket/wait `(,vars
+                           "convert.rkt"
+                           ,@(if unsafe?
+                                 '("--unsafe")
+                                 '())
+                           ,@(if skip-export?
+                                 '("--skip-export")
+                                 '())
+                           ,(target-path src-target)
+                           ,path))))
 
   (make-targets
-   `(
-
-     [:target ,racket.so (,main.so ,@compile-file-deps)
+   `([:target ,racket.so (,main.so ,@compile-file-deps)
               ,(lambda (path token)
                  (if wpo?
                      (compile-file main.so path (list (at-dir "main.wpo")) #t)
@@ -231,24 +265,24 @@
                       (list (at-source "main/help.ss")))
 
      ,(library-target expander.so (at-source "expander.sls") expander-deps
-                      (list* (at-source "schemified/schemify.scm") (at-source "expander/env.ss")
+                      (list* expander.scm (at-source "expander/env.ss")
                              primitive-tables))
 
      ,(library-target linklet.so (at-source "linklet.sls") linklet-deps
                       linklet-srcs)
 
      ,(library-target schemify.so (at-source "schemify.sls") schemify-deps
-                      (list* (at-source "schemified/schemify.scm") (at-source "schemified/known.scm")
+                      (list* schemify.scm known.scm
                              primitive-tables))
 
      ,(library-target regexp.so (at-source "regexp.sls") regexp-deps
-                      (list (at-source "schemified/regexp.scm")))
+                      (list regexp.scm))
 
      ,(library-target io.so (at-source "io.sls") io-deps
-                      (list (at-source "io/terminal.ss") (at-source "schemified/io.scm")))
+                      (list io.scm (at-source "io/terminal.ss")))
 
      ,(library-target thread.so (at-source "thread.sls") thread-deps
-                      (list (at-source "schemified/thread.scm")))
+                      (list thread.scm))
 
      ,(library-target rumble.so (at-source "rumble.sls") rumble-deps
                       rumble-srcs)
@@ -267,5 +301,25 @@
                  (run-racket racket.so args))
               :quiet
               :command]
+
+     ,@(if schemify?
+           (let* ([thread.rktl (find-target "thread.rktl"
+                                            (thread-targets-at (make-at-dir (at-dir "../thread")) vars expander))]
+                  [io.rktl (find-target "io.rktl"
+                                        (io-targets-at (make-at-dir (at-dir "../io")) vars expander))]
+                  [regexp.rktl (find-target "regexp.rktl"
+                                            (regexp-targets-at (make-at-dir (at-dir "../regexp")) vars expander))]
+                  [schemify-targets (schemify-targets-at (make-at-dir (at-dir "../schemify")) vars expander)]
+                  [schemify.rktl (find-target "schemify.rktl" schemify-targets)]
+                  [known.rktl (find-target "known.rktl" schemify-targets)]
+                  [expander.rktl (find-target "expander.rktl"
+                                              (expander-targets-at (make-at-dir (at-dir "../expander")) vars expander))])
+             `([:target ,expander.scm (,expander.rktl) ,(converter expander.rktl)]
+               [:target ,known.scm (,known.rktl) ,(converter known.rktl 'skip-export)]
+               [:target ,schemify.scm (,schemify.rktl) ,(converter schemify.rktl 'skip-export)]
+               [:target ,regexp.scm (,regexp.rktl) ,(converter regexp.rktl)]
+               [:target ,io.scm (,io.rktl) ,(converter io.rktl)]
+               [:target ,thread.scm (,thread.rktl) ,(converter thread.rktl)]))
+           '())
 
      #;(end-of-make-targets))))
