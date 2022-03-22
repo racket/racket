@@ -3,7 +3,9 @@
          (only-in "../expander/main.zuo"
                   expander-target
                   expander-main
-                  register-expansion-dependencies))
+                  register-expansion-dependencies)
+         (only-in "../rktio/main.zuo"
+                  [targets-at rktio-targets-at]))
 
 (provide-targets targets-at)
 
@@ -12,11 +14,17 @@
                     [expander (expander-target (make-at-dir (at-dir "../expander")) vars)])
   (define io.rktl (at-dir "compiled/io.rktl"))
   (define io-dep.rktd (at-dir "compiled/io-dep.rktd"))
+
+  (define rktio-dir (at-source "../build/so-rktio"))
+  (mkdir-p rktio-dir)
+  (define rktio.rktl (find-target "rktio.rktl"
+                                  (rktio-targets-at (make-at-dir rktio-dir)
+                                                    vars)))
   
   (make-targets
    `([:target io-src (,io.rktl) ,void]
 
-     [:target ,io.rktl (,expander)
+     [:target ,io.rktl (,expander ,rktio.rktl)
               ,(lambda (path token)
                  (apply racket/wait (cons vars
                                           `(,(expander-main)
@@ -51,9 +59,21 @@
                                             "-o" ,path)))
                  (register-expansion-dependencies io-dep.rktd token))]
 
-     [:target demo ()
+     [:target demo (rktio-so)
               ,(lambda (token)
                  (raco/wait vars "make" (at-source "demo.rkt"))
                  (racket/wait vars (at-source "demo.rkt")))]
+
+     ;; this target is also used by "../cs/main.zuo":
+     [:target rktio-so ()
+              ,(lambda (token)
+                 (build (find-target "installed-shared-object"
+                                     (configured-targets-at (at-source "../rktio/configure")
+                                                            (list "--enable-standalone"
+                                                                  (~a "--prefix=" (path->complete-path (at-source "../.."))))
+                                                            (list (at-source "../rktio/Makefile.in"))
+                                                            (at-source "../build/so-rktio/Makefile")
+                                                            (at-source "../rktio/main.zuo")
+                                                            vars))))]
 
      [:db-dir ,(at-dir "compiled")])))

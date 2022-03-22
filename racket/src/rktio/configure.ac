@@ -26,8 +26,7 @@ use_flag_posix_pthread=no
 
 # For standalone builds:
 rktio_version=1.0
-HIDE_STANDALONE=hide_standalone_
-HIDE_NOT_STANDALONE=
+AS_STANDALONE=f
 
 ###### Autoconfigure #######
 
@@ -379,8 +378,7 @@ fi
 ############## libtool ################
 
 if test "${enable_standalone}" = "yes" ; then
-   HIDE_STANDALONE=""
-   HIDE_NOT_STANDALONE=hide_not_standalone_
+   AS_STANDALONE=t
    if test "${enable_shared}" = "" ; then
      enable_shared=yes
    fi
@@ -432,13 +430,13 @@ else
   ICP=cp
   LTO="o"
   LTA="a"
-  RKTLINKER='$(CC)'
+  RKTLINKER="$CC"
   STATIC_AR="$AR"
   LIBSFX=so
   ICP_LIB=cp
   if test "${make_darwin_dylib}" = "yes" ; then
      LIBSFX="dylib"
-     AR='$(RKTLINKER) --shared -o'
+     AR="${RKTLINKER} --shared -o"
      ARFLAGS=""
      LIBS="${LIBS} -framework CoreFoundation"
      ICP_LIB=cp
@@ -465,8 +463,7 @@ AC_SUBST(LIBSFX)
 AC_SUBST(LTO)
 AC_SUBST(LTA)
 
-AC_SUBST(HIDE_NOT_STANDALONE)
-AC_SUBST(HIDE_STANDALONE)
+AC_SUBST(AS_STANDALONE)
 
 AC_SUBST(RKTIO_NO_ICONV)
 

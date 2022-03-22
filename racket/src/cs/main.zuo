@@ -290,7 +290,7 @@
      ,(library-target chezpart.so (at-source "chezpart.sls") '()
                       '())
 
-     [:target run (,main.so)
+     [:target run (,main.so ,(find-target "rktio-so" (io-targets-at (make-at-dir (at-dir "../io")) vars)))
               ,(lambda (token . args)
                  (run-racket main.so args))
               :quiet
@@ -321,5 +321,7 @@
                [:target ,io.scm (,io.rktl) ,(converter io.rktl)]
                [:target ,thread.scm (,thread.rktl) ,(converter thread.rktl)]))
            '())
+
+     [:db-dir ,(at-dir "compiled")]
 
      #;(end-of-make-targets))))

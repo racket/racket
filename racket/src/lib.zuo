@@ -6,7 +6,10 @@
          raco/wait
          
          make-raco-driver
-         make-zo-target)
+         make-zo-target
+
+         shell-subst
+         configured-targets-at)
 
 (struct raco-driver (vars target config-getter))
 
@@ -117,3 +120,36 @@
            (hash-set config (car p) (cdr p)))
          (hash)
          l))
+
+(define (shell-subst str config)
+  (let loop ([i 0])
+    (cond
+      [(> (+ i 2) (string-length str)) str]
+      [(and (= (char "$") (string-ref str i))
+            (= (char "{") (string-ref str (+ i 1))))
+       (let ([end (let loop ([i (+ i 2)])
+                    (cond
+                      [(= i (string-length str)) (error "didn't find closer" str)]
+                      [(= (char "}") (string-ref str i)) i]
+                      [else (loop (+ i 1))]))])
+         (shell-subst (~a (substring str 0 i)
+                          (hash-ref config (string->symbol (substring str (+ i 2) end)))
+                          (substring str (+ end 1)))
+                      config))]
+      [else (loop (+ i 1))])))
+
+(define (configured-targets-at configure configure-args more-inputs output-makefile script vars)
+  (define dir (path-only output-makefile))
+  (build (target output-makefile
+                 (lambda (name token)
+                   (rule (list* configure
+                                (input-data-target 'configure-args configure-args)
+                                more-inputs)
+                         (lambda ()
+                           (shell/wait (apply build-shell
+                                              (map string->shell
+                                                   (cons (find-relative-path dir configure)
+                                                         configure-args)))
+                                       (hash 'dir dir)))))
+                 (hash 'quiet? #t)))
+  ((dynamic-require script 'targets-at) (make-at-dir dir) vars))
