@@ -2,6 +2,8 @@
    as possible. There should be little need for forward function
    declarations. */
 
+#define ZUO_VERSION 1
+
 #if defined(_MSC_VER) || defined(__MINGW32__)
 # define ZUO_WINDOWS
 #else
@@ -3960,15 +3962,19 @@ static zuo_t *zuo_make_runtime_env(zuo_t *exe_path, const char *load_file, int a
 #endif
 
 static zuo_t *zuo_finish_runtime_env(zuo_t *ht) {
+  ht = zuo_hash_set(ht, zuo_symbol("version"), zuo_integer(ZUO_VERSION));
+
   ht = zuo_hash_set(ht, zuo_symbol("dir"), zuo_current_directory());
   ht = zuo_hash_set(ht, zuo_symbol("env"), zuo_get_envvars());
 
   {
 #ifdef ZUO_UNIX
     zuo_t *type = zuo_symbol("unix");
+    ht = zuo_hash_set(ht, zuo_symbol("can-exec?"), z.o_true);
 #endif
 #ifdef ZUO_WINDOWS
     zuo_t *type = zuo_symbol("windows");
+    ht = zuo_hash_set(ht, zuo_symbol("can-exec?"), z.o_true);
 #endif
     ht = zuo_hash_set(ht, zuo_symbol("system-type"), type);
   }

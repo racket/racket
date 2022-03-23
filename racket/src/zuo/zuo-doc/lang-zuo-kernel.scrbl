@@ -77,7 +77,7 @@ in @racketmodname[zuo/kernel] (and the values originate there):
   bitwise-and bitwise-ior bitwise-xor bitwise-not
 
   string? string-length string-ref string-u32-ref substring string
-  string=? string-ci=? string-sha1
+  string=? string-ci=? string-sha1 string-split
 
   symbol? symbol->string string->symbol string->uninterned-symbol
   
@@ -98,7 +98,8 @@ in @racketmodname[zuo/kernel] (and the values originate there):
   handle? fd-open-input fd-open-output fd-close fd-read fd-write eof
   fd-terminal? cleanable-file cleanable-cancel
 
-  stat ls rm mv mkdir rmdir ln readlink cp runtime-env current-time
+  stat ls rm mv mkdir rmdir symlink readlink cp
+  runtime-env current-time
 
   process process-status process-wait string->shell shell->strings
 

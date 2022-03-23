@@ -9,6 +9,12 @@ parsing and expansion of the file content. Zuo, however, has a
 completely separate implementation. So, even though its programs start
 with @hash-lang[], Zuo programs are not meant to be run via Racket.
 
+While @racket[@#,hash-lang[] @#,racketmodname[zuo/base]] accesses a
+base language, the primary intended use of Zuo is with
+@racket[@#,hash-lang[] @#,racketmodname[zuo]], which includes the
+@racketmodname[zuo/build] library for using @seclink["zuo-build"]{Zuo
+as a @tt{make} replacement}.
+
 The name ``Zuo'' is derived from the Chinese word for ``make.''
 
 
@@ -23,7 +29,7 @@ You can also use @exec{configure}, @exec{make}, and @exec{make
 install}, where @exec{make} targets mostly invoke a Zuo script after
 compiling @filepath{zuo.c}. If you don't use @exec{configure} but
 compile to @exec{zuo} in the current directory, then @exec{./zuo
-local} and @exec{./zuo local install} (omit the !exec{./} on Windows)
+build.zuo} and @exec{./zuo build.zuo install} (omit the !exec{./} on Windows)
 will do the same thing as @exec{make} and @exec{make install} with
 a default configuration.
 
@@ -64,7 +70,7 @@ embedded as an image. Embedding an image has two advantages:
 
 ]
 
-The @filepath{image.zuo} script included with the Zuo sources
+The @filepath{local/image.zuo} script included with the Zuo sources
 generates a @filepath{.c} file that is a copy of @filepath{zuo.c} plus
 embedded modules. By default, the @racketmodname[zuo] module and its
 dependencies are included, but you can specify others with
@@ -72,11 +78,11 @@ dependencies are included, but you can specify others with
 disabled in the generated copy, unless you supply
 @DFlag{keep-collects} when running @filepath{image.zuo}.
 
-When you use @exec{configure} and @exec{make} @exec{./zuo local} to
+When you use @exec{configure} and @exec{make} @exec{./zuo build.zuo} to
 build Zuo, the default build target creates a @filepath{to-run/zuo}
 that embeds the @racketmodname[zuo] library, as well as a
 @filepath{to-install/zuo} that has the right internal path to find
-other libraries after @exec{make install} or @exec{./zuo local
+other libraries after @exec{make install} or @exec{./zuo build.zuo
 install}.
 
 You can use images without embedding. The @racket[dump-image-and-exit]
@@ -220,14 +226,14 @@ procedure of three arguments:
 
 The procedure must return a hash table representing the evaluated
 module. A @racket['read-and-eval] procedure might use
-@racket[read-from-string-all] to read input, it might use
+@racket[string-read] to read input, it might use
 @racket[kernel-eval] to evaluate read or generated terms, and it might
-use @racket[module->has] to access other modules in the process of
+use @racket[module->hash] to access other modules in the process of
 parsing a new module---but a @racket['read-and-eval] procedure is
 under no obligation to use any of those.
 
 A call @racket[(module->hash _M)] primitive checks whether the module
-@racket[_M] is already loaded and returns its hash if so. The
+@racket[_M] is already loaded and returns its hash table if so. The
 @racket[zuo/kernel] module is always preloaded, but other modules may
 be preloaded in an image that was created by
 @racket[dump-image-and-exit]. If a module @racket[_M] is not already
@@ -240,8 +246,9 @@ representation as a hash. That representation is both recorded for
 future use and returned from the original @racket[(module->hash _M)]
 call.
 
-The Zuo startup sequence assigns a meaning to a second key:
-@racket['submodules]. The value of @racket['submodules] should be a
-hash table that maps keys to thunks, each representing a submodule.
-When Zuo runs an initial script, it looks for a @racket['main]
-submodules and runs it (i.e., calls the thunk) if present.
+The Zuo startup sequence assigns a meaning to a second key in a
+module's hash table: @racket['submodules]. The value of
+@racket['submodules] should be a hash table that maps keys to thunks,
+each representing a submodule. When Zuo runs an initial script, it
+looks for a @racket['main] submodule and runs it (i.e., calls the
+thunk) if present.

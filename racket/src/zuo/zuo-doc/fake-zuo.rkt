@@ -49,6 +49,7 @@
 
     apply
     call/cc
+    call/prompt
     context-consumer
     context-consumer?
 
@@ -64,6 +65,13 @@
     remove
     list-ref
     list-set
+
+    andmap
+    ormap
+    map
+    filter
+    foldl
+    for-each
 
     not
     eq?
@@ -206,7 +214,7 @@
     build
     build/command-line
     build/command-line*
-    build/recur
+    build/dep
     provide-targets
     find-target
     make-at-dir

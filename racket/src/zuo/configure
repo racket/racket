@@ -73,5 +73,5 @@ echo "INSTALL_PREFIX = ${installprefix}" >> Makefile
 cat ${srcdir}/Makefile.in >> Makefile
 
 echo "#lang zuo" > main.zuo
-echo "(require "'"'"${srcdir}/local/main.zuo"'"'")" >> main.zuo
+echo "(require "'"'"${srcdir}/build.zuo"'"'")" >> main.zuo
 echo "(build/command-line* targets-at at-source)" >> main.zuo

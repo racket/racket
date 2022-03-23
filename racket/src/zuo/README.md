@@ -20,7 +20,7 @@ Some Example Scripts
 See [`local/hello.zuo`](local/hello.zuo),
 [`local/tree.zuo`](local/tree.zuo),
 [`local/image.zuo`](local/image.zuo), and
-[`local/main.zuo`](local/main.zuo).
+[`build.zuo`](build.zuo).
 
 
 Building and Running Zuo
@@ -33,7 +33,7 @@ needed, although flags like `-o zuo` or `-O2` are a good idea.
 You can also use `configure`, `make`, and `make install`, where `make`
 targets mostly invoke a Zuo script after compiling `zuo.c`. If you
 don't use `configure` but compile to `zuo` in the current directory,
-then `./zuo local` and `./zuo local install` (omit the `./` on Windows)
+then `./zuo build.zuo` and `./zuo build.zuo install` (omit the `./` on Windows)
 will do the same thing as `make` and `make install` with a default
 configuration.
 
@@ -42,7 +42,7 @@ command-line arguments, then it loads `main.zuo`. Otherwise, the first
 argument to Zuo is a file to run or a directory containing a
 `main.zuo` to run, and additional arguments are delivered to that Zuo
 program via the `runtime-env` procedure. Running the command
-`./zuo local install`, for example, runs the `local/main.zuo` program
+`./zuo build install`, for example, runs the `build/main.zuo` program
 with the argument `install`. Whatever initial script is run, if it has
 a `main` submodule, that submodule is also run.
 
@@ -71,10 +71,10 @@ addition, the default collection-root path is disabled in the
 generated copy, unless you supply `--keep-collects` to
 `local/image.zuo`.
 
-When you use `configure` and `make` or `./zuo local`, the default
+When you use `configure` and `make` or `./zuo build.zuo`, the default
 build target creates a `to-run/zuo` that embeds the `zuo` library, as
 well as a `to-install/zuo` that has the right internal path to find
-other libraries after `make install` or `./zuo local install`.
+other libraries after `make install` or `./zuo build.zuo install`.
 
 You can use heap images without embedding. The `dump-heap-and-exit`
 Zuo kernel permitive creates a heap image, and a `-B` or `--boot`

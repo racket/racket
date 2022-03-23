@@ -1,6 +1,5 @@
 #lang zuo
-(require "image.zuo"
-         "compile.zuo")
+(require "local/image.zuo")
 
 ;; Exports `targets` and also defines a `main` submodule
 ;; that handles command-line arguments and builds a target
@@ -47,16 +46,15 @@
             (lambda (path token)
               (rule (list image_zuo.c
                           (input-data-target 'config config)
-                          (quote-module-path)
-                          (at-source "compile.zuo"))
+                          (quote-module-path))
                     (lambda ()
                       (define l (split-path path))
                       (when (car l) (mkdir-p (car l)))
-                      (compile-c path
-                                 (target-path image_zuo.c)
-                                 (list (~a "-DZUO_LIB_PATH=" lib-path))
-                                 config
-                                 thread-process-wait))))))
+                      (c-compile path
+                                 (list (target-path image_zuo.c))
+                                 (config-merge config
+                                               'CPPFLAGS
+                                               (string->shell (~a "-DZUO_LIB_PATH=" lib-path)))))))))
 
   (define (add-exe name)
     (if (eq? (hash-ref (runtime-env) 'system-type) 'windows)

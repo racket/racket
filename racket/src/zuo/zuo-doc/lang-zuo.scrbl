@@ -1036,7 +1036,8 @@ keys are as follows, and supplying an unrecognized key in
       @racket[#f], the target executable is run in the current
       process, after waiting for any other subprocesses and deleting
       cleanables. A non-@racket[#f] value for @racket['exact?] is not
-      allowed on Windows.}
+      allowed on Windows or, more generally, when @racket[(hash-ref
+      (runtime-env) 'can-exec?)] produced @racket[#f].}
 
 ]
 
@@ -1222,9 +1223,9 @@ Zuo process. The hash table includes the following keys:
       process was started, not counting Zuo configuration arguments or
       the name of a script to run}
 
-@item{@racket[dir]: the current directory}
+@item{@racket['dir]: the current directory}
 
-@item{@racket[env]: a list of pairs of strings for environment variables}
+@item{@racket['env]: a list of pairs of strings for environment variables}
 
 @item{@racket['script]: the script provided to Zuo to run, which might
       be @racket[""] to indicate a script read from standard input}
@@ -1234,6 +1235,11 @@ Zuo process. The hash table includes the following keys:
 @item{@racket['system-type]: @racket['unix] or @racket['windows]}
 
 @item{@racket['sys-dir] (Windows only): the path to the system directory}
+
+@item{@racket['can-exec?]: a boolean whether @racket[process] supports
+      a true value for the @racket['exec?] option}
+
+@item{@racket['version]: Zuo's version number as an integer}
 
 ]}
 

@@ -66,7 +66,7 @@
                     (define out (fd-open-output stamp-file :truncate))
                     (for-each
                      (lambda (path)
-                       (build/recur path token)
+                       (build/dep path token)
                        ;; writing the hash of every file to "stamp-file" means that
                        ;; we expect any change to effect the way that the compiled
                        ;; file runs:

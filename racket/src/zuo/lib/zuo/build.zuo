@@ -25,7 +25,7 @@
          build
          build/command-line
          build/command-line*
-         build/recur
+         build/dep
 
          find-target
          make-at-dir
@@ -59,7 +59,7 @@
 (struct phony-rule (deps
                     build))
 
-;; During a target's `get-rule` or `build`, calls to `build/recur`
+;; During a target's `get-rule` or `build`, calls to `build/dep`
 ;; trigger recording of additional dependencies
 
 (define no-sha1 "")
@@ -208,7 +208,7 @@
                      log?))        ; logging enabled?
 
 ;; Main entry point to build a target `t`
-(define (build t-in [options (hash)] [token #f])
+(define (build t-in [token #f] [options (hash)])
   (let ([t (coerce-to-target* t-in)])
     (unless (target? t) (arg-error 'build "target or list of targets" t-in))
     (unless (hash? options) (arg-error 'build "hash table" options))
@@ -236,13 +236,13 @@
          (when resource-ch
            (acquire-resource state)))))))
 
-(define (build/recur t-in token)
-  (unless (token? token) (arg-error 'build/recur "build token" token))
+(define (build/dep t-in token)
+  (unless (token? token) (arg-error 'build/dep "build token" token))
   (let ([t (coerce-to-target t-in)])
-    (unless (target? t) (arg-error 'build/recur "target" t-in))
+    (unless (target? t) (arg-error 'build/dep "target" t-in))
     (when (and (symbol? (target-name t))
                (not (symbol? (target-name (token-target token)))))
-      (error "build/recur: cannot recur with a phony or data target"))
+      (error "build/dep: cannot recur with a phony or data target"))
     (let* ([state (channel-get (token-ch token))]
            [state (force-build t (do-build t state #t))]
            [state (record-target-accumulated state (token-target token) t)])
@@ -482,13 +482,13 @@
      (cond
        [(null? args) (if (null? targets)
                          (error "no targets to build")
-                         (build (car targets) opts))]
+                         (build (car targets) #f opts))]
        [else
         (let ([target1 (find-target (car args) targets)])
           (cond
             [(and target1 (hash-ref (target-options target1) 'command? #f))
              ;; provide extra arguments to the target:
-             (build (command-target->target target1 (cdr args)) opts)]
+             (build (command-target->target target1 (cdr args)) #f opts)]
             [else
              ;; treat all arguments as targets:
              (let ([run-targets (map (lambda (arg)
@@ -500,6 +500,7 @@
                           (make-target (string->uninterned-symbol "multi")
                                        (lambda (token)
                                          (make-phony-rule run-targets void))))
+                      #f
                       opts))]))]))))
 
 (define (build/command-line* targets-at [at-dir build-path] [opts (hash)])

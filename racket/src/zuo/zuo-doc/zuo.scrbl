@@ -11,6 +11,7 @@ Racket with primitives for dealing with files and running processes.
 
 @include-section["overview.scrbl"]
 @include-section["lang-zuo.scrbl"]
+@include-section["zuo-build.scrbl"]
 @include-section["zuo-lib.scrbl"]
 @include-section["lang-zuo-hygienic.scrbl"]
 @include-section["lang-zuo-datum.scrbl"]

@@ -61,7 +61,7 @@
                             [cmd (hash-set cmd 'deps deps-file)])
                        cmd))
         ;; register each source module as a discovered dependency:
-        (for-each (lambda (p) (build/recur p token))
+        (for-each (lambda (p) (build/dep p token))
                   (string-read (file->string deps-file) 0 deps-file)))))))
 
 (define (embed-image cmd)

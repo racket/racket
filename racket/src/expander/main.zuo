@@ -18,7 +18,7 @@
 
 (define (register-expansion-dependencies dep.rktd token)
   ;; register each dependency as a "source"
-  (map (lambda (s) (build/recur s token))
+  (map (lambda (s) (build/dep s token))
        (cdr (car (string-read (file->string dep.rktd))))))
 
 (define (targets-at at-dir

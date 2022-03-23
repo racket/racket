@@ -1,7 +1,7 @@
 #lang zuo
 (require "../makefiles/lib.zuo"
          "../makefiles/version.zuo"
-         (only-in "../examples/main.zuo"
+         (only-in "../examples/build.zuo"
                   [targets-at examples-targets-at]))
 
 (provide-targets targets-at)
@@ -695,7 +695,8 @@
      [:target ,build-examples-stamp ()
               ,(lambda (path token)
                  (mkdir-p (at-dir "../examples"))
-                 (build (find-target "all" (examples-targets-at (make-at-dir (at-dir "../examples")) vars)))
+                 (build (find-target "all" (examples-targets-at (make-at-dir (at-dir "../examples")) vars))
+                        token)
                  (fd-close (fd-open-output build-examples-stamp :truncate)))]
 
      [:target run ()
@@ -723,7 +724,8 @@
                                 (list "sumary" "testscript"))
                            (list prettytest.ss cat_flush.exe build-examples-stamp)))
                  (when (directory-exists? (at-dir "../examples"))
-                   (build (find-target "clean" (examples-targets-at (make-at-dir (at-dir "../examples")) vars)))))]
+                   (build (find-target "clean" (examples-targets-at (make-at-dir (at-dir "../examples")) vars))
+                          token)))]
 
      ;; rules for generating experr files
      ,@(fold-options

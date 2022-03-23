@@ -1,7 +1,7 @@
 #lang zuo
 (require "../makefiles/lib.zuo"
          "machine.zuo"
-         (only-in "../examples/main.zuo"
+         (only-in "../examples/build.zuo"
                   [targets-at examples-targets-at]))
 
 (provide-targets targets-at)
@@ -432,9 +432,10 @@
        ;; and it iterates up to three times to find a fixpoint
        [:target ,(at-dir "bootstrap") (,options-t ,@all-srcs)
                 ,(lambda (path token)
-                   (look-for-fixpoint 3 (lambda () (build (find-target "bootall" the-targets))))
+                   (look-for-fixpoint 3 (lambda () (build (find-target "bootall" the-targets) token)))
                    (build (map (lambda (file) (find-target file the-targets))
-                               (list scheme.h equates.h gc-ocd.inc gc-oce.inc gc-par.inc heapcheck.inc)))
+                               (list scheme.h equates.h gc-ocd.inc gc-oce.inc gc-par.inc heapcheck.inc))
+                          token)
                    (fd-close (fd-open-output path :truncate)))]
 
        ;; The `profiled` target goes through the involved process of
@@ -443,27 +444,32 @@
                 ,(lambda (token)
                    (profile-clean)
                    (build (find-target "all" (targets-at at-dir (hash-set vars
-                                                                          'p "t"))))
+                                                                          'p "t")))
+                          token)
                    (pretty-clean)
                    (build (find-target (~a "io." m) (targets-at at-dir (hash-set vars
-                                                                                 'dumpspd "t"))))
+                                                                                 'dumpspd "t")))
+                          token)
                    (pretty-clean)
                    (mkdir-p (at-boot "profile"))
                    (build (find-target "all" (targets-at at-dir (hash-set* vars
                                                                            'loadspd "t"
                                                                            'bp "t"
                                                                            'PETITE_BOOT "profile/petite.boot"
-                                                                           'SCHEME_BOOT "profile/scheme.boot"))))
+                                                                           'SCHEME_BOOT "profile/scheme.boot")))
+                          token)
                    (pretty-clean)
                    (build (find-target (~a "io." m) (targets-at at-dir (hash-set* vars
                                                                                   'loadspd "t"
                                                                                   'dumpbpd "t"
-                                                                                  'SCHEMEHEAPDIRS (build-path host-workarea "boot" host-m "profile")))))
+                                                                                  'SCHEMEHEAPDIRS (build-path host-workarea "boot" host-m "profile"))))
+                          token)
                    (rm* (at-boot "profile"))
                    (pretty-clean)
                    (build (find-target "all" (targets-at at-dir (hash-set* vars
                                                                            'loadspd "t"
-                                                                           'loadbpd "t")))))]
+                                                                           'loadbpd "t")))
+                          token))]
 
        ;; The usual `clean` target:
        [:target clean ()
@@ -490,7 +496,8 @@
        [:target examples ()
                 ,(lambda (token)
                    (mkdir-p (at-dir "../examples"))
-                   (build (find-target "all" (examples-targets-at (make-at-dir (at-dir "../examples")) vars))))]
+                   (build (find-target "all" (examples-targets-at (make-at-dir (at-dir "../examples")) vars))
+                          token))]
 
        ;; Internal targets ----------------------------------------
 

@@ -48,8 +48,8 @@
      `(
        [:target build ()
                 ,(lambda (token)
-                   (build (find-target "bootfiles" the-targets) (hash) token)
-                   (build (find-target racket.boot the-targets) (hash) token))]
+                   (build (find-target "bootfiles" the-targets) token)
+                   (build (find-target racket.boot the-targets) token))]
        
        [:target ,racket.boot (,(find-target "racket.so" cs-targets))
                 ,(lambda (path token)
@@ -71,7 +71,7 @@
                    (define m-targets (scheme-targets-at (make-at-dir (at-dir CS m))
                                                         (hash-set* config
                                                                    'm m)))
-                   (build (find-target "build" m-targets) (hash) token))]
+                   (build (find-target "build" m-targets) token))]
        
        ,@(cond
            [(directory-exists? (at-source "../../ChezScheme/boot/pb"))
@@ -85,9 +85,8 @@
                                                                            'm "pb"
                                                                            'defaultm m)))
                           
-                          (build (command-target->target (find-target "bootquick-needed" pb-targets)
+                          (build (command-target->target (find-target "bootquick" pb-targets)
                                                          (list m))
-                                 (hash)
                                  token))])])
 
        
