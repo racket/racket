@@ -269,7 +269,7 @@
 		   ((dynamic-require (at-source "winlib.zuo") 'build-zlib) zlib-dir (as-runtime-dll? config))]
 		  [else
                    (define configure-command
-                     (build-shell "./configure" (hash-ref config 'zlibConfigureFlags)))
+                     (build-shell "./configure" (hash-ref config 'zlibConfigureFlags "")))
                    (cond
                      [(for-windows? config)
                       ;; configure cross-compile for windows
@@ -288,7 +288,7 @@
                       (shell/wait configure-command
                                   (hash 'dir zlib-dir
                                         'env (add-to-env
-                                              (hash-ref config 'zlibConfigureEnv)
+                                              (hash-ref config 'zlibConfigureEnv "")
                                               (config-to-env)))
                                   "libz configure")])
                    (define make-command (hash-ref config 'MAKE "make"))
@@ -460,7 +460,7 @@
 (define (for-windows? config)
   (or (eq? 'windows (system-type))
       (glob-match? "*nt" (hash-ref config 'm))
-      (glob-match? "*nt" (or (hash-ref config 'defaultm) ""))))
+      (glob-match? "*nt" (or (hash-ref config 'defaultm #f) ""))))
 
 (define (lib-build-suffix config)
   (if (eq? 'windows (system-type))

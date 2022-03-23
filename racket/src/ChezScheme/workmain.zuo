@@ -16,7 +16,7 @@
   (define Mf-config (at-dir "Mf-config"))
   (unless (file-exists? Mf-config)
     (error "no \"Mf-config\" - not running from a build directory?"))
-  (define config (config-file->hash Mf-config))
+  (define config (config-file->hash Mf-config vars))
 
   (define m (hash-ref config 'm))
   (define mboot (hash-ref config 'mboot m))
@@ -74,7 +74,7 @@
   (define (cross-build-boot token args ccopts make-targets)
     (unless (<= (length args) 1) (error "expected optional <machine>" args))
     (define xm (if (null? args)
-                   (hash-ref config 'defaultm)
+                   (hash-ref config 'defaultm m)
                    (car args)))
     (define dir (at-dir ".." (~a "xc-" xm)))
     (define s-dir (build-path dir "s"))
@@ -85,7 +85,7 @@
                      (build-path dir "Mf-config")
                      :truncate)
     (let ([targets (s-targets-at (make-at-dir s-dir)
-                                 vars
+                                 (hash-remove vars 'm)
                                  ccopts)])
       (build (map (lambda (t) (find-target t targets)) make-targets)
              (hash)
@@ -172,6 +172,18 @@
                 ,(lambda (token . args)
                    (check-not-kernel-only)
                    (cross-build-boot/safe+examples token args))
+                :command]
+
+       [:target bootquick-needed (kernel)
+                ,(lambda (token xm)
+                   (check-not-kernel-only)
+                   (define (at-boot name) (at-dir "../boot" xm name))
+                   (build (target (at-boot (car boot-file-names))
+                                  (lambda (path token)
+                                    (rule boot-files
+                                          (lambda ()
+                                            (cross-build-boot token (list xm) (hash) '("all")))))
+                                  (hash 'co-outputs (map at-boot (cdr boot-file-names))))))
                 :command]
 
        [:target bootfiles (build)

@@ -84,7 +84,7 @@
 ;; All relative file names are stored relative to `db-dir`, which
 ;; defaults to the directory of target-path. On entry, `target-path`
 ;; and keys in `ts` are relative to the current directory.
-(define (db-record-target-sha1s maybe-db-dir target-path ts)
+(define (db-record-target-sha1s maybe-db-dir target-path ts co-outputs)
   (db-paths
    maybe-db-dir target-path
    (lambda (rel-target-path db-dir db-path tc-path)
@@ -111,7 +111,10 @@
                      [time (reassoc (list dep-name time (cadr dep)) tc-content)]
                      [else tc-content])]))
               tc-content
-              (cons (list rel-target-path (car ts)) dep-sha1s-l)))
+              (if (pair? co-outputs)
+                  (append (split-sha1s rel-target-path co-outputs (car ts) db-dir)
+                          dep-sha1s-l)
+                  (cons (list rel-target-path (car ts)) dep-sha1s-l))))
      (update-file db-path new-db-content)
      (update-file tc-path new-tc-content))))
 
@@ -167,6 +170,21 @@
                     (equal? (car cached) timestamp))
                (cadr cached)
                (string-sha1 (file->string path)))))))
+
+;; Split "sha1", which should have a sha1 for each of `rel-target-path`
+;; and each element of `co-outputs`, into a list of sha1s
+(define (split-sha1s rel-target-path co-outputs sha1 db-dir)
+  (cons (list rel-target-path (substring sha1 0 40))
+        (let loop ([co-outputs co-outputs] [start 40])
+          (cond
+            [(null? co-outputs) '()]
+            [else
+             (let ([co-output (car co-outputs)])
+               (cons (list (if (relative-path? co-output)
+                               (find-relative-path db-dir co-output)
+                               co-output)
+                           (substring sha1 start (+ start 40)))
+                     (loop (cdr co-outputs) (+ start 40))))]))))
 
 ;; Atomic write by write-to-temporary-and-move
 (define (update-file path new-content)

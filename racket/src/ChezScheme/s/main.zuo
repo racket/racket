@@ -432,7 +432,7 @@
        ;; and it iterates up to three times to find a fixpoint
        [:target ,(at-dir "bootstrap") (,options-t ,@all-srcs)
                 ,(lambda (path token)
-<                   (look-for-fixpoint 3 (lambda () (build (find-target "bootall" the-targets))))
+                   (look-for-fixpoint 3 (lambda () (build (find-target "bootall" the-targets))))
                    (build (map (lambda (file) (find-target file the-targets))
                                (list scheme.h equates.h gc-ocd.inc gc-oce.inc gc-par.inc heapcheck.inc)))
                    (fd-close (fd-open-output path :truncate)))]

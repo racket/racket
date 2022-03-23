@@ -14,7 +14,7 @@
 
 (provide-targets targets-at)
 
-(define (targets-at at-dir [vars (hash)])
+(define (targets-at at-dir [vars (hash)] [extra-compile-file-deps '()])
   (define config (let ([p (at-dir "../Mf-config")])
                    (if (file-exists? p)
                        (config-file->hash p vars)
@@ -23,6 +23,7 @@
 
   (define scheme (or (lookup 'scheme)
                      (find-executable-path (.exe "scheme"))))
+  (define scheme-args (or (lookup 'scheme-args) '()))
   (define unsafe? #t)
   (define compress? #f)
   (define target-m #f)
@@ -32,7 +33,9 @@
   (define cso ".so")
   
   (define compile-file-deps
-    (map at-source '("compile-file.ss" "include.ss" "place-register.ss")))
+    (append
+     extra-compile-file-deps
+     (map at-source '("compile-file.ss" "include.ss" "place-register.ss"))))
 
   (define chezpart.so
     (at-dir (~a "chezpart" cso)))
@@ -198,6 +201,7 @@
   (define (run-racket main.so args)
     (define p (process/args scheme
                             (append
+                             scheme-args
                              (list "--disable-library-timestamps"
                                    "--libdirs" (at-dir "."))
                              (list "--script" main.so)
@@ -209,8 +213,9 @@
     (process-wait (hash-ref p 'process)))
 
   (define (compile-file src dest loads [whole-program? #f])
-    (define args (append (list scheme
-                               "--script"
+    (define args (append (list scheme)
+                         scheme-args
+                         (list "--script"
                                (at-source "compile-file.ss"))
                          (if unsafe?
                              (list "--unsafe")

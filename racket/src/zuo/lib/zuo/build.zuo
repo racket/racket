@@ -48,7 +48,7 @@
                 name      ; a symbol or path relative to the current directory
                 get-rule  ; (name token -> rule), where `name` is relative to current directory
                 kind      ; 'normal, 'input, or 'phony
-                options)) ; 'precious? or 'command?
+                options)) ; keys include 'precious?, 'command?, and 'co-outputs
 
 ;; A rule is a result from `get-rule`:
 (struct rule (deps        ; list of targets
@@ -67,7 +67,10 @@
 (define (sha1? s)
   (or (and (string? s)
            (or (= (string-length s) 40)
-               (string=? s no-sha1)))
+               (string=? s no-sha1)
+               ;; also allow a concatenation of SHA-1s for multi-file targets
+               (and (>= (string-length s) 40)
+                    (= 0 (modulo (string-length s) 40)))))
       (eq? s phony-sha1)))
 
 ;; public constructor
@@ -282,6 +285,9 @@
 ;; Starts a build for a specific target
 (define (build-unbuilt t state top?)
   (define path (target-name t))
+  (define co-outputs (if (string? path)
+                         (hash-ref (target-options t) 'co-outputs '())
+                         '()))
   (define alert-top? (and top? (not (hash-ref (target-options t) 'quiet? #f))))
   (define dep-top? (and alert-top? (symbol? path)))
 
@@ -307,7 +313,9 @@
   (unless (rule? r)
     (error "build: target result is not a rule" r))
   (define deps (rule-deps r))
-  (define sha1 (or (rule-sha1 r) (file-sha1 path tok)))
+  (define sha1 (or (rule-sha1 r) (if (pair? co-outputs)
+                                     (files-sha1 (cons path co-outputs) tok)
+                                     (file-sha1 path tok))))
   (define to-build (rule-build r))
   (define build-to-sha1? (and (rule-sha1 r) #t))
 
@@ -411,11 +419,15 @@
        (let* ([maybe-sha1 (to-build)] ; build!
               [sha1 (if build-to-sha1?
                         maybe-sha1
-                        (file-sha1 path tok))])
+                        (if (pair? co-outputs)
+                            (files-sha1 (cons path co-outputs) tok)
+                            (file-sha1 path tok)))])
          (unless (sha1? sha1)
            (error "build: target-build result is not a sha1" sha1))
          (when (equal? sha1 no-sha1)
-           (error "rule for target did not create it" path))
+           (error "rule for target did not create it" (if (pair? co-outputs)
+                                                          (cons path co-outputs)
+                                                          path)))
          (when path-handle (cleanable-cancel path-handle))
          (finish
           (lambda (state)
@@ -424,7 +436,7 @@
                            (cons no-sha1 (hash))
                            (cons sha1 dep-sha1s))]
                    [ts (merge-target-accumulated state t ts)]
-                   [state (update-target-state/record-sha1s state t ts)])
+                   [state (update-target-state/record-sha1s state t ts co-outputs)])
               state)))))
      (let ([state-ch (build-state-ch newer-state)])
        (cond
@@ -536,7 +548,9 @@
                   (or (= t-len len)
                       (= (char "/") (string-ref t-name (- start 1)))
                       (= (char "\\") (string-ref t-name (- start 1)))))))))
-  (ormap (lambda (t) (and (matches? (target-name t)) t))
+  (ormap (lambda (t) (and (or (matches? (target-name t))
+                              (ormap matches? (hash-ref (target-options t) 'co-outputs '())))
+                          t))
          targets))
 
 (define (command-target? t)
@@ -619,13 +633,10 @@
                                           (target-key t)
                                           ts)))
 
-(define (update-target-state/record-sha1s state t ts)
+(define (update-target-state/record-sha1s state t ts co-outputs)
   (unless (eq? 'phony (target-kind t))
-    (record-target-sha1s state t ts))
+    (db-record-target-sha1s (target-db-dir t) (target-name t) ts co-outputs))
   (update-target-state state t ts))
-
-(define (record-target-sha1s state t ts)
-  (db-record-target-sha1s (target-db-dir t) (target-name t) ts))
 
 (define (load-sha1s state t path)
   (cond
@@ -663,6 +674,12 @@
   (let ([state (and token (channel-get (token-ch token)))])
     (when state (channel-put (token-ch token) state))
     (file-sha1/state path state)))
+
+(define (files-sha1 paths token)
+  (let ([sha1s (map (lambda (path) (file-sha1 path token)) paths)])
+    (if (ormap (lambda (s) (string=? s no-sha1)) sha1s)
+        no-sha1
+        (apply ~a sha1s))))
 
 (define (file-sha1/state path state)
   (or (file-sha1/cached path (and state (build-state-time-cache state)))
@@ -728,7 +745,10 @@
                                          (>= (length spec) 4)
                                          (procedure? (list-ref spec 3))
                                          (or (path-string? (list-ref spec 1))
-                                             (symbol? (list-ref spec 1)))
+                                             (symbol? (list-ref spec 1))
+                                             (and (pair? (list-ref spec 1))
+                                                  (list? (list-ref spec 1))
+                                                  (andmap path-string? (list-ref spec 1))))
                                          (andmap (lambda (t) (hash-ref keyword-to-option t #f))
                                                  (list-tail spec 4)))
                                     (and (eq? (car spec) ':depend)
@@ -773,11 +793,25 @@
                       (hash)
                       specs))
   (define target-vars (foldl (lambda (spec target-vars)
-                               (let* ([name (list-ref spec 1)]
-                                      [key (name->key name)])
-                                 (when (hash-ref target-vars key #f)
-                                   (error "make-targets: duplicate target" name))
-                                 (hash-set target-vars key (variable key))))
+                               (let* ([names (list-ref spec 1)]
+                                      [name (if (pair? names) (car names) names)]
+                                      [key (name->key name)]
+                                      [var (variable key)])
+                                 (cond
+                                   [(pair? names)
+                                    (foldl (lambda (name target-vars)
+                                             (let ([key (name->key name)])
+                                               (when (hash-ref target-vars key #f)
+                                                 (error "make-targets: duplicate target" name))
+                                               (hash-set target-vars key var)))
+                                           target-vars
+                                           (if (pair? names)
+                                               names
+                                               (list name)))]
+                                   [else
+                                    (when (hash-ref target-vars key #f)
+                                      (error "make-targets: duplicate target" name))
+                                    (hash-set target-vars key var)])))
                              (hash)
                              target-specs))
   (define dep->target (lambda (dep)
@@ -792,10 +826,18 @@
                                (hash 'db-dir db-dir)
                                (hash))))
   (define targets (foldl (lambda (spec targets)
-                           (let* ([name (list-ref spec 1)]
+                           (let* ([names (list-ref spec 1)]
+                                  [name (if (pair? names) (car names) names)]
                                   [key (name->key name)]
                                   [var (hash-ref target-vars key)]
-                                  [get-deps (lambda () (map dep->target (reverse (hash-ref deps key '()))))]
+                                  [get-deps (lambda ()
+                                              (if (pair? names)
+                                                  (apply append
+                                                         (map (lambda (name)
+                                                                (let ([key (name->key name)])
+                                                                  (map dep->target (reverse (hash-ref deps key '())))))
+                                                              names))
+                                                  (map dep->target (reverse (hash-ref deps key '())))))]
                                   [t (make-target name
                                                   (if (symbol? name)
                                                       (lambda (token . args)
@@ -808,7 +850,11 @@
                                                                      ((list-ref spec 3) path token)))))
                                                   (foldl (lambda (tag options)
                                                            (hash-set options (hash-ref keyword-to-option tag) #t))
-                                                         shared-options
+                                                         (let* ([options shared-options]
+                                                                [options (if (pair? names)
+                                                                             (hash-set options 'co-outputs (cdr names))
+                                                                             options)])
+                                                           options)
                                                          (if (eq? (car spec) ':target)
                                                              (list-tail spec 4)
                                                              '())))])

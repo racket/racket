@@ -1,6 +1,8 @@
 #lang zuo
 
-(provide racket
+(provide hash-set*
+
+         racket
          racket/wait
          raco
          raco/wait
@@ -10,6 +12,13 @@
 
          shell-subst
          configured-targets-at)
+
+(define (hash-set* ht . keys+vals)
+  (let loop ([ht ht] [keys+vals keys+vals])
+    (if (null? keys+vals)
+        ht
+        (loop (hash-set ht (car keys+vals) (cadr keys+vals))
+              (cddr keys+vals)))))
 
 (struct raco-driver (vars target config-getter))
 

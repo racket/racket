@@ -144,15 +144,12 @@ skip_curses_check=no
 use_flag_pthread=yes
 use_flag_posix_pthread=no
 
-INCLUDEDEP="#"
-OSX="not_osx"
-NOT_OSX=""
-MINGW="not_mingw"
-NOT_MINGW=""
+OSX="f"
+MINGW="f"
 CONFIGURE_RACKET_SO_COMPILE=""
 COMPRESS_COMP=""
 BOOT_COMPRESS_COMP=""
-POST_LINKER="echo"
+POST_LINKER=""
 
 FRAMEWORK_INSTALL_DIR='$(libpltdir)'
 FRAMEWORK_PREFIX='@executable_path/../lib/'
@@ -165,12 +162,8 @@ SETUP_BOOT_MODE=--boot
 INSTALL_SETUP_FLAGS="--no-user"
 INSTALL_SETUP_RACKET_FLAGS=
 
-Z_LIB_DEP='$(OWN_Z_LIB)'
-Z_LIB='$(OWN_Z_LIB)'
-Z_LIB_UNPACK='$(AR) x $(OWN_Z_LIB)'
-LZ4_LIB_DEP='$(OWN_LZ4_LIB)'
-LZ4_LIB='$(OWN_LZ4_LIB)'
-LZ4_LIB_UNPACK='$(AR) x $(OWN_LZ4_LIB)'
+Z_LIB=''
+LZ4_LIB=''
 
 CS_HOST_WORKAREA_PREFIX=
 
@@ -294,8 +287,7 @@ case "$host_os" in
     use_flag_pthread=no
     MACH_OS=nt
     LIBS="${LIBS} -lshell32 -luser32 -lole32 -lrpcrt4 -luuid -lws2_32 -ladvapi32 -lwinmm"
-    MINGW=""
-    NOT_MINGW="mingw"
+    MINGW="t"
     compress_boot_files_by_default=yes
     if `which ${host}-windres > /dev/null` ; then
       WINDRES="${host}-windres"
@@ -313,9 +305,7 @@ case "$host_os" in
     LIBS="${LIBS} -framework CoreFoundation"
     LDFLAGS="${LDFLAGS} -Wl,-headerpad_max_install_names"
     if test "${enable_xonx}" = "no" ; then
-      INCLUDEDEP="-include"
-      OSX=""
-      NOT_OSX="osx"
+      OSX="t"
     else
       CONFIGURE_RACKET_SO_COMPILE="env PLT_CS_MAKE_UNIX_STYLE_MACOS=y"
       CPPFLAGS="${CPPFLAGS} -DRACKET_XONX"
@@ -598,20 +588,6 @@ m4_include(../ac/ubsan.m4)
 
 m4_include(../ac/asan.m4)
 
-############## Makefile includes ################
-
-if test "$INCLUDEDEP" = "#" ; then
-  is_gmake=`make -v no-such-target-we-hope 2>&1 | grep "GNU Make"`
-  if test "$is_gmake" != "" ; then
-     INCLUDEDEP="-include"
-  fi
-fi
-
-if test "$INCLUDEDEP" != "#" ; then
-  RKTL_PRE="compiled/"
-  RKTL_POST=".rktl"
-fi
-
 ############## C flags ################
 
 AC_LANG_C
@@ -687,9 +663,7 @@ if test "${enable_libz}" = "yes" ; then
     LIBS="${OLD_LIBS}"
     echo "Building own libz"
   else
-    Z_LIB_DEP=""
     Z_LIB="-lz"
-    Z_LIB_UNPACK='$(NOOP)'
     extra_scheme_config_args="${extra_scheme_config_args} ZLIB=-lz"
   fi
 fi
@@ -709,9 +683,7 @@ if test "${enable_liblz4}" = "yes" ; then
     LIBS="${OLD_LIBS}"
     echo "Building own liblz4"
   else
-    LZ4_LIB_DEP=""
     LZ4_LIB="-llz4"
-    LZ4_LIB_UNPACK='$(NOOP)'
     extra_scheme_config_args="${extra_scheme_config_args} LZ4=-llz4"
   fi
 fi
@@ -871,7 +843,6 @@ AC_SUBST(STRIP_SIGNATURE)
 AC_SUBST(RESTORE_SIGNATURE)
 AC_SUBST(RKTLINKER)
 AC_SUBST(POST_LINKER)
-AC_SUBST(INCLUDEDEP)
 AC_SUBST(RKTL_PRE)
 AC_SUBST(RKTL_POST)
 AC_SUBST(RACKET)
@@ -889,15 +860,9 @@ AC_SUBST(MAKE_SCHEME_SCHEME)
 AC_SUBST(USE_SCHEME_MODE)
 AC_SUBST(SETUP_BOOT_MODE)
 AC_SUBST(OSX)
-AC_SUBST(NOT_OSX)
 AC_SUBST(MINGW)
-AC_SUBST(NOT_MINGW)
-AC_SUBST(Z_LIB_DEP)
 AC_SUBST(Z_LIB)
-AC_SUBST(Z_LIB_UNPACK)
-AC_SUBST(LZ4_LIB_DEP)
 AC_SUBST(LZ4_LIB)
-AC_SUBST(LZ4_LIB_UNPACK)
 AC_SUBST(CONFIGURE_RACKET_SO_COMPILE)
 AC_SUBST(COMPRESS_COMP)
 AC_SUBST(BOOT_COMPRESS_COMP)

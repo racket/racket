@@ -645,15 +645,9 @@ MAKE_BUILD_SCHEME
 BOOT_COMPRESS_COMP
 COMPRESS_COMP
 CONFIGURE_RACKET_SO_COMPILE
-LZ4_LIB_UNPACK
 LZ4_LIB
-LZ4_LIB_DEP
-Z_LIB_UNPACK
 Z_LIB
-Z_LIB_DEP
-NOT_MINGW
 MINGW
-NOT_OSX
 OSX
 SETUP_BOOT_MODE
 USE_SCHEME_MODE
@@ -671,7 +665,6 @@ BOOTFILE_RACKET
 RACKET
 RKTL_POST
 RKTL_PRE
-INCLUDEDEP
 POST_LINKER
 RKTLINKER
 RESTORE_SIGNATURE
@@ -3274,15 +3267,12 @@ skip_curses_check=no
 use_flag_pthread=yes
 use_flag_posix_pthread=no
 
-INCLUDEDEP="#"
-OSX="not_osx"
-NOT_OSX=""
-MINGW="not_mingw"
-NOT_MINGW=""
+OSX="f"
+MINGW="f"
 CONFIGURE_RACKET_SO_COMPILE=""
 COMPRESS_COMP=""
 BOOT_COMPRESS_COMP=""
-POST_LINKER="echo"
+POST_LINKER=""
 
 FRAMEWORK_INSTALL_DIR='$(libpltdir)'
 FRAMEWORK_PREFIX='@executable_path/../lib/'
@@ -3295,12 +3285,8 @@ SETUP_BOOT_MODE=--boot
 INSTALL_SETUP_FLAGS="--no-user"
 INSTALL_SETUP_RACKET_FLAGS=
 
-Z_LIB_DEP='$(OWN_Z_LIB)'
-Z_LIB='$(OWN_Z_LIB)'
-Z_LIB_UNPACK='$(AR) x $(OWN_Z_LIB)'
-LZ4_LIB_DEP='$(OWN_LZ4_LIB)'
-LZ4_LIB='$(OWN_LZ4_LIB)'
-LZ4_LIB_UNPACK='$(AR) x $(OWN_LZ4_LIB)'
+Z_LIB=''
+LZ4_LIB=''
 
 CS_HOST_WORKAREA_PREFIX=
 
@@ -4466,8 +4452,7 @@ case "$host_os" in
     use_flag_pthread=no
     MACH_OS=nt
     LIBS="${LIBS} -lshell32 -luser32 -lole32 -lrpcrt4 -luuid -lws2_32 -ladvapi32 -lwinmm"
-    MINGW=""
-    NOT_MINGW="mingw"
+    MINGW="t"
     compress_boot_files_by_default=yes
     if `which ${host}-windres > /dev/null` ; then
       WINDRES="${host}-windres"
@@ -4485,9 +4470,7 @@ case "$host_os" in
     LIBS="${LIBS} -framework CoreFoundation"
     LDFLAGS="${LDFLAGS} -Wl,-headerpad_max_install_names"
     if test "${enable_xonx}" = "no" ; then
-      INCLUDEDEP="-include"
-      OSX=""
-      NOT_OSX="osx"
+      OSX="t"
     else
       CONFIGURE_RACKET_SO_COMPILE="env PLT_CS_MAKE_UNIX_STYLE_MACOS=y"
       CPPFLAGS="${CPPFLAGS} -DRACKET_XONX"
@@ -5041,20 +5024,6 @@ if test "${enable_asan}" = "yes" ; then
    LDFLAGS="$LDFLAGS $ASAN"
 fi
 
-
-############## Makefile includes ################
-
-if test "$INCLUDEDEP" = "#" ; then
-  is_gmake=`make -v no-such-target-we-hope 2>&1 | grep "GNU Make"`
-  if test "$is_gmake" != "" ; then
-     INCLUDEDEP="-include"
-  fi
-fi
-
-if test "$INCLUDEDEP" != "#" ; then
-  RKTL_PRE="compiled/"
-  RKTL_POST=".rktl"
-fi
 
 ############## C flags ################
 
@@ -5825,9 +5794,7 @@ $as_echo "$have_zlib" >&6; }
     LIBS="${OLD_LIBS}"
     echo "Building own libz"
   else
-    Z_LIB_DEP=""
     Z_LIB="-lz"
-    Z_LIB_UNPACK='$(NOOP)'
     extra_scheme_config_args="${extra_scheme_config_args} ZLIB=-lz"
   fi
 fi
@@ -5863,9 +5830,7 @@ $as_echo "$have_lz4" >&6; }
     LIBS="${OLD_LIBS}"
     echo "Building own liblz4"
   else
-    LZ4_LIB_DEP=""
     LZ4_LIB="-llz4"
-    LZ4_LIB_UNPACK='$(NOOP)'
     extra_scheme_config_args="${extra_scheme_config_args} LZ4=-llz4"
   fi
 fi
@@ -6131,13 +6096,6 @@ done
 
 SCHEME_CONFIG_ARGS="--machine=${KERNEL_MACH} --disable-x11 ${disable_curses_arg} ${cs_auto_flags} ${extra_scheme_config_args}"
 SCHEME_CROSS_CONFIG_ARGS="--machine=${KERNEL_TARGET_MACH} --disable-x11 ${cs_auto_flags} ${disable_curses_arg} ${extra_scheme_config_args}"
-
-
-
-
-
-
-
 
 
 
