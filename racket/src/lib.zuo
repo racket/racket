@@ -2,10 +2,14 @@
 
 (provide hash-set*
 
+         string-tree->shell
+
+         process/wait
+
          racket
-         racket/wait
+         racket/process
          raco
-         raco/wait
+         raco/process
          
          make-raco-driver
          make-zo-target
@@ -20,37 +24,46 @@
         (loop (hash-set ht (car keys+vals) (cadr keys+vals))
               (cddr keys+vals)))))
 
+(define (process/wait command . args)
+  (define p (apply process (cons command args)))
+  (process-wait (hash-ref p 'process))
+  (unless (= 0 (process-status (hash-ref p 'process)))
+    (error "failed")))
+
 (struct raco-driver (vars target config-getter))
 
 (define (find-racket vars)
   (or (hash-ref vars 'racket #f)
       (at-source "../bin" (.exe "racket"))))
 
-(define (racket vars . args)
+(define (string-tree->shell . args)
+  (build-shell (let loop ([args args])
+                 (cond
+                   [(string? args)
+                    (string->shell args)]
+                   [(list? args)
+                    (map loop args)]
+                   [else ""]))))
+
+(define (racket/process vars . args)
   (define racket-exe (find-racket vars))
   (fd-write (fd-open-output 'stdout)
-            (~a (apply build-shell (list* (string->shell racket-exe)
-                                          (map (lambda (arg)
-                                                 (if (string? arg)
-                                                     (string->shell arg)
-                                                     ""))
-                                               args)))
-                "\n"))
+            (~a (string-tree->shell (cons racket-exe args)) "\n"))
   (apply process (list* racket-exe args)))
 
-(define (racket/wait vars . args)
-  (define p (apply racket (cons vars args)))
+(define (racket vars . args)
+  (define p (apply racket/process (cons vars args)))
   (process-wait (hash-ref p 'process))
   (unless (= 0 (process-status (hash-ref p 'process)))
     (error "failed")))
 
-(define (raco vars . args)
-  (apply racket (list* vars
-                       "-N" "raco" "-l-" "raco"
-                       args)))
+(define (raco/process vars . args)
+  (apply racket/process (list* vars
+                               "-N" "raco" "-l-" "raco"
+                               args)))
 
-(define (raco/wait vars . args)
-  (define p (apply raco (cons vars args)))
+(define (raco vars . args)
+  (define p (apply raco/process (cons vars args)))
   (process-wait (hash-ref p 'process))
   (unless (= 0 (process-status (hash-ref p 'process)))
     (error "failed")))
@@ -61,7 +74,7 @@
             (rule (list (raco-driver-target raco-driver))
                   (lambda ()
                     (define vars (raco-driver-vars raco-driver))
-                    (raco/wait vars "make" src)
+                    (raco vars "make" src)
                     (define paths (get-dependencies vars src))
                     (define out (fd-open-output stamp-file :truncate))
                     (for-each
@@ -98,10 +111,10 @@
      (load-racket-configuration racket-config.db))))
 
 (define (extract-racket-configuration vars)
-  (define p (racket vars
-                    (at-source "zuo-help.rkt")
-                    "--get-config"
-                    (hash 'stdout 'pipe)))
+  (define p (racket/process vars
+                            (at-source "zuo-help.rkt")
+                            "--get-config"
+                            (hash 'stdout 'pipe)))
   (define config-str (fd-read (hash-ref p 'stdout) eof))
   (process-wait (hash-ref p 'process))
   (unless (= 0 (process-status (hash-ref p 'process)))
@@ -147,8 +160,11 @@
                       config))]
       [else (loop (+ i 1))])))
 
-(define (configured-targets-at configure configure-args more-inputs output-makefile script vars)
+(define (configured-targets-at configure configure-args more-inputs
+                               output-makefile more-outputs
+                               script vars)
   (define dir (path-only output-makefile))
+  (mkdir-p dir)
   (build (target output-makefile
                  (lambda (name token)
                    (rule (list* configure
@@ -160,5 +176,6 @@
                                                    (cons (find-relative-path dir configure)
                                                          configure-args)))
                                        (hash 'dir dir)))))
-                 (hash 'quiet? #t)))
+                 (hash 'quiet? #t
+                       'co-outputs more-outputs)))
   ((dynamic-require script 'targets-at) (make-at-dir dir) vars))

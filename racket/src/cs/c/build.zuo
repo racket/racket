@@ -1,6 +1,7 @@
 #lang zuo
 (require "../../lib.zuo"
-         (only-in "../../ChezScheme/workmain.zuo"
+         "version.zuo"
+         (only-in "../../ChezScheme/build.zuo"
                   [targets-at scheme-targets-at])
          (only-in "../main.zuo"
                   [targets-at cs-targets-at]))
@@ -13,11 +14,25 @@
 
   (define m (lookup 'MACH))
 
+  (define mac? (glob-match? "*osx" m))
+  (define mac-fw? (and mac?
+                       (equal? (lookup 'MACLIBRKT_LINK_MODE) "fw")))
+
   (define CS "ChezScheme")
+
+  (define pbchunk? #f)
+
+  (define boot-compress-flags
+    (if (equal? (lookup 'BOOT_COMPRESS_COMP) "--compress")
+        '("--compress")
+        '()))
+
+  (define version (racket-version))
 
   (define petite.boot (at-dir CS m "boot" m "petite.boot"))
   (define scheme.boot (at-dir CS m "boot" m "scheme.boot"))
   (define racket.boot (at-dir "racket.boot"))
+  (define boot-files (list petite.boot scheme.boot racket.boot))
 
   (define scheme.exe (at-dir CS m "bin" m (.exe "scheme")))
   (define scheme-args (list "-B" petite.boot "-B" scheme.boot))
@@ -31,17 +46,118 @@
                                     (list petite.boot
                                           scheme.boot)))
 
+  (define rktio_config.h (at-dir "../../rktio/rktio_config.h"))
+  (define rktio-targets (configured-targets-at (at-source "../../rktio/configure")
+                                               '()
+                                               '()
+                                               (at-dir "../../rktio/Makefile")
+                                               (list rktio_config.h)
+                                               (at-source "../../rktio/build.zuo")
+                                               vars))
+  (define librktio.a (find-target "librktio.a" rktio-targets))
+
+  (define main-deps
+    (list (at-source "main.c")
+          (at-source "boot.h")
+          (at-dir "cs_config.h")
+          (at-source "../../start/config.inc")
+          (at-source "../../start/self_exe.inc")))
+
+  (define main.o (at-dir "main.o"))
+  (define grmain.o (at-dir "grmain.o"))
+
+  (define boot.o (at-dir "boot.o"))
+  (define boot-objs
+    (append (list boot.o
+                  (at-dir CS m "boot" m "libkernel.a"))
+            (let ([zlib (or (lookup 'Z_LIB) "")])
+              (if (equal? zlib "")
+                  (list (at-dir CS m "zlib/libz.a"))
+                  '()))
+            (let ([lz4 (or (lookup 'LZ4_LIB) "")])
+              (if (equal? lz4 "")
+                  (list (at-dir CS m "lz4/lib/liblz4.a"))
+                  '()))
+            (list librktio.a)
+            (if pbchunk?
+                (error "fixme")
+                '())))
+
+  (define framework-dir (at-dir "Racket.framework/Versions" (~a version "_CS")))
+  (define framework (build-path framework-dir "Racket"))
+  (define fw-boot-dest-dir (build-path framework-dir "boot"))
+  
+  (define raw_racketcs (at-dir "raw_racketcs"))
+  (define raw_gracketcs (at-dir "raw_gracketcs"))
+
+  (define racketcs (at-dir "racketcs"))
+
+  (define petite-v.boot (at-dir "petite-v.boot"))
+  (define scheme-v.boot (at-dir "scheme-v.boot"))
+  (define racket-v.boot (at-dir "racket-v.boot"))
+
   (mkdir-p (at-dir "compiled"))
 
-  (define (scheme args)
-    (define cmd (cons scheme.exe (append scheme-args args)))
+  (define (target->path t) (if (target? t) (target-path t) t))
+
+  (define (scheme . args)
+    (define cmd (append scheme-args args))
     (fd-write (fd-open-output 'stdout)
-              (~a (apply build-shell (map string->shell cmd))
+              (~a (string-tree->shell (cons scheme.exe cmd))
                   "\n"))
-    (define p (apply process cmd))
-    (process-wait (hash-ref p 'process))
-    (unless (= 0 (process-status (hash-ref p 'process)))
-      (error "failed")))
+    (process/wait scheme.exe cmd))
+
+  (define (compile-main main.o main.c)
+    (c-compile main.o
+               main.c
+               (let* ([config (config-include config
+                                              (at-dir "."))]
+                      [config (config-merge config
+                                            'CPPFLAGS
+                                            (build-shell
+                                             (string->shell
+                                              (~a "-DINITIAL_COLLECTS_DIRECTORY="
+                                                  (~s
+                                                   (path->complete-path
+                                                    (at-source "../../../collects")))))
+                                             (string->shell
+                                              (~a "-DINITIAL_CONFIG_DIRECTORY="
+                                                  (~s
+                                                   (path->complete-path
+                                                    (at-source "../../../etc")))))))])
+                 config)))
+
+  (define (bootstrap-racket . args)
+    (racket (hash-set config 'racket raw_racketcs) args))
+
+  (define (codesign?) (glob-match? "*arm64*osx" m))
+
+  (define (strip-signature dest)
+    (when (codesign?)
+      (shell/wait (build-shell "codesign --remove-signature"
+                               (string->shell dest)))))
+  (define (restore-signature dest)
+    (when (codesign?)
+      (shell/wait (build-shell "codesign -s -"
+                               (string->shell dest)))))
+
+  (define (install_name_tool . args)
+    (shell/wait (build-shell "install_name_tool" (map string->shell args))))
+  
+  (define (mac-embed-boot src dest)
+    (rm* dest)
+    (cp src dest)
+    (strip-signature dest)
+    (when mac-fw?
+      (bootstrap-racket (at-source "embed-boot.rkt")
+                        boot-compress-flags
+                        ""
+                        dest
+                        (build-path fw-boot-dest-dir "petite.boot")
+                        (build-path fw-boot-dest-dir "scheme.boot")
+                        (build-path fw-boot-dest-dir "racket.boot"))))
+
+  (define link-config (input-data-target 'link-config (list mac? mac-fw?)))
 
   (define the-targets
     (make-targets
@@ -49,20 +165,108 @@
        [:target build ()
                 ,(lambda (token)
                    (build (find-target "bootfiles" the-targets) token)
-                   (build (find-target racket.boot the-targets) token))]
-       
+                   (build (find-target racket.boot the-targets) token)
+                   (build (find-target "scheme" the-targets) token)
+                   (build (find-target racketcs the-targets) token))]
+
+       [:target ,racketcs (,raw_racketcs ,@(if mac?
+                                               (list framework)
+                                               '())
+                                         ,link-config)
+                ,(lambda (path token)
+                   (cond
+                     [mac?
+                      (when (not mac-fw?)
+                        (rm* petite-v.boot)
+                        (rm* scheme-v.boot)
+                        (rm* racket-v.boot)
+                        (symlink (build-path fw-boot-dest-dir "petite.boot") petite-v.boot)
+                        (symlink (build-path fw-boot-dest-dir "scheme.boot") scheme-v.boot)
+                        (symlink (build-path fw-boot-dest-dir "racket.boot") racket-v.boot))
+                      (bootstrap-racket (at-source "adjust-compress.rkt")
+                                        boot-compress-flags
+                                        (build-path fw-boot-dest-dir "petite.boot")
+                                        (build-path fw-boot-dest-dir "scheme.boot")
+                                        (build-path fw-boot-dest-dir "racket.boot"))
+                      (mac-embed-boot raw_racketcs racketcs)
+                      (install_name_tool "-change"
+                                         (build-path framework-dir "Racket")
+                                         (~a "@executable_path/Racket.framework/Versions/" version "_CS/Racket")
+                                         racketcs)
+                      (restore-signature racketcs)]
+                     [else
+                      (error "fixme")]))]
+
+       [:target ,raw_racketcs (,main.o ,@(if mac-fw?
+                                             (list framework)
+                                             boot-objs)
+                                       ,link-config)
+                ,(lambda (path token)
+                   (c-link raw_racketcs
+                           (cons main.o (if mac-fw? (list framework) (map target->path boot-objs)))
+                           (config-merge config
+                                         'LDFLAGS
+                                         (or (lookup 'LINK_DYNAMIC) "")))
+                   (define post (lookup 'POST_LINKER))
+                   (when post
+                     (shell/wait (build-shell post raw_racketcs))))]
+
+       [:target ,framework (,@boot-objs ,@boot-files)
+                ,(lambda (path token)
+                   (mkdir-p framework-dir)
+                   (c-compile framework
+                              (map target->path boot-objs)
+                              (let* ([config (hash-set config 'CC (lookup 'RKTLINKER))]
+                                     [config (config-merge config
+                                                           'LDFLAGS
+                                                           "-dynamiclib -all_load")])
+                                config))
+                   (rm* (at-dir "Racket.framework/Racket"))
+                   (symlink (~a "Versions/" version "_CS/Racket") "Racket.framework/Racket")
+                   (mkdir-p fw-boot-dest-dir)
+                   (define (vfasl in.boot needs)
+                     (scheme "--script" (at-source "to-vfasl.ss")
+                             boot-compress-flags
+                             ;; $(XPATCH@CROSS_MODE@)
+                             in.boot
+                             (build-path fw-boot-dest-dir (file-name-from-path in.boot))
+                             needs))
+                   (vfasl petite.boot '())
+                   (vfasl scheme.boot '("petite"))
+                   (vfasl racket.boot '("petite" "scheme")))]
+
+       [:target ,main.o (,@main-deps)
+                ,(lambda (main.o token)
+                   (compile-main main.o (at-source "main.c")))]
+
+       [:target ,grmain.o (,@main-deps ,(at-source "grmain.c") ,(at-source "../../start/gui_filter.inc"))
+                ,(lambda (grmain.o token)
+                   (compile-main grmain.o (at-source "grmain.c")))]
+
+       [:target ,boot.o (,(at-source "boot.c")
+                         ,(at-source "../../rktio/rktio.inc")
+                         ,(at-source "boot.h")
+                         ,rktio_config.h)
+                ,(lambda (boot.o token)
+                   (c-compile boot.o
+                              (at-source "boot.c")
+                              (let* ([config (if pbchunk?
+                                                 (config-merge config 'CPPFLAGS "-DPBCHUNK_REGISTER")
+                                                 config)]
+                                     [config (config-include config
+                                                             (at-dir CS m "boot" m)
+                                                             (at-source "../../rktio")
+                                                             (at-dir "../../rktio"))])
+                                config)))]
+
        [:target ,racket.boot (,(find-target "racket.so" cs-targets))
                 ,(lambda (path token)
-                   (scheme (append
-                            (list "--script" (at-source "convert-to-boot.ss"))
-                            (if (equal? (lookup 'BOOT_COMPRESS_COMP) "--compress")
-                                '("--compress")
-                                '())
-                            ;; $(XPATCH@CROSS_MODE@)
-                            (list
-                             (at-dir "racket.so")
-                             (at-dir "racket.boot")
-                             m))))]
+                   (scheme "--script" (at-source "convert-to-boot.ss")
+                           boot-compress-flags
+                           ;; $(XPATCH@CROSS_MODE@)
+                           (at-dir "racket.so")
+                           (at-dir "racket.boot")
+                           m))]
 
        [:target scheme (bootfiles)
                 ,(lambda (token)

@@ -469,6 +469,15 @@ Removes any number of repetitions of @racket[edge-str] from the start
 and end of @racket[str].}
 
 
+@defproc[(string-tree? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is a string or if it is a list where
+@racket[string-tree?] returns @racket[#t] for each element,
+@racket[#f] otherwise. The flattened form of a string tree is a list
+of its strings in order. See also @racket[process] and
+@racket[build-shell].}
+
+
 @section{Symbols}
 
 Zuo symbols are @deftech{interned} by the reader, where two interned
@@ -971,13 +980,12 @@ unless @racket[cleanable-cancel] is called on the handle to cancel the
 clean-up action.}
 
 
-@defproc*[([(process [executable path-string?] [arg string?] ...) hash?]
-           [(process [executable path-string?] [arg string?] ... [options hash?]) hash?])]{
+@defproc[(process [executable path-string?] [args string-tree?] ... [options hash? (hash)]) hash?]{
 
-Creates a new process to run @racket[executable] with the arguments
-@racket[args]. The result is a @tech{hash table} that at least
+Creates a new process to run @racket[executable] with arguments as the
+flattened sequence @racket[args]. The result is a @tech{hash table} that at least
 contains the key @racket['process] mapped to a handle representing the
-new process. The process< handle can be used with @racket[process-wait]
+new process. The process handle can be used with @racket[process-wait]
 and @racket[process-status].
 
 If @racket[options] is supplied, it controls the process creation and
@@ -1057,14 +1065,6 @@ Returns @racket['running] if the process represented by
 @racket[process] is still running, the exit value if the process has
 exited (@racket[0] normally means succes), erroring for any other kind
 of handle.}
-
-@defproc[(process/args [executable path-string?]
-                       [args (list string?)]
-                       [options hash? (hash)])
-         hash?]{
-
-Alternative to @racket[process] for cases where it's more convenient
-to have the arguments in a list before @racket[options].}
 
 
 @defproc[(find-executable-path [name path-string?]) (or/c path-string? #f)]{

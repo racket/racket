@@ -8,6 +8,7 @@
 
 (provide void?
          boolean?
+         string-tree?
 
          equal?
          assoc
@@ -48,12 +49,16 @@
          string-trim
 
          find-executable-path
-         process/args
          system-type)
 
 (define (void? v) (eq? v (void)))
 
 (define (boolean? v) (or (eq? v #t) (eq? v #f)))
+
+(define (string-tree? v)
+  (or (string? v)
+      (and (list? v)
+           (andmap string-tree? v))))
 
 (define (equal? a b)
   (or (eq? a b)
@@ -410,12 +415,6 @@
                  (cons (hash-ref (runtime-env) 'dir)
                        (string-split PATH (if windows? ";" ":")))))]
     [else (try-exe exe)]))
-
-(define (process/args exe args [options (hash)])
-  (unless (path-string? exe) (arg-error 'process/args "path string" exe))
-  (unless (and (list? args) (andmap string? args)) (arg-error 'process/args "list of strings" args))
-  (unless (hash? options) (arg-error 'process/args "hash table" options))
-  (apply process (cons exe (append args (list options)))))
 
 (define (system-type)
   (hash-ref (runtime-env) 'system-type))

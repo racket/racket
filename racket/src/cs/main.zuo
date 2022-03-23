@@ -199,18 +199,16 @@
     (display-to-file s dest :truncate))
 
   (define (run-racket main.so args)
-    (define p (process/args scheme
-                            (append
-                             scheme-args
-                             (list "--disable-library-timestamps"
-                                   "--libdirs" (at-dir "."))
-                             (list "--script" main.so)
-                             racket-init-args
-                             args)
-                            (hash 'env (cons (cons "RACKET_IO_SOURCE_DIR" (at-source "."))
-                                             (hash-ref (runtime-env) 'env))
-                                  'exec? (not (eq? 'windows (system-type))))))
-    (process-wait (hash-ref p 'process)))
+    (process/wait scheme
+                  scheme-args
+                  "--disable-library-timestamps"
+                  "--libdirs" (at-dir ".")
+                  "--script" main.so
+                  racket-init-args
+                  args
+                  (hash 'env (cons (cons "RACKET_IO_SOURCE_DIR" (at-source "."))
+                                   (hash-ref (runtime-env) 'env))
+                        'exec? (hash-ref (runtime-env) 'can-exec?))))
 
   (define (compile-file src dest loads [whole-program? #f])
     (define args (append (list scheme)
@@ -248,16 +246,16 @@
 
   (define (converter src-target [skip-export? #f])
     (lambda (path token)
-      (apply racket/wait `(,vars
-                           "convert.rkt"
-                           ,@(if unsafe?
-                                 '("--unsafe")
-                                 '())
-                           ,@(if skip-export?
-                                 '("--skip-export")
-                                 '())
-                           ,(target-path src-target)
-                           ,path))))
+      (racket vars
+              "convert.rkt"
+              (if unsafe?
+                  "--unsafe"
+                  '())
+              (if skip-export?
+                  "--skip-export"
+                  '())
+              (target-path src-target)
+              path)))
 
   (make-targets
    `([:target ,racket.so (,main.so ,@compile-file-deps)

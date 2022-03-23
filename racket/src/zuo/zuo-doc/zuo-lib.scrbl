@@ -184,11 +184,11 @@ then @racket[command] is not shown using @racket[displayln], and
 Similarly, @racket['no-thread?] is removed from @racket[options]
 before passing it on to @racket[process].}
 
-@defproc[(build-shell [shell-str string?] ...) string?]{
+@defproc[(build-shell [shell-strs string-tree?] ...) string?]{
 
-Appends the @racket[shell-str]s with separating spaces to form a
-larger shell-command sequence. An empty-string @racket[shell-str] is
-dropped, instead of creating extra spaces.
+Appends the flattened @racket[shell-strs] sequence with separating
+spaces to form a larger shell-command sequence. An empty-string among
+@racket[shell-strs] is dropped, instead of creating extra spaces.
 
 Note that @racket[build-shell] does @emph{not} attempt to protect any
 @racket[shell-str] as a literal. Use @racket[string->shell] to convert

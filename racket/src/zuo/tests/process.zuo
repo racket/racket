@@ -20,8 +20,8 @@
   
   (let ([ht (process zuo.exe
                      echo-to-file.zuo
-                     answer.txt
-                     "anybody home?")])
+                     (list answer.txt
+                           "anybody home?"))])
     (check (hash? ht))
     (check (= 1 (hash-count ht)))
     (check (handle? (hash-ref ht 'process)))
@@ -37,7 +37,7 @@
 
   (define answer2.txt (build-path tmp-dir "answer2.txt"))
   (let ([ht1 (process zuo.exe echo-to-file.zuo answer.txt "one")]
-        [ht2 (process zuo.exe echo-to-file.zuo answer2.txt "two")])
+        [ht2 (process zuo.exe (list echo-to-file.zuo answer2.txt) "two")])
     (define p1 (hash-ref ht1 'process))
     (define p2 (hash-ref ht2 'process))
     (define pa (process-wait p1 p2))

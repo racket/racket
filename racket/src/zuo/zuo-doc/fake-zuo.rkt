@@ -106,6 +106,7 @@
     string-sha1
     char
     string-split string-join string-trim
+    string-tree?
 
     hash
     hash-ref

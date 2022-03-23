@@ -14,3 +14,4 @@
     (check (process-status (hash-ref p 'process)) 0)))
 
 (check (build-shell "x" "" "y" "" "" "z" "") "x y z")
+(check (build-shell "x" "" '("y" "" "" "z") "") "x y z")

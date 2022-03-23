@@ -5526,36 +5526,49 @@ zuo_t *zuo_process(zuo_t *command_and_args)
 {
   const char *who = "process";
   zuo_t *command = _zuo_car(command_and_args);
-  zuo_t *args = _zuo_cdr(command_and_args);
+  zuo_t *args = _zuo_cdr(command_and_args), *rev_args = z.o_null;
   zuo_t *options = z.o_empty_hash, *opt;
   zuo_t *dir, *l, *p_handle, *result;
   int redirect_in, redirect_out, redirect_err, no_wait;
   zuo_raw_handle_t pid, in, in_r, out, out_w, err, err_w;
-  int argc = 1, i, ok;
+  int argc = 1, i, ok, can_options = 1;
   char **argv;
   void *env;
   int as_child, exact_cmdline;
 
   check_path_string(who, command);
   for (l = args; l->tag == zuo_pair_tag; l = _zuo_cdr(l)) {
-    if (_zuo_car(l)->tag != zuo_string_tag) {
-      if (_zuo_cdr(l) == z.o_null) {
-        options = _zuo_car(l);
+    zuo_t *a = _zuo_car(l);
+    if (a == z.o_null) {
+      /* skip */
+    } else if ((_zuo_car(l)->tag == zuo_pair_tag)
+               && (zuo_list_p(a) == z.o_true)) {
+      /* splice list */
+      if (_zuo_cdr(l) == z.o_null)
+        can_options = 0;
+      l = zuo_cons(a, zuo_append(zuo_cons(a, zuo_cons(_zuo_cdr(l), z.o_null))));
+    } else if (a->tag != zuo_string_tag) {
+      if (can_options && _zuo_cdr(l) == z.o_null) {
+        options = a;
         if (options->tag != zuo_trie_node_tag)
-          zuo_fail_arg(who, "string or hash table", options);
-      } else
-        zuo_fail_arg(who, "string", _zuo_car(l));
-    } else
+          zuo_fail_arg(who, "string, list, or hash table", options);
+      } else {
+        zuo_fail_arg(who, "string or list", a);
+      }
+    } else {
+      rev_args = zuo_cons(a, rev_args);
       argc++;
+    }
   }
 
   argv = malloc(sizeof(char*) * (argc + 1));
 
-  for (i = 0; i < argc; i++) {
-    argv[i] = zuo_string_to_c(_zuo_car(command_and_args));
-    command_and_args = _zuo_cdr(command_and_args);
+  argv[0] = zuo_string_to_c(command);
+  for (i = argc; i-- > 1; ) {
+    argv[i] = zuo_string_to_c(_zuo_car(rev_args));
+    rev_args = _zuo_cdr(rev_args);
   }
-  argv[i] = NULL;
+  argv[argc] = NULL;
 
   redirect_in = redirect_out = redirect_err = 0;
   in_r = in = zuo_get_std_handle(0);

@@ -113,3 +113,10 @@
 (check (string<? "" "x") #t)
 (check-fail (string<? 1 "") not-string)
 (check-fail (string<? "" 1) not-string)
+
+(check (string-tree? "a"))
+(check (string-tree? '("a")))
+(check (string-tree? '("a" "b" ("c") () (((("d")))))))
+(check (string-tree? 'a) #f)
+(check (string-tree? '("a" "b" ("c") () ((((d)))))) #f)
+(check (string-tree? '("a" "b" ("c") () (((("d" . "c")))))) #f)

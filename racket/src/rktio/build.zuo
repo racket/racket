@@ -138,13 +138,13 @@
 
      [:target ,rktio.rktl (,rktio.h ,parse.rkt)
               ,(lambda (path token)
-                 (racket/wait config parse.rkt "-o" rktio.rktl rktio.h))]
+                 (racket config parse.rkt "-o" rktio.rktl rktio.h))]
      [:target ,rktio.inc (,rktio.h ,parse.rkt)
               ,(lambda (path token)
-                 (racket/wait config parse.rkt "-c" "-o" rktio.inc rktio.h))]
+                 (racket config parse.rkt "-c" "-o" rktio.inc rktio.h))]
      [:target ,rktio.def (,rktio.h ,parse.rkt)
               ,(lambda (path token)
-                 (racket/wait config parse.rkt "-d" "-o" rktio.inc rktio.h))]
+                 (racket config parse.rkt "-d" "-o" rktio.inc rktio.h))]
     
      [:target install-shared-object (,librktio.a)
               ,(lambda (token)

@@ -18,21 +18,21 @@
 
      [:target ,regexp.rktl (,expander)
               ,(lambda (path token)
-                 (apply racket/wait (cons vars
-                                          `(,(expander-main)
-                                            "-t" ,(at-source "main.rkt")
-                                            "-c" ,(at-dir "compiled/cache-src")
-                                            "-k" ,(at-source "../..")
-                                            "-s" "-x"
-                                            "--depends" ,regexp-dep.rktd
-                                            ;; Enable the sanity check for global state:
-                                            "--no-global"
-                                            "-o" ,path)))
+                 (racket vars
+                         (expander-main)
+                         "-t" (at-source "main.rkt")
+                         "-c" (at-dir "compiled/cache-src")
+                         "-k" (at-source "../..")
+                         "-s" "-x"
+                         "--depends" regexp-dep.rktd
+                         ;; Enable the sanity check for global state:
+                         "--no-global"
+                         "-o" path)
                  (register-expansion-dependencies regexp-dep.rktd token))]
 
      [:target demo ()
               ,(lambda (token)
-                 (raco/wait vars "make" (at-source "demo.rkt"))
-                 (racket/wait vars (at-source "demo.rkt")))]
+                 (raco vars "make" (at-source "demo.rkt"))
+                 (racket vars (at-source "demo.rkt")))]
 
      [:db-dir ,(at-dir "compiled")])))

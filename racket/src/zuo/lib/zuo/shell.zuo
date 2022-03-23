@@ -32,8 +32,15 @@
     (error (~a what " failed"))))
 
 (define (build-shell . strs)
-  (string-join (filter
-                (lambda (s)
-                  (unless (string? s) (arg-error 'build-shell "string" s))
-                  (not (equal? s "")))
-                strs)))
+  (let ([strs (let loop ([strs strs])
+                (cond
+                  [(null? strs) '()]
+                  [else
+                   (let ([a (car strs)])
+                     (cond
+                       [(string? a) (if (string=? a "")
+                                        (loop (cdr strs))
+                                        (cons a (loop (cdr strs))))]
+                       [(list? a) (loop (append a (cdr strs)))]
+                       [else (arg-error 'build-shell "string or list" a)]))]))])
+    (string-join strs)))

@@ -26,15 +26,15 @@
       "++pure" ,(at-source "../../collects/racket/private/collect.rkt")))
 
   (define (build src path dep.rktd token)
-    (apply racket/wait (cons vars
-                             `(,(expander-main)
-                               "-t" ,src
-                               "-c" ,(at-dir "compiled/cache-src")
-                               "-k" ,(at-source "../..")
-                               "-s" "-x"
-                               ,@ignore-args
-                               "--depends" ,dep.rktd
-                               "-o" ,path)))
+    (racket vars
+            (expander-main)
+            "-t" src
+            "-c" (at-dir "compiled/cache-src")
+            "-k" (at-source "../..")
+            "-s" "-x"
+            ignore-args
+            "--depends" dep.rktd
+            "-o" path)
     (register-expansion-dependencies dep.rktd token))
   
   (make-targets

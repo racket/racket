@@ -1,0 +1,25 @@
+#lang zuo
+
+(provide racket-version)
+
+(define (racket-version)
+  (let* ([lines (string-split (file->string (at-source "../../version/racket_version.h"))
+                              "\n")]
+         [prefix "#define MZSCHEME_VERSION_"]
+         [match? (glob->matcher (~a prefix "*"))]
+         [len (string-length prefix)])
+    (define (get-version part)
+      (ormap (lambda (line)
+               (and (match? line)
+                    (string=? part (substring line len (+ 1 len)))
+                    (string->integer (car (string-split (substring line (+ len 2)) "\r")))))
+             lines))
+    (let ([X (get-version "X")]
+          [Y (get-version "Y")]
+          [Z (get-version "Z")]
+          [W (get-version "W")])
+      (if (= W 0)
+          (if (= Z 0)
+              (~a X "." Y)
+              (~a X "." Y "." Z))
+          (~a X "." Y "." Z "." W)))))

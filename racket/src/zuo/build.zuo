@@ -67,7 +67,7 @@
 
   ;; The two executable targets
   (define zuo-to-run (exe-target "to-run/zuo" (as-c-string (find-relative-path "to-run"
-                                                                               (at-source ".." "lib")))))
+                                                                               (at-source "lib")))))
   (define zuo-to-install (exe-target "to-install/zuo" (as-c-string (build-path install-prefix "lib"))))
 
   ;; A phony target to build both executables, which we'll list first

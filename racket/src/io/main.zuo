@@ -4,7 +4,7 @@
                   expander-target
                   expander-main
                   register-expansion-dependencies)
-         (only-in "../rktio/main.zuo"
+         (only-in "../rktio/build.zuo"
                   [targets-at rktio-targets-at]))
 
 (provide-targets targets-at)
@@ -26,43 +26,42 @@
 
      [:target ,io.rktl (,expander ,rktio.rktl)
               ,(lambda (path token)
-                 (apply racket/wait (cons vars
-                                          `(,(expander-main)
-                                            "-t" ,(at-source "main.rkt")
-                                            "-c" ,(at-dir "compiled/cache-src")
-                                            "-k" ,(at-source "../..")
-                                            "-s" "-x"
-                                            "--depends" ,io-dep.rktd
-                                            ;; When flattening, replace a dynamic lookup from a primitive table to
-                                            ;; a direct use of the primitive name:
-                                            "++direct" "thread" "++direct" "pthread"
-                                            ;; Enable the sanity check for global state (to be avoided in
-                                            ;; favor of place-local state), but declare some initialized-once
-                                            ;; global state to be ok:
-                                            "--no-global"
-                                            "++global-ok" "installed-read"
-                                            "++global-ok" "installed-read-syntax"
-                                            "++global-ok" "installed-read-accept-reader"
-                                            "++global-ok" "installed-read-accept-lang"
-                                            "++global-ok" "maybe-raise-missing-module"
-                                            "++global-ok" "string->number?"
-                                            "++global-ok" "printable-regexp?"
-                                            "++global-ok" "do-global-print"
-                                            "++global-ok" "simplify-path/dl"
-                                            "++global-ok" "exec-file"
-                                            "++global-ok" "run-file"
-                                            "++global-ok" "collects-dir"
-                                            "++global-ok" "config-dir"
-                                            "++global-ok" "addon-dir"
-                                            "++global-ok" "host-collects-dir"
-                                            "++global-ok" "host-config-dir"
-                                            "-o" ,path)))
+                 (racket vars (expander-main)
+                         "-t" (at-source "main.rkt")
+                         "-c" (at-dir "compiled/cache-src")
+                         "-k" (at-source "../..")
+                         "-s" "-x"
+                         "--depends" io-dep.rktd
+                         ;; When flattening, replace a dynamic lookup from a primitive table to
+                         ;; a direct use of the primitive name:
+                         "++direct" "thread" "++direct" "pthread"
+                         ;; Enable the sanity check for global state (to be avoided in
+                         ;; favor of place-local state), but declare some initialized-once
+                         ;; global state to be ok:
+                         "--no-global"
+                         "++global-ok" "installed-read"
+                         "++global-ok" "installed-read-syntax"
+                         "++global-ok" "installed-read-accept-reader"
+                         "++global-ok" "installed-read-accept-lang"
+                         "++global-ok" "maybe-raise-missing-module"
+                         "++global-ok" "string->number?"
+                         "++global-ok" "printable-regexp?"
+                         "++global-ok" "do-global-print"
+                         "++global-ok" "simplify-path/dl"
+                         "++global-ok" "exec-file"
+                         "++global-ok" "run-file"
+                         "++global-ok" "collects-dir"
+                         "++global-ok" "config-dir"
+                         "++global-ok" "addon-dir"
+                         "++global-ok" "host-collects-dir"
+                         "++global-ok" "host-config-dir"
+                         "-o" path)
                  (register-expansion-dependencies io-dep.rktd token))]
 
      [:target demo (rktio-so)
               ,(lambda (token)
-                 (raco/wait vars "make" (at-source "demo.rkt"))
-                 (racket/wait vars (at-source "demo.rkt")))]
+                 (raco vars "make" (at-source "demo.rkt"))
+                 (racket vars (at-source "demo.rkt")))]
 
      ;; this target is also used by "../cs/main.zuo":
      [:target rktio-so ()
@@ -73,7 +72,8 @@
                                                                   (~a "--prefix=" (path->complete-path (at-source "../.."))))
                                                             (list (at-source "../rktio/Makefile.in"))
                                                             (at-source "../build/so-rktio/Makefile")
-                                                            (at-source "../rktio/main.zuo")
+                                                            '()
+                                                            (at-source "../rktio/build.zuo")
                                                             vars))))]
 
      [:db-dir ,(at-dir "compiled")])))
