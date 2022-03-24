@@ -9,8 +9,6 @@
 #ifdef WIN32
 # include <windows.h>
 # define DOS_FILE_SYSTEM
-static int scheme_utf8_encode(unsigned int *path, int zero_offset, int len,
-			      char *dest, int dest_len, int get_utf16);
 #endif
 #define BOOT_EXTERN extern
 #include "boot.h"
@@ -116,18 +114,7 @@ static long find_boot_section(const char *me)
 #endif
 
 #ifdef WIN32
-
-static int scheme_utf8_encode(unsigned int *path, int zero_offset, int len,
-			      char *dest, int offset, int get_utf16)
-{
-  int dest_len = 0;
-  if (dest) {
-    dest_len = WideCharToMultiByte(CP_UTF8, 0, (wchar_t *)path, len, NULL, 0, NULL, NULL);
-  }
-  return WideCharToMultiByte(CP_UTF8, 0, (wchar_t *)path, len, dest, dest_len, NULL, NULL);
-}
-
-# include "../start/cmdl_to_argv.inc"
+# include "../../start/cmdl_to_argv.inc"
 #endif
 
 #ifndef WIN32
@@ -202,7 +189,7 @@ static int bytes_main(int argc, char **argv,
     racket_boot_p = (racket_boot_t)scheme_dll_find_object(dll, "racket_boot");
     dll_path = self_exe;
   } else {
-    HMODULE dll;
+    HMODULE dll = NULL;
     dll_path = load_delayed_dll_x(NULL, "libracketcsxxxxxxx.dll", &dll);
     racket_boot_p = (racket_boot_t)GetProcAddress(dll, "racket_boot");
   }

@@ -26,11 +26,11 @@
   (define scheme-args (or (lookup 'scheme-args) '()))
   (define unsafe? #t)
   (define compress? #f)
-  (define target-m #f)
+  (define xpatch (lookup 'xpatch))
   (define wpo? #t)
   (define schemify? (not (equal? (lookup 'schemify) "f")))
 
-  (define cso ".so")
+  (define cso (or (lookup 'cso) ".so"))
   
   (define compile-file-deps
     (append
@@ -221,8 +221,8 @@
                          (if compress?
                              (list "--compress")
                              '())
-                         (if target-m
-                             (list "-m" target-m)
+                         (if xpatch
+                             (list "--xpatch" xpatch)
                              '())
                          (if whole-program?
                              (list "--whole-program")

@@ -244,7 +244,9 @@
                (not (symbol? (target-name (token-target token)))))
       (error "build/dep: cannot recur with a phony or data target"))
     (let* ([state (channel-get (token-ch token))]
+           [_ (release-resource state)]
            [state (force-build t (do-build t state #t))]
+           [_ (acquire-resource state)]
            [state (record-target-accumulated state (token-target token) t)])
       (channel-put (token-ch token) state))))
 

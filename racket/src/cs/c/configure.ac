@@ -155,7 +155,7 @@ FRAMEWORK_INSTALL_DIR='$(libpltdir)'
 FRAMEWORK_PREFIX='@executable_path/../lib/'
 
 RACKET='$(DEFAULT_RACKET)'
-BOOTFILE_RACKET='$(RACKET)'
+BOOTFILE_RACKET=
 RUN_RACKET='$(RUN_THIS_RACKET)'
 SETUP_BOOT_MODE=--boot
 
@@ -490,15 +490,6 @@ else
   CROSS_MODE=""
 fi
 
-if test "${CROSS_MODE}" = "cross" ; then
-  T_CROSS_MODE="-cross"
-  TT_CROSS_MODE="--cross"
-  RUN_RACKET='$(RACKET)'
-else
-  T_CROSS_MODE=""
-  TT_CROSS_MODE=""
-fi
-
 # From this point on, `MACH` means the build machine, and
 # `TARGET_MACH` is the target that we're building for (which
 # is different in cross-build mode).
@@ -534,10 +525,8 @@ if test "${enable_scheme}" != "" ; then
 fi
 
 if test "${enable_racket}" != "" ; then
-  if test "${enable_racket}" = "auto" ; then
-    # See also "configure-parent.ac"
-    enable_racket="`pwd`/../../local/cs/c/racketcs"
-    CS_HOST_WORKAREA_PREFIX=../../local/cs/c/
+  if test "${enable_racket}" != "auto" ; then
+    SETUP_BOOT_MODE=--chain
   fi
   # In non-cross mode, we interpret `--enable-racket` to supply a
   # Racket used only for generating Chez Scheme boot files
@@ -546,7 +535,6 @@ if test "${enable_racket}" != "" ; then
   else
     BOOTFILE_RACKET="${enable_racket}"
   fi
-  SETUP_BOOT_MODE=--chain
 fi
 
 if test "${enable_compress}" != "no" ; then
@@ -822,6 +810,8 @@ m4_include(../ac/rktio_keep.m4)
 SCHEME_CONFIG_ARGS="--machine=${KERNEL_MACH} --disable-x11 ${disable_curses_arg} ${cs_auto_flags} ${extra_scheme_config_args}"
 SCHEME_CROSS_CONFIG_ARGS="--machine=${KERNEL_TARGET_MACH} --disable-x11 ${cs_auto_flags} ${disable_curses_arg} ${extra_scheme_config_args}"
 
+RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
+
 AC_SUBST(upsrcdir)
 AC_SUBST(CC)
 AC_SUBST(CFLAGS)
@@ -886,12 +876,8 @@ AC_SUBST(INSTALL_SETUP_RACKET_FLAGS)
 AC_SUBST(INSTALL_LIBS_ENABLE)
 AC_SUBST(PLT_CS_SLSP_SUFFIX)
 AC_SUBST(INSTALL_NAME_TOOL)
+AC_SUBST(RKTIO_CONFIGURE_ARGS)
 
 makefiles="Makefile"
 
 AC_OUTPUT($makefiles)
-
-mkdir -p rktio
-abssrcdir=`(cd ${srcdir}; pwd)`
-echo "=== configuring in rktio (${abssrcdir}/../../rktio)"
-cd rktio; eval "${abssrcdir}/../../rktio/configure ${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"

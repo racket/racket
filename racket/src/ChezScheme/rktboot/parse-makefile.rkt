@@ -5,11 +5,11 @@
 
 (define (get-sources-from-makefile scheme-dir)
   (call-with-input-file*
-   (build-path scheme-dir "s" "main.zuo")
+   (build-path scheme-dir "s" "build.zuo")
    #:mode 'text
    (lambda (i)
      (unless (equal? (read-line i) "#lang zuo")
-       (error "expected `#lang zuo`from main.zuo"))
+       (error "expected `#lang zuo`from build.zuo"))
      (define content (let loop ()
                        (define v (read i))
                        (if (eof-object? v)

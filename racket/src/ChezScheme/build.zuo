@@ -68,37 +68,49 @@
     (when (build-kernel-only?)
       (error "target does not apply to a kernel-only configuration")))
 
-  (define (parse-boot-args args)
-    (unless (<= (length args) 1) (error "expected optional <machine>" args))
-    (define xm (if (null? args)
+  (define (parse-boot-args args k)
+    (define host-workarea
+      (and (pair? args)
+           (equal? (car args) "--host-workarea")
+           (pair? (cdr args))
+           (cadr args)))
+    (define rest-args (if host-workarea
+                          (cddr args)
+                          args))
+    (unless (<= (length rest-args) 1) (error "expected optional <machine>" args))
+    (define xm (if (null? rest-args)
                    (hash-ref config 'defaultm m)
-                   (car args)))
-    xm)
+                   (car rest-args)))
+    (k xm host-workarea))
 
   ;; Cross-builds for a machine type that is specified as an argument;
   ;; the machine type defaults to the `defaultm` configuration entry, and
   ;; that default is normally useful if the current machine type is "pb"
   (define (cross-build-boot token args ccopts make-targets)
-    (define xm (parse-boot-args args))
-    (define dir (at-dir ".." (~a "xc-" xm)))
-    (define s-dir (build-path dir "s"))
-    (mkdir-p s-dir)
-    (display-to-file (~a "m=" xm "\n"
-                         "hostm=" m "\n"
-                         "hostworkarea=" (build-path "../.." m) "\n")
-                     (build-path dir "Mf-config")
-                     :truncate)
-    (let ([targets (s-targets-at (make-at-dir s-dir)
-                                 (hash-remove vars 'm)
-                                 ccopts)])
-      (build (map (lambda (t) (find-target t targets)) make-targets)
-             token))
-    (define boot-xm-dir (at-dir "../boot" xm))
-    (mkdir-p boot-xm-dir)
-    (for-each (lambda (file)
-                (cp (build-path dir "boot" xm file)
-                    (build-path boot-xm-dir file)))
-              boot-file-names))
+    (parse-boot-args
+     args
+     (lambda (xm host-workarea)
+       (define dir (at-dir ".." (~a "xc-" xm)))
+       (define s-dir (build-path dir "s"))
+       (mkdir-p s-dir)
+       (display-to-file (~a "m=" xm "\n"
+                            "hostm=" m "\n"
+                            "hostworkarea=" (or (and host-workarea
+                                                     (find-relative-path dir host-workarea))
+                                                (build-path "../.." m)) "\n")
+                        (build-path dir "Mf-config")
+                        :truncate)
+       (let ([targets (s-targets-at (make-at-dir s-dir)
+                                    (hash-remove vars 'm)
+                                    ccopts)])
+         (build (map (lambda (t) (find-target t targets)) make-targets)
+                token))
+       (define boot-xm-dir (at-dir "../boot" xm))
+       (mkdir-p boot-xm-dir)
+       (for-each (lambda (file)
+                   (cp (build-path dir "boot" xm file)
+                       (build-path boot-xm-dir file)))
+                 boot-file-names))))
 
   (define (cross-build-boot/safe+examples token args)
     (cross-build-boot token args (hash 'o "2" 'd "3" 'i "t") '("all" "examples")))
@@ -161,17 +173,25 @@
 
        ;; See `cross-build-boot`: builds cross-compiler in unsafe mode, skips examples,
        ;; only rebuilds is needed
-       [:target bootquick (kernel)
+       [:target bootquick ()
                 ,(lambda (token . args)
                    (check-not-kernel-only)
-                   (define xm (parse-boot-args args))
-                   (define (at-boot name) (at-dir "../boot" xm name))
-                   (build (target (at-boot (car boot-file-names))
-                                  (lambda (path token)
-                                    (rule boot-files
-                                          (lambda ()
-                                            (cross-build-boot token args (hash) '("all")))))
-                                  (hash 'co-outputs (map at-boot (cdr boot-file-names))))))
+                   (parse-boot-args
+                    args
+                    (lambda (xm host-workarea)
+                      (unless host-workarea
+                        (build/dep (find-target "kernel" the-targets) token))
+                      (define (at-boot name) (at-dir "../boot" xm name))
+                      (define host-boot-files
+                        (if host-workarea
+                            (map (lambda (file) (build-path host-workarea "boot" m file)) boot-file-names)
+                            boot-files))
+                      (build (target (at-boot (car boot-file-names))
+                                     (lambda (path token)
+                                       (rule host-boot-files
+                                             (lambda ()
+                                               (cross-build-boot token args (hash) '("all")))))
+                                     (hash 'co-outputs (map at-boot (cdr boot-file-names))))))))
                 :command]
 
        ;; See `cross-build-boot`: builds cross-compiler in safe mode, includes examples

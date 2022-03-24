@@ -79,7 +79,8 @@
          kernel-srcs))
 
   (define kernel-asm-files
-    (if (glob-match? "*nt" (or (lookup 'defaultm) m))
+    (if (and (eq? 'windows (system-type))
+             (glob-match? "*nt" (or (lookup 'defaultm) m)))
 	(cond
 	 [(string=? arch "a6")
 	  (list "a6nt-jump.asm")]

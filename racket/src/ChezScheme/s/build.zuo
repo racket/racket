@@ -91,7 +91,7 @@
 
   (define m (lookup 'm))
   (define host-m (or (lookup 'hostm) m))
-  (define host-workarea (at-dir (or (lookup 'hostworkarea) "..")))
+  (define host-workarea (at-dir ".." (or (lookup 'hostworkarea) ".")))
   (define arch (m->arch m))
   (define arch.ss (~a (arch->backend arch) ".ss"))
 

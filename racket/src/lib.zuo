@@ -25,6 +25,8 @@
               (cddr keys+vals)))))
 
 (define (process/wait command . args)
+  (fd-write (fd-open-output 'stdout)
+            (~a (string-tree->shell (cons command args)) "\n"))
   (define p (apply process (cons command args)))
   (process-wait (hash-ref p 'process))
   (unless (= 0 (process-status (hash-ref p 'process)))
