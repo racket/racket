@@ -95,9 +95,9 @@
        (mkdir-p s-dir)
        (display-to-file (~a "m=" xm "\n"
                             "hostm=" m "\n"
-                            "hostworkarea=" (or (and host-workarea
-                                                     (find-relative-path dir host-workarea))
-                                                (build-path "../.." m)) "\n")
+                            "hostworkarea=" (find-relative-path dir (or host-workarea
+                                                                        (at-dir .)))
+                            "\n")
                         (build-path dir "Mf-config")
                         :truncate)
        (let ([targets (s-targets-at (make-at-dir s-dir)
