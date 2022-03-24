@@ -46,14 +46,13 @@
                                         make-c-id)  ;; Identifier/#'#f
     (define-syntax-class c-id-spec #:attributes (c-id-expr)
       #:literals (unquote)
-      (pattern (unquote c-id-expr:expr))
-      (pattern c-id:id
-               #:with c-id-expr (cond [(identifier? make-c-id)
-                                       (define result ((syntax-local-value make-c-id) #'c-id))
-                                       (unless (identifier? result)
-                                         (raise-syntax-error #f "invalid make-c-id result" make-c-id))
-                                       #`(quote #,result)]
-                                      [else #'(quote c-id)])))
+      (pattern [_ (unquote c-id-expr:expr)])
+      (pattern [#t c-id:id] #:when (identifier? make-c-id)
+               #:with c-id-expr (let ([result ((syntax-local-value make-c-id) #'c-id)])
+                                  (unless (identifier? result)
+                                    (raise-syntax-error #f "invalid make-c-id result" make-c-id))
+                                  #`(quote #,result)))
+      (pattern [_ c-id:id] #:with c-id-expr #'(quote c-id)))
     (with-syntax ([the-ffi-lib  the-ffi-lib]
                   [provide      provide-form]
                   [define-form  define-form]
@@ -72,7 +71,7 @@
                          (~optional (~seq (~and #:variable var-kw))
                                     #:name "#:variable keyword"))
                     ...))
-           #:with :c-id-spec #'(~? c-id s-id)
+           #:with :c-id-spec #'(~? (#f c-id) (#t s-id))
            (with-syntax ([fail #'(~? fail (make-fail 's-id))]
                          [get (if (attribute var-kw) #'make-c-parameter #'get-ffi-obj)])
              (with-syntax ([def (syntax/loc stx
