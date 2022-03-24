@@ -1,7 +1,6 @@
-;; This template is turned into a machine-specific ".def" file
-;; by the `workarea` script
+(define-constant machine-type (constant machine-type-pb))
+(features)
 
-(define-constant machine-type (constant machine-type-tarm64osx))
-(features iconv expeditor pthreads)
-(include "arm64.def")
+(include "pbcommon64.def")
+(include "pbcommon.def")
 (include "default.def")
