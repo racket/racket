@@ -4947,14 +4947,6 @@ if test "${enable_jit}" = "yes" ; then
   check_for_mprotect=yes
 fi
 
-
-if test "${enable_racket}" != "" ; then
-  INSTALL_NAME_TOOL='$(INSTALL_NAME_TOOL_VIA_RACKET)'
-else
-  INSTALL_NAME_TOOL=install_name_tool
-fi
-
-
 ############## platform tests ################
 
 # for flags we don't want to use in config tests:
@@ -6084,9 +6076,9 @@ fi
 
 if test "${enable_curses}" = "no" ; then
   add_curses_lib=
-  disable_curses_arg=--disable-curses
+  DISABLE_CURSES=yes
 else
-  disable_curses_arg=
+  DISABLE_CURSES=no
 fi
 
 # when `add_curses_lib` is set, then `skip_curses_check`

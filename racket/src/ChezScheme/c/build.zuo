@@ -362,7 +362,9 @@
               ,(lambda (path token)
                  (define (line s) (if s (~a s "\n") ""))
                  (define s
-                   (~a (line (and (equal? (hash-ref config 'disablecurses #f) "yes")
+                   (~a (line (and (equal? (hash-ref config 'disableiconv #f) "yes")
+                                  "#define DISABLE_ICONV"))
+                       (line (and (equal? (hash-ref config 'disablecurses #f) "yes")
                                   "#define DISABLE_CURSES"))
                        (line (and (equal? (hash-ref config 'disablex11 #f) "yes")
                                   "#define DISABLE_X11"))

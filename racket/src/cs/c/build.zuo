@@ -69,8 +69,10 @@
                                                            'scheme scheme.exe
                                                            'scheme-args scheme-args
                                                            'schemify "f"
-                                                           'CONFIGURE_RACKET_SO_COMPILE
-                                                           (or (lookup 'CONFIGURE_RACKET_SO_COMPILE) ""))])
+                                                           'zlibLib (or (lookup 'Z_LIB) "")
+                                                           'LZ4Lib (or (lookup 'LZ4_LIB) "")
+                                                           'CONFIGURE_RACKET_SO_COMPILE (or (lookup 'CONFIGURE_RACKET_SO_COMPILE) "")
+                                                           'DISABLE_WPO (or (lookup 'DISABLE_WPO) "f"))])
                                       (if (not cross?)
                                           vars
                                           (hash-set* vars
@@ -227,7 +229,7 @@
     ;; Racket should still work at this point, too
     (apply bootstrap-racket args))
 
-  (define (codesign?) (glob-match? "*arm64*osx" m))
+  (define (codesign?) (glob-match? "*arm64*osx" (or (lookup 'KERNEL_TARGET_MACH) m)))
 
   (define (strip-signature dest)
     (when (codesign?)
@@ -591,6 +593,9 @@
                                                         (hash-set* config
                                                                    'm m
                                                                    'zlibConfigureEnv zlibEnv
+                                                                   'enablelibffi (or (lookup 'SCHEME_LIBFFI) "no")
+                                                                   'disablecurses (or (lookup 'DISABLE_CURSES) "no")
+                                                                   'disableiconv (or (lookup 'DISABLE_ICONV) "no")
                                                                    ;; these are for Windows:
                                                                    'runtimeAs "static"
                                                                    'linkAs "exe"
@@ -888,7 +893,13 @@
 
        (define starter-app-dest (build-path libpltdir "Starter.app"))
        (rm* starter-app-dest)
-       (icp-r (at-dir "Starter.app") starter-app-dest)]
+       (icp-r (at-dir "Starter.app") starter-app-dest)
+       (unless (equal? "no-install" (lookup 'INSTALL_LIBS_ENABLE))
+         (map (lambda (name)
+                (bootstrap-racket (at-source "add-terminator.rkt")
+                                  (build-path fw-boot-dest-dir name)
+                                  (build-path libpltdir name)))
+              (list "petite.boot" "scheme.boot" "racket.boot")))]
       [windows?
        (void)]
       [else

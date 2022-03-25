@@ -623,38 +623,28 @@ ac_includes_default="\
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 RKTIO_CONFIGURE_ARGS
-INSTALL_NAME_TOOL
 PLT_CS_SLSP_SUFFIX
 INSTALL_LIBS_ENABLE
 INSTALL_SETUP_RACKET_FLAGS
 INSTALL_SETUP_FLAGS
 PBCHUNK_MODE
-CS_HOST_WORKAREA_PREFIX
-CROSS_COMPILE_TARGET_KIND
-COMP_SUBDIR_CONFIGURE_ARGS
-ENABLE_OR_DISABLE_WPO
+SCHEME_LIBFFI
+DISABLE_WPO
 CS_COMPILED_SUBDIR
 CS_INSTALLED
 FRAMEWORK_REL_INSTALL
-FRAMEWORK_PREFIX
 FRAMEWORK_INSTALL_DIR
-CONFIG_MAIN_SCHEME_MODE
-SCHEME_CROSS_CONFIG_ARGS
-SCHEME_CONFIG_ARGS
-MAKE_BUILD_SCHEME
 BOOT_COMPRESS_COMP
 COMPRESS_COMP
 CONFIGURE_RACKET_SO_COMPILE
+DISABLE_CURSES
+DISABLE_ICONV
 LZ4_LIB
 Z_LIB
 MINGW
 OSX
 SETUP_BOOT_MODE
-USE_SCHEME_MODE
-MAKE_SCHEME_SCHEME
-MAKE_SCHEME_MODE
 CROSS_MODE
-DIFF_MACH
 KERNEL_TARGET_MACH
 TARGET_MACH
 MACH
@@ -3058,9 +3048,9 @@ fi
 
 show_explicitly_disabled "${enable_wpo}" "Agressive core optimization"
 if test "${enable_wpo}" = "no" ; then
-  ENABLE_OR_DISABLE_WPO="WHEN_WPO=no_ UNLESS_WPO="
+  DISABLE_WPO=t
 else
-  ENABLE_OR_DISABLE_WPO=""
+  DISABLE_WPO=f
 fi
 
 ############## Install targets ################
@@ -3283,6 +3273,9 @@ INSTALL_SETUP_RACKET_FLAGS=
 Z_LIB=''
 LZ4_LIB=''
 
+DISABLE_ICONV=no
+DISABLE_CURSES=no
+
 PLT_CS_SLSP_SUFFIX=
 
 enable_pthread_by_default=yes
@@ -3293,6 +3286,7 @@ cs_auto_flags=--disable-auto-flags
 
 COPY_NEW_CFLAGS_TO_CPPFLAGS=no
 
+SCHEME_LIBFFI=no
 PBCHUNK_MODE=plain
 
 ###### Autoconfigure #######
@@ -4364,14 +4358,6 @@ fi
 
 WINDRES=windres
 
-
-if test "${enable_racket}" != "" ; then
-  INSTALL_NAME_TOOL='$(INSTALL_NAME_TOOL_VIA_RACKET)'
-else
-  INSTALL_NAME_TOOL=install_name_tool
-fi
-
-
 ############## platform tests ################
 
 # At first, `MACH` means the target that we're building for. In
@@ -4576,7 +4562,6 @@ case "$host_os" in
 
     if test "${enable_mac64}" = "no"; then
       MACH_HOST_CPU="x86"
-      extra_scheme_config_args="--32"
     fi
 
     # -pthread is not needed and triggers a warning
@@ -4774,11 +4759,6 @@ elif test "${compress_boot_files_by_default}" = "yes" ; then
   if test "${enable_compressboot}" != "no" ; then
     BOOT_COMPRESS_COMP="--compress"
   fi
-fi
-
-DIFF_MACH=skip
-if test "${MACH}" != "${TARGET_MACH}" ; then
-  DIFF_MACH=
 fi
 
 ############## Strip tool ################
@@ -5450,7 +5430,7 @@ if test "${enable_iconv}" = "no" ; then
 
 $as_echo "#define RKTIO_NO_ICONV 1" >>confdefs.h
 
-  extra_scheme_config_args="${extra_scheme_config_args} --disable-iconv"
+  DISABLE_ICONV=yes
   add_iconv_lib=
 fi
 
@@ -5657,9 +5637,9 @@ fi
 
 if test "${enable_curses}" = "no" ; then
   add_curses_lib=
-  disable_curses_arg=--disable-curses
+  DISABLE_CURSES=yes
 else
-  disable_curses_arg=
+  DISABLE_CURSES=no
 fi
 
 # when `add_curses_lib` is set, then `skip_curses_check`
@@ -5732,7 +5712,6 @@ $as_echo "$have_zlib" >&6; }
     echo "Building own libz"
   else
     Z_LIB="-lz"
-    extra_scheme_config_args="${extra_scheme_config_args} ZLIB=-lz"
   fi
 fi
 
@@ -5768,7 +5747,6 @@ $as_echo "$have_lz4" >&6; }
     echo "Building own liblz4"
   else
     LZ4_LIB="-llz4"
-    extra_scheme_config_args="${extra_scheme_config_args} LZ4=-llz4"
   fi
 fi
 
@@ -5780,20 +5758,15 @@ KERNEL_TARGET_MACH="${TARGET_MACH}"
 if test "${enable_pb}" = "yes" ; then
   enable_libffi=yes
   enable_foreign=yes
-  CONFIG_MAIN_SCHEME_MODE="--pbarch --enable-libffi"
+  SCHEME_LIBFFI=yes
   TARGET_MACH=${pb_machine_name}
   if test "${CROSS_MODE}" != "cross" ; then
     MACH=${pb_machine_name}
-  fi
-  if test "${CONFIGURE_RACKET_SO_COMPILE}" = "" ; then
-    CONFIGURE_RACKET_SO_COMPILE="env"
   fi
   CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_MACHINE_TYPE=${KERNEL_TARGET_MACH}"
   if test "${enable_pbchunk}" != "no" ; then
     PBCHUNK_MODE=pbchunk
   fi
-else
-  CONFIG_MAIN_SCHEME_MODE=""
 fi
 
 libffi_unavailable_message="did not find working configuration"
@@ -6031,20 +6004,7 @@ do
 done
 
 
-SCHEME_CONFIG_ARGS="--machine=${KERNEL_MACH} --disable-x11 ${disable_curses_arg} ${cs_auto_flags} ${extra_scheme_config_args}"
-SCHEME_CROSS_CONFIG_ARGS="--machine=${KERNEL_TARGET_MACH} --disable-x11 ${cs_auto_flags} ${disable_curses_arg} ${extra_scheme_config_args}"
-
 RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
-
-
-
-
-
-
-
-
-
-
 
 
 

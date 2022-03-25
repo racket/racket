@@ -653,7 +653,6 @@ fi
 
 if [ "$disableiconv" = "yes" ]; then
     iconvLib=
-    CPPFLAGS="${CPPFLAGS} -DDISABLE_ICONV"
 else
     iconvLib="-liconv"
 fi
@@ -918,6 +917,7 @@ warningFlags=$warningFlags
 Kernel=$Kernel
 installscriptname=$installscriptname
 disablecurses=$disablecurses
+disableiconv=$disableiconv
 disablex11=$disablex11
 enablelibffi=$libffi
 preloadBootFiles=$preloadBootFiles

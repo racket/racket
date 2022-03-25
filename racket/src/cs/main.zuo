@@ -27,7 +27,7 @@
   (define unsafe? #t)
   (define compress? #f)
   (define xpatch (lookup 'xpatch))
-  (define wpo? #t)
+  (define wpo? (not (equal? (lookup 'DISABLE_WPO) "t")))
   (define schemify? (not (equal? (lookup 'schemify) "f")))
 
   (define cso (or (lookup 'cso) ".so"))

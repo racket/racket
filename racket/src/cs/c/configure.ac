@@ -126,9 +126,9 @@ fi
 
 show_explicitly_disabled "${enable_wpo}" "Agressive core optimization"
 if test "${enable_wpo}" = "no" ; then
-  ENABLE_OR_DISABLE_WPO="WHEN_WPO=no_ UNLESS_WPO="
+  DISABLE_WPO=t
 else  
-  ENABLE_OR_DISABLE_WPO=""
+  DISABLE_WPO=f
 fi
 
 ############## Install targets ################
@@ -164,6 +164,9 @@ INSTALL_SETUP_RACKET_FLAGS=
 Z_LIB=''
 LZ4_LIB=''
 
+DISABLE_ICONV=no
+DISABLE_CURSES=no
+
 PLT_CS_SLSP_SUFFIX=
 
 enable_pthread_by_default=yes
@@ -174,6 +177,7 @@ cs_auto_flags=--disable-auto-flags
 
 COPY_NEW_CFLAGS_TO_CPPFLAGS=no
 
+SCHEME_LIBFFI=no
 PBCHUNK_MODE=plain
 
 ###### Autoconfigure #######
@@ -208,8 +212,6 @@ if test "$ARFLAGS" = '' ; then
 fi
 
 WINDRES=windres
-
-m4_include(../ac/install_name.m4)
 
 ############## platform tests ################
 
@@ -328,7 +330,6 @@ case "$host_os" in
 
     if test "${enable_mac64}" = "no"; then
       MACH_HOST_CPU="x86"
-      extra_scheme_config_args="--32"
     fi
 
     # -pthread is not needed and triggers a warning
@@ -528,11 +529,6 @@ elif test "${compress_boot_files_by_default}" = "yes" ; then
   fi
 fi
 
-DIFF_MACH=skip
-if test "${MACH}" != "${TARGET_MACH}" ; then
-  DIFF_MACH=
-fi
-
 ############## Strip tool ################
 
 m4_include(../ac/strip.m4)
@@ -561,7 +557,7 @@ AC_LANG_C
 m4_include(../ac/iconv.m4)
 if test "${enable_iconv}" = "no" ; then
   AC_DEFINE(RKTIO_NO_ICONV,1,[Do not use iconv])
-  extra_scheme_config_args="${extra_scheme_config_args} --disable-iconv"
+  DISABLE_ICONV=yes
   add_iconv_lib=
 fi
 
@@ -628,7 +624,6 @@ if test "${enable_libz}" = "yes" ; then
     echo "Building own libz"
   else
     Z_LIB="-lz"
-    extra_scheme_config_args="${extra_scheme_config_args} ZLIB=-lz"
   fi
 fi
 
@@ -648,7 +643,6 @@ if test "${enable_liblz4}" = "yes" ; then
     echo "Building own liblz4"
   else
     LZ4_LIB="-llz4"
-    extra_scheme_config_args="${extra_scheme_config_args} LZ4=-llz4"
   fi
 fi
 
@@ -660,20 +654,15 @@ KERNEL_TARGET_MACH="${TARGET_MACH}"
 if test "${enable_pb}" = "yes" ; then
   enable_libffi=yes
   enable_foreign=yes
-  CONFIG_MAIN_SCHEME_MODE="--pbarch --enable-libffi"
+  SCHEME_LIBFFI=yes
   TARGET_MACH=${pb_machine_name}
   if test "${CROSS_MODE}" != "cross" ; then
     MACH=${pb_machine_name}
-  fi
-  if test "${CONFIGURE_RACKET_SO_COMPILE}" = "" ; then
-    CONFIGURE_RACKET_SO_COMPILE="env"
   fi
   CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_MACHINE_TYPE=${KERNEL_TARGET_MACH}"
   if test "${enable_pbchunk}" != "no" ; then
     PBCHUNK_MODE=pbchunk
   fi
-else
-  CONFIG_MAIN_SCHEME_MODE=""
 fi
 
 libffi_unavailable_message="did not find working configuration"
@@ -783,9 +772,6 @@ fi
 
 m4_include(../ac/rktio_keep.m4)
 
-SCHEME_CONFIG_ARGS="--machine=${KERNEL_MACH} --disable-x11 ${disable_curses_arg} ${cs_auto_flags} ${extra_scheme_config_args}"
-SCHEME_CROSS_CONFIG_ARGS="--machine=${KERNEL_TARGET_MACH} --disable-x11 ${cs_auto_flags} ${disable_curses_arg} ${extra_scheme_config_args}"
-
 RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
 
 AC_SUBST(CC)
@@ -815,38 +801,28 @@ AC_SUBST(SCHEME_DIR)
 AC_SUBST(MACH)
 AC_SUBST(TARGET_MACH)
 AC_SUBST(KERNEL_TARGET_MACH)
-AC_SUBST(DIFF_MACH)
 AC_SUBST(CROSS_MODE)
-AC_SUBST(MAKE_SCHEME_MODE)
-AC_SUBST(MAKE_SCHEME_SCHEME)
-AC_SUBST(USE_SCHEME_MODE)
 AC_SUBST(SETUP_BOOT_MODE)
 AC_SUBST(OSX)
 AC_SUBST(MINGW)
 AC_SUBST(Z_LIB)
 AC_SUBST(LZ4_LIB)
+AC_SUBST(DISABLE_ICONV)
+AC_SUBST(DISABLE_CURSES)
 AC_SUBST(CONFIGURE_RACKET_SO_COMPILE)
 AC_SUBST(COMPRESS_COMP)
 AC_SUBST(BOOT_COMPRESS_COMP)
-AC_SUBST(MAKE_BUILD_SCHEME)
-AC_SUBST(SCHEME_CONFIG_ARGS)
-AC_SUBST(SCHEME_CROSS_CONFIG_ARGS)
-AC_SUBST(CONFIG_MAIN_SCHEME_MODE)
 AC_SUBST(FRAMEWORK_INSTALL_DIR)
-AC_SUBST(FRAMEWORK_PREFIX)
 AC_SUBST(FRAMEWORK_REL_INSTALL)
 AC_SUBST(CS_INSTALLED)
 AC_SUBST(CS_COMPILED_SUBDIR)
-AC_SUBST(ENABLE_OR_DISABLE_WPO)
-AC_SUBST(COMP_SUBDIR_CONFIGURE_ARGS)
-AC_SUBST(CROSS_COMPILE_TARGET_KIND)
-AC_SUBST(CS_HOST_WORKAREA_PREFIX)
+AC_SUBST(DISABLE_WPO)
+AC_SUBST(SCHEME_LIBFFI)
 AC_SUBST(PBCHUNK_MODE)
 AC_SUBST(INSTALL_SETUP_FLAGS)
 AC_SUBST(INSTALL_SETUP_RACKET_FLAGS)
 AC_SUBST(INSTALL_LIBS_ENABLE)
 AC_SUBST(PLT_CS_SLSP_SUFFIX)
-AC_SUBST(INSTALL_NAME_TOOL)
 AC_SUBST(RKTIO_CONFIGURE_ARGS)
 
 makefiles="Makefile"

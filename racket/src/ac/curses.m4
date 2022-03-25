@@ -91,9 +91,9 @@ fi
 
 if test "${enable_curses}" = "no" ; then
   add_curses_lib=
-  disable_curses_arg=--disable-curses
+  DISABLE_CURSES=yes
 else
-  disable_curses_arg=
+  DISABLE_CURSES=no
 fi
 
 # when `add_curses_lib` is set, then `skip_curses_check`
