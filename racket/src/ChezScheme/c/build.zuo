@@ -29,7 +29,9 @@
   (define (or-windows-lib lib)
     (if (eq? 'windows (system-type))
         (build-path ".." (if (as-scheme-dll? config) "bin" "boot") m 
-                    (~a "csv" (get-dll-version) (if (as-runtime-dll? config) "md" "mt") ".lib"))
+                    (~a (or (lookup 'kernelLibName)
+                            (~a "csv" (get-dll-version) (if (as-runtime-dll? config) "md" "mt")))
+                        ".lib"))
         lib))
 
   (define cpu+arch.c

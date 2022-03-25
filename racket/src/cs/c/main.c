@@ -280,7 +280,7 @@ static int bytes_main(int argc, char **argv,
     ba.is_gui = RACKET_IS_GUI;
     ba.wm_is_gracket_or_x11_arg_count = wm_is_gracket_or_x11_arg_count;
     ba.gracket_guid_or_x11_args = gracket_guid_or_x11_args;
-
+    
     racket_boot(&ba);
   }
 

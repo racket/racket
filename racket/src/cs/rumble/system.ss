@@ -31,7 +31,7 @@
   (case (reflect-machine-type)
     [(a6osx ta6osx i3osx ti3osx arm64osx tarm64osx ppc32osx tppc32osx)
      (if unix-style-macos? 'unix 'macosx)]
-    [(a6nt ta6nt i3nt ti3nt) 'windows]
+    [(a6nt ta6nt i3nt ti3nt arm64nt tarm64nt) 'windows]
     [else 'unix]))
 
 (define os*-symbol
@@ -43,7 +43,7 @@
      (if unix-style-macos?
          'darwin
          'macosx)]
-    [(a6nt ta6nt i3nt ti3nt) 'windows]
+    [(a6nt ta6nt i3nt ti3nt arm64nt tarm64nt) 'windows]
     [(a6le ta6le i3le ti3le
            arm32le tarm32le arm64le tarm64le
            ppc32le tppc32le)
@@ -92,7 +92,8 @@
               arm64osx tarm64osx
               arm64fb tarm64fb
               arm64ob tarm64ob
-              arm64nb tarm64nb)
+              arm64nb tarm64nb
+	      arm64nt tarm64nt)
      'aarch64]
     [(ppc32le tppc32le
               ppc32osx tppc32osx
@@ -108,7 +109,7 @@
      (if unix-style-macos?
          'static
          'framework)]
-    [(a6nt ta6nt i3nt ti3nt) 'windows]
+    [(a6nt ta6nt i3nt ti3nt arm64nt tarm64nt) 'windows]
     [else (if unix-link-shared?
               'shared
               'static)]))
@@ -116,7 +117,7 @@
 (define so-suffix-bytes
   (case (reflect-machine-type)
     [(a6osx ta6osx i3osx ti3osx arm64osx tarm64osx ppc32osx tppc32osx) (string->utf8 ".dylib")]
-    [(a6nt ta6nt i3nt ti3nt) (string->utf8 ".dll")]
+    [(a6nt ta6nt i3nt ti3nt arm64nt tarm64nt) (string->utf8 ".dll")]
     [else (string->utf8 ".so")]))
 
 (define so-mode
@@ -168,7 +169,7 @@
 
 (define (system-path-convention-type)
   (case (reflect-machine-type)
-    [(a6nt ta6nt i3nt ti3nt) 'windows]
+    [(a6nt ta6nt i3nt ti3nt arm64nt tarm64nt) 'windows]
     [else 'unix]))
 
 (define system-library-subpath-string
@@ -176,6 +177,7 @@
    (case (reflect-machine-type)
      [(a6nt ta6nt) "win32\\x86_64"]
      [(i3nt ti3nt) "win32\\i386"]
+     [(arm64nt tarm64nt) "win32\\arm64"]
      [else (string-append (symbol->string arch-symbol)
                           "-"
                           (symbol->string os*-symbol))])

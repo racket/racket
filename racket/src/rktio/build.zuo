@@ -10,8 +10,12 @@
                        vars)))
   (define (lookup key) (hash-ref config key #f))
 
-  (define lto (or (lookup 'LTO) "o"))
-  (define lta (or (lookup 'LTA) "a"))
+  (define lto (or (lookup 'LTO) (if (eq? 'windows (system-type))
+                                    "obj"
+                                    "o")))
+  (define lta (or (lookup 'LTA) (if (eq? 'windows (system-type))
+                                    "lib"
+                                    "a")))
   (define libsfx (or (lookup 'LIBSFX) "so"))
   
   (define standalone? (equal? (lookup 'AS_STANDALONE) "t"))
@@ -154,5 +158,11 @@
      [:target ,libdir/librktio.so (,librktio.a)
               ,(lambda (path token)
                  (install-shared-object))]
+
+     ,@(if (eq? 'windows (system-type))
+           `([:target ,(at-dir "rktio_config.h") (,(at-source "../worksp/librktio/rktio_config.h"))
+                      ,(lambda (path target)
+                         (cp (at-source "../worksp/librktio/rktio_config.h") path))])
+           '())
 
      [:db-dir ,(at-dir ".")])))

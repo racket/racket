@@ -45,7 +45,10 @@
                     (string->shell args)]
                    [(list? args)
                     (map loop args)]
-                   [else ""]))))
+                   [(hash? args)
+                    ;; assume last and intended as options
+                    ""]
+                   [else (~s args)]))))
 
 (define (racket/process vars . args)
   (define racket-exe (find-racket vars))
