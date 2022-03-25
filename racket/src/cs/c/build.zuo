@@ -114,13 +114,13 @@
             (list (at-dir CS m "boot" m (.a "kernel")))
             (let ([zlib (or (lookup 'Z_LIB) "")])
               (if (equal? zlib "")
-                  (list (if windows?
+                  (list (if msvc?
                             (at-dir CS m "zlibmts/zlib.lib")
                             (at-dir CS m "zlib/libz.a")))
                   '()))
             (let ([lz4 (or (lookup 'LZ4_LIB) "")])
               (if (equal? lz4 "")
-                  (list (if windows?
+                  (list (if msvc?
                             (at-dir CS m "lz4mts/lib/liblz4.lib")
                             (at-dir CS m "lz4/lib/liblz4.a")))
                   '()))
@@ -393,7 +393,7 @@
                                        (append
                                         (if mac-fw? (list framework) '())
                                         (cond
-                                          [windows? `(,MemoryModule.o ,res.o ,@windows-libs)]
+                                          [windows? `(,MemoryModule.o ,res.o ,@(if msvc? windows-libs '()))]
                                           [mac-fw? '()]
                                           [else (map target->path boot-objs)])))
                                  (config-merge (if (and windows? gui?)
@@ -504,7 +504,7 @@
        [:target ,boot.o (,(at-source "boot.c")
                          ,(at-source "../../rktio/rktio.inc")
                          ,(at-source "boot.h")
-                         ,(if windows?
+                         ,(if msvc?
                               (find-target "rktio_config.h" rktio-targets)
                               rktio_config.h))
                 ,(lambda (boot.o token)
@@ -643,7 +643,7 @@
                                                                 (hash-set* config
                                                                            'm "pb"
                                                                            'defaultm m)))
-                          
+                          (build (find-target "reset" pb-targets) token)
                           (build (command-target->target (find-target "bootquick" pb-targets)
                                                          (list m))
                                  token))])]
