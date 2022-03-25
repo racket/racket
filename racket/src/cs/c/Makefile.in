@@ -1,24 +1,34 @@
+# This makefile exists only to communicate configuration decisions
+# to "build.zuo"
+
 srcdir = @srcdir@
-builddir = @builddir@
-upsrcdir = @upsrcdir@
 
-PACKAGE = racket
+# If `RACKET` is set to something different than empty or `auto`, it
+# must be a compatible Racket to the curent build in the sense that
+# `require`s here to collection-based modules will work. The Racket
+# built here will never be run, so it's suitable as a part of a
+# cross-compile setup.
+#
+# If `BOOTFILE_RACKET` is set, then it needs only to be a Racket that
+# is recent enough to run "../../ChezScheme/rktboot/main.rkt".
+#
+RACKET = @RACKET@
+BOOTFILE_RACKET = @BOOTFILE_RACKET@
 
-SCHEME_DIR = $(srcdir)/../../ChezScheme
-UP_SCHEME_DIR = $(upsrcdir)/../../ChezScheme
-SCHEME_WORKAREA = ChezScheme
+# If `SCHEME` is set, it must be compatible to the curren build.
+# If `SCHEME_DIR` is set and `SCHEME` is not, then `SCHEME_DIR` refers
+# to an existing build directory.
+# If `RACKET` is "auto", then an auto-generated Scheme is used and
+# both of these are ignored.
+SCHEME = @SCHEME@
+SCHEME_DIR = @SCHEME_DIR@
+
+# The host machine type:
 MACH = @MACH@
-CS_HOST_WORKAREA_PREFIX = @CS_HOST_WORKAREA_PREFIX@
-SCHEME_HOST_WORKAREA = $(CS_HOST_WORKAREA_PREFIX)$(SCHEME_WORKAREA)
-SCHEME_BIN = $(SCHEME_HOST_WORKAREA)/$(MACH)/bin/$(MACH)/scheme
-SCHEME_INC = $(SCHEME_HOST_WORKAREA)/$(MACH)/boot/$(MACH)
-SCHEME_built = $(SCHEME_BIN) -B $(SCHEME_INC)/petite.boot -B $(SCHEME_INC)/scheme.boot
-SCHEME_existing = @MAKE_SCHEME_SCHEME@
-SCHEME = $(SCHEME@USE_SCHEME_MODE@)
 
-CROSS_MODE = @CROSS_MODE@
+# The machine type to build, which is `MACH` unless cross building:
 TARGET_MACH = @TARGET_MACH@
-SCHEME_TARGET_INC = $(SCHEME_WORKAREA)/$(TARGET_MACH)/boot/$(TARGET_MACH)
+CROSS_MODE = @CROSS_MODE@
 KERNEL_TARGET_MACH = @KERNEL_TARGET_MACH@
 
 CC = @CC@
@@ -32,8 +42,8 @@ ARFLAGS = @ARFLAGS@
 RANLIB = @RANLIB@
 WINDRES = @WINDRES@
 
-BOOT_COMPRESS_COMP=@BOOT_COMPRESS_COMP@
-MACLIBRKT_LINK_MODE=@MACLIBRKT_LINK_MODE@
+BOOT_COMPRESS_COMP = @BOOT_COMPRESS_COMP@
+MACLIBRKT_LINK_MODE = @MACLIBRKT_LINK_MODE@
 
 SETUP_BOOT_MODE = @SETUP_BOOT_MODE@
 
@@ -42,38 +52,22 @@ STRIP_LIB_DEBUG = @STRIP_LIB_DEBUG@
 
 RKTIO_CONFIGURE_ARGS = @RKTIO_CONFIGURE_ARGS@
 
-STRIP_SIGNATURE = @STRIP_SIGNATURE@
-RESTORE_SIGNATURE = @RESTORE_SIGNATURE@ "${srcdir}/../../mac/entitlements.plist"
+COLLECTS_PATH = @COLLECTS_PATH@
+CONFIG_PATH = @CONFIG_PATH@
 
-STRIP_SIGNATURE_VIA_RACKET = $(BOOTSTRAP_RACKET) "${srcdir}/../../mac/codesign.rkt" --remove-signature
-RESTORE_SIGNATURE_VIA_RACKET = $(BOOTSTRAP_RACKET) "${srcdir}/../../mac/codesign.rkt" -s - --entitlements
-
-INSTALL_NAME_TOOL_VIA_RACKET = $(BOOTSTRAP_RACKET) "${srcdir}/../../mac/install_name_tool.rkt"
+CROSS_COMPILE_TARGET_KIND = @CROSS_COMPILE_TARGET_KIND@
+PLT_CS_SLSP_SUFFIX = @PLT_CS_SLSP_SUFFIX@
+INSTALL_LIBS_ENABLE = @INSTALL_LIBS_ENABLE@
+FRAMEWORK_INSTALL_DIR = @FRAMEWORK_INSTALL_DIR@
+FRAMEWORK_REL_INSTALL = @FRAMEWORK_REL_INSTALL@
+CS_INSTALLED = @CS_INSTALLED@
 
 ICP=@ICP@
 ICP_LIB=@ICP_LIB@
 
-# If `RACKET` is set to something different than `DEFAULT_RACKET`, it
-# must be a compatible Racket to the curent build in the sense that
-# `require`s here to collection-based modules will work. The Racket
-# built here will never be run, so it's suitable as a part of a
-# cross-compile setup.
-#
-# If `BOOTFILE_RACKET` is different than `DEFAULT_RACKET`, then it
-# needs only to be a Racket that is recent enough to run
-# "../../ChezScheme/rktboot/main.rkt".
-#
-DEFAULT_RACKET = ./raw_racketcs
-RACKET = @RACKET@
-BOOTFILE_RACKET = @BOOTFILE_RACKET@
+SELF_ROOT_CONFIG_DIR =
 
-# Potentially supplied by makefile that calls this one, and
-# overrides `BOOTFILE_RACKET` if non-empty:
-RACKET_FOR_BOOTFILES =
-
-CS_INSTALLED = @CS_INSTALLED@
-
-NOOP = :
+INSTALL_SETUP_FLAGS = @INSTALL_SETUP_FLAGS@
 
 prefix = @prefix@
 exec_prefix = @exec_prefix@
@@ -88,167 +82,10 @@ sharepltdir = @sharepltdir@
 collectsdir = @collectsdir@
 configdir = @etcpltdir@
 
-ALLDIRINFO = "$(DESTDIR)$(bindir)" \
-             "$(DESTDIR)$(libpltdir)" \
-             "$(DESTDIR)$(includepltdir)"
-
-START_COLLECTS_PATH = "$(srcdir)/../../start/collects-path.rkt" "${srcdir}/../.."
-
-# Defines FWVERSION:
-mainsrcdir = @srcdir@/../..
-@INCLUDEDEP@ @srcdir@/../../version/version.mak
-
-cs:
-	$(MAKE) scheme@MAKE_SCHEME_MODE@
-	$(MAKE) racket-so
-	cd rktio; $(MAKE)
-	$(MAKE) racketcs
-	$(MAKE) maybe-check-racketcs
-	$(MAKE) gracketcs
-	$(MAKE) starter
-	$(MAKE) repack-@INSTALL_LIBS_ENABLE@-libs
-
 clean:
 	cd $(SCHEME_WORKAREA); $(MAKE) clean
 	cd rktio; $(MAKE) clean
 
-BOOT_COMPILED_SUBDIR =
-SETUP_COMMON_BOOT = -l- setup $(SETUP_BOOT_MODE) $(srcdir)/../../setup-go.rkt $(builddir)/compiled$(BOOT_COMPILED_SUBDIR)
-
-ABS_SCHEME_WORKAREA = "`$(SCHEME) --script $(srcdir)/../absify.ss --no-trailing-sep $(SCHEME_WORKAREA)`"
-ABS_SCHEME_HOST_WORKAREA = "`$(SCHEME) --script $(srcdir)/../absify.ss --no-trailing-sep $(SCHEME_HOST_WORKAREA)`"
-ABS_BUILDDIR = "`$(SCHEME) --script $(srcdir)/../absify.ss --no-trailing-sep $(builddir)`"
-
-SETUP_BOOT = -O 'info@compiler/cm' $(SETUP_COMMON_BOOT)
-
-# We don't try to track dependencies through makefiles for things
-# built with the expander extractor, hence "ignored"
-BOOTSTRAP_RACKET = $(RACKET) $(SETUP_BOOT) ignored $(builddir)/ignored.d
-BOOTSTRAP_BOOTFILE_RACKET = $(BOOTFILE_RACKET) $(SETUP_BOOT) ignored $(builddir)/ignored.d
-
-racket-so:
-	$(MAKE) bounce TARGET=build-racket-so
-
-RACKET_SO_ENV = @CONFIGURE_RACKET_SO_COMPILE@
-
-TARGET_MACH_built = $(TARGET_MACH)
-TARGET_MACH_existing = xc-$(TARGET_MACH)
-XPATCH_FILE = $(SCHEME_WORKAREA)/$(TARGET_MACH@USE_SCHEME_MODE@)/s/xpatch
-
-CS_PROGS = SCHEME="$(SCHEME)"
-CS_OPTS = COMPRESS_COMP=@COMPRESS_COMP@ @ENABLE_OR_DISABLE_WPO@
-CS_OPTScross = $(CS_OPTS) CSO=$(MACH) CROSS_COMP="--xpatch $(XPATCH_FILE)"
-PASS_COMPILE_DEPS_built = EXTRA_COMPILE_DEPS="$(SCHEME_INC)/petite.boot $(SCHEME_INC)/scheme.boot"
-PASS_COMPILE_DEPS_existing =
-PASS_COMPILE_DEPS = $(PASS_COMPILE_DEPS@USE_SCHEME_MODE@)
-
-build-racket-so:
-	cd $(srcdir)/.. && $(RACKET_SO_ENV) $(MAKE) "$(builddir)/racket.so" $(CS_PROGS) $(CS_OPTS@CROSS_MODE@) BUILDDIR="$(builddir)/" BOOTSTRAPPED="done" $(PASS_COMPILE_DEPS)
-
-bounce:
-	$(MAKE) builddir="$(ABS_BUILDDIR)" SCHEME_WORKAREA="$(ABS_SCHEME_WORKAREA)" SCHEME_HOST_WORKAREA="$(ABS_SCHEME_HOST_WORKAREA)" $(TARGET)
-
-scheme:
-	mkdir -p $(SCHEME_WORKAREA)
-	if [ "$(RACKET_FOR_BOOTFILES)" != "" ] ; \
-          then $(MAKE) scheme-via-rktboot BOOTFILE_RACKET="$(RACKET_FOR_BOOTFILES)" SETUP_BOOT_MODE=--chain ; \
-	elif [ "$(BOOTFILE_RACKET)" != "$(DEFAULT_RACKET)" ] ; \
-          then $(MAKE) scheme-via-rktboot BOOTFILE_RACKET="$(BOOTFILE_RACKET)" ; \
-          else $(MAKE) scheme-via-pb ; fi
-
-scheme-via-rktboot:
-	if [ "$(BOOTFILE_RACKET)" != "$(RACKET)" ] ; \
-          then $(MAKE) scheme-via-rktboot-at BOOT_COMPILED_SUBDIR=/bf BOOTFILE_RACKET="$(BOOTFILE_RACKET)" ; \
-          else $(MAKE) scheme-via-rktboot-at ; fi
-
-scheme-via-rktboot-at:
-	SCHEME_SRC="$(SCHEME_DIR)" MACH="$(MACH)" SCHEME_WORKAREA=$(SCHEME_WORKAREA) $(BOOTSTRAP_BOOTFILE_RACKET) "$(SCHEME_DIR)"/rktboot/make-boot.rkt
-	$(SHELL) $(srcdir)/reset_boot.sh $(MACH) $(SCHEME_WORKAREA)
-	$(MAKE) mach-make
-
-scheme-via-pb:
-	$(SHELL) $(srcdir)/check_boot.sh $(MACH) "$(SCHEME_DIR)" $(SCHEME_WORKAREA)
-	if [ -f boot_pending ] ; then $(MAKE) pb-bootquick ; fi
-	$(MAKE) mach-make
-	$(MAKE) check-bootstrap-same
-
-pb-bootquick:
-	$(MAKE) config-scheme MACH=pb CONFIG_SCHEME_MODE=--pb
-	cd $(SCHEME_WORKAREA) && $(MAKE) reset
-	cd $(SCHEME_WORKAREA) && $(MAKE) $(MACH).bootquick
-	$(MAKE) config-scheme
-	cd $(SCHEME_WORKAREA) && $(MAKE) reset
-	$(SHELL) $(srcdir)/ready_boot.sh $(MACH) $(SCHEME_WORKAREA)
-
-scheme-via-scheme:
-	$(MAKE) $(SCHEME_WORKAREA)/boot/$(MACH)/scheme.boot
-	$(MAKE) mach-make
-
-$(SCHEME_WORKAREA)/boot/$(MACH)/scheme.boot:
-	mkdir -p $(SCHEME_WORKAREA)
-	$(MAKE) config-scheme CONFIG_SCHEME_MODE="$(CONFIG_SCHEME_MODE) --force"
-	cd $(SCHEME_WORKAREA) && $(MAKE) $(MACH).boot Scheme="$(SCHEME)" SCHEMEHEAPDIRS=: o=3 d=0 what=all
-
-mach-make:
-	$(MAKE) config-scheme
-	cd $(SCHEME_WORKAREA) && $(MAKE)
-
-check-bootstrap-same:
-	$(SCHEME) --script $(srcdir)/same-boot.ss $(SCHEME_WORKAREA)/boot/$(MACH)/petite.boot $(SCHEME_WORKAREA)/$(MACH)/boot/$(MACH)/petite.boot
-	$(SCHEME) --script $(srcdir)/same-boot.ss $(SCHEME_WORKAREA)/boot/$(MACH)/scheme.boot $(SCHEME_WORKAREA)/$(MACH)/boot/$(MACH)/scheme.boot
-
-# Makes cross compilation work more reliably for zlib, because
-# it causes zlib/configure to use given AR, etc.
-CHOST_HACK-cross = env "CHOST=hack-do-not-use"
-CHOST_HACK =
-
-SCHEME_CONFIG_VARS = CC="$(CC)" CFLAGS="$(BASE_CFLAGS)" LDFLAGS="$(LDFLAGS) $(LINK_DYNAMIC)" LIBS="$(LIBS)" \
-                     AR="$(AR)" ARFLAGS="$(ARFLAGS)" RANLIB="$(RANLIB)" \
-                     WINDRES="$(WINDRES)"
-CONFIG_SCHEME_MODE = @CONFIG_MAIN_SCHEME_MODE@
-
-config-scheme:
-	cd $(SCHEME_WORKAREA) && "$(UP_SCHEME_DIR)"/configure $(CONFIG_SCHEME_MODE) @SCHEME_CONFIG_ARGS@ $(SCHEME_CONFIG_VARS)
-
-scheme-cross:
-	env MAKE_BOOT_FOR_CROSS=yes SCHEME_SRC="$(SCHEME_DIR)" SCHEME_WORKAREA=$(SCHEME_WORKAREA) MACH="$(TARGET_MACH)" $(BOOTSTRAP_RACKET) "$(SCHEME_DIR)"/rktboot/make-boot.rkt
-	$(MAKE) finish-scheme-cross
-
-finish-scheme-cross:
-	$(SHELL) $(srcdir)/reset_boot.sh $(TARGET_MACH) $(SCHEME_WORKAREA)
-	cd $(SCHEME_WORKAREA) && "$(UP_SCHEME_DIR)"/configure $(CONFIG_SCHEME_MODE) @SCHEME_CROSS_CONFIG_ARGS@ $(SCHEME_CONFIG_VARS)
-	cd $(SCHEME_WORKAREA)/$(TARGET_MACH)/c && $(CHOST_HACK@T_CROSS_MODE@) $(MAKE) o=o cross=t
-	$(MAKE) $(XPATCH_FILE)
-
-scheme-cross-via-scheme:
-	$(MAKE) $(SCHEME_WORKAREA)/boot/$(TARGET_MACH)/scheme.boot MACH=$(TARGET_MACH)
-	$(MAKE) finish-scheme-cross
-
-# Rebuild patch file and cross "petite.boot" and "scheme.boot" when older
-# than the build-<host "scheme.boot" or when "make-boot.rkt" touchs dummy boot files
-XPATCH_DEPS_built = $(SCHEME_HOST_WORKAREA)/$(MACH)/boot/$(MACH)/scheme.boot \
-                    $(SCHEME_WORKAREA)/boot/$(TARGET_MACH)/scheme.boot
-XPATCH_DEPS_existing = 
-XPATCH_DEPS = $(XPATCH_DEPS@USE_SCHEME_MODE@)
-
-$(XPATCH_FILE): $(XPATCH_DEPS)
-	$(MAKE) bounce TARGET=build-xpatch-using-host
-
-build-xpatch-using-host:
-	cd $(SCHEME_WORKAREA)/$(TARGET_MACH)/s && $(MAKE) -f Mf-cross m=$(MACH) xm=$(TARGET_MACH) Scheme="$(SCHEME_BIN)" SCHEMEHEAPDIRS="$(SCHEME_INC)"
-
-XPATCH =
-XPATCHcross = --xpatch $(XPATCH_FILE)
-
-racket.boot: racket.so
-	$(SCHEME) --script $(srcdir)/convert-to-boot.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) racket.so racket.boot $(TARGET_MACH)
-
-@INCLUDEDEP@ compiled/expander.d
-@INCLUDEDEP@ compiled/thread.d
-@INCLUDEDEP@ compiled/io.d
-@INCLUDEDEP@ compiled/regexp.d
-@INCLUDEDEP@ compiled/schemify.d
-@INCLUDEDEP@ compiled/known.d
 
 # ----------------------------------------
 # Unix
@@ -652,7 +489,6 @@ RUN_THIS_RACKET = $(DESTDIR)$(bindir)/racket$(CS_INSTALLED)
 
 # Intended for configuration by an external makefile that drives this one:
 SELF_ROOT_CONFIG_FLAG = -Z
-SELF_ROOT_CONFIG_DIR = ../../../../../build/config
 SELF_ROOT_CONFIG = $(SELF_ROOT_CONFIG_FLAG) $(SELF_ROOT_CONFIG_DIR)
 
 INST_CONFIG = -X "$(DESTDIR)$(collectsdir)" -G "$(DESTDIR)$(configdir)"

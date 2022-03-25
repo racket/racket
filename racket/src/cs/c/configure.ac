@@ -154,9 +154,8 @@ POST_LINKER=""
 FRAMEWORK_INSTALL_DIR='$(libpltdir)'
 FRAMEWORK_PREFIX='@executable_path/../lib/'
 
-RACKET='$(DEFAULT_RACKET)'
+RACKET=
 BOOTFILE_RACKET=
-RUN_RACKET='$(RUN_THIS_RACKET)'
 SETUP_BOOT_MODE=--boot
 
 INSTALL_SETUP_FLAGS="--no-user"
@@ -164,8 +163,6 @@ INSTALL_SETUP_RACKET_FLAGS=
 
 Z_LIB=''
 LZ4_LIB=''
-
-CS_HOST_WORKAREA_PREFIX=
 
 PLT_CS_SLSP_SUFFIX=
 
@@ -321,19 +318,12 @@ case "$host_os" in
     if test "${enable_libfw}" = "yes" ; then
       FRAMEWORK_INSTALL_DIR=/Library/Frameworks
       FRAMEWORK_REL_INSTALL=no
-      FRAMEWORK_PREFIX=''
     elif test "${enable_userfw}" = "yes" ; then
       FRAMEWORK_INSTALL_DIR=~/Library/Frameworks
       FRAMEWORK_REL_INSTALL=no
-      FRAMEWORK_PREFIX=''
     else
       FRAMEWORK_INSTALL_DIR='${libpltdir}'
       FRAMEWORK_REL_INSTALL=yes
-      if test "${libpltdir_rel}" = "" ; then
-        FRAMEWORK_PREFIX='$(FRAMEWORK_ABS_PREFIX)'
-      else
-        FRAMEWORK_PREFIX='$(FRAMEWORK_REL_PREFIX)'
-      fi
     fi
 
     if test "${enable_mac64}" = "no"; then
@@ -496,31 +486,17 @@ fi
 
 ############## Racket and Chez Scheme ################
 
-case "$srcdir" in
-    /*)
-        upsrcdir=$srcdir
-        ;;
-    *)
-        upsrcdir=../$srcdir
-        ;;
-esac
-
-SCHEME_DIR=${srcdir}/../../ChezScheme
-MAKE_BUILD_SCHEME=checkout
-USE_SCHEME_MODE="_built"
-MAKE_SCHEME_MODE="${T_CROSS_MODE}"
+SCHEME_SRC_DIR=${srcdir}/../../ChezScheme
 
 if test "${enable_scheme}" != "" ; then
    if test -d "${enable_scheme}" ; then
      # Directory exists, so use it as a build directory
      echo "Using supplied Scheme path as a build directory"
-     CS_HOST_WORKAREA_PREFIX="${enable_scheme}/"
+     SCHEME_DIR="${enable_scheme}"
    else
      # Directory does not exist, so assume it's an executable
      echo "Using supplied Scheme path as an executable"
-     MAKE_SCHEME_MODE="${T_CROSS_MODE}-via-scheme"
-     MAKE_SCHEME_SCHEME="${enable_scheme}"
-     USE_SCHEME_MODE="_existing"
+     SCHEME="${enable_scheme}"
    fi     
 fi
 
@@ -623,14 +599,14 @@ fi
 ############## zlib and LZ4 ################
 
 if test "${enable_libz}" != "no" ; then
-  if test ! -d "$SCHEME_DIR/zlib" ; then
+  if test ! -d "$SCHEME_SRC_DIR/zlib" ; then
     echo "No libz in Scheme directory, so trying installed"
     enable_libz=yes
   fi
 fi
 
 if test "${enable_liblz4}" != "no" ; then
-  if test ! -d "$SCHEME_DIR/lz4" ; then
+  if test ! -d "$SCHEME_SRC_DIR/lz4" ; then
     echo "No lz4 in Scheme directory, so trying installed"
     enable_liblz4=yes
   fi
@@ -812,7 +788,6 @@ SCHEME_CROSS_CONFIG_ARGS="--machine=${KERNEL_TARGET_MACH} --disable-x11 ${cs_aut
 
 RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
 
-AC_SUBST(upsrcdir)
 AC_SUBST(CC)
 AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)
@@ -829,22 +804,19 @@ AC_SUBST(ICP)
 AC_SUBST(ICP_LIB)
 AC_SUBST(STRIP_DEBUG)
 AC_SUBST(STRIP_LIB_DEBUG)
-AC_SUBST(STRIP_SIGNATURE)
-AC_SUBST(RESTORE_SIGNATURE)
 AC_SUBST(RKTLINKER)
 AC_SUBST(POST_LINKER)
 AC_SUBST(RKTL_PRE)
 AC_SUBST(RKTL_POST)
 AC_SUBST(RACKET)
 AC_SUBST(BOOTFILE_RACKET)
+AC_SUBST(SCHEME)
 AC_SUBST(SCHEME_DIR)
 AC_SUBST(MACH)
 AC_SUBST(TARGET_MACH)
 AC_SUBST(KERNEL_TARGET_MACH)
 AC_SUBST(DIFF_MACH)
 AC_SUBST(CROSS_MODE)
-AC_SUBST(T_CROSS_MODE)
-AC_SUBST(TT_CROSS_MODE)
 AC_SUBST(MAKE_SCHEME_MODE)
 AC_SUBST(MAKE_SCHEME_SCHEME)
 AC_SUBST(USE_SCHEME_MODE)
@@ -870,7 +842,6 @@ AC_SUBST(COMP_SUBDIR_CONFIGURE_ARGS)
 AC_SUBST(CROSS_COMPILE_TARGET_KIND)
 AC_SUBST(CS_HOST_WORKAREA_PREFIX)
 AC_SUBST(PBCHUNK_MODE)
-AC_SUBST(RUN_RACKET)
 AC_SUBST(INSTALL_SETUP_FLAGS)
 AC_SUBST(INSTALL_SETUP_RACKET_FLAGS)
 AC_SUBST(INSTALL_LIBS_ENABLE)

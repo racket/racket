@@ -628,7 +628,6 @@ PLT_CS_SLSP_SUFFIX
 INSTALL_LIBS_ENABLE
 INSTALL_SETUP_RACKET_FLAGS
 INSTALL_SETUP_FLAGS
-RUN_RACKET
 PBCHUNK_MODE
 CS_HOST_WORKAREA_PREFIX
 CROSS_COMPILE_TARGET_KIND
@@ -654,22 +653,19 @@ SETUP_BOOT_MODE
 USE_SCHEME_MODE
 MAKE_SCHEME_SCHEME
 MAKE_SCHEME_MODE
-TT_CROSS_MODE
-T_CROSS_MODE
 CROSS_MODE
 DIFF_MACH
 KERNEL_TARGET_MACH
 TARGET_MACH
 MACH
 SCHEME_DIR
+SCHEME
 BOOTFILE_RACKET
 RACKET
 RKTL_POST
 RKTL_PRE
 POST_LINKER
 RKTLINKER
-RESTORE_SIGNATURE
-STRIP_SIGNATURE
 STRIP_LIB_DEBUG
 STRIP_DEBUG
 ICP_LIB
@@ -680,7 +676,6 @@ ARFLAGS
 AR
 LINK_DYNAMIC
 LD
-upsrcdir
 EGREP
 GREP
 CPP
@@ -3278,9 +3273,8 @@ POST_LINKER=""
 FRAMEWORK_INSTALL_DIR='$(libpltdir)'
 FRAMEWORK_PREFIX='@executable_path/../lib/'
 
-RACKET='$(DEFAULT_RACKET)'
+RACKET=
 BOOTFILE_RACKET=
-RUN_RACKET='$(RUN_THIS_RACKET)'
 SETUP_BOOT_MODE=--boot
 
 INSTALL_SETUP_FLAGS="--no-user"
@@ -3288,8 +3282,6 @@ INSTALL_SETUP_RACKET_FLAGS=
 
 Z_LIB=''
 LZ4_LIB=''
-
-CS_HOST_WORKAREA_PREFIX=
 
 PLT_CS_SLSP_SUFFIX=
 
@@ -4574,19 +4566,12 @@ case "$host_os" in
     if test "${enable_libfw}" = "yes" ; then
       FRAMEWORK_INSTALL_DIR=/Library/Frameworks
       FRAMEWORK_REL_INSTALL=no
-      FRAMEWORK_PREFIX=''
     elif test "${enable_userfw}" = "yes" ; then
       FRAMEWORK_INSTALL_DIR=~/Library/Frameworks
       FRAMEWORK_REL_INSTALL=no
-      FRAMEWORK_PREFIX=''
     else
       FRAMEWORK_INSTALL_DIR='${libpltdir}'
       FRAMEWORK_REL_INSTALL=yes
-      if test "${libpltdir_rel}" = "" ; then
-        FRAMEWORK_PREFIX='$(FRAMEWORK_ABS_PREFIX)'
-      else
-        FRAMEWORK_PREFIX='$(FRAMEWORK_REL_PREFIX)'
-      fi
     fi
 
     if test "${enable_mac64}" = "no"; then
@@ -4749,31 +4734,17 @@ fi
 
 ############## Racket and Chez Scheme ################
 
-case "$srcdir" in
-    /*)
-        upsrcdir=$srcdir
-        ;;
-    *)
-        upsrcdir=../$srcdir
-        ;;
-esac
-
-SCHEME_DIR=${srcdir}/../../ChezScheme
-MAKE_BUILD_SCHEME=checkout
-USE_SCHEME_MODE="_built"
-MAKE_SCHEME_MODE="${T_CROSS_MODE}"
+SCHEME_SRC_DIR=${srcdir}/../../ChezScheme
 
 if test "${enable_scheme}" != "" ; then
    if test -d "${enable_scheme}" ; then
      # Directory exists, so use it as a build directory
      echo "Using supplied Scheme path as a build directory"
-     CS_HOST_WORKAREA_PREFIX="${enable_scheme}/"
+     SCHEME_DIR="${enable_scheme}"
    else
      # Directory does not exist, so assume it's an executable
      echo "Using supplied Scheme path as an executable"
-     MAKE_SCHEME_MODE="${T_CROSS_MODE}-via-scheme"
-     MAKE_SCHEME_SCHEME="${enable_scheme}"
-     USE_SCHEME_MODE="_existing"
+     SCHEME="${enable_scheme}"
    fi
 fi
 
@@ -4956,29 +4927,6 @@ $as_echo "$set_strip_lib" >&6; }
   fi
   ICP_STRIP_FLAG=" -s"
 fi
-
-case "$host_os" in
-  darwin*)
-    if test "${enable_codesign}" = "yes" ; then
-      case "$host_cpu" in
-         aarch64)
-           STRIP_SIGNATURE="codesign --remove-signature"
-           RESTORE_SIGNATURE="codesign -s - --entitlements"
-         ;;
-         *)
-          # Check whether `codesign` can remove signatures
-          touch sig-test-file
-          if `codesign --remove-signature sig-test-file > /dev/null 2>&1` ; then
-             STRIP_SIGNATURE="codesign --remove-signature"
-          fi
-          rm sig-test-file
-          ;;
-      esac
-   else
-     STRIP_SIGNATURE='$(STRIP_SIGNATURE_VIA_RACKET)'
-     RESTORE_SIGNATURE='$(RESTORE_SIGNATURE_VIA_RACKET)'
-   fi
-esac
 
 
 ############## natipkg ################
@@ -5739,14 +5687,14 @@ fi
 ############## zlib and LZ4 ################
 
 if test "${enable_libz}" != "no" ; then
-  if test ! -d "$SCHEME_DIR/zlib" ; then
+  if test ! -d "$SCHEME_SRC_DIR/zlib" ; then
     echo "No libz in Scheme directory, so trying installed"
     enable_libz=yes
   fi
 fi
 
 if test "${enable_liblz4}" != "no" ; then
-  if test ! -d "$SCHEME_DIR/lz4" ; then
+  if test ! -d "$SCHEME_SRC_DIR/lz4" ; then
     echo "No lz4 in Scheme directory, so trying installed"
     enable_liblz4=yes
   fi
@@ -6087,11 +6035,6 @@ SCHEME_CONFIG_ARGS="--machine=${KERNEL_MACH} --disable-x11 ${disable_curses_arg}
 SCHEME_CROSS_CONFIG_ARGS="--machine=${KERNEL_TARGET_MACH} --disable-x11 ${cs_auto_flags} ${disable_curses_arg} ${extra_scheme_config_args}"
 
 RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
-
-
-
-
-
 
 
 
