@@ -304,7 +304,7 @@ case "$host_os" in
     if test "${enable_xonx}" = "no" ; then
       OSX="t"
     else
-      CONFIGURE_RACKET_SO_COMPILE="env PLT_CS_MAKE_UNIX_STYLE_MACOS=y"
+      CONFIGURE_RACKET_SO_COMPILE="PLT_CS_MAKE_UNIX_STYLE_MACOS=y"
       CPPFLAGS="${CPPFLAGS} -DRACKET_XONX"
       strip_needs_dash_s=yes
     fi
@@ -540,7 +540,7 @@ m4_include(../ac/strip.m4)
 ############## natipkg ################
 
 if test "${enable_natipkg}" = "yes" ; then
-  CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} env PLT_CS_SLSP_SUFFIX=-natipkg"
+  CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_SLSP_SUFFIX=-natipkg"
   PLT_CS_SLSP_SUFFIX="-natipkg"
 fi
 
@@ -761,7 +761,7 @@ if test "${enable_shared}" = "yes" ; then
   LIBSFX=la
   ICP_LIB="${LIBTOOLPROG} --mode=install install${ICP_STRIP_FLAG}"
 
-  CONFIGURE_RACKET_SO_COMPILE="env PLT_CS_MAKE_LINK_SHARED=y"
+  CONFIGURE_RACKET_SO_COMPILE="PLT_CS_MAKE_LINK_SHARED=y"
 else
   ICP=cp
   LTO="o"

@@ -69,6 +69,14 @@ SELF_ROOT_CONFIG_DIR =
 
 INSTALL_SETUP_FLAGS = @INSTALL_SETUP_FLAGS@
 
+OSX=@OSX@
+
+POST_LINKER = @POST_LINKER@
+
+# Communicate certain configuration choices to ".so" compiles via
+# environment variables:
+CONFIGURE_RACKET_SO_COMPILE = @CONFIGURE_RACKET_SO_COMPILE@
+
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 datarootdir = @datarootdir@

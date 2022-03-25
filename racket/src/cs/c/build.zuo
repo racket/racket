@@ -15,7 +15,7 @@
   (define m (lookup 'TARGET_MACH))
   (define host-m (lookup 'MACH))
 
-  (define mac? (glob-match? "*osx" m))
+  (define mac? (equal? (lookup 'OSX) "t"))
   (define mac-fw? (and mac?
                        (equal? (lookup 'MACLIBRKT_LINK_MODE) "fw")))
   (define windows? (glob-match? "*nt" m))
@@ -67,7 +67,9 @@
                                     (let ([vars (hash-set* vars
                                                            'scheme scheme.exe
                                                            'scheme-args scheme-args
-                                                           'schemify "f")])
+                                                           'schemify "f"
+                                                           'CONFIGURE_RACKET_SO_COMPILE
+                                                           (or (lookup 'CONFIGURE_RACKET_SO_COMPILE) ""))])
                                       (if (not cross?)
                                           vars
                                           (hash-set* vars
@@ -152,6 +154,9 @@
 
   (define check-bootstrap-same-stamp (at-dir "check-bootstrap-same-stamp"))
 
+  (define embed+boot-deps (list petite-v.boot scheme-v.boot racket-v.boot
+                                (at-source "embed-boot.rkt")))
+        
   (mkdir-p (at-dir "compiled"))
 
   (define (target->path t) (if (target? t) (target-path t) t))
@@ -228,6 +233,11 @@
                           args)
         (shell/wait (build-shell "install_name_tool" (map string->shell args)))))
   
+  (define (post-linker exe)
+    (let ([cmd (or (lookup 'POST_LINKER) "")])
+      (unless (equal? cmd "")
+        (shell/wait (build-shell cmd (string->shell exe))))))
+
   (define (mac-embed-boot src dest)
     (rm* dest)
     (cp src dest)
@@ -281,8 +291,7 @@
 
        ,(if windows?
             `[:target (,racketcs ,gracketcs ,libracketcsxxxxxxx.dll)
-                      (,raw_racketcs ,raw_gracketcs ,libracketcsxxx_RAW.dll ,(at-source "embed-boot.rkt")
-                                     ,petite-v.boot ,scheme-v.boot ,racket-v.boot)
+                      (,raw_racketcs ,raw_gracketcs ,libracketcsxxx_RAW.dll ,@embed+boot-deps)
                       ,(lambda (path token)
                          (bootstrap-racket (at-source "embed-boot.rkt")
                                            "--target" m
@@ -294,7 +303,7 @@
                                            petite-v.boot scheme-v.boot racket-v.boot))]
             `[:target ,racketcs (,raw_racketcs ,@(if mac?
                                                      (list framework)
-                                                     '())
+                                                     embed+boot-deps)
                                                ,link-config)
                       ,(lambda (path token)
                          (cond
@@ -318,7 +327,12 @@
                                                racketcs)
                             (restore-signature racketcs)]
                            [else
-                            (error "fixme")])
+                            (bootstrap-racket (at-source "embed-boot.rkt")
+                                              "--target" m
+                                              boot-compress-flags
+                                              raw_racketcs racketcs petite-v.boot scheme-v.boot racket-v.boot)
+                            (post-linker racketcs)
+                            (restore-signature racketcs)])
 
                          (unless cross?
                            ;; Take this opportunity to perform a sanity check on
@@ -329,7 +343,7 @@
                                          (at-source ".."))))])
 
        ,@(map
-          (lambda (raw_exe gui? res.o)
+          (lambda (raw_exe gui? main.o res.o)
             `[:target ,raw_exe (,main.o ,@(if mac-fw?
                                               (list framework)
                                               boot-objs)
@@ -353,40 +367,51 @@
                                                    config)
                                                'LDFLAGS
                                                (or (lookup 'LINK_DYNAMIC) "")))
-                         (define post (lookup 'POST_LINKER))
-                         (when post
+                         (define post (or (lookup 'POST_LINKER) ""))
+                         (unless (equal? post "")
                            (shell/wait (build-shell post raw_racketcs))))])
           (cons raw_racketcs (if mac? '() (list raw_gracketcs)))
           (cons #f (if mac? '() (list #t)))
+          (cons main.o (if mac? '() (list grmain.o)))
           (cons rres.o (if mac? '() (list grres.o))))
 
-       ,@(if mac?
-             `([:target ,gracketcs (,grmain.o ,@(if mac-fw?
-                                                    (list framework)
-                                                    boot-objs)
-                                              ,gracket-app-skeleton)
-                        ,(lambda (path token)
-                           (c-link (~a gracketcs "_raw")
-                                   (cons grmain.o
-                                         (if mac-fw?
-                                             (list framework)
-                                             (map target->path boot-objs)))
-                                   config)
-                           (mac-embed-boot (~a gracketcs "_raw") gracketcs)
-                           (install_name_tool "-change"
-                                              (build-path framework-dir "Racket")
-                                              (~a "@executable_path/../../../Racket.framework/Versions/" version "_CS/Racket")
-                                              gracketcs)
-                           (rm (~a gracketcs "_raw"))
-                           (restore-signature gracketcs))]
-               [:target ,gracket-app-skeleton (,(at-source "../../mac/osx_appl.rkt")
-                                               ,(at-source "../../version/racket_version.h")
-                                               ,(at-source "../../mac/icon/GRacket.icns"))
-                        ,(lambda (path token)
-                           (bootstrap-racket (at-source "../../mac/osx_appl.rkt")
-                                             (at-source "../..")
-                                             "CS"))])
-             '())
+       ,@(cond
+           [mac?
+            `([:target ,gracketcs (,grmain.o ,@(if mac-fw?
+                                                   (list framework)
+                                                   boot-objs)
+                                             ,gracket-app-skeleton)
+                       ,(lambda (path token)
+                          (c-link (~a gracketcs "_raw")
+                                  (cons grmain.o
+                                        (if mac-fw?
+                                            (list framework)
+                                            (map target->path boot-objs)))
+                                  config)
+                          (mac-embed-boot (~a gracketcs "_raw") gracketcs)
+                          (install_name_tool "-change"
+                                             (build-path framework-dir "Racket")
+                                             (~a "@executable_path/../../../Racket.framework/Versions/" version "_CS/Racket")
+                                             gracketcs)
+                          (rm (~a gracketcs "_raw"))
+                          (restore-signature gracketcs))]
+              [:target ,gracket-app-skeleton (,(at-source "../../mac/osx_appl.rkt")
+                                              ,(at-source "../../version/racket_version.h")
+                                              ,(at-source "../../mac/icon/GRacket.icns"))
+                       ,(lambda (path token)
+                          (bootstrap-racket (at-source "../../mac/osx_appl.rkt")
+                                            (at-source "../..")
+                                            "CS"))])]
+           [windows? '()]
+           [else
+            `([:target ,gracketcs (,raw_gracketcs ,@embed+boot-deps ,link-config)
+                       ,(lambda (path token)
+                          (bootstrap-racket (at-source "embed-boot.rkt")
+                                            "--target" m
+                                            boot-compress-flags
+                                            raw_gracketcs gracketcs petite-v.boot scheme-v.boot racket-v.boot)
+                          (post-linker gracketcs)
+                          (restore-signature gracketcs))])])
 
        [:target ,framework (,@boot-objs ,@boot-files)
                 ,(lambda (path token)
@@ -480,7 +505,11 @@
                                                         (hash-set* config
                                                                    'm m
                                                                    'zlibConfigureEnv zlibEnv)))
-                   (build (find-target (if cross? "kernel" "build") m-targets) token))]
+                   (build (find-target (if cross? "kernel" "build") m-targets) token)
+
+                   (unless cross?
+                     (build (find-target check-bootstrap-same-stamp the-targets)
+                            token)))]
        
        ,@(cond
            [(not (equal? (or (lookup 'BOOTFILE_RACKET) "") ""))
@@ -527,9 +556,6 @@
                           
                           (build (command-target->target (find-target "bootquick" pb-targets)
                                                          (list m))
-                                 token)
-
-                          (build (find-target check-bootstrap-same-stamp the-targets)
                                  token))])]
            [else
             (error "no route to initial bootfiles")])
@@ -748,7 +774,20 @@
        (rm* starter-app-dest)
        (icp-r (at-dir "Starter.app") starter-app-dest)]
       [else
-       (error "fixme non-mac")])
+       (define dest-gracket (build-path libpltdir (cs-suffix "gracket")))
+       (icp gracketcs dest-gracket)
+       (strip-signature dest-racket)
+       (strip-signature dest-gracket)
+       (set-collects-path dest-racket (lookup 'COLLECTS_PATH) (lookup 'CONFIG_PATH))
+       (set-collects-path dest-gracket (lookup 'COLLECTS_PATH) (lookup 'CONFIG_PATH))
+       (restore-signature dest-racket)
+       (restore-signature dest-gracket)
+       (unless (equal? "no-install" (lookup 'INSTALL_LIBS_ENABLE))
+         (map (lambda (v.boot .boot)
+                (bootstrap-racket (at-source "add-terminator.rkt") v.boot
+                                  (build-path libpltdir .boot)))
+              (list petite-v.boot scheme-v.boot racket-v.boot)
+              (list "petite.boot" "scheme.boot" "racket.boot")))])
 
     (when setup?
       ;; Run `raco setup`.
