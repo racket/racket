@@ -1,6 +1,7 @@
 #lang zuo/base
 (require "cmdline.zuo"
          "thread.zuo"
+         "config.zuo"
          "private/build-db.zuo")
 
 (provide (rename-out [make-target target]
@@ -30,6 +31,7 @@
          find-target
          make-at-dir
          provide-targets
+         bounce-to-targets
 
          command-target?
          command-target->target
@@ -602,6 +604,26 @@
            ,targets-at-id
            ;; builds to current directory by default:
            build-path))))
+
+(define-syntax (bounce-to-targets stx)
+  (unless (and (list? stx) (= 4 (length stx)))
+    (bad-syntax stx))
+  `(,(quote-syntax do-bounce-to-targets)
+    ,(quote-syntax at-source)
+    ,(list-ref stx 1)
+    ,(list-ref stx 2)
+    ,(list-ref stx 3)))
+
+(define (do-bounce-to-targets at-source config-file config-key script-file)
+  (unless (path-string? config-file) (arg-error 'bounce-to-targets "path string" config-file))
+  (unless (symbol? config-key) (arg-error 'bounce-to-targets "symbol" config-key))
+  (unless (path-string? script-file) (arg-error 'bounce-to-targets "path string" script-file))
+  (define config (config-file->hash (at-source config-file)))
+  (build/command-line* (dynamic-require ((make-at-dir (or (car (split-path config-file)) "."))
+                                         (hash-ref config 'srcdir)
+                                         script-file)
+                                        'targets-at)
+                       at-source))
 
 ;; ------------------------------------------------------------
 ;; Helpers for reading and updating build state

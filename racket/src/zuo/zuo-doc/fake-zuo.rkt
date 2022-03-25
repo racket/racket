@@ -222,6 +222,7 @@
     make-targets
     command-target?
     command-target->target
+    bounce-to-targets
 
     shell
     shell/wait

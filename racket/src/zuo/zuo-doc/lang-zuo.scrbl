@@ -609,15 +609,38 @@ all path separators the platform default (on Windows).}
 
 @defproc[(find-relative-path [base path-string?] [path path-string?]) path-string?]{
 
-Finds a path relative to @racket[base] that accesses the same file or
-directory as @racket[path]. Both @racket[base] and @racket[path] must
-be normalized in the sense of @racket[simple-form-path], otherwise
-@filepath{.} and @filepath{..} elements are treated normal path
-elements. If @racket[base] and @racket[path] are both absolute and
-they do not share a root element, the result can still be an absolute
-path. If @racket[base] starts with @filepath{..} elements that are not
-matched by @racket[path], then elements are drawn from
-@racket[(hash-ref (runtime-env) 'dir)].}
+Attempts to finds a path relative to @racket[base] that accesses the
+same file or directory as @racket[path]. Both @racket[base] and
+@racket[path] must be normalized in the sense of
+@racket[simple-form-path], otherwise @filepath{.} and @filepath{..}
+elements are treated normal path elements. Assuming that @racket[base]
+and @racket[path] are normalized, the result is always normalized.
+
+The result path depends on whether @racket[base] and @racket[path] are
+relative or absolute:
+
+@itemlist[
+
+ @item{If both are relative, the result is always a relative path. If
+       @racket[base] starts with @filepath{..} elements that are not
+       matched by @racket[path], then elements are drawn from
+       @racket[(hash-ref (runtime-env) 'dir)].}
+
+ @item{If both are absolute, the result is absolute if @racket[base]
+       and @racket[path] do not share a root element, otherwise the
+       result is relative.}
+
+ @item{If @racket[path] is absolute and @racket[base] is relative,
+       @racket[path] is returned as-is. The intent of this mode is to
+       preserve the ``absoluteness'' of @racket[path] in a setting
+       that otherwise works in terms of relative paths.}
+
+ @item{If @racket[base] is absolute and @racket[path] is relative,
+       @racket[path] is converted to absolute via
+       @racket[path->complete-path], and the result is as when both
+       are absolute (so, the result may still be absolute).}
+
+]}
 
 @defproc[(path-only [path path-string?]) path-string?]{
 
@@ -648,11 +671,15 @@ at the start of a path element does not count as a file suffix.}
 
 Expands to a function that acts like @racket[build-path] starting from
 the enclosing module's directory. That is, expands to a function
-equivalent to
+roughly equivalent to
 
 @racketblock[(lambda args
                (apply build-path (cons (path-only (quote-module-path))
-                                       args)))]}
+                                       args)))]
+
+If the argument to the function is an absolute path, however, the
+enclosing module's directory is ignored, and the function acts simply
+like @racket[build-path].}
 
 
 @section{Opaque Records}

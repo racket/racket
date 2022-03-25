@@ -93,7 +93,7 @@ or not consistent with the result of an earlier build.
 In many cases, a plain path string can be used as a target as a
 shorthand for applying @racket[input-file-target] to the path string.
 
-@section{Building Targets}
+@section[#:tag "build-targets"]{Building Targets}
 
 There is no global list of targets that @racket[build] draws from.
 Instead, @racket[build] starts with a given target, and it learns
@@ -149,6 +149,26 @@ the imported @racketidfont{targets-at} procedure plus
 (build/command-line* targets-at at-source)
 ]
 
+However, correctly encoding @nonterm{srcdir} can be tricky when
+working from something like a shell configure script or batch file to
+generate @filepath{main.zuo}. You may find it easier to write the path
+to a separate file using a shell-variable assignment syntax, and then
+have the generated @filepath{main.zuo} read from that file. The
+@racket[bounce-to-targets] form implements that pattern. For example,
+if @filepath{Mf-config} is written in the same directory with a
+@litchar{srcdir=} line to specify the source directory (where no
+escapes are needed for the path after @litchar{=}), then a
+@filepath{mzin.zuo} of them form
+
+@racketblock[
+@#,hash-lang[] @#,racketmodname[zuo]
+(bounce-to-targets "Mf-config" 'srcdir "build.zuo")
+]
+
+reads @filepath{Mf-config} to find and dispatch to
+@filepath{build.zuo} in the same way as the earlier example module.
+
+
 @section{Recording Results}
 
 Build results are stored in a @filepath{_zuo.db} file in the same
@@ -158,7 +178,8 @@ directory (i.e., the cached value for dependency is kept with the
 target, which is in a writable build space, while an input-file target
 might be in a read-only source space). A target's options can specify
 an alternative directory to use for @filepath{_zuo.db} and
-@filepath{_zuo_tc.db}.
+@filepath{_zuo_tc.db}. Timestamp recording in @filepath{_zuo_tc.db}
+is disabled if the @envvar{SOURCE_DATE_EPOCH} environment variable is set.
 
 In the unfortunate case that a @filepath{_zuo.db} or
 @filepath{_zuo_tc.db} file gets mangled, then it may trigger an error
@@ -483,6 +504,32 @@ creates a @racketidfont{main} submodule that runs
 @racket[(build/command-line* targets-at-id build-path)]. A script
 using @racket[provide-targets] thus works as a makefile-like script or
 as an input to a larger build.}
+
+@defform[(bounce-to-targets config-file-expr key-symbol-expr script-file-expr)]{
+
+Chains to targets from (the path produced by)
+@racket[script-file-expr] relative to the directory recorded in (the
+file whose path is produced by) @racket[config-file-expr] using the
+key (produced by) @racket[key-symbol-expr], supplying the enclosing
+script's directory as the target directory.
+
+The path produced by @racket[config-file-expr] is interpreted relative
+to the enclosing module. If the path in that file for
+@racket[key-symbol-expr] is relative, it is treated relative to the
+@racket[config-file-expr] path.
+
+See @secref["build-targets"] for an explanation of how
+@racket[bounce-to-targets] is useful. The expansion of
+@racket[bounce-to-targets] is roughly as follows:
+
+@racketblock[
+  (define config (config-file->hash (at-source config-file-expr)))
+  (define at-config-dir (make-at-dir (or (car (split-path config-file)) ".")))
+  (define script-file (at-config-dir (hash-ref config key-symbol-expr)
+                                     script-file-expr))
+  (build/command-line* (dynamic-require script-file 'targets-at)
+                       at-source)
+]}
 
 @defproc[(make-targets [specs list?]) list?]{
 

@@ -112,8 +112,8 @@
   (when (> (length l) 3)
     (check (find-relative-path "../../../bin/tarm64osx/bin/" "../main.o")
            (build-path ".." ".." ".." (list-ref l 2) (list-ref l 1) "main.o"))))
-(check-arg-fail (find-relative-path "/home/zuo/src" "tmp/cache")
-                "both relative or both absolute")
+(check (find-relative-path "tmp/cache" "/home/zuo/src")
+       "/home/zuo/src")
 
 (when unix?
   (check (find-relative-path "/home/zuo/src" "/home/zuo/src/private/optimize")

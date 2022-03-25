@@ -191,9 +191,17 @@
     (arg-error 'find-relative-path "path string" wrt))
   (unless (path-string? p)
     (arg-error 'find-relative-path "path string" p))
-  (define rel? (relative-path? wrt))
-  (unless (eq? rel? (relative-path? p))
-    (error "find-relative-path: paths are not both relative or both absolute" (list wrt p)))
+  (cond
+    [(relative-path? wrt)
+     (if (relative-path? p)
+         (do-find-relative-path wrt p #t)
+         p)]
+    [else
+     (if (relative-path? p)
+         (do-find-relative-path wrt (path->complete-path p) #t)
+         (do-find-relative-path wrt p #f))]))
+
+(define (do-find-relative-path wrt p rel?)
   (define wrts (explode-path wrt))
   (cond
     [(string=? (car wrts) ".") p]

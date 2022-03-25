@@ -175,7 +175,9 @@
                          (lambda ()
                            (shell/wait (apply build-shell
                                               (map string->shell
-                                                   (cons (find-relative-path dir configure)
+                                                   (cons (if (relative-path? configure)
+                                                             (find-relative-path dir configure)
+                                                             configure)
                                                          configure-args)))
                                        (hash 'dir dir)))))
                  (hash 'quiet? #t

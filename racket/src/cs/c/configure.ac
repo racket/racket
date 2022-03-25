@@ -852,3 +852,5 @@ AC_SUBST(RKTIO_CONFIGURE_ARGS)
 makefiles="Makefile"
 
 AC_OUTPUT($makefiles)
+
+cp ${srcdir}/buildmain.zuo main.zuo

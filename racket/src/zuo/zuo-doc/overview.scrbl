@@ -29,7 +29,7 @@ You can also use @exec{configure}, @exec{make}, and @exec{make
 install}, where @exec{make} targets mostly invoke a Zuo script after
 compiling @filepath{zuo.c}. If you don't use @exec{configure} but
 compile to @exec{zuo} in the current directory, then @exec{./zuo
-build.zuo} and @exec{./zuo build.zuo install} (omit the !exec{./} on Windows)
+build.zuo} and @exec{./zuo build.zuo install} (omit the @exec{./} on Windows)
 will do the same thing as @exec{make} and @exec{make install} with
 a default configuration.
 
@@ -252,3 +252,73 @@ module's hash table: @racket['submodules]. The value of
 each representing a submodule. When Zuo runs an initial script, it
 looks for a @racket['main] submodule and runs it (i.e., calls the
 thunk) if present.
+
+
+@section[#:tag "paths"]{Path Handling}
+
+Working with paths is a central issue in many scripting tasks, and
+it's certainly a key problem for a build system. Zuo embeds some
+specific choices about how to work with paths:
+
+@itemlist[
+
+ @item{Zuo relies on syntactic normalization of paths. For example,
+       starting with @filepath{a/b} and building @filepath{../c} from
+       there produces the path @filepath{a/c}, even if @filepath{a/b}
+       on the filesystem is a symbolic link to to the relative path
+       @filepath{x/y/z}---in which case the filesystem would resolve
+       @filepath{a/b/../c} the same as @filepath{a/x/y/z/../c}, which
+       is @filepath{a/z/y/c} and not @filepath{a/c}.
+
+       In short, mixing directory symbolic links with Zuo's path
+       functions can be different than what the filesystem would do,
+       so take care to avoid cases that would not work. Symbolic links
+       to files will not create problems, so consider just never using
+       directory links.}
+
+ @item{There is no way to change the working directory of the Zuo
+       process. Having a fixed current directory means that relative
+       paths work in many more situations than they would otherwise.
+       Relative paths are communicated to system facilities still in
+       relative form, leaving it up to the operating system to resolve
+       the path relative to the current working directory.
+
+       When starting a subprocess, you can pick the working directory
+       for the subprocess. In that case, you must take care to adjust
+       relative paths communicated to the process, and
+       @racket[find-relative-path] can help.}
+
+ @item{Zuo uses and propagates relative paths as much as possible.
+       This convention is partly enabled by the fact that the working
+       directory cannot change within the Zuo process. It also helps
+       avoid trouble from a mismatch between syntactic and
+       filesystem-based path resolution, as might be created with
+       symbolic directory links; for example, even if you used
+       symbolic links or one of multiple filesystem mounts to access a
+       Zuo working tree, staying within that tree avoids complications
+       with the path that reaches the tree.
+
+       The way that you start a Zuo script affects the script's
+       operation in terms of absolute or relative paths. If you start
+       a Zuo script with a relative patch, such as @exec{zuo
+       scripts/go.zuo}, the @racket[quote-module-path] form will
+       report a relative path for the enclosing script. If you start
+       it with an absolute path, such as @exec{zuo
+       /home/racket/scripts/go.zuo}, then @racket[quote-module-path]
+       reports an absolute path. Similarly, with
+       @racketmodname[zuo/build], when you use a relative path to
+       refer to a dependency, then information about the dependency
+       can be recorded in relative form, but referring to a dependency
+       with an absolute path means that information is recorded with
+       an absolute path (even if that could be made relative to the
+       dependent target's path).}
+
+ @item{The @racket[build/build] library encourages an explicit
+       distinction between ``source'' and ``build'' directories,
+       neither of which necessarily corresponds to the current working
+       directory. This distinction, along with the fact that the
+       working directory doesn't change, helps to create composable
+       build scripts. See @secref["build-targets"] for more
+       information.}
+
+]

@@ -92,31 +92,32 @@
        (if (file-exists? db-path)
            (string-read (file->string db-path) 0 db-path)
            '()))
-     (define tc-content
-       (if (file-exists? tc-path)
-           (string-read (file->string tc-path) 0 tc-path)
-           '()))
      (define dep-sha1s-l (hash->list (cdr ts) db-dir))
      (define new-db-content (reassoc (list* rel-target-path (car ts) dep-sha1s-l) db-content))
-     (define new-tc-content
-       (foldl (lambda (dep tc-content)
-                (define dep-name (car dep))
-                (cond
-                  [(symbol? dep-name) tc-content]
-                  [else
-                   (define time (file-timestamp (if (relative-path? dep-name)
-                                                    (build-path db-dir dep-name)
-                                                    dep-name)))
-                   (cond
-                     [time (reassoc (list dep-name time (cadr dep)) tc-content)]
-                     [else tc-content])]))
-              tc-content
-              (if (pair? co-outputs)
-                  (append (split-sha1s rel-target-path co-outputs (car ts) db-dir)
-                          dep-sha1s-l)
-                  (cons (list rel-target-path (car ts)) dep-sha1s-l))))
      (update-file db-path new-db-content)
-     (update-file tc-path new-tc-content))))
+     (unless (ormap (lambda (p) (string=? (car p) "SOURCE_DATE_EPOCH")) (hash-ref (runtime-env) 'env))
+       (define tc-content
+         (if (file-exists? tc-path)
+             (string-read (file->string tc-path) 0 tc-path)
+             '()))
+       (define new-tc-content
+         (foldl (lambda (dep tc-content)
+                  (define dep-name (car dep))
+                  (cond
+                    [(symbol? dep-name) tc-content]
+                    [else
+                     (define time (file-timestamp (if (relative-path? dep-name)
+                                                      (build-path db-dir dep-name)
+                                                      dep-name)))
+                     (cond
+                       [time (reassoc (list dep-name time (cadr dep)) tc-content)]
+                       [else tc-content])]))
+                tc-content
+                (if (pair? co-outputs)
+                    (append (split-sha1s rel-target-path co-outputs (car ts) db-dir)
+                            dep-sha1s-l)
+                    (cons (list rel-target-path (car ts)) dep-sha1s-l))))
+       (update-file tc-path new-tc-content)))))
 
 ;; Loads previous-build information for `abs-path`, as well as cached
 ;; SHA-1s for things that might be dependencies; loading needs to

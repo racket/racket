@@ -19,12 +19,20 @@
 
 (define (combine-path base)
   (lambda paths
-    (for-each (lambda (path)
-                (unless (and (path-string? path)
-                             (relative-path? path))
-                  (arg-error 'at-source "relative path string" path)))
-              paths)
-    (apply build-path (cons (or (car (split-path base)) ".") paths))))
+    (cond
+      [(pair? paths)
+       (unless (path-string? (car paths))
+         (arg-error 'at-source "path string" (car paths)))
+       (for-each (lambda (path)
+                   (unless (and (path-string? path)
+                                (relative-path? path))
+                     (arg-error 'at-source "relative path string" path)))
+                 (cdr paths))
+       (if (relative-path? (car paths))
+           (apply build-path (cons (or (car (split-path base)) ".") paths))
+           (apply build-path paths))]
+      [else
+       (or (car (split-path base)) ".")])))
 
 (define-syntax (at-source stx)
   (if (list? stx)
