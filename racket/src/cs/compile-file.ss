@@ -125,7 +125,7 @@
    [else
     (unless (equal? source-dir "")
       (library-directories (list (cons source-dir build-dir)))
-      (source-directories (list build-dir source-dir)))
+      (source-directories (list "." build-dir source-dir)))
     (for-each load deps)
     (parameterize ([current-generate-id
                     (let ([counter-ht (make-eq-hashtable)])

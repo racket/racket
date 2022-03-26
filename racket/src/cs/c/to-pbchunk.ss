@@ -1,4 +1,5 @@
 (define compressed? #f)
+(define dest ".")
 
 (define-values (petite.boot scheme.boot racket.boot)
   (let loop ([args (command-line-arguments)])
@@ -11,6 +12,11 @@
             (equal? (car args) "--xpatch")
             (pair? (cdr args)))
        (load (cadr args))
+       (loop (cddr args))]
+      [(and (pair? args)
+            (equal? (car args) "--dest")
+            (pair? (cdr args)))
+       (set! dest (cadr args))
        (loop (cddr args))]
       [(null? args)
        (error 'to-vfasl "missing petite.boot argument")]
@@ -35,8 +41,8 @@
   (flush-output-port)
   (time
    (pbchunk-convert-file in.boot
-                         out.boot
-                         (many c~a)
+                         (path-build dest out.boot)
+                         (map (lambda (c) (path-build dest c)) (many c~a))
                          (many reg~a)
                          start-index)))
 

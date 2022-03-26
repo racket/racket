@@ -23,7 +23,7 @@
 
   (define CS "ChezScheme")
 
-  (define pbchunk? #f)
+  (define pbchunk? (equal? (lookup 'PBCHUNK_MODE) "pbchunk"))
 
   (define boot-compress-flags
     (if (equal? (lookup 'BOOT_COMPRESS_COMP) "--compress")
@@ -35,7 +35,12 @@
   (define petite.boot (at-dir CS m "boot" m "petite.boot"))
   (define scheme.boot (at-dir CS m "boot" m "scheme.boot"))
   (define racket.boot (at-dir "racket.boot"))
-  (define boot-files (list petite.boot scheme.boot racket.boot))
+
+  (define petite-chunked.boot (if pbchunk? (at-dir "petite-pbchunk.boot") petite.boot))
+  (define scheme-chunked.boot (if pbchunk? (at-dir "scheme-pbchunk.boot") scheme.boot))
+  (define racket-chunked.boot (if pbchunk? (at-dir "racket-pbchunk.boot") racket.boot))
+  
+  (define boot-files (list petite-chunked.boot scheme-chunked.boot racket-chunked.boot))
 
   (define cross? (not (equal? m host-m)))
 
@@ -45,7 +50,7 @@
        (cons (at-dir CS m "bin" m (.exe "scheme"))
              (list "-B" petite.boot "-B" scheme.boot))]
       [(equal? "auto" (lookup 'RACKET))
-       (define dir (at-dir "../../local/cs/c" CS host-m))
+       (define dir (at-dir "local/cs/c" CS host-m))
        (cons (build-path dir "bin" host-m (.exe "scheme"))
              (list "-B" (build-path dir "boot" host-m "petite.boot")
                    "-B" (build-path dir "boot" host-m "scheme.boot")))]
@@ -82,19 +87,21 @@
                                     (list petite.boot
                                           scheme.boot)))
 
-  (define rktio_config.h (at-dir "../../rktio/rktio_config.h"))
+  (define rktio-dir (at-dir "rktio"))
+
+  (define rktio_config.h (build-path rktio-dir "rktio_config.h"))
   (define rktio-targets
     (cond
       [(eq? 'windows (system-type))
-       (mkdir-p (at-dir "../../rktio"))
+       (mkdir-p rktio-dir)
        ((dynamic-require (at-source "../../rktio/build.zuo")
                          'targets-at)
-        (make-at-dir (at-dir "../../rktio")))]
+        (make-at-dir rktio-dir))]
       [else
        (configured-targets-at (at-source "../../rktio/configure")
                               (shell->strings (hash-ref config 'RKTIO_CONFIGURE_ARGS ""))
                               '()
-                              (at-dir "../../rktio/Makefile")
+                              (build-path rktio-dir "Makefile")
                               (list rktio_config.h)
                               (at-source "../../rktio/build.zuo")
                               vars)]))
@@ -109,6 +116,17 @@
 
   (define main.o (at-dir (.c->.o "main.c")))
   (define grmain.o (at-dir (.c->.o "grmain.c")))
+
+  (define pbchunk-srcs
+    (if pbchunk?
+        (let loop ([i 0])
+          (if (= i 10)
+              '()
+              (list* (at-dir (~a "petite" i ".c"))
+                     (at-dir (~a "scheme" i ".c"))
+                     (at-dir (~a "racket" i ".c"))
+                     (loop (+ i 1)))))
+        '()))
 
   (define boot.o (at-dir (.c->.o "boot.c")))
   (define boot-objs
@@ -127,9 +145,7 @@
                             (at-dir CS m "lz4/lib/liblz4.a")))
                   '()))
             (list librktio.a)
-            (if pbchunk?
-                (error "fixme")
-                '())))
+            (map .c->.o pbchunk-srcs)))
 
   (define MemoryModule.o (at-dir (.c->.o "MemoryModule.c")))
 
@@ -224,7 +240,7 @@
   (define (config-bootstrap-racket)
     (hash-set config 'racket (if (not cross?)
                                  raw_racketcs
-                                 (at-dir "../../local/cs/c/racketcs"))))
+                                 (at-dir "local/cs/c/racketcs"))))
   
   (define (bootstrap-racket . args)
     (racket (config-bootstrap-racket)
@@ -315,7 +331,7 @@
                          (configured-targets-at (at-source "../../cs/c/configure")
                                                 '()
                                                 '()
-                                                (at-dir "../../local/cs/c/Makefile")
+                                                (at-dir "local/cs/c/Makefile")
                                                 '()
                                                 (at-source "build.zuo")
                                                 (hash)))
@@ -472,16 +488,16 @@
                    (rm* (at-dir "Racket.framework/Racket"))
                    (symlink (~a "Versions/" version "_CS/Racket") (at-dir "Racket.framework/Racket"))
                    (mkdir-p fw-boot-dest-dir)
-                   (define (vfasl in.boot needs)
+                   (define (vfasl in.boot out.boot needs)
                      (scheme "--script" (at-source "to-vfasl.ss")
                              boot-compress-flags
                              xpatch-args
                              in.boot
-                             (build-path fw-boot-dest-dir (file-name-from-path in.boot))
+                             (build-path fw-boot-dest-dir (file-name-from-path out.boot))
                              needs))
-                   (vfasl petite.boot '())
-                   (vfasl scheme.boot '("petite"))
-                   (vfasl racket.boot '("petite" "scheme")))]
+                   (vfasl petite-chunked.boot "petite.boot" '())
+                   (vfasl scheme-chunked.boot "scheme.boot" '("petite"))
+                   (vfasl racket-chunked.boot "racket.boot" '("petite" "scheme")))]
 
        [:target ,libracketcsxxx_RAW.dll (,@boot-objs ,libres.o)
                 ,(lambda (path token)
@@ -524,7 +540,7 @@
                                      [config (config-include config
                                                              (at-dir CS m "boot" m)
                                                              (at-source "../../rktio")
-                                                             (at-dir "../../rktio"))])
+                                                             rktio-dir)])
                                 config)))]
 
        [:target ,MemoryModule.o (,(at-source "../../start/MemoryModule.c"))
@@ -641,7 +657,7 @@
                                                                                'm host-m)))
                           (build (command-target->target (find-target "bootquick" host-m-targets)
                                                          (list "--host-workarea"
-                                                               (at-dir "../../local/cs/c/ChezScheme" host-m)
+                                                               (at-dir "local/cs/c/ChezScheme" host-m)
                                                                m))
                                  token))])]
            [(directory-exists? (at-source "../../ChezScheme/boot/pb"))
@@ -669,19 +685,19 @@
                    (scheme "--script" (at-source "same-boot.ss") (at-dir CS "boot" m "scheme.boot") scheme.boot)
                    (fd-close (fd-open-output check-bootstrap-same-stamp :truncate)))]
 
-       [:target ,petite-v.boot (,petite.boot)
+       [:target ,petite-v.boot (,petite-chunked.boot)
                 ,(lambda (path target)
                    (scheme "--script" (at-source "to-vfasl.ss") boot-compress-flags xpatch-args
-                           petite.boot petite-v.boot))]
-       [:target ,scheme-v.boot (,scheme.boot)
+                           petite-chunked.boot petite-v.boot))]
+       [:target ,scheme-v.boot (,scheme-chunked.boot)
                 ,(lambda (path target)
                    (scheme "--script" (at-source "to-vfasl.ss") boot-compress-flags xpatch-args
-                           scheme.boot scheme-v.boot
+                           scheme-chunked.boot scheme-v.boot
                            "petite"))]
-       [:target ,racket-v.boot (,racket.boot)
+       [:target ,racket-v.boot (,racket-chunked.boot)
                 ,(lambda (path target)
                    (scheme "--script" (at-source "to-vfasl.ss") boot-compress-flags xpatch-args
-                           racket.boot racket-v.boot
+                           racket-chunked.boot racket-v.boot
                            "petite" "scheme"))]
 
        [:target ,rres.o (,(at-source "../../worksp/racket/racket.rc")
@@ -708,15 +724,26 @@
                            (cp (at-source "../../worksp/cs/cs_config.h") path))])
              '())
 
-       [:target here ()
-                ,(lambda (token)
-                   (define s (~a "#lang zuo\n"
-                                 (~a `(begin
-                                        (require ,(~s (find-relative-path (at-dir ".")
-                                                                          (at-source "build.zuo"))))
-                                        (build/command-line* targets-at at-source))
-                                     "\n")))
-                   (display-to-file s (at-dir "main.zuo") :truncate))]
+       ,@(if pbchunk?
+             `([:target (,@pbchunk-srcs ,petite-chunked.boot ,scheme-chunked.boot ,racket-chunked.boot)
+                        (,petite.boot ,scheme.boot ,racket.boot)
+                        ,(lambda (path token)
+                           (scheme "--script" (at-source "to-pbchunk.ss")
+                                   boot-compress-flags xpatch-args
+                                   "--dest" (at-dir ".")
+                                   petite.boot scheme.boot racket.boot))]
+               ,@(map (lambda (.c)
+                        `[:target ,(.c->.o .c) (,.c)
+                                  ,(lambda (path token)
+                                     (c-compile path
+                                                .c
+                                                (config-define (config-include config
+                                                                               (at-dir CS m "boot" m)
+                                                                               (at-dir CS m "c")
+                                                                               (at-source "../../ChezScheme/c"))
+                                                               "PORTABLE_BYTECODE")))])
+                      pbchunk-srcs))
+             '())
 
        [:target install ()
                 ,(lambda (token)
@@ -774,8 +801,6 @@
     (define includepltdir (if msvc?
                               (at-source "../../../include")
                               (at-destdir (shell-subst (lookup 'includepltdir) config))))
-    (alert "here")
-
     (define collectsdir (if msvc?
                             (at-source "../../../collects")
                             (at-destdir (shell-subst (lookup 'collectsdir) config))))

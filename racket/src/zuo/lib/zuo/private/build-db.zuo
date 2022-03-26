@@ -110,7 +110,7 @@
                                                       (build-path db-dir dep-name)
                                                       dep-name)))
                      (cond
-                       [time (reassoc (list dep-name time (cadr dep)) tc-content)]
+                       [time (reassoc (list dep-name time (substring (cadr dep) 0 40)) tc-content)]
                        [else tc-content])]))
                 tc-content
                 (if (pair? co-outputs)
