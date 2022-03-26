@@ -183,12 +183,15 @@
 
   (define (target->path t) (if (target? t) (target-path t) t))
 
-  (define (scheme . args)
+  (define (scheme/options options args)
     (define cmd (append scheme-args args))
     (fd-write (fd-open-output 'stdout)
               (~a (string-tree->shell (cons scheme.exe cmd))
                   "\n"))
-    (process/wait scheme.exe cmd))
+    (process/wait scheme.exe cmd options))
+
+  (define (scheme . args)
+    (scheme/options (hash) args))
 
   (define (compile-main main.o main.c)
     (c-compile main.o
@@ -218,10 +221,13 @@
           (at-dir compiled-subdir)
           "ignored" (at-dir "ignored.d")))
 
+  (define (config-bootstrap-racket)
+    (hash-set config 'racket (if (not cross?)
+                                 raw_racketcs
+                                 (at-dir "../../local/cs/c/racketcs"))))
+  
   (define (bootstrap-racket . args)
-    (racket (hash-set config 'racket (if (not cross?)
-                                         raw_racketcs
-                                         (at-dir "../../local/cs/c/racketcs")))
+    (racket (config-bootstrap-racket)
             (setup-boot)
             args))
   (define (install-racket . args)
@@ -756,22 +762,24 @@
       (unless windows?
         (shell/wait (build-shell (lookup 'STRIP_LIB_DEBUG) (string->shell path)))))
     
-    (define bindir (if windows?
+    (define bindir (if msvc?
                        (at-source "../../..")
                        (at-destdir (shell-subst (lookup 'bindir) config))))
-    (define libdir (if windows?
+    (define libdir (if msvc?
                        (at-source "../../../lib")
                        (at-destdir (shell-subst (lookup 'libdir) config))))
-    (define libpltdir (if windows?
+    (define libpltdir (if msvc?
                           libdir
                           (at-destdir (shell-subst (lookup 'libpltdir) config))))
-    (define includepltdir (if windows?
+    (define includepltdir (if msvc?
                               (at-source "../../../include")
                               (at-destdir (shell-subst (lookup 'includepltdir) config))))
-    (define collectsdir (if windows?
+    (alert "here")
+
+    (define collectsdir (if msvc?
                             (at-source "../../../collects")
                             (at-destdir (shell-subst (lookup 'collectsdir) config))))
-    (define configdir (if windows?
+    (define configdir (if msvc?
                           (at-source "../../../etc")
                           (at-destdir (shell-subst (lookup 'configdir) config))))
     
@@ -918,6 +926,30 @@
               (list petite-v.boot scheme-v.boot racket-v.boot)
               (list "petite.boot" "scheme.boot" "racket.boot")))])
 
+    (when cross?
+      ;; These two files don't get installed anywhere, because they're
+      ;; not part of a distribution, but a distro build expects them
+      ;; to be created in the directory where Racket was cross-built
+      (define compile-xpatch (at-dir (~a "compile-xpatch." m)))
+      (define library-xpatch (at-dir (~a "library-xpatch." m)))
+      (scheme/options (hash 'dir (at-dir "."))
+                      (list "--script"
+                            (find-relative-path (at-dir ".") (at-source "mk-cross-serve.ss"))
+                            (find-relative-path (at-dir ".") (at-source "."))
+                            "cross-serve.ss"
+                            (find-relative-path (at-dir ".") (at-source "../expander/env.ss"))))
+      (display-to-file (~a (file->string (at-dir "cross-serve.so"))
+                           (file->string xpatch))
+                       compile-xpatch
+                       :truncate)
+      (display-to-file (apply ~a
+                              (map (lambda (name)
+                                     (file->string (at-dir (~a name "." host-m))))
+                                   '("chezpart" "rumble" "thread" "io"
+                                                "regexp" "schemify" "linklet" "expander")))
+                       library-xpatch
+                       :truncate))
+
     (when setup?
       ;; Run `raco setup`.
       (define (extras key) (shell->strings (or (lookup key) "")))
@@ -935,17 +967,20 @@
       (cond
         [(not cross?)
          (process/wait dest-racket
+                       self-root-config-flags
                        "-X" collectsdir
-                       (list "-G" configdir)
+                       "-G" configdir
                        (if (equal? setup-any-zo-dir "")
                            '()
                            (list "-MCR" (~a setup-any-zo-dir ":")))
-                       self-root-config-flags
                        setup-args)]
         [else
-         (bootstrap-racket self-root-config-flags
-                           "-MCR" (~a (at-dir "compiled") ":")
-                           "--cross-compiler" m (at-dir ".")
-                           setup-args)])))
+         (racket (config-bootstrap-racket)
+                 self-root-config-flags
+                 "-MCR" (~a (at-dir "compiled") ":")
+                 "--cross-compiler" m (at-dir ".")
+                 "-X" collectsdir
+                 "-G" configdir
+                 setup-args)])))
 
   the-targets)
