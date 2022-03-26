@@ -415,7 +415,7 @@ if test "${enable_pb}" = "yes" ; then
 fi
 
 if test "${enable_target}" != "" ; then
-  TARGET_MACH=${enable_target}
+  TARGE<T_MACH=${enable_target}
   CROSS_MODE="cross"
 elif test "${build_os}_${build_cpu}" != "${host_os}_${host_cpu}" ; then
   BUILD_THREAD_PREFIX="${thread_prefix}"
@@ -814,6 +814,7 @@ AC_SUBST(COMPRESS_COMP)
 AC_SUBST(BOOT_COMPRESS_COMP)
 AC_SUBST(FRAMEWORK_INSTALL_DIR)
 AC_SUBST(FRAMEWORK_REL_INSTALL)
+AC_SUBST(CROSS_COMPILE_TARGET_KIND)
 AC_SUBST(CS_INSTALLED)
 AC_SUBST(CS_COMPILED_SUBDIR)
 AC_SUBST(DISABLE_WPO)
@@ -825,7 +826,7 @@ AC_SUBST(INSTALL_LIBS_ENABLE)
 AC_SUBST(PLT_CS_SLSP_SUFFIX)
 AC_SUBST(RKTIO_CONFIGURE_ARGS)
 
-makefiles="Makefile"
+makefiles="Mf-config"
 
 AC_OUTPUT($makefiles)
 

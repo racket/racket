@@ -1,0 +1,143 @@
+# This makefile-form configuration template is instantiated in a build
+# directory to communicate configuration decisions from "configure" to
+# "build.zuo". Most variables here are optional, so a "Mf-config"
+# could be created directly (such as by "winfig.bat"). The main
+# required ones are `srcdir` and `MACH`. For non-Windows, `bindir`,
+# `libdir`, etc., are also required. `OSX` is required for Mac OS.
+
+# How to reach the source directory from the build directory (can be
+# relative):
+srcdir = @srcdir@
+
+# The host machine type:
+MACH = @MACH@
+
+# The machine type to build, which is `MACH` unless cross building:
+TARGET_MACH = @TARGET_MACH@
+
+# Whether the build is intended as a cross build ("cross") or not
+# (empty):
+CROSS_MODE = @CROSS_MODE@
+
+# For a pb build, we want `system-type` to return information about
+# the specific machine, not just "pb"
+KERNEL_TARGET_MACH = @KERNEL_TARGET_MACH@
+
+# If `RACKET` is set to something different than empty or `auto`, it
+# must be a compatible Racket to the curent build in the sense that
+# `require`s here to collection-based modules will work. The Racket
+# built here will never be run, so it's suitable as a part of a
+# cross-compile setup.
+#
+# If `BOOTFILE_RACKET` is set, then it needs only to be a Racket that
+# is recent enough to run "../../ChezScheme/rktboot/main.rkt".
+#
+RACKET = @RACKET@
+BOOTFILE_RACKET = @BOOTFILE_RACKET@
+
+# If `SCHEME` is set, it must be compatible to the curren build.
+# If `SCHEME_DIR` is set and `SCHEME` is not, then `SCHEME_DIR` refers
+# to an existing build directory.
+# If `RACKET` is "auto", then an auto-generated Scheme is used and
+# both of these are ignored.
+SCHEME = @SCHEME@
+SCHEME_DIR = @SCHEME_DIR@
+
+# C compiler, etc.
+CC = @CC@
+CFLAGS = @CFLAGS@
+CPPFLAGS = @CPPFLAGS@
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
+LINK_DYNAMIC = @LINK_DYNAMIC@
+AR = @AR@
+ARFLAGS = @ARFLAGS@
+RANLIB = @RANLIB@
+WINDRES = @WINDRES@
+
+STRIP_DEBUG = @STRIP_DEBUG@
+STRIP_LIB_DEBUG = @STRIP_LIB_DEBUG@
+
+ICP=@ICP@
+ICP_LIB=@ICP_LIB@
+
+# Arguments to pass along to "../../rktio/configure"
+RKTIO_CONFIGURE_ARGS = @RKTIO_CONFIGURE_ARGS@
+
+# For running a bootstraping Racket with "../../setup-go.rkt", use
+# `--boot` or `--chain` as the mode
+SETUP_BOOT_MODE = @SETUP_BOOT_MODE@
+
+# Configuration to record in the executable:
+COLLECTS_PATH = @COLLECTS_PATH@
+CONFIG_PATH = @CONFIG_PATH@
+
+# Communicate certain configuration choices to ".so" compilation via
+# environment variables:
+CONFIGURE_RACKET_SO_COMPILE = @CONFIGURE_RACKET_SO_COMPILE@
+
+# Configuration about how boot files are generated:
+BOOT_COMPRESS_COMP = @BOOT_COMPRESS_COMP@
+DISABLE_WPO = @DISABLE_WPO@
+
+# Potentially a suffix like "cs" to add to the end of installed
+# executables:
+CS_INSTALLED = @CS_INSTALLED@
+
+# "machine" or "any"
+CROSS_COMPILE_TARGET_KIND = @CROSS_COMPILE_TARGET_KIND@
+
+# Suffix to add to `system-library-subpath` result
+PLT_CS_SLSP_SUFFIX = @PLT_CS_SLSP_SUFFIX@
+
+# Whether to install "libkernel.a", etc., either "no-install" or
+# empty:
+INSTALL_LIBS_ENABLE = @INSTALL_LIBS_ENABLE@
+
+# Whether building for Mac OS, and how the framework is configured and
+# installed
+OSX=@OSX@
+MACLIBRKT_LINK_MODE = @MACLIBRKT_LINK_MODE@
+FRAMEWORK_INSTALL_DIR = @FRAMEWORK_INSTALL_DIR@
+FRAMEWORK_REL_INSTALL = @FRAMEWORK_REL_INSTALL@
+
+SELF_ROOT_CONFIG_DIR =
+
+INSTALL_SETUP_FLAGS = @INSTALL_SETUP_FLAGS@
+
+# Shell command to run after building an executable, where the
+# just-built executable is added to the end of the command
+POST_LINKER = @POST_LINKER@
+
+# If these are empty, the corresponding libraries are built out of
+# sources that are with Chez Scheme:
+Z_LIB=@Z_LIB@
+LZ4_LIB=@LZ4_LIB@
+
+DISABLE_ICONV=@DISABLE_ICONV@
+DISABLE_CURSES=@DISABLE_CURSES@
+
+# Whether pb Chez Scheme should link to libffi:
+SCHEME_LIBFFI = @SCHEME_LIBFFI@
+
+# Whether pb boot files should be "chunked" to C form ("pbchunk") or
+# not ("normal"); this needs to be "normal" for a non-pb build
+PBCHUNK_MODE = @PBCHUNK_MODE@
+
+# Installation destination configuration; these can expand to
+# references to each other, such as `${prefix}` or `${PACKAGE}`.
+# which in principle allows customization of the install step
+# in the style `zuo . install prefix=...`.
+PACKAGE = racket
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+datarootdir = @datarootdir@
+bindir = @bindir@
+libdir = @libdir@
+includepltdir = @includepltdir@
+libpltdir = @libpltdir@
+libpltdir_rel = @libpltdir_rel@
+etcpltdir = @etcpltdir@
+sharepltdir = @sharepltdir@
+collectsdir = @collectsdir@
+configdir = @etcpltdir@

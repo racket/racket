@@ -9,7 +9,7 @@
 (provide-targets targets-at)
 
 (define (targets-at at-dir [vars (hash)])
-  (define config (config-file->hash (at-dir "Makefile") vars))
+  (define config (config-file->hash (at-dir "Mf-config") vars))
   (define (lookup k) (hash-ref config k #f))
 
   (define host-m (lookup 'MACH))
@@ -331,7 +331,7 @@
                          (configured-targets-at (at-source "../../cs/c/configure")
                                                 '()
                                                 '()
-                                                (at-dir "local/cs/c/Makefile")
+                                                (at-dir "local/cs/c/Mf-config")
                                                 '()
                                                 (at-source "build.zuo")
                                                 (hash)))

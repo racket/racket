@@ -632,6 +632,7 @@ SCHEME_LIBFFI
 DISABLE_WPO
 CS_COMPILED_SUBDIR
 CS_INSTALLED
+CROSS_COMPILE_TARGET_KIND
 FRAMEWORK_REL_INSTALL
 FRAMEWORK_INSTALL_DIR
 BOOT_COMPRESS_COMP
@@ -4647,7 +4648,7 @@ if test "${enable_pb}" = "yes" ; then
 fi
 
 if test "${enable_target}" != "" ; then
-  TARGET_MACH=${enable_target}
+  TARGE<T_MACH=${enable_target}
   CROSS_MODE="cross"
 elif test "${build_os}_${build_cpu}" != "${host_os}_${host_cpu}" ; then
   BUILD_THREAD_PREFIX="${thread_prefix}"
@@ -6057,7 +6058,8 @@ RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
 
 
 
-makefiles="Makefile"
+
+makefiles="Mf-config"
 
 ac_config_files="$ac_config_files $makefiles"
 
