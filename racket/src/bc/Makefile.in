@@ -19,19 +19,18 @@ configdir = @etcpltdir@
 collectsdir = @collectsdir@
 builddir = @builddir@
 
-# for version.mak:
-mainsrcdir = @srcdir@/..
-@INCLUDEDEP@ @srcdir@/../version/version.mak
-
-NOOP = :
-
 CC = @CC@
 CPP = @CPP@
 
 # Although CFLAGS is defined via configure, the intent is that
 # CFLAGS and CPPFLAGS can be adjusted at `make' time.
-CFLAGS = @CFLAGS@ @COMPFLAGS@ @PROFFLAGS@
-CPPFLAGS =  @PREFLAGS@
+CFLAGS = @CFLAGS@
+PREFLAGS = @PREFLAGS@
+OPTIONS = @OPTIONS@
+GC2OPTIONS = @GC2OPTIONS@
+MZOPTIONS = @MZOPTIONS@
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
 
 AR = @AR@
 ARFLAGS = @ARFLAGS@
@@ -39,6 +38,13 @@ RANLIB = @RANLIB@
 
 STRIP_DEBUG = @STRIP_DEBUG@
 STRIP_LIB_DEBUG = @STRIP_LIB_DEBUG@
+
+LIBFFI_CONFIGURE_ARGS = @LIBFFI_CONFIGURE_ARGS@
+RKTIO_CONFIGURE_ARGS = @RKTIO_CONFIGURE_ARGS@
+
+FOREIGN_ENABLED = @FOREIGN_ENABLED@
+LIBFFI_BUILD_ENABLED = @LIBFFI_BUILD_ENABLED@
+FOREIGN_CONVENIENCE = @FOREIGN_CONVENIENCE@
 
 STRIP_SIGNATURE = @STRIP_SIGNATURE@
 RESTORE_SIGNATURE = @RESTORE_SIGNATURE@ "${srcdir}/../mac/entitlements.plist"
@@ -52,6 +58,8 @@ ARLIBFLAGS = @LDFLAGS@ @LIBS@
 
 RACKET = racket
 
+ENABLE_CIFY = @ENABLE_CIFY@
+
 # See ../../Makefile about RUN_RACKET_<X>, which 
 # typically redirects to RUN_THIS_RACKET_<X>:
 RUN_THIS_RACKET_CGC = ./racket@CGC@
@@ -63,6 +71,13 @@ SETUP_BOOT_COLLECTS_PATH = $(SETUP_BOOT) collpath.inc collpath.d  "$(srcdir)/../
 BOOTSTRAP_RACKET = @RUN_RACKET_CGC@ $(SETUP_BOOT) ignored ignored.d
 
 MZSRC = $(srcdir)/src
+
+# Whether building for Mac OS, and how the framework is configured and
+# installed
+OSX=@OSX@
+MACLIBRKT_LINK_MODE = @MACLIBRKT_LINK_MODE@
+FRAMEWORK_INSTALL_DIR = @FRAMEWORK_INSTALL_DIR@
+FRAMEWORK_REL_INSTALL = @FRAMEWORK_REL_INSTALL@
 
 FOREIGN_DIR = foreign
 FOREIGN_OBJ = $(FOREIGN_DIR)/foreign.@LTO@

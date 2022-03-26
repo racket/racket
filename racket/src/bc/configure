@@ -620,15 +620,13 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-enable_option_checking=no
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
-subdirs
+RKTIO_CONFIGURE_ARGS
+LIBFFI_CONFIGURE_ARGS
 INSTALL_NAME_TOOL
 CROSS_COMPILE_TARGET_KIND
-STARTUP_AS_AUTO
-STARTUP_AS_C
-STARTUP_AS_BYTECODE
+ENABLE_CIFY
 BOOT_MODE
 CGC_IF_NEEDED_FOR_MMM
 RUN_RACKET_MAIN_VARIANT
@@ -644,6 +642,8 @@ FOREIGNTARGET
 FOREIGN_CONVENIENCE
 FOREIGN_OBJSLIB
 FOREIGN_IF_USED
+LIBFFI_BUILD_ENABLED
+FOREIGN_ENABLED
 EXTRA_OSK_LIBS
 OSKHOME
 DLLTOOL
@@ -669,9 +669,7 @@ EXE_SUFFIX
 FRAMEWORK_PREFIX
 FRAMEWORK_REL_INSTALL
 FRAMEWORK_INSTALL_DIR
-NOT_MINGW
 MINGW
-NOT_OSX
 OSX
 EXTRA_GMP_DEP
 EXTRA_GMP_OBJ
@@ -682,7 +680,6 @@ XFORMFLAGS
 GCDIR
 MROPTIONS
 GC2OPTIONS
-CGCOPTIONS
 MZOPTIONS
 OPTIONS
 X_EXTRA_LIBS
@@ -865,7 +862,7 @@ LDFLAGS
 LIBS
 CPPFLAGS
 CPP'
-ac_subdirs_all='foreign/libffi '
+
 
 # Initialize some variables set by options.
 ac_init_help=
@@ -3520,7 +3517,6 @@ MZINSTALLTARGET=unix-install
 MZINSTALLBINDIR='$(bindir)'
 
 MZOPTIONS=
-CGCOPTIONS=
 GC2OPTIONS=
 DYN_CFLAGS=
 
@@ -3570,18 +3566,12 @@ try_no_nullability_completeness=no
 check_for_unwind=no
 
 if test "${enable_cify}" = "yes" ; then
-  STARTUP_AS_BYTECODE=_bytecode
-  STARTUP_AS_C=
-  STARTUP_AS_AUTO=_auto
+  ENABLE_CIFY=yes
 else
   if test "${enable_cify}" = "no" ; then
-    STARTUP_AS_BYTECODE=
-    STARTUP_AS_C=_c
-    STARTUP_AS_AUTO=_auto
+    ENABLE_CIFY=no
   else
-    STARTUP_AS_BYTECODE=_bytecode
-    STARTUP_AS_C=_c
-    STARTUP_AS_AUTO=
+    ENABLE_CIFY=auto
   fi
 fi
 
@@ -4956,11 +4946,8 @@ EXTRALIBS=
 EXTRA_GMP_OBJ=
 EXTRA_GMP_DEP=
 
-# For Racket targets:
-OSX=".osx"
-NOT_OSX=""
-MINGW=".mingw"
-NOT_MINGW=""
+OSX="f"
+MINGW="f"
 CGC_X86_64=""
 
 case "$host_os" in
@@ -5053,7 +5040,6 @@ case "$host_os" in
       CFLAGS="$CFLAGS -Wp,-H,64000"
       PREFLAGS="$PREFLAGS -D_HPUX_SOURCE"
       COMPFLAGS="$COMPFLAGS -Aa +Z"
-      CGCOPTIONS="$CGCOPTIONS +ESdbgasm"
       MZOPTIONS="$MZOPTIONS +e"
     fi
     LIBS="$LIBS -Wl,-E"
@@ -5064,8 +5050,7 @@ case "$host_os" in
     use_flag_pthread=no
     skip_curses_check=yes
     MZOPTIONS="$MZOPTIONS -fno-omit-frame-pointer" # to make JIT backtraces work
-    MINGW=""
-    NOT_MINGW=".other"
+    MINGW="t"
     MZINSTALLTARGET=mingw-install
     MZINSTALLBINDIR="${MZINSTALLBINDIR}/.."
     EXE_SUFFIX=".exe"
@@ -5224,12 +5209,14 @@ $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LD="'"'"${LD}"'"'
     fi
 
+    LDFLAGS="$LDFLAGS -Wl,-headerpad_max_install_names"
+    LIBS="$LIBS -framework CoreFoundation"
+
     if test "${enable_quartz}" = "yes" ; then
       WXVARIANT="wx_mac"
       INCLUDEDEP="-include"
       OPTIONS="$OPTIONS -fno-common"
-      OSX=""
-      NOT_OSX=".other"
+      OSX="t"
       MZINSTALLTARGET=osx-install
       DYN_CFLAGS=""
       if test "${enable_libfw}" = "yes" ; then
@@ -7357,6 +7344,64 @@ if test "${enable_werror}" = "yes"; then
   CFLAGS="-Werror ${CFLAGS}"
 fi
 
+############## subconfigures ################
+
+# Make sure the --enable-shared default is propagated:
+if test "${enable_shared}" = "yes" ; then
+  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --enable-shared"
+fi
+
+# Make sure the --enable-pthread result is propagated:
+if test "${enable_pthread}" = "yes" ; then
+  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --enable-pthread"
+else
+  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --disable-pthread"
+fi
+
+# Make sure the --enable-iconv result is propagated:
+if test "${enable_iconv}" = "yes" ; then
+  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --enable-iconv"
+else
+  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --disable-iconv"
+fi
+
+if test -d "${srcdir}/foreign" && test "${enable_foreign}" = "yes" ; then
+  FOREIGN_ENABLED=yes
+  if test "${have_libffi}" != "yes" ; then
+    LIBFFI_BUILD_ENABLED=yes
+  else
+    LIBFFI_BUILD_ENABLED=no
+  fi
+else
+  FOREIGN_ENABLED=no
+  MZOPTIONS="$MZOPTIONS -DDONT_USE_FOREIGN"
+fi
+
+# Pass certain configure args on to rktio
+keep_configure_args=
+fixup_prev=
+eval "set x $ac_configure_args"
+shift
+for fixup_arg
+do
+  case $fixup_arg in
+  # Strip away all feature choices
+  -enable* | --enable* | -disable* | --disable*)
+    ;;
+  -collects* | --collects* | -apps* | --apps* | -pkgs* | --pkgs*)
+    ;;
+  *)
+    case $fixup_arg in
+    *\'*) fixup_arg=`echo "$fixup_arg" | sed "s/'/'\\\\\\\\''/g"` ;;
+    esac
+    keep_configure_args="$keep_configure_args '$fixup_arg'" ;;
+  esac
+done
+
+
+LIBFFI_CONFIGURE_ARGS="$keep_configure_args$LIBFFI_CONFIGURE_EXTRAS$SUB_CONFIGURE_EXTRAS"
+RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
+
 ############## final output ################
 
 LIBS="$LIBS $EXTRALIBS"
@@ -7467,116 +7512,8 @@ LIBS="$LIBS $EXTRALIBS"
 
 
 
-mk_needed_dir()
-{
-  if test ! -d "$1" ; then
-    mkdir "$1"
-  fi
-}
 
-makefiles="Makefile
-             src/Makefile dynsrc/Makefile
-             sgc/Makefile gc2/Makefile"
-
-# Make sure the --enable-shared default is propagated:
-if test "${enable_shared}" = "yes" ; then
-  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --enable-shared"
-fi
-
-# Make sure the --enable-pthread result is propagated:
-if test "${enable_pthread}" = "yes" ; then
-  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --enable-pthread"
-else
-  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --disable-pthread"
-fi
-
-# Make sure the --enable-iconv result is propagated:
-if test "${enable_iconv}" = "yes" ; then
-  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --enable-iconv"
-else
-  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --disable-iconv"
-fi
-
-FOREIGNTARGET=
-FOREIGN_IF_USED="FOREIGN_NOT_USED"
-if test -d "${srcdir}/foreign" && test "${enable_foreign}" = "yes" ; then
-  if test "${have_libffi}" != "yes" ; then
-    ac_aux_dir=
-for ac_dir in foreign/libffi  "$srcdir"/foreign/libffi ; do
-  if test -f "$ac_dir/install-sh"; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/install-sh -c"
-    break
-  elif test -f "$ac_dir/install.sh"; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/install.sh -c"
-    break
-  elif test -f "$ac_dir/shtool"; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/shtool install -c"
-    break
-  fi
-done
-if test -z "$ac_aux_dir"; then
-  as_fn_error $? "cannot find install-sh, install.sh, or shtool in foreign/libffi  \"$srcdir\"/foreign/libffi " "$LINENO" 5
-fi
-
-# These three variables are undocumented and unsupported,
-# and are intended to be withdrawn in a future Autoconf release.
-# They can cause serious problems if a builder's source tree is in a directory
-# whose full name contains unusual characters.
-ac_config_guess="$SHELL $ac_aux_dir/config.guess"  # Please don't use this var.
-ac_config_sub="$SHELL $ac_aux_dir/config.sub"  # Please don't use this var.
-ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
-
-
-
-
-subdirs="$subdirs foreign/libffi"
-
-    # Smooth transition from libffi v3.1 to v3.3:
-    if test -h foreign/libffi/include/ffitarget.h ; then
-       rm foreign/libffi/include/ffitarget.h
-    fi
-  fi
-  FOREIGNTARGET="foreign-stuff"
-  FOREIGN_IF_USED="FOREIGN_USED"
-else
-  FOREIGNTARGET="foreign-stub"
-  MZOPTIONS="$MZOPTIONS -DDONT_USE_FOREIGN"
-fi
-makefiles="$makefiles foreign/Makefile"
-
-# Pass certain configure args on to rktio
-keep_configure_args=
-fixup_prev=
-eval "set x $ac_configure_args"
-shift
-for fixup_arg
-do
-  case $fixup_arg in
-  # Strip away all feature choices
-  -enable* | --enable* | -disable* | --disable*)
-    ;;
-  -collects* | --collects* | -apps* | --apps* | -pkgs* | --pkgs*)
-    ;;
-  *)
-    case $fixup_arg in
-    *\'*) fixup_arg=`echo "$fixup_arg" | sed "s/'/'\\\\\\\\''/g"` ;;
-    esac
-    keep_configure_args="$keep_configure_args '$fixup_arg'" ;;
-  esac
-done
-
-
-# Add in `SUB_CONFIGURE_EXTRAS'
-ac_configure_args="$keep_configure_args$LIBFFI_CONFIGURE_EXTRAS$SUB_CONFIGURE_EXTRAS"
-
-if test "${enable_gracket}" = "yes" ; then
-  makefiles="$makefiles
-             gracket/Makefile
-               gracket/gc2/Makefile"
-fi
+makefiles="Makefile"
 
 ac_config_files="$ac_config_files $makefiles"
 
@@ -8848,158 +8785,15 @@ if test "$no_create" != yes; then
   # would make configure fail if this is the last instruction.
   $ac_cs_success || as_fn_exit 1
 fi
-
-#
-# CONFIG_SUBDIRS section.
-#
-if test "$no_recursion" != yes; then
-
-  # Remove --cache-file, --srcdir, and --disable-option-checking arguments
-  # so they do not pile up.
-  ac_sub_configure_args=
-  ac_prev=
-  eval "set x $ac_configure_args"
-  shift
-  for ac_arg
-  do
-    if test -n "$ac_prev"; then
-      ac_prev=
-      continue
-    fi
-    case $ac_arg in
-    -cache-file | --cache-file | --cache-fil | --cache-fi \
-    | --cache-f | --cache- | --cache | --cach | --cac | --ca | --c)
-      ac_prev=cache_file ;;
-    -cache-file=* | --cache-file=* | --cache-fil=* | --cache-fi=* \
-    | --cache-f=* | --cache-=* | --cache=* | --cach=* | --cac=* | --ca=* \
-    | --c=*)
-      ;;
-    --config-cache | -C)
-      ;;
-    -srcdir | --srcdir | --srcdi | --srcd | --src | --sr)
-      ac_prev=srcdir ;;
-    -srcdir=* | --srcdir=* | --srcdi=* | --srcd=* | --src=* | --sr=*)
-      ;;
-    -prefix | --prefix | --prefi | --pref | --pre | --pr | --p)
-      ac_prev=prefix ;;
-    -prefix=* | --prefix=* | --prefi=* | --pref=* | --pre=* | --pr=* | --p=*)
-      ;;
-    --disable-option-checking)
-      ;;
-    *)
-      case $ac_arg in
-      *\'*) ac_arg=`$as_echo "$ac_arg" | sed "s/'/'\\\\\\\\''/g"` ;;
-      esac
-      as_fn_append ac_sub_configure_args " '$ac_arg'" ;;
-    esac
-  done
-
-  # Always prepend --prefix to ensure using the same prefix
-  # in subdir configurations.
-  ac_arg="--prefix=$prefix"
-  case $ac_arg in
-  *\'*) ac_arg=`$as_echo "$ac_arg" | sed "s/'/'\\\\\\\\''/g"` ;;
-  esac
-  ac_sub_configure_args="'$ac_arg' $ac_sub_configure_args"
-
-  # Pass --silent
-  if test "$silent" = yes; then
-    ac_sub_configure_args="--silent $ac_sub_configure_args"
-  fi
-
-  # Always prepend --disable-option-checking to silence warnings, since
-  # different subdirs can have different --enable and --with options.
-  ac_sub_configure_args="--disable-option-checking $ac_sub_configure_args"
-
-  ac_popdir=`pwd`
-  for ac_dir in : $subdirs; do test "x$ac_dir" = x: && continue
-
-    # Do not complain, so a configure script can configure whichever
-    # parts of a large source tree are present.
-    test -d "$srcdir/$ac_dir" || continue
-
-    ac_msg="=== configuring in $ac_dir (`pwd`/$ac_dir)"
-    $as_echo "$as_me:${as_lineno-$LINENO}: $ac_msg" >&5
-    $as_echo "$ac_msg" >&6
-    as_dir="$ac_dir"; as_fn_mkdir_p
-    ac_builddir=.
-
-case "$ac_dir" in
-.) ac_dir_suffix= ac_top_builddir_sub=. ac_top_build_prefix= ;;
-*)
-  ac_dir_suffix=/`$as_echo "$ac_dir" | sed 's|^\.[\\/]||'`
-  # A ".." for each directory in $ac_dir_suffix.
-  ac_top_builddir_sub=`$as_echo "$ac_dir_suffix" | sed 's|/[^\\/]*|/..|g;s|/||'`
-  case $ac_top_builddir_sub in
-  "") ac_top_builddir_sub=. ac_top_build_prefix= ;;
-  *)  ac_top_build_prefix=$ac_top_builddir_sub/ ;;
-  esac ;;
-esac
-ac_abs_top_builddir=$ac_pwd
-ac_abs_builddir=$ac_pwd$ac_dir_suffix
-# for backward compatibility:
-ac_top_builddir=$ac_top_build_prefix
-
-case $srcdir in
-  .)  # We are building in place.
-    ac_srcdir=.
-    ac_top_srcdir=$ac_top_builddir_sub
-    ac_abs_top_srcdir=$ac_pwd ;;
-  [\\/]* | ?:[\\/]* )  # Absolute name.
-    ac_srcdir=$srcdir$ac_dir_suffix;
-    ac_top_srcdir=$srcdir
-    ac_abs_top_srcdir=$srcdir ;;
-  *) # Relative name.
-    ac_srcdir=$ac_top_build_prefix$srcdir$ac_dir_suffix
-    ac_top_srcdir=$ac_top_build_prefix$srcdir
-    ac_abs_top_srcdir=$ac_pwd/$srcdir ;;
-esac
-ac_abs_srcdir=$ac_abs_top_srcdir$ac_dir_suffix
-
-
-    cd "$ac_dir"
-
-    # Check for guested configure; otherwise get Cygnus style configure.
-    if test -f "$ac_srcdir/configure.gnu"; then
-      ac_sub_configure=$ac_srcdir/configure.gnu
-    elif test -f "$ac_srcdir/configure"; then
-      ac_sub_configure=$ac_srcdir/configure
-    elif test -f "$ac_srcdir/configure.in"; then
-      # This should be Cygnus configure.
-      ac_sub_configure=$ac_aux_dir/configure
-    else
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: no configuration information is in $ac_dir" >&5
-$as_echo "$as_me: WARNING: no configuration information is in $ac_dir" >&2;}
-      ac_sub_configure=
-    fi
-
-    # The recursion is here.
-    if test -n "$ac_sub_configure"; then
-      # Make the cache file name correct relative to the subdirectory.
-      case $cache_file in
-      [\\/]* | ?:[\\/]* ) ac_sub_cache_file=$cache_file ;;
-      *) # Relative name.
-	ac_sub_cache_file=$ac_top_build_prefix$cache_file ;;
-      esac
-
-      { $as_echo "$as_me:${as_lineno-$LINENO}: running $SHELL $ac_sub_configure $ac_sub_configure_args --cache-file=$ac_sub_cache_file --srcdir=$ac_srcdir" >&5
-$as_echo "$as_me: running $SHELL $ac_sub_configure $ac_sub_configure_args --cache-file=$ac_sub_cache_file --srcdir=$ac_srcdir" >&6;}
-      # The eval makes quoting arguments work.
-      eval "\$SHELL \"\$ac_sub_configure\" $ac_sub_configure_args \
-	   --cache-file=\"\$ac_sub_cache_file\" --srcdir=\"\$ac_srcdir\"" ||
-	as_fn_error $? "$ac_sub_configure failed for $ac_dir" "$LINENO" 5
-    fi
-
-    cd "$ac_popdir"
-  done
-fi
 if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unrecognized options: $ac_unrecognized_opts" >&5
 $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
 
 
-mkdir -p rktio
-abssrcdir=`(cd ${srcdir}; pwd)`
-echo "=== configuring in rktio (${abssrcdir}/rktio)"
-cd rktio; eval "${abssrcdir}/../rktio/configure ${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
+# mkdir -p rktio
+# abssrcdir=`(cd ${srcdir}; pwd)`
+# echo "=== configuring in rktio (${abssrcdir}/rktio)"
+# cd rktio; eval "${abssrcdir}/../rktio/configure ${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
+
+cp ${srcdir}/buildmain.zuo main.zuo

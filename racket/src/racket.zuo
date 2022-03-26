@@ -1,0 +1,65 @@
+#lang zuo
+(require "lib.zuo")
+
+(provide setup-rktio
+         setup-boot
+         racket-version)
+
+(define (setup-rktio rktio-src-dir rktio-dir config)
+  (define msvc? (eq? 'windows (system-type)))
+  (define rktio_config.h (build-path rktio-dir "rktio_config.h"))
+  (define rktio-targets
+    (cond
+      [msvc?
+       (mkdir-p rktio-dir)
+       ((dynamic-require (build-path rktio-src-dir "build.zuo")
+                         'targets-at)
+        (make-at-dir rktio-dir))]
+      [else
+       (configured-targets-at (build-path rktio-src-dir "configure")
+                              (shell->strings (hash-ref config 'RKTIO_CONFIGURE_ARGS ""))
+                              '()
+                              (build-path rktio-dir "Makefile")
+                              (list rktio_config.h)
+                              (build-path rktio-src-dir "build.zuo")
+                              config)]))
+  (define librktio.a (find-target (~a "librktio." (if msvc? "lib" "a")) rktio-targets))
+
+  (list librktio.a
+        (if msvc?
+            (find-target "rktio_config.h" rktio-targets)
+            rktio_config.h)))
+
+(define (setup-boot at-dir config
+                    [options (hash)])
+  (list "-O" "info@compiler/cm"
+        "-l-" "setup" (or (hash-ref options 'mode #f)
+                          (hash-ref config 'SETUP_BOOT_MODE #f)
+                          "--boot")
+        (at-source "setup-go.rkt")
+        (at-dir (or (hash-ref options 'compiled-subdir #f)
+                    "compiled"))
+        "ignored" (at-dir (or (hash-ref options 'dep-file #f)
+                              "ignored.d"))))
+
+(define (racket-version)
+  (let* ([lines (string-split (file->string (at-source "version/racket_version.h"))
+                              "\n")]
+         [prefix "#define MZSCHEME_VERSION_"]
+         [match? (glob->matcher (~a prefix "*"))]
+         [len (string-length prefix)])
+    (define (get-version part)
+      (ormap (lambda (line)
+               (and (match? line)
+                    (string=? part (substring line len (+ 1 len)))
+                    (string->integer (car (string-split (substring line (+ len 2)) "\r")))))
+             lines))
+    (let ([X (get-version "X")]
+          [Y (get-version "Y")]
+          [Z (get-version "Z")]
+          [W (get-version "W")])
+      (if (= W 0)
+          (if (= Z 0)
+              (~a X "." Y)
+              (~a X "." Y "." Z))
+          (~a X "." Y "." Z "." W)))))

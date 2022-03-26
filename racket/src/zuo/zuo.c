@@ -5563,6 +5563,12 @@ zuo_t *zuo_process(zuo_t *command_and_args)
 
   argv = malloc(sizeof(char*) * (argc + 1));
 
+#ifdef ZUO_UNIX
+  if (!zuo_path_is_absolute(ZUO_STRING_PTR(command))
+      && (_zuo_car(zuo_split_path(command)) == z.o_false))
+    command = zuo_build_raw_path2(zuo_string("."), command);
+#endif
+
   argv[0] = zuo_string_to_c(command);
   for (i = argc; i-- > 1; ) {
     argv[i] = zuo_string_to_c(_zuo_car(rev_args));

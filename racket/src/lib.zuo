@@ -1,6 +1,7 @@
 #lang zuo
 
 (provide hash-set*
+         target->path
 
          string-tree->shell
 
@@ -23,6 +24,8 @@
         ht
         (loop (hash-set ht (car keys+vals) (cadr keys+vals))
               (cddr keys+vals)))))
+
+(define (target->path t) (if (target? t) (target-path t) t))
 
 (define (process/wait command . args)
   (fd-write (fd-open-output 'stdout)

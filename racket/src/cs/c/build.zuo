@@ -1,6 +1,6 @@
 #lang zuo
 (require "../../lib.zuo"
-         "version.zuo"
+         "../../racket.zuo"
          (only-in "../../ChezScheme/build.zuo"
                   [targets-at scheme-targets-at])
          (only-in "../main.zuo"
@@ -88,24 +88,9 @@
                                           scheme.boot)))
 
   (define rktio-dir (at-dir "rktio"))
-
-  (define rktio_config.h (build-path rktio-dir "rktio_config.h"))
-  (define rktio-targets
-    (cond
-      [(eq? 'windows (system-type))
-       (mkdir-p rktio-dir)
-       ((dynamic-require (at-source "../../rktio/build.zuo")
-                         'targets-at)
-        (make-at-dir rktio-dir))]
-      [else
-       (configured-targets-at (at-source "../../rktio/configure")
-                              (shell->strings (hash-ref config 'RKTIO_CONFIGURE_ARGS ""))
-                              '()
-                              (build-path rktio-dir "Makefile")
-                              (list rktio_config.h)
-                              (at-source "../../rktio/build.zuo")
-                              vars)]))
-  (define librktio.a (find-target (~a "librktio." (if msvc? "lib" "a")) rktio-targets))
+  (define librktio.a+rktio_config.h (setup-rktio (at-source "../../rktio") rktio-dir config))
+  (define librktio.a (list-ref librktio.a+rktio_config.h 0))
+  (define rktio_config.h (list-ref librktio.a+rktio_config.h 1))
 
   (define main-deps
     (list (at-source "main.c")
@@ -197,8 +182,6 @@
 
   (mkdir-p (at-dir "compiled"))
 
-  (define (target->path t) (if (target? t) (target-path t) t))
-
   (define (scheme/options options args)
     (define cmd (append scheme-args args))
     (fd-write (fd-open-output 'stdout)
@@ -230,13 +213,6 @@
                                                     (at-source "../../../etc")))))))])
                  config)))
 
-  (define (setup-boot [mode (or (lookup 'SETUP_BOOT_MODE) "--boot")]
-                      [compiled-subdir "compiled"])
-    (list "-O" "info@compiler/cm"
-          "-l-" "setup" mode (at-source "../../setup-go.rkt")
-          (at-dir compiled-subdir)
-          "ignored" (at-dir "ignored.d")))
-
   (define (config-bootstrap-racket)
     (hash-set config 'racket (if (not cross?)
                                  raw_racketcs
@@ -244,7 +220,7 @@
   
   (define (bootstrap-racket . args)
     (racket (config-bootstrap-racket)
-            (setup-boot)
+            (setup-boot at-dir config)
             args))
   (define (install-racket . args)
     ;; We could try to use the built or installed Racket, but the bootstrap
@@ -398,7 +374,7 @@
                            ;; Take this opportunity to perform a sanity check on
                            ;; known-value information:
                            (process/wait racketcs
-                                         (setup-boot)
+                                         (setup-boot at-dir config)
                                          (at-source "../known.rkt")
                                          (at-source ".."))))])
 
@@ -528,9 +504,7 @@
        [:target ,boot.o (,(at-source "boot.c")
                          ,(at-source "../../rktio/rktio.inc")
                          ,(at-source "boot.h")
-                         ,(if msvc?
-                              (find-target "rktio_config.h" rktio-targets)
-                              rktio_config.h))
+                         ,rktio_config.h)
                 ,(lambda (boot.o token)
                    (c-compile boot.o
                               (at-source "boot.c")
@@ -641,7 +615,8 @@
                                                  bootfile-racket))
                           ;; "rktboot/main.rkt" performs it's own timestamp-based "make"
                           (process/wait racket.exe
-                                        (setup-boot "--chain" "compiled/rktboot")
+                                        (setup-boot at-dir config (hash 'mode "--chain"
+                                                                        'compiled-subdir "compiled/rktboot"))
                                         (at-source "../../ChezScheme/rktboot/main.rkt")
                                         "--scheme-src" (at-source "../../ChezScheme")
                                         "--dest" (at-dir CS)
