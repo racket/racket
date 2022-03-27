@@ -21,6 +21,7 @@ builddir = @builddir@
 
 CC = @CC@
 CPP = @CPP@
+XFORMFLAGS = @XFORMFLAGS@
 
 # Although CFLAGS is defined via configure, the intent is that
 # CFLAGS and CPPFLAGS can be adjusted at `make' time.

@@ -39,8 +39,12 @@
         (at-source "setup-go.rkt")
         (at-dir (or (hash-ref options 'compiled-subdir #f)
                     "compiled"))
-        "ignored" (at-dir (or (hash-ref options 'dep-file #f)
-                              "ignored.d"))))
+        (if (hash-ref options 'tag #f)
+            "--tag"
+            "ignored")
+        (or (hash-ref options 'tag #f)
+            (at-dir (or (hash-ref options 'dep-file #f)
+                        "ignored.d")))))
 
 (define (racket-version)
   (let* ([lines (string-split (file->string (at-source "version/racket_version.h"))

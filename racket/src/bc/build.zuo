@@ -28,7 +28,7 @@
 
   (define frameworkcgc-dir (at-dir "Racket.framework/Versions" (~a version)))
   (define frameworkcgc (build-path frameworkcgc-dir "Racket"))
-  (define framework3m-dir (at-dir "Racket.framework/Versions" (~a version) "_3m"))
+  (define framework3m-dir (at-dir "Racket.framework/Versions" (~a version "_3m")))
   (define framework3m (build-path framework3m-dir "Racket"))
 
   (define libffi-targets
@@ -44,7 +44,7 @@
                               (at-source "foreign/buildffi.zuo")
                               config)]))
 
-  (define src-names/no-startup
+  (define src-names/no-startup-or-third-party
     '("salloc.c"
       "bignum.c"
       "bool.c"
@@ -59,7 +59,6 @@
       "file.c"
       "fun.c"
       "future.c"
-      "gmp/gmp.c"
       "hash.c"
       "jit.c"
       "jitalloc.c"
@@ -99,9 +98,17 @@
       "syntax.c"
       "thread.c"
       "type.c"
-      "unwind/libunwind.c"
       "validate.c"
       "vector.c"))
+
+  (define third-party-src-names
+    '("gmp/gmp.c"
+      "unwind/libunwind.c"))
+
+  (define src-names/no-startup
+    (append
+     third-party-src-names
+     src-names/no-startup-or-third-party))
 
   (define src-names
     (cons "startup.c"
@@ -118,14 +125,37 @@
     (cons startup1.o
           (cdr cgc-objs)))
 
+  (define 3m-src-names
+    (cons "startup.c"
+          src-names/no-startup-or-third-party))
+
+  (define 3m-objs
+    (map (lambda (name)
+           (at-dir "xsrc" (.c->.o (file-name-from-path name))))
+         3m-src-names))
+
+  (define 3m-all-objs
+    (append
+     (map (lambda (name)
+            (at-dir "src" (.c->.o (file-name-from-path name))))
+          third-party-src-names)
+     3m-objs))
+
   (define sgc.o
     (at-dir (.c->.o "sgc/sgc.c")))
 
-  (define main.o
+  (define newgc.o
+    (at-dir (.c->.o "gc2/newgc.c")))
+
+  (define maincgc.o
     (at-dir (.c->.o "src/main.c")))
+  (define main3m.o
+    (at-dir (.c->.o "xsrc/main.c")))
   
-  (define foreign.o
+  (define foreigncgc.o
     (at-dir (.c->.o "src/foreign.c")))
+  (define foreign3m.o
+    (at-dir (.c->.o "xsrc/foreign.c")))
 
   (define libffi.a
     (find-target (.a "ffi") libffi-targets))
@@ -133,14 +163,18 @@
   (define phase1/cstartup.inc (at-dir "phase1/cstartup.inc"))
 
   (mkdir-p (at-dir "src"))
+  (mkdir-p (at-dir "gc2"))
+  (mkdir-p (at-dir "xsrc"))
   (mkdir-p (at-dir "compiled"))
 
-  (define libracket.a (at-dir (.a "racket")))
-  (define libracket1.a (at-dir (.a "racket1")))
+  (define libracketcgc.a (at-dir (.a "racket")))
+  (define libracketcgc1.a (at-dir (.a "racket1")))
   (define libracketgc.a (at-dir (.a "racketgc")))
+  (define libracket3m.a (at-dir (.a "racket3m")))
 
   (define racketcgc1 (at-dir (.exe "racketcgc1")))
   (define racketcgc (at-dir (.exe "racketcgc")))
+  (define racket3m (at-dir (.exe "racket3m")))
 
   (define common-headers (list (at-source "include/scheme.h")
                                (at-source "include/schthread.h")
@@ -148,7 +182,15 @@
                                (at-source "src/stypes.h")
                                (at-dir "mzconfig.h")))
 
-  (define (mz-config config)
+  ;; These headers have only preprocessor definitions, so they're not
+  ;; picked up in ".sdep" files:
+  (define quiet-deps
+    (list
+     (at-source "../version/racket_version.h")
+     (at-source "sconfig.h")
+     (at-dir "mzconfig.h")))
+
+  (define (mz-config config [gc2? #f])
     (config-include (hash-set* config
                                'CPPFLAGS (hash-ref config 'PREFLAGS "")
                                'CFLAGS (build-shell
@@ -156,7 +198,10 @@
                                         (hash-ref config 'COMPFLAGS "")
                                         (hash-ref config 'PROFFLAGS "")
                                         (hash-ref config 'OPTIONS "")
-                                        (hash-ref config 'MZOPTIONS "")))
+                                        (hash-ref config 'MZOPTIONS "")
+                                        (if gc2?
+                                            (hash-ref config 'GC2OPTIONS "")
+                                            "")))
                     (at-dir ".")
                     (at-dir "rktio")
                     (at-source "../rktio")
@@ -174,12 +219,61 @@
             (setup-boot at-dir config)
             args))
 
-  (define cgc-link-inputs ; omits libracket.a
+  (define (xform dest src precomp-mode token [cpp-extra ""])
+    (racket (bootstrap-racket-config config racketcgc)
+            (setup-boot at-dir config (hash 'tag "++out"))
+            (at-source "gc2/xform-mod.rkt") "--depends"
+            "--cpp"
+            (build-shell (hash-ref config 'CPP)
+                         (string->shell (~a "-I" (at-dir ".")))
+                         (string->shell (~a "-I" (at-source "src")))
+                         (string->shell (~a "-I" (at-source "include")))
+                         (string->shell (~a "-I" (at-source "../version")))
+                         (string->shell (~a "-I" (at-source "../rktio")))
+                         (string->shell (~a "-I" (at-dir "rktio")))
+                         cpp-extra
+                         (hash-ref config 'PREFLAGS "")
+                         (hash-ref config 'OPTIONS "")
+                         (hash-ref config 'GC2OPTIONS "")
+                         (hash-ref config 'MZOPTIONS ""))
+            (shell->strings (hash-ref config 'XFORMFLAGS ""))
+            "-o" "++out"
+            dest src
+            (if (eq? precomp-mode 'no-precomp)
+                (hash)
+                (hash 'env
+                      (cons (if (eq? precomp-mode 'make-precomp)
+                                (cons "XFORM_PRECOMP" "yes")
+                                (cons "XFORM_USE_PRECOMP" (at-dir "xsrc/precomp.h")))
+                            (hash-ref (runtime-env) 'env)))))
+    (for-each (lambda (file)
+                (build/dep file token))
+              (car
+               (string-read (file->string (path-replace-extension dest ".sdep"))))))
+  
+  (define cgc-link-inputs ; omits libracketcgc.a
     (append
      (list libracketgc.a librktio.a)
-     (if foreign? (list foreign.o) '())
+     (if foreign? (list foreigncgc.o) '())
      (if libffi? (list libffi.a) '())))
-     
+
+  (define 3m-link-inputs
+    (append
+     (list librktio.a)
+     (if foreign? (list foreign3m.o) '())
+     (if libffi? (list libffi.a) '())))
+
+  (define (make-directory-defs)
+    (build-shell
+     (string->shell
+      (~a "-DINITIAL_COLLECTS_DIRECTORY=" (~s (find-relative-path
+                                               (at-dir ".")
+                                               (at-source "../../collects")))))
+     (string->shell
+      (~a "-DINITIAL_CONFIG_DIRECTORY=" (~s (find-relative-path
+                                             (at-dir ".")
+                                             (at-source "../../etc")))))))
+
   (define the-targets
     (make-targets
      `([:target ,(at-dir "cstartup.inc") (,racketcgc1 ,(at-source "src/startup.inc")
@@ -219,48 +313,55 @@
                                         (at-source "../version/racket_version.h"))]))]
 
        ,@(map
-          (lambda (racketcgc libracket.a framework?)
-            `[:target ,racketcgc (,libracket.a ,@(if framework? '() cgc-link-inputs) ,main.o)
+          (lambda (racketcgc libracket.a main.o link-inputs framework? fw-suffix)
+            `[:target ,racketcgc (,libracket.a ,@(if framework? '() link-inputs) ,main.o)
                       ,(lambda (path token)
                          (c-link path
                                  (append
                                   (list main.o)
                                   (if framework?
                                       '()
-                                      (cons libracket.a (map target->path cgc-link-inputs))))
+                                      (cons libracket.a (map target->path link-inputs))))
                                  (if framework?
-                                     (config-merge (config-merge config
-                                                                 'LDFLAGS
-                                                                 (string->shell (~a "-F" (at-dir "."))))
+                                     (config-merge config
                                                    'LIBS
-                                                   "-framework Racket")
+                                                   (string->shell
+                                                    (at-dir "Racket.framework" "Versions" (~a version fw-suffix) "Racket")))
                                      config)))])
-            
-          (list racketcgc racketcgc1)
-          (list (if mac-fw? frameworkcgc libracket.a) libracket1.a)
-          (list mac-fw? #f))
+          (list racketcgc1 racketcgc racket3m)
+          (list libracketcgc1.a (if mac-fw? frameworkcgc libracketcgc.a) (if mac-fw? framework3m libracket3m.a))
+          (list maincgc.o maincgc.o main3m.o)
+          (list cgc-link-inputs cgc-link-inputs 3m-link-inputs)
+          (list #f mac-fw? mac-fw?)
+          (list "" "" "_3m"))
 
-       [:target ,frameworkcgc (,libracket.a ,@cgc-link-inputs)
-                ,(lambda (path token)
-                   (mkdir-p frameworkcgc-dir)
-                   (c-link path
-                           (cons libracket.a (map target->path cgc-link-inputs))
-                           (config-merge config
-                                         'LDFLAGS
-                                         "-dynamiclib -all_load"))
-                   (rm* (at-dir "Racket.framework/Racket"))
-                   (symlink (build-path "Versions" version "Racket")
-                            (at-dir "Racket.framework/Racket")))]
+       ,@(map (lambda (framework framework-dir libracket.a link-inputs suffix)
+                `[:target ,framework (,libracket.a ,@link-inputs)
+                          ,(lambda (path token)
+                             (mkdir-p framework-dir)
+                             (c-link path
+                                     (cons libracket.a (map target->path link-inputs))
+                                     (config-merge config
+                                                   'LDFLAGS
+                                                   "-dynamiclib -all_load"))
+                             (rm* (at-dir "Racket.framework/Racket"))
+                             (symlink (build-path "Versions" (~a version suffix) "Racket")
+                                      (at-dir "Racket.framework/Racket")))])
+              (list frameworkcgc framework3m)
+              (list frameworkcgc-dir framework3m-dir)
+              (list libracketcgc.a libracket3m.a)
+              (list cgc-link-inputs 3m-link-inputs)
+              (list "" "_3m"))
 
        ,@(map
-          (lambda (libracket.a cgc-objs)
-            `[:target ,libracket.a (,@cgc-objs)
+          (lambda (libracket.a objs)
+            `[:target ,libracket.a (,@objs)
                       ,(lambda (path token)
                          (c-ar path
-                               cgc-objs
+                               objs
                                config))])
-          (list libracket1.a libracket.a)
-          (list cgc-obj1s cgc-objs))
+          (list libracketcgc1.a libracketcgc.a libracket3m.a)
+          (list cgc-obj1s cgc-objs (list* newgc.o 3m-all-objs)))
 
        [:target ,libracketgc.a (,sgc.o)
                 ,(lambda (path token)
@@ -277,6 +378,16 @@
                                         (mz-config config)))])
               src-names
               cgc-objs)
+
+       ,@(map (lambda (src-name obj)
+                (define src (at-dir "xsrc" src-name))
+                `[:target ,obj (,src)
+                          ,(lambda (path token)
+                             (c-compile path
+                                        src
+                                        (mz-config config #t)))])
+              3m-src-names
+              3m-objs)
 
        [:target ,startup1.o (,(at-source "src/startup.c") ,@common-headers
                                                           ,phase1/cstartup.inc
@@ -319,32 +430,85 @@
                                               (at-source ".")
                                               (at-dir "."))))]
 
-       [:target ,main.o (,(at-source "main.c")
-                         ,@common-headers
-                         ,(at-source "cmdline.inc")
-                         ,(at-source "../start/parse_cmdl.inc")
-                         ,(at-source "../start/cmdl_to_argv.inc")
-                         ,(at-source "../start/config.inc")
-                         ,(at-source "../start/self_exe.inc")
-                         ,(at-source "../start/delayed.inc")
-                         ,(at-source "../start/embedded_dll.inc"))
+       [:target ,newgc.o ,(list*
+                           (at-dir "mzconfig.h")
+                           (map (lambda (name)
+                                  (at-source "gc2" name))
+                                '("alloc_cache.c"
+                                  "block_cache.c"
+                                  "backtrace.c"
+                                  "commongc_internal.h"
+                                  "platforms.h"
+                                  "fnls.c"
+                                  "gc2.c"
+                                  "gc2.h"
+                                  "gc2_dump.h"
+                                  "gc2_obj.h"
+                                  "immobile_boxes.c"
+                                  "../include/scheme.h"
+                                  "../include/schthread.h"
+                                  "../sconfig.h"
+                                  "../uconfig.h"
+                                  "../src/stypes.h"
+                                  "../src/schexn.h"
+                                  "../gc2/gc2.h"
+                                  "../src/schemef.h"
+                                  "../src/mzrt.h"
+                                  "../src/schpriv.h"
+                                  "../utils/splay.c"
+                                  "mem_account.c"
+                                  "msgprint.c"
+                                  "my_qsort.c"
+                                  "newgc.c"
+                                  "newgc.h"
+                                  "page_range.c"
+                                  "places_gc.c"
+                                  "rlimit_heapsize.c"
+                                  "roots.c"
+                                  "stack_comp.c"
+                                  "sighand.c"
+                                  "var_stack.c"
+                                  "vm.c"
+                                  "vm_memalign.c"
+                                  "vm_mmap.c"
+                                  "vm_osk.c"
+                                  "vm_osx.c"
+                                  "weak.c")))
+                ,(lambda (path token)
+                   (c-compile path
+                              (at-source "gc2/newgc.c")
+                              (config-include (hash-set* config
+                                                         'CPPFLAGS (build-shell
+                                                                    (hash-ref config 'PREFLAGS "")
+                                                                    "-DSGC_EXPORTS")
+                                                         'CFLAGS (build-shell
+                                                                  (hash-ref config 'CFLAGS "")
+                                                                  (hash-ref config 'COMPFLAGS "")
+                                                                  (hash-ref config 'PROFFLAGS "")
+                                                                  (hash-ref config 'MZOPTIONS "")
+                                                                  (hash-ref config 'GC2OPTIONS "")))
+                                              (at-source ".")
+                                              (at-source "include")
+                                              (at-dir "."))))]
+
+       [:target ,maincgc.o (,(at-source "main.c")
+                            ,@common-headers
+                            ,(at-source "cmdline.inc")
+                            ,(at-source "../start/parse_cmdl.inc")
+                            ,(at-source "../start/cmdl_to_argv.inc")
+                            ,(at-source "../start/config.inc")
+                            ,(at-source "../start/self_exe.inc")
+                            ,(at-source "../start/delayed.inc")
+                            ,(at-source "../start/embedded_dll.inc"))
                 ,(lambda (path token)
                    (c-compile path
                               (at-source "main.c")
                               (config-merge (mz-config config)
                                             'CPPFLAGS
-                                            (build-shell
-                                             (string->shell
-                                              (~a "-DINITIAL_COLLECTS_DIRECTORY=" (~s (find-relative-path
-                                                                                       (at-dir ".")
-                                                                                       (at-source "../../collects")))))
-                                             (string->shell
-                                              (~a "-DINITIAL_CONFIG_DIRECTORY=" (~s (find-relative-path
-                                                                                     (at-dir ".")
-                                                                                     (at-source "../../etc")))))))))]
+                                            (make-directory-defs))))]
 
-       [:target ,foreign.o (,(at-source "foreign/foreign.c")
-                            ,@common-headers)
+       [:target ,foreigncgc.o (,(at-source "foreign/foreign.c")
+                               ,@common-headers)
                 ,(lambda (path token)
                    (c-compile path
                               (at-source "foreign/foreign.c")
@@ -353,6 +517,51 @@
                                     (config-include config
                                                     (at-dir "foreign/libffi/include"))
                                     config))))]
+
+       [:target ,(at-dir "xsrc/precomp.h") (,(at-source "gc2/precomp.c")
+                                            ,(at-source "gc2/xform-mod.rkt")
+                                            ,@quiet-deps)
+                ,(lambda (path token)
+                   (xform (at-dir "xsrc/precomp.h")
+                          (at-source "gc2/precomp.c")
+                          'make-precomp
+                          token))]
+
+       ,@(map (lambda (src-name)
+                (define src (at-source "src" src-name))
+                `[:target ,(at-dir "xsrc" src-name) (,src
+                                                     ,(at-dir "xsrc/precomp.h")
+                                                     ,(at-source "gc2/xform-mod.rkt")
+                                                     ,@quiet-deps)
+                          ,(lambda (path token)
+                             (xform path src 'use-precomp token))])
+              src-names)
+
+       [:target ,(at-dir "xsrc/main.c")  (,(at-source "main.c")
+                                          ,(at-source "gc2/xform-mod.rkt")
+                                          ,@quiet-deps)
+                ,(lambda (path token)
+                   (xform path (at-source "main.c") 'no-precomp token
+                          (make-directory-defs)))]
+
+       [:target ,main3m.o (,(at-dir "xsrc/main.c"))
+                ,(lambda (path token)
+                   (c-compile path
+                              (at-dir "xsrc/main.c")
+                              (mz-config config #t)))]
+
+       [:target ,(at-dir "xsrc/foreign.c")  (,(at-source "foreign/foreign.c")
+                                             ,(at-source "gc2/xform-mod.rkt")
+                                             ,@quiet-deps)
+                ,(lambda (path token)
+                   (xform path (at-source "foreign/foreign.c") 'no-precomp token
+                          (string->shell (~a "-I" (at-dir "foreign/libffi/include")))))]
+
+       [:target ,foreign3m.o (,(at-dir "xsrc/foreign.c"))
+                ,(lambda (path token)
+                   (c-compile path
+                              (at-dir "xsrc/foreign.c")
+                              (mz-config config #t)))]
 
        [:db-dir ,(at-dir "compiled")])))
 

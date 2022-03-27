@@ -1840,6 +1840,15 @@ static int peek_input(const unsigned char *s, zuo_int_t *_o, const char *want) {
   return 1;
 }
 
+static int all_digits_before_delim(const unsigned char *s, zuo_int_t i) {
+  while (isdigit(s[i]) || isalpha(s[i]) || strchr(symbol_chars, s[i])) {
+    if (!isdigit(s[i]))
+      return 0;
+    i++;
+  }
+  return 1;
+}
+
 static zuo_t *zuo_in(const unsigned char *s, zuo_int_t *_o, zuo_t *where, int skip_whitespace_only) {
   /* use `stack` insteda of recurring */
   zuo_t *stack = z.o_null, *obj;
@@ -1991,7 +2000,8 @@ static zuo_t *zuo_in(const unsigned char *s, zuo_int_t *_o, zuo_t *where, int sk
         zuo_read_fail(s, _o, where, "bad hash mark");
         obj = z.o_undefined;
       }
-    } else if (isdigit(c) || ((c == '-') && isdigit(s[(*_o)+1]))) {
+    } else if ((isdigit(c) || ((c == '-') && isdigit(s[(*_o)+1])))
+               && all_digits_before_delim(s, (*_o) + 1)) {
       zuo_uint_t n;
       int neg = (c == '-');
       if (neg) (*_o)++;
@@ -2034,7 +2044,7 @@ static zuo_t *zuo_in(const unsigned char *s, zuo_int_t *_o, zuo_t *where, int sk
                                                      : zuo_symbol("unquote"))),
                        stack);
       obj = z.o_undefined;
-    } else if ((c == '.') && !(isalpha(s[*_o+1]) || strchr(symbol_chars, s[*_o+1]))) {
+    } else if ((c == '.') && !(isalpha(s[*_o+1]) || isdigit(s[*_o+1]) || strchr(symbol_chars, s[*_o+1]))) {
       if ((stack != z.o_null) && (ZUO_CAR(ZUO_CAR(stack)) == ZUO_IN_PAREN_LIST_RECUR))
         ZUO_CAR(ZUO_CAR(stack)) = ZUO_IN_PAREN_PAIR_RECUR;
       else if ((stack != z.o_null) && (ZUO_CAR(ZUO_CAR(stack)) == ZUO_IN_BRACKET_LIST_RECUR))
@@ -2043,7 +2053,7 @@ static zuo_t *zuo_in(const unsigned char *s, zuo_int_t *_o, zuo_t *where, int sk
         zuo_read_fail(s, _o, where, "misplaced `.`");
       (*_o)++;
       obj = z.o_undefined;
-    } else if (isalpha(c) || strchr(symbol_chars, c)) {
+      } else if (isalpha(c) || isdigit(c) || strchr(symbol_chars, c)) {
       zuo_t *sym;
       zuo_int_t start = *_o, len;
       char *s2;
