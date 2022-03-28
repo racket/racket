@@ -330,7 +330,7 @@
 
   (define-values (call-with-scheme run-scheme/status run-scheme)
     (make-run-scheme at-source at-dir lookup
-                     (at-dir "..") m
+                     #f (at-dir "..") m
                      (source-directories)))
 
   (define (make-config-script opt)

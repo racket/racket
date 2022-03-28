@@ -12,6 +12,7 @@
   (define m (lookup 'm))
   (define host-m (or (lookup 'hostm) m))
   (define host-workarea (at-dir (or (lookup 'hostworkarea) "..")))
+  (define host-scheme (lookup 'hostscheme))
 
   (define src-names (string-split (hash-ref mf 'src)))
   (define srcs (map at-source src-names))
@@ -20,7 +21,7 @@
 
   (define-values (call-with-scheme run-scheme/status run-scheme)
     (make-run-scheme at-source at-dir lookup
-                     host-workarea host-m))
+                     host-scheme host-workarea host-m))
 
   (make-targets
    `([:target needed ,objs ,void]

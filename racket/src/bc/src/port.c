@@ -7104,7 +7104,7 @@ static char *Swide_to_utf8(const wchar_t *arg) {
 }
 
 static Scheme_Object *Sstring_utf8(const char *s, int len) {
-  return scheme_make_sized_utf8_string(s, len);
+  return scheme_make_sized_utf8_string((char *)s, len);
 }
 
 static Scheme_Object *S_LastErrorString() {

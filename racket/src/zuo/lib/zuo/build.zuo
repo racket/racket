@@ -44,7 +44,8 @@
 ;; A token represents a build in progress, used by a target's `get-rule` or `build`
 ;; function to make recursive call or get SHA-1s (possibly cached)
 (struct token (target     ; the target that received this token
-               ch))       ; a channel to access the build state
+               ch         ; a channel to access the build state
+               seen))     ; to detect dependency cycles
 
 (struct target (key       ; shortcut: `string->symbol` of the path
                 name      ; a symbol or path relative to the current directory
@@ -216,10 +217,13 @@
     (unless (hash? options) (arg-error 'build "hash table" options))
     (unless (or (not token) (token? token)) (arg-error 'build "build token or #f" token))
     (let ([resource-ch (and token
-                            (let ([state (channel-get (token-ch token))])
-                              (channel-put (token-ch token) state)
-                              (release-resource state)
-                              (build-state-resource-ch state)))])
+                            (let ([state (get-state (token-ch token) "nested")])
+                              (put-state (token-ch token) state "nested")
+                              (release-resource state "nested")
+                              (build-state-resource-ch state)))]
+          [seen (if token
+                    (token-seen token)
+                    (hash))])
       ;; Start a threading context, so we can have parallel build tasks
       ((if token (lambda (th) (th)) call-in-main-thread)
        (lambda ()
@@ -234,9 +238,9 @@
                                         (make-resources (hash-ref options 'jobs (default-jobs))))
                                     (or (hash-ref options 'log? #f)
                                         (assoc "ZUO_BUILD_LOG" (hash-ref (runtime-env) 'env)))))
-         (force-build t (do-build t state #t))
+         (do-build t state seen #t)
          (when resource-ch
-           (acquire-resource state)))))))
+           (acquire-resource state "continue from nested")))))))
 
 (define (build/dep t-in token)
   (unless (token? token) (arg-error 'build/dep "build token" token))
@@ -245,23 +249,26 @@
     (when (and (symbol? (target-name t))
                (not (symbol? (target-name (token-target token)))))
       (error "build/dep: cannot recur with a phony or data target"))
-    (let* ([state (channel-get (token-ch token))]
-           [_ (release-resource state)]
-           [state (force-build t (do-build t state #t))]
-           [_ (acquire-resource state)]
+    (let* ([state (get-state (token-ch token) "dep")]
+           [_ (release-resource state "dep")]
+           [state (do-build t state (token-seen token) #t)]
            [state (record-target-accumulated state (token-target token) t)])
-      (channel-put (token-ch token) state))))
+      (put-state (token-ch token) state "dep")
+      (acquire-resource state "continue from dep"))))
 
-;; Detects already built or cycles, but leaves in-progress (as
-;; represented by a channel) alone
-(define (do-build t state top?)
-  (let ([state (ensure-consistent state t)])
-    (define current (target-state state t))
-    (cond
-      [(not current) (build-input-or-unbuilt t state top?)]
-      [(eq? current 'pending) (error "build: dependency cycle" (target-name t))]
-      [(channel? current) state]
-      [else state])))
+;; Detects already built or cycles, and waits for in-progress (as
+;; represented by a channel) to complete
+(define (do-build t state seen top?)
+  (cond
+    [(hash-ref seen (target-key t) #f)
+     (error "build: dependency cycle" (target-name t))]
+    [else
+     (let ([state (ensure-consistent state t)])
+       (define current (target-state state t))
+       (cond
+         [(not current) (force-build t (build-input-or-unbuilt t state seen top?))]
+         [(channel? current) (force-build t state)]
+         [else state]))]))
 
 ;; Blocks until an in-progress target completes
 (define (force-build t state)
@@ -269,13 +276,15 @@
   (cond
     [(channel? current)
      ;; Waiting on the channel might block, so relinquish state
-     (channel-put (build-state-ch state) state)
+     (put-state (build-state-ch state) state "force")
      (channel-get current)
-     (channel-get (build-state-ch state))]
+     ;; Put value back to potentially satisfy some other waiting thread:
+     (channel-put current 'still-done)
+     (get-state (build-state-ch state) "force")]
     [else state]))
 
 ;; Shortcut for plain inputs, otherwise starts a build
-(define (build-input-or-unbuilt t state top?)
+(define (build-input-or-unbuilt t state seen top?)
   (when (build-state-log? state) (alert (~a "checking " (target-name t))))
   (cond
     [(eq? (target-kind t) 'input)
@@ -284,33 +293,36 @@
      (define sha1 (or (rule-sha1 r) (file-sha1/state (target-path t) state)))
      (when (equal? sha1 no-sha1) ((rule-build r)))
      (update-target-state state t (list sha1))]
-    [else (build-unbuilt t state top?)]))
+    [else (build-unbuilt t state seen top?)]))
 
 ;; Starts a build for a specific target
-(define (build-unbuilt t state top?)
+(define (build-unbuilt t state seen top?)
   (define path (target-name t))
   (define co-outputs (if (string? path)
                          (hash-ref (target-options t) 'co-outputs '())
                          '()))
   (define alert-top? (and top? (not (hash-ref (target-options t) 'quiet? #f))))
   (define dep-top? (and alert-top? (symbol? path)))
+  (define new-seen (hash-set seen (target-key t) #t))
 
   ;; delete a target file if we don't finish:
   (define path-handle (and (path-string? path)
                            (not (hash-ref (target-options t) 'precious? #f))
                            (cleanable-file path)))
 
-  (define pending-state (update-target-state state t 'pending))
-
   ;; get previously recorded result, possibly loading from a file
   ;; that is cached in the build state
-  (define loaded-state (load-sha1s pending-state t path))
+  (define loaded-state (load-sha1s state t path))
   (define prev-ts (previous-target-state loaded-state (target-key t)))
   (define prev-sha1 (car prev-ts))
   (define prev-dep-sha1s/raw-symbols (cdr prev-ts))
 
-  (define tok (token t (build-state-ch state)))
-  (channel-put (token-ch tok) loaded-state)
+  ;; record a channel as the start's current build state
+  (define result-ch (channel))
+  (define queued-state (update-target-state loaded-state t result-ch))
+
+  (define tok (token t (build-state-ch state) new-seen))
+  (put-state (token-ch tok) queued-state "rule")
 
   ;; first phase of the target: get a rule
   (define r ((target-get-rule t) (target-name t) tok))
@@ -335,18 +347,15 @@
                                 prev-dep-sha1s/raw-symbols
                                 (hash-keys prev-dep-sha1s/raw-symbols)))
 
-  (define rule-state (channel-get (token-ch tok)))
+  (define rule-state (get-state (token-ch tok) "rule"))
 
   ;; trigger builds of dependencies, but don't want for them to complete
-  (define fetch-state
-    (foldl (lambda (dep state) (do-build dep state dep-top?))
-           rule-state
-           deps))
+  (for-each (make-fetch-dep rule-state new-seen dep-top?) deps)
 
   ;; now that they're all potentially started, wait for completions
   (define new-state
-    (foldl (lambda (dep state) (force-build dep state))
-           fetch-state
+    (foldl (lambda (dep state) (do-build dep state new-seen dep-top?))
+           rule-state
            deps))
 
   ;; extract results, assemble in a hash table: <rel-path> -> <sha1>
@@ -386,13 +395,10 @@
                '()
                (hash-keys prev-dep-sha1s))
         '()))
-  (define more-fetch-state
-    (foldl (lambda (dep state) (do-build dep state dep-top?))
-           new-state
-           more-deps))
+  (for-each (make-fetch-dep new-state new-seen dep-top?) more-deps)
   (define newer-state
-    (foldl (lambda (dep state) (force-build dep state))
-           more-fetch-state
+    (foldl (lambda (dep state) (do-build dep state new-seen dep-top?))
+           new-state
            more-deps))
   (define all-dep-sha1s
     (foldl (lambda (dep dep-sha1s)
@@ -415,7 +421,9 @@
                 (equal? prev-sha1 sha1)
                 (not (equal? sha1 phony-sha1)))
        (alert (~a (target-name t) " is up to date")))
-     (update-target-state newer-state t (cons sha1 all-dep-sha1s))]
+     (define done-state (update-target-state newer-state t (cons sha1 all-dep-sha1s)))
+     (channel-put result-ch 'done)
+     done-state]
     [else
      (unless to-build
        (error "build: out-of-date target has no build procedure" (target-name t)))
@@ -441,27 +449,37 @@
                            (cons sha1 dep-sha1s))]
                    [ts (merge-target-accumulated state t ts)]
                    [state (update-target-state/record-sha1s state t ts co-outputs)])
+              (channel-put result-ch 'done)
               state)))))
      (let ([state-ch (build-state-ch newer-state)])
        (cond
          [(hash-ref (target-options t) 'eager? #f)
           ;; run build in this thread
-          (channel-put state-ch newer-state)
-          (build-one (lambda (proc) (proc (channel-get state-ch))))]
+          (put-state state-ch newer-state "build")
+          (build-one (lambda (proc) (proc (get-state state-ch "build"))))]
          [else
           ;; run build in its own thread
-          (let ([ch (channel)])
-            (thread (lambda ()
-                      (acquire-resource newer-state) ; limits process parallelism
-                      (build-one
-                       (lambda (proc)
-                         (release-resource newer-state)
-                         (let* ([state (channel-get state-ch)]
-                                [state (proc state)])
-                           (channel-put state-ch state)
-                           (channel-put ch 'done))))))
-            ;; meanwhile, record a channel as the start's current build state
-            (update-target-state newer-state t ch))]))]))
+          (thread (lambda ()
+                    (acquire-resource newer-state path) ; limits process parallelism
+                    (build-one
+                     (lambda (proc)
+                       (release-resource newer-state path)
+                       (let* ([state (get-state state-ch "tbuild")]
+                              [state (proc state)])
+                         (put-state state-ch state "tbuild"))))))
+          newer-state]))]))
+
+(define (make-fetch-dep state seen top?)
+  (let ([state-ch (build-state-ch state)])
+    (lambda (dep)
+      ;; No one waits for the this thread's work, and it doesn't
+      ;; actually use the build result. It just creates a demand for
+      ;; the build result, so the demand exists concurrent to waiting
+      ;; on dependencies.
+      (thread (lambda ()
+                (let* ([state (get-state state-ch "fetch")]
+                       [state (do-build dep state seen top?)])
+                  (put-state state-ch state "fetch")))))))
 
 ;; Alternative entry point suitable for use from a script's `main`
 (define (build/command-line targets [opts (hash)])
@@ -696,8 +714,8 @@
 (define (file-sha1 path token)
   (unless (path-string? path) (arg-error 'file-sha1 "path string" path))
   (unless (or (not token) (token? token)) (error 'file-sha1 "build-token" token))
-  (let ([state (and token (channel-get (token-ch token)))])
-    (when state (channel-put (token-ch token) state))
+  (let ([state (and token (get-state (token-ch token) "sha1"))])
+    (when state (put-state (token-ch token) state "sha1"))
     (file-sha1/state path state)))
 
 (define (files-sha1 paths token)
@@ -725,6 +743,12 @@
 ;; ------------------------------------------------------------
 ;; Generic helpers
 
+(define (get-state ch who)
+  (channel-get ch))
+
+(define (put-state ch state who)
+  (channel-put ch state))
+
 (define (make-resources n)
   (define ch (channel))
   (let loop ([n n])
@@ -733,11 +757,11 @@
       (loop (- n 1))))
   ch)
 
-(define (acquire-resource state)
+(define (acquire-resource state who)
   (channel-get (build-state-resource-ch state))
   (void))
 
-(define (release-resource state)
+(define (release-resource state who)
   (channel-put (build-state-resource-ch state) 'go))
 
 (define (log-changed same? who state)

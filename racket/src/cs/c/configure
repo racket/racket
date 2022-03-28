@@ -5968,13 +5968,13 @@ else
   ICP=cp
   LTO="o"
   LTA="a"
-  RKTLINKER='$(CC)'
+  RKTLINKER="${CC}"
   STATIC_AR="$AR"
   LIBSFX=so
   ICP_LIB=cp
   if test "${make_darwin_dylib}" = "yes" ; then
      LIBSFX="dylib"
-     AR='$(RKTLINKER) --shared -o'
+     AR="${RKTLINKER} --shared -o"
      ARFLAGS=""
      LIBS="${LIBS} -framework CoreFoundation"
      ICP_LIB=cp

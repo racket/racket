@@ -91,7 +91,11 @@
 
   (define m (lookup 'm))
   (define host-m (or (lookup 'hostm) m))
-  (define host-workarea (at-dir ".." (or (lookup 'hostworkarea) ".")))
+  (define host-workarea (let ([host-workarea (lookup 'hostworkarea)])
+                          (if (equal? host-workarea "")
+                              ""
+                              (at-dir ".." (or host-workarea ".")))))
+  (define host-scheme (lookup 'hostscheme))
   (define arch (m->arch m))
   (define arch.ss (~a (arch->backend arch) ".ss"))
 
@@ -200,7 +204,7 @@
 
   (define-values (call-with-scheme run-scheme/status run-scheme)
     (make-run-scheme at-source at-dir lookup
-                     host-workarea host-m
+                     host-scheme host-workarea host-m
                      (list (at-source "../unicode"))
                      (list (cons (at-source "../nanopass")
                                  (at-dir ".")))))

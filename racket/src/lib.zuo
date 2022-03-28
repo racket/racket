@@ -19,6 +19,8 @@
          shell-subst
          configured-targets-at
 
+         executable->path
+
          windres)
 
 (define (hash-set* ht . keys+vals)
@@ -74,8 +76,11 @@
 
 (define (racket vars . args)
   (define p (apply racket/process (cons vars args)))
-  (process-wait (hash-ref p 'process))
-  (unless (= 0 (process-status (hash-ref p 'process)))
+  (define pid (hash-ref p 'process))
+  (if (equal? "yes" (hash-ref vars 'racketConcurrent "no"))
+      (thread-process-wait pid)
+      (process-wait pid))
+  (unless (= 0 (process-status pid))
     (error "failed")))
 
 (define (raco/process vars . args)
@@ -209,6 +214,13 @@
   (if (not (car (split-path path)))
       (~a "./" path)
       path))
+
+(define (executable->path exe at-dir)
+  (if (relative-path? exe)
+      (if (not (car (split-path exe)))
+          (find-executable-path exe)
+          (at-dir exe))
+      exe))
 
 (define (windres in out config msvc? [flags ""])
   (if msvc?

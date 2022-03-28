@@ -69,19 +69,26 @@
       (error "target does not apply to a kernel-only configuration")))
 
   (define (parse-boot-args args k)
-    (define host-workarea
+    (define host-scheme
       (and (pair? args)
+           (equal? (car args) "--host-scheme")
+           (pair? (cdr args))
+           (cadr args)))
+    (define host-workarea
+      (and (not host-scheme)
+           (pair? args)
            (equal? (car args) "--host-workarea")
            (pair? (cdr args))
            (cadr args)))
-    (define rest-args (if host-workarea
+    (define rest-args (if (or host-workarea
+                              host-scheme)
                           (cddr args)
                           args))
     (unless (<= (length rest-args) 1) (error "expected optional <machine>" args))
     (define xm (if (null? rest-args)
                    (hash-ref config 'defaultm m)
                    (car rest-args)))
-    (k xm host-workarea))
+    (k xm host-scheme host-workarea))
 
   ;; Cross-builds for a machine type that is specified as an argument;
   ;; the machine type defaults to the `defaultm` configuration entry, and
@@ -89,14 +96,19 @@
   (define (cross-build-boot token args ccopts make-targets)
     (parse-boot-args
      args
-     (lambda (xm host-workarea)
+     (lambda (xm host-scheme host-workarea)
        (define dir (at-dir ".." (~a "xc-" xm)))
        (define s-dir (build-path dir "s"))
        (mkdir-p s-dir)
        (display-to-file (~a "m=" xm "\n"
                             "hostm=" m "\n"
-                            "hostworkarea=" (find-relative-path dir (or host-workarea
-                                                                        (at-dir .)))
+                            (if host-scheme
+                                (~a "hostscheme=" host-scheme "\n")
+                                "")
+                            "hostworkarea=" (if host-scheme
+                                                ""
+                                                (find-relative-path dir (or host-workarea
+                                                                            (at-dir .))))
                             "\n")
                         (build-path dir "Mf-config")
                         :truncate)
@@ -178,14 +190,16 @@
                    (check-not-kernel-only)
                    (parse-boot-args
                     args
-                    (lambda (xm host-workarea)
-                      (unless host-workarea
+                    (lambda (xm host-scheme host-workarea)
+                      (unless (or host-scheme host-workarea)
                         (build/dep (find-target "kernel" the-targets) token))
                       (define (at-boot name) (at-dir "../boot" xm name))
                       (define host-boot-files
-                        (if host-workarea
-                            (map (lambda (file) (build-path host-workarea "boot" m file)) boot-file-names)
-                            boot-files))
+                        (cond
+                          [host-workarea
+                           (map (lambda (file) (build-path host-workarea "boot" m file)) boot-file-names)]
+                          [host-scheme '()]
+                          [else boot-files]))
                       (build (target (at-boot (car boot-file-names))
                                      (lambda (path token)
                                        (rule host-boot-files

@@ -12,7 +12,7 @@
 
 (define (targets-at at-dir [vars (hash)])
   (define config (config-file->hash (at-dir "Mf-config") vars))
-  (define (lookup k) (hash-ref config k #f))
+  (define (lookup k) (hash-ref config k ""))
 
   (define host-m (lookup 'MACH))
   (define m (or (lookup 'TARGET_MACH) host-m))
@@ -51,16 +51,16 @@
       [(not cross?)
        (cons (at-dir CS m "bin" m (.exe "scheme"))
              (list "-B" petite.boot "-B" scheme.boot))]
-      [(equal? "auto" (lookup 'RACKET))
-       (define dir (at-dir "local/cs/c" CS host-m))
+      [(not (equal? "" (lookup 'SCHEME)))
+       (cons (executable->path (lookup 'SCHEME) at-dir)
+             '())]
+      [(not (equal? "" (lookup 'SCHEME_DIR)))
+       (define dir (build-path (lookup 'SCHEME_DIR) host-m))
        (cons (build-path dir "bin" host-m (.exe "scheme"))
              (list "-B" (build-path dir "boot" host-m "petite.boot")
                    "-B" (build-path dir "boot" host-m "scheme.boot")))]
-      [(not (equal? "" (or (lookup 'SCHEME) "")))
-       (cons (lookup 'SCHEME)
-             '())]
-      [(not (equal? "" (or (lookup 'SCHEME_DIR) "")))
-       (define dir (build-path (lookup 'SCHEME_DIR) host-m))
+      [(not (equal? (lookup 'RACKET) ""))
+       (define dir (at-dir "local/cs/c" CS host-m))
        (cons (build-path dir "bin" host-m (.exe "scheme"))
              (list "-B" (build-path dir "boot" host-m "petite.boot")
                    "-B" (build-path dir "boot" host-m "scheme.boot")))]
@@ -76,9 +76,9 @@
                                                            'scheme scheme.exe
                                                            'scheme-args scheme-args
                                                            'schemify "f"
-                                                           'zlibLib (or (lookup 'Z_LIB) "")
+                                                           'zlibLib (lookup 'Z_LIB)
                                                            'LZ4Lib (or (lookup 'LZ4_LIB) "")
-                                                           'CONFIGURE_RACKET_SO_COMPILE (or (lookup 'CONFIGURE_RACKET_SO_COMPILE) "")
+                                                           'CONFIGURE_RACKET_SO_COMPILE (lookup 'CONFIGURE_RACKET_SO_COMPILE)
                                                            'DISABLE_WPO (or (lookup 'DISABLE_WPO) "f"))])
                                       (if (not cross?)
                                           vars
@@ -123,7 +123,7 @@
   (define boot-objs
     (append (list boot.o)
             (list (at-dir CS m "boot" m (.a "kernel")))
-            (let ([zlib (or (lookup 'Z_LIB) "")])
+            (let ([zlib (lookup 'Z_LIB)])
               (if (equal? zlib "")
                   (list (if msvc?
                             (at-dir CS m "zlibmts/zlib.lib")
@@ -216,7 +216,10 @@
   (define (config-bootstrap-racket)
     (hash-set config 'racket (if (not cross?)
                                  raw_racketcs
-                                 (at-dir "local/cs/c/racketcs"))))
+                                 (let ([r (lookup 'RACKET)])
+                                   (if (equal? r "")
+                                       (at-dir "local/cs/c/racketcs")
+                                       (executable->path r at-dir))))))
   
   (define (bootstrap-racket . args)
     (racket (config-bootstrap-racket)
@@ -254,7 +257,7 @@
         (shell/wait (build-shell "install_name_tool" (map string->shell args)))))
   
   (define (post-linker exe)
-    (let ([cmd (or (lookup 'POST_LINKER) "")])
+    (let ([cmd (lookup 'POST_LINKER)])
       (unless (equal? cmd "")
         (shell/wait (build-shell cmd (string->shell exe))))))
   
@@ -293,16 +296,30 @@
        [:target build-racketcs ()
                 ,(lambda (token)
                    (when cross?
-                     (when (equal? "auto" (lookup 'RACKET))
-                       (define host-targets-at
-                         (configured-targets-at (at-source "../../cs/c/configure")
-                                                '()
-                                                '()
-                                                (at-dir "local/cs/c/Mf-config")
-                                                '()
-                                                (at-source "build.zuo")
-                                                (hash)))
-                       (build (find-target "build-racketcs" host-targets-at) token)))
+                     (cond
+                       [(equal? "auto" (lookup 'RACKET))
+                        ;; build host `racketcs` and `scheme`
+                        (define host-targets-at
+                          (configured-targets-at (at-source "../../cs/c/configure")
+                                                 '()
+                                                 '()
+                                                 (at-dir "local/cs/c/Mf-config")
+                                                 '()
+                                                 (at-source "build.zuo")
+                                                 (hash)))
+                        (build (find-target "build-racketcs" host-targets-at) token)]
+                       [(and (equal? "" (lookup 'SCHEME))
+                             (equal? "" (lookup 'SCHEME_DIR)))
+                        ;; build host `scheme`
+                        (define host-targets-at
+                          (configured-targets-at (at-source "../../cs/c/configure")
+                                                 '()
+                                                 '()
+                                                 (at-dir "local/cs/c/Mf-config")
+                                                 '()
+                                                 (at-source "build.zuo")
+                                                 (hash 'BOOTFILE_RACKET (lookup 'RACKET))))
+                        (build (find-target "scheme" host-targets-at) token)]))
                    (build/dep (find-target "bootfiles" the-targets) token)
                    (build/dep (find-target "scheme" the-targets) token)
                    (unless cross?
@@ -395,8 +412,8 @@
                                                                      "-mwindows"))
                                                    config)
                                                'LDFLAGS
-                                               (or (lookup 'LINK_DYNAMIC) "")))
-                         (define post (or (lookup 'POST_LINKER) ""))
+                                               (lookup 'LINK_DYNAMIC)))
+                         (define post (lookup 'POST_LINKER))
                          (unless (equal? post "")
                            (shell/wait (build-shell post raw_racketcs))))])
           (cons raw_racketcs (if mac? '() (list raw_gracketcs)))
@@ -550,16 +567,15 @@
                             token)))]
        
        ,@(cond
-           [(not (equal? (or (lookup 'BOOTFILE_RACKET) "") ""))
-            ;; use `BOOTFILE_RACKET` to build boot files
+           [(not (equal? (lookup 'BOOTFILE_RACKET) ""))
+            ;; use `BOOTFILE_RACKET` to `RACKET` to build boot files
             `([:target bootfiles ()
                        ,(lambda (token)
-                          (define bootfile-racket (lookup 'BOOTFILE_RACKET))
-                          (define racket.exe (if (relative-path? bootfile-racket)
-                                                 (if (not (car (split-path bootfile-racket)))
-                                                     (find-executable-path bootfile-racket)
-                                                     (at-dir bootfile-racket))
-                                                 bootfile-racket))
+                          (define bootfile-racket (let ([r (lookup 'BOOTFILE_RACKET)])
+                                                    (if (equal? r "")
+                                                        (lookup 'RACKET)
+                                                        r)))
+                          (define racket.exe (executable->path bootfile-racket at-dir))
                           ;; "rktboot/main.rkt" performs it's own timestamp-based "make"
                           (process/wait racket.exe
                                         (setup-boot at-dir config (hash 'mode "--chain"
@@ -568,8 +584,9 @@
                                         "--scheme-src" (at-source "../../ChezScheme")
                                         "--dest" (at-dir CS)
                                         "--machine" m))])]
-           [(equal? (lookup 'RACKET) "auto")
-            ;; assuming "auto" is built before we get here
+           [(or (not (equal? (lookup 'SCHEME_DIR) ""))
+                (not (equal? (lookup 'SCHEME) ""))
+                (not (equal? (lookup 'RACKET) "")))
             `([:target bootfiles ()
                        ,(lambda (token)
                           (mkdir-p (at-dir CS m))
@@ -577,10 +594,25 @@
                           (define host-m-targets (scheme-targets-at (make-at-dir (at-dir CS m))
                                                                     (hash-set* config
                                                                                'm host-m)))
+                          (define args
+                            (cond
+                              [(not (equal? (lookup 'SCHEME_DIR) ""))
+                               ;; use existing Scheme workarea to build boot files
+                               (list "--host-workarea"
+                                     (at-dir (lookup 'SCHEME_DIR) host-m)
+                                     m)]
+                              [(not (equal? (lookup 'SCHEME) ""))
+                               ;; use existing Scheme to build boot files
+                               (list "--host-scheme"
+                                     (executable->path (lookup 'SCHEME) at-dir)
+                                     m)]
+                              [else
+                               ;; assuming auto Racket and/or Scheme is built before we get here
+                               (list "--host-workarea"
+                                     (at-dir "local/cs/c/ChezScheme" host-m)
+                                     m)]))
                           (build (command-target->target (find-target "bootquick" host-m-targets)
-                                                         (list "--host-workarea"
-                                                               (at-dir "local/cs/c/ChezScheme" host-m)
-                                                               m))
+                                                         args)
                                  token))])]
            [(directory-exists? (at-source "../../ChezScheme/boot/pb"))
             ;; pb bootstrap mode: build pb to build machine-specific bootfiles
@@ -681,8 +713,8 @@
        [:db-dir ,(at-dir "compiled")])))
 
   (define (install token setup?)
-    (define (cs-suffix p) (~a p (or (lookup 'CS_INSTALLED) "")))
-    (define (CS-suffix p) (~a p (string-upcase (or (lookup 'CS_INSTALLED) ""))))
+    (define (cs-suffix p) (~a p (lookup 'CS_INSTALLED)))
+    (define (CS-suffix p) (~a p (string-upcase (lookup 'CS_INSTALLED))))
 
     (define bindir (if msvc?
                        (at-source "../../..")
@@ -740,7 +772,7 @@
                     m (or (lookup 'KERNEL_TARGET_MACH) m)
                     (or (lookup 'CROSS_COMPILE_TARGET_KIND) "machine")
                     (at-source ".")
-                    (or (lookup 'PLT_CS_SLSP_SUFFIX) ""))
+                    (lookup 'PLT_CS_SLSP_SUFFIX))
     
     (icp config (at-source "api.h") (build-path includepltdir "racketcs.h"))
     (icp config (at-source "boot.h") (build-path includepltdir "racketcsboot.h"))
@@ -754,7 +786,7 @@
       (define (unpack-lib lib)
         (shell/wait (build-shell (lookup 'AR) "x" (find-relative-path repack-dir lib))
                     (hash 'dir repack-dir)))
-      (when (equal? (or (lookup 'Z_LIB) "") "")
+      (when (equal? (lookup 'Z_LIB) "")
         (unpack-lib (at-dir CS m "zlib/libz.a")))
       (when (equal? (or (lookup 'LZ4_LIB) "") "")
         (unpack-lib (at-dir CS m "lz4/lib/liblz4.a")))

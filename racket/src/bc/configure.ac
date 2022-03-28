@@ -233,12 +233,7 @@ if test "${enable_racket}" != "" ; then
   if test "${enable_racket}" = "auto" ; then
     echo "=== Creating and using local Racket executable"
   else
-    if test ! -f "${enable_racket}"; then
-      echo "cannot find racket executable in ${enable_racket}"
-      exit 1
-    else
-      echo "=== Using Racket executable ${enable_racket}"
-    fi	
+    echo "=== Using Racket executable ${enable_racket}"
   fi 
 fi
 
@@ -260,6 +255,8 @@ MZINSTALLBINDIR='$(bindir)'
 MZOPTIONS=
 GC2OPTIONS=
 DYN_CFLAGS=
+
+RACKET=
 
 WXVARIANT="wx_xt"
 
@@ -1231,22 +1228,10 @@ fi
 
 ############## Racket for Racket ################
 
-if test "${enable_racket}" = "auto" ; then
-  # See also "configure-parent.ac"
-  enable_racket="`pwd`/../local/bc/racket3m"
-fi
-
 if test "${enable_racket}" = "" ; then
-  RUN_RACKET_CGC='$(RUN_THIS_RACKET_CGC)'
-  RUN_RACKET_MMM='$(RUN_THIS_RACKET_MMM)'
-  RUN_RACKET_MAIN_VARIANT='$(RUN_THIS_RACKET_MAIN_VARIANT)'
-  CGC_IF_NEEDED_FOR_MMM="cgc"
   BOOT_MODE="--boot"
 else
-  RUN_RACKET_CGC="${enable_racket}"
-  RUN_RACKET_MMM="${enable_racket}"
-  RUN_RACKET_MAIN_VARIANT="${enable_racket}"
-  CGC_IF_NEEDED_FOR_MMM="no-cgc-needed"
+  RACKET="${enable_racket}"
   BOOT_MODE="--chain"
 fi
 
@@ -1482,10 +1467,7 @@ AC_SUBST(INSTALL_SETUP_RACKET_FLAGS)
 
 AC_SUBST(INSTALL_LIBS_ENABLE)
 
-AC_SUBST(RUN_RACKET_CGC)
-AC_SUBST(RUN_RACKET_MMM)
-AC_SUBST(RUN_RACKET_MAIN_VARIANT)
-AC_SUBST(CGC_IF_NEEDED_FOR_MMM)
+AC_SUBST(RACKET)
 AC_SUBST(BOOT_MODE)
 
 AC_SUBST(ENABLE_CIFY)

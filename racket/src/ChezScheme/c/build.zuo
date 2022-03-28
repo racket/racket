@@ -383,7 +383,7 @@
               ,(lambda (token . args)
                  (define-values (call-with-scheme run-scheme/status run-scheme)
                    (make-run-scheme at-source at-dir lookup
-                                    (at-dir "..") m))
+                                    #f (at-dir "..") m))
                  (call-with-scheme
                   (lambda (scheme.exe env)
                     (process scheme.exe args (hash 'env env

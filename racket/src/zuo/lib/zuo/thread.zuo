@@ -70,8 +70,8 @@
          [else
           (raw-channel-get st chl
                            (lambda (v st) v)
-                           (lambda (st) (error "call-in-thread: main thread is stuck"))
-                           #f)])))))
+                           (lambda (st)
+                             (error "call-in-thread: main thread is stuck")))])))))
 
 (define (enqueue-thread st thunk)
   (state-set-tl st (cons thunk (state-tl st))))
@@ -147,7 +147,7 @@
                [else
                 (loop (ch-set-w-tl (ch-set-w-hd ch (reverse w-tl)) '()))]))])))))
 
-(define (raw-channel-get st chl k yield-k try?)
+(define (raw-channel-get st chl k yield-k)
   (let* ([chs (state-channels st)]
          [ch (hash-ref chs (channel-id chl) #f)])
     (unless ch (error "channel-get: does not belong to the running thread group" ch))
@@ -158,7 +158,6 @@
           [(pair? hd)
            (k (car hd)
               (update-ch st (ch-set-hd ch (cdr hd))))]
-          [try? #f]
           [else
            (let* ([tl (ch-tl ch)])
              (cond
@@ -177,8 +176,7 @@
                      v)
                    (lambda (st)
                      (current-state st)
-                     (yield))
-                   #f))
+                     (yield))))
 
 (define (thread-process-wait p . ps)
   (for-each (lambda (p)

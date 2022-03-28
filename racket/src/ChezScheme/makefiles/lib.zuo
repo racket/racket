@@ -93,16 +93,20 @@
         [else (error "unknown format" format)]))))
 
 (define (make-run-scheme at-source at-dir lookup
-                         host-workarea host-m
+                         host-scheme host-workarea host-m
                          [extra-source-dirs '()]
                          [extra-library-dirs '()])
   (define (call-with-scheme k)
-    (define scheme.exe (build-path host-workarea "bin" host-m (.exe "scheme")))
-    (define env (cons
-                 (cons "SCHEMEHEAPDIRS" (path->complete-path
-                                         (or (lookup 'SCHEMEHEAPDIRS)
-                                             (build-path host-workarea "boot" host-m))))
-                 (hash-ref (runtime-env) 'env)))
+    (define scheme.exe (or host-scheme
+                           (build-path host-workarea "bin" host-m (.exe "scheme"))))
+    (define env (if (or (lookup 'SCHEMEHEAPDIRS)
+                        (not (equal? host-workarea "")))
+                    (cons
+                     (cons "SCHEMEHEAPDIRS" (path->complete-path
+                                             (or (lookup 'SCHEMEHEAPDIRS)
+                                                 (build-path host-workarea "boot" host-m))))
+                     (hash-ref (runtime-env) 'env))
+                    (hash-ref (runtime-env) 'env)))
     (k scheme.exe env))
 
   (define (run-scheme/status what script inputs [options (hash)])

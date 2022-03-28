@@ -5351,7 +5351,7 @@ HANDLE scheme_dll_load_library(const char *s, const wchar_t *ws, int *_mode)
   }
 
   *_mode = 0;
-  return LoadLibraryW(scheme_get_dll_path(ws));
+  return LoadLibraryW(scheme_get_dll_path((wchar_t *)ws));
 }
 
 void *scheme_dll_get_proc_address(HANDLE m, const char *name, int dll_mode)

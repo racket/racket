@@ -11,11 +11,11 @@
   (define (lookup k) (hash-ref config k #f))
 
   (define msvc? (eq? 'windows (system-type)))
-  (define windows? (or msvc? (equal? (lookup 'MINGW) "yes")))
+  (define windows? (or msvc? (equal? (lookup 'MINGW) "t")))
 
   (define foreign? (not (equal? (lookup 'FOREIGN_ENABLED) "no")))
   (define libffi? (and foreign? (not (equal? (lookup 'LIBFFI_BUILD_ENABLED) "no"))))
-  (define cross? #f)
+  (define cross? (not (equal? (or (lookup 'RACKET) "") "")))
   (define cify-mode (or (lookup 'ENABKE_CIFY) "auto"))
   (define gracket? (not (equal? (lookup 'MAKE_GRACKET) "no")))
 
@@ -173,6 +173,7 @@
     (find-target (.a "ffi") libffi-targets))
 
   (define phase1/cstartup.inc (at-dir "phase1/cstartup.inc"))
+  (define cstartup.inc (at-dir "cstartup.inc"))
 
   (mkdir-p (at-dir "src"))
   (mkdir-p (at-dir "gc2"))
@@ -184,19 +185,40 @@
   (define libracketgc.a (at-dir (.a "racketgc")))
   (define libracket3m.a (at-dir (.a "racket3m")))
 
-  (define racketcgc1 (at-dir (.exe "racketcgc1")))
-  (define racketcgc (at-dir (.exe "racketcgc")))
-  (define racket3m (at-dir (.exe "racket3m")))
+  (define racketcgc1 (at-dir (if windows?
+                                 "RacketCGC1.exe"
+                                 "racketcgc1")))
+  (define racketcgc (at-dir (if windows?
+                                "RacketCGC.exe"
+                                "racketcgc")))
+  (define racket3m (at-dir (if windows?
+                               "Racket3m.exe"
+                               "racket3m")))
 
-  (define gracketcgc (if mac?
-                         (at-dir "GRacketCGC.app/Contents/MacOS/GRacketCGC")
-                         (at-dir (.exe "gracketcgc"))))
-  (define gracket3m (if mac?
-                        (at-dir "GRacket3m.app/Contents/MacOS/GRacket3m")
-                        (at-dir (.exe "gracket3m"))))
+  (define gracketcgc (cond
+                       [mac? (at-dir "GRacketCGC.app/Contents/MacOS/GRacketCGC")]
+                       [windows? (at-dir "GRacketCGC.exe")]
+                       [else (at-dir (.exe "gracketcgc"))]))
+  (define gracket3m (cond
+                      [mac? (at-dir "GRacket3m.app/Contents/MacOS/GRacket3m")]
+                      [windows? (at-dir "GRacket3m.exe")]
+                      [else (at-dir (.exe "gracket3m"))]))
 
   (define gracketcgc-app-skeleton (at-dir "GRacketCGC.app/Contents/Info.plist"))
   (define gracket3m-app-skeleton (at-dir "GRacket3m.app/Contents/Info.plist"))
+
+  (define libmzgcxxxxxxx.dll (at-dir "lib/libmzgcxxxxxxx.dll"))
+  (define libracketcgcxxxxxxx.dll (at-dir "lib/libracketxxxxxxx.dll"))
+  (define libracket3mxxxxxxx.dll (at-dir "lib/libracket3mxxxxxxx.dll"))
+  (define mzsj86g.o (at-dir "mzsj86g.o"))
+  (define libmzgc.def (at-dir "libmzgc.def"))
+  (define libracketcgc.def (at-dir "libracket.def"))
+  (define libracket3m.def (at-dir "libracket3m.def"))
+  (define libmzgc.dll.a (at-dir "libmzgc.dll.a"))
+  (define libracketcgc.dll.a (at-dir "libracket.dll.a"))
+  (define libracket3m.dll.a (at-dir "libracket3m.dll.a"))
+  (define rres.o (at-dir "rres.o"))
+  (define grres.o (at-dir "grres.o"))
 
   (define common-headers (list (at-source "include/scheme.h")
                                (at-source "include/schthread.h")
@@ -211,6 +233,35 @@
      (at-source "../version/racket_version.h")
      (at-source "sconfig.h")
      (at-dir "mzconfig.h")))
+
+  (define rktio-headers
+    (list (at-source "schrktio.h")
+          (at-source "../rktio/rktio.h")
+          (at-source "../rktio/rktio_platform.h")
+          (at-dir "rktio/rktio_config.h")))
+
+  (define jit-headers
+    (list
+     (at-source "src/jit.h") (at-source "src/jitfpu.h") (at-source "src/stypes.h")
+     (at-source "src/lightning/i386/core.h") (at-source "src/lightning/i386/core-common.h")
+     (at-source "src/lightning/i386/asm.h") (at-source "src/lightning/i386/asm-common.h")
+     (at-source "src/lightning/i386/funcs.h") (at-source "src/lightning/i386/funcs-common.h")
+     (at-source "src/lightning/i386/fp.h") (at-source "src/lightning/i386/fp-sse.h")
+     (at-source "src/lightning/i386/fp-common.h") (at-source "src/lightning/i386/fp-extfpu.h")
+     (at-source "src/lightning/ppc/core.h") (at-source "src/lightning/ppc/core-common.h")
+     (at-source "src/lightning/ppc/asm.h") (at-source "src/lightning/ppc/asm-common.h")
+     (at-source "src/lightning/ppc/funcs.h") (at-source "src/lightning/ppc/funcs-common.h")
+     (at-source "src/lightning/ppc/fp.h") (at-source "src/lightning/ppc/fp-common.h")
+     (at-source "src/lightning/arm/core.h") (at-source "src/lightning/arm/core-common.h")
+     (at-source "src/lightning/arm/asm.h") (at-source "src/lightning/arm/asm-common.h")
+     (at-source "src/lightning/arm/funcs.h") (at-source "src/lightning/arm/funcs-common.h")
+     (at-source "src/lightning/arm/fp.h") (at-source "src/lightning/arm/fp-common.h")
+     (at-source "src/lightning/arm/fp-vfp.h") (at-source "src/lightning/arm/fp-swf.h")
+     (at-source "src/future.h") (at-source "src/jit_ts.c") (at-source "src/jit_ts_protos.h")))
+
+  (define windows-libs '("WS2_32.lib" "Shell32.lib" "User32.lib" "Winmm.lib"
+                                      "RpCrt4.lib" "Ole32.lib" "Advapi32.lib"))
+  (define MemoryModule.o (at-dir (.c->.o "MemoryModule.c")))
 
   (define (mz-config config [gc2? #f])
     (config-include (hash-set* config
@@ -232,10 +283,17 @@
                     (at-source "../version")
                     (at-source "src")))
 
+  (define (get-cross-racket)
+    (let ([r (lookup 'RACKET)])
+      (if (not (car (split-path r)))
+          (or (find-executable-path r)
+              (error "cannot location racket" r))
+          (at-dir r))))
+
   (define (bootstrap-racket-config config local-racket)
     (hash-set config 'racket (if (not cross?)
                                  local-racket
-                                 (error "fixme"))))
+                                 (get-cross-racket))))
 
   (define (bootstrap-racket local-racket . args)
     (racket (bootstrap-racket-config config local-racket)
@@ -269,7 +327,10 @@
                                    (string->shell dest))))))
 
   (define (xform dest src precomp-mode token [cpp-extra ""])
-    (racket (bootstrap-racket-config config racketcgc)
+    (racket (hash-set (bootstrap-racket-config config racketcgc)
+                      'racketConcurrent (if (eq? precomp-mode 'use-precomp)
+                                            "yes"
+                                            "no"))
             (setup-boot at-dir config (hash 'tag "++out"))
             (at-source "gc2/xform-mod.rkt") "--depends"
             "--cpp"
@@ -299,7 +360,12 @@
                 (build/dep file token))
               (car
                (string-read (file->string (path-replace-extension dest ".sdep"))))))
-  
+
+  (define xform-racket-deps
+    (if cross?
+        '()
+        (list racketcgc)))
+
   (define (install_name_tool . args)
     (if cross?
         (bootstrap-racket racketcgc
@@ -314,14 +380,14 @@
   
   (define cgc-link-inputs ; omits libracketcgc.a
     (append
-     (list libracketgc.a librktio.a)
      (if foreign? (list foreigncgc.o) '())
+     (list libracketgc.a librktio.a)
      (if libffi? (list libffi.a) '())))
 
   (define 3m-link-inputs
     (append
-     (list librktio.a)
      (if foreign? (list foreign3m.o) '())
+     (list librktio.a)
      (if libffi? (list libffi.a) '())))
 
   (define (make-directory-defs gracket?)
@@ -348,8 +414,11 @@
 
         [:target cgc (,racketcgc ,@(if gracket? (list gracketcgc) '()) ,starter) ,void]
         
-        [:target ,(at-dir "cstartup.inc") (,racketcgc1 ,(at-source "src/startup.inc")
-                                                       ,(input-data-target 'cify cify-mode))
+        [:target ,cstartup.inc (,(at-source "src/startup.inc")
+                                ,(input-data-target 'cify cify-mode)
+                                ,@(if cross?
+                                      '()
+                                      (list racketcgc1)))
                  ,(lambda (path token)
                     (define cify? (cond
                                     [(equal? cify-mode "yes") #t]
@@ -385,8 +454,14 @@
                                          (at-source "../version/racket_version.h"))]))]
 
         ,@(map
-           (lambda (racketcgc libracket.a main.o link-inputs framework? fw-suffix fw-ups extra-deps)
-             `[:target ,racketcgc (,libracket.a ,@(if framework? '() link-inputs) ,main.o ,@extra-deps)
+           (lambda (racket.exe libracket.a main.o link-inputs framework? fw-suffix fw-ups extra-deps)
+             `[:target ,racket.exe (,libracket.a ,@(if framework? '() link-inputs) ,main.o ,@extra-deps
+                                                 ,@(if (eq? racket.exe racketcgc1)
+                                                       '()
+                                                       (list cstartup.inc))
+                                                 ,@(if windows?
+                                                       (list MemoryModule.o)
+                                                       '()))
                        ,(lambda (path token)
                           (mkdir-p (path-only path))
                           (c-link path
@@ -394,7 +469,10 @@
                                    (list main.o)
                                    (if framework?
                                        '()
-                                       (cons libracket.a (map target->path link-inputs))))
+                                       (cons libracket.a (map target->path link-inputs)))
+                                   (if windows?
+                                       `(,MemoryModule.o ,@(if msvc? windows-libs '()))
+                                       '()))
                                   (if framework?
                                       (config-merge config
                                                     'LIBS
@@ -410,15 +488,21 @@
            (list racketcgc1
                  racketcgc racket3m
                  gracketcgc gracket3m)
-           (list libracketcgc1.a
-                 (if mac-fw? frameworkcgc libracketcgc.a) (if mac-fw? framework3m libracket3m.a)
-                 (if mac-fw? frameworkcgc libracketcgc.a) (if mac-fw? framework3m libracket3m.a))
+           (let ([cgc.a (if mac-fw? frameworkcgc (if windows? libracketcgc.dll.a libracketcgc.a))]
+                 [3m.a (if mac-fw? framework3m (if windows? libracket3m.dll.a libracket3m.a))])
+             (list libracketcgc1.a
+                   cgc.a 3m.a
+                   cgc.a 3m.a))
            (list maincgc.o
                  maincgc.o main3m.o
                  grmaincgc.o grmain3m.o)
-           (list cgc-link-inputs
-                 cgc-link-inputs 3m-link-inputs
-                 cgc-link-inputs 3m-link-inputs)
+           (if windows?
+               (list cgc-link-inputs
+                     (list libracketcgc.dll.a rres.o) (list libracket3m.dll.a rres.o)
+                     (list libracketcgc.dll.a grres.o) (list libracket3m.dll.a grres.o))
+               (list cgc-link-inputs
+                     cgc-link-inputs 3m-link-inputs
+                     cgc-link-inputs 3m-link-inputs))
            (list #f
                  mac-fw? mac-fw?
                  mac-fw? mac-fw?)
@@ -464,6 +548,80 @@
                (list cgc-link-inputs 3m-link-inputs)
                (list "" "_3m"))
 
+        [:target (,libmzgcxxxxxxx.dll ,libmzgc.def) (,libracketgc.a)
+                 ,(lambda (path token)
+                    (mkdir-p (path-only path))
+                    (c-link path
+                            '()
+                            (config-merge config
+                                          'LDFLAGS
+                                          (build-shell "-shared"
+                                                       "-Wl,--output-def" (string->shell (~a "-Wl," libmzgc.def))
+                                                       "-Wl,--whole-archive" (string->shell libracketgc.a)
+                                                       "-Wl,--no-whole-archive"
+                                                       "-static-libgcc"))))]
+
+        ,@(map
+           (lambda (cgc? libracket.dll libracket.a libracket.def link-inputs)
+             `[:target (,libracket.dll ,libracket.def) (,@(if cgc? (list libracketgc.a) '()) ,libracket.a ,mzsj86g.o ,@link-inputs)
+                       ,(lambda (path token)
+                          (mkdir-p (path-only path))
+                          (c-link path
+                                  (list mzsj86g.o)
+                                  (config-merge (config-merge config
+                                                              'LIBS
+                                                              (build-shell
+                                                               "-lshell32 -luser32 -lws2_32 -lwinmm"
+                                                               (if cgc? (string->shell libmzgcxxxxxxx.dll) "")))
+                                                'LDFLAGS
+                                                (build-shell "-shared"
+                                                             "-Wl,--output-def" (string->shell (~a "-Wl," libracket.def))
+                                                             "-Wl,--whole-archive" (string->shell libracket.a)
+                                                             "-Wl,--no-whole-archive"
+                                                             "-static-libgcc"
+                                                             (map string->shell (map target->path link-inputs))))))])
+           (list #t #f)
+           (list libracketcgcxxxxxxx.dll libracket3mxxxxxxx.dll)
+           (list libracketcgc.a libracket3m.a)
+           (list libracketcgc.def libracket3m.def)
+           (list cgc-link-inputs 3m-link-inputs))
+
+        ,@(map
+           (lambda (dll.a dll def)
+             `[:target ,dll.a (,dll ,def)
+                       ,(lambda (path token)
+                          (shell/wait (build-shell
+                                       (lookup 'DLLTOOL)
+                                       "--def" (string->shell def)
+                                       "-D" (string->shell (file-name-from-path dll))
+                                       "--output-exp" (at-dir (path-replace-extension (path-only dll) ".exp"))
+                                       "--output-lib" (at-dir (path-replace-extension (path-only dll) ".lib"))
+                                       "--output-delaylib" dll.a)))])
+           (list libmzgc.dll.a libracketcgc.dll.a libracket3m.dll.a)
+           (list libmzgcxxxxxxx.dll libracketcgcxxxxxxx.dll libracket3mxxxxxxx.dll)
+           (list libmzgc.def libracketcgc.def libracket3m.def))
+
+        [:target ,mzsj86g.o (,(at-source "src/mzsj86g.S"))
+                 ,(lambda (path token)
+                    (c-compile path
+                               (at-source "src/mzsj86g.S")
+                               config))]
+
+        [:target ,rres.o (,(at-source "../worksp/racket/racket.rc")
+                          ,(at-source "../worksp/racket/racket.ico")
+                          ,(at-source "../version/racket_version.h"))
+                 ,(lambda (path target)
+                    (windres (at-source "../worksp/racket/racket.rc")
+                             path
+                             config msvc?))]
+        [:target ,grres.o (,(at-source "../worksp/gracket/gracket.rc")
+                           ,(at-source "../worksp/gracket/gracket.ico")
+                           ,(at-source "../version/racket_version.h"))
+                 ,(lambda (path target)
+                    (windres (at-source "../worksp/gracket/gracket.rc")
+                             path
+                             config msvc?))]
+                
         ,@(map
            (lambda (libracket.a objs)
              `[:target ,libracket.a (,@objs)
@@ -478,7 +636,11 @@
                  ,(lambda (path token)
                     (c-ar path
                           (list sgc.o)
-                          config))]
+                          (if windows?
+                              (config-merge config
+                                            'CPPFLAGS
+                                            "-DSGC_EXPORTS")
+                              config)))]
 
         ,@(map (lambda (src-name obj)
                  (define src (at-source "src" src-name))
@@ -489,6 +651,69 @@
                                          (mz-config config)))])
                src-names
                cgc-objs)
+
+        ,@(map
+           (lambda (p)
+             `[:depend ,(at-dir "src" (.c->.o (~a (car p) '..c))) ,(cdr p)])
+           `(["salloc" ,(at-source "src/mzmark_salloc.inc") ,@rktio-headers]
+             ["bool" ,(at-source "src/mzeqchk.inc")]
+             ["char" ,(at-source "src/schuchar.inc")]
+             ["compenv" ,(at-source "src/mzmark_compenv.inc")]
+             ["compile" ,(at-source "src/mzmark_compile.inc")]
+             ["dynext" ,(at-source "src/schemef.h") ,(at-source "../version/racket_version.h")]
+             ["env" ,(at-source "src/schminc.h") ,(at-source "src/mzmark_env.inc")]
+             ["eval" ,(at-source "src/mzmark_eval.inc")
+                     ,(at-source "src/schmach.h") ,(at-source "src/mzstkchk.h") ,(at-source "src/schrunst.h")
+                     ,(at-source "src/future.h")]
+             ["file" ,@rktio-headers]
+             ["fun" ,@rktio-headers
+                    ,(at-source "src/mzmark_fun.inc") ,(at-source "src/schmap.inc")
+                    ,(at-source "src/future.h")]
+             ["future" ,(at-source "src/future.h") ,(at-source "sconfig.h") ,(at-source "uconfig.h") ,(at-dir "mzconfig.h")
+                       ,(at-source "src/mzmark_future.inc")
+                       ,(at-source "src/jit_ts_future_glue.c") ,(at-source "src/jit_ts_runtime_glue.c") ,(at-source "src/jit_ts_protos.h")]
+             ["hash" ,(at-source "src/mzmark_hash.inc")]
+             ["jit" ,@jit-headers ,(at-source "src/mzmark_jit.inc")]
+             ["jitalloc" ,@jit-headers]
+             ["jitarith" ,@jit-headers]
+             ["jitcall" ,@jit-headers]
+             ["jitcommon" ,@jit-headers]
+             ["jitinline" ,@jit-headers]
+             ["jitstack" ,@jit-headers ,(at-source "src/codetab.inc")
+                         ,(at-source "src/unwind/libunwind.h")]
+             ["jitstate" ,@jit-headers]
+             ["network" ,@rktio-headers ,(at-source "src/mzmark_network.inc")]
+             ["numarith" ,(at-source "src/nummacs.h")]
+             ["number" ,(at-source "src/nummacs.h")
+                       ,(at-source "src/longdouble/longdouble.c")]
+             ["numcomp" ,(at-source "src/nummacs.h")]
+             ["numstr" ,(at-source "src/random.inc") ,(at-source "src/newrandom.inc")]
+             ["optimize" ,(at-source "src/mzmark_optimize.inc")]
+             ["place" ,@rktio-headers ,(at-source "src/mzmark_place.inc")]
+             ["port" ,@rktio-headers ,(at-source "src/mzmark_port.inc")]
+             ["portfun" @rktio-headers ,(at-source "../version/racket_version.h") ,(at-source "src/mzmark_portfun.inc")]
+             ["print" ,(at-source "src/schcpt.h") ,(at-source "../version/racket_version.h")
+                      ,(at-source "sconfig.h") ,(at-source "uconfig.h") ,(at-dir "mzconfig.h")
+                      ,(at-source "src/mzmark_print.inc")
+                      ,(at-source "src/print_vector.inc")]
+             ["thread" ,@rktio-headers ,(at-source "src/mzmark_thread.inc")]
+             ["read" ,(at-source "src/schcpt.h") ,(at-source "../version/racket_version.h") ,(at-source "src/schminc.h")
+                     ,(at-source "src/mzmark_read.inc")]
+             ["regexp" ,(at-source "src/mzmark_regexp.inc") ,(at-source "src/schrx.h")]
+             ["resolve" ,(at-source "src/mzmark_resolve.inc")]
+             ["setjmpup" ,(at-source "src/schmach.h")]
+             ["sfs" ,(at-source "src/mzmark_sfs.inc")]
+             ["startup" ,(at-source "../version/racket_version.h")
+                        ,(at-source "src/schminc.h") ,(at-source "src/startup.inc")
+                        ,(at-source "src/startup-glue.inc")]
+             ["string" ,@rktio-headers ,(at-source "../version/racket_version.h")
+                       ,(at-source "src/mzmark_string.inc") ,(at-source "src/strops.inc")
+                       ,(at-source "src/schustr.inc") ,(at-source "src/systype.inc")]
+             ["struct" ,(at-source "src/mzmark_struct.inc")]
+             ["syntax" ,(at-source "src/mzmark_syntax.inc")]
+             ["sema" ,(at-source "src/mzmark_sema.inc")]
+             ["type" ,(at-source "src/mzmark_type.inc")]
+             ["validate" ,(at-source "src/mzmark_validate.inc")]))
 
         ,@(map (lambda (src-name obj)
                  (define src (at-dir "xsrc" src-name))
@@ -637,7 +862,8 @@
 
         [:target ,(at-dir "xsrc/precomp.h") (,(at-source "gc2/precomp.c")
                                              ,(at-source "gc2/xform-mod.rkt")
-                                             ,@quiet-deps)
+                                             ,@quiet-deps
+                                             ,@xform-racket-deps)
                  ,(lambda (path token)
                     (xform (at-dir "xsrc/precomp.h")
                            (at-source "gc2/precomp.c")
@@ -649,16 +875,20 @@
                  `[:target ,(at-dir "xsrc" src-name) (,src
                                                       ,(at-dir "xsrc/precomp.h")
                                                       ,(at-source "gc2/xform-mod.rkt")
-                                                      ,@quiet-deps)
+                                                      ,@quiet-deps
+                                                      ,@xform-racket-deps)
                            ,(lambda (path token)
                               (xform path src 'use-precomp token))])
                src-names)
+
+        [:depend ,(at-dir "xsrc/startup.c") (,cstartup.inc)]
 
         ,@(map (lambda (main.c gracket?)
                  `[:target ,(at-dir "xsrc" (file-name-from-path main.c))
                            (,main.c
                             ,(at-source "gc2/xform-mod.rkt")
-                            ,@quiet-deps)
+                            ,@quiet-deps
+                            ,@xform-racket-deps)
                            ,(lambda (path token)
                               (xform path main.c 'no-precomp token
                                      (make-directory-defs gracket?)))])
@@ -676,7 +906,8 @@
 
         [:target ,(at-dir "xsrc/foreign.c")  (,(at-source "foreign/foreign.c")
                                               ,(at-source "gc2/xform-mod.rkt")
-                                              ,@quiet-deps)
+                                              ,@quiet-deps
+                                              ,@xform-racket-deps)
                  ,(lambda (path token)
                     (xform path (at-source "foreign/foreign.c") 'no-precomp token
                            (string->shell (~a "-I" (at-dir "foreign/libffi/include")))))]
@@ -686,6 +917,12 @@
                     (c-compile path
                                (at-dir "xsrc/foreign.c")
                                (mz-config config #t)))]
+
+        [:target ,MemoryModule.o (,(at-source "../start/MemoryModule.c"))
+                 ,(lambda (path token)
+                    (c-compile MemoryModule.o
+                               (at-source "../start/MemoryModule.c")
+                               config))]
 
         [:target plain-install-3m () ,(lambda (token) (install #t #f #f))]
         [:target plain-install-cgc () ,(lambda (token) (install #f #t #f))]
