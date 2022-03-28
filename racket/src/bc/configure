@@ -663,6 +663,7 @@ ICP
 WXVARIANT
 WXLIBS
 LIBSFX
+NEED_STRIP_SIGNATURE
 OWN_LIBFFI
 SO_SUFFIX
 EXE_SUFFIX
@@ -3545,6 +3546,8 @@ SO_SUFFIX=.so
 
 POST_LINKER="echo"
 
+NEED_STRIP_SIGNATURE=
+
 MMM=3m
 MMM_INSTALLED=
 MMM_CAP_INSTALLED=
@@ -5184,6 +5187,9 @@ $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
     case "$host_cpu" in
       i386|x86_64)
        enable_parallel_by_default=yes
+       ;;
+      aarch64*|arm64*)
+       NEED_STRIP_SIGNATURE=yes
        ;;
       *)
        ;;
@@ -7405,6 +7411,7 @@ RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
 ############## final output ################
 
 LIBS="$LIBS $EXTRALIBS"
+
 
 
 

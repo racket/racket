@@ -1,6 +1,7 @@
 #lang zuo
 
 (provide hash-set*
+         string-upcase
          target->path
 
          string-tree->shell
@@ -16,7 +17,9 @@
          make-zo-target
 
          shell-subst
-         configured-targets-at)
+         configured-targets-at
+
+         windres)
 
 (define (hash-set* ht . keys+vals)
   (let loop ([ht ht] [keys+vals keys+vals])
@@ -24,6 +27,16 @@
         ht
         (loop (hash-set ht (car keys+vals) (cadr keys+vals))
               (cddr keys+vals)))))
+
+(define (string-upcase s)
+  (let loop ([i 0] [start 0])
+    (cond
+      [(= i (string-length s)) (substring s start)]
+      [(and (>= (string-ref s i) (char "a"))
+            (<= (string-ref s i) (char "z")))
+       (~a (substring s start i) (string (+ (string-ref s i) (- (char "A") (char "a"))))
+           (loop (+ i 1) (+ i 1)))]
+      [else (loop (+ i 1) start)])))
 
 (define (target->path t) (if (target? t) (target-path t) t))
 
@@ -196,3 +209,12 @@
   (if (not (car (split-path path)))
       (~a "./" path)
       path))
+
+(define (windres in out config msvc? [flags ""])
+  (if msvc?
+      (shell/wait (build-shell "rc" "-r" flags
+                               "/fo" (string->shell out)
+                               (string->shell in)))
+      (shell/wait (build-shell (hash-ref config 'WINDRES) flags
+                               "-i" (string->shell in)
+                               "-o" (string->shell out)))))

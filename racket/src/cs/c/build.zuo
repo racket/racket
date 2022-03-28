@@ -3,6 +3,8 @@
          "../../racket.zuo"
          (only-in "../../ChezScheme/build.zuo"
                   [targets-at scheme-targets-at])
+         (only-in "../../start/build.zuo"
+                  [targets-at starter-targets-at])
          (only-in "../main.zuo"
                   [targets-at cs-targets-at]))
 
@@ -87,6 +89,10 @@
                                     (list petite.boot
                                           scheme.boot)))
 
+  (define starter-targets (starter-targets-at at-dir config windows?))
+  (define MzStart.exe (at-dir "MzStart.exe"))
+  (define MrStart.exe (at-dir "MrStart.exe"))
+
   (define rktio-dir (at-dir "rktio"))
   (define librktio.a+rktio_config.h (setup-rktio (at-source "../../rktio") rktio-dir config))
   (define librktio.a (list-ref librktio.a+rktio_config.h 0))
@@ -159,18 +165,12 @@
   (define rres.o (at-dir (~a "rres" (if msvc? ".res" ".o"))))
   (define grres.o (at-dir (~a "grres" (if msvc? ".res" ".o"))))
   (define libres.o (at-dir (~a "libres" (if msvc? ".res" ".o"))))
-  (define start_rc.o (at-dir (~a "start_rc" (if msvc? ".res" ".o"))))
-  (define gstart_rc.o (at-dir (~a "gstart_rc" (if msvc? ".res" ".o"))))
 
   (define gracket-app-skeleton (at-dir "GRacketCS.app/Contents/Info.plist"))
 
   (define petite-v.boot (at-dir "petite-v.boot"))
   (define scheme-v.boot (at-dir "scheme-v.boot"))
   (define racket-v.boot (at-dir "racket-v.boot"))
-
-  (define starter (if windows? "starter" (at-dir "starter")))
-  (define MzStart.exe (at-dir "MzStart.exe"))
-  (define MrStart.exe (at-dir "MrStart.exe"))
 
   (define check-bootstrap-same-stamp (at-dir "check-bootstrap-same-stamp"))
 
@@ -257,15 +257,6 @@
     (let ([cmd (or (lookup 'POST_LINKER) "")])
       (unless (equal? cmd "")
         (shell/wait (build-shell cmd (string->shell exe))))))
-
-  (define (windres in out [flags ""])
-    (if msvc?
-        (shell/wait (build-shell "rc" "-r" flags
-                                 "/fo" (string->shell out)
-                                 (string->shell in)))
-        (shell/wait (build-shell (lookup 'WINDRES) flags
-                                 "-i" (string->shell in)
-                                 "-o" (string->shell out)))))
   
   (define (mac-embed-boot src dest)
     (rm* dest)
@@ -297,7 +288,7 @@
                 ,(lambda (token)
                    (build/dep (find-target "build-racketcs" the-targets) token)
                    (build/dep (find-target gracketcs the-targets) token)
-                   (build/dep (find-target starter the-targets) token))]
+                   (build/dep (find-target "starter" starter-targets) token))]
 
        [:target build-racketcs ()
                 ,(lambda (token)
@@ -532,50 +523,6 @@
                            (at-dir "racket.boot")
                            m))]
 
-       ,@(cond
-           [windows?
-            `([:target starter (,MzStart.exe ,MrStart.exe) ,void]
-              ,@(map (lambda (.exe .rc gui?)
-                       `[:target ,.exe (,(at-source "../../start/start.c") ,.rc)
-                                 ,(lambda (path token)
-                                    (c-compile .exe
-                                               (append (list (at-source "../../start/start.c")
-                                                             .rc)
-                                                       (if msvc?
-                                                           (list "User32.lib")
-                                                           '()))
-                                               (config-merge (if gui?
-                                                                 (config-merge config
-                                                                               'LDFLAGS
-                                                                               (if msvc?
-                                                                                   "/link /SUBSYSTEM:windows"
-                                                                                   "-mwindows"))
-                                                                 config)
-                                                             'CFLAGS
-                                                             (if gui?
-                                                                 "-DMRSTART"
-                                                                 "-DMZSTART"))))])
-                     (list MzStart.exe MrStart.exe)
-                     (list start_rc.o gstart_rc.o)
-                     (list #f #t))
-              ,@(map (lambda (.rc gui?)
-                       `[:target ,.rc (,(at-source "../../worksp/starters/start.rc"))
-                                 ,(lambda (path token)
-                                    (windres (at-source "../../worksp/starters/start.rc")
-                                             .rc
-                                             (if gui?
-                                                 "-DMRSTART"
-                                                 "-DMZSTART")))])
-                    
-                     (list start_rc.o gstart_rc.o)
-                     (list #f #t)))]
-           [else
-            `([:target ,starter (,(at-source "../../start/ustart.c") ,(at-source "../../start/self_exe.inc"))
-                       ,(lambda (path token)
-                          (c-compile path
-                                     (list (at-source "../../start/ustart.c"))
-                                     config))])])
-
        [:target scheme (bootfiles)
                 ,(lambda (token)
                    (mkdir-p (at-dir CS m))
@@ -680,18 +627,21 @@
                          ,(at-source "../../version/racket_version.h"))
                 ,(lambda (path target)
                    (windres (at-source "../../worksp/racket/racket.rc")
-                            path))]
+                            path
+                            config msvc?))]
        [:target ,grres.o (,(at-source "../../worksp/gracket/gracket.rc")
                           ,(at-source "../../worksp/gracket/gracket.ico")
                           ,(at-source "../../version/racket_version.h"))
                 ,(lambda (path target)
                    (windres (at-source "../../worksp/gracket/gracket.rc")
-                            path))]
+                            path
+                            config msvc?))]
        [:target ,libres.o (,(at-source "../../worksp/cs/libracket.rc")
                            ,(at-source "../../version/racket_version.h"))
                 ,(lambda (path target)
                    (windres (at-source "../../worksp/cs/libracket.rc")
-                            path))]
+                            path
+                            config msvc?))]
 
        ,@(if windows?
              `([:target ,(at-dir "cs_config.h") (,(at-source "../../worksp/cs/cs_config.h"))
@@ -731,57 +681,21 @@
        [:db-dir ,(at-dir "compiled")])))
 
   (define (install token setup?)
-    (define (upcase s)
-      (let loop ([i 0] [start 0])
-        (cond
-          [(= i (string-length s)) (substring s start)]
-          [(and (>= (string-ref s i) (char "a"))
-                (<= (string-ref s i) (char "z")))
-           (~a (substring s start i) (string (+ (string-ref s i) (- (char "A") (char "a"))))
-               (loop (+ i 1) (+ i 1)))]
-          [else (loop (+ i 1) start)])))
-    
-    (define (at-destdir p) p)
     (define (cs-suffix p) (~a p (or (lookup 'CS_INSTALLED) "")))
-    (define (CS-suffix p) (~a p (upcase (or (lookup 'CS_INSTALLED) ""))))
+    (define (CS-suffix p) (~a p (string-upcase (or (lookup 'CS_INSTALLED) ""))))
 
-    (define (icp src dest)
-      (if (eq? 'windows (system-type))
-          (cp src dest)
-          (shell/wait (build-shell (lookup 'ICP) (string->shell src) (string->shell dest)))))
-    (define (icp-r src dest)
-      (if (eq? 'windows (system-type))
-          (cp* src dest)
-          (shell/wait (build-shell (lookup 'ICP) "-r" (string->shell src) (string->shell dest)))))
-    (define (icp-lib src dest)
-      (if (eq? 'windows (system-type))
-          (cp src dest)
-          (shell/wait (build-shell (lookup 'ICP_LIB) (string->shell src) (string->shell dest)))))
-    (define (strip-debug path)
-      (unless windows?
-        (shell/wait (build-shell (lookup 'STRIP_DEBUG) (string->shell path)))))
-    (define (strip-lib-debug path)
-      (unless windows?
-        (shell/wait (build-shell (lookup 'STRIP_LIB_DEBUG) (string->shell path)))))
-    
     (define bindir (if msvc?
                        (at-source "../../..")
-                       (at-destdir (shell-subst (lookup 'bindir) config))))
+                       (at-destdir config (shell-subst (lookup 'bindir) config))))
     (define libdir (if msvc?
                        (at-source "../../../lib")
-                       (at-destdir (shell-subst (lookup 'libdir) config))))
+                       (at-destdir config (shell-subst (lookup 'libdir) config))))
     (define libpltdir (if msvc?
                           libdir
-                          (at-destdir (shell-subst (lookup 'libpltdir) config))))
+                          (at-destdir config (shell-subst (lookup 'libpltdir) config))))
     (define includepltdir (if msvc?
                               (at-source "../../../include")
-                              (at-destdir (shell-subst (lookup 'includepltdir) config))))
-    (define collectsdir (if msvc?
-                            (at-source "../../../collects")
-                            (at-destdir (shell-subst (lookup 'collectsdir) config))))
-    (define configdir (if msvc?
-                          (at-source "../../../etc")
-                          (at-destdir (shell-subst (lookup 'configdir) config))))
+                              (at-destdir config (shell-subst (lookup 'includepltdir) config))))
     
     (mkdir-p bindir)
     (mkdir-p libpltdir)
@@ -794,8 +708,8 @@
     (cond
       [windows?
        (define (icp/strip src dest)
-         (icp src dest)
-         (strip-debug dest))
+         (icp config src dest)
+         (strip-debug config dest))
        (icp/strip libracketcsxxxxxxx.dll (build-path libdir (file-name-from-path libracketcsxxxxxxx.dll)))
        (icp/strip racketcs dest-racket)
        (icp/strip gracketcs (build-path libdir (~a (CS-suffix "GRacket") ".exe")))
@@ -808,16 +722,16 @@
        (rm* (build-path libpltdir "starter-sh"))
        (rm* dest-starter)
 
-       (icp racketcs dest-racket)
+       (icp config racketcs dest-racket)
        (strip-signature dest-racket)
-       (strip-debug dest-racket)
+       (strip-debug config dest-racket)
        (restore-signature dest-racket)
 
-       (icp (at-source "../../start/starter-sh") (build-path libpltdir "starter-sh"))
+       (icp config (at-source "../../start/starter-sh") (build-path libpltdir "starter-sh"))
 
-       (icp "starter" dest-starter)
+       (icp config "starter" dest-starter)
        (strip-signature dest-starter)
-       (strip-debug dest-starter)
+       (strip-debug config dest-starter)
        (set-collects-path dest-starter (lookup 'COLLECTS_PATH) (lookup 'CONFIG_PATH))
        (restore-signature dest-starter)])
 
@@ -828,9 +742,9 @@
                     (at-source ".")
                     (or (lookup 'PLT_CS_SLSP_SUFFIX) ""))
     
-    (icp (at-source "api.h") (build-path includepltdir "racketcs.h"))
-    (icp (at-source "boot.h") (build-path includepltdir "racketcsboot.h"))
-    (icp (at-dir CS m "boot" m "scheme.h") (build-path includepltdir "chezscheme.h"))
+    (icp config (at-source "api.h") (build-path includepltdir "racketcs.h"))
+    (icp config (at-source "boot.h") (build-path includepltdir "racketcsboot.h"))
+    (icp config (at-dir CS m "boot" m "scheme.h") (build-path includepltdir "chezscheme.h"))
     
     (unless (or windows? (equal? "no-install" (lookup 'INSTALL_LIBS_ENABLE)))
       (define repack-dir (at-dir "repack"))
@@ -849,12 +763,13 @@
       (shell/wait (build-shell (lookup 'AR) (lookup 'ARFLAGS) libracketcs.a
                                (filter (glob->matcher "*.o") (ls* repack-dir))
                                boot.o))
-      (icp-lib libracketcs.a (build-path libdir "libracketcs.a"))
-      (strip-lib-debug (build-path libdir "libracketcs.a")))
+      (icp-lib config libracketcs.a (build-path libdir "libracketcs.a"))
+      (strip-lib-debug config (build-path libdir "libracketcs.a")))
 
     (cond
       [mac?
-       (define dest-framework-dir (shell-subst (lookup 'FRAMEWORK_INSTALL_DIR) config))
+       (define dest-framework-dir (build-path (shell-subst (lookup 'FRAMEWORK_INSTALL_DIR) config)
+                                              "Racket.framework"))
        (define fw-vers-dir (build-path dest-framework-dir "Versions" (~a version "_CS")))
        (define dest-racket (build-path bindir (cs-suffix "racket")))
        (define framework-prefix (cond
@@ -886,7 +801,7 @@
        (define gracket-app-dest (build-path libpltdir (~a (CS-suffix "GRacket") ".app")))
        (define dest-gracket (build-path gracket-app-dest "Contents/MacOS" (CS-suffix "GRacket")))
        (rm* gracket-app-dest)
-       (icp-r (at-dir "GRacketCS.app") gracket-app-dest)
+       (icp-r config (at-dir "GRacketCS.app") gracket-app-dest)
        (bootstrap-racket (at-source "../../mac/rename-app.rkt")
                          gracket-app-dest "GRacketCS" (CS-suffix "GRacket")
                          "no-up")
@@ -896,12 +811,12 @@
                           dest-gracket)
        (strip-signature dest-gracket)
        (set-collects-path dest-gracket "../../../../collects" "../../../../etc")
-       (strip-debug dest-gracket)
+       (strip-debug config dest-gracket)
        (restore-signature dest-gracket)
 
        (define starter-app-dest (build-path libpltdir "Starter.app"))
        (rm* starter-app-dest)
-       (icp-r (at-dir "Starter.app") starter-app-dest)
+       (icp-r config (at-dir "Starter.app") starter-app-dest)
        (unless (equal? "no-install" (lookup 'INSTALL_LIBS_ENABLE))
          (map (lambda (name)
                 (bootstrap-racket (at-source "add-terminator.rkt")
@@ -912,7 +827,7 @@
        (void)]
       [else
        (define dest-gracket (build-path libpltdir (cs-suffix "gracket")))
-       (icp gracketcs dest-gracket)
+       (icp config gracketcs dest-gracket)
        (strip-signature dest-racket)
        (strip-signature dest-gracket)
        (set-collects-path dest-racket (lookup 'COLLECTS_PATH) (lookup 'CONFIG_PATH))
@@ -951,36 +866,9 @@
                        :truncate))
 
     (when setup?
-      ;; Run `raco setup`.
-      (define (extras key) (shell->strings (or (lookup key) "")))
-      ;; A distribution build can set `SELF_ROOT_CONFIG_DIR` to make the
-      ;; setup config different from the result distribution's config, etc.
-      (define self-root-config-dir (or (lookup 'SELF_ROOT_CONFIG_DIR) ""))
-      (define setup-any-zo-dir (or (lookup 'SETUP_ANY_ZO_DIR) ""))
-      (define self-root-config-flags (if (equal? self-root-config-dir "")
-                                         '()
-                                         (list "-G" self-root-config-dir)))
-      (define setup-args (list
-                          "-N" "raco" "-l-" "setup"
-                          (extras 'INSTALL_SETUP_FLAGS)
-                          (extras 'PLT_SETUP_OPTIONS_FLAGS)))
-      (cond
-        [(not cross?)
-         (process/wait dest-racket
-                       self-root-config-flags
-                       "-X" collectsdir
-                       "-G" configdir
-                       (if (equal? setup-any-zo-dir "")
-                           '()
-                           (list "-MCR" (~a setup-any-zo-dir ":")))
-                       setup-args)]
-        [else
-         (racket (config-bootstrap-racket)
-                 self-root-config-flags
-                 "-MCR" (~a (at-dir "compiled") ":")
-                 "--cross-compiler" m (at-dir ".")
-                 "-X" collectsdir
-                 "-G" configdir
-                 setup-args)])))
+      (run-raco-setup config dest-racket
+                      (and cross? (config-bootstrap-racket))
+                      (list "-MCR" (~a (at-dir "compiled") ":")
+                            "--cross-compiler" m (at-dir ".")))))
 
   the-targets)
