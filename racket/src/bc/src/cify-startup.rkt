@@ -13,15 +13,14 @@
          "../../cify/main.rkt"
          "help-startup.rkt")
 
-(define dest "cstartup.inc")
 (define version-line (format "/* version: ~a */" (version)))
 
 (define debug? #f)
 
-(define-values (src vers deps)
+(define-values (dest src vers deps)
   (command-line
-   #:args (src-file vers-file . dep)
-   (values src-file vers-file dep)))
+   #:args (dest-file src-file vers-file . dep)
+   (values dest-file src-file vers-file dep)))
 
 (define content (get-linklet src))
 (define version-comparisons (get-version-comparisons vers))
