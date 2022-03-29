@@ -36,11 +36,15 @@
 #define HAVE_GETADDRINFO 1
 
 /* Enable futures: */
-#define MZ_USE_FUTURES
+#ifndef _M_ARM64
+# define MZ_USE_FUTURES
+#endif
 
 /* Enable places --- 3m only: */
 #ifdef MZ_PRECISE_GC
-# define MZ_USE_PLACES
+# ifndef _M_ARM64
+#  define MZ_USE_PLACES
+# endif
 #endif
 
 /* Enable single-precision floats: */
