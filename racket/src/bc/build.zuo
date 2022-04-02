@@ -22,12 +22,17 @@
   (define foreign? (not (equal? (lookup 'FOREIGN_ENABLED) "no")))
   (define libffi? (and foreign? (not (equal? (lookup 'LIBFFI_BUILD_ENABLED) "no"))))
   (define cross? (not (equal? (or (lookup 'RACKET) "") "")))
-  (define cify-mode (or (lookup 'ENABKE_CIFY) "auto"))
+  (define cify-mode (or (lookup 'ENABLE_CIFY) "auto"))
   (define gracket? (not (equal? (lookup 'MAKE_GRACKET) "no")))
 
   (define mac? (equal? (lookup 'OSX) "t"))
   (define mac-fw? (and mac?
                        (equal? (lookup 'MACLIBRKT_LINK_MODE) "fw")))
+
+  (define (default-cpp)
+    (if windows?
+        "cl.exe /E"
+        "cc -E"))
 
   (define bc-suffix "")
 
@@ -222,11 +227,11 @@
 
   (define gracketcgc (cond
                        [mac? (at-dir "GRacketCGC.app/Contents/MacOS/GRacketCGC")]
-                       [windows? (at-dir "GRacketCGC.exe")]
+                       [windows? (at-dir "lib/GRacketCGC.exe")]
                        [else (at-dir (.exe "gracketcgc"))]))
   (define gracket3m (cond
                       [mac? (at-dir "GRacket3m.app/Contents/MacOS/GRacket3m")]
-                      [windows? (at-dir "GRacket3m.exe")]
+                      [windows? (at-dir "lib/GRacket3m.exe")]
                       [else (at-dir (.exe "gracket3m"))]))
 
   (define gracketcgc-app-skeleton (at-dir "GRacketCGC.app/Contents/Info.plist"))
@@ -263,14 +268,14 @@
                                   (at-dir "libracket1xxxxxxx.lib")
                                   (at-dir "libracket1.dll.a")))
   (define libracketcgc.dll.a (if msvc?
-                                 (at-dir "libracketxxxxxxx.dll")
+                                 (at-dir "libracketxxxxxxx.lib")
                                  (at-dir "libracket.dll.a")))
   (define libracket3m.dll.a (if msvc?
                                 (at-dir "libracket3mxxxxxxx.lib")
                                 (at-dir "libracket3m.dll.a")))
   
-  (define rres.o (at-dir "rres.o"))
-  (define grres.o (at-dir "grres.o"))
+  (define rres.o (at-dir (~a "rres" (if msvc? ".res" ".o"))))
+  (define grres.o (at-dir (~a "grres" (if msvc? ".res" ".o"))))
 
   (define mzsj86.o (at-dir (.c->.o "mzsj86.c")))
   (define mzsj86a.o (at-dir (.c->.o "mzsj86a.c"))) ; not a real file, but a stand-in for assembly output
@@ -417,8 +422,10 @@
                                             "no"))
             (setup-boot at-dir config (hash 'tag "++out"))
             (at-source "gc2/xform-mod.rkt") "--depends"
+            (if windows? "--indirect" '())
             "--cpp"
-            (build-shell (hash-ref config 'CPP)
+            (build-shell (or (hash-ref config 'CPP #f)
+                             (default-cpp))
                          (string->shell (~a "-I" (at-dir ".")))
                          (string->shell (~a "-I" (at-source "src")))
                          (string->shell (~a "-I" (at-source "include")))
@@ -426,6 +433,11 @@
                          (string->shell (~a "-I" (at-source "../rktio")))
                          (string->shell (~a "-I" (at-dir "rktio")))
                          (string->shell (~a "-I" (at-dir "phase2")))
+                         (if msvc?
+                             (build-shell (string->shell (~a "-I" (at-source "../worksp")))
+                                          (string->shell (~a "-I" (at-source "../worksp/libffi")))
+                                          (string->shell (~a "-I" ffi-arch-include)))
+                             "")
                          cpp-extra
                          (hash-ref config 'PREFLAGS "")
                          (hash-ref config 'OPTIONS "")
@@ -442,9 +454,7 @@
                                 (cons "XFORM_USE_PRECOMP" (at-dir "xsrc/precomp.h")))
                             (hash-ref (runtime-env) 'env)))))
     (for-each (lambda (file)
-                ;; skip `phase2/cstartup.inc`, because it's generated and declared
-                (unless (equal? file phase2/cstartup.inc)
-                  (build/dep file token)))
+                (build/dep file token))
               (car
                (string-read (file->string (path-replace-extension dest ".sdep"))))))
 
@@ -533,9 +543,11 @@
                        (for-each (let ([match? (glob->matcher " * \\")])
                                    (lambda (line)
                                      (when (match? line)
-                                       (build/dep (substring line 1 (- (string-length line) 2)) token))))
+                                       (build/dep (car (shell->strings (substring line 1 (- (string-length line) 2)) token))
+                                                  token))))
                                  lines)]
                       [else
+                       (rm* path)
                        (bootstrap-racket racketcgc1
                                          (at-source "src/compile-startup.rkt")
                                          path
@@ -547,7 +559,7 @@
         ;;  - Mac linking may use frameworks
         ;;  - Windows linking uses DLL imports
         ,@(map
-           (lambda (racket.exe libracket.a main.o link-inputs framework? fw-suffix fw-ups delay-dlls extra-deps)
+           (lambda (racket.exe libracket.a main.o link-inputs framework? fw-suffix fw-ups delay-dlls extra-deps gui?)
              `[:target ,racket.exe (,libracket.a ,@(if framework? '() link-inputs) ,main.o ,@extra-deps
                                                  ,@(if windows?
                                                        (list MemoryModule.o)
@@ -572,6 +584,7 @@
                                           (config-merge config
                                                         'LIBS
                                                         (build-shell "/link"
+                                                                     (if gui? "/SUBSYSTEM:windows" "")
                                                                      (map (lambda (delay-dll)
                                                                             (~a "/DELAYLOAD:" (file-name-from-path delay-dll)))
                                                                           delay-dlls)))
@@ -614,7 +627,10 @@
                  (list libmzgcxxxxxxx.dll libracketcgcxxxxxxx.dll) (list libracket3mxxxxxxx.dll))
            (list '()
                  '() '()
-                 (if mac? (list gracketcgc-app-skeleton) '()) (if mac? (list gracket3m-app-skeleton) '())))
+                 (if mac? (list gracketcgc-app-skeleton) '()) (if mac? (list gracket3m-app-skeleton) '()))
+           (list #f
+                 #f #f
+                 #t #t))
 
         ;; Mac OS GUI app skeleton
         ,@(map (lambda (gracket-app-skeleton suffix local-racket)
@@ -674,7 +690,7 @@
         ;; Windows DLLs
         ,@(map
            (lambda (cgc? libracket.dll libracket.a libracket.def link-inputs objs)
-             `[:target (,libracket.dll ,libracket.def) (,@(if cgc? (list libmzgcxxxxxxx.dll) '())
+             `[:target (,libracket.dll ,libracket.def) (,@(if cgc? (list libmzgcxxxxxxx.dll) (list newgc.o))
                                                         ,libracket.a ,mzsj86.o ,@mzsj86a-objs
                                                         ,@link-inputs)
                        ,(lambda (path token)
@@ -683,6 +699,7 @@
                                   (append
                                    (cons mzsj86.o mzsj86a-objs)
                                    (if msvc? objs '())
+                                   (if (and msvc? (not cgc?)) (list newgc.o) '())
                                    (if msvc?
                                        (map (lambda (p)
                                               (if (equal? p libracketgc.a)
@@ -715,7 +732,7 @@
            (list libracketcgc1.a libracketcgc.a libracket3m.a)
            (list libracketcgc1.def libracketcgc.def libracket3m.def)
            (list cgc-link-inputs cgc-link-inputs 3m-link-inputs)
-           (list cgc-obj1s cgc-objs 3m-objs))
+           (list cgc-obj1s cgc-objs 3m-all-objs))
 
         ;; Windows DLL import libraries
         ,@(map
@@ -1171,7 +1188,8 @@
         (bootstrap-racket (if 3m? racket3m racketcgc)
                           (at-source "mksystem.rkt")
                           (at-dir "system.rktd")
-                          (build-shell (hash-ref config 'CPP)
+                          (build-shell (or (hash-ref config 'CPP #f)
+                                           (default-cpp))
                                        (hash-ref config 'PREFLAGS "")
                                        (hash-ref config 'OPTIONS "")
                                        (hash-ref config 'GC2OPTIONS "")

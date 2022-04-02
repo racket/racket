@@ -439,27 +439,71 @@
         ;; To run cpp:
         (define process2
           (if (eq? (system-type) 'windows)
-              (lambda (s)
-                (let ([split (let loop ([s s])
-                               (let ([m (regexp-match #rx"([^ ]*) +(.*)" s)])
-                                 (if m
-                                     (cons (cadr m) (loop (caddr m)))
-                                     (list s))))])
+              (lambda (s . args)
+                (let ([split (let loop ([i 0] [start 0] [quoted? #f])
+                               (cond
+                                 [(= i (string-length s))
+                                  (if (= i start)
+                                      '()
+                                      (list (substring s start i)))]
+                                 [(and (not quoted?)
+                                       (char=? #\space (string-ref s i)))
+                                  (if (= i start)
+                                      (loop (+ i 1) (+ i 1) #f)
+                                      (cons (substring s start i)
+                                            (loop (+ i 1) (+ i 1) #f)))]
+                                 [(and (char=? #\\ (string-ref s i))
+                                       (regexp-match-positions #rx"^\\\\*\"" s i))
+                                  => (lambda (m)
+                                       (define count (- (cdar m) (caar m) 1))
+                                       (define bs (make-string (quotient count 2) #\\))
+                                       (define prefix (string-append (substring s start i)
+                                                                     bs
+                                                                     (if (even? count)
+                                                                         ""
+                                                                         "\"")))
+                                       (define r (if (even? count)
+                                                     (loop (+ i count) (+ i count) quoted?)
+                                                     (loop (+ i count 1) (+ i count 1) quoted?)))
+                                       (if (or (null? r)
+                                               (and (not quoted?)
+                                                    (odd? count)
+                                                    (char=? (string-ref s (+ i count 1)) #\space)))
+                                           (cons prefix r)
+                                           (cons (string-append prefix (car r))
+                                                 (cdr r))))]
+                                 [(char=? #\" (string-ref s i))
+                                  (cond
+                                    [quoted?
+                                     (define e (substring s start i))
+                                     (define r (loop (+ i 1) (+ i 1) #f))
+                                     (if (or (null? r)
+                                             (char=? (string-ref s (+ i 1)) #\space))
+                                         (cons e r)
+                                         (cons (string-append e (car r)) (cdr r)))]
+                                    [else
+                                     (define r (loop (+ i 1) (+ i 1) #t))
+                                     (if (= i start)
+                                         r
+                                         (cons (string-append (substring s start i) (car r))
+                                               (cdr r)))])]
+                                 [else
+                                  (loop (+ i 1) start quoted?)]))])
                   (apply (verbose process*) (find-executable-path (maybe-add-exe (car split)) #f)
-                         (cdr split))))
+                         (append (cdr split) args))))
               (verbose process)))
 
         (define cpp-process
 	  (if (string? cpp)
-	      (process2 (format "~a~a~a ~a"
+	      (process2 (format "~a~a~a"
 				cpp
 				(if pgc?
 				    (if pgc-really?
 					" -DMZ_XFORM -DMZ_PRECISE_GC"
 					" -DMZ_XFORM")
 				    "")
-				(if callee-restore? " -DGC_STACK_CALLEE_RESTORE" "")
-				file-in))
+				(if callee-restore? " -DGC_STACK_CALLEE_RESTORE" ""))
+                        file-in)
 	      (apply (verbose process*)
 		     (append
 		      cpp

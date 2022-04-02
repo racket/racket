@@ -250,11 +250,20 @@
                (not (symbol? (target-name (token-target token)))))
       (error "build/dep: cannot recur with a phony or data target"))
     (let* ([state (get-state (token-ch token) "dep")]
-           [_ (release-resource state "dep")]
+           [acquire? (cond
+                       [(eq? 'input (target-kind t))
+                        ;; This shortcut avoids release a resource that may
+                        ;; be needed to complete a target and having other
+                        ;; targets run (and potentially fail) meanwhile
+                        #f]
+                       [else
+                        (release-resource state "dep")
+                        #t])]
            [state (do-build t state (token-seen token) #t)]
            [state (record-target-accumulated state (token-target token) t)])
       (put-state (token-ch token) state "dep")
-      (acquire-resource state "continue from dep"))))
+      (when acquire?
+        (acquire-resource state "continue from dep")))))
 
 ;; Detects already built or cycles, and waits for in-progress (as
 ;; represented by a channel) to complete
@@ -704,8 +713,8 @@
     (cond
       [old-t
        (unless (or (eq? t old-t)
-                   (and (eq? (target-kind t) 'input)
-                        (eq? (target-kind old-t) 'input)))
+                   (eq? (target-kind t) 'input)
+                   (eq? (target-kind old-t) 'input))
          (error "build: multiple targets for same output" (target-name t)))
        state]
       [else
