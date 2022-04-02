@@ -1,14 +1,15 @@
 #lang zuo
 (require "../lib.zuo"
-         "../racket.zuo"
          (only-in "../start/build.zuo"
                   [targets-at starter-targets-at]))
 
 (provide-targets targets-at)
 
 (define (targets-at at-dir [vars (hash)])
-  (define config (config-file->hash (at-dir "Makefile") vars))
+  (define config (config-file->hash (at-dir "Mf-config") vars))
   (define (lookup k) (hash-ref config k #f))
+
+  (define 3m-default? (not (equal? (lookup 'CGC_INSTALLED) "")))
 
   (define msvc? (eq? 'windows (system-type)))
   (define windows? (or msvc? (equal? (lookup 'MINGW) "t")))
@@ -377,10 +378,20 @@
 
   (define (get-cross-racket)
     (let ([r (lookup 'RACKET)])
-      (if (not (car (split-path r)))
-          (or (find-executable-path r)
-              (error "cannot location racket" r))
-          (at-dir r))))
+      (cond
+        [(equal? r "auto")
+         (define auto-bc-targets
+           (configured-targets-at (at-source "configure") '() '()
+                                  (at-dir "local/Mf-config") '()
+                                  (at-source "build.zuo") (hash)))
+         (define auto-racket (find-target "racketcgc" auto-bc-targets))
+         (build auto-racket)
+         (target-path auto-racket)]
+        [else
+         (if (not (car (split-path r)))
+             (or (find-executable-path r)
+                 (error "cannot locate racket" r))
+             (at-dir r))])))
 
   (define (bootstrap-racket-config config local-racket)
     (hash-set config 'racket (if (not cross?)
@@ -510,7 +521,9 @@
   (define the-targets
     (append
      (make-targets
-      `([:target 3m (,racket3m ,@(if gracket? (list gracket3m) '()) ,starter) ,void]
+      `([:target build ,(if 3m-default? '(3m) '(cgc)) ,void]
+        
+        [:target 3m (,racket3m ,@(if gracket? (list gracket3m) '()) ,starter) ,void]
 
         [:target cgc (,racketcgc ,@(if gracket? (list gracketcgc) '()) ,starter) ,void]
 
@@ -537,7 +550,7 @@
                     (cond
                       [cify?
                        (racket (bootstrap-racket-config config racketcgc1)
-                               (setup-boot at-dir config (hash 'dep-file (at-dir "cstartup.d")))
+                               (setup-boot at-dir config (hash 'dep-file "cstartup.d"))
                                (at-source "src/cify-startup.rkt")
                                path
                                (at-source "src/startup.inc")
@@ -655,6 +668,7 @@
                               (bootstrap-racket local-racket
                                                 (at-source "../mac/osx_appl.rkt")
                                                 (at-source "..")
+                                                (at-dir ".")
                                                 suffix))])
                (list gracketcgc-app-skeleton gracket3m-app-skeleton)
                (list "CGC" "3m")
@@ -758,8 +772,8 @@
                                            (lookup 'DLLTOOL)
                                            "--def" (string->shell def)
                                            "-D" (string->shell (file-name-from-path dll))
-                                           "--output-exp" (at-dir (path-replace-extension (path-only dll) ".exp"))
-                                           "--output-lib" (at-dir (path-replace-extension (path-only dll) ".lib"))
+                                           "--output-exp" (at-dir (path-replace-extension (file-name-from-path dll) ".exp"))
+                                           "--output-lib" (at-dir (path-replace-extension (file-name-from-path dll) ".lib"))
                                            "--output-delaylib" dll.a))))])
            (list libmzgc.dll.a libracketcgc1.dll.a libracketcgc.dll.a libracket3m.dll.a)
            (list libmzgcxxxxxxx.dll libracketcgc1xxxxxxx.dll libracketcgcxxxxxxx.dll libracket3mxxxxxxx.dll)
@@ -1166,6 +1180,8 @@
                                      :truncate))]
 
         ;; Install targets, implemented by the `install` function below
+        [:target install (,(if 3m-default? 'install-3m 'install-cgc)) ,void]
+        [:target plain-install (,(if 3m-default? 'plain-install-3m 'plain-install-cgc)) ,void]
         [:target plain-install-3m () ,(lambda (token) (install #t #f #f))]
         [:target plain-install-cgc () ,(lambda (token) (install #f #t #f))]
         [:target install-3m () ,(lambda (token) (install #t #f #t))]
@@ -1184,6 +1200,9 @@
     (define libpltdir (if msvc?
                           libdir
                           (at-destdir config (shell-subst (lookup 'libpltdir) config))))
+    (define sharepltdir (if msvc?
+                            (at-source "../../share")
+                            (at-destdir config (shell-subst (lookup 'sharepltdir) config))))
     (define includepltdir (if msvc?
                               (at-source "../../include")
                               (at-destdir config (shell-subst (lookup 'includepltdir) config))))
@@ -1198,11 +1217,11 @@
     (mkdir-p libpltdir)
     (mkdir-p includepltdir)
 
-    (define collects-path (or (lookup 'COLLECTS_PATH)
+    (define collects-path (or (shell-subst (lookup 'COLLECTS_PATH) config)
                               (if windows?
                                   "collects"
                                   (build-path ".." "collects"))))
-    (define config-path (or (lookup 'CONFIG_PATH)
+    (define config-path (or (shell-subst (lookup 'CONFIG_PATH) config)
                             (if windows?
                                 "etc"
                                 (build-path ".." "etc"))))
@@ -1303,7 +1322,7 @@
          (cp/strip libracket3mxxxxxxx.dll (build-path libdir (file-name-from-path libracket3mxxxxxxx.dll))))]
       [else
        (define starter.exe (build-path libpltdir (.exe "starter")))
-       (cp (.exe "starter") starter.exe)
+       (cp (at-dir (.exe "starter")) starter.exe)
        (cp (at-source "../start/starter-sh") (build-path libpltdir "starter-sh"))
        (strip-signature starter.exe)
        (strip-debug config starter.exe)
@@ -1366,7 +1385,8 @@
           (symlink (~a "Versions/" version (if 3m? "_3m" "") "/Racket")
                    (build-path dest-framework-dir "Racket"))]
          [else
-          (error "fixme unix")])])
+          ;; no extra Unix actions
+          (void)])])
 
     (unless (or windows? (equal? "no-install" (lookup 'INSTALL_LIBS_ENABLE)))
       (cp (target->path librktio.a) (build-path libdir (file-name-from-path (target->path librktio.a))))
@@ -1384,6 +1404,8 @@
         (strip-lib-debug config lib-dest)
         (strip-lib-debug config libgc-dest)))
 
+    (install-license-files sharepltdir)
+    
     (when setup?
       (define dest-exe (build-path bindir (if (not windows?)
                                               (~a "racket"
@@ -1395,9 +1417,9 @@
                                                       3m-cap-installed-suffix
                                                       cgc-cap-installed-suffix)
                                                   ".exe"))))
-      (run-raco-setup config dest-exe (and cross? (error "fixme install")) '()))
+      (maybe-copytree config dest-exe (and cross? (get-cross-racket)) at-dir)
+      (run-raco-setup config dest-exe (and cross? (get-cross-racket)) '()))
 
     (void))
 
   the-targets)
-  

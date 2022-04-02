@@ -8,6 +8,7 @@ pb_dir="$dir/ChezScheme/boot/pb"
 
 use_cs=maybe
 use_bc=maybe
+default_vm=cs
 supplied_racket=no
 supplied_scheme=no
 enable_boothelp=
@@ -18,19 +19,27 @@ enable_boothelp=
 
 for arg in $*; do 
     case "$arg" in
-        --enable-cs | --enable-csdefault)
+        --enable-cs)
             use_cs=yes
             ;;
-        --enable-bc | --enable-bcdefault | --enable-cgcdefault)
+        --enable-csdefault)
+            default_vm=cs
+            ;;
+        --enable-bc)
             use_bc=yes
+            ;;
+        --enable-bcdefault | --enable-cgcdefault)
+            default_vm=bc
             ;;
         --enable-csonly)
             use_cs=yes
             use_bc=no
+            default_vm=cs
             ;;
         --enable-bconly)
             use_cs=no
             use_bc=yes
+            default_vm=bc
             ;;
         --enable-racket=*)
             supplied_racket=yes
@@ -60,6 +69,7 @@ if test "$use_bc" = maybe ; then
     if test "$use_cs" = maybe ; then
         use_cs=yes
         use_bc=no
+        default_vm=cs
     elif test "$use_cs" = no ; then
         use_bc=yes
     elif test -d "$pb_dir" -o $supplied_racket = yes ; then
@@ -71,6 +81,7 @@ if test "$use_bc" = maybe ; then
     fi
 elif test "$use_cs" = "maybe" ; then
     use_cs=no
+    default_vm=bc
 fi
 
 if test "$use_cs" = "yes" ; then
@@ -106,8 +117,21 @@ if test "$use_bc" = "yes" ; then
     esac
 fi
 
-if test "$use_bc" = "no" ; then
-    exec "$dir/cfg-cs" $enable_boothelp ${1+"$@"}
-else
-    exec "$dir/cfg-bc" $enable_boothelp ${1+"$@"}
-fi
+case "$dir" in
+    /*)
+        upsrcdir="$dir"
+        ;;
+    *)
+        upsrcdir="../$dir"
+        ;;
+esac
+
+echo "srcdir=$dir" > Makefile
+echo "upsrcdir=$upsrcdir" >> Makefile
+echo "default_vm=${default_vm}" >> Makefile
+echo "use_cs=${use_cs}" >> Makefile
+echo "use_bc=${use_bc}" >> Makefile
+echo "HOSTCC="'$(CC) $(CFLAGS) -O2' >> Makefile
+cat "$dir/Makefile.in" >> Makefile
+
+cp "$dir/buildmain.zuo" main.zuo

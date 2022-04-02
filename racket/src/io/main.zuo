@@ -7,7 +7,12 @@
          (only-in "../rktio/build.zuo"
                   [targets-at rktio-targets-at]))
 
-(provide-targets targets-at)
+(provide targets-at)
+
+(module+ main
+  (build/command-line* (lambda (at-dir vars)
+                         (targets-at at-dir (hash-set vars 'sync-rktio #t)))
+                       build-path))
 
 (define (targets-at at-dir
                     [vars (hash)]
@@ -15,12 +20,16 @@
   (define io.rktl (at-dir "compiled/io.rktl"))
   (define io-dep.rktd (at-dir "compiled/io-dep.rktd"))
 
-  (define rktio-dir (at-source "../build/so-rktio"))
-  (mkdir-p rktio-dir)
-  (define rktio.rktl (find-target "rktio.rktl"
-                                  (rktio-targets-at (make-at-dir rktio-dir)
-                                                    vars)))
-  
+  (define rktio.rktl
+    (cond
+      [(hash-ref vars 'sync-rktio #f)
+       (define rktio-dir (at-source "../build/so-rktio"))
+       (mkdir-p rktio-dir)
+       (find-target "rktio.rktl" (rktio-targets-at (make-at-dir rktio-dir)
+                                                   vars))]
+      [else
+       (at-source "../rktio/rktio.rktl")]))
+
   (make-targets
    `([:target io-src (,io.rktl) ,void]
 

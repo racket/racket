@@ -142,3 +142,10 @@ etcpltdir = @etcpltdir@
 sharepltdir = @sharepltdir@
 collectsdir = @collectsdir@
 configdir = @etcpltdir@
+pkgsdir = @pkgsdir@
+docdir = @docdir@
+appsdir = @appsdir@
+mandir = @mandir@
+
+MAKE_COPYTREE = @MAKE_COPYTREE@
+INSTALL_ORIG_TREE = @INSTALL_ORIG_TREE@

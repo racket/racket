@@ -1,6 +1,5 @@
 #lang zuo
 (require "../../lib.zuo"
-         "../../racket.zuo"
          (only-in "../../ChezScheme/build.zuo"
                   [targets-at scheme-targets-at])
          (only-in "../../start/build.zuo"
@@ -447,6 +446,7 @@
                        ,(lambda (path token)
                           (bootstrap-racket (at-source "../../mac/osx_appl.rkt")
                                             (at-source "../..")
+                                            (at-dir ".")
                                             "CS"))])]
            [windows? '()]
            [else
@@ -725,9 +725,16 @@
     (define libpltdir (if msvc?
                           libdir
                           (at-destdir config (shell-subst (lookup 'libpltdir) config))))
+    (define sharepltdir (if msvc?
+                            (at-source "../../share")
+                            (at-destdir config (shell-subst (lookup 'sharepltdir) config))))
     (define includepltdir (if msvc?
                               (at-source "../../../include")
                               (at-destdir config (shell-subst (lookup 'includepltdir) config))))
+
+    ;; not used for Windows:
+    (define collects-path (shell-subst (lookup 'COLLECTS_PATH) config))
+    (define config-path (shell-subst (lookup 'CONFIG_PATH) config))
     
     (mkdir-p bindir)
     (mkdir-p libpltdir)
@@ -761,10 +768,10 @@
 
        (icp config (at-source "../../start/starter-sh") (build-path libpltdir "starter-sh"))
 
-       (icp config "starter" dest-starter)
+       (icp config (at-dir "starter") dest-starter)
        (strip-signature dest-starter)
        (strip-debug config dest-starter)
-       (set-collects-path dest-starter (lookup 'COLLECTS_PATH) (lookup 'CONFIG_PATH))
+       (set-collects-path dest-starter collects-path config-path)
        (restore-signature dest-starter)])
 
     (install-racket (at-source "gen-system.rkt")
@@ -822,7 +829,7 @@
               (cp (build-path framework-dir "boot" x.boot) (build-path fw-vers-dir "boot" x.boot)))
             '("petite.boot" "scheme.boot" "racket.boot"))
        (strip-signature dest-racket)
-       (set-collects-path dest-racket (lookup 'COLLECTS_PATH) (lookup 'CONFIG_PATH))
+       (set-collects-path dest-racket collects-path config-path)
        (install_name_tool "-change"
                           (~a "@executable_path/Racket.framework/Versions/" version "_CS/Racket")
                           (~a framework-prefix "Racket.framework/Versions/" version "_CS/Racket")
@@ -862,8 +869,8 @@
        (icp config gracketcs dest-gracket)
        (strip-signature dest-racket)
        (strip-signature dest-gracket)
-       (set-collects-path dest-racket (lookup 'COLLECTS_PATH) (lookup 'CONFIG_PATH))
-       (set-collects-path dest-gracket (lookup 'COLLECTS_PATH) (lookup 'CONFIG_PATH))
+       (set-collects-path dest-racket collects-path config-path)
+       (set-collects-path dest-gracket collects-path config-path)
        (restore-signature dest-racket)
        (restore-signature dest-gracket)
        (unless (equal? "no-install" (lookup 'INSTALL_LIBS_ENABLE))
@@ -897,7 +904,10 @@
                        library-xpatch
                        :truncate))
 
+    (install-license-files sharepltdir)
+
     (when setup?
+      (maybe-copytree config dest-racket (and cross? (config-bootstrap-racket)) at-dir)
       (run-raco-setup config dest-racket
                       (and cross? (config-bootstrap-racket))
                       (list "-MCR" (~a (at-dir "compiled") ":")

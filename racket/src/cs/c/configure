@@ -799,9 +799,12 @@ enable_libs
 enable_noopt
 enable_ubsan
 enable_asan
-enable_bcdefault
-enable_csonly
 enable_csdefault
+enable_csonly
+enable_cs
+enable_bcdefault
+enable_bconly
+enable_bc
 enable_crossany
 enable_libz
 enable_liblz4
@@ -1460,10 +1463,12 @@ Optional Features:
   --enable-strip          strip debug on install (usually enabled by default)
   --enable-ubsan          compile with -fsanitize=undefined
   --enable-asan           compile with -fsanitize=address
-  --enable-bcdefault      install BC without suffix
-  --enable-bconly         BC default, and skip CS build
   --enable-csdefault      install CS without suffix
   --enable-csonly         CS default, and skip BC build
+  --enable-cs             CS enabled
+  --enable-bcdefault      install BC without suffix
+  --enable-bconly         BC default, and skip CS build
+  --enable-bc             BC enabled
   --enable-crossany       Record own cross target as machine-independent
   --enable-libz           use installed libz if available
   --enable-liblz4         use installed liblz4 if available
@@ -2751,16 +2756,6 @@ if test "${enable_asan+set}" = set; then :
 fi
 
 
-# Check whether --enable-bcdefault was given.
-if test "${enable_bcdefault+set}" = set; then :
-  enableval=$enable_bcdefault;
-fi
-
-# Check whether --enable-csonly was given.
-if test "${enable_csonly+set}" = set; then :
-  enableval=$enable_csonly;
-fi
-
 # Check whether --enable-csdefault was given.
 if test "${enable_csdefault+set}" = set; then :
   enableval=$enable_csdefault;
@@ -2769,6 +2764,26 @@ fi
 # Check whether --enable-csonly was given.
 if test "${enable_csonly+set}" = set; then :
   enableval=$enable_csonly;
+fi
+
+# Check whether --enable-cs was given.
+if test "${enable_cs+set}" = set; then :
+  enableval=$enable_cs;
+fi
+
+# Check whether --enable-bcdefault was given.
+if test "${enable_bcdefault+set}" = set; then :
+  enableval=$enable_bcdefault;
+fi
+
+# Check whether --enable-bconly was given.
+if test "${enable_bconly+set}" = set; then :
+  enableval=$enable_bconly;
+fi
+
+# Check whether --enable-bc was given.
+if test "${enable_bc+set}" = set; then :
+  enableval=$enable_bc;
 fi
 
 

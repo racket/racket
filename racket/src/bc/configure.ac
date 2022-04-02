@@ -1479,7 +1479,7 @@ AC_SUBST(INSTALL_NAME_TOOL)
 AC_SUBST(LIBFFI_CONFIGURE_ARGS)
 AC_SUBST(RKTIO_CONFIGURE_ARGS)
 
-makefiles="Makefile"
+makefiles="Mf-config"
 
 AC_OUTPUT($makefiles)
 

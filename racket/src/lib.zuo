@@ -21,7 +21,21 @@
 
          executable->path
 
-         windres)
+         windres
+
+         setup-rktio
+         setup-boot
+         racket-version
+         at-destdir
+         icp
+         icp-r
+         icp-lib
+         strip-debug
+         strip-lib-debug
+         run-raco-setup
+
+         install-license-files
+         maybe-copytree)
 
 (define (hash-set* ht . keys+vals)
   (let loop ([ht ht] [keys+vals keys+vals])
@@ -114,11 +128,11 @@
                     (fd-close out))))))
 
 (define (get-dependencies vars file)
-  (define p (racket vars
-                    (at-source "zuo-help.rkt")
-                    "--dependencies"
-                    file
-                    (hash 'stdout 'pipe)))
+  (define p (racket/process vars
+                            (at-source "zuo-help.rkt")
+                            "--dependencies"
+                            file
+                            (hash 'stdout 'pipe)))
   (define config-str (fd-read (hash-ref p 'stdout) eof))
   (process-wait (hash-ref p 'process))
   (unless (= 0 (process-status (hash-ref p 'process)))
@@ -126,6 +140,7 @@
   (string-read config-str))
 
 (define (make-raco-driver vars racket-config.db)
+  (unless (hash? vars) (arg-error 'make-raco-driver "hash" vars))
   (raco-driver
    vars
    (target racket-config.db
@@ -230,3 +245,178 @@
       (shell/wait (build-shell (hash-ref config 'WINDRES) flags
                                "-i" (string->shell in)
                                "-o" (string->shell out)))))
+
+(define (setup-rktio rktio-src-dir rktio-dir config)
+  (define msvc? (eq? 'windows (system-type)))
+  (define rktio_config.h (build-path rktio-dir "rktio_config.h"))
+  (define rktio-targets
+    (cond
+      [msvc?
+       (mkdir-p rktio-dir)
+       ((dynamic-require (build-path rktio-src-dir "build.zuo")
+                         'targets-at)
+        (make-at-dir rktio-dir))]
+      [else
+       (configured-targets-at (build-path rktio-src-dir "configure")
+                              (shell->strings (hash-ref config 'RKTIO_CONFIGURE_ARGS ""))
+                              '()
+                              (build-path rktio-dir "Makefile")
+                              (list rktio_config.h)
+                              (build-path rktio-src-dir "build.zuo")
+                              config)]))
+  (define librktio.a (find-target (~a "librktio." (if msvc? "lib" "a")) rktio-targets))
+
+  (list librktio.a
+        (if msvc?
+            (find-target "rktio_config.h" rktio-targets)
+            rktio_config.h)))
+
+(define (setup-boot at-dir config
+                    [options (hash)])
+  (list "-O" "info@compiler/cm"
+        "-l-" "setup" (or (hash-ref options 'mode #f)
+                          (hash-ref config 'SETUP_BOOT_MODE #f)
+                          "--boot")
+        (at-source "setup-go.rkt")
+        (at-dir (or (hash-ref options 'compiled-subdir #f)
+                    "compiled"))
+        (if (hash-ref options 'tag #f)
+            "--tag"
+            "ignored")
+        (or (hash-ref options 'tag #f)
+            (at-dir (or (hash-ref options 'dep-file #f)
+                        "ignored.d")))))
+
+(define (racket-version)
+  (let* ([lines (string-split (file->string (at-source "version/racket_version.h"))
+                              "\n")]
+         [prefix "#define MZSCHEME_VERSION_"]
+         [match? (glob->matcher (~a prefix "*"))]
+         [len (string-length prefix)])
+    (define (get-version part)
+      (ormap (lambda (line)
+               (and (match? line)
+                    (string=? part (substring line len (+ 1 len)))
+                    (string->integer (car (string-split (substring line (+ len 2)) "\r")))))
+             lines))
+    (let ([X (get-version "X")]
+          [Y (get-version "Y")]
+          [Z (get-version "Z")]
+          [W (get-version "W")])
+      (if (= W 0)
+          (if (= Z 0)
+              (~a X "." Y)
+              (~a X "." Y "." Z))
+          (~a X "." Y "." Z "." W)))))
+
+(define (at-destdir config p)
+  (define destdir (hash-ref config 'DESTDIR #f))
+  (if destdir
+      (if (relative-path? p)
+          (build-path destdir p)
+          (apply build-path
+                 (cons destdir
+                       (cdr (explode-path p)))))
+      p))
+
+(define (icp config src dest)
+  (if (eq? 'windows (system-type))
+      (cp src dest)
+      (shell/wait (build-shell (hash-ref config 'ICP) (string->shell src) (string->shell dest)))))
+
+(define (icp-r config src dest)
+  (if (eq? 'windows (system-type))
+      (cp* src dest)
+      (shell/wait (build-shell (hash-ref config 'ICP) "-r" (string->shell src) (string->shell dest)))))
+
+(define (icp-lib config src dest)
+  (if (eq? 'windows (system-type))
+      (cp src dest)
+      (shell/wait (build-shell (hash-ref config 'ICP_LIB) (string->shell src) (string->shell dest)))))
+
+(define (strip-debug config path)
+  (unless (eq? 'windows (system-type))
+    (shell/wait (build-shell (hash-ref config 'STRIP_DEBUG) (string->shell path)))))
+
+(define (strip-lib-debug config path)
+  (unless (eq? 'windows (system-type))
+    (shell/wait (build-shell (hash-ref config 'STRIP_LIB_DEBUG) (string->shell path)))))
+
+(define (run-raco-setup config dest-racket cross-bootstrap-racket cross-compiler-args)
+  (define msvc? (eq? 'windows (system-type)))
+  
+  (define collectsdir (if msvc?
+                          (at-source "../collects")
+                          (at-destdir config (shell-subst (hash-ref config 'collectsdir) config))))
+  (define configdir (if msvc?
+                        (at-source "../etc")
+                        (at-destdir config (shell-subst (hash-ref config 'configdir) config))))
+  
+  (define (extras key) (shell->strings (or (hash-ref config key #f) "")))
+  ;; A distribution build can set `SELF_ROOT_CONFIG_DIR` to make the
+  ;; setup config different from the result distribution's config, etc.
+  (define self-root-config-dir (or (hash-ref config 'SELF_ROOT_CONFIG_DIR #f) ""))
+  (define setup-any-zo-dir (or (hash-ref config 'SETUP_ANY_ZO_DIR #f) ""))
+  (define self-root-config-flags (if (equal? self-root-config-dir "")
+                                     '()
+                                     (list "-G" self-root-config-dir)))
+  (define setup-args (list
+                      "-N" "raco" "-l-" "setup"
+                      (extras 'INSTALL_SETUP_FLAGS)
+                      (extras 'PLT_SETUP_OPTIONS_FLAGS)))
+  (cond
+    [(not cross-bootstrap-racket)
+     (process/wait dest-racket
+                   self-root-config-flags
+                   "-X" collectsdir
+                   "-G" configdir
+                   (if (equal? setup-any-zo-dir "")
+                       '()
+                       (list "-MCR" (~a setup-any-zo-dir ":")))
+                   setup-args)]
+    [else
+     (racket cross-bootstrap-racket
+             self-root-config-flags
+             cross-compiler-args
+             "-X" collectsdir
+             "-G" configdir
+             setup-args)]))
+
+(define (install-license-files sharepltdir)
+  (mkdir-p sharepltdir)
+  (for-each (lambda (path)
+              (cp (at-source path) (build-path sharepltdir path)))
+            '("LICENSE-libscheme.txt"
+              "LICENSE-MIT.txt"
+              "LICENSE-APACHE.txt"
+              "LICENSE-LGPL.txt"
+              "LICENSE-GPL.txt"
+              "LICENSE.txt")))
+
+(define (maybe-copytree config dest-racket cross-racket at-dir)
+  (when (equal? (hash-ref config 'MAKE_COPYTREE #f) "copytree")
+    (define dirs
+      (map (lambda (dir)
+             (at-destdir config (shell-subst (hash-ref config dir) config)))
+           '(bindir
+             collectsdir
+             pkgsdir
+             docdir
+             libdir
+             includepltdir
+             libpltdir
+             sharepltdir
+             configdir
+             appsdir
+             mandir)))
+    (for-each mkdir-p dirs)
+    (process/wait (or cross-racket dest-racket)
+                  (if cross-racket
+                      '()
+                      (list "-X" (at-source "../collects")
+                            "-G" (at-source "../etc")))
+                  (setup-boot at-dir config)
+                  (at-source "../collects/setup/unixstyle-install.rkt")
+                  "make-install-copytree" (at-source "..")
+                  dirs
+                  (hash-ref config 'INSTALL_ORIG_TREE "no"))))

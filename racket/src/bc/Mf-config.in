@@ -1,0 +1,111 @@
+#
+# Makefile for racket
+#
+
+PACKAGE = racket
+
+srcdir = @srcdir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+datarootdir = @datarootdir@
+bindir = @bindir@
+libdir = @libdir@
+includepltdir = @includepltdir@
+libpltdir = @libpltdir@
+libpltdir_rel = @libpltdir_rel@
+etcpltdir = @etcpltdir@
+sharepltdir = @sharepltdir@
+configdir = @etcpltdir@
+collectsdir = @collectsdir@
+builddir = @builddir@
+pkgsdir = @pkgsdir@
+docdir = @docdir@
+appsdir = @appsdir@
+mandir = @mandir@
+
+MAKE_COPYTREE = @MAKE_COPYTREE@
+INSTALL_ORIGTREE = @INSTALL_ORIGTREE@
+
+CC = @CC@
+CPP = @CPP@
+XFORMFLAGS = @XFORMFLAGS@
+
+# Although CFLAGS is defined via configure, the intent is that
+# CFLAGS and CPPFLAGS can be adjusted at `make' time.
+CFLAGS = @CFLAGS@
+PREFLAGS = @PREFLAGS@
+OPTIONS = @OPTIONS@
+GC2OPTIONS = @GC2OPTIONS@
+MZOPTIONS = @MZOPTIONS@
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
+DLLTOOL = @DLLTOOL@
+WINDRES = @WINDRES@
+
+AR = @AR@
+ARFLAGS = @ARFLAGS@
+RANLIB = @RANLIB@
+
+STRIP_DEBUG = @STRIP_DEBUG@
+STRIP_LIB_DEBUG = @STRIP_LIB_DEBUG@
+
+LIBFFI_CONFIGURE_ARGS = @LIBFFI_CONFIGURE_ARGS@
+RKTIO_CONFIGURE_ARGS = @RKTIO_CONFIGURE_ARGS@
+
+FOREIGN_ENABLED = @FOREIGN_ENABLED@
+LIBFFI_BUILD_ENABLED = @LIBFFI_BUILD_ENABLED@
+FOREIGN_CONVENIENCE = @FOREIGN_CONVENIENCE@
+
+STRIP_SIGNATURE = @STRIP_SIGNATURE@
+RESTORE_SIGNATURE = @RESTORE_SIGNATURE@ "${srcdir}/../mac/entitlements.plist"
+
+STRIP_SIGNATURE_VIA_RACKET = $(BOOTSTRAP_RACKET) "${srcdir}/../mac/codesign.rkt" --remove-signature
+RESTORE_SIGNATURE_VIA_RACKET = $(BOOTSTRAP_RACKET) "${srcdir}/../mac/codesign.rkt" -s - --entitlements
+
+INSTALL_NAME_TOOL_VIA_RACKET = $(BOOTSTRAP_RACKET) "${srcdir}/../mac/install_name_tool.rkt"
+
+ARLIBFLAGS = @LDFLAGS@ @LIBS@
+
+RACKET = @RACKET@
+
+ENABLE_CIFY = @ENABLE_CIFY@
+
+# See ../../Makefile about RUN_RACKET_<X>, which 
+# typically redirects to RUN_THIS_RACKET_<X>:
+RUN_THIS_RACKET_CGC = ./racket@CGC@
+RUN_THIS_RACKET_MMM = ./racket@MMM@
+
+SETUP_BOOT = -O "info@compiler/cm" -l- setup @BOOT_MODE@ $(srcdir)/../setup-go.rkt ../compiled
+SETUP_BOOT_COLLECTS_PATH = $(SETUP_BOOT) collpath.inc collpath.d  "$(srcdir)/../start/collects-path.rkt" "${srcdir}/.."
+
+BOOTSTRAP_RACKET = @RUN_RACKET_CGC@ $(SETUP_BOOT) ignored ignored.d
+
+MZSRC = $(srcdir)/src
+
+# Whether building for Mac OS, and how the framework is configured and
+# installed
+OSX=@OSX@
+MACLIBRKT_LINK_MODE = @MACLIBRKT_LINK_MODE@
+FRAMEWORK_INSTALL_DIR = @FRAMEWORK_INSTALL_DIR@
+FRAMEWORK_REL_INSTALL = @FRAMEWORK_REL_INSTALL@
+NEED_STRIP_SIGNATURE = @NEED_STRIP_SIGNATURE@
+
+MINGW = @MINGW@
+
+CGC_INSTALLED = @CGC_INSTALLED@
+MMM_INSTALLED = @MMM_INSTALLED@
+CGC_CAP_INSTALLED = @CGC_CAP_INSTALLED@
+MMM_CAP_INSTALLED = @MMM_CAP_INSTALLED@
+
+INSTALL_LIBS_ENABLE = @INSTALL_LIBS_ENABLE@
+
+CROSS_COMPILE_TARGET_KIND = @CROSS_COMPILE_TARGET_KIND@
+
+COLLECTS_PATH = @COLLECTS_PATH@
+CONFIG_PATH = @CONFIG_PATH@
+
+MAKE_GRACKET = @MAKE_GRACKET@
+
+ICP=@ICP@
+ICP_LIB=@ICP_LIB@
+ICP_STATIC_LIB=@ICP_STATIC_LIB@

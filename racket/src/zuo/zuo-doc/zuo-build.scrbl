@@ -444,7 +444,7 @@ string.}
 Adds a layer of target-variable parsing to
 @racket[build/command-line]. Command-line arguments of the form
 @nonterm{name}@litchar{=}@nonterm{value} are parsed as variable
-assignments, where @racket{name} is formed by @litchar{a}-@litchar{z},
+assignments, where @nonterm{name} is formed by @litchar{a}-@litchar{z},
 @litchar{A}-@litchar{Z}, @litchar{_}, and @litchar{0}-@litchar{9}, but
 not starting @litchar{0}-@litchar{9}. These variables can appear
 anywhere in the command line and are removed from the argument list
