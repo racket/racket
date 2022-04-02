@@ -439,7 +439,7 @@
         ;; To run cpp:
         (define process2
           (if (eq? (system-type) 'windows)
-              (lambda (s . args)
+              (lambda (s dest)
                 (let ([split (let loop ([i 0] [start 0] [quoted? #f])
                                (cond
                                  [(= i (string-length s))
@@ -490,8 +490,9 @@
                                  [else
                                   (loop (+ i 1) start quoted?)]))])
                   (apply (verbose process*) (find-executable-path (maybe-add-exe (car split)) #f)
-                         (append (cdr split) args))))
-              (verbose process)))
+                         (append (cdr split) (list dest)))))
+              (lambda (s dest)
+                ((verbose process) (format "~a ~s" s dest)))))
 
         (define cpp-process
 	  (if (string? cpp)

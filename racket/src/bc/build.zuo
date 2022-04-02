@@ -940,11 +940,11 @@
         [:target ,phase1/cstartup.inc (,(at-source "src/startup.inc")
                                        ,(at-source "../win/cstartup.zuo"))
                  ,(lambda (path token)
-                    (alert "converting startup.inc to avoid big string")
                     (mkdir-p (path-only path))
                     (cond
                       [msvc?
                        ;; Avoid trouble with over-long string constants in MSVC
+                       (alert "converting startup.inc to avoid big string")
                        ((dynamic-require (at-source "../win/cstartup.zuo") 'convert-to-character-array)
                         (at-source "src/startup.inc")
                         path)]
