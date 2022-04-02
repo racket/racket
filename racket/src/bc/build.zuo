@@ -34,7 +34,10 @@
         "cl.exe /E"
         "cc -E"))
 
-  (define bc-suffix "")
+  (define cgc-installed-suffix (or (lookup 'CGC_INSTALLED) "cgc"))
+  (define 3m-installed-suffix (or (lookup 'MMM_INSTALLED) "bc"))
+  (define cgc-cap-installed-suffix (or (lookup 'CGC_CAP_INSTALLED) "CGC"))
+  (define 3m-cap-installed-suffix (or (lookup 'MMM_CAP_INSTALLED) "BC"))
 
   (define rktio-dir (at-dir "rktio"))
   (define librktio.a+rktio_config.h (setup-rktio (at-source "../rktio") rktio-dir config))
@@ -560,10 +563,15 @@
         ;;  - Windows linking uses DLL imports
         ,@(map
            (lambda (racket.exe libracket.a main.o link-inputs framework? fw-suffix fw-ups delay-dlls extra-deps gui?)
+             (define manifest (and msvc?
+                                   (if gui?
+                                       (at-source "../worksp/racket/racket.manifest")
+                                       (at-source "../worksp/gracket/gracket.manifest"))))
              `[:target ,racket.exe (,libracket.a ,@(if framework? '() link-inputs) ,main.o ,@extra-deps
                                                  ,@(if windows?
                                                        (list MemoryModule.o)
-                                                       '()))
+                                                       '())
+                                                 ,@(if manifest (list manifest) '()))
                        ,(lambda (path token)
                           (mkdir-p (path-only path))
                           (c-link path
@@ -590,6 +598,11 @@
                                                                           delay-dlls)))
                                           config)))
                           (post-linker path)
+                          (when msvc?
+                            (shell/wait
+                             (build-shell "mt.exe -manifest"
+                                          (string->shell manifest)
+                                          (string->shell (~a "-outputresource:" path ";1")))))
                           (when framework?
                             (install_name_tool "-change"
                                                (~a "Racket.framework/Versions/" (~a version fw-suffix) "/Racket")
@@ -1041,7 +1054,8 @@
                                        ,(at-source "../start/config.inc")
                                        ,(at-source "../start/self_exe.inc")
                                        ,(at-source "../start/delayed.inc")
-                                       ,(at-source "../start/embedded_dll.inc"))
+                                       ,(at-source "../start/embedded_dll.inc")
+                                       ,@(if msvc? (list bc_suffix.h) '()))
                            ,(lambda (path token)
                               (c-compile path
                                          main.c
@@ -1102,6 +1116,7 @@
                  `[:target ,(at-dir "xsrc" (file-name-from-path main.c))
                            (,main.c
                             ,(at-source "gc2/xform-mod.rkt")
+                            ,@(if msvc? (list bc_suffix.h) '())
                             ,@quiet-deps
                             ,@xform-racket-deps)
                            ,(lambda (path token)
@@ -1144,9 +1159,9 @@
                                config))]
 
         ;; Windows file-suffix-selection helper
-        [:target ,bc_suffix.h (,(input-data-target 'bc-suffix bc-suffix))
+        [:target ,bc_suffix.h (,(input-data-target 'bc-suffix 3m-cap-installed-suffix))
                  ,(lambda (path token)
-                    (display-to-file (~a "#define COMPILED_PATH_AS_" bc-suffix)
+                    (display-to-file (~a "#define COMPILED_PATH_AS_" 3m-cap-installed-suffix)
                                      bc_suffix.h
                                      :truncate))]
 
@@ -1178,10 +1193,19 @@
     (define configdir (if msvc?
                           (at-source "../../etc")
                           (at-destdir config (shell-subst (lookup 'configdir) config))))
-    
+
     (mkdir-p bindir)
     (mkdir-p libpltdir)
     (mkdir-p includepltdir)
+
+    (define collects-path (or (lookup 'COLLECTS_PATH)
+                              (if windows?
+                                  "collects"
+                                  (build-path ".." "collects"))))
+    (define config-path (or (lookup 'CONFIG_PATH)
+                            (if windows?
+                                "etc"
+                                (build-path ".." "etc"))))
 
     ;; Make install "system.rktd"
     (if cross?
@@ -1199,7 +1223,7 @@
                                        (string->shell (~a "-I" (if windows?
                                                                    (at-source "../worksp")
                                                                    (at-dir ".")))))
-                          (lookup 'MMM_INSTALLED) (lookup 'CROSS_COMPILE_TARGET_KIND)
+                          3m-installed-suffix (lookup 'CROSS_COMPILE_TARGET_KIND)
                           (if 3m? racket3m racketcgc)
                           (error "fixme"))
         (bootstrap-racket (if 3m? racket3m racketcgc)
@@ -1224,7 +1248,7 @@
            (icp config racket dest-exe)
            (strip-signature dest-exe)
            (strip-debug config dest-exe)
-           (set-collects-path dest-exe (lookup 'COLLECTS_PATH) (lookup 'CONFIG_PATH))
+           (set-collects-path dest-exe collects-path config-path)
            (restore-signature dest-exe)
 
            (when gracket?
@@ -1245,12 +1269,12 @@
                 (mv (build-path (path-only dest-exe) (file-name-from-path gracket)) dest-exe)]
                [else
                 (rm* dest-exe)
-                (icp gracket dest-exe)])
+                (icp config gracket dest-exe)])
              (strip-signature dest-exe)
              (strip-debug config dest-exe)
              (if mac?
                  (set-collects-path dest-exe "../../../../collects" "../../../../etc")
-                 (set-collects-path dest-exe (lookup 'COLLECTS_PATH) (lookup 'CONFIG_PATH)))
+                 (set-collects-path dest-exe collects-path config-path))
              (restore-signature dest-exe)))
          (append
           (if cgc? (list racketcgc) '())
@@ -1259,22 +1283,31 @@
           (if cgc? (list gracketcgc) '())
           (if 3m? (list gracket3m) '()))
          (append
-          (if cgc? (list (lookup 'CGC_INSTALLED)) '())
-          (if 3m? (list (lookup 'MMM_INSTALLED)) '()))
+          (if cgc? (list cgc-installed-suffix) '())
+          (if 3m? (list 3m-installed-suffix) '()))
          (append
-          (if cgc? (list (lookup 'CGC_CAP_INSTALLED)) '())
-          (if 3m? (list (lookup 'MMM_CAP_INSTALLED)) '())))
+          (if cgc? (list cgc-cap-installed-suffix) '())
+          (if 3m? (list 3m-cap-installed-suffix) '())))
 
     (cond
       [windows?
-       (error "fixme windows")]
+       (define (cp/strip from to)
+         (cp from to)
+         (strip-debug config to))
+       (cp/strip "MzStart.exe" (build-path libpltdir "MzStart.exe"))
+       (cp/strip "MrStart.exe" (build-path libpltdir "MrStart.exe"))
+       (when cgc?
+         (cp/strip libmzgcxxxxxxx.dll (build-path libdir (file-name-from-path libmzgcxxxxxxx.dll)))
+         (cp/strip libracketcgcxxxxxxx.dll (build-path libdir (file-name-from-path libracketcgcxxxxxxx.dll))))
+       (when 3m?
+         (cp/strip libracket3mxxxxxxx.dll (build-path libdir (file-name-from-path libracket3mxxxxxxx.dll))))]
       [else
        (define starter.exe (build-path libpltdir (.exe "starter")))
        (cp (.exe "starter") starter.exe)
        (cp (at-source "../start/starter-sh") (build-path libpltdir "starter-sh"))
        (strip-signature starter.exe)
        (strip-debug config starter.exe)
-       (set-collects-path starter.exe (lookup 'COLLECTS_PATH) (lookup 'CONFIG_PATH))
+       (set-collects-path starter.exe collects-path config-path)
 
        (display-to-file (~a "CC=" (lookup 'CC) "\n"
                             "CFLAGS=" (build-shell (lookup 'CFLAGS)
@@ -1321,8 +1354,8 @@
                 (if cgc? (list racketcgc) '())
                 (if 3m? (list racket3m) '()))
                (append
-                (if cgc? (list (lookup 'CGC_INSTALLED)) '())
-                (if 3m? (list (lookup 'MMM_INSTALLED)) '()))
+                (if cgc? (list cgc-installed-suffix) '())
+                (if 3m? (list 3m-installed-suffix) '()))
                (append
                 (if cgc? (list frameworkcgc) '())
                 (if 3m? (list framework3m) '()))
@@ -1352,11 +1385,16 @@
         (strip-lib-debug config libgc-dest)))
 
     (when setup?
-      (define dest-exe (build-path bindir (~a "racket"
-                                              (if 3m?
-                                                  (lookup 'MMM_INSTALLED)
-                                                  (lookup 'CGC_INSTALLED))
-                                              (if windows? ".exe" ""))))
+      (define dest-exe (build-path bindir (if (not windows?)
+                                              (~a "racket"
+                                                  (if 3m?
+                                                      3m-installed-suffix
+                                                      cgc-installed-suffix))
+                                              (~a "Racket"
+                                                  (if 3m?
+                                                      3m-cap-installed-suffix
+                                                      cgc-cap-installed-suffix)
+                                                  ".exe"))))
       (run-raco-setup config dest-exe (and cross? (error "fixme install")) '()))
 
     (void))

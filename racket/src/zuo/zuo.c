@@ -5084,6 +5084,9 @@ static zuo_t *zuo_suspend_signal() {
 }
 
 static zuo_t *zuo_resume_signal() {
+  if (zuo_signal_suspended == 0)
+    return z.o_void;
+
   if (--zuo_signal_suspended == 0) {
 #ifdef ZUO_UNIX
     sigset_t set;

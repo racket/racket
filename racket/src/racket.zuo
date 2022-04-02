@@ -112,10 +112,10 @@
   (define msvc? (eq? 'windows (system-type)))
   
   (define collectsdir (if msvc?
-                          (at-source "../../../collects")
+                          (at-source "../collects")
                           (at-destdir config (shell-subst (hash-ref config 'collectsdir) config))))
   (define configdir (if msvc?
-                        (at-source "../../../etc")
+                        (at-source "../etc")
                         (at-destdir config (shell-subst (hash-ref config 'configdir) config))))
   
   (define (extras key) (shell->strings (or (hash-ref config key #f) "")))
