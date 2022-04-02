@@ -76,6 +76,11 @@
   (define starter-targets (starter-targets-at at-dir config windows?))
   (define starter (find-target "starter" starter-targets))
 
+  (define mzdyncgc.o (at-dir "mzdyn.o"))
+  (define mzdyn3m.o (at-dir "mzdyn3m.o"))
+  (define mzdyncgc.exp (at-dir "mzdyn.exp"))
+  (define mzdyn3m.exp (at-dir "mzdyn3m.exp"))
+
   (define src-names/no-startup-or-third-party
     '("salloc.c"
       "bignum.c"
@@ -338,11 +343,12 @@
                                       "RpCrt4.lib" "Ole32.lib" "Advapi32.lib"))
   (define MemoryModule.o (at-dir (.c->.o "MemoryModule.c")))
 
-  (define machine-link-flags (and msvc?
-                                  (cond
-                                    [(eq? windows-arch 'x64) "/link /MACHINE:X64"]
-                                    [(eq? windows-arch 'arm64) "/link /MACHINE:ARM64"]
-                                    [else "/link /MACHINE:X86"])))
+  (define machine-link-str (and msvc?
+                                (cond
+                                  [(eq? windows-arch 'x64) "/MACHINE:X64"]
+                                  [(eq? windows-arch 'arm64) "/MACHINE:ARM64"]
+                                  [else "/MACHINE:X86"])))
+  (define machine-link-flags (and msvc? (~a "/link " machine-link-str)))
 
   (define (mzconfig-include config)
     (if msvc?
@@ -523,9 +529,9 @@
      (make-targets
       `([:target build ,(if 3m-default? '(3m) '(cgc)) ,void]
         
-        [:target 3m (,racket3m ,@(if gracket? (list gracket3m) '()) ,starter) ,void]
+        [:target 3m (,racket3m ,@(if gracket? (list gracket3m) '()) ,starter ,mzdyn3m.o) ,void]
 
-        [:target cgc (,racketcgc ,@(if gracket? (list gracketcgc) '()) ,starter) ,void]
+        [:target cgc (,racketcgc ,@(if gracket? (list gracketcgc) '()) ,starter ,mzdyncgc.o) ,void]
 
         ;; Phase2 "cstartup.inc" generation as a compiled form of "startup.inc"
         [:target ,phase2/cstartup.inc (,(at-source "src/startup.inc")
@@ -1179,6 +1185,36 @@
                                      bc_suffix.h
                                      :truncate))]
 
+        ,@(map (lambda (mzdyn.o mzdyn.exp 3m?)
+                 `[:target (,mzdyn.o ,@(if windows? (list mzdyn.exp) '())) (,(at-source "dynsrc/mzdyn.c") ,@common-headers)
+                           ,(lambda (path token)
+                              (c-compile path
+                                         (at-source "dynsrc/mzdyn.c")
+                                         (let* ([config (mz-config config)]
+                                                [config (config-merge config
+                                                                      'CFLAGS
+                                                                      (or (lookup 'DYN_CFLAGS) ""))])
+                                           (if 3m?
+                                               (config-define config
+                                                              "MZ_PRECISE_GC")
+                                               config)))
+                              (when windows?
+                                (cond
+                                  [msvc?
+                                   (shell/wait (build-shell
+                                                "lib.exe"
+                                                machine-link-str
+                                                (~a "-def:" (string->shell mzdyn.exp))
+                                                (~a "-out:" (string->shell (path-replace-extension mzdyn.exp ".lib")))))]
+                                  [else
+                                   (shell/wait (build-shell
+                                                (lookup 'DLLTOOL)
+                                                "--output-exp" (string->shell mzdyn.exp)
+                                                (string->shell mzdyn.o)))])))])
+               (list mzdyncgc.o mzdyn3m.o)
+               (list mzdyncgc.exp mzdyn3m.exp)
+               (list #f #t))
+
         ;; Install targets, implemented by the `install` function below
         [:target install (,(if 3m-default? 'install-3m 'install-cgc)) ,void]
         [:target plain-install (,(if 3m-default? 'plain-install-3m 'plain-install-cgc)) ,void]
@@ -1388,6 +1424,7 @@
           ;; no extra Unix actions
           (void)])])
 
+    ;; static libraries, if enabled
     (unless (or windows? (equal? "no-install" (lookup 'INSTALL_LIBS_ENABLE)))
       (cp (target->path librktio.a) (build-path libdir (file-name-from-path (target->path librktio.a))))
       
@@ -1403,6 +1440,16 @@
         (icp-lib config libracketgc.a libgc-dest)
         (strip-lib-debug config lib-dest)
         (strip-lib-debug config libgc-dest)))
+
+    ;; mzdyn.o
+    (when 3m?
+      (cp mzdyn3m.o (build-path libpltdir (file-name-from-path mzdyn3m.o)))
+      (when windows?
+        (cp mzdyn3m.exp (build-path libpltdir (file-name-from-path mzdyn3m.exp)))))
+    (when cgc?
+      (cp mzdyncgc.o (build-path libpltdir (file-name-from-path mzdyncgc.o)))
+      (when windows?
+        (cp mzdyncgc.exp (build-path libpltdir (file-name-from-path mzdyncgc.exp)))))
 
     (install-license-files sharepltdir)
     
