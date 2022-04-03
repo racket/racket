@@ -11,10 +11,10 @@
 
 (define (targets-at at-dir [vars (hash)])
   (define config (config-file->hash (at-dir "Mf-config") vars))
-  (define (lookup k) (hash-ref config k ""))
+  (define (lookup k [default ""]) (hash-ref config k default))
 
   (define host-m (lookup 'MACH))
-  (define m (or (lookup 'TARGET_MACH) host-m))
+  (define m (hash-ref config 'TARGET_MACH host-m))
 
   (define mac? (equal? (lookup 'OSX) "t"))
   (define mac-fw? (and mac?
@@ -76,9 +76,9 @@
                                                            'scheme-args scheme-args
                                                            'schemify "f"
                                                            'zlibLib (lookup 'Z_LIB)
-                                                           'LZ4Lib (or (lookup 'LZ4_LIB) "")
+                                                           'LZ4Lib (lookup 'LZ4_LIB)
                                                            'CONFIGURE_RACKET_SO_COMPILE (lookup 'CONFIGURE_RACKET_SO_COMPILE)
-                                                           'DISABLE_WPO (or (lookup 'DISABLE_WPO) "f"))])
+                                                           'DISABLE_WPO (lookup 'DISABLE_WPO "f"))])
                                       (if (not cross?)
                                           vars
                                           (hash-set* vars
@@ -128,7 +128,7 @@
                             (at-dir CS m "zlibmts/zlib.lib")
                             (at-dir CS m "zlib/libz.a")))
                   '()))
-            (let ([lz4 (or (lookup 'LZ4_LIB) "")])
+            (let ([lz4 (lookup 'LZ4_LIB)])
               (if (equal? lz4 "")
                   (list (if msvc?
                             (at-dir CS m "lz4mts/lib/liblz4.lib")
@@ -229,7 +229,7 @@
     ;; Racket should still work at this point, too
     (apply bootstrap-racket args))
 
-  (define (codesign?) (glob-match? "*arm64*osx" (or (lookup 'KERNEL_TARGET_MACH) m)))
+  (define (codesign?) (glob-match? "*arm64*osx" (lookup 'KERNEL_TARGET_MACH m)))
 
   (define (strip-signature dest)
     (when (codesign?)
@@ -499,7 +499,10 @@
                                                               'CFLAGS
                                                               "--shared")
                                                 'LDFLAGS
-                                                '"-static-libgcc"))))]
+                                                (build-shell
+                                                 "-Wl,--output-def"
+                                                 (string->shell (~a "-Wl," (path-replace-extension path ".def")))
+                                                 "-static-libgcc")))))]
 
        [:target ,main.o (,@main-deps)
                 ,(lambda (main.o token)
@@ -553,9 +556,9 @@
                                                         (hash-set* config
                                                                    'm m
                                                                    'zlibConfigureEnv zlibEnv
-                                                                   'enablelibffi (or (lookup 'SCHEME_LIBFFI) "no")
-                                                                   'disablecurses (or (lookup 'DISABLE_CURSES) "no")
-                                                                   'disableiconv (or (lookup 'DISABLE_ICONV) "no")
+                                                                   'enablelibffi (lookup 'SCHEME_LIBFFI "no")
+                                                                   'disablecurses (lookup 'DISABLE_CURSES "no")
+                                                                   'disableiconv (lookup 'DISABLE_ICONV "no")
                                                                    ;; these are for Windows:
                                                                    'runtimeAs "static"
                                                                    'linkAs "exe"
@@ -726,7 +729,7 @@
                           libdir
                           (at-destdir config (shell-subst (lookup 'libpltdir) config))))
     (define sharepltdir (if msvc?
-                            (at-source "../../share")
+                            (at-source "../../../share")
                             (at-destdir config (shell-subst (lookup 'sharepltdir) config))))
     (define includepltdir (if msvc?
                               (at-source "../../../include")
@@ -750,6 +753,13 @@
          (icp config src dest)
          (strip-debug config dest))
        (icp/strip libracketcsxxxxxxx.dll (build-path libdir (file-name-from-path libracketcsxxxxxxx.dll)))
+       (define .def (path-replace-extension (file-name-from-path libracketcsxxxxxxx.dll) ".def"))
+       (cond
+         [msvc?
+          (define generate-def-from-dll (dynamic-require (at-source "../../win/gendef.zuo")
+                                                         'generate-def-from-dll))
+          (generate-def-from-dll libracketcsxxxxxxx.dll (build-path libdir .def))]
+         [else (cp (at-dir .def) (build-path libdir .def))])
        (icp/strip racketcs dest-racket)
        (icp/strip gracketcs (build-path libdir (~a (CS-suffix "GRacket") ".exe")))
        (icp/strip MzStart.exe (build-path libpltdir (file-name-from-path MzStart.exe)))
@@ -776,8 +786,8 @@
 
     (install-racket (at-source "gen-system.rkt")
                     (build-path libpltdir (~a (cs-suffix "system") ".rktd"))
-                    m (or (lookup 'KERNEL_TARGET_MACH) m)
-                    (or (lookup 'CROSS_COMPILE_TARGET_KIND) "machine")
+                    m (lookup 'KERNEL_TARGET_MACH m)
+                    (lookup 'CROSS_COMPILE_TARGET_KIND "machine")
                     (at-source ".")
                     (lookup 'PLT_CS_SLSP_SUFFIX))
     
@@ -795,7 +805,7 @@
                     (hash 'dir repack-dir)))
       (when (equal? (lookup 'Z_LIB) "")
         (unpack-lib (at-dir CS m "zlib/libz.a")))
-      (when (equal? (or (lookup 'LZ4_LIB) "") "")
+      (when (equal? (lookup 'LZ4_LIB) "")
         (unpack-lib (at-dir CS m "lz4/lib/liblz4.a")))
       (unpack-lib (target->path librktio.a))
       (unpack-lib (at-dir CS m "boot" m "libkernel.a"))

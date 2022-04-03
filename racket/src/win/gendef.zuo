@@ -1,0 +1,30 @@
+#lang zuo
+
+(provide generate-def-from-dll)
+
+(define (generate-def-from-dll dll def)
+  (fd-write (fd-open-output 'stdout) (~a "Generating " def " from " dll "\n"))
+  (define p (shell (build-shell "dumpbin /exports"
+                                (string->shell dll))
+                   (hash 'stdout 'pipe)))
+  (define dump (fd-read (hash-ref p 'stdout) eof))
+  (process-wait (hash-ref p 'process))
+  (define lines (string-split dump "\n"))
+  (define header? (glob->matcher "*ordinal*hint*RVA*"))
+  (let loop ([lines lines])
+    (cond
+      [(null? lines)
+       (error "did not fail header line")]
+      [(header? (car lines))
+       (define out (fd-open-output def :truncate))
+       (fd-write out "EXPORTS\n")
+       (for-each (lambda (line)
+                   (define r (string-read (car (string-split line "="))))
+                   (when (and (list? r)
+                              (= (length r) 4)
+                              (integer? (car r))
+                              (symbol? (list-ref r 3)))
+                     (fd-write out (~a "    " (list-ref r 3)
+                                       " @" (list-ref r 0) "\n"))))
+                 (cdr lines))]
+      [else (loop (cdr lines))])))

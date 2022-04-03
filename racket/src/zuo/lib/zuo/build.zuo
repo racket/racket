@@ -243,6 +243,8 @@
                                     (or (hash-ref options 'log? #f)
                                         (assoc "ZUO_BUILD_LOG" (hash-ref (runtime-env) 'env)))
                                     (= num-jobs 1)))
+         (when resource-ch
+           (release-resource state "nested"))
          (do-build t state seen #t)
          (when resource-ch
            (acquire-resource state "continue from nested")))))))

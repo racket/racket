@@ -1,5 +1,6 @@
 #lang zuo
 (require "../lib.zuo"
+         "../win/gendef.zuo"
          (only-in "../start/build.zuo"
                   [targets-at starter-targets-at]))
 
@@ -1491,9 +1492,24 @@
        (cp/strip "MrStart.exe" (build-path libpltdir "MrStart.exe"))
        (when cgc?
          (cp/strip libmzgcxxxxxxx.dll (build-path libdir (file-name-from-path libmzgcxxxxxxx.dll)))
-         (cp/strip libracketcgcxxxxxxx.dll (build-path libdir (file-name-from-path libracketcgcxxxxxxx.dll))))
+         (cp/strip libracketcgcxxxxxxx.dll (build-path libdir (file-name-from-path libracketcgcxxxxxxx.dll)))
+         (cond
+           [msvc?
+            (define gcdef (path-replace-extension (file-name-from-path libmzgcxxxxxxx.dll) ".def"))
+            (define def (path-replace-extension (file-name-from-path libracketcgcxxxxxxx.dll) ".def"))
+            (generate-def-from-dll libmzgcxxxxxxx.dll (build-path libdir gcdef))
+            (generate-def-from-dll libracketcgcxxxxxxx.dll (build-path libdir def))]
+           [else
+            (cp libmzgc.def (build-path libdir (file-name-from-path libmzgc.def)))
+            (cp libracketcgc.def (build-path libdir (file-name-from-path libracketcgc.def)))]))
        (when 3m?
-         (cp/strip libracket3mxxxxxxx.dll (build-path libdir (file-name-from-path libracket3mxxxxxxx.dll))))
+         (cp/strip libracket3mxxxxxxx.dll (build-path libdir (file-name-from-path libracket3mxxxxxxx.dll)))
+         (cond
+           [msvc?
+            (define def (path-replace-extension (file-name-from-path libracket3mxxxxxxx.dll) ".def"))
+            (generate-def-from-dll libracket3mxxxxxxx.dll (build-path libdir def))]
+           [else
+            (cp libracket3m.def (build-path libdir (file-name-from-path libracket3m.def)))]))
        (cp (at-source "../mzcom/prebuilt/MzCOM.tlb") (build-path libpltdir "MzCOM.tlb"))
        (when cgc?
          (cp/strip mzcomcgc.exe (build-path libdir (~a "MzCom" cgc-cap-installed-suffix ".exe"))))
