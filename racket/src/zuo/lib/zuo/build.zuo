@@ -27,6 +27,7 @@
          build/command-line
          build/command-line*
          build/dep
+         build/no-dep
 
          find-target
          make-at-dir
@@ -43,9 +44,11 @@
 
 ;; A token represents a build in progress, used by a target's `get-rule` or `build`
 ;; function to make recursive call or get SHA-1s (possibly cached)
-(struct token (target     ; the target that received this token
-               ch         ; a channel to access the build state
-               seen))     ; to detect dependency cycles
+(struct token (target      ; the target that received this token
+               ch          ; a channel to access the build state
+               seen        ; to detect dependency cycles
+               resource-ch ; build state's resource channel
+               uni?))      ; build state's `uni?` flag
 
 (struct target (key       ; shortcut: `string->symbol` of the path
                 name      ; a symbol or path relative to the current directory
@@ -208,7 +211,8 @@
                      time-cache    ; key -> (cons timestamp sha1)
                      saw-targets   ; key -> target [to detect multiple for same output]
                      resource-ch   ; channel with available resources enqueued
-                     log?))        ; logging enabled?
+                     log?          ; logging enabled?
+                     uni?))        ; just one job?
 
 ;; Main entry point to build a target `t`
 (define (build t-in [token #f] [options (hash)])
@@ -216,14 +220,14 @@
     (unless (target? t) (arg-error 'build "target or list of targets" t-in))
     (unless (hash? options) (arg-error 'build "hash table" options))
     (unless (or (not token) (token? token)) (arg-error 'build "build token or #f" token))
-    (let ([resource-ch (and token
-                            (let ([state (get-state (token-ch token) "nested")])
-                              (put-state (token-ch token) state "nested")
-                              (release-resource state "nested")
-                              (build-state-resource-ch state)))]
-          [seen (if token
-                    (token-seen token)
-                    (hash))])
+    (let* ([resource-ch (and token (token-resource-ch token))]
+           [num-jobs (if token
+                         ;; we only need whether it's 1 job or more:
+                         (if (token-uni? token) 1 2)
+                         (hash-ref options 'jobs (default-jobs)))]
+           [seen (if token
+                     (token-seen token)
+                     (hash))])
       ;; Start a threading context, so we can have parallel build tasks
       ((if token (lambda (th) (th)) call-in-main-thread)
        (lambda ()
@@ -235,14 +239,15 @@
                                     (hash)
                                     (hash)
                                     (or resource-ch
-                                        (make-resources (hash-ref options 'jobs (default-jobs))))
+                                        (make-resources num-jobs))
                                     (or (hash-ref options 'log? #f)
-                                        (assoc "ZUO_BUILD_LOG" (hash-ref (runtime-env) 'env)))))
+                                        (assoc "ZUO_BUILD_LOG" (hash-ref (runtime-env) 'env)))
+                                    (= num-jobs 1)))
          (do-build t state seen #t)
          (when resource-ch
            (acquire-resource state "continue from nested")))))))
 
-(define (build/dep t-in token)
+(define (build/maybe-dep t-in token add-dep?)
   (unless (token? token) (arg-error 'build/dep "build token" token))
   (let ([t (coerce-to-target t-in)])
     (unless (target? t) (arg-error 'build/dep "target" t-in))
@@ -260,10 +265,18 @@
                         (release-resource state "dep")
                         #t])]
            [state (do-build t state (token-seen token) #t)]
-           [state (record-target-accumulated state (token-target token) t)])
+           [state (if add-dep?
+                      (record-target-accumulated state (token-target token) t)
+                      state)])
       (put-state (token-ch token) state "dep")
       (when acquire?
         (acquire-resource state "continue from dep")))))
+
+(define (build/dep t-in token)
+  (build/maybe-dep t-in token #t))
+
+(define (build/no-dep t-in token)
+  (build/maybe-dep t-in token #f))
 
 ;; Detects already built or cycles, and waits for in-progress (as
 ;; represented by a channel) to complete
@@ -330,7 +343,11 @@
   (define result-ch (channel))
   (define queued-state (update-target-state loaded-state t result-ch))
 
-  (define tok (token t (build-state-ch state) new-seen))
+  (define tok (token t
+                     (build-state-ch state)
+                     new-seen
+                     (build-state-resource-ch state)
+                     (build-state-uni? state)))
   (put-state (token-ch tok) queued-state "rule")
 
   ;; first phase of the target: get a rule
@@ -479,16 +496,18 @@
           newer-state]))]))
 
 (define (make-fetch-dep state seen top?)
-  (let ([state-ch (build-state-ch state)])
-    (lambda (dep)
-      ;; No one waits for the this thread's work, and it doesn't
-      ;; actually use the build result. It just creates a demand for
-      ;; the build result, so the demand exists concurrent to waiting
-      ;; on dependencies.
-      (thread (lambda ()
-                (let* ([state (get-state state-ch "fetch")]
-                       [state (do-build dep state seen top?)])
-                  (put-state state-ch state "fetch")))))))
+  (if (build-state-uni? state)
+      void
+      (let ([state-ch (build-state-ch state)])
+        (lambda (dep)
+          ;; No one waits for the this thread's work, and it doesn't
+          ;; actually use the build result. It just creates a demand for
+          ;; the build result, so the demand exists concurrent to waiting
+          ;; on dependencies.
+          (thread (lambda ()
+                    (let* ([state (get-state state-ch "fetch")]
+                           [state (do-build dep state seen top?)])
+                      (put-state state-ch state "fetch"))))))))
 
 ;; Alternative entry point suitable for use from a script's `main`
 (define (build/command-line targets [opts (hash)])

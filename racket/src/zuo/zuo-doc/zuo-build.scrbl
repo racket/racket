@@ -4,12 +4,14 @@
                      racket/contract/base)
           "defzuomodule.rkt")
 
+@(define shake-url "https://shakebuild.com/")
+
 @title[#:tag "zuo-build"]{Zuo as a @tt{make} Replacement}
 
 @defzuomodule[zuo/build]
 
 The @racketmodname[zuo/build] library is modeled on @exec{make} and
-@hyperlink["https://shakebuild.com/"]{Shake} for tracking dependencies
+@hyperlink[shake-url]{Shake} for tracking dependencies
 and build steps. The library has two layers:
 
 @itemlist[
@@ -99,9 +101,8 @@ There is no global list of targets that @racket[build] draws from.
 Instead, @racket[build] starts with a given target, and it learns
 about other targets a @racket[_get-dep] procedures return them and as
 @racket[_rebuild] procedures expose them via @racket[build/dep]. If
-@racket[build] discovers multiple targets with the same filename, then
-it reports an error, unless the targets were all created by
-@racket[input-file-target].
+@racket[build] discovers multiple non-input targets with the same
+filename, then it reports an error.
 
 The @racket[build/command-line] function is a convenience to implement
 get @tt{make}-like command-line handling for building targets. The
@@ -276,8 +277,8 @@ when applying an @racket[_at-dir] function to create @racket[name].
 
 The @deftech{build token} argument to @racket[get-deps] represents the
 target build in progress. It's useful with @racket[file-sha1] to take
-advantage of caching and with @racket[build/dep] to report
-discovered targets.
+advantage of caching, with @racket[build/dep] to report
+discovered targets, and with @racket[build/no-dep] or @racket[build].
 
 The following keys are recognized in @racket[options]:
 
@@ -407,8 +408,9 @@ independent of other builds in the sense that target results for
 others build are not reused for this one. That is, other builds and
 this one might check the states of some of the same files, but any
 triggered actions are separate, and @tech{phony} targets are similarly
-triggered independently. Use @racket[build/dep], instead, to
-recursively trigger targets within the same build.}
+triggered independently. Use @racket[build/dep] or
+@racket[build/no-dep], instead, to recursively trigger targets within
+the same build.}
 
 
 @defproc[(build/dep [target (or target? path-string?)] [token token?]) void?]{
@@ -420,6 +422,13 @@ or @racket[_rebuild] procedure. Targets reachable through
 for example. After @racket[target] is built, it is registered as a
 dependency of the target that received @racket[token] (if the target
 is not @tech{phony}).}
+
+
+@defproc[(build/no-dep [target (or target? path-string?)] [token token?]) void?]{
+
+Like @racket[build/dep] to continue a build in progress, but does not
+register a dependency. Using @racket[build/no-dep] has an effect
+similar to @hyperlink[shake-url]{Shake}'s ``order only'' dependencies.}
 
 
 @defproc[(build/command-line [targets (listof target?)] [options hash? (hash)]) void?]{

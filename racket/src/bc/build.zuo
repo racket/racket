@@ -450,6 +450,12 @@
                                    (string->shell dest))))))
 
   (define (xform dest src precomp-mode token [cpp-extra ""])
+    (unless cross?
+      ;; using `build/no-dep` here means that we don't re-xform all sources just
+      ;; because racketcgc changed; this is a trade-off between being correct in
+      ;; all cases (it's possible that a bug fix changes the way that xform runs)
+      ;; versus a more expected incremental reaction to changes in the sources
+      (build/no-dep (find-target racketcgc the-targets) token))
     (racket (hash-set (bootstrap-racket-config config racketcgc)
                       'racketConcurrent (if (eq? precomp-mode 'use-precomp)
                                             "yes"
@@ -490,12 +496,18 @@
     (for-each (lambda (file)
                 (build/dep file token))
               (car
-               (string-read (file->string (path-replace-extension dest ".sdep"))))))
+               (string-read (file->string (path-replace-extension dest ".sdep")))))
+    (unless (eq? precomp-mode 'use-precomp)
+      (register-d-dependencies (path-replace-extension dest ".d") token)))
 
-  (define xform-racket-deps
-    (if cross?
-        '()
-        (list racketcgc)))
+  (define (register-d-dependencies x.d token)
+    (define lines (string-split (file->string x.d) "\n"))
+    (for-each (let ([match? (glob->matcher " * \\")])
+                (lambda (line)
+                  (when (match? line)
+                    (build/dep (car (shell->strings (substring line 1 (- (string-length line) 2)) token))
+                               token))))
+              lines))
 
   (define (install_name_tool . args)
     (if cross?
@@ -580,13 +592,7 @@
                                path
                                (at-source "src/startup.inc")
                                (at-source "../version/racket_version.h"))
-                       (define lines (string-split (file->string (at-dir "cstartup.d")) "\n"))
-                       (for-each (let ([match? (glob->matcher " * \\")])
-                                   (lambda (line)
-                                     (when (match? line)
-                                       (build/dep (car (shell->strings (substring line 1 (- (string-length line) 2)) token))
-                                                  token))))
-                                 lines)]
+                       (register-d-dependencies (at-dir "cstartup.d") token)]
                       [else
                        (rm* path)
                        (bootstrap-racket racketcgc1
@@ -1133,8 +1139,7 @@
         ;; (the bulk of the 3m implementation)
         [:target ,(at-dir "xsrc/precomp.h") (,(at-source "gc2/precomp.c")
                                              ,(at-source "gc2/xform-mod.rkt")
-                                             ,@quiet-deps
-                                             ,@xform-racket-deps)
+                                             ,@quiet-deps)
                  ,(lambda (path token)
                     (xform (at-dir "xsrc/precomp.h")
                            (at-source "gc2/precomp.c")
@@ -1147,8 +1152,7 @@
                  `[:target ,(at-dir "xsrc" src-name) (,src
                                                       ,(at-dir "xsrc/precomp.h")
                                                       ,(at-source "gc2/xform-mod.rkt")
-                                                      ,@quiet-deps
-                                                      ,@xform-racket-deps)
+                                                      ,@quiet-deps)
                            ,(lambda (path token)
                               (xform path src 'use-precomp token))])
                src-names)
@@ -1161,8 +1165,7 @@
                            (,main.c
                             ,(at-source "gc2/xform-mod.rkt")
                             ,@(if msvc? (list bc_suffix.h) '())
-                            ,@quiet-deps
-                            ,@xform-racket-deps)
+                            ,@quiet-deps)
                            ,(lambda (path token)
                               (xform path main.c 'no-precomp token
                                      (make-directory-defs gracket?)))])
@@ -1182,8 +1185,7 @@
         ;; FFI compiled for 3m
         [:target ,(at-dir "xsrc/foreign.c")  (,(at-source "foreign/foreign.c")
                                               ,(at-source "gc2/xform-mod.rkt")
-                                              ,@quiet-deps
-                                              ,@xform-racket-deps)
+                                              ,@quiet-deps)
                  ,(lambda (path token)
                     (xform path (at-source "foreign/foreign.c") 'no-precomp token
                            (string->shell (~a "-I" (at-dir "foreign/libffi/include")))))]

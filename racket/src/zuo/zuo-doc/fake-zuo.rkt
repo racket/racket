@@ -216,6 +216,7 @@
     build/command-line
     build/command-line*
     build/dep
+    build/no-dep
     provide-targets
     find-target
     make-at-dir
