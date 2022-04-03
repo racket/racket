@@ -617,9 +617,7 @@ case "$host_os" in
     MZINSTALLBINDIR="${MZINSTALLBINDIR}/.."
     EXE_SUFFIX=".exe"
     COLLECTS_PATH="collects"
-    GUI_COLLECTS_PATH="../collects"
     CONFIG_PATH="etc"
-    GUI_CONFIG_PATH="../etc"
     skip_iconv_check=yes
     check_for_mprotect=no
     # ".a" is typically not useful, since we always build a DLL:

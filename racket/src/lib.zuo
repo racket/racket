@@ -250,6 +250,7 @@
 (define (windres in out config msvc? [flags ""])
   (if msvc?
       (shell/wait (build-shell "rc" "-r" flags
+                               "/l 0x409"
                                "/fo" (string->shell out)
                                (string->shell in)))
       (shell/wait (build-shell (hash-ref config 'WINDRES) flags

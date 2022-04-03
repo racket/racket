@@ -268,7 +268,7 @@
 
   ;; A ".def" is generated alongside a ".dll", and it's used to create
   ;; an import library (i.e., a library where linking means "use a DLL"
-  ;; a run time); for MinGW, the ".def" feed into `dlltool`; for MSVC,
+  ;; a run time); for MinGW, the ".def" feeds into `dlltool`; for MSVC,
   ;; an import ".lib" is generated directly, and we'll create the ".lib"
   ;; in it's normal place just by copying
   (define libmzgc.def (if msvc?
@@ -404,6 +404,7 @@
                                          (if msvc?
                                              (~a "/DGC_DLL /DLIBMZ_EXPORTS"
                                                  " /D_CRT_SECURE_NO_DEPRECATE"
+                                                 " /D _USE_DECLSPECS_FOR_SAL=0 /D _USE_ATTRIBUTES_FOR_SAL=0"
                                                  " /DUSE_SENORA_GC")
                                              "")))
                      (at-dir ".")
