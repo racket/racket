@@ -299,6 +299,7 @@
   
   (define rres.o (at-dir (~a "rres" (if msvc? ".res" ".o"))))
   (define grres.o (at-dir (~a "grres" (if msvc? ".res" ".o"))))
+  (define comres.o (at-dir (~a "comres" (if msvc? ".res" ".o"))))
 
   (define mzsj86.o (at-dir (.c->.o "mzsj86.c")))
   (define mzsj86a.o (at-dir (.c->.o "mzsj86a.c"))) ; not a real file, but a stand-in for assembly output
@@ -306,6 +307,16 @@
                                (eq? windows-arch 'arm64))
                            (list mzsj86a.o)
                            '()))
+
+  (define mzcomcgc.exe (at-dir "MzComCGC.exe"))
+  (define mzcom3m.exe (at-dir "MzCom3m.exe"))
+
+  (define mzcomcgc.o (at-dir (.c->.o "src/mzcom.c")))
+  (define mzobjcgc.o (at-dir (.c->.o "src/mzobj.c")))
+  (define mzcom3m.o (at-dir (.c->.o "xsrc/mzcom.c")))
+  (define mzobj3m.o (at-dir (.c->.o "xsrc/mzobj.c")))
+  (define com_glue.o (at-dir (.c->.o "src/com_glue.c")))
+  (define mzobj3m.cxx (at-dir "xsrc/mzobj.cxx"))
 
   (define mzconfig.h (if msvc?
                          (at-source "../worksp/mzconfig.h")
@@ -319,6 +330,11 @@
                                 (at-source "sconfig.h")
                                 (at-source "src/stypes.h")
                                 mzconfig.h)))
+
+  (define mzcom-headers (append
+                         common-headers
+                         (list (at-source "../mzcom/com_glue.h")
+                               (at-source "../mzcom/resource.h"))))
 
   ;; These headers have only preprocessor definitions, so they're not
   ;; picked up in ".sdep" files:
@@ -560,9 +576,17 @@
      (make-targets
       `([:target build ,(if 3m-default? '(3m) '(cgc)) ,void]
         
-        [:target 3m (,racket3m ,@(if gracket? (list gracket3m) '()) ,starter ,mzdyn3m.o) ,void]
+        [:target 3m (,racket3m ,@(if gracket? (list gracket3m) '())
+                               ,@(if windows? (list mzcom3m.exe) '())
+                               ,starter
+                               ,mzdyn3m.o)
+                 ,void]
 
-        [:target cgc (,racketcgc ,@(if gracket? (list gracketcgc) '()) ,starter ,mzdyncgc.o) ,void]
+        [:target cgc (,racketcgc ,@(if gracket? (list gracketcgc) '())
+                                 ,@(if windows? (list mzcomcgc.exe) '())
+                                 ,starter
+                                 ,mzdyncgc.o)
+                 ,void]
 
         ;; Phase2 "cstartup.inc" generation as a compiled form of "startup.inc"
         [:target ,phase2/cstartup.inc (,(at-source "src/startup.inc")
@@ -640,7 +664,12 @@
                                                                      (map (lambda (delay-dll)
                                                                             (~a "/DELAYLOAD:" (file-name-from-path delay-dll)))
                                                                           delay-dlls)))
-                                          (let ([link-cc (shell-subst (hash-ref config 'MZLINKER #f) config)])
+                                          (let ([link-cc (shell-subst (hash-ref config 'MZLINKER #f) config)]
+                                                [config (if gui?
+                                                            (config-merge config
+                                                                          'LDFLAGS
+                                                                          "-mwindows")
+                                                            config)])
                                             (if link-cc
                                                 (hash-set config 'CC link-cc)
                                                 config)))))
@@ -1211,6 +1240,7 @@
                                      bc_suffix.h
                                      :truncate))]
 
+        ;; mzdyn.o
         ,@(map (lambda (mzdyn.o mzdyn.exp 3m?)
                  `[:target (,mzdyn.o ,@(if windows? (list mzdyn.exp) '())) (,(at-source "dynsrc/mzdyn.c") ,@common-headers)
                            ,(lambda (path token)
@@ -1240,6 +1270,78 @@
                (list mzdyncgc.o mzdyn3m.o)
                (list mzdyncgc.exp mzdyn3m.exp)
                (list #f #t))
+
+        ;; MzCom (Windows)
+        ,@(map (lambda (mzcom.exe libracket.dll.a more.dll.a-files mzcom.o mzobj.o)
+                 `[:target ,mzcom.exe (,comres.o
+                                       ,com_glue.o
+                                       ,mzcom.o
+                                       ,mzobj.o
+                                       ,libracket.dll.a
+                                       ,@more.dll.a-files)
+                           ,(lambda (path token)
+                              (c-link mzcom.exe
+                                      (append
+                                       more.dll.a-files
+                                       (list mzcom.o mzobj.o com_glue.o comres.o
+                                             libracket.dll.a))
+                                      (config-merge (config-merge config
+                                                                  'LIBS
+                                                                  "-lole32 -loleaut32 -luuid -ldelayimp -static-libgcc")
+                                                    'LDFLAGS
+                                                    "-mwindows")))])
+               (list mzcomcgc.exe mzcom3m.exe )
+               (list libracketcgc.dll.a libracket3m.dll.a)
+               (list (list libmzgc.dll.a) '())
+               (list mzcomcgc.o mzcom3m.o)
+               (list mzobjcgc.o mzobj3m.o))
+        [:target ,comres.o (,(at-source "../worksp/mzcom/mzcom.rc")
+                            ,(at-source "../mzcom/prebuilt/MzCOM.tlb"))
+                 ,(lambda (path token)
+                    (windres (at-source "../worksp/mzcom/mzcom.rc")
+                             path
+                             config
+                             msvc?
+                             (build-shell (~a "-I" (string->shell (at-source "../mzcom")))
+                                          (~a "-I" (string->shell (at-source "../mzcom/prebuilt"))))))]
+
+        ,@(map (lambda (mzcom.o 3m?)
+                 `[:target ,mzcom.o (,(at-source "../mzcom/mzcom.cxx") ,@mzcom-headers)
+                           ,(lambda (path token)
+                              (c-compile path
+                                         (at-source "../mzcom/mzcom.cxx")
+                                         (config-merge (mz-config config)
+                                                       'CFLAGS
+                                                       (build-shell "-fno-exceptions"
+                                                                    (if 3m? "-DMZCOM_3M" "")))))])
+               (list mzcomcgc.o mzcom3m.o)
+               (list #f #t))
+
+        [:target ,mzobjcgc.o (,(at-source "../mzcom/mzobj.cxx") ,@mzcom-headers)
+                 ,(lambda (path token)
+                    (c-compile path
+                               (at-source "../mzcom/mzobj.cxx")
+                               (config-merge (mz-config config)
+                                             'CFLAGS
+                                             "-fno-exceptions")))]
+        [:target ,mzobj3m.o (,mzobj3m.cxx)
+                 ,(lambda (path token)
+                    (c-compile path
+                               mzobj3m.cxx
+                               (config-merge (mz-config config)
+                                             'CFLAGS
+                                             "-fno-exceptions")))]
+        [:target ,mzobj3m.cxx (,(at-source "../mzcom/mzobj.cxx")
+                               ,(at-source "gc2/xform-mod.rkt")
+                               ,@quiet-deps)
+                 ,(lambda (path token)
+                    (xform path (at-source "../mzcom/mzobj.cxx") 'no-precomp token))]
+
+        [:target ,com_glue.o (,(at-source "../mzcom/com_glue.c") ,@mzcom-headers)
+                 ,(lambda (path token)
+                    (c-compile path
+                               (at-source "../mzcom/com_glue.c")
+                               (mz-config config)))]
 
         ;; Install targets, implemented by the `install` function below
         [:target install (,(if 3m-default? 'install-3m 'install-cgc)) ,void]
@@ -1381,7 +1483,12 @@
          (cp/strip libmzgcxxxxxxx.dll (build-path libdir (file-name-from-path libmzgcxxxxxxx.dll)))
          (cp/strip libracketcgcxxxxxxx.dll (build-path libdir (file-name-from-path libracketcgcxxxxxxx.dll))))
        (when 3m?
-         (cp/strip libracket3mxxxxxxx.dll (build-path libdir (file-name-from-path libracket3mxxxxxxx.dll))))]
+         (cp/strip libracket3mxxxxxxx.dll (build-path libdir (file-name-from-path libracket3mxxxxxxx.dll))))
+       (cp (at-source "../mzcom/prebuilt/MzCOM.tlb") (build-path libpltdir "MzCOM.tlb"))
+       (when cgc?
+         (cp/strip mzcomcgc.exe (build-path libdir (~a "MzStart" cgc-cap-installed-suffix ".exe"))))
+       (when 3m?
+         (cp/strip mzcom3m.exe (build-path libdir (~a "MzStart" 3m-cap-installed-suffix ".exe"))))]
       [else
        (define starter.exe (build-path libpltdir (.exe "starter")))
        (cp (at-dir (.exe "starter")) starter.exe)
