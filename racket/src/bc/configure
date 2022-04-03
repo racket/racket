@@ -7260,7 +7260,6 @@ if test "${enable_shared}" = "yes" ; then
   abssrcdir=`(cd ${srcdir}; pwd)`
 
   # Try to convert libdir to an absolute path:
-  # (Is this necessary anymore?)
   if test -d "${libdir}" ; then
     abslibdir=`(cd ${libdir}; pwd)`
   else
@@ -7285,26 +7284,22 @@ if test "${enable_shared}" = "yes" ; then
     fi
   fi
 
-  if test "$INCLUDEDEP" = "-include" ; then
-    plt_lib_version="\$(FWVERSION)"
-  else
-    VERSION_X=`grep 'define MZSCHEME_VERSION_X ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
-    VERSION_Y=`grep 'define MZSCHEME_VERSION_Y ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
-    VERSION_Z=`grep 'define MZSCHEME_VERSION_Z ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
-    VERSION_W=`grep 'define MZSCHEME_VERSION_W ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
+  VERSION_X=`grep 'define MZSCHEME_VERSION_X ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
+  VERSION_Y=`grep 'define MZSCHEME_VERSION_Y ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
+  VERSION_Z=`grep 'define MZSCHEME_VERSION_Z ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
+  VERSION_W=`grep 'define MZSCHEME_VERSION_W ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
 
-    if test "${VERSION_W}" != "0" ; then
-      plt_lib_version="${VERSION_X}.${VERSION_Y}.${VERSION_Z}.${VERSION_W}"
+  if test "${VERSION_W}" != "0" ; then
+    plt_lib_version="${VERSION_X}.${VERSION_Y}.${VERSION_Z}.${VERSION_W}"
+  else
+    if test "${VERSION_Z}" != "0" ; then
+      plt_lib_version="${VERSION_X}.${VERSION_Y}.${VERSION_Z}"
     else
-      if test "${VERSION_Z}" != "0" ; then
-        plt_lib_version="${VERSION_X}.${VERSION_Y}.${VERSION_Z}"
-      else
-        plt_lib_version="${VERSION_X}.${VERSION_Y}"
-      fi
+      plt_lib_version="${VERSION_X}.${VERSION_Y}"
     fi
   fi
 
-  AR="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc}${ar_libtool_no_undefined} -release ${plt_lib_version} -rpath ${abslibdir} \$(ARLIBFLAGS) -o"
+  AR="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc}${ar_libtool_no_undefined} -release ${plt_lib_version} -rpath ${abslibdir} -o"
   STATIC_AR="${LIBTOOLPROG} --mode=link --tag=CC $CC -o"
   ARFLAGS=""
   RANLIB=":"
@@ -7335,9 +7330,9 @@ else
   LIBFINISH=echo
   LTO="o"
   LTA="a"
-  MZLINKER='$(CC)'
+  MZLINKER='${CC}'
   STATIC_AR="$AR"
-  PLAIN_CC='$(CC)'
+  PLAIN_CC='${CC}'
   FOREIGN_CONVENIENCE=""
   FOREIGN_OBJSLIB="\$(FOREIGN_OBJS)"
 fi

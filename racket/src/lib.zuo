@@ -17,6 +17,8 @@
          make-zo-target
 
          shell-subst
+         shell-subst-value
+
          configured-targets-at
 
          executable->path
@@ -201,6 +203,12 @@
                       config))]
       [else (loop (+ i 1))])))
 
+(define (shell-subst-value config key)
+  (let ([v (hash-ref config key #f)])
+    (if v
+        (hash-set config key (shell-subst v config))
+        config)))
+
 (define (configured-targets-at configure configure-args more-inputs
                                output-makefile more-outputs
                                script vars)
@@ -264,7 +272,7 @@
                               (list rktio_config.h)
                               (build-path rktio-src-dir "build.zuo")
                               config)]))
-  (define librktio.a (find-target (~a "librktio." (if msvc? "lib" "a")) rktio-targets))
+  (define librktio.a (find-target (~a "librktio." (if msvc? "lib" (hash-ref config 'LTA "a"))) rktio-targets))
 
   (list librktio.a
         (if msvc?

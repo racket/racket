@@ -30,6 +30,12 @@ CC = @CC@
 CPP = @CPP@
 XFORMFLAGS = @XFORMFLAGS@
 
+# Stays a plain compiler even if libtool is used for `CC`
+PLAIN_CC = @PLAIN_CC@
+
+# Usually `$(CC)`, but needs to be different when using libtool
+MZLINKER = @MZLINKER@
+
 # Although CFLAGS is defined via configure, the intent is that
 # CFLAGS and CPPFLAGS can be adjusted at `make' time.
 CFLAGS = @CFLAGS@
@@ -47,8 +53,12 @@ AR = @AR@
 ARFLAGS = @ARFLAGS@
 RANLIB = @RANLIB@
 
+
 STRIP_DEBUG = @STRIP_DEBUG@
 STRIP_LIB_DEBUG = @STRIP_LIB_DEBUG@
+
+LTO = @LTO@
+LTA = @LTA@
 
 LIBFFI_CONFIGURE_ARGS = @LIBFFI_CONFIGURE_ARGS@
 RKTIO_CONFIGURE_ARGS = @RKTIO_CONFIGURE_ARGS@

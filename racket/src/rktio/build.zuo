@@ -101,7 +101,10 @@
                                    (map string->shell (shell->strings (or (lookup 'LIBS) ""))))
                            ;; normal library:
                            objs)
-                       config))]
+                       (let ([ar (hash-ref config 'STATIC_AR)])
+                         (if ar
+                             (hash-set config 'AR (shell-subst ar config))
+                             (shell-subst-value config 'AR)))))]
 
      ,@(map (lambda (name obj)
               (let ([src (at-source name)])

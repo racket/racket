@@ -30,6 +30,20 @@
   (define mac-fw? (and mac?
                        (equal? (lookup 'MACLIBRKT_LINK_MODE) "fw")))
 
+  (define lto (or (lookup 'LTO) "o"))
+  (define (.c->.o s)
+    (if msvc?
+        (path-replace-extension s ".obj")
+        (path-replace-extension s (~a "." lto))))
+
+  (define lta (or (lookup 'LTA) "a"))
+  (define (.lta s)
+    (if msvc?
+        (.a s)
+        (~a "lib" s "." lta)))
+
+  (define shared-libraries? (equal? lta "la"))
+
   (define (default-cpp)
     (if windows?
         "cl.exe /E"
@@ -76,8 +90,8 @@
   (define starter-targets (starter-targets-at at-dir config windows?))
   (define starter (find-target "starter" starter-targets))
 
-  (define mzdyncgc.o (at-dir "mzdyn.o"))
-  (define mzdyn3m.o (at-dir "mzdyn3m.o"))
+  (define mzdyncgc.o (at-dir (if windows? "mzdyn.obj" (.c->.o "mzdyn.c"))))
+  (define mzdyn3m.o (at-dir (if windows? "mzdyn3m.obj" (.c->.o "mzdyn3m.c"))))
   (define mzdyncgc.exp (at-dir "mzdyn.exp"))
   (define mzdyn3m.exp (at-dir "mzdyn3m.exp"))
 
@@ -219,10 +233,10 @@
   (mkdir-p (at-dir "xsrc"))
   (mkdir-p (at-dir "compiled"))
 
-  (define libracketcgc.a (at-dir (.a "racket")))
-  (define libracketcgc1.a (at-dir (.a "racket1")))
-  (define libracketgc.a (at-dir (.a "racketgc")))
-  (define libracket3m.a (at-dir (.a "racket3m")))
+  (define libracketcgc.a (at-dir (.lta "racket")))
+  (define libracketcgc1.a (at-dir (.lta "racket1")))
+  (define libracketgc.a (at-dir (.lta "racketgc")))
+  (define libracket3m.a (at-dir (.lta "racket3m")))
 
   (define racketcgc1 (at-dir (if windows?
                                  "RacketCGC1.exe"
@@ -494,7 +508,7 @@
     (let ([cmd (or (lookup 'POST_LINKER) "")])
       (unless (equal? cmd "")
         (shell/wait (build-shell cmd (string->shell exe))))))
-  
+
   (define cgc-link-inputs ; omits libracketcgc.a
     (append
      (if foreign? (list foreigncgc.o) '())
@@ -514,14 +528,19 @@
                                                (at-dir ".")
                                                (at-source (if (and gracket? mac?)
                                                               "../../.."
-                                                              ".")
+                                                              ;; libtool creates executable one level deeper:
+                                                              (if shared-libraries?
+                                                                  ".."
+                                                                  "."))
                                                           "../../collects")))))
      (string->shell
       (~a "-DINITIAL_CONFIG_DIRECTORY=" (~s (find-relative-path
                                              (at-dir ".")
                                              (at-source (if (and gracket? mac?)
-                                                              "../../.."
-                                                              ".")
+                                                            "../../.."
+                                                            (if shared-libraries?
+                                                                ".."
+                                                                "."))
                                                         "../../etc")))))))
 
   (define the-targets
@@ -615,7 +634,10 @@
                                                                      (map (lambda (delay-dll)
                                                                             (~a "/DELAYLOAD:" (file-name-from-path delay-dll)))
                                                                           delay-dlls)))
-                                          config)))
+                                          (let ([link-cc (shell-subst (hash-ref config 'MZLINKER #f) config)])
+                                            (if link-cc
+                                                (hash-set config 'CC link-cc)
+                                                config)))))
                           (post-linker path)
                           (when msvc?
                             (shell/wait
@@ -837,8 +859,10 @@
              `[:target ,libracket.a (,@objs)
                        ,(lambda (path token)
                           (c-ar path
-                                objs
-                                config))])
+                                (if shared-libraries?
+                                    (cons (target->path librktio.a) objs)
+                                    objs)
+                                (shell-subst-value config 'AR)))])
            (list libracketcgc1.a libracketcgc.a libracket3m.a)
            (list cgc-obj1s cgc-objs (list* newgc.o 3m-all-objs)))
 
@@ -851,7 +875,7 @@
                               (config-merge config
                                             'CPPFLAGS
                                             "-DSGC_EXPORTS")
-                              config)))]
+                              (shell-subst-value config 'AR))))]
 
         ;; Racket core implementation compiled for CGC
         ;; (the bulk of the CGC implementation)
