@@ -379,6 +379,13 @@ void zuo_check_sanity() {
 }
 
 /*======================================================================*/
+/* signal forward declarations                                          */
+/*======================================================================*/
+
+static zuo_t *zuo_resume_signal();
+static zuo_t *zuo_suspend_signal();
+
+/*======================================================================*/
 /* memory manager                                                       */
 /*======================================================================*/
 
@@ -555,6 +562,8 @@ static void zuo_collect() {
   void *old_space = to_space;
   old_space_t *old_old_spaces = old_spaces;
 
+  zuo_suspend_signal();
+
   old_spaces = NULL;
   heap_size = total_allocation;
   to_space = malloc(heap_size);
@@ -575,6 +584,8 @@ static void zuo_collect() {
 
   /* cleanup */
   zuo_finish_gc(old_space, old_old_spaces);
+
+  zuo_resume_signal();
 }
 
 static void zuo_check_collect() {
@@ -1287,8 +1298,6 @@ static zuo_t *zuo_trie_keys(zuo_t *trie_in, zuo_t *accum) {
 /* terminal support                                                     */
 /*======================================================================*/
 
-static zuo_t *zuo_resume_signal();
-static zuo_t *zuo_suspend_signal();
 static int zuo_ansi_ok = 1;
 
 static void zuo_init_terminal() {
@@ -5077,7 +5086,11 @@ static zuo_t *zuo_suspend_signal() {
 #endif
 #ifdef ZUO_WINDOWS
     LONG old = InterlockedExchange(&zuo_handler_suspended, 1);
-    ASSERT(old == 0);
+    if (old == -1) {
+      /* signal-handling thread is trying to terminate the process,
+	 so just wait */
+      Sleep(INFINITE);
+    }
 #endif
   }
   return z.o_void;

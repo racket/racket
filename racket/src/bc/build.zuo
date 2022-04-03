@@ -662,7 +662,8 @@
                                                         (build-shell "/link"
                                                                      (if gui? "/SUBSYSTEM:windows" "")
                                                                      (map (lambda (delay-dll)
-                                                                            (~a "/DELAYLOAD:" (file-name-from-path delay-dll)))
+                                                                            (~a "/DELAYLOAD:" (string->shell
+                                                                                               (file-name-from-path delay-dll))))
                                                                           delay-dlls)))
                                           (let ([link-cc (shell-subst (hash-ref config 'MZLINKER #f) config)]
                                                 [config (if gui?
@@ -1260,7 +1261,7 @@
                                    (shell/wait (build-shell
                                                 "lib.exe"
                                                 machine-link-str
-                                                (~a "-def:" (string->shell mzdyn.exp))
+                                                (~a "-def:" (string->shell (at-source "dynsrc/mzdyn.def")))
                                                 (~a "-out:" (string->shell (path-replace-extension mzdyn.exp ".lib")))))]
                                   [else
                                    (shell/wait (build-shell
@@ -1287,9 +1288,18 @@
                                              libracket.dll.a))
                                       (config-merge (config-merge config
                                                                   'LIBS
-                                                                  "-lole32 -loleaut32 -luuid -ldelayimp -static-libgcc")
+                                                                  (if msvc?
+                                                                      (build-shell windows-libs
+                                                                                   "ole32.lib oleaut32.lib uuid.lib")
+                                                                      "-lole32 -loleaut32 -luuid -ldelayimp -static-libgcc"))
                                                     'LDFLAGS
-                                                    "-mwindows")))])
+                                                    (build-shell "-mwindows"
+                                                                 (map (lambda (delay-dll)
+                                                                        (~a "/DELAYLOAD:"
+                                                                            (string->shell
+                                                                             (file-name-from-path delay-dll))))
+                                                                      (cons libracket.dll.a
+                                                                            more.dll.a-files))))))])
                (list mzcomcgc.exe mzcom3m.exe )
                (list libracketcgc.dll.a libracket3m.dll.a)
                (list (list libmzgc.dll.a) '())
@@ -1312,7 +1322,7 @@
                                          (at-source "../mzcom/mzcom.cxx")
                                          (config-merge (mz-config config)
                                                        'CFLAGS
-                                                       (build-shell "-fno-exceptions"
+                                                       (build-shell (if msvc? "" "-fno-exceptions")
                                                                     (if 3m? "-DMZCOM_3M" "")))))])
                (list mzcomcgc.o mzcom3m.o)
                (list #f #t))
@@ -1323,14 +1333,14 @@
                                (at-source "../mzcom/mzobj.cxx")
                                (config-merge (mz-config config)
                                              'CFLAGS
-                                             "-fno-exceptions")))]
+                                             (if msvc? "" "-fno-exceptions"))))]
         [:target ,mzobj3m.o (,mzobj3m.cxx)
                  ,(lambda (path token)
                     (c-compile path
                                mzobj3m.cxx
                                (config-merge (mz-config config)
                                              'CFLAGS
-                                             "-fno-exceptions")))]
+                                             (if msvc? "" "-fno-exceptions"))))]
         [:target ,mzobj3m.cxx (,(at-source "../mzcom/mzobj.cxx")
                                ,(at-source "gc2/xform-mod.rkt")
                                ,@quiet-deps)
@@ -1486,9 +1496,9 @@
          (cp/strip libracket3mxxxxxxx.dll (build-path libdir (file-name-from-path libracket3mxxxxxxx.dll))))
        (cp (at-source "../mzcom/prebuilt/MzCOM.tlb") (build-path libpltdir "MzCOM.tlb"))
        (when cgc?
-         (cp/strip mzcomcgc.exe (build-path libdir (~a "MzStart" cgc-cap-installed-suffix ".exe"))))
+         (cp/strip mzcomcgc.exe (build-path libdir (~a "MzCom" cgc-cap-installed-suffix ".exe"))))
        (when 3m?
-         (cp/strip mzcom3m.exe (build-path libdir (~a "MzStart" 3m-cap-installed-suffix ".exe"))))]
+         (cp/strip mzcom3m.exe (build-path libdir (~a "MzCom" 3m-cap-installed-suffix ".exe"))))]
       [else
        (define starter.exe (build-path libpltdir (.exe "starter")))
        (cp (at-dir (.exe "starter")) starter.exe)
