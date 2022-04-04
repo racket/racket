@@ -16,8 +16,6 @@
          remove
          sort
 
-         call/comp
-
          file-exists?
          directory-exists?
          link-exists?
@@ -130,14 +128,6 @@
                   [(null? b) a]
                   [(less-than? (car b) (car a)) (cons (car b) (merge a (cdr b)))]
                   [else (cons (car a) (merge (cdr a) b))])))])))
-
-(define (call/comp proc)
-  (unless (procedure? proc) (arg-error 'call/comp "procedure" proc))
-  (call/cc (lambda (k)
-             (proc (lambda (v)
-                     (call/prompt
-                      (lambda ()
-                        (k v))))))))
 
 (define (file-exists? p)
   (unless (path-string? p) (arg-error 'file-exists? "path string" p))

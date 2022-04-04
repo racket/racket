@@ -550,14 +550,13 @@ opposed to a failure thunk.}
 @defproc[(apply [proc procedure?] [lst list?]) any/c]
 @defproc[(call/cc [proc procedure?]) any/c]
 @defproc[(call/prompt [proc procedure?]) any/c]
-@defproc[(call/comp [proc procedure?]) any/c]
 )]{
 
 Like @realracket*[procedure? apply call/cc
 call-with-continuation-prompt call-with-composable-continuation] from
 @racketmodname[racket], but @racket[apply] accepts only two arguments,
-and @racket[call/cc], @racket[call/prompt], @racket[call/comp] have no
-tag or abort handler.}
+and @racket[call/cc] and @racket[call/prompt] have no prompt-tag or
+abort-handler argument.}
 
 
 @section{Paths}

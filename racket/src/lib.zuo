@@ -84,8 +84,9 @@
                     ""]
                    [else (~s args)]))))
 
-(define (racket/process vars . args)
+(define (racket/process vars . args-in)
   (define racket-exe (find-racket vars))
+  (define args (append (hash-ref vars 'racket-args '()) args-in))
   (fd-write (fd-open-output 'stdout)
             (~a (string-tree->shell (cons racket-exe args)) "\n"))
   (apply process (list* racket-exe args)))
@@ -211,16 +212,27 @@
         (hash-set config key (shell-subst v config))
         config)))
 
-(define (configured-targets-at configure configure-args more-inputs
-                               output-makefile more-outputs
-                               script vars)
-  (define dir (path-only output-makefile))
+(define (configured-targets-at options)
+  (define who 'configured-targets-at)
+  (define configure (hash-ref options 'configure))
+  (define configure-args (hash-ref options 'configure-args '()))
+  (define inputs (hash-ref options 'inputs '()))
+  (unless (list? inputs) (arg-error who "list" inputs))
+  (define outputs (hash-ref options 'outputs))
+  (unless (list? outputs) (arg-error who "list" outputs))
+  (define dir (or (hash-ref options 'dir #f)
+                  (and (pair? outputs)
+                       (path-only (car outputs)))
+                  (error "need 'dir or non-empty 'outputs")))
+  (define script (or (hash-ref options 'script #f)
+                     (build-path (path-only configure) "build.zuo")))
+  (define vars (hash-ref options 'vars))
   (mkdir-p dir)
-  (build (target output-makefile
+  (build (target (car outputs)
                  (lambda (name token)
                    (rule (list* configure
                                 (input-data-target 'configure-args configure-args)
-                                more-inputs)
+                                inputs)
                          (lambda ()
                            (shell/wait (apply build-shell
                                               (map string->shell
@@ -231,7 +243,7 @@
                                                          configure-args)))
                                        (hash 'dir dir)))))
                  (hash 'quiet? #t
-                       'co-outputs more-outputs)))
+                       'co-outputs (cdr outputs))))
   ((dynamic-require script 'targets-at) (make-at-dir dir) vars))
 
 ;; in a shell, we need to have "./" when running something in the same directory
@@ -268,13 +280,15 @@
                          'targets-at)
         (make-at-dir rktio-dir))]
       [else
-       (configured-targets-at (build-path rktio-src-dir "configure")
-                              (shell->strings (hash-ref config 'RKTIO_CONFIGURE_ARGS ""))
-                              '()
-                              (build-path rktio-dir "Makefile")
-                              (list rktio_config.h)
-                              (build-path rktio-src-dir "build.zuo")
-                              config)]))
+       (configured-targets-at (hash
+                               'configure (build-path rktio-src-dir "configure")
+                               'args (shell->strings (hash-ref config 'RKTIO_CONFIGURE_ARGS ""))
+                               'inputs (list (build-path rktio-src-dir "Makefile.in")
+                                             (build-path rktio-src-dir "rktio_config.h.in"))
+                               'outputs (list (build-path rktio-dir "Makefile")
+                                              rktio_config.h)
+                               'script (build-path rktio-src-dir "build.zuo")
+                               'vars config))]))
   (define librktio.a (find-target (~a "librktio." (if msvc? "lib" (hash-ref config 'LTA "a"))) rktio-targets))
 
   (list librktio.a
@@ -364,7 +378,7 @@
                         (at-destdir config (shell-subst (hash-ref config 'configdir) config))))
   
   (define (extras key) (shell->strings (or (hash-ref config key #f) "")))
-  ;; A distribution build can set `SELF_ROOT_CONFIG_DIR` to make the
+  ;; A top-level build script can set `SELF_ROOT_CONFIG_DIR` to make the
   ;; setup config different from the result distribution's config, etc.
   (define self-root-config-dir (or (hash-ref config 'SELF_ROOT_CONFIG_DIR #f) ""))
   (define setup-any-zo-dir (or (hash-ref config 'SETUP_ANY_ZO_DIR #f) ""))
@@ -374,13 +388,13 @@
   (define setup-args (list
                       "-N" "raco" "-l-" "setup"
                       (extras 'INSTALL_SETUP_FLAGS)
-                      (extras 'PLT_SETUP_OPTIONS_FLAGS)))
+                      (extras 'PLT_SETUP_OPTIONS)))
   (cond
     [(not cross-bootstrap-racket)
      (process/wait dest-racket
-                   self-root-config-flags
                    "-X" collectsdir
                    "-G" configdir
+                   self-root-config-flags
                    (if (equal? setup-any-zo-dir "")
                        '()
                        (list "-MCR" (~a setup-any-zo-dir ":")))

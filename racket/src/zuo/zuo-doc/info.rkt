@@ -6,3 +6,7 @@
                "racket-doc"))
 
 (define scribblings '(("zuo.scrbl" (multi-page) (language))))
+
+(define pkg-desc "Documentation for the Zuo build language")
+
+(define pkg-authors '(mflatt))

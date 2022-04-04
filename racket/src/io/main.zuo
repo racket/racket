@@ -76,13 +76,12 @@
      [:target rktio-so ()
               ,(lambda (token)
                  (build (find-target "installed-shared-object"
-                                     (configured-targets-at (at-source "../rktio/configure")
-                                                            (list "--enable-standalone"
-                                                                  (~a "--prefix=" (path->complete-path (at-source "../.."))))
-                                                            (list (at-source "../rktio/Makefile.in"))
-                                                            (at-source "../build/so-rktio/Makefile")
-                                                            '()
-                                                            (at-source "../rktio/build.zuo")
-                                                            vars))))]
+                                     (configured-targets-at (hash 'configure (at-source "../rktio/configure")
+                                                                  'configure-args
+                                                                  (list "--enable-standalone"
+                                                                        (~a "--prefix=" (path->complete-path (at-source "../.."))))
+                                                                  'inputs (list (at-source "../rktio/Makefile.in"))
+                                                                  'outputs (list (at-source "../build/so-rktio/Makefile"))
+                                                                  'vars vars)))))]
 
      [:db-dir ,(at-dir "compiled")])))

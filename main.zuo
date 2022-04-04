@@ -1,0 +1,179 @@
+#lang zuo
+(require "racket/src/lib.zuo")
+
+(provide-targets targets-at)
+
+;; We ignore the `at-dir` argument and instead do everything
+;; relative to the source directory
+(define (targets-at at-dir-ignored [vars (hash)])
+  (define config (config-file->hash (at-source "Makefile") vars))
+  (define (lookup key [default ""]) (hash-ref config key default))
+  (define (lookup! key) (or (hash-ref config key #f)
+                            (error "required configuraiton entry is missing:" key)))
+
+  (define build-config.rktd (at-source "build/config/config.rktd"))
+
+  (define vm (string->symbol (lookup 'VM "cs")))
+
+  ;; Needed for any distribution:
+  (define required-pkgs '("racket-lib"))
+
+  (define (get-cpus)
+    (define cpus (let ([s (lookup 'CPUS)])
+                   (and (not (equal? s ""))
+                        s)))
+    (define n-cpus (and cpus (string->integer cpus)))
+    (when (and cpus
+               (or (not n-cpus)
+                   (>= n-cpus 1)))
+      (error "CPUS is not a positive integer:" cpus))
+    n-cpus)
+
+  (define (build-options)
+    (define n-cpus (get-cpus))
+    (if n-cpus
+        (hash 'jobs n-cpus)
+        (hash)))
+
+  (define (setup-options)
+    (define opts (lookup 'PLT_SETUP_OPTIONS))
+    (define cpus (get-cpus))
+    (if cpus
+        (build-shell opts "-j" cpus)
+        opts))
+
+  (define (pb-fetch)
+    (define boot-dir (at-source "racket/src/ChezScheme/boot"))
+    (define pb-dir (build-path boot-dir "pb"))
+    (define branch (lookup! 'PB_BRANCH))
+    (mkdir-p boot-dir)
+    (if (directory-exists? pb-dir)
+        (shell/wait (build-shell "git fetch -q origin" (~a branch ":remotes/origin/" branch))
+                    (hash 'dir pb-dir))
+        (shell/wait (build-shell "git clone -q" (lookup 'SINGLE_BRANCH_FLAG)
+                                 "-b" branch (string->shell (lookup! 'PB_REPO))
+                                 (string->shell pb-dir))))
+    (shell/wait (build-shell "git remote set-branches origin" branch)
+                (hash 'dir pb-dir))
+    (shell/wait (build-shell "git checkout -q" branch)
+                (hash 'dir pb-dir)))
+
+  (define (build-base subdir token also?)
+    (define targets
+      (configured-targets-at (hash
+                              'configure (at-source "racket/src" subdir "configure")
+                              'inputs (list (at-source "racket/src" subdir "Mf-config.in"))
+                              'outputs (list (at-source "racket/src/build" subdir "Mf-config"))
+                              'vars (hash
+                                     ;; causes the `raco setup` step to not build
+                                     ;; installed packages:
+                                     'SELF_ROOT_CONFIG_DIR (path-only build-config.rktd)
+                                     'PLT_SETUP_OPTIONS (build-shell
+                                                         (if also? "-D" "")
+                                                         (setup-options))))))
+    (build (find-target "build" targets)
+           token
+           (build-options))
+    (build (find-target "install-again" targets)
+           token
+           (build-options)))
+
+  (define (find-racket vm)
+    (define sfx (if (eq? vm 'cs)
+                    (lookup 'RACKETCS_SUFFIX)
+                    (lookup 'RACKETBC_SUFFIX)))
+    (define racket.exe
+      (cond
+        [(eq? 'windows (system-type))
+         (at-source "racket" (~a "Racket" (string-upcase sfx) ".exe"))]
+        [else
+         (at-source "racket/bin" (~a "racket" sfx))]))
+    (hash 'racket racket.exe
+          'racket-args (append (shell->strings (lookup 'SETUP_MACHINE_FLAGS))
+                               (list "-G" (at-source "racket/etc")
+                                     "-X" (at-source "racket/collects")))))
+  
+  (define (setup vm . args)
+    (raco (find-racket vm)
+          "setup"
+          args
+          (shell->strings (setup-options))))
+
+  (define (base token vm [also? #f])
+    (build/dep (find-target build-config.rktd the-targets) token)
+    (cond
+      [(eq? vm 'cs)
+       (pb-fetch)
+       (build-base "cs/c" token also?)]
+      [else
+       (build-base "bc" token also?)]))
+
+  (define (as-is token vm)
+    (base token vm)
+    (setup vm))
+
+  (define (in-place token vm [also? #f] [setup-extra-args ""])
+    (base token vm also?)
+
+    (define vars (find-racket vm))
+    (define jobs (get-cpus))
+
+    (unless also?
+      (racket vars
+              (list "-U" "-G" (path-only build-config.rktd)
+                    "-l-" "pkg/dirs-catalog"
+                    "--link" "--check-metadata" "--immediate"
+                    (at-source "racket/share/pkgs-catalog")
+                    (at-source "pkgs")
+                    (at-source "racket/src/expander")
+                    (at-source "racket/src/zuo/zuo-doc")))
+      (racket vars
+              (list "-U" "-G" (path-only build-config.rktd)
+                    (at-source "racket/src/pkgs-config.rkt")
+                    "https://pkgs.racket-lang.org"
+                    (lookup 'SRC_CATALOG)))
+      (racket vars
+              (at-source "racket/src/pkgs-check.rkt")
+              (at-source "racket/share/pkgs-catalog"))
+
+      (raco vars "pkg" "update"
+            "--all" "--auto" "--no-setup" "--scope" "installation"
+            (shell->strings (lookup 'PKG_UPDATE_OPTIONS)))
+      (raco vars "pkg" "install"
+            (if jobs (list "-j" (~a jobs)) '())
+            "--no-setup" "--pkgs" "--skip-installed" "--scope" "installation"
+            "--deps" "search-auto"
+            required-pkgs
+            (shell->strings (lookup 'PKGS)))
+      (setup vm "--only-foreign-libs"))
+
+    (setup vm (shell->strings setup-extra-args)))
+
+  (define the-targets
+    (make-targets
+     `([:target in-place () ,(lambda (token) (in-place token vm))]
+       [:target as-is () ,(lambda (token) (as-is token vm))]
+       [:target base () ,(lambda (token) (base token vm))]
+
+       [:target both () ,(lambda (token)
+                           (in-place token vm #f "--error-out build/step")
+                           (in-place token (if (eq? vm 'cs) 'bc 'cs) #t "--error-in build/step"))]
+       
+       [:target cs-base () ,(lambda (token) (base token 'cs))]
+       [:target cs-as-is () ,(lambda (token) (as-is token 'cs))]
+       [:target cs-in-place () ,(lambda (token) (in-place token 'cs))]
+       [:target also-cs () ,(lambda (token) (in-place token 'cs #t))]
+
+       [:target bc-base () ,(lambda (token) (base token 'bc))]
+       [:target bc-as-is () ,(lambda (token) (as-is token 'bc))]
+       [:target bc-in-place () ,(lambda (token) (in-place token 'bc))]
+       [:target also-bc () ,(lambda (token) (in-place token 'bc #t))]
+
+       [:target ,build-config.rktd ()
+                ,(lambda (path token)
+                   (mkdir-p (path-only path))
+                   (display-to-file "#hash((links-search-files . ()))\n"
+                                    path
+                                    :truncate))])))
+
+  the-targets)

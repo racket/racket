@@ -38,7 +38,8 @@
 		   (system* rez-path 
 			    (path->string (build-path cw-path (string-append src ".r")))
 			    "-UseDF" "-o" 
-			    (path->string
+			    (build-path
+                             dest-dir
 			     (path-replace-suffix app #".rsrc.OSX"))))])
     ; (rez-it "Racket") ; useless under OS X...
     (rez-it "GRacket" "GRacket"))
