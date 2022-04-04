@@ -72,10 +72,10 @@
                                                          (if also? "-D" "")
                                                          (setup-options))))))
     (build (find-target "build" targets)
-           token
+           #f
            (build-options))
     (build (find-target "install-again" targets)
-           token
+           #f
            (build-options)))
 
   (define (find-racket vm)

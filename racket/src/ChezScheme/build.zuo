@@ -205,7 +205,8 @@
                                        (rule host-boot-files
                                              (lambda ()
                                                (cross-build-boot token args (hash) '("all")))))
-                                     (hash 'co-outputs (map at-boot (cdr boot-file-names))))))))
+                                     (hash 'co-outputs (map at-boot (cdr boot-file-names))))
+                             token))))
                 :command]
 
        ;; See `cross-build-boot`: builds cross-compiler in safe mode, includes examples
