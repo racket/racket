@@ -42,21 +42,38 @@
         (build-shell opts "-j" (~a cpus))
         opts))
 
-  (define (pb-fetch)
+  (define (pb-manage step)
     (define boot-dir (at-source "racket/src/ChezScheme/boot"))
     (define pb-dir (build-path boot-dir "pb"))
     (define branch (lookup! 'PB_BRANCH))
-    (mkdir-p boot-dir)
-    (if (directory-exists? pb-dir)
-        (shell/wait (build-shell "git fetch -q origin" (~a branch ":remotes/origin/" branch))
-                    (hash 'dir pb-dir))
-        (shell/wait (build-shell "git clone -q" (lookup 'SINGLE_BRANCH_FLAG)
-                                 "-b" branch (string->shell (lookup! 'PB_REPO))
-                                 (string->shell pb-dir))))
-    (shell/wait (build-shell "git remote set-branches origin" branch)
-                (hash 'dir pb-dir))
-    (shell/wait (build-shell "git checkout -q" branch)
-                (hash 'dir pb-dir)))
+    (cond
+      [(eq? step 'fetch)
+       (mkdir-p boot-dir)
+       (if (directory-exists? pb-dir)
+           (shell/wait (build-shell "git fetch -q origin" (~a branch ":remotes/origin/" branch))
+                       (hash 'dir pb-dir))
+           (shell/wait (build-shell "git clone -q" (lookup 'SINGLE_BRANCH_FLAG)
+                                    "-b" branch (string->shell (lookup! 'PB_REPO))
+                                    (string->shell pb-dir))))
+       (shell/wait (build-shell "git remote set-branches origin" branch)
+                   (hash 'dir pb-dir))
+       (shell/wait (build-shell "git checkout -q" branch)
+                   (hash 'dir pb-dir))]
+      [(eq? step 'build)
+       (shell/wait "racket rktboot/main.rkt --machine pb"
+                   (hash 'dir (at-source "racket/src/ChezScheme")))]
+      [(eq? step 'stage)
+       (define options (hash 'dir pb-dir))
+       (shell/wait (build-shell "git branch" branch) options)
+       (shell/wait (build-shell "git checkout" branch) options)
+       (shell/wait
+        (build-shell "git add . && git commit --amend --reset-author -m" (string->shell "new build"))
+        options)]
+      [(eq? step 'push)
+       (shell/wait (build-shell "git push -u origin" branch)
+                   (hash 'dir pb-dir))]
+      [else
+       (error "unknown pb step" step)]))
 
   (define (build-base subdir token also?)
     (define targets
@@ -105,7 +122,7 @@
     (build/dep (find-target build-config.rktd the-targets) token)
     (cond
       [(eq? vm 'cs)
-       (pb-fetch)
+       (pb-manage 'fetch)
        (build-base "cs/c" token also?)]
       [else
        (build-base "bc" token also?)]))
@@ -170,6 +187,11 @@
        [:target bc-as-is () ,(lambda (token) (as-is token 'bc))]
        [:target bc-in-place () ,(lambda (token) (in-place token 'bc))]
        [:target also-bc () ,(lambda (token) (in-place token 'bc #t))]
+
+       [:target pb-fetch () ,(lambda (token) (pb-manage 'fetch))]
+       [:target pb-build () ,(lambda (token) (pb-manage 'build))]
+       [:target pb-stage () ,(lambda (token) (pb-manage 'stage))]
+       [:target pb-push () ,(lambda (token) (pb-manage 'push))]
 
        [:target ,build-config.rktd ()
                 ,(lambda (path token)

@@ -139,9 +139,9 @@
 
   (define MemoryModule.o (at-dir (.c->.o "MemoryModule.c")))
 
-  (define framework-dir (at-dir "Racket.framework/Versions" (~a version "_CS")))
-  (define framework (build-path framework-dir "Racket"))
-  (define fw-boot-dest-dir (build-path framework-dir "boot"))
+  (define framework-dir (build-path "Racket.framework/Versions" (~a version "_CS")))
+  (define framework (at-dir framework-dir "Racket"))
+  (define fw-boot-dest-dir (at-dir framework-dir "boot"))
   
   (define raw_racketcs (at-dir (if windows?
                                    "raw_racketcs.exe"
@@ -186,9 +186,6 @@
 
   (define (scheme/options options args)
     (define cmd (append scheme-args args))
-    (fd-write (fd-open-output 'stdout)
-              (~a (string-tree->shell (cons scheme.exe cmd))
-                  "\n"))
     (process/wait scheme.exe cmd options))
 
   (define (scheme . args)
@@ -411,6 +408,13 @@
                                                    config)
                                                'LDFLAGS
                                                (lookup 'LINK_DYNAMIC)))
+                         (when (and mac-fw? (not gui?))
+                           (strip-signature raw_exe)
+                           (install_name_tool "-change"
+                                              (build-path framework-dir "Racket")
+                                              (~a "@executable_path/Racket.framework/Versions/" version "_CS/Racket")
+                                              raw_exe)
+                           (restore-signature raw_exe))
                          (define post (lookup 'POST_LINKER))
                          (unless (equal? post "")
                            (shell/wait (build-shell post raw_racketcs))))])
@@ -460,7 +464,7 @@
 
        [:target ,framework (,@boot-objs ,@boot-files)
                 ,(lambda (path token)
-                   (mkdir-p framework-dir)
+                   (mkdir-p (at-dir framework-dir))
                    (c-compile framework
                               (map target->path boot-objs)
                               (let* ([config (hash-set config 'CC (lookup 'RKTLINKER))]
@@ -563,7 +567,6 @@
                                                                    'linkAs "exe"
                                                                    'kernelLibName "kernel")))
                    (build (find-target (if cross? "kernel" "build") m-targets) token)
-
                    (unless cross?
                      (build (find-target check-bootstrap-same-stamp the-targets)
                             token)))]
@@ -852,7 +855,7 @@
           (cp framework (build-path fw-vers-dir "Racket"))
           (mkdir-p (build-path fw-vers-dir "boot"))
           (map (lambda (x.boot)
-                 (cp (build-path framework-dir "boot" x.boot) (build-path fw-vers-dir "boot" x.boot)))
+                 (cp (build-path (at-dir framework-dir) "boot" x.boot) (build-path fw-vers-dir "boot" x.boot)))
                '("petite.boot" "scheme.boot" "racket.boot"))
           (strip-signature dest-racket)
           (set-collects-path dest-racket collects-path config-path)

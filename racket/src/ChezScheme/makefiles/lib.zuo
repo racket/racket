@@ -113,23 +113,20 @@
     (call-with-scheme
      (lambda (scheme.exe env)
        (displayln (~a "running " scheme.exe " to build " what))
-       (define p (apply process
-                        (cons scheme.exe
-                              (append (list "-q")
-                                      inputs
-                                      (list (hash 'stdin 'pipe
-                                                  'stdout (or (hash-ref options 'stdout #f)
-                                                              (fd-open-output 'stdout))
-                                                  'stderr (or (hash-ref options 'stderr #f)
-                                                              (fd-open-output 'stderr))
-                                                  'env env))))))
+       (define p (process scheme.exe "-q" inputs
+                          (hash 'stdin 'pipe
+                                'stdout (or (hash-ref options 'stdout #f)
+                                            (fd-open-output 'stdout))
+                                'stderr (or (hash-ref options 'stderr #f)
+                                            (fd-open-output 'stderr))
+                                'env env)))
        (define to (hash-ref p 'stdin))
-       (fd-write to (~s `(source-directories '(,(path->complete-path (at-dir "."))
-                                               ,(path->complete-path (at-source "."))
+       (fd-write to (~s `(source-directories '(,(at-dir ".")
+                                               ,(at-source ".")
                                                ,@extra-source-dirs))))
        (fd-write to (~s `(library-directories '(,@extra-library-dirs
-                                                ,(cons (path->complete-path (at-source "."))
-                                                       (path->complete-path (at-dir ".")))))))
+                                                ,(cons (at-source ".")
+                                                       (at-dir "."))))))
        (fd-write to (string-join (map ~s script)))
        (fd-close to)
        (thread-process-wait (hash-ref p 'process))

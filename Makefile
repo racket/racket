@@ -95,7 +95,7 @@ CS_HOST_WORKAREA_PREFIX =
 # Racket CS boot files
 
 # This branch name changes each time the pb boot files are updated:
-PB_BRANCH = circa-8.4.0.8-1
+PB_BRANCH = circa-8.4.0.8-2
 PB_REPO = https://github.com/racket/pb
 
 # Set to empty for Git before v1.7.10:
@@ -195,6 +195,17 @@ native-cs-for-cross: $(ZUO)
 	$(RUN_ZUO) native-cs-for-cross $(BUILD_VARS)
 native-bc-for-cross: $(ZUO)
 	$(RUN_ZUO) native-bc-for-cross $(BUILD_VARS)
+
+# ------------------------------------------------------------
+# pb update
+
+# Helpers for managing the "pb" repo:
+#  * `make pb-build` to rebuild pb boot files
+#  * `make pb-stage` after updating `PB_BRANCH`
+#  * `make pb-push` to upload the branch after checking that
+#    the staged branch looks right
+# If you don't have push access to `PB_REPO`, you may need to
+# change the origin of your "pb" checkout.
 
 pb-fetch: $(ZUO)
 	$(RUN_ZUO) pb-fetch $(BUILD_VARS)

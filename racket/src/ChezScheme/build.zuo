@@ -324,13 +324,21 @@
               bounce-scripts)
 
        ,@(map (lambda (name dest)
-                `[:target ,dest ()
+                (define src (build-path boot-src-dir name))
+                ;; If `dest` doesn't exist, use `src`. If `dest` exists and `src` is newer
+                ;; than when `dest` was first created, then use `src` in that case, too.
+                ;; Otherwise, leave `dest` alone on the assumption that it's a newer
+                ;; version bootstrapped from `src`.
+                `[:target ,dest (,src)
                           ,(lambda (dest token)
-                             (unless (file-exists? dest)
-                               (define src (build-path boot-src-dir name))
-                               (unless (file-exists? src)
-                                 (error "missing prebuilt boot file" src))
+                             (define orig-sha1-file (path-replace-extension dest ".orig-hash"))
+                             (define src-hash (file-sha1 src token))
+                             (unless (and (file-exists? dest)
+                                          (file-exists? orig-sha1-file)
+                                          (equal? src-hash
+                                                  (file->string orig-sha1-file)))
                                (mkdir-p (at-dir "boot" m))
+                               (display-to-file src-hash orig-sha1-file :truncate)
                                (cp/ln src dest)))])
               boot-file-names
               boot-files)
