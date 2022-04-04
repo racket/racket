@@ -9,7 +9,7 @@
   (define config (config-file->hash (at-source "Makefile") vars))
   (define (lookup key [default ""]) (hash-ref config key default))
   (define (lookup! key) (or (hash-ref config key #f)
-                            (error "required configuraiton entry is missing:" key)))
+                            (error "required configuraiton entry is missing" key)))
 
   (define build-config.rktd (at-source "build/config/config.rktd"))
 
@@ -25,8 +25,8 @@
     (define n-cpus (and cpus (string->integer cpus)))
     (when (and cpus
                (or (not n-cpus)
-                   (>= n-cpus 1)))
-      (error "CPUS is not a positive integer:" cpus))
+                   (< n-cpus 1)))
+      (error "CPUS is not a positive integer" cpus))
     n-cpus)
 
   (define (build-options)
@@ -39,7 +39,7 @@
     (define opts (lookup 'PLT_SETUP_OPTIONS))
     (define cpus (get-cpus))
     (if cpus
-        (build-shell opts "-j" cpus)
+        (build-shell opts "-j" (~a cpus))
         opts))
 
   (define (pb-fetch)
