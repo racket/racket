@@ -408,7 +408,7 @@ DISTRO_BUILD_VARS = DOC_SEARCH="$(DOC_SEARCH)" \
                     DIST_DIR="$(DIST_DIR)" \
                     DIST_SUFFIX="$(DIST_SUFFIX)" \
                     DIST_DESC="$(DIST_DESC)" \
-                    DIST_CATALOGS_q="$(DIST_CATALOGS_q :)" "" \
+                    DIST_CATALOGS_q="$(DIST_CATALOGS_q)" "" \
                     BUILD_STAMP="$(BUILD_STAMP)" \
                     INSTALL_NAME="$(INSTALL_NAME)" \
                     SIGN_IDENTITY="$(SIGN_IDENTITY)" \
@@ -420,7 +420,7 @@ DISTRO_BUILD_VARS = DOC_SEARCH="$(DOC_SEARCH)" \
                     CONFIG_MODE="$(CONFIG_MODE)" \
                     CLEAN_MODE="$(CLEAN_MODE)" \
                     JOB_OPTIONS="$(JOB_OPTIONS)" \
-                    SERVE_DURING_CMD_qq=$(SERVE_DURING_CMD_qq :)" \
+                    SERVE_DURING_CMD_qq=$(SERVE_DURING_CMD_qq)" \
                     PKG_INSTALL_OPTIONS="$(PKG_INSTALL_OPTIONS)" \
                     UNPACK_COLLECTS_FLAGS="$(UNPACK_COLLECTS_FLAGS)" \
                     TEST_PKGS="$(TEST_PKGS)" \
@@ -541,5 +541,5 @@ racket/src/build/bin/zuo: racket/src/zuo/zuo.c
 	$(CC) $(CFLAGS) -O2 -DZUO_LIB_PATH='"../../zuo/lib"' -o $(ZUO) racket/src/zuo/zuo.c
 
 racket\src\build\zuo.exe: racket\src\zuo\zuo.c
-	mkdir -p racket\src\build
-	cl.exe /O2 /Fe: $(ZUO) racket\src\zuo\zuo.c
+	IF NOT EXIST racket\src\build cmd /c mkdir racket\src\build
+	cd racket\src\build && cl.exe /O2 /DZUO_LIB_PATH=\"..\\zuo\\lib\" /Fezuo.exe ..\zuo\zuo.c

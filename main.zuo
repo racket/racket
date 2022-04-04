@@ -61,7 +61,9 @@
   (define (build-base subdir token also?)
     (define targets
       (configured-targets-at (hash
-                              'configure (at-source "racket/src" subdir "configure")
+                              'configure (if (eq? 'windows (system-type))
+                                             (at-source "racket/src" subdir "winfig.bat")
+                                             (at-source "racket/src" subdir "configure"))
                               'inputs (list (at-source "racket/src" subdir "Mf-config.in"))
                               'outputs (list (at-source "racket/src/build" subdir "Mf-config"))
                               'vars (hash
