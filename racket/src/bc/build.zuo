@@ -1372,7 +1372,7 @@
                     (if 3m-default?
                         (setup #t #f)
                         (setup #f #t)))]
-       [:target ,(at-dir "install-stamp") ()
+       [:target (,(at-dir "install-stamp") ,dest-racket-exe) ()
                 ,(lambda (path token)
                    (if 3m-default?
                        (install #t #f token)
@@ -1387,6 +1387,21 @@
                        (at-source "../..")
                        (at-destdir config (shell-subst (lookup 'bindir) config))))
     (k bindir))
+
+
+  (define dest-racket-exe
+    (call-with-bindir
+     (lambda (bindir)
+       (build-path bindir (if (not windows?)
+                              (~a "racket"
+                                  (if 3m?
+                                      3m-installed-suffix
+                                      cgc-installed-suffix))
+                              (~a "Racket"
+                                  (if 3m?
+                                      3m-cap-installed-suffix
+                                      cgc-cap-installed-suffix)
+                                  ".exe"))))))
 
   (define (install 3m? cgc? [token #f]) ; if token is not #f, registers dependencies
     (call-with-bindir
@@ -1647,17 +1662,10 @@
   (define (setup 3m? cgc?)
     (call-with-bindir
      (lambda (bindir)
-       (define dest-exe (build-path bindir (if (not windows?)
-                                               (~a "racket"
-                                                   (if 3m?
-                                                       3m-installed-suffix
-                                                       cgc-installed-suffix))
-                                               (~a "Racket"
-                                                   (if 3m?
-                                                       3m-cap-installed-suffix
-                                                       cgc-cap-installed-suffix)
-                                                   ".exe"))))
+       (define dest-exe dest-racket-exe)
        (maybe-copytree config dest-exe (and cross? (get-cross-racket)) at-dir)
-       (run-raco-setup config dest-exe (and cross? (get-cross-racket)) '()))))
+       (run-raco-setup config dest-exe (and cross? (get-cross-racket)) '())
+       (maybe-libzo-move config dest-exe (and cross? (get-cross-racket)) at-dir)
+       (maybe-destdir-fix config dest-racket copytree-racket at-dir))))
 
   the-targets)

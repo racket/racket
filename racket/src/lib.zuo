@@ -37,7 +37,9 @@
          run-raco-setup
 
          install-license-files
-         maybe-copytree)
+         maybe-copytree
+         maybe-libzo-move
+         maybe-destdir-fix)
 
 (define (hash-set* ht . keys+vals)
   (let loop ([ht ht] [keys+vals keys+vals])
@@ -418,8 +420,7 @@
               "LICENSE-GPL.txt"
               "LICENSE.txt")))
 
-(define (maybe-copytree config dest-racket cross-racket at-dir)
-  (when (equal? (hash-ref config 'MAKE_COPYTREE #f) "copytree")
+(define (unixstyle-install-run config dest-racket cross-racket at-dir command . args)
     (define dirs
       (map (lambda (dir)
              (at-destdir config (shell-subst (hash-ref config dir) config)))
@@ -434,14 +435,33 @@
              configdir
              appsdir
              mandir)))
-    (for-each mkdir-p dirs)
-    (process/wait (or cross-racket dest-racket)
-                  (if cross-racket
-                      '()
-                      (list "-X" (at-source "../collects")
-                            "-G" (at-source "../etc")))
-                  (setup-boot at-dir config)
-                  (at-source "../collects/setup/unixstyle-install.rkt")
-                  "make-install-copytree" (at-source "..")
-                  dirs
-                  (hash-ref config 'INSTALL_ORIG_TREE "no"))))
+  (for-each mkdir-p dirs)
+  (process/wait (or cross-racket dest-racket)
+                (if cross-racket
+                    '()
+                    (list "-X" (at-source "../collects")
+                          "-G" (at-source "../etc")))
+                (setup-boot at-dir config)
+                (at-source "../collects/setup/unixstyle-install.rkt")
+                command (at-source "..")
+                dirs
+                args))
+
+(define (maybe-copytree config dest-racket cross-racket at-dir)
+  (when (equal? (hash-ref config 'MAKE_COPYTREE #f) "copytree")
+    (unixstyle-install-run config dest-racket cross-racket at-dir
+                           "make-install-copytree"
+                           (hash-ref config 'INSTALL_ORIG_TREE "no"))))
+
+(define (maybe-libzo-move config dest-racket cross-racket at-dir)
+  (when (equal? (hash-ref config 'INSTALL_LIBZO #f) "libzo")
+    (unixstyle-install-run config dest-racket cross-racket at-dir
+                           "make-install-libzo-move")))
+
+(define (maybe-destdir-fix config dest-racket cross-racket at-dir)
+  (when (not (equal? (hash-ref config 'DESTDIR "") ""))
+    (when (equal? (hash-ref config 'SKIP_DESTDIR_FIX "") "")
+      (unixstyle-install-run config dest-racket cross-racket at-dir
+                             "make-install-destdir-fix"
+                             (hash-ref config 'INSTALL_ORIG_TREE "")
+                             (hash-ref config 'INSTALL_LIBZO "")))))

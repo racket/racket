@@ -17,6 +17,7 @@
 
   ;; Needed for any distribution:
   (define required-pkgs '("racket-lib"))
+  (define default-src-catalog "https://pkgs.racket-lang.org")
 
   (define (get-cpus)
     (define cpus (let ([s (lookup 'CPUS)])
@@ -75,7 +76,8 @@
       [else
        (error "unknown pb step" step)]))
 
-  (define (build-base subdir token also?)
+  ;; non-#f prefix implies Unix-style build:
+  (define (build-base subdir token also? [prefix #f])
     (define targets
       (configured-targets-at (hash
                               'configure (if (eq? 'windows (system-type))
@@ -83,13 +85,24 @@
                                              (at-source "racket/src" subdir "configure"))
                               'inputs (list (at-source "racket/src" subdir "Mf-config.in"))
                               'outputs (list (at-source "racket/src/build" subdir "Mf-config"))
+                              'configure-args (cond
+                                                [(eq? 'windows (system-type)) '()]
+                                                [prefix (list (~a "--prefix=" prefix)
+                                                              "--enable-macprefix")]
+                                                [else '("--disable-useprefix"
+                                                        "--enable-origtree")])
                               'vars (hash
                                      ;; causes the `raco setup` step to not build
                                      ;; installed packages:
                                      'SELF_ROOT_CONFIG_DIR (path-only build-config.rktd)
                                      'PLT_SETUP_OPTIONS (build-shell
                                                          (if also? "-D" "")
-                                                         (setup-options))))))
+                                                         (setup-options))
+                                     'DESTDIR (and prefix
+                                                   (lookup 'DESTDIR #f))
+                                     ;; for a unix-style install, we'll run any needed
+                                     ;; `DESTDIR` fixes later:
+                                     'SKIP_DESTDIR_FIX "skip"))))
     (build (find-target "build" targets)
            #f
            (build-options))
@@ -118,20 +131,57 @@
           args
           (shell->strings (setup-options))))
 
-  (define (base token vm [also? #f])
+  (define (maybe-fetch vm)
+    (when (eq? vm 'cs)
+      (pb-manage 'fetch)))
+
+  (define (base token vm [also? #f] [prefix #f])
     (build/dep (find-target build-config.rktd the-targets) token)
     (cond
       [(eq? vm 'cs)
-       (pb-manage 'fetch)
-       (build-base "cs/c" token also?)]
+       (build-base "cs/c" token also? prefix)]
       [else
-       (build-base "bc" token also?)]))
+       (build-base "bc" token also? prefix)]))
+
+  (define (unix-style token vm)
+    (define prefix (lookup! 'PREFIX))
+    (when (equal? prefix "")
+      (error "supply PREFIX=<prefix> for a unix-style installation"))
+    (maybe-fetch vm)
+    ;; builds and installs to `DESTDIR` plus `prefix`
+    (base token vm #f prefix)
+    ;; run installed `raco` and `racket`
+    (define raco (at-destdir vars (build-path prefix "bin" "raco")))
+    (define racket (at-destdir vars (build-path prefix "bin" "racket")))
+    ;; setup installed catalog
+    (define src-catalog (lookup 'SRC_CATALOG))
+    (unless (equal? src-catalog default-src-catalog)
+      (process/wait raco "pkg" "config" "-i"
+                    "--set" "catalogs" src-catalog ""))
+    (define loc-catalog (at-source "build/local/pkgs-catalog"))
+    (define unix-catalog (at-source "build/local/catalog"))
+    (process/wait racket "-l-" "pkg/dirs-catalog" "--check-metadata" loc-catalog "pkgs")
+    (process/wait raco "pkg" "catalog-copy" "--force" "--from-config" loc-catalog
+                  unix-catalog)
+    ;; install packages
+    (define jobs (get-cpus))
+    (process/wait raco "pkg" "install"
+                  (if jobs (list "-j" (~a jobs)) '())
+                  "--catalog" unix-catalog "--auto" "-i"
+                  required-pkgs
+                  (shell->strings (lookup 'PKGS)))
+    ;; destdir fixups
+    (define at-vm-dir (make-at-dir (at-source "racket/src/build" (if (eq? vm 'cs) "cs/c" "bc"))))
+    (define config (config-file->hash (at-vm-dir "Mf-config") vars))
+    (maybe-libzo-move config racket #f at-vm-dir)
+    (maybe-destdir-fix config racket #f at-vm-dir))
 
   (define (as-is token vm)
     (base token vm)
     (setup vm))
 
   (define (in-place token vm [also? #f] [setup-extra-args ""])
+    (maybe-fetch vm)
     (base token vm also?)
 
     (define vars (find-racket vm))
@@ -149,7 +199,7 @@
       (racket vars
               (list "-U" "-G" (path-only build-config.rktd)
                     (at-source "racket/src/pkgs-config.rkt")
-                    "https://pkgs.racket-lang.org"
+                    default-src-catalog
                     (lookup 'SRC_CATALOG)))
       (racket vars
               (at-source "racket/src/pkgs-check.rkt")
@@ -172,21 +222,24 @@
     (make-targets
      `([:target in-place () ,(lambda (token) (in-place token vm))]
        [:target as-is () ,(lambda (token) (as-is token vm))]
-       [:target base () ,(lambda (token) (base token vm))]
+       [:target base () ,(lambda (token) (maybe-fetch vm) (base token vm))]
+       [:target unix-style () ,(lambda (token) (unix-style token vm))]
 
        [:target both () ,(lambda (token)
                            (in-place token vm #f "--error-out build/step")
                            (in-place token (if (eq? vm 'cs) 'bc 'cs) #t "--error-in build/step"))]
        
-       [:target cs-base () ,(lambda (token) (base token 'cs))]
+       [:target cs-base () ,(lambda (token) (maybe-fetch vm) (base token 'cs))]
        [:target cs-as-is () ,(lambda (token) (as-is token 'cs))]
        [:target cs-in-place () ,(lambda (token) (in-place token 'cs))]
        [:target also-cs () ,(lambda (token) (in-place token 'cs #t))]
+       [:target cs-unix-style () ,(lambda (token) (unix-style token 'cs))]
 
-       [:target bc-base () ,(lambda (token) (base token 'bc))]
+       [:target bc-base () ,(lambda (token) (maybe-fetch vm) (base token 'bc))]
        [:target bc-as-is () ,(lambda (token) (as-is token 'bc))]
        [:target bc-in-place () ,(lambda (token) (in-place token 'bc))]
        [:target also-bc () ,(lambda (token) (in-place token 'bc #t))]
+       [:target bc-unix-style () ,(lambda (token) (unix-style token 'bc))]
 
        [:target pb-fetch () ,(lambda (token) (pb-manage 'fetch))]
        [:target pb-build () ,(lambda (token) (pb-manage 'build))]

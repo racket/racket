@@ -277,6 +277,17 @@
     (bootstrap-racket (at-source "../../start/collects-path.rkt") (at-source "../..")
                       dest collects-path config-path))
 
+  (define (call-with-dest-racket k)
+    (define bindir (if msvc?
+                       (at-source "../../..")
+                       (at-destdir config (shell-subst (lookup 'bindir) config))))
+    (define dest-racket (build-path bindir (if windows?
+                                               (~a (CS-suffix "Racket") ".exe")
+                                               (cs-suffix "racket"))))
+    (k bindir dest-racket))
+
+  (define dest-racket-exe (call-with-dest-racket (lambda (bindir dest-racket) dest-racket)))
+
   (define link-config (input-data-target 'link-config (list mac? mac-fw?)))
 
   (define xpatch-args
@@ -354,24 +365,19 @@
                               (symlink (build-path fw-boot-dest-dir "petite.boot") petite-v.boot)
                               (symlink (build-path fw-boot-dest-dir "scheme.boot") scheme-v.boot)
                               (symlink (build-path fw-boot-dest-dir "racket.boot") racket-v.boot))
+                            (mac-embed-boot raw_racketcs racketcs)
                             (bootstrap-racket (at-source "adjust-compress.rkt")
                                               boot-compress-flags
                                               (build-path fw-boot-dest-dir "petite.boot")
                                               (build-path fw-boot-dest-dir "scheme.boot")
                                               (build-path fw-boot-dest-dir "racket.boot"))
-                            (mac-embed-boot raw_racketcs racketcs)
-                            (install_name_tool "-change"
-                                               (build-path framework-dir "Racket")
-                                               (~a "@executable_path/Racket.framework/Versions/" version "_CS/Racket")
-                                               racketcs)
                             (restore-signature racketcs)]
                            [else
                             (bootstrap-racket (at-source "embed-boot.rkt")
                                               "--target" m
                                               boot-compress-flags
                                               raw_racketcs racketcs petite-v.boot scheme-v.boot racket-v.boot)
-                            (post-linker racketcs)
-                            (restore-signature racketcs)])
+                            (post-linker racketcs)])
 
                          (unless cross?
                            ;; Take this opportunity to perform a sanity check on
@@ -411,7 +417,7 @@
                          (when (and mac-fw? (not gui?))
                            (strip-signature raw_exe)
                            (install_name_tool "-change"
-                                              (build-path framework-dir "Racket")
+                                              (at-dir framework-dir "Racket")
                                               (~a "@executable_path/Racket.framework/Versions/" version "_CS/Racket")
                                               raw_exe)
                            (restore-signature raw_exe))
@@ -438,7 +444,7 @@
                                   config)
                           (mac-embed-boot (~a gracketcs "_raw") gracketcs)
                           (install_name_tool "-change"
-                                             (build-path framework-dir "Racket")
+                                             (at-dir framework-dir "Racket")
                                              (~a "@executable_path/../../../Racket.framework/Versions/" version "_CS/Racket")
                                              gracketcs)
                           (rm (~a gracketcs "_raw"))
@@ -716,24 +722,18 @@
                 ,(lambda (token)
                    (install #f))]
 
+       ;; It would be more precise to list all the intended installation targets
+       ;; for `install-again`, but we apprixmate with just the `racket` executable
+       ;; plus an an "install-stamp" file to stand for the rest
        [:target install-again (,(at-dir "install-stamp"))
                 ,(lambda (token)
                    (setup))]
-       [:target ,(at-dir "install-stamp") ()
+       [:target (,(at-dir "install-stamp") ,dest-racket-exe) ()
                 ,(lambda (path token)
                    (install token)
                    (fd-close (fd-open-output path :truncate)))]
   
        [:db-dir ,(at-dir "compiled")])))
-
-  (define (call-with-dest-racket k)
-    (define bindir (if msvc?
-                       (at-source "../../..")
-                       (at-destdir config (shell-subst (lookup 'bindir) config))))
-    (define dest-racket (build-path bindir (if windows?
-                                               (~a (CS-suffix "Racket") ".exe")
-                                               (cs-suffix "racket"))))
-    (k bindir dest-racket))
 
   (define (install token) ; if token is not #f, registers dependencies
     (call-with-dest-racket
@@ -939,10 +939,13 @@
   (define (setup)
     (call-with-dest-racket
      (lambda (bindir dest-racket)
-       (maybe-copytree config dest-racket (and cross? (config-bootstrap-racket)) at-dir)
+       (define copytree-racket (and cross? (config-bootstrap-racket)))
+       (maybe-copytree config dest-racket copytree-racket at-dir)
        (run-raco-setup config dest-racket
                        (and cross? (config-bootstrap-racket))
                        (list "-MCR" (~a (at-dir "compiled") ":")
-                             "--cross-compiler" m (at-dir "."))))))
+                             "--cross-compiler" m (at-dir ".")))
+       (maybe-libzo-move config dest-racket copytree-racket at-dir)
+       (maybe-destdir-fix config dest-racket copytree-racket at-dir))))
 
   the-targets)
