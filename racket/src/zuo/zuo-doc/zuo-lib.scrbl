@@ -161,28 +161,38 @@ threads to run.}
 
 @defzuomodule[zuo/shell]
 
-@defproc[(shell [command path-string?] [options hash? (hash)]) hash?]{
+@defproc[(shell [command string-tree?] ... [options hash? (hash)]) hash?]{
 
-Like @racket[process], but runs @racket[command] as a shell command
-(via @exec{/bin/sh} on Unix or @exec{cmd.exe} on Windows).}
+Like @racket[process], but runs the combination of @racket[command]
+strings as a shell command (via @exec{/bin/sh} on Unix or
+@exec{cmd.exe} on Windows).
 
-@defproc[(shell/wait [command path-string?]
-                     [options hash? (hash)]
-                     [what string? "shell command"])
+The @racket[command] strings are combined into a single command string
+in the same as by @racket[build-shell]. Spaces in a @racket[command]
+are left as-is; so, for example, @racket["ls -a"] as a sole
+@racket[command] string is the same as a sequence @racket["ls"] then
+@racket["-a"]. Use @racket[string->shell] to protect characters like
+spaces, and especially to convert from a path (that might have spaces
+or other special characters) to part of a command.}
+
+
+@defproc[(shell/wait [command string-tree?] ... [options hash? (hash)])
          void?]{
 
 Like @racket[shell], but first @racket[displayln]s the command string,
 uses @racket[thread-process-wait] (or @racket[process-wait] if
 @racket[options] has a true value for @racket['no-thread?]) to wait on
 the shell process, and reports an error if the process has a
-non-@racket[0] exit code. The @racket[what] string is use when
-constructing an error.
+non-@racket[0] exit code.
 
 If @racket[options] includes @racket['quiet?] mapped to a true value,
-then @racket[command] is not shown using @racket[displayln], and
-@racket['quiet?] is removed before passing it on to @racket[process].
-Similarly, @racket['no-thread?] is removed from @racket[options]
-before passing it on to @racket[process].}
+then @racket[command] is not shown using @racket[displayln]. If
+@racket[options] includes @racket['desc] mapped to a string value, the
+string is used in place of @racket["shell command"] when reporting an
+error. Any @racket['quiet?], @racket['no-thread?], or @racket['desc]
+mapping is removed from @racket[options] before passing it on to
+@racket[process].}
+
 
 @defproc[(build-shell [shell-strs string-tree?] ...) string?]{
 
@@ -190,8 +200,8 @@ Appends the flattened @racket[shell-strs] sequence with separating
 spaces to form a larger shell-command sequence. An empty-string among
 @racket[shell-strs] is dropped, instead of creating extra spaces.
 
-Note that @racket[build-shell] does @emph{not} attempt to protect any
-@racket[shell-str] as a literal. Use @racket[string->shell] to convert
+Note that @racket[build-shell] does @emph{not} attempt to protect any of the
+@racket[shell-strs] as a literal. Use @racket[string->shell] to convert
 an individual path or literal string to a shell-command argument
 encoding that string.}
 

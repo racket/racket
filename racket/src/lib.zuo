@@ -236,13 +236,12 @@
                                 (input-data-target 'configure-args configure-args)
                                 inputs)
                          (lambda ()
-                           (shell/wait (apply build-shell
-                                              (map string->shell
-                                                   (cons (ensure-path
-                                                          (if (relative-path? configure)
-                                                              (find-relative-path dir configure)
-                                                              configure))
-                                                         configure-args)))
+                           (shell/wait (map string->shell
+                                            (cons (ensure-path
+                                                   (if (relative-path? configure)
+                                                       (find-relative-path dir configure)
+                                                       configure))
+                                                  configure-args))
                                        (hash 'dir dir)))))
                  (hash 'quiet? #t
                        'co-outputs (cdr outputs))))
@@ -263,13 +262,13 @@
 
 (define (windres in out config msvc? [flags ""])
   (if msvc?
-      (shell/wait (build-shell "rc" "-r" flags
-                               "/l 0x409"
-                               "/fo" (string->shell out)
-                               (string->shell in)))
-      (shell/wait (build-shell (hash-ref config 'WINDRES) flags
-                               "-i" (string->shell in)
-                               "-o" (string->shell out)))))
+      (shell/wait "rc" "-r" flags
+                  "/l 0x409"
+                  "/fo" (string->shell out)
+                  (string->shell in))
+      (shell/wait (hash-ref config 'WINDRES) flags
+                  "-i" (string->shell in)
+                  "-o" (string->shell out))))
 
 (define (setup-rktio rktio-src-dir rktio-dir config)
   (define msvc? (eq? 'windows (system-type)))
@@ -349,25 +348,25 @@
 (define (icp config src dest)
   (if (eq? 'windows (system-type))
       (cp src dest)
-      (shell/wait (build-shell (hash-ref config 'ICP) (string->shell src) (string->shell dest)))))
+      (shell/wait (hash-ref config 'ICP) (string->shell src) (string->shell dest))))
 
 (define (icp-r config src dest)
   (if (eq? 'windows (system-type))
       (cp* src dest)
-      (shell/wait (build-shell (hash-ref config 'ICP) "-r" (string->shell src) (string->shell dest)))))
+      (shell/wait (hash-ref config 'ICP) "-r" (string->shell src) (string->shell dest))))
 
 (define (icp-lib config src dest)
   (if (eq? 'windows (system-type))
       (cp src dest)
-      (shell/wait (build-shell (hash-ref config 'ICP_LIB) (string->shell src) (string->shell dest)))))
+      (shell/wait (hash-ref config 'ICP_LIB) (string->shell src) (string->shell dest))))
 
 (define (strip-debug config path)
   (unless (eq? 'windows (system-type))
-    (shell/wait (build-shell (hash-ref config 'STRIP_DEBUG) (string->shell path)))))
+    (shell/wait (hash-ref config 'STRIP_DEBUG) (string->shell path))))
 
 (define (strip-lib-debug config path)
   (unless (eq? 'windows (system-type))
-    (shell/wait (build-shell (hash-ref config 'STRIP_LIB_DEBUG) (string->shell path)))))
+    (shell/wait (hash-ref config 'STRIP_LIB_DEBUG) (string->shell path))))
 
 (define (run-raco-setup config dest-racket cross-bootstrap-racket cross-compiler-args)
   (define msvc? (eq? 'windows (system-type)))

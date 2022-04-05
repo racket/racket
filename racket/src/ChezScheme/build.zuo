@@ -100,9 +100,6 @@
        (define dir (at-dir ".." (~a "xc-" xm)))
        (define s-dir (build-path dir "s"))
        (mkdir-p s-dir)
-       ;; for migrating from old builds: remove any links that were created
-       (for-each (lambda (p) (when (link-exists? p) (rm p)))
-                 (ls* s-dir))
        (display-to-file (~a "m=" xm "\n"
                             "hostm=" m "\n"
                             (if host-scheme

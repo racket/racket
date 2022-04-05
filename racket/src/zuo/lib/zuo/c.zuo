@@ -36,7 +36,7 @@
                      ""
                      (build-shell (or (lookup 'LDFLAGS) "")
                                   (or (lookup 'LIBS) "")))))
-  (shell/wait command (hash) "compile"))
+  (shell/wait command (hash 'desc "compile")))
 
 (define (c-link .exe ins config)
   (unless (path-string? .exe) (arg-error 'c-link "path string" .exe))
@@ -53,7 +53,7 @@
                  (string-join (map string->shell ins))
                  (or (lookup 'LDFLAGS) "")
                  (or (lookup 'LIBS) "")))
-  (shell/wait command (hash) "link"))
+  (shell/wait command (hash 'desc "link")))
 
 (define (c-ar .a ins config)
   (unless (path-string? .a) (arg-error 'c-ar "path string" .exe))
@@ -69,8 +69,8 @@
                 (or (lookup 'ARFLAGS) "")
                 (string->shell (if windows? (~a "/OUT:" .a) .a))
                 (string-join (map string->shell ins)))
-   (hash)
-   "library creation"))
+   (hash 'desc
+         "library creation")))
 
 (define (make-lookup config)
   (lambda (key) (hash-ref config key #f)))

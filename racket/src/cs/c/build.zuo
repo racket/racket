@@ -236,8 +236,8 @@
       (if cross?
           (bootstrap-racket (at-source "../../mac/codesign.rkt") "--remove-signature"
                             dest)
-          (shell/wait (build-shell "codesign --remove-signature"
-                                   (string->shell dest))))))
+          (shell/wait "codesign --remove-signature"
+                      (string->shell dest)))))
   (define (restore-signature dest)
     (when (codesign?)
       (if cross?
@@ -245,20 +245,20 @@
                             "-s" "-"
                             "--entitlements" (at-source "../../mac/entitlements.plist")
                             dest)
-          (shell/wait (build-shell "codesign -s -"
-                                   "--entitlements" (at-source "../../mac/entitlements.plist")
-                                   (string->shell dest))))))
+          (shell/wait "codesign -s -"
+                      "--entitlements" (at-source "../../mac/entitlements.plist")
+                      (string->shell dest)))))
 
   (define (install_name_tool . args)
     (if cross?
         (bootstrap-racket (at-source "../../mac/install_name_tool.rkt")
                           args)
-        (shell/wait (build-shell "install_name_tool" (map string->shell args)))))
+        (shell/wait "install_name_tool" (map string->shell args))))
   
   (define (post-linker exe)
     (let ([cmd (lookup 'POST_LINKER)])
       (unless (equal? cmd "")
-        (shell/wait (build-shell cmd (string->shell exe))))))
+        (shell/wait cmd (string->shell exe)))))
   
   (define (mac-embed-boot src dest)
     (rm* dest)
@@ -423,7 +423,7 @@
                            (restore-signature raw_exe))
                          (define post (lookup 'POST_LINKER))
                          (unless (equal? post "")
-                           (shell/wait (build-shell post raw_racketcs))))])
+                           (shell/wait post raw_racketcs)))])
           (cons raw_racketcs (if mac? '() (list raw_gracketcs)))
           (cons #f (if mac? '() (list #t)))
           (cons main.o (if mac? '() (list grmain.o)))
@@ -508,10 +508,9 @@
                                                               'CFLAGS
                                                               "--shared")
                                                 'LDFLAGS
-                                                (build-shell
-                                                 "-Wl,--output-def"
-                                                 (string->shell (~a "-Wl," (path-replace-extension path ".def")))
-                                                 "-static-libgcc")))))]
+                                                "-Wl,--output-def"
+                                                (string->shell (~a "-Wl," (path-replace-extension path ".def")))
+                                                "-static-libgcc"))))]
 
        [:target ,main.o (,@main-deps)
                 ,(lambda (main.o token)
@@ -820,7 +819,7 @@
          (rm* repack-dir)
          (mkdir-p repack-dir)
          (define (unpack-lib lib)
-           (shell/wait (build-shell (lookup 'AR) "x" (find-relative-path repack-dir lib))
+           (shell/wait (lookup 'AR) "x" (find-relative-path repack-dir lib)
                        (hash 'dir repack-dir)))
          (when (equal? (lookup 'Z_LIB) "")
            (unpack-lib (at-dir CS m "zlib/libz.a")))
@@ -828,9 +827,9 @@
            (unpack-lib (at-dir CS m "lz4/lib/liblz4.a")))
          (unpack-lib (target->path librktio.a))
          (unpack-lib (at-dir CS m "boot" m "libkernel.a"))
-         (shell/wait (build-shell (lookup 'AR) (lookup 'ARFLAGS) libracketcs.a
-                                  (filter (glob->matcher "*.o") (ls* repack-dir))
-                                  boot.o))
+         (shell/wait (lookup 'AR) (lookup 'ARFLAGS) libracketcs.a
+                     (filter (glob->matcher "*.o") (ls* repack-dir))
+                     boot.o)
          (icp-lib config (in! libracketcs.a) (build-path libdir "libracketcs.a"))
          (strip-lib-debug config (build-path libdir "libracketcs.a")))
 

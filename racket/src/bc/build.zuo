@@ -455,8 +455,8 @@
           (bootstrap-racket racketcgc
                             (at-source "../mac/codesign.rkt") "--remove-signature"
                             dest)
-          (shell/wait (build-shell "codesign --remove-signature"
-                                   (string->shell dest))))))
+          (shell/wait "codesign --remove-signature"
+                      (string->shell dest)))))
   (define (restore-signature dest)
     (when (codesign?)
       (if cross?
@@ -465,9 +465,9 @@
                             "-s" "-"
                             "--entitlements" (at-source "../mac/entitlements.plist")
                             dest)
-          (shell/wait (build-shell "codesign -s -"
-                                   "--entitlements" (at-source "../mac/entitlements.plist")
-                                   (string->shell dest))))))
+          (shell/wait "codesign -s -"
+                      "--entitlements" (at-source "../mac/entitlements.plist")
+                      (string->shell dest)))))
 
   (define (xform dest src precomp-mode token [cpp-extra ""])
     (unless cross?
@@ -534,12 +534,12 @@
         (bootstrap-racket racketcgc
                           (at-source "../mac/install_name_tool.rkt")
                           args)
-        (shell/wait (build-shell "install_name_tool" (map string->shell args)))))
+        (shell/wait "install_name_tool" (map string->shell args))))
 
   (define (post-linker exe)
     (let ([cmd (or (lookup 'POST_LINKER) "")])
       (unless (equal? cmd "")
-        (shell/wait (build-shell cmd (string->shell exe))))))
+        (shell/wait cmd (string->shell exe)))))
 
   (define cgc-link-inputs ; omits libracketcgc.a
     (append
@@ -680,10 +680,9 @@
                                                 config)))))
                           (post-linker path)
                           (when msvc?
-                            (shell/wait
-                             (build-shell "mt.exe -manifest"
-                                          (string->shell manifest)
-                                          (string->shell (~a "-outputresource:" path ";1")))))
+                            (shell/wait "mt.exe -manifest"
+                                        (string->shell manifest)
+                                        (string->shell (~a "-outputresource:" path ";1"))))
                           (when framework?
                             (install_name_tool "-change"
                                                (~a "Racket.framework/Versions/" (~a version fw-suffix) "/Racket")
@@ -836,13 +835,12 @@
                        ,(lambda (path token)
                           (if msvc?
                               (cp def dll.a)
-                              (shell/wait (build-shell
-                                           (lookup 'DLLTOOL)
-                                           "--def" (string->shell def)
-                                           "-D" (string->shell (file-name-from-path dll))
-                                           "--output-exp" (at-dir (path-replace-extension (file-name-from-path dll) ".exp"))
-                                           "--output-lib" (at-dir (path-replace-extension (file-name-from-path dll) ".lib"))
-                                           "--output-delaylib" dll.a))))])
+                              (shell/wait (lookup 'DLLTOOL)
+                                          "--def" (string->shell def)
+                                          "-D" (string->shell (file-name-from-path dll))
+                                          "--output-exp" (at-dir (path-replace-extension (file-name-from-path dll) ".exp"))
+                                          "--output-lib" (at-dir (path-replace-extension (file-name-from-path dll) ".lib"))
+                                          "--output-delaylib" dll.a)))])
            (list libmzgc.dll.a libracketcgc1.dll.a libracketcgc.dll.a libracket3m.dll.a)
            (list libmzgcxxxxxxx.dll libracketcgc1xxxxxxx.dll libracketcgcxxxxxxx.dll libracket3mxxxxxxx.dll)
            (list libmzgc.def libracketcgc1.def libracketcgc.def libracket3m.def))
@@ -867,15 +865,13 @@
                  ,(lambda (path token)
                     (cond
                       [(eq? windows-arch 'arm64)
-                       (shell/wait (build-shell
-                                    "armasm64.exe"
-                                    "-o" (string->shell path)
-                                    (string->shell (at-source "src/mzsjarm64.S"))))]
+                       (shell/wait "armasm64.exe"
+                                   "-o" (string->shell path)
+                                   (string->shell (at-source "src/mzsjarm64.S")))]
                       [else
-                       (shell/wait (build-shell
-                                    "ml64.exe /c /Cx"
-                                    "/Fo" (string->shell path)
-                                    (string->shell (at-source "src/mzsj86w64.S"))))]))]
+                       (shell/wait "ml64.exe /c /Cx"
+                                   "/Fo" (string->shell path)
+                                   (string->shell (at-source "src/mzsj86w64.S")))]))]
 
         ;; Windows resource files
         [:target ,rres.o (,(at-source "../worksp/racket/racket.rc")
@@ -1264,16 +1260,14 @@
                               (when windows?
                                 (cond
                                   [msvc?
-                                   (shell/wait (build-shell
-                                                "lib.exe"
-                                                machine-link-str
-                                                (~a "-def:" (string->shell (at-source "dynsrc/mzdyn.def")))
-                                                (~a "-out:" (string->shell (path-replace-extension mzdyn.exp ".lib")))))]
+                                   (shell/wait "lib.exe"
+                                               machine-link-str
+                                               (~a "-def:" (string->shell (at-source "dynsrc/mzdyn.def")))
+                                               (~a "-out:" (string->shell (path-replace-extension mzdyn.exp ".lib"))))]
                                   [else
-                                   (shell/wait (build-shell
-                                                (lookup 'DLLTOOL)
-                                                "--output-exp" (string->shell mzdyn.exp)
-                                                (string->shell mzdyn.o)))])))])
+                                   (shell/wait (lookup 'DLLTOOL)
+                                               "--output-exp" (string->shell mzdyn.exp)
+                                               (string->shell mzdyn.o))])))])
                (list mzdyncgc.o mzdyn3m.o)
                (list mzdyncgc.exp mzdyn3m.exp)
                (list #f #t))

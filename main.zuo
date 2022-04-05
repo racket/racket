@@ -51,27 +51,26 @@
       [(eq? step 'fetch)
        (mkdir-p boot-dir)
        (if (directory-exists? pb-dir)
-           (shell/wait (build-shell "git fetch -q origin" (~a branch ":remotes/origin/" branch))
+           (shell/wait "git fetch -q origin" (~a branch ":remotes/origin/" branch)
                        (hash 'dir pb-dir))
-           (shell/wait (build-shell "git clone -q" (lookup 'SINGLE_BRANCH_FLAG)
-                                    "-b" branch (string->shell (lookup! 'PB_REPO))
-                                    (string->shell pb-dir))))
-       (shell/wait (build-shell "git remote set-branches origin" branch)
+           (shell/wait "git clone -q" (lookup 'SINGLE_BRANCH_FLAG)
+                       "-b" branch (string->shell (lookup! 'PB_REPO))
+                       (string->shell pb-dir)))
+       (shell/wait "git remote set-branches origin" branch
                    (hash 'dir pb-dir))
-       (shell/wait (build-shell "git checkout -q" branch)
+       (shell/wait "git checkout -q" branch
                    (hash 'dir pb-dir))]
       [(eq? step 'build)
        (shell/wait "racket rktboot/main.rkt --machine pb"
                    (hash 'dir (at-source "racket/src/ChezScheme")))]
       [(eq? step 'stage)
        (define options (hash 'dir pb-dir))
-       (shell/wait (build-shell "git branch" branch) options)
-       (shell/wait (build-shell "git checkout" branch) options)
-       (shell/wait
-        (build-shell "git add . && git commit --amend --reset-author -m" (string->shell "new build"))
+       (shell/wait "git branch" branch options)
+       (shell/wait "git checkout" branch options)
+       (shell/wait "git add . && git commit --amend --reset-author -m" (string->shell "new build")
         options)]
       [(eq? step 'push)
-       (shell/wait (build-shell "git push -u origin" branch)
+       (shell/wait "git push -u origin" branch
                    (hash 'dir pb-dir))]
       [else
        (error "unknown pb step" step)]))
