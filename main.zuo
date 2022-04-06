@@ -15,9 +15,8 @@
 
   (define vm (string->symbol (lookup 'VM "cs")))
 
-  ;; Needed for any distribution:
-  (define required-pkgs '("racket-lib"))
-  (define default-src-catalog "https://pkgs.racket-lang.org")
+  (define required-pkgs (shell->strings (hash-ref config 'REQUIRED_PKGS)))
+  (define default-src-catalog (hash-ref config 'DEFAULT_SRC_CATALOG))
 
   (define (get-jobs)
     (define cpus (let ([s (lookup 'CPUS)])
@@ -47,6 +46,11 @@
     (if jobs
         (build-shell opts "-j" (~a jobs))
         opts))
+
+  (define (server-compile-machine?)
+    (equal? "-M" (lookup 'SERVER_COMPILE_MACHINE)))
+  (define (get-mcr-args)
+    (list "-MCR" (~a (path->complete-path (at-source "build/zo")) ":")))
 
   (define (pb-manage step)
     (define boot-dir (at-source "racket/src/ChezScheme/boot"))
@@ -92,6 +96,9 @@
                               'configure-args (append
                                                (shell->strings (lookup 'CONFIGURE_ARGS_qq))
                                                (shell->strings (lookup 'CONFIGURE_ARGS))
+                                               (if (server-compile-machine?)
+                                                   '("--enable-crossany")
+                                                   '())
                                                (cond
                                                  [(eq? 'windows (system-type)) '()]
                                                  [prefix (list (~a "--prefix=" prefix)
@@ -104,6 +111,11 @@
                                      'SELF_ROOT_CONFIG_DIR (if prefix
                                                                ""
                                                                (path-only build-config.rktd))
+                                     'SETUP_MACHINE_FLAGS (build-shell
+                                                           (lookup 'SETUP_MACHINE_FLAGS)
+                                                           (if (server-compile-machine?)
+                                                               (map string->shell (get-mcr-args))
+                                                               ""))
                                      'PLT_SETUP_OPTIONS (build-shell
                                                          (if also? "-D" "")
                                                          (setup-options))
@@ -152,6 +164,9 @@
             (at-source "racket/bin" (~a "racket" sfx))])]))
     (hash 'racket racket.exe
           'racket-args (append (shell->strings (lookup 'SETUP_MACHINE_FLAGS))
+                               (if (server-compile-machine?)
+                                   (get-mcr-args)
+                                   '())
                                (list "-G" (at-source "racket/etc")
                                      "-X" (at-source "racket/collects")))))
   

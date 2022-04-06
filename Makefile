@@ -78,15 +78,15 @@ RACKET =
 # Old name for `RACKET`:
 PLAIN_RACKET = 
 
-# For CS, if `RACKET` and `RACKET_FOR_BOOTFILES` are not set, the
-# build uses the `pb` repo to get initial portable-byte Chez Scheme
-# boot files. If `RACKET` is set, then it is always run in preference
-# to the built Racket, so it's useful for cross-compilation, and it
-# needs to be essentially the same version and variant as being built.
-# If only `RACKET_FOR_BOOTFILES` is set, then it doesn't have to be so
-# similar to the one being built, because it's used only to create
-# initial Chez Scheme boot files.
-RACKET_FOR_BOOTFILES =
+# For CS, if `RACKET` and `BOOTFILE_RACKET` are not set, the build
+# uses the `pb` repo to get initial portable-byte Chez Scheme boot
+# files; if `RACKET` is set, then it is always run in preference to
+# the built Racket, so it's useful for cross-compilation, and it needs
+# to be essentially the same version and variant as being built; if
+# only `BOOTFILE_RACKET` is set, then it doesn't have to be so similar
+# to the one being built, because it's used only to create initial
+# Chez Scheme boot files
+BOOTFILE_RACKET =
 
 # For CS, points a cross build at a directory containing a host build;
 # this path can be relative to the cross build directory
@@ -95,7 +95,8 @@ CS_HOST_WORKAREA_PREFIX =
 # ------------------------------------------------------------
 # Racket CS boot files
 
-# This branch name changes each time the pb boot files are updated:
+# This branch name must be changed each time the pb boot files are
+# updated:
 PB_BRANCH = circa-8.4.0.8-2
 PB_REPO = https://github.com/racket/pb
 
@@ -113,6 +114,9 @@ EXTRA_REPOS_BASE =
 # to include in a distribution:
 PKGS = main-distribution main-distribution-test
 
+# Needed for any distribution (not meant to be configured):
+REQUIRED_PKGS = racket-lib
+
 # Options passed along to any `raco pkg update` run:
 PKG_UPDATE_OPTIONS =
 
@@ -122,8 +126,16 @@ PLT_SETUP_OPTIONS =
 # Catalog for package sources:
 SRC_CATALOG = https://pkgs.racket-lang.org
 
+# Built-in catalog for package sources (not meant to be configured):
+DEFAULT_SRC_CATALOG = https://pkgs.racket-lang.org
+
 # For -M, etc., to pick the target machine for compilation:
 SETUP_MACHINE_FLAGS =
+
+# Set to "-M" as a shorthand for
+#  SETUP_MACHINE_FLAGS="-MCR `pwd`build/zo:"
+#  CONFIGURE_ARGS="--enable-crossany"
+SERVER_COMPILE_MACHINE =
 
 # ------------------------------------------------------------
 # Installation options
@@ -132,13 +144,13 @@ SETUP_MACHINE_FLAGS =
 PREFIX =
 
 # For Unix-style builds, a directory where an installation
-# that's destined for `PREFIX` is staged to move there later:
+# that's destined for `PREFIX` is staged (to be moved later):
 DESTDIR =
 
-# Can be `bc` or empty:
+# Can be "bc" or empty:
 RACKETBC_SUFFIX = bc
 
-# Can be `cs` or empty:
+# Can be "cs" or empty:
 RACKETCS_SUFFIX =
 
 # ------------------------------------------------------------
