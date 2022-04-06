@@ -4043,7 +4043,7 @@ static zuo_t *zuo_consume_option(zuo_t **_options, const char *name) {
 static void check_options_consumed(const char *who, zuo_t *options) {
   if (((zuo_trie_node_t *)options)->count > 0) {
     options = zuo_hash_keys(options);
-    zuo_fail1w(who, "unrecognized option", _zuo_car(options));
+    zuo_fail1w(who, "unrecognized or unused option", _zuo_car(options));
   }
 }
 
@@ -4074,6 +4074,11 @@ static zuo_t *zuo_drain(zuo_raw_handle_t fd, zuo_int_t amount) {
     if (amt > 4096) amt = 4096;
 #ifdef ZUO_UNIX
     got = read(fd, ZUO_STRING_PTR(s) + offset, amt);
+    if ((got < 0) && (errno == EAGAIN)) {
+      got = 0;
+      if (offset == 0)
+        amount = 0; /* don't return `eof` */
+    }
 #endif
 #ifdef ZUO_WINDOWS
     {
@@ -4161,11 +4166,15 @@ static void zuo_close(zuo_raw_handle_t handle)
 #endif
 }
 
-static zuo_raw_handle_t zuo_fd_open_input_handle(zuo_t *path) {
+static zuo_raw_handle_t zuo_fd_open_input_handle(zuo_t *path, zuo_t *options) {
   const char *who = "fd-open-input";
   zuo_raw_handle_t fd;
 
+  if (options == z.o_undefined) options = z.o_empty_hash;
+  
   if (zuo_is_path_string(path)) {
+    check_hash(who, options);
+    check_options_consumed(who, options);
     if (zuo_file_logging) {
       FILE *lf = fopen(zuo_file_logging, "ab");
       zuo_fwrite(lf, path);
@@ -4191,16 +4200,41 @@ static zuo_raw_handle_t zuo_fd_open_input_handle(zuo_t *path) {
     free(wp);
 #endif
     return fd;
-  } else {
-    if (path != zuo_symbol("stdin"))
-      zuo_fail_arg(who, "path string or 'stdin", path);
+  } else if (path == zuo_symbol("stdin")) {
+    check_hash(who, options);
+    check_options_consumed(who, options);
     fd = zuo_get_std_handle(0);
     return fd;
+  } else {
+    zuo_t *nonblock;
+    
+    if ((path->tag != zuo_integer_tag)
+        || (ZUO_INT_I(path) < 0))
+      zuo_fail_arg(who, "path string, 'stdin, or nonnegative integer", path);
+
+    check_hash(who, options);
+    nonblock = zuo_consume_option(&options, "nonblocking?");
+    check_options_consumed(who, options);
+
+#ifdef ZUO_UNIX
+    fd = (zuo_raw_handle_t)ZUO_INT_I(path);
+    if ((nonblock != z.o_undefined) && (nonblock != z.o_false)) {
+      int r = fcntl(fd, F_GETFL, 0);
+      if (r == -1) zuo_fail1w(who, "failed to access flags of file descriptor", path);
+      r = fcntl(ZUO_INT_I(path), F_SETFL, r | O_NONBLOCK);
+      if (r == -1) zuo_fail1w(who, "failed to set file descriptor as nonblocking", path);
+    }
+    return fd;
+#endif
+#ifdef ZUO_WINDOWS
+    zuo_fail1w(who, "integer file descriptors are not supported on Windows");
+    return INVALID_HANDLE_VALUE;
+#endif
   }
 }
 
-static zuo_t *zuo_fd_open_input(zuo_t *path) {
-  return zuo_handle(zuo_fd_open_input_handle(path), zuo_handle_open_fd_in_status);
+static zuo_t *zuo_fd_open_input(zuo_t *path, zuo_t *options) {
+  return zuo_handle(zuo_fd_open_input_handle(path, options), zuo_handle_open_fd_in_status);
 }
 
 static zuo_t *zuo_fd_open_output(zuo_t *path, zuo_t *options) {
@@ -4213,8 +4247,7 @@ static zuo_t *zuo_fd_open_output(zuo_t *path, zuo_t *options) {
   if (zuo_is_path_string(path)) {
     zuo_t *exists;
 
-    if (options->tag != zuo_trie_node_tag)
-      zuo_fail_arg(who, "hash table", options);
+    check_hash(who, options);
 
     exists = zuo_consume_option(&options, "exists");
 
@@ -4289,17 +4322,29 @@ static zuo_t *zuo_fd_open_output(zuo_t *path, zuo_t *options) {
 
     return fd_h;
   } else if (path == zuo_symbol("stdout")) {
-    if ((options->tag != zuo_trie_node_tag) || (((zuo_trie_node_t *)options)->count != 0))
-      zuo_fail1w(who, "non-empty options with 'stdout", options);
+    check_hash(who, options);
+    check_options_consumed(who, options);
     fd = zuo_get_std_handle(1);
     return zuo_handle(fd, zuo_handle_open_fd_out_status);
-  } else {
-    if (path != zuo_symbol("stderr"))
-      zuo_fail_arg(who, "path string, 'stdout, or 'stderr", path);
-    if ((options->tag != zuo_trie_node_tag) || (((zuo_trie_node_t *)options)->count != 0))
-      zuo_fail1w(who, "non-empty options with 'stderr", options);
+  } else if (path == zuo_symbol("stderr")) {
+    check_hash(who, options);
+    check_options_consumed(who, options);
     fd = zuo_get_std_handle(2);
     return zuo_handle(fd, zuo_handle_open_fd_out_status);
+  } else {
+    if ((path->tag != zuo_integer_tag)
+        || (ZUO_INT_I(path) < 0))
+      zuo_fail_arg(who, "path string, 'stdout, 'stderr, or nonnegative integer", path);
+    check_hash(who, options);
+    check_options_consumed(who, options);
+#ifdef ZUO_UNIX    
+    fd = zuo_get_std_handle((zuo_raw_handle_t)ZUO_INT_I(path));
+    return zuo_handle(fd, zuo_handle_open_fd_out_status);
+#endif
+#ifdef ZUO_WINDOWS
+    zuo_fail1w(who, "integer file descriptors are not supported on Windows");
+    return z.o_undefined;
+#endif
   }
 }
 
@@ -4572,7 +4617,7 @@ static zuo_t *zuo_module_to_hash_star(zuo_t *module_path) {
     zuo_t *str, *lang;
     zuo_int_t post;
 
-    in = zuo_fd_open_input_handle(file_path);
+    in = zuo_fd_open_input_handle(file_path, z.o_empty_hash);
     str = zuo_drain(in, -1);
     zuo_close_handle(in);
 
@@ -6495,7 +6540,7 @@ static void zuo_primitive_init(int will_load_image) {
 
   ZUO_TOP_ENV_SET_PRIMITIVE1("continuation-prompt-available?", zuo_prompt_avail_p);
 
-  ZUO_TOP_ENV_SET_PRIMITIVE1("fd-open-input", zuo_fd_open_input);
+  ZUO_TOP_ENV_SET_PRIMITIVEb("fd-open-input", zuo_fd_open_input);
   ZUO_TOP_ENV_SET_PRIMITIVEb("fd-open-output", zuo_fd_open_output);
   ZUO_TOP_ENV_SET_PRIMITIVE1("fd-close", zuo_fd_close);
   ZUO_TOP_ENV_SET_PRIMITIVE2("fd-read", zuo_fd_read);
@@ -6556,7 +6601,7 @@ static void zuo_image_init(char *boot_image) {
 # endif
     if (boot_image) {
       /* The image supplies constants and tables */
-      zuo_raw_handle_t in = zuo_fd_open_input_handle(zuo_string(boot_image));
+      zuo_raw_handle_t in = zuo_fd_open_input_handle(zuo_string(boot_image), z.o_empty_hash);
       zuo_t *dump = zuo_drain(in, -1);
       zuo_close_handle(in);
       zuo_fasl_restore(ZUO_STRING_PTR(dump), ZUO_STRING_LEN(dump));
@@ -6757,7 +6802,7 @@ int zuo_main(int argc, char **argv) {
     zuo_t *mod_ht, *submods, *main_proc;
 
     if (load_file[0] == 0) {
-      zuo_raw_handle_t in = zuo_fd_open_input_handle(zuo_symbol("stdin"));
+      zuo_raw_handle_t in = zuo_fd_open_input_handle(zuo_symbol("stdin"), z.o_empty_hash);
       zuo_t *input = zuo_drain(in, -1);
       mod_ht = zuo_eval_module(load_path, input);
     } else

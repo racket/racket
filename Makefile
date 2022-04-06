@@ -52,7 +52,10 @@ RUN_ZUO = $(ZUO) .
 VM = cs
 
 # Makefile parallelism propagated to `raco setup`:
+JOBS =
+# Backward compatibility:
 CPUS =
+# Parallelism from `make -j` with GNU make might also be detected
 
 # Arguments to include in a call to `configure`, where `-` means no
 # arguments; when not just `-`, arguments are preserved for future
@@ -144,6 +147,7 @@ RACKETCS_SUFFIX =
 # Build targets
 
 BUILD_VARS = VM="$(VM)" \
+             JOBS="$(JOBS)" \
              CPUS="$(CPUS)" \
              CONFIGURE_ARGS_qq="$(CONFIGURE_ARGS_qq)" \
              CONFIGURE_ARGS="$(CONFIGURE_ARGS)" \

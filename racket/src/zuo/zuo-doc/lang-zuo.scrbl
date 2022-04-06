@@ -819,7 +819,7 @@ symbols format in @realracket[print] and @realracket[write] styles with
 
 Convenience output functions that are analogous to @realracket*[display
 displayln] from @racketmodname[racket]. They use @racket[~a] and
-@racket[(fd-open-output'stdout)].}
+@racket[(fd-open-output 'stdout)].}
 
 
 @defproc[(error [v any/c] ...) void?]{
@@ -910,14 +910,24 @@ represented as @tech{handles}.
 Returns @racket[#t] if @racket[v] is a @tech{handle}, @racket[#f]
 otherwise.}
 
-@defproc[(fd-open-input [filename (or/c path-string? 'stdin)]) handle?]{
+@defproc[(fd-open-input [filename (or/c path-string? 'stdin integer?)]
+                        [options hash?])
+         handle?]{
 
-Opens a file for reading or obtains a reference to standard input when
-@racket[filename] is @racket['stdin]. The result handle can be used
-with @racket[fd-read] and closed with @racket[fd-close].}
+Opens a file for reading, obtains a reference to standard input when
+@racket[filename] is @racket['stdin], or (on Unix) obtains a
+reference to an existing file descriptor when @racket[filename]
+is an integer. The result handle can be used
+with @racket[fd-read] and closed with @racket[fd-close].
+
+In @racket[options], a single key is currently recognized when
+@racket[filename] is an integer: @racket['nonblocking?]. Its value is
+treated as a boolean, and if true, the file descriptor is set to
+non-blocking mode.}
+
 
 @deftogether[(
-@defproc[(fd-open-output [filename path-string?]
+@defproc[(fd-open-output [filename (or/c path-string? 'stdout 'stderr integer?)]
                          [options hash? (hash)]) handle?]
 @defthing[:error hash?]
 @defthing[:truncate hash?]
@@ -929,8 +939,10 @@ with @racket[fd-read] and closed with @racket[fd-close].}
 
 The @racket[fd-open-output] procedure opens a file for writing,
 obtains a reference to standard output when @racket[filename] is
-@racket['stdout], or obtains a reference to standard error when
-@racket[filename] is @racket['stderr]. When opening a file,
+@racket['stdout], obtains a reference to standard error when
+@racket[filename] is @racket['stderr], or (on Unix) obtains a
+reference to an existing file descriptor when @racket[filename]
+is an integer. When opening a file,
 @racket[options] specifies options as described below, but
 @racket[options] must be empty for @racket['stdout] or
 @racket['stderr]. The result handle can be used with @racket[fd-write]
@@ -966,7 +978,8 @@ string containing the read bytes.
 
 The number of bytes in the returned string can be less than
 @racket[amount] if the number of currently available bytes is less
-than @racket[amount] but at least one byte.}
+than @racket[amount] but at least one byte or if @racket[handle] is
+nonblocking and zero bytes are available.}
 
 @defproc[(fd-write [handle handle?] [str string?]) void?]{
 

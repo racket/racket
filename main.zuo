@@ -19,28 +19,33 @@
   (define required-pkgs '("racket-lib"))
   (define default-src-catalog "https://pkgs.racket-lang.org")
 
-  (define (get-cpus)
+  (define (get-jobs)
     (define cpus (let ([s (lookup 'CPUS)])
                    (and (not (equal? s ""))
                         s)))
-    (define n-cpus (and cpus (string->integer cpus)))
-    (when (and cpus
-               (or (not n-cpus)
-                   (< n-cpus 1)))
-      (error "CPUS is not a positive integer" cpus))
-    n-cpus)
+    (define jobs (or cpus
+                     (let ([s (lookup 'JOBS)])
+                       (and (not (equal? s ""))
+                            s))))
+    (define n-jobs (and jobs (string->integer jobs)))
+    (when (and jobs
+               (or (not n-jobs)
+                   (< n-jobs 1)))
+      (error (~a (if cpus "CPUS" "JOBS") "is not a positive integer" jobs)))
+    (or n-jobs
+        (infer-gnu-make-jobs)))
 
   (define (build-options)
-    (define n-cpus (get-cpus))
-    (if n-cpus
-        (hash 'jobs n-cpus)
+    (define n-jobs (get-jobs))
+    (if n-jobs
+        (hash 'jobs n-jobs)
         (hash)))
 
   (define (setup-options)
     (define opts (lookup 'PLT_SETUP_OPTIONS))
-    (define cpus (get-cpus))
-    (if cpus
-        (build-shell opts "-j" (~a cpus))
+    (define jobs (get-jobs))
+    (if jobs
+        (build-shell opts "-j" (~a jobs))
         opts))
 
   (define (pb-manage step)
@@ -166,7 +171,7 @@
     (process/wait raco "pkg" "catalog-copy" "--force" "--from-config" loc-catalog
                   unix-catalog)
     ;; install packages
-    (define jobs (get-cpus))
+    (define jobs (get-jobs))
     (process/wait raco "pkg" "install"
                   (if jobs (list "-j" (~a jobs)) '())
                   "--catalog" unix-catalog "--auto" "-i"
@@ -187,7 +192,7 @@
     (base token vm also?)
 
     (define vars (find-racket vm))
-    (define jobs (get-cpus))
+    (define jobs (get-jobs))
 
     (unless also?
       (racket vars

@@ -39,7 +39,9 @@
          install-license-files
          maybe-copytree
          maybe-libzo-move
-         maybe-destdir-fix)
+         maybe-destdir-fix
+
+         infer-gnu-make-jobs)
 
 (define (hash-set* ht . keys+vals)
   (let loop ([ht ht] [keys+vals keys+vals])
@@ -473,3 +475,29 @@
                              "make-install-destdir-fix"
                              (hash-ref config 'INSTALL_ORIG_TREE "")
                              (hash-ref config 'INSTALL_LIBZO "")))))
+
+(define (infer-gnu-make-jobs)
+  ;; GNU make sets `MAKEFLAGS` to include `-j` and `--jobserver-fds=<in>,<out>`
+  ;; when parallel builds are enabled via `-j`, where <in> and <out> are
+  ; file descriptors for pipes to read and write 1-character job tokens
+  (define a (assoc "MAKEFLAGS" (hash-ref (runtime-env) 'env)))
+  (and a
+       (let ([args (shell->strings (cdr a))])
+         (and (ormap (lambda (arg) (string=? "-j" arg)) args)
+              (ormap (let ([match? (glob->matcher "--jobserver-fds=*")])
+                       (lambda (arg)
+                         (and (match? arg)
+                              (let ([fds (map string->integer
+                                              (string-split (cadr (string-split arg "=")) ","))])
+                                (and (= (length fds) 2)
+                                     (andmap integer? fds)
+                                     ;; read in all available job tokens, then give them back up,
+                                     ;; just so we can infer the number of tokens that would be available
+                                     (let ([in (fd-open-input (car fds) (hash 'nonblocking? #t))]
+                                           [out (fd-open-output (cadr fds))])
+                                       (define s (fd-read in eof))
+                                       (and (string? s)
+                                            (begin
+                                              (fd-write out s)
+                                              (+ 1 (string-length s))))))))))
+                     args)))))
