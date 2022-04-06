@@ -30,8 +30,13 @@
 (struct state-get-msg (k))
 (struct state-put-msg (state k))
 
+(define thread-tag (string->uninterned-symbol "thread"))
+(define (check-in-thread who)
+  (unless (continuation-prompt-available? thread-tag)
+    (error (~a who ": not in a thread context"))))
+
 ;; a request is issued by discarding the current continuation
-(define empty-k (call/prompt (lambda () (call/cc (lambda (k) k)))))
+(define empty-k (call/prompt (lambda () (call/cc (lambda (k) k))) thread-tag))
 
 ;; runs thunk as a thread in a new scheduler; any created threads or
 ;; channels are specific to the scheduler; returns the result of the
@@ -47,7 +52,7 @@
      (let loop ([st st] [hd-thunk (lambda () (channel-put chl (thunk)))])
        (cond
          [hd-thunk
-          (let ([v (call/prompt hd-thunk)])
+          (let ([v (call/prompt hd-thunk thread-tag)])
             ;; the thread either made a state request or has terminated
             (cond
               [(state-get-msg? v)
@@ -106,6 +111,7 @@
          (lambda (thunk)
            (unless (procedure? thunk)
              (arg-error 'thread "procedure" thunk))
+           (check-in-thread 'thread)
            (define th (thread (string->uninterned-symbol "thread")))
            (let ([st (current-state)])
              (current-state (enqueue-thread st (lambda () (thunk)))))
@@ -115,6 +121,7 @@
 (define make-channel
   (let ([channel
          (lambda ()
+           (check-in-thread 'channel)
            (raw-make-channel
             (current-state)
             (lambda (ch st)
@@ -124,6 +131,7 @@
 
 (define (channel-put chl v)
   (unless (channel? chl) (arg-error 'channel-put "channel" chl))
+  (check-in-thread 'channel-put)
   (let* ([st (current-state)]
          [chs (state-channels (current-state))]
          [ch (hash-ref chs (channel-id chl) #f)])
@@ -170,6 +178,7 @@
 
 (define (channel-get chl)
   (unless (channel? chl) (arg-error 'channel-get "channel" chl))
+  (check-in-thread 'channel-get)
   (raw-channel-get (current-state) chl
                    (lambda (v st)
                      (current-state st)
@@ -182,6 +191,7 @@
   (for-each (lambda (p)
               (unless (handle? p) (arg-error 'thread-process-wait "handle" p)))
             (cons p ps))
+  (check-in-thread 'thread-process-wait)
   (call/cc
    (lambda (k)
      (let ([st (current-state)])

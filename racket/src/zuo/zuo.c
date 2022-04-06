@@ -333,7 +333,7 @@ static struct {
     zuo_t *o_interp_k;
     zuo_t *o_interp_in_proc; /* used for a stack trace on error */
 
-    zuo_t *o_interp_meta_k;
+    zuo_t *o_interp_meta_k; /* list of (cons <cont> <tag>) */
 
     /* for cycle detection */
     zuo_t *o_pending_modules;
@@ -1725,7 +1725,7 @@ static void zuo_stack_trace() {
       k = ((zuo_cont_t *)k)->next;
     }
     if (meta_k != z.o_null) {
-      k = _zuo_car(meta_k);
+      k = _zuo_car(_zuo_car(meta_k));
       meta_k = _zuo_cdr(meta_k);
     }
   } while (k != z.o_done_k);
@@ -2924,6 +2924,13 @@ static zuo_t *zuo_append(zuo_t *objs) {
   return first;
 }
 
+static zuo_t *zuo_prompt_avail_p(zuo_t *tag) {
+  check_symbol("continuation-prompt-available?", tag);
+  if (Z.o_interp_meta_k == z.o_null)
+    return z.o_false;
+  return ((tag == _zuo_cdr(_zuo_car(Z.o_interp_meta_k))) ? z.o_true : z.o_false);
+}
+
 static zuo_t *zuo_variable_p(zuo_t *var) {
   return (var->tag == zuo_variable_tag) ? z.o_true : z.o_false;
 }
@@ -3228,14 +3235,17 @@ static void continue_step() {
             args = zuo_cons(Z.o_interp_k, z.o_null);
             /* no break => loop to apply again */
           } else if (rator == z.o_call_prompt) {
-            if (count != 1)
+            zuo_t *tag;
+            if (count != 2)
               zuo_fail_arity(z.o_call_prompt, args);
             rator = _zuo_car(args);
+            tag = _zuo_car(_zuo_cdr(args));
+            if (tag->tag != zuo_symbol_tag)
+              zuo_fail1w("call/prompt", "not a symbol", tag);
             args = z.o_null;
-            if (Z.o_interp_k != z.o_done_k) {
-              Z.o_interp_meta_k = zuo_cons(Z.o_interp_k, Z.o_interp_meta_k);
-              Z.o_interp_k = z.o_done_k;
-            }
+            Z.o_interp_meta_k = zuo_cons(zuo_cons(Z.o_interp_k, tag),
+                                         Z.o_interp_meta_k);
+            Z.o_interp_k = z.o_done_k;
             /* no break => loop to apply again */
           } else if (rator == z.o_kernel_eval) {
             if (count != 1)
@@ -3243,7 +3253,7 @@ static void continue_step() {
 
             Z.o_interp_e = _zuo_car(args);
             check_syntax(Z.o_interp_e);
-            Z.o_interp_meta_k = zuo_cons(Z.o_interp_k,
+            Z.o_interp_meta_k = zuo_cons(zuo_cons(Z.o_interp_k, z.o_undefined),
                                          Z.o_interp_meta_k);
 
             Z.o_interp_v = z.o_undefined;
@@ -3317,7 +3327,7 @@ zuo_t *zuo_kernel_eval(zuo_t *e) {
 
         return v;
       } else {
-        Z.o_interp_k = _zuo_car(Z.o_interp_meta_k);
+        Z.o_interp_k = _zuo_car(_zuo_car(Z.o_interp_meta_k));
         Z.o_interp_meta_k = zuo_cdr(Z.o_interp_meta_k);
       }
     } else {
@@ -6482,6 +6492,8 @@ static void zuo_primitive_init(int will_load_image) {
   ZUO_TOP_ENV_SET_PRIMITIVE1("variable", zuo_make_variable);
   ZUO_TOP_ENV_SET_PRIMITIVE1("variable-ref", zuo_variable_ref);
   ZUO_TOP_ENV_SET_PRIMITIVE2("variable-set!", zuo_variable_set);
+
+  ZUO_TOP_ENV_SET_PRIMITIVE1("continuation-prompt-available?", zuo_prompt_avail_p);
 
   ZUO_TOP_ENV_SET_PRIMITIVE1("fd-open-input", zuo_fd_open_input);
   ZUO_TOP_ENV_SET_PRIMITIVEb("fd-open-output", zuo_fd_open_output);

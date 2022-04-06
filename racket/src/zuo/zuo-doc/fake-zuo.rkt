@@ -50,6 +50,7 @@
     apply
     call/cc
     call/prompt
+    continuation-prompt-available?
     context-consumer
     context-consumer?
 

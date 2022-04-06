@@ -549,14 +549,17 @@ opposed to a failure thunk.}
 @defproc[(procedure? [v any/c]) any/c]
 @defproc[(apply [proc procedure?] [lst list?]) any/c]
 @defproc[(call/cc [proc procedure?]) any/c]
-@defproc[(call/prompt [proc procedure?]) any/c]
+@defproc[(call/prompt [proc procedure?] [tag symbol?]) any/c]
+@defproc[(continuation-prompt-available? [tag symbol?]) boolean?]
 )]{
 
 Like @realracket*[procedure? apply call/cc
-call-with-continuation-prompt call-with-composable-continuation] from
+call-with-continuation-prompt continuation-prompt-available?] from
 @racketmodname[racket], but @racket[apply] accepts only two arguments,
-and @racket[call/cc] and @racket[call/prompt] have no prompt-tag or
-abort-handler argument.}
+@racket[call/cc] has no prompt-tag argument and captures up to the
+nearest enclosing prompt of any tag, @racket[call/prompt] expects a
+symbol for a prompt tag, and @racket[continuation-prompt-available?]
+checks only whether the immediately enclosing prompt has the given tag.}
 
 
 @section{Paths}
