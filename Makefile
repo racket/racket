@@ -57,10 +57,8 @@ JOBS =
 CPUS =
 # Parallelism from `make -j` with GNU make might also be detected
 
-# Arguments to include in a call to `configure`, where `-` means no
-# arguments; when not just `-`, arguments are preserved for future
-# runs where `CONFIGURE_ARGS` is empty
-CONFIGURE_ARGS = -
+# Arguments to include in a call to `configure`
+CONFIGURE_ARGS =
 
 # Originally, `CONFIGURE_ARGS_qq` was intended as a configuration
 # argument that should be propagated, we can't handle it's quoting in

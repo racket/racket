@@ -945,6 +945,7 @@
                        (list "-MCR" (~a (at-dir "compiled") ":")
                              "--cross-compiler" m (at-dir ".")))
        (maybe-libzo-move config dest-racket copytree-racket at-dir)
-       (maybe-destdir-fix config dest-racket copytree-racket at-dir))))
+       (maybe-destdir-fix config dest-racket copytree-racket at-dir)
+       (maybe-set-install-scope config dest-racket copytree-racket at-dir))))
 
   the-targets)

@@ -12,7 +12,8 @@ srcdir = @srcdir@
 # The host machine type:
 MACH = @MACH@
 
-# The machine type to build, which is `MACH` unless cross building:
+# The machine type to build, which is the same as `MACH` unless cross
+# building:
 TARGET_MACH = @TARGET_MACH@
 
 # Whether the build is intended as a cross build ("cross") or not
@@ -25,21 +26,21 @@ KERNEL_TARGET_MACH = @KERNEL_TARGET_MACH@
 
 # If `RACKET` is set to something different than empty or `auto`, it
 # must be a compatible Racket to the curent build in the sense that
-# `require`s here to collection-based modules will work. The Racket
+# `require`s here to collection-based modules will work; the Racket
 # built here will never be run, so it's suitable as a part of a
-# cross-compile setup.
-#
-# If `BOOTFILE_RACKET` is set, then it needs only to be a Racket that
-# is recent enough to run "../../ChezScheme/rktboot/main.rkt".
-#
+# cross-compile setup
 RACKET = @RACKET@
+
+# If `BOOTFILE_RACKET` is set, then it needs only to be a Racket that
+# is recent enough to run "../../ChezScheme/rktboot/main.rkt"; it
+# doesn't replace the Racket build here for other purposes
 BOOTFILE_RACKET = @BOOTFILE_RACKET@
 
-# If `SCHEME` is set, it must be compatible to the curren build.
-# If `SCHEME_DIR` is set and `SCHEME` is not, then `SCHEME_DIR` refers
-# to an existing build directory.
-# If `RACKET` is "auto", then an auto-generated Scheme is used and
-# both of these are ignored.
+# If `SCHEME` is set, it must be compatible to the curren build;
+# if `SCHEME_DIR` is set and `SCHEME` is not, then `SCHEME_DIR` refers
+# to an existing build directory;
+# if `RACKET` is "auto", then an auto-generated Scheme is used and
+# both of these are ignored
 SCHEME = @SCHEME@
 SCHEME_DIR = @SCHEME_DIR@
 
@@ -49,16 +50,26 @@ CFLAGS = @CFLAGS@
 CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
-LINK_DYNAMIC = @LINK_DYNAMIC@
 AR = @AR@
 ARFLAGS = @ARFLAGS@
 RANLIB = @RANLIB@
-WINDRES = @WINDRES@
+
+# Extra `LDFLAGS` when linking a Racket executable
+LINK_DYNAMIC = @LINK_DYNAMIC@
+
+# Alternative to `CC` for an invocation that links a Racket executable
 RKTLINKER = @RKTLINKER@
 
+# Windows resource compiler
+WINDRES = @WINDRES@
+
+# Debugging-info stripping commands for executables and libraries
 STRIP_DEBUG = @STRIP_DEBUG@
 STRIP_LIB_DEBUG = @STRIP_LIB_DEBUG@
 
+# Replacements for `cp` for installing executables and libraries;
+# if libtool is used, for example, these might be libtool installation
+# commands
 ICP=@ICP@
 ICP_LIB=@ICP_LIB@
 
@@ -85,25 +96,36 @@ DISABLE_WPO = @DISABLE_WPO@
 # executables:
 CS_INSTALLED = @CS_INSTALLED@
 
-# "machine" or "any"
+# Whether to configure the installation for machine-specific
+# bytecode ("machine") or machine-independent ("any"); this
+# configuration happens via "system.rktd"
 CROSS_COMPILE_TARGET_KIND = @CROSS_COMPILE_TARGET_KIND@
 
 # Suffix to add to `system-library-subpath` result
 PLT_CS_SLSP_SUFFIX = @PLT_CS_SLSP_SUFFIX@
 
-# Whether to install "libkernel.a", etc., either "no-install" or
-# empty:
+# Whether to install "libkernel.a", etc. ("install") or omit
+# them ("no-install")
 INSTALL_LIBS_ENABLE = @INSTALL_LIBS_ENABLE@
 
-# Whether building for Mac OS, and how the framework is configured and
-# installed
+# Whether building for Mac OS ("t" or "f")
 OSX=@OSX@
+# Link executable to framework ("fw") or everything in the
+# executable ("static")
 MACLIBRKT_LINK_MODE = @MACLIBRKT_LINK_MODE@
-FRAMEWORK_INSTALL_DIR = @FRAMEWORK_INSTALL_DIR@
+# Install framework relative to executable ("yes") or at
+# an absolute path ("no"); if absolute path, then
+# `FRAMEWORK_INSTALL_DIR` supplies the path
 FRAMEWORK_REL_INSTALL = @FRAMEWORK_REL_INSTALL@
+FRAMEWORK_INSTALL_DIR = @FRAMEWORK_INSTALL_DIR@
 
+# This might be set to a directory that narrows installation actions
+# to just the main collects (no packages), for example; when non-empty
+# this configuration is applied after a default that points at the
+# installation "etc" directory
 SELF_ROOT_CONFIG_DIR =
 
+# Typically "--no-user":
 INSTALL_SETUP_FLAGS = @INSTALL_SETUP_FLAGS@
 
 # Shell command to run after building an executable, where the
@@ -115,10 +137,11 @@ POST_LINKER = @POST_LINKER@
 Z_LIB=@Z_LIB@
 LZ4_LIB=@LZ4_LIB@
 
+# Propagated to Chez Scheme build ("yes" or "no")
 DISABLE_ICONV=@DISABLE_ICONV@
 DISABLE_CURSES=@DISABLE_CURSES@
 
-# Whether pb Chez Scheme should link to libffi:
+# Whether pb Chez Scheme should link to libffi ("yes" or "no")
 SCHEME_LIBFFI = @SCHEME_LIBFFI@
 
 # Whether pb boot files should be "chunked" to C form ("pbchunk") or
@@ -147,10 +170,22 @@ docdir = @docdir@
 appsdir = @appsdir@
 mandir = @mandir@
 
+# Whether `setup/unixstyle-install.rkt copytree` is needed for
+# installation ("yes" or "no")
 MAKE_COPYTREE = @MAKE_COPYTREE@
+
+# Whether copytree should preserve the source shape ("yes")
+# or use a convential Unix filesystem structure ("no")
 INSTALL_ORIG_TREE = @INSTALL_ORIG_TREE@
 
+# Whether the default package scope should be set on installation
+# ("adjust" or "preserve")
 MAKE_INSTALL_PKGSCOPE = @MAKE_INSTALL_PKGSCOPE@
+
+# The value to install as the default installation scope
+# (e.g., "user")
 INSTALL_PKGSCOPE = @INSTALL_PKGSCOPE@
 
+# Whether ".zo" files should be moved to "lib" instead of "share"
+# for a Unix-style installation ("yes" or "no")
 INSTALL_LIBZO = @INSTALL_LIBZO@

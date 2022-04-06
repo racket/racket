@@ -40,6 +40,7 @@
          maybe-copytree
          maybe-libzo-move
          maybe-destdir-fix
+         maybe-set-install-scope
 
          infer-gnu-make-jobs)
 
@@ -475,6 +476,16 @@
                              "make-install-destdir-fix"
                              (hash-ref config 'INSTALL_ORIG_TREE "")
                              (hash-ref config 'INSTALL_LIBZO "")))))
+
+(define (maybe-set-install-scope config dest-racket cross-racket at-dir)
+  (when (equal? (hash-ref config 'MAKE_INSTALL_PKGSCOPE "") "adjust")
+    (process/wait (or cross-racket dest-racket)
+                  (if cross-racket
+                      '()
+                      (list "-X" (at-source "../collects")
+                            "-G" (at-source "../etc")))
+                  "-l-" "raco" "pkg" "config" "-i" "--set" "default-scope"
+                  (hash-ref config 'INSTALL_PKGSCOPE))))
 
 (define (infer-gnu-make-jobs)
   ;; GNU make sets `MAKEFLAGS` to include `-j` and `--jobserver-fds=<in>,<out>`

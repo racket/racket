@@ -443,8 +443,8 @@
             (setup-boot at-dir config)
             args))
 
-  (define (set-collects-path dest collects-path config-path)
-    (bootstrap-racket racketcgc (at-source "../start/collects-path.rkt") (at-source "..")
+  (define (set-collects-path racketx dest collects-path config-path)
+    (bootstrap-racket racketx (at-source "../start/collects-path.rkt") (at-source "..")
                       dest collects-path config-path))
 
   (define (codesign?) (equal? (lookup 'NEED_STRIP_SIGNATURE) "yes"))
@@ -575,6 +575,26 @@
                                                                 "."))
                                                         "../../etc")))))))
 
+  (define (call-with-bindir k)
+    (define bindir (if msvc?
+                       (at-source "../..")
+                       (at-destdir config (shell-subst (lookup 'bindir) config))))
+    (k bindir))
+
+  (define (dest-racket-exe 3m?)
+    (call-with-bindir
+     (lambda (bindir)
+       (build-path bindir (if (not windows?)
+                              (~a "racket"
+                                  (if 3m?
+                                      3m-installed-suffix
+                                      cgc-installed-suffix))
+                              (~a "Racket"
+                                  (if 3m?
+                                      3m-cap-installed-suffix
+                                      cgc-cap-installed-suffix)
+                                  ".exe"))))))
+
   (define the-targets
     (append
      (make-targets
@@ -685,7 +705,7 @@
                                         (string->shell (~a "-outputresource:" path ";1"))))
                           (when framework?
                             (install_name_tool "-change"
-                                               (~a "Racket.framework/Versions/" (~a version fw-suffix) "/Racket")
+                                               (at-dir (~a "Racket.framework/Versions/" (~a version fw-suffix) "/Racket"))
                                                (~a "@executable_path/" fw-ups "Racket.framework/Versions/" (~a version fw-suffix) "/Racket")
                                                path)))])
            (list racketcgc1
@@ -1366,7 +1386,7 @@
                     (if 3m-default?
                         (setup #t #f)
                         (setup #f #t)))]
-       [:target (,(at-dir "install-stamp") ,dest-racket-exe) ()
+       [:target (,(at-dir "install-stamp") ,(dest-racket-exe 3m-default?)) ()
                 ,(lambda (path token)
                    (if 3m-default?
                        (install #t #f token)
@@ -1375,27 +1395,6 @@
 
         [:db-dir ,(at-dir "compiled")]))
      starter-targets))
-
-  (define (call-with-bindir k)
-    (define bindir (if msvc?
-                       (at-source "../..")
-                       (at-destdir config (shell-subst (lookup 'bindir) config))))
-    (k bindir))
-
-
-  (define dest-racket-exe
-    (call-with-bindir
-     (lambda (bindir)
-       (build-path bindir (if (not windows?)
-                              (~a "racket"
-                                  (if 3m?
-                                      3m-installed-suffix
-                                      cgc-installed-suffix))
-                              (~a "Racket"
-                                  (if 3m?
-                                      3m-cap-installed-suffix
-                                      cgc-cap-installed-suffix)
-                                  ".exe"))))))
 
   (define (install 3m? cgc? [token #f]) ; if token is not #f, registers dependencies
     (call-with-bindir
@@ -1441,10 +1440,12 @@
 
        (define (cp/in src dest)
          (cp (in! src) dest))
+
+       (define racketx (if 3m? racket3m racketcgc))
        
        ;; Make install "system.rktd"
        (if cross?
-           (bootstrap-racket (if 3m? racket3m racketcgc)
+           (bootstrap-racket racketx
                              (at-source "mksystem.rkt")
                              (at-dir "system.rktd")
                              (build-shell (or (hash-ref config 'CPP #f)
@@ -1461,12 +1462,12 @@
                              3m-installed-suffix (lookup 'CROSS_COMPILE_TARGET_KIND)
                              (if 3m? racket3m racketcgc)
                              (error "fixme"))
-           (bootstrap-racket (if 3m? racket3m racketcgc)
+           (bootstrap-racket racketx
                              (at-source "mksystem.rkt")
                              (at-dir "system.rktd")))
        (cp (at-dir "system.rktd") (build-path libpltdir "system.rktd"))
 
-       (bootstrap-racket (if 3m? racket3m racketcgc)
+       (bootstrap-racket racketx
                          (at-source "mkincludes.rkt")
                          includepltdir
                          (at-source ".")
@@ -1483,7 +1484,7 @@
               (icp* racket dest-exe)
               (strip-signature dest-exe)
               (strip-debug config dest-exe)
-              (set-collects-path dest-exe collects-path config-path)
+              (set-collects-path racket dest-exe collects-path config-path)
               (restore-signature dest-exe)
 
               (when gracket?
@@ -1508,8 +1509,8 @@
                 (strip-signature dest-exe)
                 (strip-debug config dest-exe)
                 (if mac?
-                    (set-collects-path dest-exe "../../../../collects" "../../../../etc")
-                    (set-collects-path dest-exe collects-path config-path))
+                    (set-collects-path racket dest-exe "../../../../collects" "../../../../etc")
+                    (set-collects-path racket dest-exe collects-path config-path))
                 (restore-signature dest-exe)))
             (append
              (if cgc? (list racketcgc) '())
@@ -1562,7 +1563,7 @@
           (cp/in (at-source "../start/starter-sh") (build-path libpltdir "starter-sh"))
           (strip-signature starter.exe)
           (strip-debug config starter.exe)
-          (set-collects-path starter.exe collects-path config-path)
+          (set-collects-path racketx starter.exe collects-path config-path)
 
           (display-to-file (~a "CC=" (lookup 'CC) "\n"
                                "CFLAGS=" (build-shell (lookup 'CFLAGS)
@@ -1589,7 +1590,7 @@
              (rm* (build-path dest-framework-dir "Versions" (~a version)))
              (rm* (build-path dest-framework-dir "Versions" (~a version "_3m")))
              (when (equal? (lookup 'FRAMEWORK_REL_INSTALL) "yes")
-               (bootstrap-racket racketcgc (at-source "../mac/clean-fw.rkt") dest-framework-dir))
+               (bootstrap-racket racketx (at-source "../mac/clean-fw.rkt") dest-framework-dir))
              (mkdir-p dest-framework-dir)
              
              (map (lambda (racket install-suffix framework suffix)
@@ -1656,10 +1657,12 @@
   (define (setup 3m? cgc?)
     (call-with-bindir
      (lambda (bindir)
-       (define dest-exe dest-racket-exe)
-       (maybe-copytree config dest-exe (and cross? (get-cross-racket)) at-dir)
-       (run-raco-setup config dest-exe (and cross? (get-cross-racket)) '())
-       (maybe-libzo-move config dest-exe (and cross? (get-cross-racket)) at-dir)
-       (maybe-destdir-fix config dest-racket copytree-racket at-dir))))
+       (define dest-exe (dest-racket-exe 3m?))
+       (define copytree-racket (and cross? (get-cross-racket)))
+       (maybe-copytree config dest-exe copytree-racket at-dir)
+       (run-raco-setup config dest-exe copytree-racket '())
+       (maybe-libzo-move config dest-exe copytree-racket at-dir)
+       (maybe-destdir-fix config dest-exe copytree-racket at-dir)
+       (maybe-set-install-scope config dest-exe copytree-racket at-dir))))
 
   the-targets)

@@ -89,12 +89,15 @@
                                              (at-source "racket/src" subdir "configure"))
                               'inputs (list (at-source "racket/src" subdir "Mf-config.in"))
                               'outputs (list (at-source "racket/src/build" subdir "Mf-config"))
-                              'configure-args (cond
-                                                [(eq? 'windows (system-type)) '()]
-                                                [prefix (list (~a "--prefix=" prefix)
-                                                              "--enable-macprefix")]
-                                                [else '("--disable-useprefix"
-                                                        "--enable-origtree")])
+                              'configure-args (append
+                                               (shell->strings (lookup 'CONFIGURE_ARGS_qq))
+                                               (shell->strings (lookup 'CONFIGURE_ARGS))
+                                               (cond
+                                                 [(eq? 'windows (system-type)) '()]
+                                                 [prefix (list (~a "--prefix=" prefix)
+                                                               "--enable-macprefix")]
+                                                 [else '("--disable-useprefix"
+                                                         "--enable-origtree")]))
                               'vars (hash
                                      ;; causes the `raco setup` step to not build
                                      ;; installed packages (unless `prefix`):
