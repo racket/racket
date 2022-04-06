@@ -336,14 +336,14 @@
           (~a X "." Y "." Z "." W)))))
 
 (define (at-destdir config p)
-  (define destdir (hash-ref config 'DESTDIR #f))
-  (if destdir
+  (define destdir (hash-ref config 'DESTDIR ""))
+  (if (equal? destdir "")
+      p
       (if (relative-path? p)
           (build-path destdir p)
           (apply build-path
                  (cons destdir
-                       (cdr (explode-path p)))))
-      p))
+                       (cdr (explode-path p)))))))
 
 (define (icp config src dest)
   (if (eq? 'windows (system-type))
@@ -444,7 +444,15 @@
                 (at-source "../collects/setup/unixstyle-install.rkt")
                 command (at-source "..")
                 dirs
-                args))
+                args
+                ;; some `unixstyle-install` commands need `DESTDIR` provided
+                ;; as an environment variable
+                (let ([destdir (hash-ref config 'DESTDIR "")])
+                  (if (equal? destdir "")
+                      (hash)
+                      (hash 'env (cons
+                                  (cons "DESTDIR" destdir)
+                                  (hash-ref (runtime-env) 'env)))))))
 
 (define (maybe-copytree config dest-racket cross-racket at-dir)
   (when (equal? (hash-ref config 'MAKE_COPYTREE #f) "copytree")
@@ -454,8 +462,9 @@
 
 (define (maybe-libzo-move config dest-racket cross-racket at-dir)
   (when (equal? (hash-ref config 'INSTALL_LIBZO #f) "libzo")
-    (unixstyle-install-run config dest-racket cross-racket at-dir
-                           "make-install-libzo-move")))
+    (when (equal? (hash-ref config 'SKIP_DESTDIR_FIX "") "")
+      (unixstyle-install-run config dest-racket cross-racket at-dir
+                             "make-install-libzo-move"))))
 
 (define (maybe-destdir-fix config dest-racket cross-racket at-dir)
   (when (not (equal? (hash-ref config 'DESTDIR "") ""))

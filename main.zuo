@@ -92,13 +92,16 @@
                                                         "--enable-origtree")])
                               'vars (hash
                                      ;; causes the `raco setup` step to not build
-                                     ;; installed packages:
-                                     'SELF_ROOT_CONFIG_DIR (path-only build-config.rktd)
+                                     ;; installed packages (unless `prefix`):
+                                     'SELF_ROOT_CONFIG_DIR (if prefix
+                                                               ""
+                                                               (path-only build-config.rktd))
                                      'PLT_SETUP_OPTIONS (build-shell
                                                          (if also? "-D" "")
                                                          (setup-options))
-                                     'DESTDIR (and prefix
-                                                   (lookup 'DESTDIR #f))
+                                     'DESTDIR (if prefix
+                                                  (lookup 'DESTDIR "")
+                                                  "")
                                      ;; for a unix-style install, we'll run any needed
                                      ;; `DESTDIR` fixes later:
                                      'SKIP_DESTDIR_FIX "skip"))))

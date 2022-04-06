@@ -75,10 +75,10 @@
   (define libdir/librktio.so
     (let* ([lib-dir (shell-subst (or (hash-ref config 'libdir #f) "/usr/local/lib")
                                  config)]
-           [p (lookup 'DESTDIR)])
-      (build-path (if p
-                      (apply build-path (cons p (cdr (explode-path (path->complete-path lib-dir)))))
-                      lib-dir)
+           [p (or (lookup 'DESTDIR) "")])
+      (build-path (if (equal? p "")
+                      lib-dir
+                      (apply build-path (cons p (cdr (explode-path (path->complete-path lib-dir))))))
                   (file-name-from-path librktio.a))))
 
   (define (install-shared-object)

@@ -127,8 +127,12 @@ SETUP_MACHINE_FLAGS =
 # ------------------------------------------------------------
 # Installation options
 
-# For Unix-style builds:
+# For Unix-style builds, where to install:
 PREFIX =
+
+# For Unix-style builds, a directory where an installation
+# that's destined for `PREFIX` is staged to move there later:
+DESTDIR =
 
 # Can be `bc` or empty:
 RACKETBC_SUFFIX = bc
@@ -159,7 +163,8 @@ BUILD_VARS = VM="$(VM)" \
              SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" \
              PREFIX="$(PREFIX)" \
              RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" \
-             RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)"
+             RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" \
+             DESTDIR="$(DESTDIR)"
 
 in-place: $(ZUO)
 	$(RUN_ZUO) in-place $(BUILD_VARS)
