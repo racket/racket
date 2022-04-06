@@ -113,14 +113,17 @@
                                      ;; for a unix-style install, we'll run any needed
                                      ;; `DESTDIR` fixes later:
                                      'SKIP_DESTDIR_FIX "skip"
-                                     ;; Propagate `RACKET` and similat
+                                     ;; Propagate `RACKET` and similar
                                      'RACKET (let ([r (lookup 'RACKET)])
                                                (if (equal? r "")
                                                    (lookup 'PLAIN_RACKET)
                                                    r))
                                      'BOOTFILE_RACKET (lookup 'BOOTFILE_RACKET)
                                      'SCHEME (lookup 'SCHEME)
-                                     'SCHEME_DIR (lookup 'SCHEME_DIR)))))
+                                     'SCHEME_DIR (lookup 'SCHEME_DIR)
+                                     'CROSS_MODE (if (equal? (lookup 'CS_CROSS_SUFFIX) "-cross")
+                                                     "cross"
+                                                     "")))))
     (build (find-target "build" targets)
            #f
            (build-options))
@@ -129,15 +132,24 @@
            (build-options)))
 
   (define (find-racket vm)
-    (define sfx (if (eq? vm 'cs)
-                    (lookup 'RACKETCS_SUFFIX)
-                    (lookup 'RACKETBC_SUFFIX)))
+    (define provided-racket
+      (let ([r (lookup 'RACKET)])
+        (if (equal? r "")
+            (lookup 'PLAIN_RACKET)
+            r)))
     (define racket.exe
       (cond
-        [(eq? 'windows (system-type))
-         (at-source "racket" (~a "Racket" (string-upcase sfx) ".exe"))]
+        [(not (equal? provided-racket ""))
+         (executable->path provided-racket at-source)]
         [else
-         (at-source "racket/bin" (~a "racket" sfx))]))
+         (define sfx (if (eq? vm 'cs)
+                         (lookup 'RACKETCS_SUFFIX)
+                         (lookup 'RACKETBC_SUFFIX)))
+         (cond
+           [(eq? 'windows (system-type))
+            (at-source "racket" (~a "Racket" (string-upcase sfx) ".exe"))]
+           [else
+            (at-source "racket/bin" (~a "racket" sfx))])]))
     (hash 'racket racket.exe
           'racket-args (append (shell->strings (lookup 'SETUP_MACHINE_FLAGS))
                                (list "-G" (at-source "racket/etc")
@@ -163,6 +175,7 @@
       [else
        (build-base "bc" token also? prefix)]))
 
+  ;; currently does not support Windows or cross compilation
   (define (unix-style token vm)
     (define prefix (lookup! 'PREFIX))
     (when (equal? prefix "")

@@ -626,7 +626,6 @@ RKTIO_CONFIGURE_ARGS
 LIBFFI_CONFIGURE_ARGS
 INSTALL_NAME_TOOL
 CROSS_COMPILE_TARGET_KIND
-CROSS_MODE
 ENABLE_CIFY
 SETUP_BOOT_MODE
 RACKET
@@ -4963,12 +4962,6 @@ OSX="f"
 MINGW="f"
 CGC_X86_64=""
 
-if test "${build_os}_${build_cpu}" != "${host_os}_${host_cpu}" ; then
-  CROSS_MODE="cross"
-else
-  CROSS_MODE=""
-fi
-
 case "$host_os" in
   solaris2*)
     STATICLINK="-Wl,-Bstatic" # after -ldl
@@ -7408,7 +7401,6 @@ RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
 ############## final output ################
 
 LIBS="$LIBS $EXTRALIBS"
-
 
 
 

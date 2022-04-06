@@ -512,12 +512,6 @@ OSX="f"
 MINGW="f"
 CGC_X86_64=""
 
-if test "${build_os}_${build_cpu}" != "${host_os}_${host_cpu}" ; then
-  CROSS_MODE="cross"
-else
-  CROSS_MODE=""
-fi
-
 case "$host_os" in
   solaris2*)
     STATICLINK="-Wl,-Bstatic" # after -ldl
@@ -1471,7 +1465,6 @@ AC_SUBST(SETUP_BOOT_MODE)
 
 AC_SUBST(ENABLE_CIFY)
 
-AC_SUBST(CROSS_MODE)
 AC_SUBST(CROSS_COMPILE_TARGET_KIND)
 
 AC_SUBST(INSTALL_NAME_TOOL)

@@ -43,7 +43,7 @@
   
   (define boot-files (list petite-chunked.boot scheme-chunked.boot racket-chunked.boot))
 
-  (define cross? (equal? (lookup 'CROSS) "cross"))
+  (define cross? (equal? (lookup 'CROSS_MODE) "cross"))
 
   (define scheme.exe+args
     (cond

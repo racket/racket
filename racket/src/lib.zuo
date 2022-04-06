@@ -381,15 +381,16 @@
                         (at-source "../etc")
                         (at-destdir config (shell-subst (hash-ref config 'configdir) config))))
   
-  (define (extras key) (shell->strings (or (hash-ref config key #f) "")))
+  (define (extras key) (shell->strings (hash-ref config key "")))
   ;; A top-level build script can set `SELF_ROOT_CONFIG_DIR` to make the
   ;; setup config different from the result distribution's config, etc.
   (define self-root-config-dir (or (hash-ref config 'SELF_ROOT_CONFIG_DIR #f) ""))
-  (define setup-any-zo-dir (or (hash-ref config 'SETUP_ANY_ZO_DIR #f) ""))
   (define self-root-config-flags (if (equal? self-root-config-dir "")
                                      '()
                                      (list "-G" self-root-config-dir)))
   (define setup-args (list
+                      (extras 'INSTALL_SETUP_RACKET_FLAGS)
+                      (extras 'SETUP_MACHINE_FLAGS)
                       "-N" "raco" "-l-" "setup"
                       (extras 'INSTALL_SETUP_FLAGS)
                       (extras 'PLT_SETUP_OPTIONS)))
@@ -399,9 +400,6 @@
                    "-X" collectsdir
                    "-G" configdir
                    self-root-config-flags
-                   (if (equal? setup-any-zo-dir "")
-                       '()
-                       (list "-MCR" (~a setup-any-zo-dir ":")))
                    setup-args)]
     [else
      (racket (hash 'racket cross-bootstrap-racket)

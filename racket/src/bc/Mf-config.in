@@ -54,10 +54,6 @@ RACKET = @RACKET@
 
 ENABLE_CIFY = @ENABLE_CIFY@
 
-# Whether the build is intended as a cross build ("cross") or not
-# (empty):
-CROSS_MODE = @CROSS_MODE@
-
 # Whether building for Mac OS ("t" or "f"), and how the framework is
 # configured and installed
 OSX=@OSX@
@@ -81,6 +77,10 @@ INSTALL_LIBS_ENABLE = @INSTALL_LIBS_ENABLE@
 CROSS_COMPILE_TARGET_KIND = @CROSS_COMPILE_TARGET_KIND@
 
 SETUP_BOOT_MODE = @SETUP_BOOT_MODE@
+
+INSTALL_SETUP_FLAGS = @INSTALL_SETUP_FLAGS@
+INSTALL_SETUP_RACKET_FLAGS = @INSTALL_SETUP_RACKET_FLAGS@
+SETUP_MACHINE_FLAGS = 
 
 COLLECTS_PATH = @COLLECTS_PATH@
 CONFIG_PATH = @CONFIG_PATH@

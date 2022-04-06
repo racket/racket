@@ -23,7 +23,6 @@
 
   (define foreign? (not (equal? (lookup 'FOREIGN_ENABLED) "no")))
   (define libffi? (and foreign? (not (equal? (lookup 'LIBFFI_BUILD_ENABLED) "no"))))
-  (define cross? (equal? (or (lookup 'CROSS_MODE) "") "cross"))
   (define provided-racket? (not (equal? (or (lookup 'RACKET) "") "")))
   (define cify-mode (or (lookup 'ENABLE_CIFY) "auto"))
   (define gracket? (not (equal? (lookup 'MAKE_GRACKET) "no")))
@@ -415,7 +414,7 @@
                      (at-source "../version")
                      (at-source "src"))))
 
-  (define (get-cross-racket)
+  (define (get-host-racket)
     (let ([r (lookup 'RACKET)])
       (cond
         [(equal? r "auto")
@@ -437,7 +436,7 @@
   (define (bootstrap-racket-config config local-racket)
     (hash-set config 'racket (if (not provided-racket?)
                                  local-racket
-                                 (get-cross-racket))))
+                                 (get-host-racket))))
 
   (define (bootstrap-racket local-racket . args)
     (racket (bootstrap-racket-config config local-racket)
@@ -624,10 +623,10 @@
                     (define cify? (cond
                                     [(equal? cify-mode "yes") #t]
                                     [(equal? cify-mode "no") #f]
-                                    [cross? #f]
+                                    [provided-racket? #f]
                                     [else
                                      (define p (process (if provided-racket?
-                                                            (get-cross-racket)
+                                                            (get-host-racket)
                                                             racketcgc1)
                                                         (at-source "src/startup-select.rkt")
                                                         (hash 'stdout 'pipe)))
@@ -1447,7 +1446,7 @@
        (define racketx (if 3m? racket3m racketcgc))
        
        ;; Make install "system.rktd"
-       (if cross?
+       (if provided-racket?
            (bootstrap-racket racketx
                              (at-source "mksystem.rkt")
                              (at-dir "system.rktd")
@@ -1463,7 +1462,9 @@
                                                                       (at-source "../worksp")
                                                                       (at-dir ".")))))
                              3m-installed-suffix (lookup 'CROSS_COMPILE_TARGET_KIND)
-                             (if cross? "cross" "native"))
+                             ;; although this is not necessarily a cross compilation, we
+                             ;; pessimistically assume that it is:
+                             "cross")
            (bootstrap-racket racketx
                              (at-source "mksystem.rkt")
                              (at-dir "system.rktd")))
@@ -1660,7 +1661,7 @@
     (call-with-bindir
      (lambda (bindir)
        (define dest-exe (dest-racket-exe 3m?))
-       (define copytree-racket (and provided-racket? (get-cross-racket)))
+       (define copytree-racket (and provided-racket? (get-host-racket)))
        (maybe-copytree config dest-exe copytree-racket at-dir)
        (run-raco-setup config dest-exe copytree-racket '())
        (maybe-libzo-move config dest-exe copytree-racket at-dir)
