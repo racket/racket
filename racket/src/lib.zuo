@@ -404,7 +404,7 @@
                        (list "-MCR" (~a setup-any-zo-dir ":")))
                    setup-args)]
     [else
-     (racket cross-bootstrap-racket
+     (racket (hash 'racket cross-bootstrap-racket)
              self-root-config-flags
              cross-compiler-args
              "-X" collectsdir

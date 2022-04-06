@@ -114,9 +114,10 @@ OSX=@OSX@
 # executable ("static")
 MACLIBRKT_LINK_MODE = @MACLIBRKT_LINK_MODE@
 # Install framework relative to executable ("yes") or at
-# an absolute path ("no"); if absolute path, then
-# `FRAMEWORK_INSTALL_DIR` supplies the path
+# an absolute path ("no")
 FRAMEWORK_REL_INSTALL = @FRAMEWORK_REL_INSTALL@
+# Supplies the path for install, using "${libpltdir}" for relative
+# or an absolute path otherwise
 FRAMEWORK_INSTALL_DIR = @FRAMEWORK_INSTALL_DIR@
 
 # This might be set to a directory that narrows installation actions

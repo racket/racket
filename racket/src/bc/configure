@@ -626,8 +626,9 @@ RKTIO_CONFIGURE_ARGS
 LIBFFI_CONFIGURE_ARGS
 INSTALL_NAME_TOOL
 CROSS_COMPILE_TARGET_KIND
+CROSS_MODE
 ENABLE_CIFY
-BOOT_MODE
+SETUP_BOOT_MODE
 RACKET
 INSTALL_LIBS_ENABLE
 INSTALL_SETUP_RACKET_FLAGS
@@ -4962,6 +4963,12 @@ OSX="f"
 MINGW="f"
 CGC_X86_64=""
 
+if test "${build_os}_${build_cpu}" != "${host_os}_${host_cpu}" ; then
+  CROSS_MODE="cross"
+else
+  CROSS_MODE=""
+fi
+
 case "$host_os" in
   solaris2*)
     STATICLINK="-Wl,-Bstatic" # after -ldl
@@ -5067,9 +5074,7 @@ case "$host_os" in
     MZINSTALLBINDIR="${MZINSTALLBINDIR}/.."
     EXE_SUFFIX=".exe"
     COLLECTS_PATH="collects"
-    GUI_COLLECTS_PATH="../collects"
     CONFIG_PATH="etc"
-    GUI_CONFIG_PATH="../etc"
     skip_iconv_check=yes
     check_for_mprotect=no
     # ".a" is typically not useful, since we always build a DLL:
@@ -7246,10 +7251,10 @@ fi
 ############## Racket for Racket ################
 
 if test "${enable_racket}" = "" ; then
-  BOOT_MODE="--boot"
+  SETUP_BOOT_MODE="--boot"
 else
   RACKET="${enable_racket}"
-  BOOT_MODE="--chain"
+  SETUP_BOOT_MODE="--chain"
 fi
 
 ############## libtool ################
@@ -7403,6 +7408,7 @@ RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
 ############## final output ################
 
 LIBS="$LIBS $EXTRALIBS"
+
 
 
 

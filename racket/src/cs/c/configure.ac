@@ -415,7 +415,7 @@ if test "${enable_pb}" = "yes" ; then
 fi
 
 if test "${enable_target}" != "" ; then
-  TARGE<T_MACH=${enable_target}
+  TARGET_MACH=${enable_target}
   CROSS_MODE="cross"
 elif test "${build_os}_${build_cpu}" != "${host_os}_${host_cpu}" ; then
   BUILD_THREAD_PREFIX="${thread_prefix}"

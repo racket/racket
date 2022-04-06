@@ -112,7 +112,15 @@
                                                   "")
                                      ;; for a unix-style install, we'll run any needed
                                      ;; `DESTDIR` fixes later:
-                                     'SKIP_DESTDIR_FIX "skip"))))
+                                     'SKIP_DESTDIR_FIX "skip"
+                                     ;; Propagate `RACKET` and similat
+                                     'RACKET (let ([r (lookup 'RACKET)])
+                                               (if (equal? r "")
+                                                   (lookup 'PLAIN_RACKET)
+                                                   r))
+                                     'BOOTFILE_RACKET (lookup 'BOOTFILE_RACKET)
+                                     'SCHEME (lookup 'SCHEME)
+                                     'SCHEME_DIR (lookup 'SCHEME_DIR)))))
     (build (find-target "build" targets)
            #f
            (build-options))
@@ -143,7 +151,9 @@
 
   (define (maybe-fetch vm)
     (when (eq? vm 'cs)
-      (pb-manage 'fetch)))
+      (when (andmap (lambda (key) (equal? (lookup key) ""))
+                    '(RACKET PLAIN_RACKET SCHEME SCHEME_DIR))
+        (pb-manage 'fetch))))
 
   (define (base token vm [also? #f] [prefix #f])
     (build/dep (find-target build-config.rktd the-targets) token)
@@ -239,12 +249,14 @@
                            (in-place token vm #f "--error-out build/step")
                            (in-place token (if (eq? vm 'cs) 'bc 'cs) #t "--error-in build/step"))]
        
+       [:target cs () ,(lambda (token) (in-place token 'cs))]
        [:target cs-base () ,(lambda (token) (maybe-fetch vm) (base token 'cs))]
        [:target cs-as-is () ,(lambda (token) (as-is token 'cs))]
        [:target cs-in-place () ,(lambda (token) (in-place token 'cs))]
        [:target also-cs () ,(lambda (token) (in-place token 'cs #t))]
        [:target cs-unix-style () ,(lambda (token) (unix-style token 'cs))]
 
+       [:target bc () ,(lambda (token) (in-place token 'bc))]
        [:target bc-base () ,(lambda (token) (maybe-fetch vm) (base token 'bc))]
        [:target bc-as-is () ,(lambda (token) (as-is token 'bc))]
        [:target bc-in-place () ,(lambda (token) (in-place token 'bc))]

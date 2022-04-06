@@ -512,6 +512,12 @@ OSX="f"
 MINGW="f"
 CGC_X86_64=""
 
+if test "${build_os}_${build_cpu}" != "${host_os}_${host_cpu}" ; then
+  CROSS_MODE="cross"
+else
+  CROSS_MODE=""
+fi
+
 case "$host_os" in
   solaris2*)
     STATICLINK="-Wl,-Bstatic" # after -ldl
@@ -1227,10 +1233,10 @@ fi
 ############## Racket for Racket ################
 
 if test "${enable_racket}" = "" ; then
-  BOOT_MODE="--boot"
+  SETUP_BOOT_MODE="--boot"
 else
   RACKET="${enable_racket}"
-  BOOT_MODE="--chain"
+  SETUP_BOOT_MODE="--chain"
 fi
 
 ############## libtool ################
@@ -1461,10 +1467,11 @@ AC_SUBST(INSTALL_SETUP_RACKET_FLAGS)
 AC_SUBST(INSTALL_LIBS_ENABLE)
 
 AC_SUBST(RACKET)
-AC_SUBST(BOOT_MODE)
+AC_SUBST(SETUP_BOOT_MODE)
 
 AC_SUBST(ENABLE_CIFY)
 
+AC_SUBST(CROSS_MODE)
 AC_SUBST(CROSS_COMPILE_TARGET_KIND)
 
 AC_SUBST(INSTALL_NAME_TOOL)

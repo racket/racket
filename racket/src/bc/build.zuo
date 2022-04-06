@@ -23,7 +23,8 @@
 
   (define foreign? (not (equal? (lookup 'FOREIGN_ENABLED) "no")))
   (define libffi? (and foreign? (not (equal? (lookup 'LIBFFI_BUILD_ENABLED) "no"))))
-  (define cross? (not (equal? (or (lookup 'RACKET) "") "")))
+  (define cross? (equal? (or (lookup 'CROSS_MODE) "") "cross"))
+  (define provided-racket? (not (equal? (or (lookup 'RACKET) "") "")))
   (define cify-mode (or (lookup 'ENABLE_CIFY) "auto"))
   (define gracket? (not (equal? (lookup 'MAKE_GRACKET) "no")))
 
@@ -434,7 +435,7 @@
              (at-dir r))])))
 
   (define (bootstrap-racket-config config local-racket)
-    (hash-set config 'racket (if (not cross?)
+    (hash-set config 'racket (if (not provided-racket?)
                                  local-racket
                                  (get-cross-racket))))
 
@@ -451,7 +452,7 @@
 
   (define (strip-signature dest)
     (when (codesign?)
-      (if cross?
+      (if provided-racket?
           (bootstrap-racket racketcgc
                             (at-source "../mac/codesign.rkt") "--remove-signature"
                             dest)
@@ -459,7 +460,7 @@
                       (string->shell dest)))))
   (define (restore-signature dest)
     (when (codesign?)
-      (if cross?
+      (if provided-racket?
           (bootstrap-racket racketcgc
                             (at-source "../mac/codesign.rkt")
                             "-s" "-"
@@ -470,7 +471,7 @@
                       (string->shell dest)))))
 
   (define (xform dest src precomp-mode token [cpp-extra ""])
-    (unless cross?
+    (unless provided-racket?
       ;; using `build/no-dep` here means that we don't re-xform all sources just
       ;; because racketcgc changed; this is a trade-off between being correct in
       ;; all cases (it's possible that a bug fix changes the way that xform runs)
@@ -530,7 +531,7 @@
               lines))
 
   (define (install_name_tool . args)
-    (if cross?
+    (if provided-racket?
         (bootstrap-racket racketcgc
                           (at-source "../mac/install_name_tool.rkt")
                           args)
@@ -615,7 +616,7 @@
         ;; Phase2 "cstartup.inc" generation as a compiled form of "startup.inc"
         [:target ,phase2/cstartup.inc (,(at-source "src/startup.inc")
                                        ,(input-data-target 'cify cify-mode)
-                                       ,@(if cross?
+                                       ,@(if provided-racket?
                                              '()
                                              (list racketcgc1)))
                  ,(lambda (path token)
@@ -625,7 +626,9 @@
                                     [(equal? cify-mode "no") #f]
                                     [cross? #f]
                                     [else
-                                     (define p (process racketcgc1
+                                     (define p (process (if provided-racket?
+                                                            (get-cross-racket)
+                                                            racketcgc1)
                                                         (at-source "src/startup-select.rkt")
                                                         (hash 'stdout 'pipe)))
                                      (define s (fd-read (hash-ref p 'stdout) eof))
@@ -1460,8 +1463,7 @@
                                                                       (at-source "../worksp")
                                                                       (at-dir ".")))))
                              3m-installed-suffix (lookup 'CROSS_COMPILE_TARGET_KIND)
-                             (if 3m? racket3m racketcgc)
-                             (error "fixme"))
+                             (if cross? "cross" "native"))
            (bootstrap-racket racketx
                              (at-source "mksystem.rkt")
                              (at-dir "system.rktd")))
@@ -1658,7 +1660,7 @@
     (call-with-bindir
      (lambda (bindir)
        (define dest-exe (dest-racket-exe 3m?))
-       (define copytree-racket (and cross? (get-cross-racket)))
+       (define copytree-racket (and provided-racket? (get-cross-racket)))
        (maybe-copytree config dest-exe copytree-racket at-dir)
        (run-raco-setup config dest-exe copytree-racket '())
        (maybe-libzo-move config dest-exe copytree-racket at-dir)

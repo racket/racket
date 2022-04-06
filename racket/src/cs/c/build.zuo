@@ -43,7 +43,7 @@
   
   (define boot-files (list petite-chunked.boot scheme-chunked.boot racket-chunked.boot))
 
-  (define cross? (not (equal? m host-m)))
+  (define cross? (equal? (lookup 'CROSS) "cross"))
 
   (define scheme.exe+args
     (cond
@@ -286,7 +286,19 @@
                                                (cs-suffix "racket"))))
     (k bindir dest-racket))
 
-  (define dest-racket-exe (call-with-dest-racket (lambda (bindir dest-racket) dest-racket)))
+  ;; It would be more precise to list all the intended installation
+  ;; targets for `install-again`, but we apprixmate with a handful of
+  ;; things, like the `racket` executable, plus an an "install-stamp"
+  ;; file to stand for the rest
+  (define install-files-to-check
+    (call-with-dest-racket
+     (lambda (bindir dest-racket)
+       (cons dest-racket
+             (cond
+               [mac-fw? (list (build-path (shell-subst (lookup 'FRAMEWORK_INSTALL_DIR) config)
+                                          framework-dir
+                                          "Racket"))]
+               [else '()])))))
 
   (define link-config (input-data-target 'link-config (list mac? mac-fw?)))
 
@@ -577,26 +589,11 @@
                             token)))]
        
        ,@(cond
-           [(not (equal? (lookup 'BOOTFILE_RACKET) ""))
-            ;; use `BOOTFILE_RACKET` to `RACKET` to build boot files
-            `([:target bootfiles ()
-                       ,(lambda (token)
-                          (define bootfile-racket (let ([r (lookup 'BOOTFILE_RACKET)])
-                                                    (if (equal? r "")
-                                                        (lookup 'RACKET)
-                                                        r)))
-                          (define racket.exe (executable->path bootfile-racket at-dir))
-                          ;; "rktboot/main.rkt" performs it's own timestamp-based "make"
-                          (process/wait racket.exe
-                                        (setup-boot at-dir config (hash 'mode "--chain"
-                                                                        'compiled-subdir "compiled/rktboot"))
-                                        (at-source "../../ChezScheme/rktboot/main.rkt")
-                                        "--scheme-src" (at-source "../../ChezScheme")
-                                        "--dest" (at-dir CS)
-                                        "--machine" m))])]
-           [(or (not (equal? (lookup 'SCHEME_DIR) ""))
-                (not (equal? (lookup 'SCHEME) ""))
-                (not (equal? (lookup 'RACKET) "")))
+           [(and
+             (equal? (lookup 'BOOTFILE_RACKET) "")
+             (or (not (equal? (lookup 'SCHEME_DIR) ""))
+                 (not (equal? (lookup 'SCHEME) ""))
+                 (equal? (lookup 'RACKET) "auto")))
             `([:target bootfiles ()
                        ,(lambda (token)
                           (mkdir-p (at-dir CS m))
@@ -624,6 +621,24 @@
                           (build (command-target->target (find-target "bootquick" host-m-targets)
                                                          args)
                                  token))])]
+           [(or (not (equal? (lookup 'BOOTFILE_RACKET) ""))
+                (not (equal? (lookup 'RACKET) "")))
+            ;; use `BOOTFILE_RACKET` or `RACKET` to build boot files
+            `([:target bootfiles ()
+                       ,(lambda (token)
+                          (define bootfile-racket (let ([r (lookup 'BOOTFILE_RACKET)])
+                                                    (if (equal? r "")
+                                                        (lookup 'RACKET)
+                                                        r)))
+                          (define racket.exe (executable->path bootfile-racket at-dir))
+                          ;; "rktboot/main.rkt" performs it's own timestamp-based "make"
+                          (process/wait racket.exe
+                                        (setup-boot at-dir config (hash 'mode "--chain"
+                                                                        'compiled-subdir "compiled/rktboot"))
+                                        (at-source "../../ChezScheme/rktboot/main.rkt")
+                                        "--scheme-src" (at-source "../../ChezScheme")
+                                        "--dest" (at-dir CS)
+                                        "--machine" m))])]
            [(directory-exists? (at-source "../../ChezScheme/boot/pb"))
             ;; pb bootstrap mode: build pb to build machine-specific bootfiles
             `([:target bootfiles ()
@@ -721,13 +736,10 @@
                 ,(lambda (token)
                    (install #f))]
 
-       ;; It would be more precise to list all the intended installation targets
-       ;; for `install-again`, but we apprixmate with just the `racket` executable
-       ;; plus an an "install-stamp" file to stand for the rest
        [:target install-again (,(at-dir "install-stamp"))
                 ,(lambda (token)
                    (setup))]
-       [:target (,(at-dir "install-stamp") ,dest-racket-exe) ()
+       [:target (,(at-dir "install-stamp") ,@install-files-to-check) ()
                 ,(lambda (path token)
                    (install token)
                    (fd-close (fd-open-output path :truncate)))]
