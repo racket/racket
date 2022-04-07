@@ -137,7 +137,9 @@
   ;; base, in-place, and unix-style
 
   ;; non-#f prefix implies Unix-style build:
-  (define (build-base subdir token also? [prefix #f])
+  (define (build-base subdir token [options (hash)])
+    (define also? (hash-ref options 'also? #f))
+    (define prefix (hash-ref options 'prefix #f))
     (define targets
       (configured-targets-at (hash
                               'configure (if (eq? 'windows (system-type))
@@ -148,9 +150,11 @@
                               'configure-args (append
                                                (shell->strings (lookup 'CONFIGURE_ARGS_qq))
                                                (shell->strings (lookup 'CONFIGURE_ARGS))
-                                               (if (server-compile-machine?)
+                                               (if (or (server-compile-machine?)
+                                                       (hash-ref options 'server-compile-machine? #f))
                                                    '("--enable-crossany")
                                                    '())
+                                               (shell->strings (lookup 'DISABLE_STATIC_LIBS))
                                                (cond
                                                  [(eq? 'windows (system-type)) '()]
                                                  [prefix (list (~a "--prefix=" prefix)
@@ -165,7 +169,8 @@
                                                                (path-only build-config.rktd))
                                      'SETUP_MACHINE_FLAGS (build-shell
                                                            (lookup 'SETUP_MACHINE_FLAGS)
-                                                           (if (server-compile-machine?)
+                                                           (if (or (server-compile-machine?)
+                                                                   (hash-ref options 'server-compile-machine? #f))
                                                                (map string->shell (get-mcr-args))
                                                                ""))
                                      'PLT_SETUP_OPTIONS (build-shell
@@ -204,7 +209,7 @@
            #f
            (build-options)))
 
-  (define (find-racket vm [config (at-source "racket/etc")])
+  (define (find-racket vm [config (at-source "racket/etc")] [options (hash)])
     (define provided-racket (get-provided-racket))
     (define racket.exe
       (cond
@@ -221,7 +226,8 @@
             (at-source "racket/bin" (~a "racket" sfx))])]))
     (hash 'racket racket.exe
           'racket-args (append (shell->strings (lookup 'SETUP_MACHINE_FLAGS))
-                               (if (server-compile-machine?)
+                               (if (or (server-compile-machine?)
+                                       (hash-ref options 'server-compile-machine? #f))
                                    (get-mcr-args)
                                    '())
                                (list "-G" config
@@ -239,13 +245,13 @@
                     '(RACKET PLAIN_RACKET SCHEME SCHEME_DIR))
         (pb-manage 'fetch))))
 
-  (define (base token vm [also? #f] [prefix #f])
+  (define (base token vm [options (hash)])
     (build/dep (find-target build-config.rktd the-targets) token)
     (cond
       [(eq? vm 'cs)
-       (build-base "cs/c" token also? prefix)]
+       (build-base "cs/c" token options)]
       [else
-       (build-base "bc" token also? prefix)]))
+       (build-base "bc" token options)]))
 
   ;; currently does not support Windows or cross compilation
   (define (unix-style token vm)
@@ -255,7 +261,7 @@
       (error "supply PREFIX=<prefix> for a unix-style installation"))
     (maybe-fetch vm)
     ;; builds and installs to `DESTDIR` plus `prefix`
-    (base token vm #f prefix)
+    (base token vm (hash 'prefix prefix))
     ;; run installed `raco` and `racket`
     (define raco (at-destdir vars (build-path prefix "bin" "raco")))
     (define racket (at-destdir vars (build-path prefix "bin" "racket")))
@@ -290,7 +296,7 @@
   (define (in-place token vm [also? #f] [setup-extra-args ""])
     (check-mode "in-place")
     (maybe-fetch vm)
-    (base token vm also?)
+    (base token vm (hash 'also? also?))
 
     (define vars (find-racket vm))
     (define jobs (get-jobs))
@@ -334,17 +340,38 @@
   (define config+mode (list (lookup 'CONFIG) (lookup 'CONFIG_MODE)))
   (define user-flags (list "-A" "build/user"))
 
-  (define (find-built-racket)
-    (define vars (find-racket vm (at-source "build/user/config")))
+  ;; Catch problems due to malformed distribution-build packages
+  (define recompile-options (list "--recompile-only"))
+  
+  (define auto-options (list "--skip-installed" "--deps" "search-auto" "--pkgs" (get-job-options)))
+  (define user-auto-options (list "--scope" "user" auto-options))
+  (define source-user-auto (list "--catalog" "build/catalog-copy" user-auto-options
+                                 (shell->strings (lookup 'SERVER_PKG_INSTALL_OPTIONS))))
+  (define remote-user-auto (list "--catalog" svr-cat user-auto-options))
+  (define remote-inst-auto (list "--catalog" svr-cat "--scope" "installation"
+                                 auto-options recompile-options
+                                 (shell->strings (lookup 'PKG_INSTALL_OPTIONS))))
+
+  (define (find-built-racket [cross? #f])
+    (define vars (find-racket vm
+                              (at-source "build/user/config")
+                              (if cross?
+                                  (hash 'server-compile-machine? #t)
+                                  (hash))))
     (hash-set vars
               'racket-args
               (append (hash-ref vars 'racket-args '())
                       (list '"-A" "build/user"))))
-    
+
+  (define (built-racket* cross? . args)
+    (racket (find-built-racket #t) args))
+  (define (built-raco* cross? . args)
+    (built-racket* cross? "-N" "raco" "-l-" "raco" args))
+
   (define (built-racket . args)
-    (racket (find-built-racket) args))
+    (built-racket* #f args))
   (define (built-raco . args)
-    (built-racket "-N" "raco" "-l-" "raco" args))
+    (built-raco* #f args))
 
   (define (server token)
     (check-mode "server")
@@ -356,18 +383,6 @@
     (check-mode "server")
     (make-build/site.rkt)
     (update-stamp.txt)
-
-    ;; Catch problems due to malformed distribution-build packages
-    (define recompile-options (list "--recompile-only"))
-    
-    (define auto-options (list "--skip-installed" "--deps" "search-auto" "--pkgs" (get-job-options)))
-    (define user-auto-options (list "--scope" "user" auto-options))
-    (define source-user-auto (list "--catalog" "build/catalog-copy" user-auto-options
-                                   (shell->strings (lookup 'SERVER_PKG_INSTALL_OPTIONS))))
-    (define remote-user-auto (list "--catalog" svr-cat user-auto-options))
-    (define remote-inst-auto (list "--catalog" svr-cat "--scope" "installation"
-                                   auto-options recompile-options
-                                   (shell->strings (lookup 'PKG_INSTALL_OPTIONS))))
 
     ;; Create a copy of `SRC_CATALOG', so that we snapshot checksums, and
     ;; start building from it. The packages are installed in user scope,
@@ -451,6 +466,89 @@
                   config+mode "" "" (lookup 'DOC_SEARCH) ""))
   
   ;; ------------------------------------------------------------
+  ;; Distribution builds: client
+
+  (define (client token [options (hash)])
+    (cond
+      [(directory-exists? "build/log") ; => server space also used for client build
+       (check-mode "server")]
+      [else
+       (check-mode "client")
+       (rm* "build/user")])
+    (base token vm)
+
+    (define cross? (hash-ref options 'cross? #f))
+
+    (define (built-racket . args) (built-racket* cross? args))
+    (define (built-raco . args) (built-raco* cross? args))
+
+    (define (in-bundle-raco . args)
+      (if cross?
+          (built-racket* #t
+                         (list "-G" "bundle/racket/etc" "-X" "bundle/racket/collects"
+                               "-C" "-A" "bundle/user" "-l" "raco")
+                         args)
+          (shell/wait (if (eq? 'windows (system-type))
+                          "bundle\\racket\\raco.exe"
+                          "bundle/racket/bin/raco")
+                      args)))
+    
+    ;; Install the "distro-build" package from the server into
+    ;; a local build:
+    (built-raco "pkg" "install" remote-user-auto "distro-build-client")
+
+    (when cross?
+      (rm* (apply build-path (cons "build/zo" (cdr (explode-path (path->complete-path (at-source "bundle"))))))))
+    ;; Copy our local build into a "bundle/racket" build, dropping in the
+    ;; process things that should not be in an installer (such as the "src"
+    ;; directory). Then, replace the "collects" tree with the one from the
+    ;; server. Run `raco setup` in case the replacing "collects" tree needs
+    ;; recompiling. Install required packages next, because they may include
+    ;; packages that are needed to make core functionality work right
+    ;; (which as the SQLite3 library). At last, install the selected packages
+    ;; from the server, and the run a post-adjustment script.
+    (rm* "bundle")
+    (mkdir-p "bundle/racket")
+    (built-racket "-l" "setup/unixstyle-install" "bundle" "racket" "bundle/racket")
+    (built-racket "-l" "setup/winstrip" "bundle/racket")
+    (built-racket "-l" "setup/winvers-change" "bundle/racket")
+    (built-racket "-l-" "distro-build/unpack-collects" (shell->strings (lookup 'UNPACK_COLLECTS_FLAGS))
+                  (~a (lookup 'SERVER_URL_SCHEME) "://" svr-prt "/" (lookup 'SERVER_COLLECTS_PATH)))
+    (in-bundle-raco "setup" "--no-user" (get-job-options) recompile-options)
+    (define pkg-source-flags (shell->strings (lookup 'PKG_SOURCE_MODE)))
+    (in-bundle-raco "pkg" "install" remote-inst-auto pkg-source-flags required-pkgs)
+    (in-bundle-raco "pkg" "install" remote-inst-auto pkg-source-flags (shell->strings (lookup 'PKGS)))
+    (built-racket "-l" "setup/unixstyle-install" "post-adjust" (lookup 'SOURCE_MODE) (lookup 'PKG_SOURCE_MODE) "racket" "bundle/racket")
+
+    (built-racket "-l" "distro-build/set-config" "bundle/racket/etc/config.rktd"
+                  (lookup 'INSTALL_NAME) (lookup 'BUILD_STAMP) (lookup 'DOC_SEARCH)
+                  (if (hash-ref options 'from-site? #f)
+                      (list (~a (lookup 'SERVER_URL_SCHEME) "://" svr-prt "/"
+                                (let ([s (lookup 'SITE_PATH)])
+                                  (if (or (equal? s "") (= (char "/") (string-ref s (- (string-length s) 1))))
+                                      s
+                                      (~a s "/")))
+                                "catalog/")
+                            "")
+                      '()))
+
+    (built-racket "-l-" "distro-build/installer"
+                  "--readme" (lookup 'README) "--upload" (lookup 'UPLOAD)
+                  "--desc" (lookup 'DIST_DESC)
+                  (shell->strings (lookup 'RELEASE_MODE))
+                  (shell->strings (lookup 'SOURCE_MODE))
+                  (shell->strings (lookup 'VERSIONLESS_MODE))
+                  (shell->strings (lookup 'MAC_PKG_MODE))
+                  (shell->strings (lookup 'TGZ_MODE))
+                  "--packed-options" (lookup 'INSTALLER_OPTIONS)
+                  "--pre-process" (lookup 'INSTALLER_PRE_PROCESS_BASE64)
+                  "--post-process" (lookup 'INSTALLER_POST_PROCESS_BASE64)
+                  shell->strings (lookup 'NOTARIZATION_CONFIG)
+                  (lookup 'DIST_NAME) (lookup 'DIST_BASE) (lookup 'DIST_DIR)
+                  (lookup 'DIST_SUFFIX)
+                  (lookup 'SIGN_IDENTITY) (lookup 'OSSLSIGNCODE_ARGS_BASE64)))
+  
+  ;; ------------------------------------------------------------
   ;; Targets
 
   (define the-targets
@@ -488,6 +586,10 @@
 
        [:target server () ,(lambda (token) (server token))]
        [:target server-from-base () ,(lambda (token) (server-from-base token))]
+
+       [:target client () ,(lambda (token) (client token))]
+       [:target client-compile-any () ,(lambda (token) (client token (hash 'cross? #t)))]
+       [:target client-from-site () ,(lambda (token) (client token (hash 'from-site? #t)))]
 
        [:target ,build-config.rktd ()
                 ,(lambda (path token)

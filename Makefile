@@ -423,6 +423,9 @@ WIN32_CLIENT_BASE = win-base
 # Backward-compatibility target selector: `bundle-from-server` or `bundle-cross-from-server`
 BUNDLE_FROM_SERVER_TARGET = bundle-from-server
 
+# For `client-from-site`, relative path on server for the site
+SITE_PATH =
+
 DISTRO_BUILD_VARS = DOC_SEARCH="$(DOC_SEARCH)" \
                     SERVER="$(SERVER)" \
                     SERVER_PORT="$(SERVER_PORT)" \
@@ -458,7 +461,7 @@ DISTRO_BUILD_VARS = DOC_SEARCH="$(DOC_SEARCH)" \
                     CONFIG_MODE="$(CONFIG_MODE)" \
                     CLEAN_MODE="$(CLEAN_MODE)" \
                     JOB_OPTIONS="$(JOB_OPTIONS)" \
-                    SERVE_DURING_CMD_qq=$(SERVE_DURING_CMD_qq)" \
+                    SERVE_DURING_CMD_qq="$(SERVE_DURING_CMD_qq)" \
                     PKG_INSTALL_OPTIONS="$(PKG_INSTALL_OPTIONS)" \
                     UNPACK_COLLECTS_FLAGS="$(UNPACK_COLLECTS_FLAGS)" \
                     TEST_PKGS="$(TEST_PKGS)" \
@@ -493,8 +496,27 @@ server-from-base: $(ZUO)
 client: $(ZUO)
 	$(RUN_ZUO) client $(BUILD_VARS) $(DISTRO_BUILD_VARS)
 
+client-compile-any: $(ZUO)
+	$(RUN_ZUO) client-compile-any $(BUILD_VARS) $(DISTRO_BUILD_VARS)
+
+
 test-client: $(ZUO)
 	$(RUN_ZUO) test-client $(BUILD_VARS) $(DISTRO_BUILD_VARS)
+
+# ------------------------------------------------------------
+# On a supported platform (for an installer build) after a `make site'
+# has completed; SERVER, SERVER_PORT (usually 80), and SITE_PATH
+# should be set, and other configurations are propagated; normally,
+# README should be set (possibly to empty), because a site doesn't
+# provide a generic "README.txt".
+
+FROM_SITE_ARGS == SERVER_CATALOG_PATH=$(SITE_PATH)catalog/ SERVER_COLLECTS_PATH=$(SITE_PATH)origin/ \
+                  DIST_CATALOGS_q='$(SERVER_URL_SCHEME)://$(SERVER):$(SERVER_PORT)/$(SITE_PATH)catalog/ ""' \
+                  DOC_SEARCH="$(SERVER_URL_SCHEME)://$(SERVER):$(SERVER_PORT)/$(SITE_PATH)doc/local-redirect/index.html" \
+                  $(PROP_ARGS)
+
+client-from-site:
+	$(RUN_ZUO) client-from-site $(BUILD_VARS) $(DISTRO_BUILD_VARS)
 
 # ------------------------------------------------------------
 # Drive installer build across server and clients:
