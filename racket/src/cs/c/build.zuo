@@ -264,7 +264,7 @@
     (rm* dest)
     (cp src dest)
     (strip-signature dest)
-    (when mac-fw?
+    (unless mac-fw?
       (bootstrap-racket (at-source "embed-boot.rkt")
                         boot-compress-flags
                         ""
@@ -363,9 +363,10 @@
                                            "++exe" raw_gracketcs gracketcs
                                            libracketcsxxx_RAW.dll libracketcsxxxxxxx.dll
                                            petite-v.boot scheme-v.boot racket-v.boot))]
-            `[:target ,racketcs (,raw_racketcs ,@(if mac?
+            `[:target ,racketcs (,raw_racketcs ,@(if mac-fw?
                                                      (list framework)
                                                      embed+boot-deps)
+                                               ,(input-data-target 'mac-fw mac-fw?)
                                                ,link-config)
                       ,(lambda (path token)
                          (cond
@@ -374,9 +375,11 @@
                               (rm* petite-v.boot)
                               (rm* scheme-v.boot)
                               (rm* racket-v.boot)
-                              (symlink (build-path fw-boot-dest-dir "petite.boot") petite-v.boot)
-                              (symlink (build-path fw-boot-dest-dir "scheme.boot") scheme-v.boot)
-                              (symlink (build-path fw-boot-dest-dir "racket.boot") racket-v.boot))
+                              (define rel-fw-boot-dest-dir
+                                (find-relative-path (path-only petite-v.boot) fw-boot-dest-dir))
+                              (symlink (build-path rel-fw-boot-dest-dir "petite.boot") petite-v.boot)
+                              (symlink (build-path rel-fw-boot-dest-dir "scheme.boot") scheme-v.boot)
+                              (symlink (build-path rel-fw-boot-dest-dir "racket.boot") racket-v.boot))
                             (mac-embed-boot raw_racketcs racketcs)
                             (bootstrap-racket (at-source "adjust-compress.rkt")
                                               boot-compress-flags
@@ -404,6 +407,7 @@
             `[:target ,raw_exe (,main.o ,@(if mac-fw?
                                               (list framework)
                                               boot-objs)
+                                        ,(input-data-target 'mac-fw mac-fw?)
                                         ,@(if windows?
                                               (list MemoryModule.o res.o)
                                               '())
@@ -761,6 +765,9 @@
        (define includepltdir (if msvc?
                                  (at-source "../../../include")
                                  (at-destdir config (shell-subst (lookup 'includepltdir) config))))
+       (define configdir (if msvc?
+                             (at-source "../../../etc")
+                             (at-destdir config (shell-subst (lookup 'configdir) config))))
 
        ;; not used for Windows:
        (define collects-path (shell-subst (lookup 'COLLECTS_PATH) config))
@@ -769,6 +776,7 @@
        (mkdir-p bindir)
        (mkdir-p libpltdir)
        (mkdir-p includepltdir)
+       (mkdir-p configdir)
 
        (define (in! src)
          (when token (build/dep src token))

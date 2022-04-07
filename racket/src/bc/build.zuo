@@ -1423,6 +1423,7 @@
        (mkdir-p bindir)
        (mkdir-p libpltdir)
        (mkdir-p includepltdir)
+       (mkdir-p configdir)
 
        (define collects-path (or (shell-subst (lookup 'COLLECTS_PATH) config)
                                  (if windows?

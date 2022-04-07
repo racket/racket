@@ -162,7 +162,7 @@ RACKETCS_SUFFIX =
 BUILD_VARS = VM="$(VM)" \
              JOBS="$(JOBS)" \
              CPUS="$(CPUS)" \
-             CONFIGURE_ARGS_qq="$(CONFIGURE_ARGS_qq)" \
+             CONFIGURE_ARGS_qq='$(CONFIGURE_ARGS_qq)' \
              CONFIGURE_ARGS="$(CONFIGURE_ARGS)" \
              CS_CROSS_SUFFIX="$(CS_CROSS_SUFFIX)" \
              RACKET="$(RACKET)" \
@@ -253,12 +253,13 @@ clean:
 # Configuration options for building installers
 
 # On variable definitions: Spaces are allowed where noted and
-# disallowed otherwise. If a variable name ends in "_q", then it means
-# that the variable can expand to include double-quote marks. If a
-# variable's name ends in "_qq", then it expands to a combination of
-# single-quote and double-quote marks. If a variable's name does not
-# end in "_q" or "_qq", don't use any quote marks on the right-hand
-# side of its definition.
+# disallowed otherwise. If a variable name ends in "_q" or "_qq", then
+# it means that the variable can expand to include double-quote marks.
+# (If a variable's name ends in "_qq", then it used to allow a
+# combination of single-quote and double-quote marks, sortof, but
+# that's no longer supported at all; use `zuo` directly if that's
+# needed). If a variable's name does not end in "_q" or "_qq", don't
+# use any quote marks on the right-hand side of its definition.
 
 # A URL embedded in documentation for remote searches, where a Racket
 # version and search key are added as query fields to the URL, and ""
@@ -449,7 +450,7 @@ DISTRO_BUILD_VARS = DOC_SEARCH="$(DOC_SEARCH)" \
                     DIST_DIR="$(DIST_DIR)" \
                     DIST_SUFFIX="$(DIST_SUFFIX)" \
                     DIST_DESC="$(DIST_DESC)" \
-                    DIST_CATALOGS_q="$(DIST_CATALOGS_q)" "" \
+                    DIST_CATALOGS_q='$(DIST_CATALOGS_q)' \
                     BUILD_STAMP="$(BUILD_STAMP)" \
                     INSTALL_NAME="$(INSTALL_NAME)" \
                     SIGN_IDENTITY="$(SIGN_IDENTITY)" \
@@ -461,11 +462,11 @@ DISTRO_BUILD_VARS = DOC_SEARCH="$(DOC_SEARCH)" \
                     CONFIG_MODE="$(CONFIG_MODE)" \
                     CLEAN_MODE="$(CLEAN_MODE)" \
                     JOB_OPTIONS="$(JOB_OPTIONS)" \
-                    SERVE_DURING_CMD_qq="$(SERVE_DURING_CMD_qq)" \
+                    SERVE_DURING_CMD_qq='$(SERVE_DURING_CMD_qq)' \
                     PKG_INSTALL_OPTIONS="$(PKG_INSTALL_OPTIONS)" \
                     UNPACK_COLLECTS_FLAGS="$(UNPACK_COLLECTS_FLAGS)" \
                     TEST_PKGS="$(TEST_PKGS)" \
-                    TEST_ARGS_q="$(TEST_ARGS_q)" \
+                    TEST_ARGS_q='$(TEST_ARGS_q)' \
                     CLIENT_BASE="$(CLIENT_BASE)" \
                     WIN32_CLIENT_BASE="$(WIN32_CLIENT_BASE)" \
                     BUNDLE_FROM_SERVER_TARGET="$(BUNDLE_FROM_SERVER_TARGET)"
@@ -509,11 +510,6 @@ test-client: $(ZUO)
 # should be set, and other configurations are propagated; normally,
 # README should be set (possibly to empty), because a site doesn't
 # provide a generic "README.txt".
-
-FROM_SITE_ARGS == SERVER_CATALOG_PATH=$(SITE_PATH)catalog/ SERVER_COLLECTS_PATH=$(SITE_PATH)origin/ \
-                  DIST_CATALOGS_q='$(SERVER_URL_SCHEME)://$(SERVER):$(SERVER_PORT)/$(SITE_PATH)catalog/ ""' \
-                  DOC_SEARCH="$(SERVER_URL_SCHEME)://$(SERVER):$(SERVER_PORT)/$(SITE_PATH)doc/local-redirect/index.html" \
-                  $(PROP_ARGS)
 
 client-from-site:
 	$(RUN_ZUO) client-from-site $(BUILD_VARS) $(DISTRO_BUILD_VARS)

@@ -364,7 +364,7 @@
                       (list '"-A" "build/user"))))
 
   (define (built-racket* cross? . args)
-    (racket (find-built-racket #t) args))
+    (racket (find-built-racket cross?) args))
   (define (built-raco* cross? . args)
     (built-racket* cross? "-N" "raco" "-l-" "raco" args))
 
@@ -373,13 +373,13 @@
   (define (built-raco . args)
     (built-raco* #f args))
 
-  (define (server token)
+  (define (server token [options (hash)])
     (check-mode "server")
     (rm* "build/zo")
     (base token vm)
-    (server-from-base token))
+    (server-from-base token options))
 
-  (define (server-from-base token)
+  (define (server-from-base token [options (hash)])
     (check-mode "server")
     (make-build/site.rkt)
     (update-stamp.txt)
@@ -416,6 +416,9 @@
                   (shell->strings (lookup 'PACK_BUILT_OPTIONS))
                   "build/pkgs.rktd")
 
+    (built-catalog-server token options))
+
+  (define (built-catalog-server token [options (hash)])
     ;; Run a catalog server to provide pre-built packages, as well
     ;; as the copy of the server's "collects" tree:
     (when (directory-exists? ".git")
@@ -424,7 +427,8 @@
       (built-racket "-l" "distro-build/serve-catalog" config+mode
                     (lookup 'SERVER_HOSTS) (lookup 'SERVER_PORT)
                     (hash-ref rkt 'racket) (hash-ref rkt 'racket-args)
-                    (shell->strings (lookup 'SERVE_DURING_CMD_qq)))))
+                    (or (hash-ref options 'serve-during-cmd #f)
+                        (shell->strings (lookup 'SERVE_DURING_CMD_qq))))))
 
   (define (make-build/site.rkt)
     (when (and (equal? (lookup 'CONFIG) build/site.rkt)
@@ -464,7 +468,7 @@
   (define (server-set-config)
     (built-racket "-l" "distro-build/set-server-config" "build/user/config/config.rktd"
                   config+mode "" "" (lookup 'DOC_SEARCH) ""))
-  
+
   ;; ------------------------------------------------------------
   ;; Distribution builds: client
 
@@ -543,11 +547,41 @@
                   "--packed-options" (lookup 'INSTALLER_OPTIONS)
                   "--pre-process" (lookup 'INSTALLER_PRE_PROCESS_BASE64)
                   "--post-process" (lookup 'INSTALLER_POST_PROCESS_BASE64)
-                  shell->strings (lookup 'NOTARIZATION_CONFIG)
+                  (shell->strings (lookup 'NOTARIZATION_CONFIG))
                   (lookup 'DIST_NAME) (lookup 'DIST_BASE) (lookup 'DIST_DIR)
                   (lookup 'DIST_SUFFIX)
                   (lookup 'SIGN_IDENTITY) (lookup 'OSSLSIGNCODE_ARGS_BASE64)))
   
+  ;; ------------------------------------------------------------
+  ;; Distribution builds: installers
+
+  (define (installers token)
+    (rm* "build/installers")
+    (server token (hash 'serve-during-cmd (get-drive-clients-args))))
+
+  (define (installers-from-built token)
+    (built-catalog-server token (hash 'serve-during-cmd (get-drive-clients-args))))
+
+  (define (get-drive-clients-args [describe-clients? #f])
+    (list "-l-" "distro-build/drive-clients"
+          (if describe-clients?
+              (list "--describe")
+              '())
+          (shell->strings (lookup 'RELEASE_MODE))
+          (shell->strings (lookup 'SOURCE_MODE))
+          (shell->strings (lookup 'VERSIONLESS_MODE))
+          (shell->strings (lookup 'CLEAN_MODE))
+          (shell->strings (lookup 'SERVER_COMPILE_MACHINE))
+          config+mode
+          (lookup 'SERVER) (lookup 'SERVER_PORT)
+          (lookup 'SERVER_HOSTS)
+          (lookup 'PKGS)
+          (lookup 'DOC_SEARCH) (lookup 'DIST_NAME)
+          (lookup 'DIST_BASE) (lookup 'DIST_DIR)))
+
+  (define (describe-clients token)
+    (built-racket (get-drive-clients-args #t)))
+
   ;; ------------------------------------------------------------
   ;; Targets
 
@@ -590,6 +624,10 @@
        [:target client () ,(lambda (token) (client token))]
        [:target client-compile-any () ,(lambda (token) (client token (hash 'cross? #t)))]
        [:target client-from-site () ,(lambda (token) (client token (hash 'from-site? #t)))]
+
+       [:target installers () ,(lambda (token) (installers token))]
+       [:target installers-from-built () ,(lambda (token) (installers-from-built token))]
+       [:target describe-clients () ,(lambda (token) (describe-clients token))]
 
        [:target ,build-config.rktd ()
                 ,(lambda (path token)
