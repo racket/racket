@@ -117,6 +117,9 @@ PKGS = main-distribution main-distribution-test
 # Needed for any distribution (not meant to be configured):
 REQUIRED_PKGS = racket-lib
 
+# Needed for distro-build (not meant to be configured):
+DISTRO_BUILD_PKGS = distro-build-lib
+
 # Options passed along to any `raco pkg update` run:
 PKG_UPDATE_OPTIONS =
 
@@ -279,6 +282,10 @@ SERVER_COLLECTS_PATH =
 # anf empty value listens on all interfaces:
 SERVER_HOSTS = localhost
 
+# Set `PACK_BUILT_OPTIONS` to "--mode <mode>" to force all packages to
+# a specific mode, but the default infers "built" or "binary"
+PACK_BUILT_OPTIONS =
+
 # Set to "--release" to create release-mode installers (as opposed to
 # snapshot installers):
 RELEASE_MODE =
@@ -423,6 +430,7 @@ DISTRO_BUILD_VARS = DOC_SEARCH="$(DOC_SEARCH)" \
                     SERVER_CATALOG_PATH="$(SERVER_CATALOG_PATH)" \
                     SERVER_COLLECTS_PATH="$(SERVER_COLLECTS_PATH)" \
                     SERVER_HOSTS="$(SERVER_HOSTS)" \
+                    PACK_BUILT_OPTIONS="$(PACK_BUILT_OPTIONS)" \
                     RELEASE_MODE="$(RELEASE_MODE)" \
                     SOURCE_MODE="$(SOURCE_MODE)" \
                     VERSIONLESS_MODE="$(VERSIONLESS_MODE)" \
@@ -468,12 +476,15 @@ DISTRO_BUILD_VARS = DOC_SEARCH="$(DOC_SEARCH)" \
 server: $(ZUO)
 	$(RUN_ZUO) server $(BUILD_VARS) $(DISTRO_BUILD_VARS)
 
+server-from-base: $(ZUO)
+	$(RUN_ZUO) server-from-base $(BUILD_VARS) $(DISTRO_BUILD_VARS)
+
 # ------------------------------------------------------------
 # On each supported platform (for an installer build):
 #
-# The `client' and `win-client' targets are also used by
-# `distro-build/drive-clients', which is in turn run by the
-# `installers' target.
+# The `client` (and `win-client`) targets are also used by
+# `distro-build/drive-clients`, which is in turn run by the
+# `installers` target.
 #
 # For a non-Windows machine, if "build/log" exists, then
 # keep the "build/user" directory on the grounds that the
@@ -554,10 +565,10 @@ win32-both: $(ZUO)
 win32-also-cs: $(ZUO)
 	$(RUN_ZUO) also-cs $(BUILD_VARS)
 
-win32-client: $(ZUO)
+win-client: $(ZUO)
 	$(RUN_ZUO) client $(BUILD_VARS) $(DISTRO_BUILD_VARS)
 
-win32-test-client:  $(ZUO)
+win-test-client:  $(ZUO)
 	$(RUN_ZUO) test-client $(BUILD_VARS) $(DISTRO_BUILD_VARS)
 
 fetch-pb: $(ZUO)

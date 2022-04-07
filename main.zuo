@@ -1,6 +1,22 @@
 #lang zuo
 (require "racket/src/lib.zuo")
 
+;; This Zuo script drives a Racket build from a Git checkout, either
+;; for an in-place build (which is the most typical mode), a Unix-style
+;; build, or a distro-build server or client.
+
+;; Build options are provided as <variable>=<value> command-line
+;; arguments, as in
+;;   zuo PKGS="compiler-lib"
+;; or
+;;   zuo main.zuo unix-style PKGS="compiler-lib"
+;; All variables are described in `Makefile`, which also provides
+;; all default values.
+
+;; `Makefile` also effectively lists the available targets, and it
+;; bounces each of those targets to this script after ensuring that a
+;; `zuo` executable is built.
+
 (provide-targets targets-at)
 
 ;; We ignore the `at-dir` argument and instead do everything
@@ -12,11 +28,18 @@
                             (error "required configuraiton entry is missing" key)))
 
   (define build-config.rktd (at-source "build/config/config.rktd"))
+  (define build/site.rkt (at-source "build/site.rkt"))
 
   (define vm (string->symbol (lookup 'VM "cs")))
 
   (define required-pkgs (shell->strings (hash-ref config 'REQUIRED_PKGS)))
   (define default-src-catalog (hash-ref config 'DEFAULT_SRC_CATALOG))
+
+  (define (get-provided-racket)
+    (let ([r (lookup 'RACKET)])
+      (if (equal? r "")
+          (lookup 'PLAIN_RACKET)
+          r)))
 
   (define (get-jobs)
     (define cpus (let ([s (lookup 'CPUS)])
@@ -40,17 +63,39 @@
         (hash 'jobs n-jobs)
         (hash)))
 
-  (define (setup-options)
-    (define opts (lookup 'PLT_SETUP_OPTIONS))
+  (define (get-job-options)
     (define jobs (get-jobs))
     (if jobs
-        (build-shell opts "-j" (~a jobs))
-        opts))
+        (list "-j" (~a jobs))
+        '()))
+
+  (define (setup-options)
+    (define opts (lookup 'PLT_SETUP_OPTIONS))
+    (build-shell opts (get-job-options)))
 
   (define (server-compile-machine?)
     (equal? "-M" (lookup 'SERVER_COMPILE_MACHINE)))
   (define (get-mcr-args)
     (list "-MCR" (~a (path->complete-path (at-source "build/zo")) ":")))
+
+  ;; ------------------------------------------------------------
+  ;; pb setup
+
+  (define (check-mode mode)
+    (define mode-file (at-source "racket/src/build/checkout-mode"))
+    (cond
+      [(file-exists? mode-file)
+       (define old-mode (file->string mode-file))
+       (unless (equal? old-mode mode)
+         (error (~a "checkout previously built in "
+                    (~s old-mode)
+                    " mode; start with a fresh checkout for "
+                    (~s mode)
+                    " mode")))]
+      [else (display-to-file mode mode-file)]))
+ 
+  ;; ------------------------------------------------------------
+  ;; pb setup
 
   (define (pb-manage step)
     (define boot-dir (at-source "racket/src/ChezScheme/boot"))
@@ -63,7 +108,11 @@
            (shell/wait "git fetch -q origin" (~a branch ":remotes/origin/" branch)
                        (hash 'dir pb-dir))
            (shell/wait "git clone -q" (lookup 'SINGLE_BRANCH_FLAG)
-                       "-b" branch (string->shell (lookup! 'PB_REPO))
+                       "-b" branch (string->shell
+                                    (let ([ex (lookup 'EXTRA_REPOS_BASE)])
+                                      (if (equal? ex "")
+                                          (lookup! 'PB_REPO)
+                                          (~a ex "pb/.git"))))
                        (string->shell pb-dir)))
        (shell/wait "git remote set-branches origin" branch
                    (hash 'dir pb-dir))
@@ -83,6 +132,9 @@
                    (hash 'dir pb-dir))]
       [else
        (error "unknown pb step" step)]))
+
+  ;; ------------------------------------------------------------
+  ;; base, in-place, and unix-style
 
   ;; non-#f prefix implies Unix-style build:
   (define (build-base subdir token also? [prefix #f])
@@ -126,10 +178,7 @@
                                      ;; `DESTDIR` fixes later:
                                      'SKIP_DESTDIR_FIX "skip"
                                      ;; Propagate `RACKET` and similar
-                                     'RACKET (let ([r (lookup 'RACKET)])
-                                               (if (equal? r "")
-                                                   (lookup 'PLAIN_RACKET)
-                                                   r))
+                                     'RACKET (get-provided-racket)
                                      'BOOTFILE_RACKET (lookup 'BOOTFILE_RACKET)
                                      'SCHEME (lookup 'SCHEME)
                                      'SCHEME_DIR (lookup 'SCHEME_DIR)
@@ -143,12 +192,20 @@
            #f
            (build-options)))
 
-  (define (find-racket vm)
-    (define provided-racket
-      (let ([r (lookup 'RACKET)])
-        (if (equal? r "")
-            (lookup 'PLAIN_RACKET)
-            r)))
+  (define (native-for-cross subdir token)
+    (define targets
+      (configured-targets-at (hash
+                              'configure (if (eq? 'windows (system-type))
+                                             (at-source "racket/src" subdir "winfig.bat")
+                                             (at-source "racket/src" subdir "configure"))
+                              'inputs (list (at-source "racket/src" subdir "Mf-config.in"))
+                              'outputs (list (at-source "racket/src/build/cross" subdir "Mf-config")))))
+    (build (find-target "build" targets)
+           #f
+           (build-options)))
+
+  (define (find-racket vm [config (at-source "racket/etc")])
+    (define provided-racket (get-provided-racket))
     (define racket.exe
       (cond
         [(not (equal? provided-racket ""))
@@ -167,7 +224,7 @@
                                (if (server-compile-machine?)
                                    (get-mcr-args)
                                    '())
-                               (list "-G" (at-source "racket/etc")
+                               (list "-G" config
                                      "-X" (at-source "racket/collects")))))
   
   (define (setup vm . args)
@@ -192,6 +249,7 @@
 
   ;; currently does not support Windows or cross compilation
   (define (unix-style token vm)
+    (check-mode "unix-style")
     (define prefix (lookup! 'PREFIX))
     (when (equal? prefix "")
       (error "supply PREFIX=<prefix> for a unix-style installation"))
@@ -225,10 +283,12 @@
     (maybe-destdir-fix config racket #f at-vm-dir))
 
   (define (as-is token vm)
+    (check-mode "in-place")
     (base token vm)
     (setup vm))
 
   (define (in-place token vm [also? #f] [setup-extra-args ""])
+    (check-mode "in-place")
     (maybe-fetch vm)
     (base token vm also?)
 
@@ -266,6 +326,133 @@
 
     (setup vm (shell->strings setup-extra-args)))
 
+  ;; ------------------------------------------------------------
+  ;; Distribution builds: server
+  
+  (define svr-prt (~a (lookup 'SERVER) ":" (lookup 'SERVER_PORT)))
+  (define svr-cat (~a (lookup 'SERVER_URL_SCHEME) "://" svr-prt "/" (lookup 'SERVER_CATALOG_PATH)))
+  (define config+mode (list (lookup 'CONFIG) (lookup 'CONFIG_MODE)))
+  (define user-flags (list "-A" "build/user"))
+
+  (define (find-built-racket)
+    (define vars (find-racket vm (at-source "build/user/config")))
+    (hash-set vars
+              'racket-args
+              (append (hash-ref vars 'racket-args '())
+                      (list '"-A" "build/user"))))
+    
+  (define (built-racket . args)
+    (racket (find-built-racket) args))
+  (define (built-raco . args)
+    (built-racket "-N" "raco" "-l-" "raco" args))
+
+  (define (server token)
+    (check-mode "server")
+    (rm* "build/zo")
+    (base token vm)
+    (server-from-base token))
+
+  (define (server-from-base token)
+    (check-mode "server")
+    (make-build/site.rkt)
+    (update-stamp.txt)
+
+    ;; Catch problems due to malformed distribution-build packages
+    (define recompile-options (list "--recompile-only"))
+    
+    (define auto-options (list "--skip-installed" "--deps" "search-auto" "--pkgs" (get-job-options)))
+    (define user-auto-options (list "--scope" "user" auto-options))
+    (define source-user-auto (list "--catalog" "build/catalog-copy" user-auto-options
+                                   (shell->strings (lookup 'SERVER_PKG_INSTALL_OPTIONS))))
+    (define remote-user-auto (list "--catalog" svr-cat user-auto-options))
+    (define remote-inst-auto (list "--catalog" svr-cat "--scope" "installation"
+                                   auto-options recompile-options
+                                   (shell->strings (lookup 'PKG_INSTALL_OPTIONS))))
+
+    ;; Create a copy of `SRC_CATALOG', so that we snapshot checksums, and
+    ;; start building from it. The packages are installed in user scope,
+    ;; but we set the add-on directory to "build/user", so that we don't
+    ;; affect the actual current user's installation (and to a large degree
+    ;; we're insulated from it)
+    (rm* "build/user")
+    (rm* "build/catalog-copy")
+    (built-raco "pkg" "catalog-copy" (lookup 'SRC_CATALOG) "build/catalog-copy")
+    (server-cache-config)
+    (built-raco "pkg" "install" "--all-platforms" user-auto-options
+                required-pkgs
+                (shell->strings (lookup 'DISTRO_BUILD_PKGS)))
+    (server-set-config)
+    (built-racket "-l-" "distro-build/pkg-info" "-o" "build/pkgs.rktd" "build/catalog-copy")
+    (built-racket "-l" "distro-build/install-pkgs" config+mode
+                  (build-shell (lookup 'PKGS) (lookup 'TEST_PKGS))
+                  source-user-auto
+                  "--all-platforms")
+    (built-raco "setup" "--avoid-main" (get-job-options))
+
+    ;; Although a client will build its own "collects", pack up the
+    ;; server's version to be used by each client, so that every client has
+    ;; exactly the same bytecode (which matters for SHA1-based dependency
+    ;; tracking)
+    (built-racket "-l" "distro-build/pack-collects")
+
+    ;; Now that we've built packages from local sources, create "built"
+    ;; versions of the packages from the installation into "build/user"
+    (built-racket "-l-" "distro-build/pack-built"
+                  (shell->strings (lookup 'PACK_BUILT_OPTIONS))
+                  "build/pkgs.rktd")
+
+    ;; Run a catalog server to provide pre-built packages, as well
+    ;; as the copy of the server's "collects" tree:
+    (when (directory-exists? ".git")
+      (shell/wait "git update-server-info"))
+    (let ([rkt (find-built-racket)])
+      (built-racket "-l" "distro-build/serve-catalog" config+mode
+                    (lookup 'SERVER_HOSTS) (lookup 'SERVER_PORT)
+                    (hash-ref rkt 'racket) (hash-ref rkt 'racket-args)
+                    (shell->strings (lookup 'SERVE_DURING_CMD_qq)))))
+
+  (define (make-build/site.rkt)
+    (when (and (equal? (lookup 'CONFIG) build/site.rkt)
+               (not (file-exists? build/site.rkt)))
+      (mkdir-p (path-only build/site.rkt))
+      (display-to-file (~a "#lang distro-build/config\n"
+                           "(machine)")
+                       build/site.rkt)))
+  
+  (define (update-stamp.txt)
+    (define given-stamp (lookup 'BUILD_STAMP))
+    (define stamp
+      (cond
+        [(not (equal? given-stamp ""))
+         given-stamp]
+        [else
+         (define (shell-result . cmds)
+           (define p (shell cmds (hash 'stdout 'pipe)))
+           (define r (fd-read (hash-ref p 'stdout) eof))
+           (process-wait (hash-ref p 'process))
+           (unless (= 0 (process-status (hash-ref p 'process)))
+             (error "failed" cmds))
+           (car (string-split r "\n")))
+         (~a
+          (shell-result "date" (string->shell "+%Y%m%d"))
+          (if (directory-exists? (at-source ".git"))
+              (~a "-"
+                  (shell-result "git log -1 --pretty=format:%h"))
+              ""))]))
+    (display-to-file (~a stamp "\n") (at-source "build/stamp.txt") :truncate))
+
+  (define (server-cache-config)
+    (built-raco "pkg" "config" "-i" "--set" "download-cache-dir" "build/cache")
+    (built-raco "pkg" "config" "-i" "--set" "download-cache-max-files" "1023")
+    (built-raco "pkg" "config" "-i" "--set" "download-cache-max-bytes" "671088640"))
+  
+  (define (server-set-config)
+    (built-racket "-l" "distro-build/set-server-config" "build/user/config/config.rktd"
+                  config+mode "" "" (lookup 'DOC_SEARCH) ""))
+  
+  ;; ------------------------------------------------------------
+  ;; Targets
+
   (define the-targets
     (make-targets
      `([:target in-place () ,(lambda (token) (in-place token vm))]
@@ -278,14 +465,14 @@
                            (in-place token (if (eq? vm 'cs) 'bc 'cs) #t "--error-in build/step"))]
        
        [:target cs () ,(lambda (token) (in-place token 'cs))]
-       [:target cs-base () ,(lambda (token) (maybe-fetch vm) (base token 'cs))]
+       [:target cs-base () ,(lambda (token) (maybe-fetch 'cs) (base token 'cs))]
        [:target cs-as-is () ,(lambda (token) (as-is token 'cs))]
        [:target cs-in-place () ,(lambda (token) (in-place token 'cs))]
        [:target also-cs () ,(lambda (token) (in-place token 'cs #t))]
        [:target cs-unix-style () ,(lambda (token) (unix-style token 'cs))]
 
        [:target bc () ,(lambda (token) (in-place token 'bc))]
-       [:target bc-base () ,(lambda (token) (maybe-fetch vm) (base token 'bc))]
+       [:target bc-base () ,(lambda (token) (base token 'bc))]
        [:target bc-as-is () ,(lambda (token) (as-is token 'bc))]
        [:target bc-in-place () ,(lambda (token) (in-place token 'bc))]
        [:target also-bc () ,(lambda (token) (in-place token 'bc #t))]
@@ -296,11 +483,20 @@
        [:target pb-stage () ,(lambda (token) (pb-manage 'stage))]
        [:target pb-push () ,(lambda (token) (pb-manage 'push))]
 
+       [:target native-cs-for-cross () ,(lambda (token) (maybe-fetch 'cs) (native-for-cross "cs/c" token))]
+       [:target native-bc-for-cross () ,(lambda (token) (native-for-cross "bc" token))]
+
+       [:target server () ,(lambda (token) (server token))]
+       [:target server-from-base () ,(lambda (token) (server-from-base token))]
+
        [:target ,build-config.rktd ()
                 ,(lambda (path token)
                    (mkdir-p (path-only path))
                    (display-to-file "#hash((links-search-files . ()))\n"
                                     path
-                                    :truncate))])))
+                                    :truncate))]
+
+       ;; does nothing; used to make sure that "main.zuo" loads without error
+       [:target ping () ,(lambda (token) (alert "pong"))])))
 
   the-targets)
