@@ -331,7 +331,7 @@
                 ;; version bootstrapped from `src`.
                 `[:target ,dest (,src)
                           ,(lambda (dest token)
-                             (define orig-sha1-file (path-replace-extension dest ".orig-hash"))
+                             (define orig-sha1-file (~a dest ".orig-hash"))
                              (define src-hash (file-sha1 src token))
                              (unless (and (file-exists? dest)
                                           (file-exists? orig-sha1-file)
