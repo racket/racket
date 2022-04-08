@@ -179,6 +179,9 @@
   (define windows-libs '("WS2_32.lib" "Shell32.lib" "User32.lib" "Winmm.lib"
                                       "RpCrt4.lib" "Ole32.lib" "Advapi32.lib"))
 
+  (define racket.manifest (at-source "../worksp/racket/racket.manifest"))
+  (define gracket.manifest (at-source "../worksp/gracket/gracket.manifest"))
+
   (define (cs-suffix p) (~a p (lookup 'CS_INSTALLED)))
   (define (CS-suffix p) (~a p (string-upcase (lookup 'CS_INSTALLED))))
 
@@ -363,7 +366,8 @@
 
        ,(if windows?
             `[:target (,racketcs ,gracketcs ,libracketcsxxxxxxx.dll)
-                      (,raw_racketcs ,raw_gracketcs ,libracketcsxxx_RAW.dll ,@embed+boot-deps)
+                      (,raw_racketcs ,raw_gracketcs ,libracketcsxxx_RAW.dll ,@embed+boot-deps
+                                     ,racket.manifest ,gracket.manifest)
                       ,(lambda (path token)
                          (unless cross?
                            ;; we need a libracketcsxxxxxxx.dll in place to run raw_racketcs
@@ -379,7 +383,11 @@
                                            "++exe" raw_racketcs racketcs
                                            "++exe" raw_gracketcs gracketcs
                                            libracketcsxxx_RAW.dll libracketcsxxxxxxx.dll
-                                           petite-v.boot scheme-v.boot racket-v.boot))]
+                                           petite-v.boot scheme-v.boot racket-v.boot)
+                         (shell/wait "mt" "-manifest" (string->shell racket.manifest)
+                                     (string->shell (~a "-outputresource:" racketcs)))
+                         (shell/wait "mt" "-manifest" (string->shell gracket.manifest
+                                     (string->shell (~a "-outputresource:" gracketcs))))]
             `[:target ,racketcs (,raw_racketcs ,@(if mac-fw?
                                                      (list framework)
                                                      embed+boot-deps)
