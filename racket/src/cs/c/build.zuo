@@ -179,8 +179,8 @@
   (define windows-libs '("WS2_32.lib" "Shell32.lib" "User32.lib" "Winmm.lib"
                                       "RpCrt4.lib" "Ole32.lib" "Advapi32.lib"))
 
-  (define racket.manifest (at-source "../worksp/racket/racket.manifest"))
-  (define gracket.manifest (at-source "../worksp/gracket/gracket.manifest"))
+  (define racket.manifest (at-source "../../worksp/racket/racket.manifest"))
+  (define gracket.manifest (at-source "../../worksp/gracket/gracket.manifest"))
 
   (define (cs-suffix p) (~a p (lookup 'CS_INSTALLED)))
   (define (CS-suffix p) (~a p (string-upcase (lookup 'CS_INSTALLED))))
@@ -386,8 +386,8 @@
                                            petite-v.boot scheme-v.boot racket-v.boot)
                          (shell/wait "mt" "-manifest" (string->shell racket.manifest)
                                      (string->shell (~a "-outputresource:" racketcs)))
-                         (shell/wait "mt" "-manifest" (string->shell gracket.manifest
-                                     (string->shell (~a "-outputresource:" gracketcs)))))]
+                         (shell/wait "mt" "-manifest" (string->shell gracket.manifest)
+                                     (string->shell (~a "-outputresource:" gracketcs))))]
             `[:target ,racketcs (,raw_racketcs ,@(if mac-fw?
                                                      (list framework)
                                                      embed+boot-deps)
