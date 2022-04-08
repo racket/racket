@@ -502,9 +502,9 @@
                                      (andmap integer? fds)
                                      ;; read in all available job tokens, then give them back up,
                                      ;; just so we can infer the number of tokens that would be available
-                                     (let ([in (fd-open-input (car fds) (hash 'nonblocking? #t))]
+                                     (let ([in (fd-open-input (car fds))]
                                            [out (fd-open-output (cadr fds))])
-                                       (define s (fd-read in eof))
+                                       (define s (fd-read in 'avail))
                                        (and (string? s)
                                             (begin
                                               (fd-write out s)

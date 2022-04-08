@@ -30,7 +30,14 @@
   (define build-config.rktd (at-source "build/config/config.rktd"))
   (define build/site.rkt (at-source "build/site.rkt"))
 
-  (define vm (string->symbol (lookup 'VM "cs")))
+  (define vm (let ([cb (lookup 'CLIENT_BASE)]
+                   [wcb (lookup 'WIN_CLIENT_BASE)])
+               (cond
+                 [(equal? cb "cs-base") 'cs]
+                 [(equal? cb "bc-base") 'bc]
+                 [(equal? wcb "win-cs-base") 'cs]
+                 [(equal? wcb "win-bc-base") 'bc]
+                 [else (string->symbol (lookup 'VM "cs"))])))
 
   (define required-pkgs (shell->strings (hash-ref config 'REQUIRED_PKGS)))
   (define default-src-catalog (hash-ref config 'DEFAULT_SRC_CATALOG))
@@ -92,7 +99,9 @@
                     " mode; start with a fresh checkout for "
                     (~s mode)
                     " mode")))]
-      [else (display-to-file mode mode-file)]))
+      [else
+       (mkdir-p (path-only mode-file))
+       (display-to-file mode mode-file)]))
  
   ;; ------------------------------------------------------------
   ;; pb setup
@@ -375,6 +384,7 @@
 
   (define (server token [options (hash)])
     (check-mode "server")
+    (maybe-fetch 'cs)
     (rm* "build/zo")
     (base token vm)
     (server-from-base token options))
@@ -473,12 +483,13 @@
   ;; Distribution builds: client
 
   (define (client token [options (hash)])
-    (cond
+     (cond
       [(directory-exists? "build/log") ; => server space also used for client build
        (check-mode "server")]
       [else
        (check-mode "client")
        (rm* "build/user")])
+    (maybe-fetch 'cs)
     (base token vm)
 
     (define cross? (hash-ref options 'cross? #f))

@@ -62,6 +62,8 @@
   (define boot-files
     (map (lambda (file) (at-dir "boot" m file)) boot-file-names))
 
+  (define clean-links-stamp (at-dir ".no-links"))
+
   (define (build-kernel-only?)
     (string=? (hash-ref config 'buildKernelOnly "no") "yes"))
   (define (check-not-kernel-only)
@@ -100,6 +102,7 @@
        (define dir (at-dir ".." (~a "xc-" xm)))
        (define s-dir (build-path dir "s"))
        (mkdir-p s-dir)
+       (clean-links s-dir) ; in case leftover from old build system
        (display-to-file (~a "m=" xm "\n"
                             "hostm=" m "\n"
                             (if host-scheme
@@ -115,6 +118,7 @@
        (let ([targets (s-targets-at (make-at-dir s-dir)
                                     (hash-remove vars 'm)
                                     ccopts)])
+         (build (find-target "clean" targets) token)
          (build (map (lambda (t) (find-target t targets)) make-targets)
                 token))
        (define boot-xm-dir (at-dir "../boot" xm))
@@ -134,6 +138,15 @@
                          (make-at-dir (at-dir "mats"))
                          vars))
            token))
+
+  (define (clean-links dir)
+    (for-each (lambda (p)
+                (cond
+                  [(link-exists? p) (rm p)]
+                  [(directory-exists? p)
+                   (unless (equal? "boot" (file-name-from-path p))
+                     (clean-links p))]))
+              (ls* dir)))
 
   (define the-targets
     (make-targets
@@ -310,7 +323,7 @@
        ;; Internal targets ----------------------------------------
 
        ;; Builds out an initial workarea, with links to book files
-       [:target workarea (,@bounce-files ,@boot-files)
+       [:target workarea (,@bounce-files ,@boot-files ,clean-links-stamp)
                 ,void
                 :quiet]
 
@@ -342,6 +355,12 @@
                                (cp/ln src dest)))])
               boot-file-names
               boot-files)
+
+       [:target ,clean-links-stamp ()
+                ,(lambda (path token)
+                   ;; clear out links from old build system that break the new build
+                   (clean-links (at-dir))
+                   (display-to-file "done" path))]
 
        ;; Needed to keep the initial-boot-file info here instead of in "boot"
        [:db-dir ,(at-dir ".")]

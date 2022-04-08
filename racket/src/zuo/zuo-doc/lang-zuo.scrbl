@@ -911,7 +911,7 @@ Returns @racket[#t] if @racket[v] is a @tech{handle}, @racket[#f]
 otherwise.}
 
 @defproc[(fd-open-input [filename (or/c path-string? 'stdin integer?)]
-                        [options hash?])
+                        [options hash? (hash)])
          handle?]{
 
 Opens a file for reading, obtains a reference to standard input when
@@ -920,10 +920,8 @@ reference to an existing file descriptor when @racket[filename]
 is an integer. The result handle can be used
 with @racket[fd-read] and closed with @racket[fd-close].
 
-In @racket[options], a single key is currently recognized when
-@racket[filename] is an integer: @racket['nonblocking?]. Its value is
-treated as a boolean, and if true, the file descriptor is set to
-non-blocking mode.}
+No keys are currently recognized for @racket[options], so it must be
+an empty hash table.}
 
 
 @deftogether[(
@@ -966,20 +964,22 @@ Closes the file or stream associated with @racket[handle], if it
 refers to an open input or output stream. Any other kind of
 @racket[handle] triggers an error.}
 
-@defproc[(fd-read [handle handle?] [amount (or/c integer? eof)]) (or/c string? eof)]{
+@defproc[(fd-read [handle handle?] [amount (or/c integer? eof 'avail)]) (or/c string? eof)]{
 
 Reads from the input file or input stream associated with
 @racket[handle], erroring for any other kind of @racket[handle]. The
-@racket[amount] argument can be @racket[eof] to read all content up to
-an end-of-file, or a non-negative integer to read up to that many
-bytes. The result is @racket[eof] if @racket[amount] is not @racket[0]
+@racket[amount] argument can be a non-negative integer to read up to
+that many bytes, @racket[eof] to read all content up to an
+end-of-file, or @racket['avail] where supported (on Unix) to read as
+many bytes as available in non-blocking mode. The result is
+@racket[eof] if @racket[amount] is not @racket[0] or @racket['avail]
 and no bytes are available before an end-of-file; otherwise, it is a
 string containing the read bytes.
 
 The number of bytes in the returned string can be less than
 @racket[amount] if the number of currently available bytes is less
-than @racket[amount] but at least one byte or if @racket[handle] is
-nonblocking and zero bytes are available.}
+than @racket[amount] but at least one byte. The result can be an empty
+string only if @racket[amount] is @racket[0] or @racket['avail].}
 
 @defproc[(fd-write [handle handle?] [str string?]) void?]{
 

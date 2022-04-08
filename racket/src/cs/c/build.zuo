@@ -269,9 +269,7 @@
                         boot-compress-flags
                         ""
                         dest
-                        (build-path fw-boot-dest-dir "petite.boot")
-                        (build-path fw-boot-dest-dir "scheme.boot")
-                        (build-path fw-boot-dest-dir "racket.boot"))))
+                        petite-v.boot scheme-v.boot racket-v.boot)))
 
   (define (set-collects-path dest collects-path config-path)
     (bootstrap-racket (at-source "../../start/collects-path.rkt") (at-source "../..")
@@ -313,7 +311,9 @@
                 ,(lambda (token)
                    (build/dep (find-target "build-racketcs" the-targets) token)
                    (build/dep (find-target gracketcs the-targets) token)
-                   (build/dep (find-target "starter" starter-targets) token))]
+                   (build/dep (find-target "starter" starter-targets) token)
+                   (when (and mac? (not mac-fw?))
+                     (build/dep (find-target framework the-targets) token)))]
 
        [:target build-racketcs ()
                 ,(lambda (token)
@@ -371,21 +371,7 @@
                       ,(lambda (path token)
                          (cond
                            [mac?
-                            (when (not mac-fw?)
-                              (rm* petite-v.boot)
-                              (rm* scheme-v.boot)
-                              (rm* racket-v.boot)
-                              (define rel-fw-boot-dest-dir
-                                (find-relative-path (path-only petite-v.boot) fw-boot-dest-dir))
-                              (symlink (build-path rel-fw-boot-dest-dir "petite.boot") petite-v.boot)
-                              (symlink (build-path rel-fw-boot-dest-dir "scheme.boot") scheme-v.boot)
-                              (symlink (build-path rel-fw-boot-dest-dir "racket.boot") racket-v.boot))
                             (mac-embed-boot raw_racketcs racketcs)
-                            (bootstrap-racket (at-source "adjust-compress.rkt")
-                                              boot-compress-flags
-                                              (build-path fw-boot-dest-dir "petite.boot")
-                                              (build-path fw-boot-dest-dir "scheme.boot")
-                                              (build-path fw-boot-dest-dir "racket.boot"))
                             (restore-signature racketcs)]
                            [else
                             (bootstrap-racket (at-source "embed-boot.rkt")

@@ -4061,6 +4061,8 @@ static zuo_t *zuo_fd_handle(zuo_raw_handle_t handle, zuo_handle_status_t status)
 }
 
 static zuo_t *zuo_drain(zuo_raw_handle_t fd, zuo_int_t amount) {
+  /* amount as -1 => read until EOF
+     amount as -2 => non-blocking read on Unix */
   zuo_t *s;
   zuo_int_t sz = 256, offset = 0;
 
@@ -4073,11 +4075,28 @@ static zuo_t *zuo_drain(zuo_raw_handle_t fd, zuo_int_t amount) {
     zuo_int_t amt = sz - offset;
     if (amt > 4096) amt = 4096;
 #ifdef ZUO_UNIX
-    got = read(fd, ZUO_STRING_PTR(s) + offset, amt);
-    if ((got < 0) && (errno == EAGAIN)) {
-      got = 0;
-      if (offset == 0)
-        amount = 0; /* don't return `eof` */
+    {
+      int nonblock = (amount == -2), old_fl, r;
+
+      if (nonblock) {
+        old_fl = fcntl(fd, F_GETFL, 0);
+        if (old_fl == -1) zuo_fail("failed to access flags of file descriptor");
+        r = fcntl(fd, F_SETFL, old_fl | O_NONBLOCK);
+        if (r == -1) zuo_fail("failed to set file descriptor as nonblocking");
+      } else
+        old_fl = 0;
+
+      got = read(fd, ZUO_STRING_PTR(s) + offset, amt);
+      if ((got < 0) && (errno == EAGAIN)) {
+        got = 0;
+        if (offset == 0)
+          amount = 0; /* don't return `eof` */
+      }
+
+      if (nonblock) {
+        r = fcntl(fd, F_SETFL, old_fl);
+        if (r == -1) zuo_fail("failed to restore flags of file descriptor");
+      }
     }
 #endif
 #ifdef ZUO_WINDOWS
@@ -4206,24 +4225,14 @@ static zuo_raw_handle_t zuo_fd_open_input_handle(zuo_t *path, zuo_t *options) {
     fd = zuo_get_std_handle(0);
     return fd;
   } else {
-    zuo_t *nonblock;
-    
     if ((path->tag != zuo_integer_tag)
         || (ZUO_INT_I(path) < 0))
       zuo_fail_arg(who, "path string, 'stdin, or nonnegative integer", path);
 
     check_hash(who, options);
-    nonblock = zuo_consume_option(&options, "nonblocking?");
     check_options_consumed(who, options);
-
 #ifdef ZUO_UNIX
     fd = (zuo_raw_handle_t)ZUO_INT_I(path);
-    if ((nonblock != z.o_undefined) && (nonblock != z.o_false)) {
-      int r = fcntl(fd, F_GETFL, 0);
-      if (r == -1) zuo_fail1w(who, "failed to access flags of file descriptor", path);
-      r = fcntl(ZUO_INT_I(path), F_SETFL, r | O_NONBLOCK);
-      if (r == -1) zuo_fail1w(who, "failed to set file descriptor as nonblocking", path);
-    }
     return fd;
 #endif
 #ifdef ZUO_WINDOWS
@@ -4392,11 +4401,19 @@ static zuo_t *zuo_fd_read(zuo_t *fd_h, zuo_t *amount) {
       || ((zuo_handle_t *)fd_h)->u.h.status != zuo_handle_open_fd_in_status)
     zuo_fail_arg(who, "open input file descriptor", fd_h);
   if (amount != z.o_eof) {
-    if ((amount->tag == zuo_integer_tag)
-        && (ZUO_INT_I(amount) >= 0))
+    if ((amount->tag == zuo_symbol_tag)
+        && (amount == zuo_symbol("avail"))) {
+#ifdef ZUO_UNIX
+      amt = -2;
+#endif
+#ifdef ZUO_WINDOWS
+      zuo_fail1w(who, "non-blocking reads are not supported for file descriptor", fd_h);
+#endif
+    } else if ((amount->tag == zuo_integer_tag)
+             && (ZUO_INT_I(amount) >= 0))
       amt = ZUO_INT_I(amount);
     else
-      zuo_fail_arg(who, "nonnegative integer or eof", amount);
+      zuo_fail_arg(who, "nonnegative integer, eof, or 'avail", amount);
   }
 
   return zuo_drain(ZUO_HANDLE_RAW(fd_h), amt);
@@ -5239,7 +5256,7 @@ static void zuo_init_signal_handler() {
 #ifdef ZUO_UNIX
   struct sigaction sa;
   sigemptyset(&sa.sa_mask);
-  sa.sa_flags = 0;
+  sa.sa_flags = SA_RESTART;
   sa.sa_handler = zuo_signal_received;
   sigaction(SIGINT, &sa, NULL);
 #endif
@@ -5396,7 +5413,7 @@ static char **zuo_shell_to_strings_c(char *buf, int skip_exe, zuo_intptr_t *_len
           char **new_command = (char **)malloc((2*maxargs + 1) * sizeof(char *));
           memcpy(new_command, command, cmd * sizeof(char *));
           free(command);
-          new_command = command;
+          command = new_command;
           maxargs *= 2;
         }
         command[cmd++] = buf+arg_start;
