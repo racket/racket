@@ -1534,8 +1534,8 @@
           (define (cp/strip from to)
             (cp/in from to)
             (strip-debug config to))
-          (cp/strip "MzStart.exe" (build-path libpltdir "MzStart.exe"))
-          (cp/strip "MrStart.exe" (build-path libpltdir "MrStart.exe"))
+          (cp/strip (at-dir "MzStart.exe") (build-path libpltdir "MzStart.exe"))
+          (cp/strip (at-dir "MrStart.exe") (build-path libpltdir "MrStart.exe"))
           (when cgc?
             (cp/strip libmzgcxxxxxxx.dll (build-path libdir (file-name-from-path libmzgcxxxxxxx.dll)))
             (cp/strip libracketcgcxxxxxxx.dll (build-path libdir (file-name-from-path libracketcgcxxxxxxx.dll)))
