@@ -4241,7 +4241,7 @@ static zuo_raw_handle_t zuo_fd_open_input_handle(zuo_t *path, zuo_t *options) {
     return fd;
 #endif
 #ifdef ZUO_WINDOWS
-    zuo_fail1w(who, "integer file descriptors are not supported on Windows");
+    zuo_fail1w(who, "integer file descriptors are not supported on Windows", path);
     return INVALID_HANDLE_VALUE;
 #endif
   }
@@ -4356,7 +4356,7 @@ static zuo_t *zuo_fd_open_output(zuo_t *path, zuo_t *options) {
     return zuo_handle(fd, zuo_handle_open_fd_out_status);
 #endif
 #ifdef ZUO_WINDOWS
-    zuo_fail1w(who, "integer file descriptors are not supported on Windows");
+    zuo_fail1w(who, "integer file descriptors are not supported on Windows", path);
     return z.o_undefined;
 #endif
   }
