@@ -18,6 +18,7 @@
 
          shell-subst
          shell-subst-value
+         shell-subst-pwd
 
          configured-targets-at
 
@@ -217,6 +218,10 @@
         (hash-set config key (shell-subst v config))
         config)))
 
+(define (shell-subst-pwd str wrt)
+  (string-join (string-split str "`pwd`")
+               (string->shell wrt)))
+
 (define (configured-targets-at options)
   (define who 'configured-targets-at)
   (define configure (hash-ref options 'configure))
@@ -286,7 +291,7 @@
       [else
        (configured-targets-at (hash
                                'configure (build-path rktio-src-dir "configure")
-                               'args (shell->strings (hash-ref config 'RKTIO_CONFIGURE_ARGS ""))
+                               'configure-args (shell->strings (hash-ref config 'RKTIO_CONFIGURE_ARGS ""))
                                'inputs (list (build-path rktio-src-dir "Makefile.in")
                                              (build-path rktio-src-dir "rktio_config.h.in"))
                                'outputs (list (build-path rktio-dir "Makefile")

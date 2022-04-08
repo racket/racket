@@ -54,7 +54,7 @@
        (cons (executable->path (lookup 'SCHEME) at-dir)
              '())]
       [(not (equal? "" (lookup 'SCHEME_DIR)))
-       (define dir (build-path (lookup 'SCHEME_DIR) host-m))
+       (define dir (at-dir (lookup 'SCHEME_DIR) host-m))
        (cons (build-path dir "bin" host-m (.exe "scheme"))
              (list "-B" (build-path dir "boot" host-m "petite.boot")
                    "-B" (build-path dir "boot" host-m "scheme.boot")))]
@@ -185,8 +185,20 @@
   (mkdir-p (at-dir "compiled"))
 
   (define (scheme/options options args)
-    (define cmd (append scheme-args args))
-    (process/wait scheme.exe cmd options))
+    (define dir (hash-ref options 'dir #f))
+    (define cmd (append (if dir
+                            (map (lambda (arg)
+                                   (if (equal? arg "-B")
+                                       arg
+                                       (find-relative-path dir arg)))
+                                 scheme-args)
+                            scheme-args)
+                        args))
+    (process/wait (if dir
+                      (find-relative-path dir scheme.exe)
+                      scheme.exe)
+                  cmd
+                  options))
 
   (define (scheme . args)
     (scheme/options (hash) args))
@@ -515,9 +527,10 @@
                                                               'CFLAGS
                                                               "--shared")
                                                 'LDFLAGS
-                                                "-Wl,--output-def"
-                                                (string->shell (~a "-Wl," (path-replace-extension path ".def")))
-                                                "-static-libgcc"))))]
+                                                (build-shell "-Wl,--output-def"
+                                                             (string->shell
+                                                              (~a "-Wl," (path-replace-extension libracketcsxxxxxxx.dll ".def")))
+                                                             "-static-libgcc")))))]
 
        [:target ,main.o (,@main-deps)
                 ,(lambda (main.o token)
@@ -952,7 +965,9 @@
        (define copytree-racket (and cross? (config-bootstrap-racket)))
        (maybe-copytree config dest-racket copytree-racket at-dir)
        (run-raco-setup config dest-racket
-                       (and cross? (config-bootstrap-racket))
+                       (and cross? (hash-ref (config-bootstrap-racket) 'racket))
+                       ;; this can be redundant if it's also supplied via `SETUP_MACHINE_FLAGS`,
+                       ;; but redundant should be ok:
                        (list "-MCR" (~a (at-dir "compiled") ":")
                              "--cross-compiler" m (at-dir ".")))
        (maybe-libzo-move config dest-racket copytree-racket at-dir)

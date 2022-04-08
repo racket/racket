@@ -97,6 +97,7 @@ case "$host_os" in
     ;;
   *mingw*)
     skip_iconv_check=yes
+    PREFLAGS="$PREFLAGS -DWIN32"
     # force pthread off for Windows:
     enable_pthread=no
     ;;

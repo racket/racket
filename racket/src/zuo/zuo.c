@@ -4432,15 +4432,21 @@ static zuo_t *zuo_fd_terminal_p(zuo_t *fd_h, zuo_t *ansi) {
 }
 
 static zuo_t *zuo_fd_valid_p(zuo_t *fd_h) {
-  int r;
-  zuo_raw_handle_t fd;
-  
   zuo_check_input_output_fd("fd-valid?", fd_h);
 
-  fd = ZUO_HANDLE_RAW(fd_h);
-  EINTR_RETRY(r = fcntl(fd, F_GETFL, 0));
+#ifdef ZUO_UNIX
+  {
+    int r;
+    zuo_raw_handle_t fd;
 
-  return (r == -1) ? z.o_false : z.o_true;
+    fd = ZUO_HANDLE_RAW(fd_h);
+    EINTR_RETRY(r = fcntl(fd, F_GETFL, 0));
+
+    return (r == -1) ? z.o_false : z.o_true;
+  }
+#else
+  return z.o_true;
+#endif
 }
 
 static char *zuo_string_to_c(zuo_t *obj) {

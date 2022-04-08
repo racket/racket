@@ -157,7 +157,8 @@
                               'inputs (list (at-source "racket/src" subdir "Mf-config.in"))
                               'outputs (list (at-source "racket/src/build" subdir "Mf-config"))
                               'configure-args (append
-                                               (shell->strings (lookup 'CONFIGURE_ARGS_qq))
+                                               (shell->strings (shell-subst-pwd (lookup 'CONFIGURE_ARGS_qq)
+                                                                                (at-source "racket/src/build" subdir)))
                                                (shell->strings (lookup 'CONFIGURE_ARGS))
                                                (if (or (server-compile-machine?)
                                                        (hash-ref options 'server-compile-machine? #f))
@@ -194,8 +195,10 @@
                                      ;; Propagate `RACKET` and similar
                                      'RACKET (get-provided-racket)
                                      'BOOTFILE_RACKET (lookup 'BOOTFILE_RACKET)
-                                     'SCHEME (lookup 'SCHEME)
-                                     'SCHEME_DIR (lookup 'SCHEME_DIR)
+                                     'SCHEME_DIR (let ([s (lookup 'CS_HOST_WORKAREA_PREFIX)])
+                                                   (if (equal? s "")
+                                                       ""
+                                                       (build-path s "ChezScheme")))
                                      'CROSS_MODE (if (equal? (lookup 'CS_CROSS_SUFFIX) "-cross")
                                                      "cross"
                                                      "")))))
@@ -493,7 +496,8 @@
     (maybe-fetch 'cs)
     (base token vm)
 
-    (define cross? (hash-ref options 'cross? #f))
+    (define cross? (or (hash-ref options 'cross? #f)
+                       (equal? (lookup 'CS_CROSS_SUFFIX) "-cross")))
 
     (define (built-racket . args) (built-racket* cross? args))
     (define (built-raco . args) (built-raco* cross? args))

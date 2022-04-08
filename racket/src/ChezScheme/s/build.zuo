@@ -598,7 +598,7 @@
        ,@(map (lambda (gc.inc mkgc.inc)
                 `[:target ,gc.inc (,mkgc.so ,@macro-objs)
                           ,(lambda (gc.inc token)
-                             (rm gc.inc)
+                             (rm* gc.inc)
                              (run-scheme-header-script gc.inc
                                                        (lambda (tmp) `((,mkgc.inc ,tmp)))
                                                        (list mkheader.so mkgc.so)))])

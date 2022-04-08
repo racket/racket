@@ -61,9 +61,8 @@ CPUS =
 # Arguments to include in a call to `configure`
 CONFIGURE_ARGS =
 
-# Originally, `CONFIGURE_ARGS_qq` was intended as a configuration
-# argument that should be propagated, we can't handle it's quoting in
-# general in makefiles; use `zuo` directly if you need that
+# Like `CONFIGURE_ARGS`, but for historical reasons, "`pwd`" is
+# replaced with the build subdirectory where `configure` is run
 CONFIGURE_ARGS_qq =
 
 # ------------------------------------------------------------
