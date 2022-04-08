@@ -205,9 +205,22 @@
     (build (find-target "build" targets)
            #f
            (build-options))
+    (when (eq? 'windows (system-type))
+      (remove-early-load-dlls))
     (build (find-target "install-again" targets)
            #f
            (build-options)))
+
+  (define (remove-early-load-dlls)
+    ;; On Windows, remove DLLs that might be loaded by `raco` on startup,
+    ;; but which we might need to reinstall via `raco`
+    (for-each (lambda (dll)
+                (rm* (at-source "racket/lib" dll)))
+              '("longdouble.dll"
+                "libiconv-2.dll"
+                "iconv.dll"
+                "libeay32.dll"
+                "ssleay32.dll")))
 
   (define (native-for-cross subdir token)
     (define targets
@@ -245,7 +258,7 @@
                                    '())
                                (list "-G" config
                                      "-X" (at-source "racket/collects")))))
-  
+
   (define (setup vm . args)
     (raco (find-racket vm)
           "setup"
