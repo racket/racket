@@ -387,7 +387,7 @@
                          (shell/wait "mt" "-manifest" (string->shell racket.manifest)
                                      (string->shell (~a "-outputresource:" racketcs)))
                          (shell/wait "mt" "-manifest" (string->shell gracket.manifest
-                                     (string->shell (~a "-outputresource:" gracketcs))))]
+                                     (string->shell (~a "-outputresource:" gracketcs)))))]
             `[:target ,racketcs (,raw_racketcs ,@(if mac-fw?
                                                      (list framework)
                                                      embed+boot-deps)
