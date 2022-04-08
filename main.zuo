@@ -213,7 +213,8 @@
                                              (at-source "racket/src" subdir "winfig.bat")
                                              (at-source "racket/src" subdir "configure"))
                               'inputs (list (at-source "racket/src" subdir "Mf-config.in"))
-                              'outputs (list (at-source "racket/src/build/cross" subdir "Mf-config")))))
+                              'outputs (list (at-source "racket/src/build/cross" subdir "Mf-config"))
+                              'vars (hash))))
     (build (find-target "build" targets)
            #f
            (build-options)))
