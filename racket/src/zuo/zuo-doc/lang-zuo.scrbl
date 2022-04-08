@@ -999,6 +999,12 @@ bracketing a change and restore with @racket[suspend-signal] and
 @racket[resume-signal] to avoid leaving a terminal in a mangled state
 after Ctl-C.}
 
+@defproc[(fd-valid? [handle handle?]) boolean?]{
+
+Reports whether a file descriptor opened by appears to be a valid file
+descriptor, which is potentially useful after supplying an integer to
+@racket[fd-open-input] or @racket[fd-open-output] }
+
 @deftogether[(
 @defproc[(file->string [name path-string]) string?]
 @defproc[(display-to-file [str string?] [name path-string] [options hash? (hash)]) void?]

@@ -4431,6 +4431,18 @@ static zuo_t *zuo_fd_terminal_p(zuo_t *fd_h, zuo_t *ansi) {
   return zuo_is_terminal(ZUO_HANDLE_RAW(fd_h)) ? z.o_true : z.o_false;
 }
 
+static zuo_t *zuo_fd_valid_p(zuo_t *fd_h) {
+  int r;
+  zuo_raw_handle_t fd;
+  
+  zuo_check_input_output_fd("fd-valid?", fd_h);
+
+  fd = ZUO_HANDLE_RAW(fd_h);
+  EINTR_RETRY(r = fcntl(fd, F_GETFL, 0));
+
+  return (r == -1) ? z.o_false : z.o_true;
+}
+
 static char *zuo_string_to_c(zuo_t *obj) {
   char *s;
   zuo_int_t len;
@@ -6566,6 +6578,7 @@ static void zuo_primitive_init(int will_load_image) {
   ZUO_TOP_ENV_SET_PRIMITIVE2("fd-read", zuo_fd_read);
   ZUO_TOP_ENV_SET_PRIMITIVE2("fd-write", zuo_fd_write);
   ZUO_TOP_ENV_SET_PRIMITIVEb("fd-terminal?", zuo_fd_terminal_p);
+  ZUO_TOP_ENV_SET_PRIMITIVE1("fd-valid?", zuo_fd_valid_p);
 
   ZUO_TOP_ENV_SET_PRIMITIVEb("stat", zuo_stat);
   ZUO_TOP_ENV_SET_PRIMITIVE1("rm", zuo_rm);

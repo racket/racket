@@ -36,6 +36,7 @@
 !if 0
 
 ZUO = racket/src/build/bin/zuo
+PLUS_MODIFIER = +
 
 #\
 !endif
@@ -43,7 +44,7 @@ ZUO = racket/src/build/bin/zuo
 # `nmake`-only \
 ZUO = racket\src\build\zuo.exe
 
-RUN_ZUO = $(ZUO) .
+RUN_ZUO = $(PLUS_MODIFIER) $(ZUO) .
 
 # ------------------------------------------------------------
 # Base, in-place, and Unix-style builds
