@@ -180,14 +180,23 @@
                  config)))
 
   (define (config-to-env)
-    (foldl (lambda (key env)
-	     (let ([v (hash-ref config key #f)])
-	       (if v
-		   (replace (cons (~a key) v)
-			    env)
-		   env)))
-           (hash-ref (runtime-env) 'env)
-           '(CC CFLAGS CPPFLAGS AR ARFLAGS RANLIB LDFLAGS)))
+    (let ([config
+           ;; Merge `CPPFLAGS` to `CFLAGS`, because `CPPFLAGS` is less widely
+           ;; recognized, including by zlib and LZ4 configure
+           (let ([cppflags (hash-ref config 'CPPFLAGS "")])
+             (if (equal? cppflags "")
+                 config
+                 (hash-set config 'CFLAGS
+                           (build-shell (hash-ref config 'CFLAGS "")
+                                        cppflags))))])
+      (foldl (lambda (key env)
+               (let ([v (hash-ref config key #f)])
+                 (if v
+                     (replace (cons (~a key) v)
+                              env)
+                     env)))
+             (hash-ref (runtime-env) 'env)
+             '(CC CFLAGS AR ARFLAGS RANLIB LDFLAGS))))
 
   (define (add-to-env vars env)
     (foldl (lambda (var=val env)
