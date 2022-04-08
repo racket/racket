@@ -297,6 +297,11 @@
                                           framework-dir
                                           "Racket"))]
                [else '()])))))
+  (define install-data-to-check
+    (input-data-target 'install-data
+                       ;; this could be more precise, too:
+                       (list (lookup 'CROSS_COMPILE_TARGET_KIND)
+                             (lookup 'PLT_CS_SLSP_SUFFIX))))
 
   (define link-config (input-data-target 'link-config (list mac? mac-fw?)))
 
@@ -729,7 +734,7 @@
        [:target install-again (,(at-dir "install-stamp"))
                 ,(lambda (token)
                    (setup))]
-       [:target (,(at-dir "install-stamp") ,@install-files-to-check) ()
+       [:target (,(at-dir "install-stamp") ,@install-files-to-check) (,install-data-to-check)
                 ,(lambda (path token)
                    (install token)
                    (fd-close (fd-open-output path :truncate)))]
@@ -780,7 +785,7 @@
           (define .def (path-replace-extension (file-name-from-path libracketcsxxxxxxx.dll) ".def"))
           (cond
             [msvc?
-             (define generate-def-from-dll (dynamic-require (at-source "../../win/gendef.zuo")
+             (define generate-def-from-dll (dynamic-require (at-source "../../worksp/gendef.zuo")
                                                             'generate-def-from-dll))
              (generate-def-from-dll (in! libracketcsxxxxxxx.dll) (build-path libdir .def))]
             [else (cp (at-dir .def) (build-path libdir .def))])

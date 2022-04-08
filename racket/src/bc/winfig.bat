@@ -8,5 +8,5 @@ echo srcdir=%SRCDIR% > Mf-config
 echo PREFLAGS=/DWIN32 >> Mf-config
 echo CFLAGS=/Ox /Zi /GS- >> Mf-config
 
-cl.exe /nologo /Fe: winfig.exe "%SRCDIR%\..\win\winfig.c"
+cl.exe /nologo /Fe: winfig.exe "%SRCDIR%\..\worksp\winfig.c"
 winfig.exe >> Mf-config

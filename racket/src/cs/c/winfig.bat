@@ -7,6 +7,5 @@ copy /y "%SRCDIR%\buildmain.zuo" main.zuo > NUL
 echo srcdir=%SRCDIR% > Mf-config
 echo CFLAGS=/DWIN32 /Ox /Zi >> Mf-config
 
-cl.exe /nologo /Fe: winfig.exe "%SRCDIR%\..\..\win\winfig.c"
+cl.exe /nologo /Fe: winfig.exe "%SRCDIR%\..\..\worksp\winfig.c"
 winfig.exe >> Mf-config
-

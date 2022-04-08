@@ -1,6 +1,6 @@
 #lang zuo
 (require "../lib.zuo"
-         "../win/gendef.zuo"
+         "../worksp/gendef.zuo"
          (only-in "../start/build.zuo"
                   [targets-at starter-targets-at]))
 
@@ -70,7 +70,7 @@
   (define libffi-targets
     (cond
       [(not libffi?) '()]
-      [msvc? ((dynamic-require (at-source "../win/libffi.zuo") 'targets-at)
+      [msvc? ((dynamic-require (at-source "../worksp/libffi.zuo") 'targets-at)
               (make-at-dir (at-dir "foreign/libffi"))
               config)]
       [else
@@ -1042,14 +1042,14 @@
         ;; Phase1 "cstartup.inc" --- normally just "startup.inc", but
         ;; for MSVC, we convert from a string to a character array
         [:target ,phase1/cstartup.inc (,(at-source "src/startup.inc")
-                                       ,(at-source "../win/cstartup.zuo"))
+                                       ,(at-source "../worksp/cstartup.zuo"))
                  ,(lambda (path token)
                     (mkdir-p (path-only path))
                     (cond
                       [msvc?
                        ;; Avoid trouble with over-long string constants in MSVC
                        (alert "converting startup.inc to avoid big string")
-                       ((dynamic-require (at-source "../win/cstartup.zuo") 'convert-to-character-array)
+                       ((dynamic-require (at-source "../worksp/cstartup.zuo") 'convert-to-character-array)
                         (at-source "src/startup.inc")
                         path)]
                       [else
