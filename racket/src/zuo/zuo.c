@@ -4051,6 +4051,11 @@ static void check_options_consumed(const char *who, zuo_t *options) {
 /* files/streams                                                        */
 /*======================================================================*/
 
+#ifdef ZUO_UNIX
+/* Maybe not necessary, since we use `SA_RESTART`, but just in case: */
+# define EINTR_RETRY(e) do { } while (((e) == -1) && (errno == EINTR))
+#endif
+
 static zuo_t *zuo_fd_handle(zuo_raw_handle_t handle, zuo_handle_status_t status)  {
   zuo_t *h = zuo_handle(handle, status);
 #ifdef ZUO_UNIX
@@ -4079,14 +4084,14 @@ static zuo_t *zuo_drain(zuo_raw_handle_t fd, zuo_int_t amount) {
       int nonblock = (amount == -2), old_fl, r;
 
       if (nonblock) {
-        old_fl = fcntl(fd, F_GETFL, 0);
+        EINTR_RETRY(old_fl = fcntl(fd, F_GETFL, 0));
         if (old_fl == -1) zuo_fail("failed to access flags of file descriptor");
-        r = fcntl(fd, F_SETFL, old_fl | O_NONBLOCK);
+        EINTR_RETRY(r = fcntl(fd, F_SETFL, old_fl | O_NONBLOCK));
         if (r == -1) zuo_fail("failed to set file descriptor as nonblocking");
       } else
         old_fl = 0;
 
-      got = read(fd, ZUO_STRING_PTR(s) + offset, amt);
+      EINTR_RETRY(got = read(fd, ZUO_STRING_PTR(s) + offset, amt));
       if ((got < 0) && (errno == EAGAIN)) {
         got = 0;
         if (offset == 0)
@@ -4094,7 +4099,7 @@ static zuo_t *zuo_drain(zuo_raw_handle_t fd, zuo_int_t amount) {
       }
 
       if (nonblock) {
-        r = fcntl(fd, F_SETFL, old_fl);
+        EINTR_RETRY(r = fcntl(fd, F_SETFL, old_fl));
         if (r == -1) zuo_fail("failed to restore flags of file descriptor");
       }
     }
@@ -4148,7 +4153,7 @@ static void zuo_fill(const char *s, zuo_int_t len, zuo_raw_handle_t fd) {
     zuo_int_t amt = len - done;
     if (amt > 4096) amt = 4096;
 #ifdef ZUO_UNIX
-    did = write(fd, s + done, amt);
+    EINTR_RETRY(did = write(fd, s + done, amt));
 #endif
 #ifdef ZUO_WINDOWS
     {
@@ -4170,7 +4175,7 @@ static void zuo_fill(const char *s, zuo_int_t len, zuo_raw_handle_t fd) {
 static void zuo_close_handle(zuo_raw_handle_t handle)
 {
 #ifdef ZUO_UNIX
-  close(handle);
+  EINTR_RETRY(close(handle));
 #endif
 #ifdef ZUO_WINDOWS
   CloseHandle(handle);
@@ -4201,7 +4206,7 @@ static zuo_raw_handle_t zuo_fd_open_input_handle(zuo_t *path, zuo_t *options) {
       fclose(lf);
     }
 #ifdef ZUO_UNIX
-    fd = open(ZUO_STRING_PTR(path), O_RDONLY);
+    EINTR_RETRY(fd = open(ZUO_STRING_PTR(path), O_RDONLY));
     if (fd == -1)
       zuo_fail1w_errno(who, "file open failed", path);
 #endif
@@ -4283,7 +4288,7 @@ static zuo_t *zuo_fd_open_output(zuo_t *path, zuo_t *options) {
         }
       }
 
-      fd = open(ZUO_STRING_PTR(path), O_WRONLY | mode, 0666);
+      EINTR_RETRY(fd = open(ZUO_STRING_PTR(path), O_WRONLY | mode, 0666));
       if (fd == -1)
         zuo_fail1w_errno(who, "file open failed", path);
     }
@@ -4770,12 +4775,10 @@ static zuo_t *zuo_stat(zuo_t *path, zuo_t *follow_links) {
     struct stat stat_buf;
     int stat_result;
 
-    do {
-      if (follow_links == z.o_false)
-	stat_result = lstat(ZUO_STRING_PTR(path), &stat_buf);
-      else
-	stat_result = stat(ZUO_STRING_PTR(path), &stat_buf);
-    } while ((stat_result == -1) && (errno == EINTR));
+    if (follow_links == z.o_false)
+      stat_result = lstat(ZUO_STRING_PTR(path), &stat_buf);
+    else
+      stat_result = stat(ZUO_STRING_PTR(path), &stat_buf);
 
     if (stat_result != 0) {
       if (errno != ENOENT)
@@ -5069,7 +5072,7 @@ static zuo_t *zuo_cp(zuo_t *src_path, zuo_t *dest_path) {
   zuo_int_t len, amt;
   char *buf;
 
-  src_fd = open(ZUO_STRING_PTR(src_path), O_RDONLY);
+  EINTR_RETRY(src_fd = open(ZUO_STRING_PTR(src_path), O_RDONLY));
   if (src_fd == -1)
     zuo_fail1w_errno(who, "source open failed", src_path);
 
@@ -5079,7 +5082,7 @@ static zuo_t *zuo_cp(zuo_t *src_path, zuo_t *dest_path) {
   /* Permissions may be reduced by umask, but the intent here is to
      make sure the file doesn't have more permissions than it will end
      up with: */
-  dest_fd = open(ZUO_STRING_PTR(dest_path), O_WRONLY | O_CREAT | O_TRUNC, st_buf.st_mode);
+  EINTR_RETRY(dest_fd = open(ZUO_STRING_PTR(dest_path), O_WRONLY | O_CREAT | O_TRUNC, st_buf.st_mode));
 
   if (dest_fd == -1)
     zuo_fail1w_errno(who, "destination open failed", dest_path);
@@ -5087,25 +5090,25 @@ static zuo_t *zuo_cp(zuo_t *src_path, zuo_t *dest_path) {
   buf = malloc(4096);
 
   while (1) {
-    amt = read(src_fd, buf, 4096);
+    EINTR_RETRY(amt = read(src_fd, buf, 4096));
     if (amt == 0)
       break;
     if (amt < 0)
       zuo_fail1w_errno(who, "source read failed", src_path);
     while (amt > 0) {
-      len = write(dest_fd, buf, amt);
+      EINTR_RETRY(len = write(dest_fd, buf, amt));
       if (len < 0)
         zuo_fail1w_errno(who, "destination write failed", dest_path);
       amt -= len;
     }
   }
 
-  close(src_fd);
+  EINTR_RETRY(close(src_fd));
 
   if (fchmod(dest_fd, st_buf.st_mode) != 0)
     zuo_fail1w_errno(who, "destination permissions update failed", dest_path);
 
-  close(dest_fd);
+  EINTR_RETRY(close(dest_fd));
 #endif
 #ifdef ZUO_WINDOWS
   {
@@ -5208,7 +5211,7 @@ static void zuo_clean_all() {
     if (v->tag == zuo_handle_tag) {
 #ifdef ZUO_UNIX
       int stat_loc;
-      (void)waitpid(ZUO_HANDLE_RAW(v), &stat_loc, 0);
+      EINTR_RETRY(waitpid(ZUO_HANDLE_RAW(v), &stat_loc, 0));
 #endif
 #ifdef ZUO_WINDOWS
       WaitForSingleObject(ZUO_HANDLE_RAW(v), INFINITE);
@@ -5603,8 +5606,9 @@ static void zuo_pipe(zuo_raw_handle_t *_r, zuo_raw_handle_t *_w)
 {
 #ifdef ZUO_UNIX
   {
-    int fd[2];
-    if (pipe(fd) != 0)
+    int fd[2], r;
+    EINTR_RETRY(r = pipe(fd));
+    if (r != 0)
       zuo_fail("pipe creation failed");
     *_r = fd[0];
     *_w = fd[1];
@@ -5796,23 +5800,23 @@ zuo_t *zuo_process(zuo_t *command_and_args)
       zuo_resume_signal();
 
       if (in_r != 0) {
-        dup2(in_r, 0);
+        EINTR_RETRY(dup2(in_r, 0));
         if (redirect_in)
-          close(in);
+          EINTR_RETRY(close(in));
       }
       if (out_w != 1) {
-        dup2(out_w, 1);
+        EINTR_RETRY(dup2(out_w, 1));
         if (redirect_out)
-          close(out);
+          EINTR_RETRY(close(out));
       }
       if (err_w != 2) {
-        dup2(err_w, 2);
+        EINTR_RETRY(dup2(err_w, 2));
         if (redirect_err)
-          close(err);
+          EINTR_RETRY(close(err));
       }
 
       while (open_fds != z.o_null) {
-        close(ZUO_HANDLE_RAW(_zuo_car(open_fds)));
+        EINTR_RETRY(close(ZUO_HANDLE_RAW(_zuo_car(open_fds))));
         open_fds = _zuo_cdr(open_fds);
       }
 
@@ -5826,8 +5830,7 @@ zuo_t *zuo_process(zuo_t *command_and_args)
       } else
         msg = "chdir failed\n";
 
-      if (write(2, msg, strlen(msg)) != 0)
-        abort();
+      EINTR_RETRY(write(2, msg, strlen(msg)));
 
       _exit(1);
     } else {
@@ -6019,7 +6022,7 @@ zuo_t *zuo_process_wait(zuo_t *pids_i) {
     }
 
     /* wait for any process to exit, and update the corresponding handle */
-    pid = wait(&stat_loc);
+    EINTR_RETRY(pid = wait(&stat_loc));
 
     /* there's a race here between having completed a wait() and a SIGINT
        before we update the cleanables table, but it should be harmless,
