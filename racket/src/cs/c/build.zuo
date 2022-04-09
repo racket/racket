@@ -606,6 +606,7 @@
                                                         (hash-set* config
                                                                    'm m
                                                                    'zlibConfigureEnv zlibEnv
+                                                                   'disablex11 "yes"
                                                                    'enablelibffi (lookup 'SCHEME_LIBFFI "no")
                                                                    'disablecurses (lookup 'DISABLE_CURSES "no")
                                                                    'disableiconv (lookup 'DISABLE_ICONV "no")
