@@ -5147,12 +5147,13 @@ zuo_t *zuo_current_time() {
 # ifdef CLOCK_REALTIME
   struct timespec t;
   if (clock_gettime(CLOCK_REALTIME, &t) != 0)
-    zuo_fail("error gettig time");
+    zuo_fail("error getting time");
   return zuo_cons(zuo_integer(t.tv_sec),
                   zuo_integer(t.tv_nsec));
 # else
   struct timeval t;
-  gettimeofday(&t, NULL);
+  if (gettimeofday(&t, NULL))
+    zuo_fail("error getting time");
   return zuo_cons(zuo_integer(t.tv_sec),
                   zuo_integer(t.tv_usec * 1000));
 # endif
