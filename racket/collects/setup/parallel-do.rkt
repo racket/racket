@@ -76,6 +76,7 @@
       (define worker-cmdline-list (list (current-executable-path)
                                         "-X" (path->string (current-collects-path))
                                         "-G" (path->string (find-config-dir))
+                                        "-A" (path->string (find-system-path 'addon-dir))
                                         "-e" "(eval(read))"))
       (define dynamic-require-cmd `((dynamic-require (string->path ,module-path) (quote ,funcname)) #f))
       (let-values ([(_process-handle _out _in _err) (apply subprocess #f #f (current-error-port) worker-cmdline-list)])
