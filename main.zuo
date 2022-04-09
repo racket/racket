@@ -628,6 +628,32 @@
     (built-racket (get-drive-clients-args #t)))
 
   ;; ------------------------------------------------------------
+  ;; Distribution builds: site and snapshot
+
+
+  (define (site token)
+    (installers token)
+    (site-from-installers token))
+
+  (define (site-from-installers token)
+    (rm* "build/docs")
+    (rm* (build-path "build/zo"
+                     (apply build-path (cdr (explode-path (hash-ref (runtime-env) 'dir))))
+                     "build/docs"))
+    (built-racket "-l-" "distro-build/install-for-docs" "build/docs"
+                  config+mode (lookup 'PKGS)
+                  "build/built/catalog" "build/native/catalog")
+    (built-racket "-l-" "distro-build/assemble-site"
+                  config+mode (lookup 'DIST_BASE)))
+
+  (define (snapshot-site token)
+    (site token)
+    (snapshot-at-site token))
+
+  (define (snapshot-at-site token)
+    (built-racket "-l-" "distro-build/manage-snapshots" config+mode (lookup 'DIST_BASE)))
+
+  ;; ------------------------------------------------------------
   ;; Targets
 
   (define the-targets
@@ -672,6 +698,12 @@
        [:target installers () ,(lambda (token) (installers token))]
        [:target installers-from-built () ,(lambda (token) (installers-from-built token))]
        [:target describe-clients () ,(lambda (token) (describe-clients token))]
+
+       [:target site () ,(lambda (token) (site token))]
+       [:target site-from-installers () ,(lambda (token) (site-from-installers token))]
+
+       [:target snapshot-site () ,(lambda (token) (snapshot-site token))]
+       [:target snapshot-at-site () ,(lambda (token) (snapshot-at-site token))]
 
        [:target ,build-config.rktd ()
                 ,(lambda (path token)
