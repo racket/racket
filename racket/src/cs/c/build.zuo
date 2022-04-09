@@ -212,19 +212,25 @@
                (let* ([config (config-include config
                                               (at-dir ".")
                                               (at-source "."))]
-                      [config (config-merge config
-                                            'CPPFLAGS
-                                            (build-shell
-                                             (string->shell
-                                              (~a "-DINITIAL_COLLECTS_DIRECTORY="
-                                                  (~s
-                                                   (path->complete-path
-                                                    (at-source "../../../collects")))))
-                                             (string->shell
-                                              (~a "-DINITIAL_CONFIG_DIRECTORY="
-                                                  (~s
-                                                   (path->complete-path
-                                                    (at-source "../../../etc")))))))])
+                      [config (if windows?
+                                  (if msvc?
+                                      config
+                                      (config-merge config
+                                                    'CPPFLAGS
+                                                    "-DWIN32"))
+                                  (config-merge config
+                                                'CPPFLAGS
+                                                (build-shell
+                                                 (string->shell
+                                                  (~a "-DINITIAL_COLLECTS_DIRECTORY="
+                                                      (~s
+                                                       (path->complete-path
+                                                        (at-source "../../../collects")))))
+                                                 (string->shell
+                                                  (~a "-DINITIAL_CONFIG_DIRECTORY="
+                                                      (~s
+                                                       (path->complete-path
+                                                        (at-source "../../../etc"))))))))])
                  config)))
 
   (define (config-bootstrap-racket)
@@ -293,7 +299,7 @@
   (define (call-with-dest-racket k)
     (define bindir (if msvc?
                        (at-source "../../..")
-                       (at-destdir config (shell-subst (lookup 'bindir) config))))
+                       (at-destdir config (shell-subst (lookup (if windows? 'prefix 'bindir)) config))))
     (define dest-racket (build-path bindir (if windows?
                                                (~a (CS-suffix "Racket") ".exe")
                                                (cs-suffix "racket"))))
@@ -384,10 +390,11 @@
                                            "++exe" raw_gracketcs gracketcs
                                            libracketcsxxx_RAW.dll libracketcsxxxxxxx.dll
                                            petite-v.boot scheme-v.boot racket-v.boot)
-                         (shell/wait "mt" "-manifest" (string->shell racket.manifest)
-                                     (string->shell (~a "-outputresource:" racketcs)))
-                         (shell/wait "mt" "-manifest" (string->shell gracket.manifest)
-                                     (string->shell (~a "-outputresource:" gracketcs))))]
+                         (when msvc?
+                           (shell/wait "mt" "-manifest" (string->shell racket.manifest)
+                                       (string->shell (~a "-outputresource:" racketcs)))
+                           (shell/wait "mt" "-manifest" (string->shell gracket.manifest)
+                                       (string->shell (~a "-outputresource:" gracketcs)))))]
             `[:target ,racketcs (,raw_racketcs ,@(if mac-fw?
                                                      (list framework)
                                                      embed+boot-deps)
@@ -802,7 +809,7 @@
           (define (icp/strip src dest)
             (icp* src dest)
             (strip-debug config dest))
-          (icp/strip libracketcsxxxxxxx.dll (build-path libdir (file-name-from-path libracketcsxxxxxxx.dll)))
+          (icp* libracketcsxxxxxxx.dll (build-path libdir (file-name-from-path libracketcsxxxxxxx.dll)))
           (define .def (path-replace-extension (file-name-from-path libracketcsxxxxxxx.dll) ".def"))
           (cond
             [msvc?

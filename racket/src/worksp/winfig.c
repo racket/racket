@@ -6,7 +6,7 @@ int main() {
 #elif defined(_WIN64)
   printf("MACH=ta6nt\n");
 #else
-  printf("MACH=tai3t\n");
+  printf("MACH=ti3nt\n");
 #endif
   return 0;
 }

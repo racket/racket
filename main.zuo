@@ -563,7 +563,7 @@
                                       (~a s "/")))
                                 "catalog/")
                             "")
-                      '()))
+                      (shell->strings (lookup 'DIST_CATALOGS_q))))
 
     (built-racket "-l-" "distro-build/installer"
                   "--readme" (lookup 'README) "--upload" (lookup 'UPLOAD)
