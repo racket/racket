@@ -5969,12 +5969,8 @@ zuo_t *zuo_process(zuo_t *command_and_args)
 
   zuo_resume_signal();
 
-  if (!ok) {
-    fprintf(stderr, "attempted command:");
-    for (i = 0; i < argc; i++)
-      fprintf(stderr, "  %s\n", argv[i]);
+  if (!ok)
     zuo_fail("exec failed");
-  }
 
   if (env != NULL)
     free(env);

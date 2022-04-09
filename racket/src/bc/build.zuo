@@ -602,12 +602,14 @@
         
         [:target 3m (,racket3m ,@(if gracket? (list gracket3m) '())
                                ,@(if windows? (list mzcom3m.exe) '())
+                               ,@(if mac? (list framework3m) '())
                                ,starter
                                ,mzdyn3m.o)
                  ,void]
 
         [:target cgc (,racketcgc ,@(if gracket? (list gracketcgc) '())
                                  ,@(if windows? (list mzcomcgc.exe) '())
+                                 ,@(if mac? (list frameworkcgc) '())
                                  ,starter
                                  ,mzdyncgc.o)
                  ,void]

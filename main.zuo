@@ -166,6 +166,14 @@
                                                    '())
                                                (shell->strings (lookup 'DISABLE_STATIC_LIBS))
                                                (cond
+                                                 [(and (equal? subdir "cs/c")
+                                                       (equal? (lookup 'RACKETCS_SUFFIX) ""))
+                                                  '("--enable-csdefault")]
+                                                 [(and (equal? subdir "bc")
+                                                       (equal? (lookup 'RACKETBC_SUFFIX) ""))
+                                                  '("--enable-bcdefault")]
+                                                 [else '()])
+                                               (cond
                                                  [(eq? 'windows (system-type)) '()]
                                                  [prefix (list (~a "--prefix=" prefix)
                                                                "--enable-macprefix")]
@@ -189,6 +197,9 @@
                                      'DESTDIR (if prefix
                                                   (lookup 'DESTDIR "")
                                                   "")
+                                     'CS_INSTALLED (lookup 'RACKETCS_SUFFIX)
+                                     'MMM_INSTALLED (lookup 'RACKETBC_SUFFIX)
+                                     'MMM_CAP_INSTALLED (string-upcase (lookup 'RACKETBC_SUFFIX))
                                      ;; for a unix-style install, we'll run any needed
                                      ;; `DESTDIR` fixes later:
                                      'SKIP_DESTDIR_FIX "skip"
