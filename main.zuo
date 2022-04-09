@@ -507,9 +507,9 @@
        (check-mode "client")
        (rm* "build/user")])
     (maybe-fetch 'cs)
-    (base token vm)
+    (base token vm options)
 
-    (define cross? (or (hash-ref options 'cross? #f)
+    (define cross? (or (hash-ref options 'server-compile-machine? #f)
                        (equal? (lookup 'CS_CROSS_SUFFIX) "-cross")))
 
     (define (built-racket . args) (built-racket* cross? args))
@@ -650,7 +650,7 @@
        [:target server-from-base () ,(lambda (token) (server-from-base token))]
 
        [:target client () ,(lambda (token) (client token))]
-       [:target client-compile-any () ,(lambda (token) (client token (hash 'cross? #t)))]
+       [:target client-compile-any () ,(lambda (token) (client token (hash 'server-compile-machine? #t)))]
        [:target client-from-site () ,(lambda (token) (client token (hash 'from-site? #t)))]
 
        [:target installers () ,(lambda (token) (installers token))]
