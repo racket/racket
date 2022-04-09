@@ -138,8 +138,7 @@
 
 (define (get-dependencies vars file)
   (define p (racket/process vars
-                            (at-source "zuo-help.rkt")
-                            "--dependencies"
+                            (at-source "read-deps.rkt")
                             file
                             (hash 'stdout 'pipe)))
   (define config-str (fd-read (hash-ref p 'stdout) eof))
@@ -162,8 +161,7 @@
 
 (define (extract-racket-configuration vars)
   (define p (racket/process vars
-                            (at-source "zuo-help.rkt")
-                            "--get-config"
+                            (at-source "get-config.rkt")
                             (hash 'stdout 'pipe)))
   (define config-str (fd-read (hash-ref p 'stdout) eof))
   (process-wait (hash-ref p 'process))
