@@ -212,7 +212,8 @@
                                                        (build-path s "ChezScheme")))
                                      'CROSS_MODE (if (equal? (lookup 'CS_CROSS_SUFFIX) "-cross")
                                                      "cross"
-                                                     "")))))
+                                                     "")
+                                     'MAKE (lookup 'MAKE)))))
     (build (find-target "build" targets)
            #f
            (build-options))

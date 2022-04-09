@@ -32,7 +32,12 @@
 # ------------------------------------------------------------
 # Zuo macros (with `make` versus `nmake` magic)
 
-# `make` will continue this comment to the next line, but `nmake` won't \
+# Most `make` variants will continue the end of this comment
+# to the next line, due to the final backslash, but `nmake` won't.
+# Also, OpenBSD's `make` won't, so see the end of this file  \
+ZUO = racket\src\build\zuo.exe
+
+# Get `nmake` to skip this part \
 !if 0
 
 ZUO = racket/src/build/bin/zuo
@@ -40,9 +45,6 @@ PLUS_MODIFIER = +
 
 #\
 !endif
-
-# `nmake`-only \
-ZUO = racket\src\build\zuo.exe
 
 RUN_ZUO = $(PLUS_MODIFIER) $(ZUO) .
 
@@ -159,7 +161,8 @@ RACKETCS_SUFFIX =
 # ------------------------------------------------------------
 # Build targets
 
-BUILD_VARS = VM="$(VM)" \
+BUILD_VARS = MAKE=$(MAKE) \
+             VM="$(VM)" \
              JOBS="$(JOBS)" \
              CPUS="$(CPUS)" \
              CONFIGURE_ARGS_qq='$(CONFIGURE_ARGS_qq)' \
@@ -593,6 +596,9 @@ win-test-client:  $(ZUO)
 fetch-pb: $(ZUO)
 	$(RUN_ZUO) pb-fetch $(BUILD_VARS)
 
+ping: $(ZUO)
+	$(RUN_ZUO) ping $(BUILD_VARS)
+
 # ------------------------------------------------------------
 # Zuo build rules
 
@@ -603,3 +609,17 @@ racket/src/build/bin/zuo: racket/src/zuo/zuo.c
 racket\src\build\zuo.exe: racket\src\zuo\zuo.c
 	IF NOT EXIST racket\src\build cmd /c mkdir racket\src\build
 	cd racket\src\build && cl.exe /O2 /DZUO_LIB_PATH=\"..\\zuo\\lib\" /Fezuo.exe ..\zuo\zuo.c
+
+# ------------------------------------------------------------
+# OpenBSD `make` workaround
+
+# Open BSD sees the `!` lines that are intended for `nmake`, and it
+# treats them as an empty target name with dependencies `if`, `0`,
+# and `endif` --- and since that empty target is the first target, it's
+# treated as the default, so bounce to the actual default target
+# \
+!if 0
+#\
+if endif 0: in-place
+# \
+!endif

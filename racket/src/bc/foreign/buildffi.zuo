@@ -27,7 +27,7 @@
                   (rule '()
                         (lambda ()
                           (shell/wait (build-shell
-                                       "make"
+                                       (hash-ref config 'MAKE "make")
                                        (string->shell (~a "libffi" (hash-ref config 'FOREIGN_CONVENIENCE "") ".la")))
                                       (hash 'dir
                                             (at-dir ".")))

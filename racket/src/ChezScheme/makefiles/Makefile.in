@@ -7,7 +7,7 @@ ZUO=bin/zuo
 
 .PHONY: build
 build: $(ZUO)
-	$(ZUO) $(workarea)
+	$(ZUO) $(workarea) MAKE="$(MAKE)"
 
 .PHONY: run
 run: $(ZUO)
@@ -15,86 +15,86 @@ run: $(ZUO)
 
 .PHONY: kernel
 kernel: $(ZUO)
-	$(ZUO) $(workarea) kernel
+	$(ZUO) $(workarea) kernel MAKE="$(MAKE)"
 
 .PHONY: install
 install: $(ZUO)
-	$(ZUO) $(workarea) install
+	$(ZUO) $(workarea) install MAKE="$(MAKE)"
 
 .PHONY: uninstall
 uninstall: $(ZUO)
-	$(ZUO) $(workarea) uninstall
+	$(ZUO) $(workarea) uninstall MAKE="$(MAKE)"
 
 .PHONY: test
 test: $(ZUO)
-	$(ZUO) $(workarea) test
+	$(ZUO) $(workarea) test MAKE="$(MAKE)"
 
 .PHONY: test-some
 test-some: $(ZUO)
-	$(ZUO) $(workarea) test-some
+	$(ZUO) $(workarea) test-some MAKE="$(MAKE)"
 
 .PHONY: test-more
 test-more: $(ZUO)
-	$(ZUO) $(workarea) test-more
+	$(ZUO) $(workarea) test-more MAKE="$(MAKE)"
 
 .PHONY: coverage
 coverage: $(ZUO)
-	$(ZUO) $(workarea) coverage
+	$(ZUO) $(workarea) coverage MAKE="$(MAKE)"
 
 .PHONY: bootfiles
 bootfiles: $(ZUO)
-	$(ZUO) $(workarea) bootfiles
+	$(ZUO) $(workarea) bootfiles MAKE="$(MAKE)"
 
 .PHONY: reset
 reset: $(ZUO)
-	$(ZUO) $(workarea) reset
+	$(ZUO) $(workarea) reset MAKE="$(MAKE)"
 
 # <machine>.boot to build boot files for <machine>
 %.boot: $(ZUO)
-	$(ZUO) $(workarea) boot $*
+	$(ZUO) $(workarea) boot $* MAKE="$(MAKE)"
 
 auto.boot: $(ZUO)
-	$(ZUO) $(workarea) boot
+	$(ZUO) $(workarea) boot MAKE="$(MAKE)"
 
 # <machine>.bootquick to build boot files for <machine>
 # with o=3 d=0 for the cross compiler, and only after
 # building the kernel for the configured machine
 %.bootquick: $(ZUO)
-	$(ZUO) $(workarea) bootquick $*
+	$(ZUO) $(workarea) bootquick $* MAKE="$(MAKE)"
 
 auto.bootquick: $(ZUO)
-	$(ZUO) $(workarea) bootquick
+	$(ZUO) $(workarea) bootquick MAKE="$(MAKE)"
 
 # <machine>-<tag>.boot to repackage boot files for
 # <machine> with pbchunk sources, including additional
 # boot files
 %.bootpbchunk: $(ZUO)
-	$(ZUO) $(workarea) bootpbchunk $* $(ARGS)
+	$(ZUO) $(workarea) bootpbchunk $* $(ARGS) MAKE="$(MAKE)"
 
 # Supply ORIG=<dir> to build using existing at <dir>
 .PHONY: from-orig
 from-orig: $(ZUO)
-	$(ZUO) $(workarea) from-orig $(ORIG)
+	$(ZUO) $(workarea) from-orig $(ORIG) MAKE="$(MAKE)"
 
 .PHONY: docs
 docs: build $(ZUO)
-	$(ZUO) $(workarea) docs
+	$(ZUO) $(workarea) docs MAKE="$(MAKE)"
 
 .PHONY: bintar
 bintar: $(ZUO)
-	$(ZUO) $(workarea) bintar
+	$(ZUO) $(workarea) bintar MAKE="$(MAKE)"
 
 .PHONY: rpm
 rpm: $(ZUO)
-	$(ZUO) $(workarea) rpm
+	$(ZUO) $(workarea) rpm MAKE="$(MAKE)"
 
 .PHONY: pkg
 pkg: $(ZUO)
-	$(ZUO) $(workarea) pkg
+	$(ZUO) $(workarea) pkg MAKE="$(MAKE)"
 
 .PHONY: clean
 clean: $(ZUO)
-	$(ZUO) $(workarea) clean
+	$(ZUO) $(workarea) clean MAKE="$(MAKE)"
 	rm -f bin/zuo
 
 $(ZUO): $(srcdir)/../zuo/zuo.c
