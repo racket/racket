@@ -309,8 +309,8 @@
                            (list mzsj86a.o)
                            '()))
 
-  (define mzcomcgc.exe (at-dir "MzComCGC.exe"))
-  (define mzcom3m.exe (at-dir "MzCom3m.exe"))
+  (define mzcomcgc.exe (at-dir "MzCOMCGC.exe"))
+  (define mzcom3m.exe (at-dir "MzCOM3m.exe"))
 
   (define mzcomcgc.o (at-dir (.c->.o "src/mzcom.c")))
   (define mzobjcgc.o (at-dir (.c->.o "src/mzobj.c")))
@@ -1296,7 +1296,7 @@
                (list mzdyncgc.exp mzdyn3m.exp)
                (list #f #t))
 
-        ;; MzCom (Windows)
+        ;; MzCOM (Windows)
         ,@(map (lambda (mzcom.exe libracket.dll.a more.dll.a-files mzcom.o mzobj.o)
                  `[:target ,mzcom.exe (,comres.o
                                        ,com_glue.o
@@ -1317,13 +1317,15 @@
                                                                                    "ole32.lib oleaut32.lib uuid.lib")
                                                                       "-lole32 -loleaut32 -luuid -ldelayimp -static-libgcc"))
                                                     'LDFLAGS
-                                                    (build-shell "-mwindows"
-                                                                 (map (lambda (delay-dll)
-                                                                        (~a "/DELAYLOAD:"
-                                                                            (string->shell
-                                                                             (file-name-from-path delay-dll))))
-                                                                      (cons libracket.dll.a
-                                                                            more.dll.a-files))))))])
+                                                    (if msvc?
+                                                        (build-shell "/SUBSYSTEM:windows"
+                                                                     (map (lambda (delay-dll)
+                                                                            (~a "/DELAYLOAD:"
+                                                                                (string->shell
+                                                                                 (file-name-from-path delay-dll))))
+                                                                          (cons libracket.dll.a
+                                                                                more.dll.a-files)))
+                                                        "-mwindows"))))])
                (list mzcomcgc.exe mzcom3m.exe )
                (list libracketcgc.dll.a libracket3m.dll.a)
                (list (list libmzgc.dll.a) '())
@@ -1461,9 +1463,10 @@
                                           (hash-ref config 'MZOPTIONS "")
                                           (string->shell (at-source "src/systype.c"))
                                           (string->shell (~a "-I" (at-source "include")))
-                                          (string->shell (~a "-I" (if windows?
-                                                                      (at-source "../worksp")
-                                                                      (at-dir ".")))))
+                                          (string->shell (~a "-I" (at-dir ".")))
+                                          (if windows?
+                                              (string->shell (~a "-I" (at-source "../worksp")))
+                                              ""))
                              3m-installed-suffix (lookup 'CROSS_COMPILE_TARGET_KIND)
                              ;; although this is not necessarily a cross compilation, we
                              ;; pessimistically assume that it is:
@@ -1560,9 +1563,9 @@
                (cp libracket3m.def (build-path libdir (file-name-from-path libracket3m.def)))]))
           (cp/in (at-source "../mzcom/prebuilt/MzCOM.tlb") (build-path libpltdir "MzCOM.tlb"))
           (when cgc?
-            (cp/strip mzcomcgc.exe (build-path libdir (~a "MzCom" cgc-cap-installed-suffix ".exe"))))
+            (cp/strip mzcomcgc.exe (build-path libdir (~a "MzCOM" cgc-cap-installed-suffix ".exe"))))
           (when 3m?
-            (cp/strip mzcom3m.exe (build-path libdir (~a "MzCom" 3m-cap-installed-suffix ".exe"))))]
+            (cp/strip mzcom3m.exe (build-path libdir (~a "MzCOM" 3m-cap-installed-suffix ".exe"))))]
          [else
           (define starter.exe (build-path libpltdir (.exe "starter")))
           (cp/in (at-dir (.exe "starter")) starter.exe)

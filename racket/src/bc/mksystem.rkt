@@ -35,7 +35,7 @@
         (begin
           (printf "Extracting system information for cross-compile\n")
           (let-values ([(p out in err)
-                        (subprocess #f #f #f "/bin/sh" "-c" (vector-ref args 1))])
+                        (subprocess #f #f (current-error-port) "/bin/sh" "-c" (vector-ref args 1))])
             (close-output-port in)
             (letrec-values ([(read-all) (lambda ()
                                           (let-values ([(s) (read-bytes 4096 out)])
