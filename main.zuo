@@ -31,7 +31,7 @@
   (define build/site.rkt (at-source "build/site.rkt"))
 
   (define vm (let ([cb (lookup 'CLIENT_BASE)]
-                   [wcb (lookup 'WIN_CLIENT_BASE)])
+                   [wcb (lookup 'WIN32_CLIENT_BASE)])
                (cond
                  [(equal? cb "cs-base") 'cs]
                  [(equal? cb "bc-base") 'bc]
