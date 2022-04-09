@@ -239,6 +239,9 @@
                               'configure (if (eq? 'windows (system-type))
                                              (at-source "racket/src" subdir "winfig.bat")
                                              (at-source "racket/src" subdir "configure"))
+                              'configure-args (if (equal? subdir "cs/c")
+                                                  (list "--enable-csdefault")
+                                                  (list "--enable-bcdefault"))
                               'inputs (list (at-source "racket/src" subdir "Mf-config.in"))
                               'outputs (list (at-source "racket/src/build/cross" subdir "Mf-config"))
                               'vars (hash))))
@@ -392,7 +395,7 @@
   (define (find-built-racket [cross? #f])
     (define vars (find-racket vm
                               (at-source "build/user/config")
-                              (if cross?
+                              (if (and cross? (eq? vm 'cs))
                                   (hash 'server-compile-machine? #t)
                                   (hash))))
     (hash-set vars
@@ -521,6 +524,7 @@
     (base token vm options)
 
     (define cross? (or (hash-ref options 'server-compile-machine? #f)
+                       (equal? (lookup 'BUNDLE_FROM_SERVER_TARGET) "bundle-cross-from-server")
                        (equal? (lookup 'CS_CROSS_SUFFIX) "-cross")))
 
     (define (built-racket . args) (built-racket* cross? args))

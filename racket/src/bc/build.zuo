@@ -578,7 +578,7 @@
   (define (call-with-bindir k)
     (define bindir (if msvc?
                        (at-source "../..")
-                       (at-destdir config (shell-subst (lookup 'bindir) config))))
+                       (at-destdir config (shell-subst (lookup (if windows? 'prefix 'bindir)) config))))
     (k bindir))
 
   (define (dest-racket-exe 3m?)
@@ -1517,9 +1517,13 @@
                    (icp* gracket dest-exe)])
                 (strip-signature dest-exe)
                 (strip-debug config dest-exe)
-                (if mac?
-                    (set-collects-path racket dest-exe "../../../../collects" "../../../../etc")
-                    (set-collects-path racket dest-exe collects-path config-path))
+                (cond
+                  [mac?
+                   (set-collects-path racket dest-exe "../../../../collects" "../../../../etc")]
+                  [windows?
+                   (set-collects-path racket dest-exe "../collects" "../etc")]
+                  [else
+                   (set-collects-path racket dest-exe collects-path config-path)])
                 (restore-signature dest-exe)))
             (append
              (if cgc? (list racketcgc) '())
