@@ -21,6 +21,7 @@
 # include <sys/types.h>
 # include <sys/wait.h>
 # include <sys/stat.h>
+# include <sys/time.h>
 # include <time.h>
 # include <dirent.h>
 # include <signal.h>
@@ -5143,11 +5144,18 @@ static zuo_t *zuo_cp(zuo_t *src_path, zuo_t *dest_path) {
 
 zuo_t *zuo_current_time() {
 #ifdef ZUO_UNIX
+# ifdef CLOCK_REALTIME
   struct timespec t;
   if (clock_gettime(CLOCK_REALTIME, &t) != 0)
     zuo_fail("error gettig time");
   return zuo_cons(zuo_integer(t.tv_sec),
                   zuo_integer(t.tv_nsec));
+# else
+  struct timeval t;
+  gettimeofday(&t, NULL);
+  return zuo_cons(zuo_integer(t.tv_sec),
+                  zuo_integer(t.tv_usec * 1000));
+# endif
 #endif
 #ifdef ZUO_WINDOWS
   FILETIME ft;
