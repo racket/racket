@@ -654,6 +654,21 @@
     (built-racket "-l-" "distro-build/manage-snapshots" config+mode (lookup 'DIST_BASE)))
 
   ;; ------------------------------------------------------------
+  ;; Derived: steps that require a working `racket` to build things
+  ;; that need to be in sync to build `racket` in the first place
+
+  (define (derived token)
+    (define (build-one src target-name)
+      (let ([src (at-source src)])
+        (build (find-target target-name
+                            ((dynamic-require src 'targets-at)
+                             (make-at-dir (path-only src))))
+               token)))
+    (build-one "racket/src/rktio/build.zuo" "rktio-rktl")
+    (build-one "racket/src/expander/main.zuo" "expander")
+    (build-one "racket/src/cs/main.zuo" "schemified"))
+
+  ;; ------------------------------------------------------------
   ;; Targets
 
   (define the-targets
@@ -711,6 +726,8 @@
                    (display-to-file "#hash((links-search-files . ()))\n"
                                     path
                                     :truncate))]
+
+       [:target derived () ,(lambda (token) (derived token))]
 
        ;; does nothing; used to make sure that "main.zuo" loads without error
        [:target ping () ,(lambda (token) (alert "pong"))])))

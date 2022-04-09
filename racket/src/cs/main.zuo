@@ -254,7 +254,7 @@
   (define (converter src-target [skip-export? #f])
     (lambda (path token)
       (racket vars
-              "convert.rkt"
+              (at-source "convert.rkt")
               (if unsafe?
                   "--unsafe"
                   '())
@@ -324,12 +324,16 @@
                   [known.rktl (find-target "known.rktl" schemify-targets)]
                   [expander.rktl (find-target "expander.rktl"
                                               (expander-targets-at (make-at-dir (at-dir "../expander")) vars expander))])
-             `([:target ,expander.scm (,expander.rktl) ,(converter expander.rktl)]
-               [:target ,known.scm (,known.rktl) ,(converter known.rktl 'skip-export)]
-               [:target ,schemify.scm (,schemify.rktl) ,(converter schemify.rktl 'skip-export)]
-               [:target ,regexp.scm (,regexp.rktl) ,(converter regexp.rktl)]
-               [:target ,io.scm (,io.rktl) ,(converter io.rktl)]
-               [:target ,thread.scm (,thread.rktl) ,(converter thread.rktl)]))
+             `([:target schemified (,thread.scm ,io.scm ,regexp.scm
+                                                ,schemify.scm ,known.scm
+                                                ,expander.scm)
+                        ,void]
+               [:target ,expander.scm (,expander.rktl) ,(converter expander.rktl) :precious]
+               [:target ,known.scm (,known.rktl) ,(converter known.rktl 'skip-export) :precious]
+               [:target ,schemify.scm (,schemify.rktl) ,(converter schemify.rktl 'skip-export) :precious]
+               [:target ,regexp.scm (,regexp.rktl) ,(converter regexp.rktl) :precious]
+               [:target ,io.scm (,io.rktl) ,(converter io.rktl) :precious]
+               [:target ,thread.scm (,thread.rktl) ,(converter thread.rktl) :precious]))
            '())
 
      [:db-dir ,(at-dir "compiled")]
