@@ -536,7 +536,7 @@
                          (error "no targets to build")
                          (build (car targets) #f opts))]
        [else
-        (let ([target1 (find-target (car args) targets)])
+        (let ([target1 (find-target (car args) targets (lambda () #f))])
           (cond
             [(and target1 (hash-ref (target-options target1) 'command? #f))
              ;; provide extra arguments to the target:
@@ -544,7 +544,7 @@
             [else
              ;; treat all arguments as targets:
              (let ([run-targets (map (lambda (arg)
-                                       (or (find-target arg targets)
+                                       (or (find-target arg targets (lambda () #f))
                                            (error (~a "unknown target: " arg))))
                                      args)])
                (build (if (= (length run-targets) 1)
@@ -587,10 +587,11 @@
                (loop (cdr args) accum-args (hash-set vars (car var+val) (cdr var+val)))
                (loop (cdr args) (cons (car args) accum-args) vars)))]))))
 
-(define (find-target name targets)
+(define (find-target name targets [fail-k (lambda () (error "target not found" name))])
   (unless (path-string? name) (arg-error 'find-target "path string" name))
   (unless (and (list? targets) (andmap target? targets))
     (arg-error 'find-target "list of targets" targets))
+  (unless (procedure? fail-k) (arg-error 'find-target "procedure" fail-k))
   (define len (string-length name))
   (define (matches? t-name)
     (let* ([t-name (~a t-name)]
@@ -601,10 +602,11 @@
                   (or (= t-len len)
                       (= (char "/") (string-ref t-name (- start 1)))
                       (= (char "\\") (string-ref t-name (- start 1)))))))))
-  (ormap (lambda (t) (and (or (matches? (target-name t))
-                              (ormap matches? (hash-ref (target-options t) 'co-outputs '())))
-                          t))
-         targets))
+  (or (ormap (lambda (t) (and (or (matches? (target-name t))
+                                  (ormap matches? (hash-ref (target-options t) 'co-outputs '())))
+                              t))
+             targets)
+      (fail-k)))
 
 (define (command-target? t)
   (and (target? t)

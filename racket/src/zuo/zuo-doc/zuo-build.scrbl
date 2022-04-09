@@ -464,13 +464,17 @@ The @racket[targets-at] procedure is applied to @racket[at-dir] and a
 hash table of variables, where each variable name is converted to a
 symbol and the value is left exact as after @litchar{=}.}
 
-@defproc[(find-target [name string?] [targets (listof target?)]) (or/c target? #f)]{
+@defproc[(find-target [name string?]
+                      [targets (listof target?)]
+                      [fail-k procedure? (lambda () (error ....))])
+         (or/c target? #f)]{
 
 Finds the first target in @racket[targets] that is a match for
 @racket[name], returning @racket[#f] is not match is found. A
 @racket[name] matches when it is the same as n entire symbol or path
 target name or when it matches a suffix that is preceded by
-@litchar{/} or @litchar{\\}.}
+@litchar{/} or @litchar{\\}. If no match is found, @racket[fail-k]
+is called in tail position.}
 
 @defproc[(make-at-dir [path path-string?]) (path-string?  ... . -> . path-string?)]{
 
