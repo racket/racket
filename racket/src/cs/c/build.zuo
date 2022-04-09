@@ -234,13 +234,20 @@
                  config)))
 
   (define (config-bootstrap-racket)
-    (hash-set config 'racket (if (not cross?)
+    (let ([config
+           (hash-set config
+                     'racket (if (not cross?)
                                  raw_racketcs
                                  (let ([r (lookup 'RACKET)])
                                    (if (equal? r "")
                                        (at-dir "local/cs/c/racketcs")
-                                       (executable->path r at-dir))))))
-  
+                                       (executable->path r at-dir)))))])
+      (if msvc?
+          (hash-set config
+                    'racket-args (list "-X" (at-source "../../../collects")
+                                       "-G" (at-source "../../../etc")))
+          config)))
+
   (define (bootstrap-racket . args)
     (racket (config-bootstrap-racket)
             (setup-boot at-dir config)
