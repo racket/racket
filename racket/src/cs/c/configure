@@ -4741,7 +4741,7 @@ if test "${enable_scheme}" != "" ; then
    if test -d "${enable_scheme}" ; then
      # Directory exists, so use it as a build directory
      echo "Using supplied Scheme path as a build directory"
-     SCHEME_DIR="${enable_scheme}"
+     SCHEME_DIR="${enable_scheme}/ChezScheme"
    else
      # Directory does not exist, so assume it's an executable
      echo "Using supplied Scheme path as an executable"

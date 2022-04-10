@@ -68,7 +68,8 @@
   (define scheme.exe (car scheme.exe+args))
   (define scheme-args (cdr scheme.exe+args))
 
-  (define xpatch (at-dir CS (~a "xc-" m) "s" "xpatch"))
+  (define xpatch? (and cross? (not (equal? m host-m))))
+  (define xpatch (and xpatch? (at-dir CS (~a "xc-" m) "s" "xpatch")))
 
   (define cs-targets (cs-targets-at at-dir
                                     (let ([vars (hash-set* vars
@@ -79,7 +80,7 @@
                                                            'LZ4Lib (lookup 'LZ4_LIB)
                                                            'CONFIGURE_RACKET_SO_COMPILE (lookup 'CONFIGURE_RACKET_SO_COMPILE)
                                                            'DISABLE_WPO (lookup 'DISABLE_WPO "f"))])
-                                      (if (not cross?)
+                                      (if (not xpatch?)
                                           vars
                                           (hash-set* vars
                                                      'xpatch xpatch
@@ -336,7 +337,7 @@
   (define link-config (input-data-target 'link-config (list mac? mac-fw?)))
 
   (define xpatch-args
-    (if cross?
+    (if xpatch?
         (list "--xpatch" xpatch)
         '()))
 
@@ -959,7 +960,7 @@
                  (list petite-v.boot scheme-v.boot racket-v.boot)
                  (list "petite.boot" "scheme.boot" "racket.boot")))])
 
-       (when cross?
+       (when xpatch?
          ;; These two files don't get installed anywhere, because they're
          ;; not part of a distribution, but a distro build expects them
          ;; to be created in the directory where Racket was cross-built
