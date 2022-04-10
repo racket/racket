@@ -41,17 +41,12 @@ implemented in Chez Scheme and Racket (compiled to Chez Scheme).
 Racket CS
 ---------
 
-By default, `configure` and the Windows scripts build the CS
-implementation of Racket.
+By default, `configure` (for Unix) or `winfig.bat` (for Windows)
+prepares a build for the CS implementation of Racket. Chez Scheme is
+included in Racket source distributions and the source repository, and
+it will be compiled as part of the build.
 
-Chez Scheme is included in Racket source distributions and the source
-repository.
-
-To build Racket CS on Windows, see See "worksp\README.txt" for
-information.
-
-If you need more information specific to Racket CS, see
-"cs/README.txt".
+For more information specific to Racket CS, see "cs/README.txt".
 
 Racket BC
 ---------
@@ -59,18 +54,16 @@ Racket BC
 To build Racket BC on Unix variants or Mac OS:
 
  * ... in addition to Racket CS: supply `--enable-cs --enable-bc` to
-   `configure`.
+   `configure` or supply `/both` to `winfig.bat`.
 
    The generated Racket BC executables will have a "bc" suffix. A
    plain `make` will still build Racket CS; use `make bc` to build and
    `make install-bc` to install.
 
- * ... by itself: supply `--enable-bcdefault` to `configure`.
+ * ... by itself: supply `--enable-bcdefault` to `configure` or
+   `/bconly` to `winfig.bat`.
  
    The generated Racket BC executables will *not* have a "bc" suffix.
-
-To build Racket BC on Windows, see See "worksp\README.txt" for
-information.
 
 If you need more information specific to Racket BC, see
 "bc/README.txt".
@@ -101,10 +94,12 @@ Quick instructions:
  restart from scratch should you need to.
 
  Some build modes may require GNU Make. For example, when building the
- Racket CS implementation, GNU Make is required. When building the
- Racket BC implementation, the content of the "foreign" subdirectory
- requires GNU Make if no installed "libffi" is detected. If the build
- fails with another variant of `make`, please try using GNU Make.
+ Racket CS implementation, GNU Make is required when the bundled LZ4
+ is built because none if supplied via `--enable-liblz4`. When
+ building the Racket BC implementation, the content of the "foreign"
+ subdirectory requires GNU Make if no installed "libffi" is detected.
+ If the build fails with another variant of `make`, please try using
+ GNU Make.
 
  When building from a Git clone, after `make install`, the Racket
  installation is still more "minimal" than a "Minimal Racket"
@@ -185,10 +180,10 @@ Detailed instructions:
     The `configure` script accepts many other flags that adjust the
     build process. Run `configure --help` for more information. In
     addition, a specific compiler can be selected through environment
-    variables. For example, to select the SGI compilers for Irix
+    variables. For example, to select the SGI compiler for Irix
     instead of gcc, run configure as
 
-         env CC=cc CXX=CC [here]configure
+         env CC=cc [here]configure
 
     To add an include path, be sure to use CPPFLAGS="-I..." instead of
     CFLAGS="-I...". The CPPFLAGS variable controls C pre-processing,
@@ -216,6 +211,11 @@ Detailed instructions:
     You can run executables in-place before `make install`, but if you
     haven't yet built ".zo" bytecode files from Racket sources in
     "../collects", startup will be very slow.
+
+    The first step of `make` is to build `bin/zuo` to run build
+    scripts. If you need to select the C compiler to build `bin/zuo`
+    (which is a single C file that needs only system headers), then
+    supply `HOSTCC=<compiler>` as an argument to `make`.
 
  4. Run `make install`.
 
@@ -340,8 +340,19 @@ but note the following:
  Compiling for Windows
 ========================================================================
 
-To compile with Microsoft Visual C, see the instructions in
+For information of setting an a command-line build environment set up
+with Microsoft Visual Studio, see the instructions in
 "worksp\README.txt".
+
+With the command-line environment set up, the build steps are
+essentially the same as for Unix, but with `winfig.bat` in place of
+`configure` and `nmake` in place of `make`:
+
+   mkdir build
+   cd build
+   ../winfig.bat
+   nmake
+   nmake install
 
 To compile with MinGW tools, follow the Unix instructions above; do
 not use `--enable-shared`, because DLLs will be generated
@@ -515,6 +526,25 @@ CS). Interpreted modes are available --- but slower, of course:
 
 
 ========================================================================
+ Make versus Zuo
+========================================================================
+
+When you run `configure` or `winfig.bat`, a makefile is generated, but
+most of the build work is described by ".zuo" files. The generated
+makefiles ensure that `bin/zuo` or `zuo.exe` is built and then bounces
+the target request to `zuo`.
+
+A file named "build.zuo" is analogous to "Makefile.in": it's in a
+source directory but meant to be used from a build directory. A file
+named "main.zuo" is analogous to "Makefile", where the directory
+containing "main.zuo" is the build directory. The `configure` and
+`winfig.bat` scripts generate a "main.zuo" in a build directory that
+bounces to "build.zuo" in the source directiry. A file named
+"buildmain.zuo" is even more like "Makefile.in" in the sense that
+"buildmain.zuo" is instantiated in a build directory as "main.zuo".
+
+
+========================================================================
  Modifying Racket
 ========================================================================
 
@@ -628,11 +658,11 @@ Sources shared by both Racket implementations
 
    Startup wrappers used by both the Racket CS and BC implementations.
 
- * "worksp" --- Windows projects and build scripts
+ * "worksp" --- Windows scripts, icons, etc.
 
  * "mac" --- scripts for generating Mac OS ".app"s
 
- * "setup-go.rkt" --- helper script
+ * "setup-go.rkt" and other ".rkt" files --- helper scripts
 
    The "setup-go.rkt" script is a bootstrapping tool that is used by
    parts of the build that need to run Racket programs in the process

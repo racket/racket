@@ -2,6 +2,9 @@ This directory contains most of the source code to the Racket BC
 implementation. See "../README.txt" for general information on
 building.
 
+You will need to use `zuo` instead of `make` for working at the level
+of this directory. See "../zuo".
+
 
 ========================================================================
  CGC versus 3m
@@ -14,17 +17,17 @@ usually provides better overall performance.
 
 The default build mode creates 3m executables only (except for a CGC
 executable that is used to build the 3m executable). To create CGC
-executables in addition to 3m executables, use `make cgc` in addition
-to `make`, or run `make both`. To install both variants, use `make
+executables in addition to 3m executables, use `zuo . cgc` in addition
+to `zuo`, or run `zuo . both`. To install both variants, use `make
 install-both` instead of just `make install`. Alternatively, use just
-`make cgc` and `make install-cgc` to build and install just the CGC
+`zuo . cgc` and `zuo . install-cgc` to build and install just the CGC
 variants.
 
-CGC variants are installed with a "cgc" suffix.  To swap the default
-build and install mode, supply `--enable-cgcdefault` to `configure`.  In
-that case, CGC variants are built by default, `make 3m` creates 3m
-executables, and `make install-both` installs CGC variants without a suffix
-and 3m variants with a "3m" suffix.
+CGC variants are installed with a "cgc" suffix. To swap the default
+build and install mode, supply `--enable-cgcdefault` to `configure`.
+In that case, CGC variants are built by default, `zuo . 3m` creates 3m
+executables, and `make install-both` installs CGC variants without a
+suffix and 3m variants with a "3m" suffix.
 
 
 ========================================================================

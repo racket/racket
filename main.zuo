@@ -7,7 +7,7 @@
 
 ;; Build options are provided as <variable>=<value> command-line
 ;; arguments, as in
-;;   zuo PKGS="compiler-lib"
+;;   zuo . PKGS="compiler-lib"
 ;; or
 ;;   zuo main.zuo unix-style PKGS="compiler-lib"
 ;; All variables are described in `Makefile`, which also provides
@@ -52,15 +52,22 @@
     (define cpus (let ([s (lookup 'CPUS)])
                    (and (not (equal? s ""))
                         s)))
-    (define jobs (or cpus
-                     (let ([s (lookup 'JOBS)])
-                       (and (not (equal? s ""))
-                            s))))
+    (define simple-jobs (or cpus
+                            (let ([s (lookup 'JOBS)])
+                              (and (not (equal? s ""))
+                                   s))))
+    (define jobs (or simple-jobs
+                     (let ([l (string-split (lookup 'JOB_OPTIONS))])
+                       (and (= 2 (length l))
+                            (equal? (car l) "-j")
+                            (cadr l)))))
     (define n-jobs (and jobs (string->integer jobs)))
     (when (and jobs
                (or (not n-jobs)
                    (< n-jobs 1)))
-      (error (~a (if cpus "CPUS" "JOBS") "is not a positive integer" jobs)))
+      (error (~a (if cpus "CPUS" (if simple-jobs "JOBS" "JOB_OPTIONS argument"))
+                 "is not a positive integer"
+                 jobs)))
     (or n-jobs
         (infer-gnu-make-jobs)))
 
@@ -274,6 +281,17 @@
                                (list "-G" config
                                      "-X" (at-source "racket/collects")))))
 
+  (define (local-catalog [racket (hash-ref (find-racket vm) 'racket)]
+                         [raco #f])
+    (define loc-catalog (at-source "build/local/pkgs-catalog"))
+    (define unix-catalog (at-source "build/local/catalog"))
+    (process/wait racket "-l-" "pkg/dirs-catalog" "--check-metadata" loc-catalog "pkgs")
+    (process/wait (or raco racket)
+                  (if raco '() (list "-l-" "raco"))
+                  "pkg" "catalog-copy" "--force" "--from-config" loc-catalog
+                  unix-catalog)
+    unix-catalog)
+    
   (define (setup vm . args)
     (raco (find-racket vm)
           "setup"
@@ -311,11 +329,8 @@
     (unless (equal? src-catalog default-src-catalog)
       (process/wait raco "pkg" "config" "-i"
                     "--set" "catalogs" src-catalog ""))
-    (define loc-catalog (at-source "build/local/pkgs-catalog"))
-    (define unix-catalog (at-source "build/local/catalog"))
-    (process/wait racket "-l-" "pkg/dirs-catalog" "--check-metadata" loc-catalog "pkgs")
-    (process/wait raco "pkg" "catalog-copy" "--force" "--from-config" loc-catalog
-                  unix-catalog)
+    ;; create local catalog
+    (define unix-catalog (local-catalog racket raco))
     ;; install packages
     (define jobs (get-jobs))
     (process/wait raco "pkg" "install"
@@ -726,6 +741,8 @@
                    (display-to-file "#hash((links-search-files . ()))\n"
                                     path
                                     :truncate))]
+
+       [:target local-catalog () ,(lambda (token) (local-catalog))]
 
        [:target derived () ,(lambda (token) (derived token))]
 

@@ -21,11 +21,12 @@
                        vars)))
   (define lookup (lambda (k) (hash-ref config k #f)))
 
-  (define scheme (or (lookup 'scheme)
+  (define scheme (or (lookup 'SCHEME)
                      (find-executable-path (.exe "scheme"))))
   (define scheme-args (or (lookup 'scheme-args) '()))
-  (define unsafe? #t)
-  (define compress? #f)
+  (define unsafe? (not (equal? (lookup 'UNSAFE_COMP) "no")))
+  (define debug?  (equal? (lookup 'DEBUG_COMP) "yes"))
+  (define compress? (equal? (lookup 'BOOT_COMPRESS_COMP) "--compress"))
   (define xpatch (lookup 'xpatch))
   (define wpo? (not (equal? (lookup 'DISABLE_WPO) "t")))
   (define schemify? (not (equal? (lookup 'schemify) "f")))
@@ -194,11 +195,14 @@
   (define known.scm (at-source "schemified/known.scm"))
   (define expander.scm (at-source "schemified/expander.scm"))
 
+  (define rktio.so
+    (find-target "rktio-so" (io-targets-at (make-at-dir (at-dir "../io")) vars)))
+    
   (define (cat srcs dest)
     (define s (apply ~a (map file->string srcs)))
     (display-to-file s dest :truncate))
 
-  (define (run-racket main.so args)
+  (define (run-racket main.so . args)
     (process/wait scheme
                   scheme-args
                   "--disable-library-timestamps"
@@ -216,6 +220,9 @@
                                (at-source "compile-file.ss"))
                          (if unsafe?
                              (list "--unsafe")
+                             '())
+                         (if debug?
+                             (list "--debug")
                              '())
                          (if compress?
                              (list "--compress")
@@ -238,13 +245,10 @@
              (define l (string-split s "="))
              (cons (car l) (cadr l)))
            (string-split (or (lookup 'CONFIGURE_RACKET_SO_COMPILE) ""))))
-    (define p (process scheme args (hash
-                                    'env (append
-                                          config-env-vars
-                                          (hash-ref (runtime-env) 'env)))))
-    (thread-process-wait (hash-ref p 'process))
-    (unless (= 0 (process-status (hash-ref p 'process)))
-      (error "failed")))
+    (process/wait scheme args (hash
+                               'env (append
+                                     config-env-vars
+                                     (hash-ref (runtime-env) 'env)))))
 
   (define (library-target dest src import-deps more-srcs)
     `[:target ,dest (,src ,@more-srcs ,@import-deps ,@compile-file-deps)
@@ -300,13 +304,13 @@
      ,(library-target chezpart.so (at-source "chezpart.sls") '()
                       '())
 
-     [:target run (,main.so ,(find-target "rktio-so" (io-targets-at (make-at-dir (at-dir "../io")) vars)))
+     [:target run (,main.so ,rktio.so)
               ,(lambda (token . args)
                  (run-racket main.so args))
               :quiet
               :command]
 
-     [:target run-wpo (,racket.so)
+     [:target run-wpo (,racket.so ,rktio.so)
               ,(lambda (token . args)
                  (run-racket racket.so args))
               :quiet
@@ -335,6 +339,20 @@
                [:target ,io.scm (,io.rktl) ,(converter io.rktl) :precious]
                [:target ,thread.scm (,thread.rktl) ,(converter thread.rktl) :precious]))
            '())
+
+     [:target setup (,main.so ,rktio.so)
+              ,(lambda (token . args)
+                 (run-racket main.so "-l-" "setup" args))
+              :command]
+     [:target setup-v (,main.so ,rktio.so)
+              ,(lambda (token . args)
+                 (run-racket main.so "-W" "info@compiler/cm info@linklet debug@GC:major error"
+                             "-l-" "setup" "-j" "1" args))
+              :command]
+
+     [:target strip ()
+              ,(lambda (token)
+                 (process/wait scheme "--script" "strip.ss" main-deps racket.so))]
 
      [:db-dir ,(at-dir "compiled")]
 

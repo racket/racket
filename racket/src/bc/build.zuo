@@ -50,10 +50,18 @@
         "cl.exe /E"
         "cc -E"))
 
-  (define cgc-installed-suffix (or (lookup 'CGC_INSTALLED) "cgc"))
-  (define 3m-installed-suffix (or (lookup 'MMM_INSTALLED) "bc"))
-  (define cgc-cap-installed-suffix (or (lookup 'CGC_CAP_INSTALLED) "CGC"))
-  (define 3m-cap-installed-suffix (or (lookup 'MMM_CAP_INSTALLED) "BC"))
+  (define cgc-installed-suffix (or (lookup 'CGC_INSTALLED)
+                                   (string-downcase (or (lookup 'CGC_CAP_INSTALLED)
+                                                        "cgc"))))
+  (define 3m-installed-suffix (or (lookup 'MMM_INSTALLED)
+                                  (string-downcase (or (lookup 'MMM_CAP_INSTALLED)
+                                                       "bc"))))
+  (define cgc-cap-installed-suffix (or (lookup 'CGC_CAP_INSTALLED)
+                                       (string-upcase (or (lookup 'CGC_INSTALLED)
+                                                          "CGC"))))
+  (define 3m-cap-installed-suffix (or (lookup 'MMM_CAP_INSTALLED)
+                                      (string-upcase (or (lookup 'MMM_INSTALLED)
+                                                         "BC"))))
 
   (define rktio-dir (at-dir "rktio"))
   (define librktio.a+rktio_config.h (setup-rktio (at-source "../rktio") rktio-dir config))
@@ -613,6 +621,8 @@
                                  ,starter
                                  ,mzdyncgc.o)
                  ,void]
+
+        [:target both (3m cgc)]
 
         ;; Phase2 "cstartup.inc" generation as a compiled form of "startup.inc"
         [:target ,phase2/cstartup.inc (,(at-source "src/startup.inc")
@@ -1386,6 +1396,7 @@
         [:target plain-install-cgc () ,(lambda (token) (install #f #t))]
         [:target install-3m () ,(lambda (token) (install #t #f) (setup #t #f))]
         [:target install-cgc () ,(lambda (token) (install #f #t) (setup #f #t))]
+        [:target install-both () ,(lambda (token) (install #t #t) (setup #t #f))]
 
         [:target install-again (,(at-dir "install-stamp"))
                  ,(lambda (token)

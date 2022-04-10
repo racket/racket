@@ -101,7 +101,8 @@
                                    (map string->shell (shell->strings (or (lookup 'LIBS) ""))))
                            ;; normal library:
                            objs)
-                       (let ([ar (hash-ref config 'STATIC_AR #f)])
+                       (let ([ar (and (not standalone?)
+                                      (hash-ref config 'STATIC_AR #f))])
                          (if ar
                              (hash-set config 'AR (shell-subst ar config))
                              (shell-subst-value config 'AR)))))]

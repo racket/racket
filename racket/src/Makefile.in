@@ -12,6 +12,24 @@ install: $(ZUO)
 plain-install: $(ZUO)
 	$(ZUO) . plain-install
 
+cs: $(ZUO)
+	$(ZUO) . cs
+
+cs-install: $(ZUO)
+	$(ZUO) . cs-install
+
+plain-cs-install: $(ZUO)
+	$(ZUO) . plain-cs-install
+
+bc: $(ZUO)
+	$(ZUO) . bc
+
+bc-install: $(ZUO)
+	$(ZUO) . bc-install
+
+plain-bc-install: $(ZUO)
+	$(ZUO) . plain-bc-install
+
 $(ZUO):
 	mkdir -p bin
 	$(HOSTCC) -DZUO_LIB_PATH='"'"$(upsrcdir)/zuo/lib"'"' -o $(ZUO) $(srcdir)/zuo/zuo.c

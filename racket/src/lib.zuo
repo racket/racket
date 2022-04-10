@@ -1,6 +1,7 @@
 #lang zuo
 
 (provide hash-set*
+         string-downcase
          string-upcase
          target->path
 
@@ -51,6 +52,16 @@
         ht
         (loop (hash-set ht (car keys+vals) (cadr keys+vals))
               (cddr keys+vals)))))
+
+(define (string-downcase s)
+  (let loop ([i 0] [start 0])
+    (cond
+      [(= i (string-length s)) (substring s start)]
+      [(and (>= (string-ref s i) (char "A"))
+            (<= (string-ref s i) (char "Z")))
+       (~a (substring s start i) (string (+ (string-ref s i) (- (char "a") (char "A"))))
+           (loop (+ i 1) (+ i 1)))]
+      [else (loop (+ i 1) start)])))
 
 (define (string-upcase s)
   (let loop ([i 0] [start 0])
@@ -341,15 +352,16 @@
               (~a X "." Y "." Z))
           (~a X "." Y "." Z "." W)))))
 
+;; Adds `DESTDIR` on the front, and also ensures that the path
+;; is absolute
 (define (at-destdir config p)
   (define destdir (hash-ref config 'DESTDIR ""))
-  (if (equal? destdir "")
-      p
-      (if (relative-path? p)
-          (build-path destdir p)
-          (apply build-path
-                 (cons destdir
-                       (cdr (explode-path p)))))))
+  (path->complete-path
+   (if (equal? destdir "")
+       p
+       (apply build-path
+              (cons destdir
+                    (cdr (explode-path (path->complete-path p))))))))
 
 (define (icp config src dest)
   (if (eq? 'windows (system-type))

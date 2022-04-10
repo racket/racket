@@ -222,6 +222,9 @@ native-cs-for-cross: $(ZUO)
 native-bc-for-cross: $(ZUO)
 	$(RUN_ZUO) native-bc-for-cross $(BUILD_VARS)
 
+local-catalog: $(ZUO)
+	$(RUN_ZUO) local-catalog $(BUILD_VARS)
+
 # ------------------------------------------------------------
 # pb update
 
@@ -397,8 +400,8 @@ CONFIG_MODE = default
 # (except as overridden in the `CONFIG' module):
 CLEAN_MODE =
 
-# Determines the number of parallel jobs used for package and
-# setup operations:
+# Alternate way to set the number of parallel jobs used for package and
+# setup operations; leave empty or set to "-j <jobs>":
 JOB_OPTIONS =
 
 # $(USER_RACKET) arguments for a command to run after the server has

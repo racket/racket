@@ -51,4 +51,20 @@
               ,(lambda (token)
                  (build (find-target "plain-install" (get-targets)) token))]
                  
+     [:target cs-install ()
+              ,(lambda (token)
+                 (build (find-target "install" (get-cs-targets)) token))]
+
+     [:target plain-cs-install ()
+              ,(lambda (token)
+                 (build (find-target "plain-install" (get-cs-targets)) token))]
+                 
+     [:target bc-install ()
+              ,(lambda (token)
+                 (build (find-target "install" (get-bc-targets)) token))]
+
+     [:target plain-bc-install ()
+              ,(lambda (token)
+                 (build (find-target "plain-install" (get-bc-targets)) token))]
+                 
      #;(end-of-targets))))
