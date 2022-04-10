@@ -72,7 +72,7 @@
 
   (define cs-targets (cs-targets-at at-dir
                                     (let ([vars (hash-set* vars
-                                                           'scheme scheme.exe
+                                                           'SCHEME scheme.exe
                                                            'scheme-args scheme-args
                                                            'schemify "f"
                                                            'zlibLib (lookup 'Z_LIB)
