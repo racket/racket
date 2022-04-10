@@ -221,13 +221,6 @@ while [ $# != 0 ] ; do
       LD="emld"
       AR="emar"
       RANLIB="emranlib"
-      if [ "$zlibset" = "no" ]; then
-        zlibLib=
-        zlibInc=
-        zlibDep=
-        zlibHeaderDep=
-        installzlibtarget=
-      fi
       ;;
     --force)
       forceworkarea=yes

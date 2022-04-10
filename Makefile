@@ -563,6 +563,18 @@ derived: $(ZUO)
 # ------------------------------------------------------------
 # Compatibility targets
 
+cs-base: $(ZUO)
+	$(RUN_ZUO) base $(BUILD_VARS) VM=cs
+
+bc-base: $(ZUO)
+	$(RUN_ZUO) base $(BUILD_VARS) VM=bc
+
+cs-in-place: $(ZUO)
+	$(RUN_ZUO) in-place $(BUILD_VARS) VM=cs
+
+bc-in-place: $(ZUO)
+	$(RUN_ZUO) in-place $(BUILD_VARS) VM=bc
+
 win32-in-place: $(ZUO)
 	$(RUN_ZUO) in-place $(BUILD_VARS)
 

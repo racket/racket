@@ -49,6 +49,7 @@
                      (if windows?
                          "cl.exe"
                          "cc"))
+                 (or (lookup 'CFLAGS) "")
                  (if windows? "/Fe:" "-o") (string->shell .exe)
                  (string-join (map string->shell ins))
                  (or (lookup 'LDFLAGS) "")

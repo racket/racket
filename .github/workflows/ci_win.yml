@@ -28,15 +28,14 @@ jobs:
       shell: cmd
       run: |
         call msvcprep.bat x86_amd64
-        set UNDERSCORE_BC_SUFFIX=_
-        call build.bat
+        nmake bc-base RACKETBC_SUFFIX=
     - name: Build CS
       working-directory: .\racket\src\worksp
       if: matrix.mode == 'CS'
       shell: cmd
       run: |
         call msvcprep.bat x86_amd64
-        call build-cs.bat
+        nmake cs-base RACKETCS_SUFFIX=
     - name: Check reported racket version
       shell: cmd
       run: |

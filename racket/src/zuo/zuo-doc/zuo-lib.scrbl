@@ -229,7 +229,7 @@ The following keys are recognized in a tool configuration:
 
 @item{@racket['CPPFLAGS]: C preprocessor flags}
 
-@item{@racket['CFLAGS]: C compilation flags}
+@item{@racket['CFLAGS]: C compilation and linking flags}
 
 @item{@racket['LDFLAGS]: C linker flags}
 
