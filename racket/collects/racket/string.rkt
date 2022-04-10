@@ -38,9 +38,21 @@
     (raise-argument-error 'string-join "string?" sep))
   (unless (or (string? after-last) (eq? after-last none))
     (raise-argument-error 'string-join "string?" after-last))
-  (let* ([r (if (or (null? strs) (null? (cdr strs)))
-              strs
-              (add-between strs sep #:before-last before-last))]
+
+  (let* ([r (cond
+              [(or (null? strs) (null? (cdr strs))) strs]
+              ;; below here, strs definitely has at least two elements
+              [(equal? sep "")
+               (cond
+                 [(equal? before-last "") strs]
+                 [else
+                  (define rev-strs (reverse strs))
+                  (define rev-assembled
+                    (cons (car rev-strs)
+                          (cons before-last
+                                (cdr rev-strs))))
+                  (reverse rev-assembled)])]
+              [else (add-between strs sep #:before-last before-last)])]
          [r (if (eq? after-last   none) r (append r (list after-last)))]
          [r (if (eq? before-first none) r (cons before-first r))])
     (apply string-append r)))

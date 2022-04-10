@@ -392,6 +392,15 @@
   (test "x y z" string-join '("x" "y" "z") " ")
   (test "x,y,z" string-join '("x" "y" "z") ",")
   (test "x, y and z" string-join '("x" "y" "z") ", " #:before-last " and ")
+
+  ;; test empty string optimization
+  (test "xyz" string-join '("x" "y" "z") "")
+  (test "xyz" string-join '("x" "y" "z") "" #:before-last "")
+  (test "xy and z" string-join '("x" "y" "z") "" #:before-last " and ")
+  (test "xy" string-join '("x" "y") "")
+  (test "xy" string-join '("x" "y") "" #:before-last "")
+  (test "x and y" string-join '("x" "y") "" #:before-last " and ")
+
   (for ([strs+res
          (in-list '((("x" "y" "z") "x, y and z")
                     (("x" "y")     "x and y")
