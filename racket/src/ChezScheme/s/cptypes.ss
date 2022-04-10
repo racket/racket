@@ -42,23 +42,7 @@ Notes:
      f-types: idem for the "else" branch. (if x (something) <here x is #f>)
 
 
- - predicate: They may be:
-              * a symbol to indicate the type, like 'vector 'pair 'flonum
-                (there are a few fake values, in particular 'bottom is used to
-                 signal that there is an error)
-              * a nanopass-quoted value that is okay-to-copy?, like
-                `(quote 0) `(quote 5) `(quote #t) `(quote '())
-                (this doesn't includes `(quote <record-type-descriptor>))
-              * a record #[pred-$record/rtd <rtd>] to signal that it's a
-                record of type <rtd>
-              * a record #[pred-$record/ref <ref>] to signal that it's a
-                record of a type that is stored in the variable <ref>
-                (these may collide with other records)
-              * a record #[pred-or <imm> <nor> <rec>] where <imm> a predicate for 
-                an immediate, <rec> is a predicate for a record and <nor> is a 
-                predicate for anything else.
-              * TODO?: add something to indicate that x is a procedure to
-                       create/setter/getter/predicate of a record of that type
+ - The possible types are defined and explained in cptypes-lattice.ss
 
  - Primitives are marked as procedures, without distinction.
  - Most of the time I'm using eq? and eqv? as if they were equivalent.
@@ -589,7 +573,6 @@ Notes:
     (cond
       [(#3%$record? d) '$record] ;check first to avoid double representation of rtd
       [(okay-to-copy? d) ir]
-      [(and (integer? d) (exact? d)) 'exact-integer]
       [(list? d) '$list-pair] ; quoted list should not be modified.
       [(pair? d) 'pair]
       [(box? d) 'box]
@@ -617,47 +600,6 @@ Notes:
           (rtd->record-predicate e extend?)]
          [else (if (not extend?) 'bottom '$record)])]
       [else (if (not extend?) 'bottom '$record)]))
-
-  ; Recognize predicates and get the corresponding
-  ; type using the notation in primdata.ss
-  ; TODO: Move this info to primdata.ss
-  (define (primref-name->predicate name)
-    (case name
-      [pair? 'pair]
-      [box? 'box]
-      [$record? '$record]
-      [fixnum? 'fixnum]
-      [bignum? 'bignum]
-      [flonum? 'flonum]
-      [real? 'real]
-      [number? 'number]
-      [vector? 'vector]
-      [string? 'string]
-      [bytevector? 'bytevector]
-      [fxvector? 'fxvector]
-      [flvector? 'flvector]
-      [gensym? 'gensym]
-      [uninterned-symbol? 'uninterned-symbol]
-      [symbol? 'symbol]
-      [char? 'char]
-      [boolean? 'boolean]
-      [procedure? 'procedure]
-      [not 'false]
-      [null? 'null]
-      [eof-object? 'eof-object]
-      [bwp-object? 'bwp-object]
-      [$immediate? '$immediate]
-      [list? 'list]
-      [list-assuming-immutable? 'list-assuming-immutable]
-      [record? 'record]
-      [record-type-descriptor? 'rtd]
-      [integer? 'integer]
-      [rational? 'rational]
-      [cflonum? 'cflonum]
-      [else #f])) ; this function is used only to detect predicates.
-
-  (define (primref->predicate pr extend?)
-    (primref-name/nqm->predicate (primref-name->predicate (primref-name pr)) extend?))
 
   (define check-constant-is?
     (case-lambda
@@ -709,6 +651,10 @@ Notes:
                   [else
                    (let ([rest ($sgetprop (primref-name pr) '*rest-type* #f)])
                      (primref-name/nqm->predicate rest extend?))]))]))))
+
+  (define (primref->predicate pr extend?)
+    (let ([type ($sgetprop (primref-name pr) '*pred-type* #f)])
+      (primref-name/nqm->predicate type extend?)))
 
   (define (primref->unsafe-primref pr)
     (lookup-primref 3 (primref-name pr)))
@@ -993,10 +939,10 @@ Notes:
                           (values `(call ,preinfo ,pr ,e* (... ...))
                                   (if boolean? boolean-pred 'fixnum)
                                   ntypes #f #f))]
-                       [(andmap (lambda (r) (predicate-implies? r 'flonum)) r*)
+                       [(andmap (lambda (r) (predicate-implies? r flonum-pred)) r*)
                         (let ([pr (lookup-primref 3 'flprim)])
                           (values `(call ,preinfo ,pr ,e* (... ...))
-                                  (if boolean? boolean-pred 'flonum)
+                                  (if boolean? boolean-pred flonum-pred)
                                   ntypes #f #f))]
                        [else
                         (values `(call ,preinfo ,pr ,e* (... ...))
@@ -1178,30 +1124,6 @@ Notes:
                                        (pred-env-add/ref ntypes val (rtd->record-predicate rtd #t) plxc))
                                   #f)]))])
 
-      (define-specialize 2 exact?
-        [(n) (let ([r (get-type n)])
-               (cond
-                 [(predicate-implies? r 'exact-integer)
-                  (values (make-seq ctxt n true-rec)
-                          true-rec ntypes #f #f)]
-                 [(predicate-implies? r 'flonum)
-                  (values (make-seq ctxt n false-rec)
-                          false-rec ntypes #f #f)]
-                 [else
-                  (values `(call ,preinfo ,pr ,n) ret ntypes #f #f)]))])
-
-      (define-specialize 2 inexact?
-        [(n) (let ([r (get-type n)])
-               (cond
-                 [(predicate-implies? r 'exact-integer)
-                  (values (make-seq ctxt n false-rec)
-                          false-rec ntypes #f #f)]
-                 [(predicate-implies? r 'flonum)
-                  (values (make-seq ctxt n true-rec)
-                          true-rec ntypes #f #f)]
-                 [else
-                  (values `(call ,preinfo ,pr ,n) ret ntypes #f #f)]))])
-
       (define-specialize 2 zero?
         [(n) (let ([r (get-type n)])
                (cond
@@ -1219,13 +1141,13 @@ Notes:
                           ret
                           ntypes
                           (pred-env-add/ref ntypes n `(quote 0) plxc)
-                          #f)]
-                 [(predicate-implies? r 'flonum)
+                          (pred-env-add/not/ref ntypes n `(quote 0) plxc))]
+                 [(predicate-implies? r flonum-pred)
                   (values `(call ,preinfo ,(lookup-primref 3 'flzero?) ,n)
                           ret
                           ntypes
-                          #f ; TODO: Add a type for flzero
-                          #f)]
+                          (pred-env-add/ref ntypes n flzero-pred plxc)
+                          (pred-env-add/ref ntypes n flzero-pred plxc))]
                  [else
                   (values `(call ,preinfo ,pr ,n) ret ntypes #f #f)]))])
 
@@ -1234,7 +1156,14 @@ Notes:
                      ret
                      ntypes
                      (pred-env-add/ref ntypes n `(quote 0) plxc)
-                     #f)])
+                     (pred-env-add/not/ref ntypes n `(quote 0) plxc))])
+
+      (define-specialize 2 flzero?
+        [(n) (values `(call ,preinfo ,pr ,n)
+                     ret
+                     ntypes
+                     (pred-env-add/ref ntypes n flzero-pred plxc)
+                     (pred-env-add/not/ref ntypes n flzero-pred plxc))])
 
       (define-specialize 2 atan
         [(n) (let ([r (get-type n)])
@@ -1265,25 +1194,25 @@ Notes:
                (cond
                  [(predicate-implies? r char-pred)
                   (values ir maybe-symbol-pred ntypes #f #f)]
-                 [(predicate-implies? r 'symbol)
+                 [(predicate-implies? r symbol-pred)
                   (values ir maybe-char-pred ntypes #f #f)]
                  [(and (predicate-disjoint? r char-pred)
-                       (predicate-disjoint? r 'symbol))
+                       (predicate-disjoint? r symbol-pred))
                   (values ir 'bottom pred-env-bottom #f #f)]
                  [else
-                  (values ir (predicate-union maybe-char-pred 'symbol)
-                          (pred-env-add/ref ntypes n (predicate-union char-pred 'symbol) plxc) #f #f)]))]
+                  (values ir (predicate-union maybe-char-pred symbol-pred)
+                          (pred-env-add/ref ntypes n (predicate-union char-pred symbol-pred) plxc) #f #f)]))]
         [(n c) (let ([rn (get-type n)]
                      [rc (get-type c)]
                      [ir `(call ,preinfo ,pr ,n ,c)])
                  (cond
-                   [(or (predicate-disjoint? rn 'symbol)
+                   [(or (predicate-disjoint? rn symbol-pred)
                         (predicate-disjoint? rc maybe-char-pred))
                     (values ir 'bottom pred-env-bottom #f #f)]
                    [else
                     (values ir void-rec
                             (pred-env-add/ref (pred-env-add/ref ntypes
-                                                                n 'symbol plxc)
+                                                                n symbol-pred plxc)
                                               c maybe-char-pred plxc)
                              #f #f)]))])
 
@@ -1402,25 +1331,30 @@ Notes:
   (with-output-language (Lsrc Expr)
   
   (define (fold-predicate preinfo pr e* ret r* ctxt ntypes oldtypes plxc)
-    ; assume they never raise an error
-    ; TODO?: Move to a define-specialize
-    (let ([val (car e*)]
-          [val-type (car r*)])
+    (if (and (eq? (primref-name pr) 'integer?)
+             (predicate-implies? (car r*) flonum-pred))
+        (do-fold-predicate preinfo (lookup-primref 3 'flinteger?) e* ret r* ctxt ntypes oldtypes plxc)
+        (do-fold-predicate preinfo pr e* ret r* ctxt ntypes oldtypes plxc)))
+
+  (define (do-fold-predicate preinfo pr e* ret r* ctxt ntypes oldtypes plxc)
+    (let ([e (car e*)]
+          [r (predicate-intersect (car r*)
+                                  (primref->argument-predicate pr 0 1 #t))])
       (cond
-        [(predicate-implies? val-type (primref->predicate pr #f))
-         (values (make-seq ctxt val true-rec)
+        [(predicate-implies? r (primref->predicate pr #f))
+         (values (make-seq ctxt `(call ,preinfo ,pr ,e) true-rec)
                  true-rec ntypes #f #f)]
-        [(predicate-disjoint? val-type (primref->predicate pr #t))
-         (values (make-seq ctxt val false-rec)
+        [(predicate-disjoint? r (primref->predicate pr #t))
+         (values (make-seq ctxt `(call ,preinfo ,pr ,e) false-rec)
                  false-rec ntypes #f #f)]
         [else
-         (values `(call ,preinfo ,pr ,val)
+         (values `(call ,preinfo ,pr ,e)
                  ret
                  ntypes
                  (and (eq? ctxt 'test)
-                      (pred-env-add/ref ntypes val (primref->predicate pr #t) plxc))
+                      (pred-env-add/ref ntypes e (primref->predicate pr #t) plxc))
                  (and (eq? ctxt 'test)
-                      (pred-env-add/not/ref ntypes val (primref->predicate pr #f) plxc)))])))
+                      (pred-env-add/not/ref ntypes e (primref->predicate pr #f) plxc)))])))
 
   (define (fold-call/primref preinfo pr e* ctxt oldtypes plxc)
     (fold-primref/unrestricted preinfo pr e* ctxt oldtypes plxc))

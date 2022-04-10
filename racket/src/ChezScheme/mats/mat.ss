@@ -249,11 +249,14 @@
               (if (or (equal? dir ".")
                       (equal? dir orig-dir))
                   l
-                  (cons "." l)))))
+                  (cons "." (map (lambda (p)
+                                   (define (convert p)
+                                     (path-build-normal orig-dir p))
+                                   (if (pair? p)
+                                       (cons (convert (car p)) (convert (cdr p)))
+                                       (convert p)))
+                                   l))))))
         (parameterize ([current-directory dir]
-                       ;; If `dir` is not the current directory, a caller
-                       ;; is responsible for ensuring that the path lists
-                       ;; below have absolute paths
                        [source-directories (add-here (source-directories))]
                        [library-directories (add-here (library-directories))])
           (printf "matting ~a with output to ~a/~a~%" ifn dir ofn)
@@ -574,16 +577,27 @@
           (loop))))
     #t))
 
+(define path-build-normal
+  (lambda (dir fn)
+    (cond
+      [(path-absolute? fn) fn]
+      [(equal? dir ".") fn]
+      [(and (equal? ".." (path-first fn))
+            (not (equal? dir (path-parent dir))))
+       (path-build-normal (path-parent dir) (path-rest fn))]
+      [else
+       (path-build dir fn)])))
+
+(define path-equal?
+  (lambda (a b)
+    (or (equal? a b)
+        (equal? (path-build-normal (current-directory) a)
+                (path-build-normal (current-directory) b)))))
+
 (define find-source
   (lambda (fn)
     (or (ormap (lambda (dir)
-                 (let ([fn (cond
-                             [(equal? dir ".") fn]
-                             [(and (equal? ".." (path-first fn))
-                                   (not (equal? dir (path-parent dir))))
-                              (path-build (path-parent dir) (path-rest fn))]
-                             [else
-                              (path-build dir fn)])])
+                 (let ([fn (path-build-normal dir fn)])
                    (and (file-exists? fn) fn)))
                (source-directories))
         (format (path-build *mats-dir* fn)))))

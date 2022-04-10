@@ -96,4 +96,8 @@
 
  (try-git-repo-using-default-branch
   "remote/git with default branch"
-  "https://github.com/racket/test-pkg-2.git"))
+  "https://github.com/racket/test-pkg-2.git")
+
+ (try-git-repo-using-default-branch
+  "remote/github with default branch"
+  "git://github.com/racket/test-pkg-2"))

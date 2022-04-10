@@ -16,6 +16,7 @@
 ;;; sections 6-1 and 6-2:
 
 (define prettytest.ss (find-source "prettytest.ss"))
+(define build-area-testfile.ss (path-build-normal (current-directory) "testfile.ss"))
 
 (mat current-input-port
    (port? (current-input-port))
@@ -3072,6 +3073,10 @@
   )
 
 (mat filesystem-operations2 (parameters [current-directory *mats-dir*])
+  (begin
+    ;; we expct this to be newer than "mat.ss":
+    (close-port (open-output-file build-area-testfile.ss 'truncate))
+    #t)
   (if (or (windows?) (embedded?))
       (fixnum? (get-mode "mat.ss"))
       (let ([m (get-mode "mat.ss")])
@@ -3088,8 +3093,8 @@
        (eqv? (get-mode "../mats") (get-mode "../mats/.")))
   ; access times are unreliable on contemporary file systems
   (time? (file-access-time "mat.ss"))
-  (time<=? (file-change-time "mat.ss") (file-change-time (find-source "mat.so")))
-  (time<=? (file-modification-time "mat.ss") (file-modification-time (find-source "mat.so")))
+  (time<=? (file-change-time "mat.ss") (file-change-time build-area-testfile.ss))
+  (time<=? (file-modification-time "mat.ss") (file-modification-time build-area-testfile.ss))
   (equal?
     (list (time? (file-access-time "../mats"))
           (time? (file-change-time "../mats"))

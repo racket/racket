@@ -3747,7 +3747,7 @@ static zuo_t *zuo_build_path2(zuo_t *base, zuo_t *rel) {
   int ups;
 
   do {
-    zuo_t *l, *p;
+    zuo_t *l;
     l = zuo_split_path(rel);
     exploded = zuo_cons(_zuo_cdr(l), exploded);
     rel = _zuo_car(l);
@@ -3804,9 +3804,6 @@ static zuo_t *zuo_build_path2(zuo_t *base, zuo_t *rel) {
 static zuo_t *zuo_build_path_multi(const char *who, zuo_t *paths,
                                    zuo_t *(*build_path2)(zuo_t *, zuo_t *)) {
   zuo_t *pre, *post;
-  zuo_string_t *path;
-  zuo_uint_t len;
-  int add_sep;
 
   pre = _zuo_car(paths);
   check_path_string(who, pre);
@@ -5144,7 +5141,9 @@ static zuo_t *zuo_cp(zuo_t *src_path, zuo_t *dest_path) {
 
 zuo_t *zuo_current_time() {
 #ifdef ZUO_UNIX
-# ifdef CLOCK_REALTIME
+  /* clock_gettime() provides more precision but ay require linking
+     to an extra library */
+# ifdef USE_CLOCK_REALTIME
   struct timespec t;
   if (clock_gettime(CLOCK_REALTIME, &t) != 0)
     zuo_fail("error getting time");

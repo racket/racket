@@ -753,7 +753,7 @@ returned when @racket[path] is the same as @racket[base].
 If @racket[normalize-case?] is true (the default), then pairs of path
 elements to be compared are first converted via
 @racket[normal-case-path], which means that path elements are
-comparsed case-insentively on Windows. If @racket[normalize-case?] is
+compared case-insentively on Windows. If @racket[normalize-case?] is
 @racket[#f], then path elements and the path roots match only if they
 have the same case.
 

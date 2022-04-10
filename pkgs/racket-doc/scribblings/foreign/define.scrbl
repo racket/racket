@@ -27,7 +27,7 @@ the library produced by @racket[ffi-lib-expr]. The syntax of
                              (code:line #:variable)])]
 
 A @racket[define-id] form binds @racket[id] by extracting a binding
-with the name @racket[_c-id] from the library produced by
+with the foreign name @racket[_c-id] from the library produced by
 @racket[ffi-lib-expr], where @racket[_c-id] defaults to @racket[_id].
 The other options support further wrapping and configuration:
 
@@ -49,17 +49,21 @@ The other options support further wrapping and configuration:
        @racket[_id] to report an error when it is applied if
        @racket[_c-id] was not found in the foreign library.}
 
- @item{If provided, the @racket[#:make-c-id] option changes
-      the default behavior of @racket[_c-id] using an @tech{ffi
-       identifier convention}, such as converting hyphens to
-      underscores or camel case.
-      Several conventions are provided by
-      @racketmodname[ffi/unsafe/define/conventions].}
+ @item{If the @racket[#:c-id] option is provided with an identifier
+       argument @racket[_c-id], then @racket[_c-id] is used as the
+       foreign name. If the argument has the form @racket[(@#,(racket
+       unquote) _c-id-expr)], then the foreign name is the result of
+       evaluating @racket[_c-id-expr]. In either case, the
+       @racket[#:make-c-id] argument is ignored.}
 
- @item{If the @racket[#:c-id] argument has the form
-       @racket[(@#,(racket unquote) _c-id-expr)], then the foreign
-       name is the result of evaluating @racket[_c-id-expr]. In this
-       case, the @racket[#:make-c-id] argument is ignored.}
+ @item{If the @racket[#:c-id] option is absent, the foreign name is
+        based on @racket[_id]. If @racket[define-id] was defined with
+        the @racket[#:make-c-id] option, it computes the foreign name
+        using an @tech{ffi identifier convention}, such as converting
+        hyphens to underscores or camel case.  Several conventions are
+        provided by @racketmodname[ffi/unsafe/define/conventions]. If
+        @racket[#:make-c-id] was absent, then @racket[_id] is used as
+        the foreign name.}
 
  @item{If the @racket[#:variable] keyword is given, then
        @racket[make-c-parameter] is used instead of

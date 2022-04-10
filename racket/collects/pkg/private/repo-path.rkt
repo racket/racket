@@ -26,7 +26,7 @@
       (let* ([paths (map path/param-path (url-path/no-slash pkg-url))])
         (list* (car paths)
                (regexp-replace* #rx"[.]git$" (cadr paths) "")
-               (or (url-fragment pkg-url) "master")
+               (or (url-fragment pkg-url) 'head)
                (extract-git-path pkg-url)))))
 
 (define (extract-git-path pkg-url)

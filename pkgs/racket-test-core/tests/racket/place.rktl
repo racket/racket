@@ -204,4 +204,24 @@
 (require (submod "place-utils.rkt" place-test-submod))
 (test 0 p 0)
 
+;; ----------------------------------------
+
+(let ()
+  (define fn (make-temporary-file "place~a.rkt"))
+  (call-with-output-file fn #:exists 'truncate
+                         (lambda (out)
+                           (displayln
+                            (string-append "#lang racket/base\n"
+                                           (format "~s"
+                                                   '(begin
+                                                      (require racket/place)
+                                                      (provide main)
+                                                      (define (main pch #:x [x #f])
+                                                        (place-channel-put pch 'done)))))
+                            out)))
+  (test 'done place-channel-get (dynamic-place fn 'main))
+  (delete-file fn))
+
+;; ----------------------------------------
+
 (report-errs)

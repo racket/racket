@@ -1519,11 +1519,9 @@
            '(lambda () (void (random 2))))
 (test-comp '(lambda (x) (void (if (eq? (random 2) 0) (box x) (list x))))
            '(lambda (x) (void (random 2))))
-(test-comp #:except 'chez-scheme
-           '(lambda (x) (void (if x (random) 1)))
+(test-comp '(lambda (x) (void (if x (random) 1)))
            '(lambda (x) (void (if x (random) 2))))
-(test-comp #:except 'chez-scheme
-           '(lambda (x) (void (if x 1 (random))))
+(test-comp '(lambda (x) (void (if x 1 (random))))
            '(lambda (x) (void (if x 2 (random)))))
 (test-comp '(lambda (x) (void (if x (random) 1)))
            '(lambda (x) (void))
@@ -2742,8 +2740,7 @@
               (when (and (list? z)
                          (pair? z))
                 #t)))
-(test-comp #:except 'chez-scheme 
-           '(lambda (z)
+(test-comp '(lambda (z)
               (when (and (list? z)
                          (not (null? z)))
                 (k:list-pair? z)))
@@ -2759,8 +2756,7 @@
               (when (and (list? z)
                          (not (pair? z)))
                 #t)))
-(test-comp #:except 'chez-scheme
-           '(lambda (z)
+(test-comp '(lambda (z)
               (when (and (list? z)
                          (not (k:list-pair? z)))
                 (null? z)))
@@ -2768,8 +2764,7 @@
               (when (and (list? z)
                          (not (k:list-pair? z)))
                 #t)))
-(test-comp #:except 'chez-scheme
-           '(lambda (z)
+(test-comp '(lambda (z)
               (when (and (boolean? z)
                          (not (k:true-object? z)))
                 (not z)))

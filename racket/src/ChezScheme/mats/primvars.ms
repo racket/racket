@@ -24,7 +24,7 @@
            separate-eval-tools separate-compile separate-eval run-script patch-exec-path $record->vector
            $cat_flush
            test-cp0-expansion
-           mkfile rm-rf touch find-source
+           mkfile rm-rf touch find-source path-build-normal path-equal?
            heap-check-interval
            preexisting-profile-dump-entry?
            coverage-table record-run-coverage load-coverage-files combine-coverage-files coverage-percent
@@ -299,13 +299,14 @@
                        [((in ...) ...) #`(((in ...) #,outs) ...)])))
                  (define do-entry
                    (lambda (x)
-                     (syntax-case x (feature sig flags ->)
+                     (syntax-case x (feature sig pred flags ->)
                        [(prim [feature f] . more)
                         (if (memq (datum f) feature*)
                             (do-entry #'(prim . more))
                             #'(void))]
                        [(prim [flags flag ...]) (do-entry #'(prim [sig] [flags flag ...]))]
-                       [(prim [sig [(in ...) ... -> (out ...)] ...] [flags flag ...])
+                       [(prim [sig sigs ...] [flags flag ...]) (do-entry #'(prim [sig sigs ...] [pred #f] [flags flag ...]))]
+                       [(prim [sig [(in ...) ... -> (out ...)] ...] [pred p] [flags flag ...])
                         (with-syntax ([(unprefixed . prim) (prim-name #'prim)])
                           (with-syntax ([((((in ...) (out ...)) ...) ...)
                                          (map ins-and-outs #'(((in ...) ...) ...) #'((out ...) ...))])

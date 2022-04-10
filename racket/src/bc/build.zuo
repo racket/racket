@@ -229,7 +229,8 @@
     (at-dir (.c->.o "xsrc/foreign.c")))
 
   (define libffi.a
-    (find-target (.a "ffi") libffi-targets))
+    (and libffi?
+         (find-target (.a "ffi") libffi-targets)))
 
   ;; For phase1, we use "startup.inc" in source form; then, we use the
   ;; phase1 CGC to generate a compiled version of "startup.inc", either
@@ -622,7 +623,7 @@
                                  ,mzdyncgc.o)
                  ,void]
 
-        [:target both (3m cgc)]
+        [:target both (3m cgc) ,void]
 
         ;; Phase2 "cstartup.inc" generation as a compiled form of "startup.inc"
         [:target ,phase2/cstartup.inc (,(at-source "src/startup.inc")
@@ -704,7 +705,7 @@
                                                                                                (file-name-from-path delay-dll))))
                                                                           delay-dlls)))
                                           (let ([link-cc (shell-subst (hash-ref config 'MZLINKER #f) config)]
-                                                [config (if gui?
+                                                [config (if (and gui? windows?)
                                                             (config-merge config
                                                                           'LDFLAGS
                                                                           "-mwindows")

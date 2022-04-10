@@ -66,6 +66,12 @@
   (test 'val syntax-property s 'key)
   (test #f syntax-property (syntax-property-remove s 'key) 'key))
 
+(let ([s (syntax-property #'s 'key #f)])
+  (test #f syntax-property s 'key)
+  (test #f syntax-property (syntax-property-remove s 'key) 'key)
+  (test '(key) syntax-property-symbol-keys s)
+  (test '() syntax-property-symbol-keys (syntax-property-remove s 'key)))
+
 (test #t immutable? (syntax-e (datum->syntax #f (string #\a))))
 (test #t immutable? (syntax-e (syntax-case (datum->syntax #f (list (string #\a))) ()
                                 [(a) #'a])))

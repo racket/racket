@@ -1124,7 +1124,7 @@
                                                 (directory-separator)
                                                 (directory-separator) (machine-type) (directory-separator)
                                                 (if (windows?) ".exe" "")))])
-      (unless (or (embedded?) (equal? *scheme* would-be-scheme))
+      (unless (or (embedded?) (path-equal? *scheme* would-be-scheme))
         (errorf #f "not testing boot file based on ../boot/~a/petite.boot, since *scheme* ~a isn't ~a"
           (machine-type) *scheme* would-be-scheme))
       (parameterize ([optimize-level 2])
@@ -1158,7 +1158,7 @@
                                                 (directory-separator)
                                                 (directory-separator) (machine-type) (directory-separator)
                                                 (if (windows?) ".exe" "")))])
-      (unless (or (embedded?) (equal? *scheme* would-be-scheme))
+      (unless (or (embedded?) (path-equal? *scheme* would-be-scheme))
         (errorf #f "not testing boot file based on ../boot/~a/petite.boot, since *scheme* ~a isn't ~a"
           (machine-type) *scheme* would-be-scheme))
       (mkfile "testfile.ss"

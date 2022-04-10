@@ -629,6 +629,9 @@ if [ "$cflagsset" = "no" ] ; then
         CFLAGS="-m32 ${optFlags}"
         ;;
     em)
+        if [ "$zlibLib" = "" ]; then
+          zlibLib="-s USE_ZLIB=1"
+        fi
         CFLAGS="${optFlags}"
         ;;
   esac

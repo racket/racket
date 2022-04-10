@@ -10940,7 +10940,7 @@
             (load-program "testfile-tlp11.so")))
         dep8))
     '("332211\n" ((testfile-tlp9))))
-  (equal? (library-object-filename '(testfile-tlp9)) (find-source "testfile-tlp9.so"))
+  (path-equal? (library-object-filename '(testfile-tlp9)) "testfile-tlp9.so")
  ; make sure internal module bindings are properly set up before
  ; the body forms are processed
   (begin
@@ -11238,21 +11238,21 @@
       'replace)
     (separate-compile 'li5)
     #t)
-  (equal?
+  (path-equal?
     (parameterize ([compile-imported-libraries #t])
       (eval '(let () (import (testfile-li3)) x))
       (library-object-filename '(testfile-li3)))
-    (find-source "testfile-li3.so"))
+     "testfile-li3.so")
   (equal?
     (parameterize ([compile-imported-libraries #f])
       (eval '(let () (import (testfile-li4)) x))
       (library-object-filename '(testfile-li4)))
     #f)
-  (equal?
+  (path-equal?
     (begin
       (eval '(let () (import (testfile-li5)) x))
       (library-object-filename '(testfile-li5)))
-    (find-source "testfile-li5.so"))
+    "testfile-li5.so")
   (equal?
     (begin
       (load-library "testfile-li3.ss")
@@ -11262,7 +11262,7 @@
     (begin
       (load-library "testfile-li3.so")
       (library-object-filename '(testfile-li3)))
-    (find-source "testfile-li3.so"))
+    "testfile-li3.so")
 )
 
 (mat rnrs-eval

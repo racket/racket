@@ -884,7 +884,7 @@
           (loop (cdr l))))
       (lambda ()
         (let ([f (dynamic-require mod sym)])
-          (f pch)))))
+          (|#%app| f pch)))))
    (set-destroy-place!
     (lambda ()
       (io-place-destroy!)))

@@ -386,7 +386,8 @@
             (shell->strings (lookup 'PKGS)))
       (setup vm "--only-foreign-libs"))
 
-    (setup vm (shell->strings setup-extra-args)))
+    (setup vm (shell->strings setup-extra-args)
+           (if also? "-D" '())))
 
   ;; ------------------------------------------------------------
   ;; Distribution builds: server
