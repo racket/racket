@@ -94,7 +94,7 @@
   (define host-workarea (let ([host-workarea (lookup 'hostworkarea)])
                           (if (equal? host-workarea "")
                               ""
-                              (at-dir ".." (or host-workarea ".")))))
+                              ((make-at-dir (at-dir "..")) (or host-workarea ".")))))
   (define host-scheme (lookup 'hostscheme))
   (define arch (m->arch m))
   (define arch.ss (~a (arch->backend arch) ".ss"))
