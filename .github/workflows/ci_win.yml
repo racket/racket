@@ -23,18 +23,16 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build 3m
-      working-directory: .\racket\src\worksp
       if: matrix.mode == '3m'
       shell: cmd
       run: |
-        call msvcprep.bat x86_amd64
+        call racket\src\worksp\msvcprep.bat x86_amd64
         nmake bc-base RACKETBC_SUFFIX=
     - name: Build CS
-      working-directory: .\racket\src\worksp
       if: matrix.mode == 'CS'
       shell: cmd
       run: |
-        call msvcprep.bat x86_amd64
+        call racket\src\worksp\msvcprep.bat x86_amd64
         nmake cs-base RACKETCS_SUFFIX=
     - name: Check reported racket version
       shell: cmd
