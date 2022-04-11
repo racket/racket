@@ -30,6 +30,12 @@ bc-install: $(ZUO)
 plain-bc-install: $(ZUO)
 	$(ZUO) . plain-bc-install
 
+3m: $(ZUO)
+	$(ZUO) . 3m
+
+cgc: $(ZUO)
+	$(ZUO) . cgc
+
 $(ZUO):
 	mkdir -p bin
 	$(HOSTCC) -DZUO_LIB_PATH='"'"$(upsrcdir)/zuo/lib"'"' -o $(ZUO) $(srcdir)/zuo/zuo.c
