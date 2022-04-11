@@ -7,7 +7,7 @@
          install_name_tool*)
 
 ;; Always using the Racket implementation of `codesign` avoids
-;; problems on Monterrey, which seems to leave the executable in
+;; problems on Monterey, which seems to leave the executable in
 ;; a state that `install_name_tool` and `strip` don't like.
 ;; Also, older versions of Mac OS don't have `codesign`, and this
 ;; mode avoids having to distinguish.
