@@ -889,11 +889,12 @@
                                                  "Racket.framework"))
           (define fw-vers-dir (build-path dest-framework-dir "Versions" (~a version "_CS")))
           (define dest-racket (build-path bindir (cs-suffix "racket")))
-          (define framework-prefix (cond
-                                     [(not (equal? (lookup 'FRAMEWORK_REL_INSTALL) "yes")) ""]
-                                     [(relative-path? dest-framework-dir)
-                                      (~a "@executable_path/../" (shell-subst (lookup 'libpltdir_rel) config) "/")]
-                                     [else (~a libpltdir "/")]))
+          (define (get-framework-prefix gui?)
+            (cond
+              [(not (equal? (lookup 'FRAMEWORK_REL_INSTALL) "yes")) ""]
+              [(not (equal? (lookup 'libpltdir_rel) ""))
+               (~a "@executable_path/../" (if gui? "../../" "") (shell-subst (lookup 'libpltdir_rel) config) "/")]
+              [else (~a libpltdir "/")]))
 
           ;; Framework and `racket` install
           (rm* (build-path dest-framework-dir "Racket"))
@@ -910,7 +911,7 @@
           (set-collects-path dest-racket collects-path config-path)
           (install_name_tool "-change"
                              (~a "@executable_path/Racket.framework/Versions/" version "_CS/Racket")
-                             (~a framework-prefix "Racket.framework/Versions/" version "_CS/Racket")
+                             (~a (get-framework-prefix #f) "Racket.framework/Versions/" version "_CS/Racket")
                              dest-racket)
           (restore-signature dest-racket)
 
@@ -925,7 +926,7 @@
                             "no-up")
           (install_name_tool "-change"
                              (~a "@executable_path/../../../../Racket.framework/Versions/" version "_CS/Racket")
-                             (~a framework-prefix "Racket.framework/Versions/" version "_CS/Racket")
+                             (~a (get-framework-prefix #t) "Racket.framework/Versions/" version "_CS/Racket")
                              dest-gracket)
           (strip-signature dest-gracket)
           (set-collects-path dest-gracket "../../../../collects" "../../../../etc")

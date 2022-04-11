@@ -664,7 +664,6 @@ NEED_STRIP_SIGNATURE
 OWN_LIBFFI
 SO_SUFFIX
 EXE_SUFFIX
-FRAMEWORK_PREFIX
 FRAMEWORK_REL_INSTALL
 FRAMEWORK_INSTALL_DIR
 MINGW
@@ -5235,19 +5234,12 @@ $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
       if test "${enable_libfw}" = "yes" ; then
         FRAMEWORK_INSTALL_DIR=/Library/Frameworks
         FRAMEWORK_REL_INSTALL=no
-        FRAMEWORK_PREFIX=''
       elif test "${enable_userfw}" = "yes" ; then
         FRAMEWORK_INSTALL_DIR=~/Library/Frameworks
         FRAMEWORK_REL_INSTALL=no
-        FRAMEWORK_PREFIX=''
       else
         FRAMEWORK_INSTALL_DIR='${libpltdir}'
         FRAMEWORK_REL_INSTALL=yes
-        if test "${libpltdir_rel}" = "" ; then
-          FRAMEWORK_PREFIX='$(FRAMEWORK_ABS_PREFIX)'
-        else
-          FRAMEWORK_PREFIX='$(FRAMEWORK_REL_PREFIX)'
-        fi
       fi
       if test "${enable_embedfw}" = "yes" ; then
         strip_needs_dash_s=yes
@@ -7401,7 +7393,6 @@ RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
 ############## final output ################
 
 LIBS="$LIBS $EXTRALIBS"
-
 
 
 

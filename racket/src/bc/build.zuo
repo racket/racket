@@ -1496,8 +1496,15 @@
                              (at-source "../worksp")
                              (at-dir ".")))
 
+       (define (get-framework-prefix gui?)
+         (cond
+           [(not (equal? (lookup 'FRAMEWORK_REL_INSTALL) "yes")) ""]
+           [(not (equal? (lookup 'libpltdir_rel) ""))
+            (~a "@executable_path/../" (if gui? "../../" "") (shell-subst (lookup 'libpltdir_rel) config) "/")]
+           [else (~a libpltdir "/")]))
+
        ;; Install racket and gracket
-       (map (lambda (racket gracket install-suffix cap-install-suffix)
+       (map (lambda (racket gracket install-suffix cap-install-suffix fw-suffix)
               (define dest-exe (build-path bindir (~a (if windows? "Racket" "racket")
                                                       (if windows? cap-install-suffix install-suffix)
                                                       (if windows? ".exe" ""))))
@@ -1531,11 +1538,11 @@
                 (strip-debug config dest-exe)
                 (cond
                   [mac?
-                   (set-collects-path racket dest-exe "../../../../collects" "../../../../etc")]
-                  [windows?
-                   (set-collects-path racket dest-exe "../collects" "../etc")]
-                  [else
-                   (set-collects-path racket dest-exe collects-path config-path)])
+                   (set-collects-path racket dest-exe "../../../../collects" "../../../../etc")
+                   (install_name_tool "-change"
+                                      (~a "@executable_path/Racket.framework/Versions/" version fw-suffix "/Racket")
+                                      (~a (get-framework-prefix #t) "Racket.framework/Versions/" version fw-suffix "/Racket")
+                                      dest-exe)])
                 (restore-signature dest-exe)))
             (append
              (if cgc? (list racketcgc) '())
@@ -1548,7 +1555,10 @@
              (if 3m? (list 3m-installed-suffix) '()))
             (append
              (if cgc? (list cgc-cap-installed-suffix) '())
-             (if 3m? (list 3m-cap-installed-suffix) '())))
+             (if 3m? (list 3m-cap-installed-suffix) '()))
+            (append
+             (if cgc? (list "") '())
+             (if 3m? (list "_3m") '())))
 
        (cond
          [windows?
@@ -1605,11 +1615,6 @@
              (define dest-framework-dir (at-destdir config
                                                     (build-path (shell-subst (lookup 'FRAMEWORK_INSTALL_DIR) config)
                                                                 "Racket.framework")))
-             (define framework-prefix (cond
-                                        [(not (equal? (lookup 'FRAMEWORK_REL_INSTALL) "yes")) ""]
-                                        [(relative-path? dest-framework-dir)
-                                         (~a "@executable_path/../" (shell-subst (lookup 'libpltdir_rel) config) "/")]
-                                        [else (~a libpltdir "/")]))
              
              (rm* (build-path dest-framework-dir "Racket"))
              (rm* (build-path dest-framework-dir "Versions" (~a version)))
@@ -1628,7 +1633,7 @@
                     (strip-signature dest-exe)
                     (install_name_tool "-change"
                                        (~a "@executable_path/Racket.framework/Versions/" version suffix "/Racket")
-                                       (~a framework-prefix "Racket.framework/Versions/" version suffix "/Racket")
+                                       (~a (get-framework-prefix #f) "Racket.framework/Versions/" version suffix "/Racket")
                                        dest-exe)
                     (restore-signature dest-exe))
                   (append

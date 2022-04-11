@@ -696,19 +696,12 @@ case "$host_os" in
       if test "${enable_libfw}" = "yes" ; then
         FRAMEWORK_INSTALL_DIR=/Library/Frameworks
         FRAMEWORK_REL_INSTALL=no
-        FRAMEWORK_PREFIX=''
       elif test "${enable_userfw}" = "yes" ; then
         FRAMEWORK_INSTALL_DIR=~/Library/Frameworks
         FRAMEWORK_REL_INSTALL=no
-        FRAMEWORK_PREFIX=''
       else
         FRAMEWORK_INSTALL_DIR='${libpltdir}'
         FRAMEWORK_REL_INSTALL=yes
-        if test "${libpltdir_rel}" = "" ; then
-          FRAMEWORK_PREFIX='$(FRAMEWORK_ABS_PREFIX)'
-        else
-          FRAMEWORK_PREFIX='$(FRAMEWORK_REL_PREFIX)'
-        fi
       fi
       if test "${enable_embedfw}" = "yes" ; then
         strip_needs_dash_s=yes
@@ -1410,7 +1403,6 @@ AC_SUBST(OSX)
 AC_SUBST(MINGW)
 AC_SUBST(FRAMEWORK_INSTALL_DIR)
 AC_SUBST(FRAMEWORK_REL_INSTALL)
-AC_SUBST(FRAMEWORK_PREFIX)
 AC_SUBST(EXE_SUFFIX)
 AC_SUBST(SO_SUFFIX)
 AC_SUBST(OWN_LIBFFI)
