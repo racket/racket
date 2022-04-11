@@ -2082,10 +2082,10 @@ static zuo_t *zuo_in(const unsigned char *s, zuo_int_t *_o, zuo_t *where, int sk
       free(s2);
       obj = sym;
     } else {
-      char s[2];
-      s[0] = c;
-      s[1] = 0;
-      zuo_fail1w("read", "unrecognized character", zuo_string(s));
+      char sc[2];
+      sc[0] = c;
+      sc[1] = 0;
+      zuo_fail1w("read", "unrecognized character", zuo_string(sc));
       obj = z.o_null;
     }
 
@@ -2141,15 +2141,15 @@ static zuo_t *zuo_in(const unsigned char *s, zuo_int_t *_o, zuo_t *where, int sk
   }
 }
 
-static zuo_t *zuo_string_read(zuo_t *obj, zuo_t *start_i, zuo_t *where) {
+static zuo_t *zuo_string_read(zuo_t *str, zuo_t *start_i, zuo_t *where) {
   const char *who = "string-read";
   zuo_int_t len, start, i;
   zuo_t *first = z.o_null, *last = z.o_null, *p;
   const char *s;
   zuo_int_t o;
 
-  check_string(who, obj);
-  len = ZUO_STRING_LEN(obj);
+  check_string(who, str);
+  len = ZUO_STRING_LEN(str);
 
   if (start_i == z.o_undefined)
     start = 0;
@@ -2160,12 +2160,12 @@ static zuo_t *zuo_string_read(zuo_t *obj, zuo_t *start_i, zuo_t *where) {
       zuo_fail1w(who, "starting index is out of bounds", start_i);
   }
 
-  s = ZUO_STRING_PTR(obj);
+  s = ZUO_STRING_PTR(str);
   o = start;
 
   for (i = start; i < len; i++)
     if (s[i] == 0)
-      zuo_fail1w(who, "nul character in input", obj);
+      zuo_fail1w(who, "nul character in input", str);
 
   while (1) {
     zuo_t *obj = zuo_in((const unsigned char *)s, &o, where, 0);
