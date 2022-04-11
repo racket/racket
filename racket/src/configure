@@ -23,12 +23,14 @@ for arg in $*; do
             use_cs=yes
             ;;
         --enable-csdefault)
+            use_cs=yes
             default_vm=cs
             ;;
         --enable-bc)
             use_bc=yes
             ;;
         --enable-bcdefault | --enable-cgcdefault)
+            use_bc=yes
             default_vm=bc
             ;;
         --enable-csonly)
