@@ -1,5 +1,6 @@
 #lang zuo
 (require "../../lib.zuo"
+         "../../mac/codesign.zuo"
          (only-in "../../ChezScheme/build.zuo"
                   [targets-at scheme-targets-at])
          (only-in "../../start/build.zuo"
@@ -260,31 +261,15 @@
     ;; Racket should still work at this point, too
     (apply bootstrap-racket args))
 
-  (define (codesign?) (glob-match? "*arm64*osx" (lookup 'KERNEL_TARGET_MACH m)))
-
   (define (strip-signature dest)
-    (when (codesign?)
-      (if cross?
-          (bootstrap-racket (at-source "../../mac/codesign.rkt") "--remove-signature"
-                            dest)
-          (shell/wait "codesign --remove-signature"
-                      (string->shell dest)))))
+    (when mac?
+      (strip-signature* cross? bootstrap-racket dest)))
   (define (restore-signature dest)
-    (when (codesign?)
-      (if cross?
-          (bootstrap-racket (at-source "../../mac/codesign.rkt")
-                            "-s" "-"
-                            "--entitlements" (at-source "../../mac/entitlements.plist")
-                            dest)
-          (shell/wait "codesign -s -"
-                      "--entitlements" (at-source "../../mac/entitlements.plist")
-                      (string->shell dest)))))
+    (when mac?
+      (restore-signature* cross? bootstrap-racket dest)))
 
   (define (install_name_tool . args)
-    (if cross?
-        (bootstrap-racket (at-source "../../mac/install_name_tool.rkt")
-                          args)
-        (shell/wait "install_name_tool" (map string->shell args))))
+    (install_name_tool* cross? bootstrap-racket args))
   
   (define (post-linker exe)
     (let ([cmd (lookup 'POST_LINKER)])
@@ -332,7 +317,11 @@
     (input-data-target 'install-data
                        ;; this could be more precise, too:
                        (list (lookup 'CROSS_COMPILE_TARGET_KIND)
-                             (lookup 'PLT_CS_SLSP_SUFFIX))))
+                             (lookup 'PLT_CS_SLSP_SUFFIX)
+                             ;; Hack: if the `install` function changes, you may
+                             ;; need to bump this version to get incremental builds
+                             ;; to reinstall:
+                             1)))
 
   (define link-config (input-data-target 'link-config (list mac? mac-fw?)))
 
@@ -433,7 +422,10 @@
        ,@(map
           (lambda (raw_exe gui? main.o res.o)
             `[:target ,raw_exe (,main.o ,@(if mac-fw?
-                                              (list framework)
+                                              (cons framework (if gui?
+                                                                  '()
+                                                                  ;; so we can run `raw_racketcs` for signatures:
+                                                                  embed+boot-deps))
                                               boot-objs)
                                         ,(input-data-target 'mac-fw mac-fw?)
                                         ,@(if windows?
@@ -441,7 +433,11 @@
                                               '())
                                         ,link-config)
                       ,(lambda (path token)
-                         (c-link raw_exe
+                         (define dest_exe (cond
+                                            [(and mac-fw? (not gui?) codesign-via-racket? (not cross?))
+                                             (~a raw_exe "_tmp")]
+                                            [else raw_exe]))
+                         (c-link dest_exe
                                  (cons main.o
                                        (append
                                         (if mac-fw? (list framework) '())
@@ -459,12 +455,20 @@
                                                'LDFLAGS
                                                (lookup 'LINK_DYNAMIC)))
                          (when (and mac-fw? (not gui?))
-                           (strip-signature raw_exe)
+                           (unless (equal? dest_exe raw_exe)
+                             ;; link a version that does not refer to the framework:
+                             (c-link raw_exe 
+                                     (cons main.o (map target->path boot-objs))
+                                     config))
+                           (strip-signature dest_exe)
                            (install_name_tool "-change"
-                                              (at-dir framework-dir "Racket")
+                                              (build-path framework-dir "Racket")
                                               (~a "@executable_path/Racket.framework/Versions/" version "_CS/Racket")
-                                              raw_exe)
-                           (restore-signature raw_exe))
+                                              dest_exe)
+                           (restore-signature dest_exe)
+                           (unless (equal? raw_exe dest_exe)
+                             (rm* raw_exe)
+                             (mv dest_exe raw_exe)))
                          (define post (lookup 'POST_LINKER))
                          (unless (equal? post "")
                            (shell/wait post raw_racketcs)))])
@@ -488,7 +492,7 @@
                                   config)
                           (mac-embed-boot (~a gracketcs "_raw") gracketcs)
                           (install_name_tool "-change"
-                                             (at-dir framework-dir "Racket")
+                                             (build-path framework-dir "Racket")
                                              (~a "@executable_path/../../../Racket.framework/Versions/" version "_CS/Racket")
                                              gracketcs)
                           (rm (~a gracketcs "_raw"))
@@ -520,7 +524,10 @@
                               (let* ([config (hash-set config 'CC (lookup 'RKTLINKER))]
                                      [config (config-merge config
                                                            'LDFLAGS
-                                                           "-dynamiclib -all_load")])
+                                                           (build-shell
+                                                            "-dynamiclib -all_load"
+                                                            "-install_name"
+                                                            (~a "Racket.framework/Versions/" version "_CS/Racket")))])
                                 config))
                    (rm* (at-dir "Racket.framework/Racket"))
                    (symlink (~a "Versions/" version "_CS/Racket") (at-dir "Racket.framework/Racket"))

@@ -1,6 +1,7 @@
 #lang zuo
 (require "../lib.zuo"
          "../worksp/gendef.zuo"
+         "../mac/codesign.zuo"
          (only-in "../start/build.zuo"
                   [targets-at starter-targets-at]))
 
@@ -355,7 +356,7 @@
      mzconfig.h))
 
   (define rktio-headers
-    (list (at-source "schrktio.h")
+    (list (at-source "src/schrktio.h")
           (at-source "../rktio/rktio.h")
           (at-source "../rktio/rktio_platform.h")
           (at-dir "rktio/rktio_config.h")))
@@ -456,27 +457,18 @@
     (bootstrap-racket racketx (at-source "../start/collects-path.rkt") (at-source "..")
                       dest collects-path config-path))
 
-  (define (codesign?) (equal? (lookup 'NEED_STRIP_SIGNATURE) "yes"))
-
+  (define (bootstrap-racket/cgc1 . args)
+    (apply bootstrap-racket (cons racketcgc1 args)))
+    
   (define (strip-signature dest)
-    (when (codesign?)
-      (if provided-racket?
-          (bootstrap-racket racketcgc
-                            (at-source "../mac/codesign.rkt") "--remove-signature"
-                            dest)
-          (shell/wait "codesign --remove-signature"
-                      (string->shell dest)))))
+    (when mac?
+      (strip-signature* provided-racket? bootstrap-racket/cgc1 dest)))
   (define (restore-signature dest)
-    (when (codesign?)
-      (if provided-racket?
-          (bootstrap-racket racketcgc
-                            (at-source "../mac/codesign.rkt")
-                            "-s" "-"
-                            "--entitlements" (at-source "../mac/entitlements.plist")
-                            dest)
-          (shell/wait "codesign -s -"
-                      "--entitlements" (at-source "../mac/entitlements.plist")
-                      (string->shell dest)))))
+    (when mac?
+      (restore-signature* provided-racket? bootstrap-racket/cgc1 dest)))
+
+  (define (install_name_tool . args)
+    (install_name_tool* provided-racket? bootstrap-racket/cgc1 args))
 
   (define (xform dest src precomp-mode token [cpp-extra ""])
     (unless provided-racket?
@@ -537,13 +529,6 @@
                     (build/dep (car (shell->strings (substring line 1 (- (string-length line) 2)) token))
                                token))))
               lines))
-
-  (define (install_name_tool . args)
-    (if provided-racket?
-        (bootstrap-racket racketcgc
-                          (at-source "../mac/install_name_tool.rkt")
-                          args)
-        (shell/wait "install_name_tool" (map string->shell args))))
 
   (define (post-linker exe)
     (let ([cmd (or (lookup 'POST_LINKER) "")])
@@ -720,7 +705,7 @@
                                         (string->shell (~a "-outputresource:" path ";1"))))
                           (when framework?
                             (install_name_tool "-change"
-                                               (at-dir (~a "Racket.framework/Versions/" (~a version fw-suffix) "/Racket"))
+                                               (~a "Racket.framework/Versions/" (~a version fw-suffix) "/Racket")
                                                (~a "@executable_path/" fw-ups "Racket.framework/Versions/" (~a version fw-suffix) "/Racket")
                                                path)))])
            (list racketcgc1
@@ -785,7 +770,10 @@
                                       (cons libracket.a (map target->path link-inputs))
                                       (config-merge config
                                                     'LDFLAGS
-                                                    "-dynamiclib -all_load"))
+                                                    (build-shell
+                                                     "-dynamiclib -all_load"
+                                                     "-install_name"
+                                                     (~a "Racket.framework/Versions/" version suffix "/Racket"))))
                               (rm* (at-dir "Racket.framework/Racket"))
                               (symlink (build-path "Versions" (~a version suffix) "Racket")
                                        (at-dir "Racket.framework/Racket")))])
@@ -968,7 +956,7 @@
         ;; by asking the C preprocessor to explain what it uses)
         ,@(map
            (lambda (p)
-             `[:depend ,(at-dir "src" (.c->.o (~a (car p) '..c))) ,(cdr p)])
+             `[:depend ,(at-dir "src" (.c->.o (~a (car p) ".c"))) ,(cdr p)])
            `(["salloc" ,(at-source "src/mzmark_salloc.inc") ,@rktio-headers]
              ["bool" ,(at-source "src/mzeqchk.inc")]
              ["char" ,(at-source "src/schuchar.inc")]
@@ -1005,7 +993,7 @@
              ["optimize" ,(at-source "src/mzmark_optimize.inc")]
              ["place" ,@rktio-headers ,(at-source "src/mzmark_place.inc")]
              ["port" ,@rktio-headers ,(at-source "src/mzmark_port.inc")]
-             ["portfun" @rktio-headers ,(at-source "../version/racket_version.h") ,(at-source "src/mzmark_portfun.inc")]
+             ["portfun" ,@rktio-headers ,(at-source "../version/racket_version.h") ,(at-source "src/mzmark_portfun.inc")]
              ["print" ,(at-source "src/schcpt.h") ,(at-source "../version/racket_version.h")
                       ,(at-source "sconfig.h") ,(at-source "uconfig.h") ,mzconfig.h
                       ,(at-source "src/mzmark_print.inc")

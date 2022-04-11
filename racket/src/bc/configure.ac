@@ -283,8 +283,6 @@ SO_SUFFIX=.so
 
 POST_LINKER="echo"
 
-NEED_STRIP_SIGNATURE=
-
 MMM=3m
 MMM_INSTALLED=
 MMM_CAP_INSTALLED=
@@ -657,7 +655,6 @@ case "$host_os" in
        enable_parallel_by_default=yes
        ;;
       aarch64*|arm64*)
-       NEED_STRIP_SIGNATURE=yes
        ;;       
       *)
        ;;
@@ -1406,7 +1403,6 @@ AC_SUBST(FRAMEWORK_REL_INSTALL)
 AC_SUBST(EXE_SUFFIX)
 AC_SUBST(SO_SUFFIX)
 AC_SUBST(OWN_LIBFFI)
-AC_SUBST(NEED_STRIP_SIGNATURE)
 
 AC_SUBST(LIBSFX)
 AC_SUBST(WXLIBS)
