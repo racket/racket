@@ -1348,7 +1348,7 @@ fi
 
 m4_include(../ac/rktio_keep.m4)
 
-LIBFFI_CONFIGURE_ARGS="$keep_configure_args$LIBFFI_CONFIGURE_EXTRAS$SUB_CONFIGURE_EXTRAS"
+LIBFFI_CONFIGURE_ARGS="$keep_configure_args$LIBFFI_CONFIGURE_EXTRAS$SUB_CONFIGURE_EXTRAS --disable-builddir"
 RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
 
 ############## final output ################
