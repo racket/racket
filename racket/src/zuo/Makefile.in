@@ -26,6 +26,10 @@ zuos-to-run-and-install: zuo
 zuo: $(srcdir)/zuo.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -DZUO_LIB_PATH='"'"$(srcdir)/lib"'"' -o zuo $(srcdir)/zuo.c $(LDFLAGS) $(LIBS)
 
+.PHONY: check
+check: zuo
+	./zuo . check
+
 .PHONY: install
 install: zuo
 	./zuo . install

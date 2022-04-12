@@ -80,6 +80,19 @@
               (phony-rule (list zuo-to-run zuo-to-install)
                           void))))
 
+  ;; A phony target to run the test suite
+  (define check
+    (target 'check
+            (lambda (token)
+              (phony-rule (list zuo-to-run)
+                          (lambda ()
+                            (unless (= 0 (process-status
+                                          (thread-process-wait
+                                           (hash-ref (process "to-run/zuo"
+                                                              (at-source "tests/main.zuo"))
+                                                     'process))))
+                              (error "check failed")))))))
+
   ;; A phony target to install
   (define install
     (target 'install
@@ -106,4 +119,5 @@
         image_zuo.c
         zuo-to-run
         zuo-to-install
+        check
         install))
