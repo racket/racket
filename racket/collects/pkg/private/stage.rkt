@@ -301,7 +301,7 @@
          ['git
           (when (equal? checksum "")
             (pkg-error 
-             (~a "cannot use empty checksum for Git repostory package source\n"
+             (~a "cannot use empty checksum for Git repository package source\n"
                  "  source: ~a")
              pkg))
           (define-values (transport host port repo branch path)

@@ -310,7 +310,7 @@
                                 [(link static-link)
                                  (~a "\n  extra advice:\n"
                                      "   Your current installation is a directory link, and the directory might\n"
-                                     "   be a Git repostory checkout, but the package system doesn't know that.\n"
+                                     "   be a Git repository checkout, but the package system doesn't know that.\n"
                                      "   If so, try\n"
                                      "    cd " (simplify-path
                                                 (path->complete-path (cadr current-orig-pkg) (pkg-installed-dir)))
