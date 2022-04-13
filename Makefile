@@ -140,7 +140,7 @@ SETUP_MACHINE_FLAGS =
 # Set to "-M" as a shorthand for
 #  SETUP_MACHINE_FLAGS="-MCR `pwd`build/zo:"
 #  CONFIGURE_ARGS="--enable-crossany"
-SERVER_COMPILE_MACHINE = -M
+SERVER_COMPILE_MACHINE =
 
 # ------------------------------------------------------------
 # Installation options
