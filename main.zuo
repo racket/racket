@@ -87,8 +87,6 @@
     (define opts (lookup 'PLT_SETUP_OPTIONS))
     (build-shell opts (get-job-options)))
 
-  (define (server-compile-machine?)
-    (equal? "-M" (lookup 'SERVER_COMPILE_MACHINE)))
   (define (get-mcr-args)
     (list "-MCR" (~a (path->complete-path (at-source "build/zo")) ":")))
 
@@ -167,8 +165,7 @@
                                                (shell->strings (shell-subst-pwd (lookup 'CONFIGURE_ARGS_qq)
                                                                                 (at-source "racket/src/build" subdir)))
                                                (shell->strings (lookup 'CONFIGURE_ARGS))
-                                               (if (or (server-compile-machine?)
-                                                       (hash-ref options 'server-compile-machine? #f))
+                                               (if (hash-ref options 'server-compile-machine? #f)
                                                    '("--enable-crossany")
                                                    '())
                                                (shell->strings (lookup 'DISABLE_STATIC_LIBS))
@@ -194,8 +191,7 @@
                                                                (path-only build-config.rktd))
                                      'SETUP_MACHINE_FLAGS (build-shell
                                                            (lookup 'SETUP_MACHINE_FLAGS)
-                                                           (if (or (server-compile-machine?)
-                                                                   (hash-ref options 'server-compile-machine? #f))
+                                                           (if (hash-ref options 'server-compile-machine? #f)
                                                                (map string->shell (get-mcr-args))
                                                                ""))
                                      'PLT_SETUP_OPTIONS (build-shell
@@ -274,8 +270,7 @@
             (at-source "racket/bin" (~a "racket" sfx))])]))
     (hash 'racket racket.exe
           'racket-args (append (shell->strings (lookup 'SETUP_MACHINE_FLAGS))
-                               (if (or (server-compile-machine?)
-                                       (hash-ref options 'server-compile-machine? #f))
+                               (if (hash-ref options 'server-compile-machine? #f)
                                    (get-mcr-args)
                                    '())
                                (list "-G" config
@@ -291,7 +286,7 @@
                   "pkg" "catalog-copy" "--force" "--from-config" loc-catalog
                   unix-catalog)
     unix-catalog)
-    
+
   (define (setup vm . args)
     (raco (find-racket vm)
           "setup"
@@ -409,10 +404,12 @@
                                  auto-options recompile-options
                                  (shell->strings (lookup 'PKG_INSTALL_OPTIONS))))
 
-  (define (find-built-racket [cross? #f])
+  (define (find-built-racket options)
     (define vars (find-racket vm
                               (at-source "build/user/config")
-                              (if (and cross? (eq? vm 'cs))
+                              (if (or (and (hash-ref options 'cross? #f)
+                                           (eq? vm 'cs))
+                                      (hash-ref options 'server-compile-machine? #t))
                                   (hash 'server-compile-machine? #t)
                                   (hash))))
     (hash-set vars
@@ -420,27 +417,29 @@
               (append (hash-ref vars 'racket-args '())
                       (list '"-A" "build/user"))))
 
-  (define (built-racket* cross? . args)
-    (racket (find-built-racket cross?) args))
-  (define (built-raco* cross? . args)
-    (built-racket* cross? "-N" "raco" "-l-" "raco" args))
+  (define (built-racket options . args)
+    (racket (find-built-racket options) args))
+  (define (built-raco options . args)
+    (built-racket options "-N" "raco" "-l-" "raco" args))
 
-  (define (built-racket . args)
-    (built-racket* #f args))
-  (define (built-raco . args)
-    (built-raco* #f args))
+  (define (add-server-compile-machine options)
+    (if (equal? "-M" (lookup 'SERVER_COMPILE_MACHINE))
+        (hash-set options 'server-compile-machine? #t)
+        options))
 
   (define (server token [options (hash)])
     (check-mode "server")
     (maybe-fetch 'cs)
     (rm* "build/zo")
-    (base token vm)
+    (base token vm (add-server-compile-machine options))
     (server-from-base token options))
 
-  (define (server-from-base token [options (hash)])
+  (define (server-from-base token [options-in (hash)])
     (check-mode "server")
     (make-build/site.rkt)
     (update-stamp.txt)
+
+    (define options (add-server-compile-machine options-in))
 
     ;; Create a copy of `SRC_CATALOG', so that we snapshot checksums, and
     ;; start building from it. The packages are installed in user scope,
@@ -449,28 +448,28 @@
     ;; we're insulated from it)
     (rm* "build/user")
     (rm* "build/catalog-copy")
-    (built-raco "pkg" "catalog-copy" (lookup 'SRC_CATALOG) "build/catalog-copy")
-    (server-cache-config)
-    (built-raco "pkg" "install" "--all-platforms" user-auto-options
+    (built-raco options "pkg" "catalog-copy" (lookup 'SRC_CATALOG) "build/catalog-copy")
+    (server-cache-config options)
+    (built-raco options "pkg" "install" "--all-platforms" user-auto-options
                 required-pkgs
                 (shell->strings (lookup 'DISTRO_BUILD_PKGS)))
-    (server-set-config)
-    (built-racket "-l-" "distro-build/pkg-info" "-o" "build/pkgs.rktd" "build/catalog-copy")
-    (built-racket "-l" "distro-build/install-pkgs" config+mode
+    (server-set-config options)
+    (built-racket options "-l-" "distro-build/pkg-info" "-o" "build/pkgs.rktd" "build/catalog-copy")
+    (built-racket options "-l" "distro-build/install-pkgs" config+mode
                   (build-shell (lookup 'PKGS) (lookup 'TEST_PKGS))
                   source-user-auto
                   "--all-platforms")
-    (built-raco "setup" "--avoid-main" (get-job-options))
+    (built-raco options "setup" "--avoid-main" (get-job-options))
 
     ;; Although a client will build its own "collects", pack up the
     ;; server's version to be used by each client, so that every client has
     ;; exactly the same bytecode (which matters for SHA1-based dependency
     ;; tracking)
-    (built-racket "-l" "distro-build/pack-collects")
+    (built-racket options "-l" "distro-build/pack-collects")
 
     ;; Now that we've built packages from local sources, create "built"
     ;; versions of the packages from the installation into "build/user"
-    (built-racket "-l-" "distro-build/pack-built"
+    (built-racket options "-l-" "distro-build/pack-built"
                   (shell->strings (lookup 'PACK_BUILT_OPTIONS))
                   "build/pkgs.rktd")
 
@@ -481,8 +480,8 @@
     ;; as the copy of the server's "collects" tree:
     (when (directory-exists? ".git")
       (shell/wait "git update-server-info"))
-    (let ([rkt (find-built-racket)])
-      (built-racket "-l" "distro-build/serve-catalog" config+mode
+    (let ([rkt (find-built-racket options)])
+      (built-racket options "-l" "distro-build/serve-catalog" config+mode
                     (lookup 'SERVER_HOSTS) (lookup 'SERVER_PORT)
                     (hash-ref rkt 'racket) (hash-ref rkt 'racket-args)
                     (or (hash-ref options 'serve-during-cmd #f)
@@ -518,19 +517,19 @@
               ""))]))
     (display-to-file (~a stamp "\n") (at-source "build/stamp.txt") :truncate))
 
-  (define (server-cache-config)
-    (built-raco "pkg" "config" "-i" "--set" "download-cache-dir" "build/cache")
-    (built-raco "pkg" "config" "-i" "--set" "download-cache-max-files" "1023")
-    (built-raco "pkg" "config" "-i" "--set" "download-cache-max-bytes" "671088640"))
+  (define (server-cache-config options)
+    (built-raco options "pkg" "config" "-i" "--set" "download-cache-dir" "build/cache")
+    (built-raco options "pkg" "config" "-i" "--set" "download-cache-max-files" "1023")
+    (built-raco options "pkg" "config" "-i" "--set" "download-cache-max-bytes" "671088640"))
   
-  (define (server-set-config)
-    (built-racket "-l" "distro-build/set-server-config" "build/user/config/config.rktd"
+  (define (server-set-config options)
+    (built-racket options "-l" "distro-build/set-server-config" "build/user/config/config.rktd"
                   config+mode "" "" (lookup 'DOC_SEARCH) ""))
 
   ;; ------------------------------------------------------------
   ;; Distribution builds: client
 
-  (define (client token [options (hash)])
+  (define (client token [options-in (hash)])
      (cond
       [(directory-exists? "build/log") ; => server space also used for client build
        (check-mode "server")]
@@ -538,19 +537,21 @@
        (check-mode "client")
        (rm* "build/user")])
     (maybe-fetch 'cs)
-    (base token vm options)
+    (base token vm options-in)
 
-    (define cross? (or (hash-ref options 'server-compile-machine? #f)
+    (define cross? (or (hash-ref options-in 'server-compile-machine? #f)
                        (equal? (lookup 'BUNDLE_FROM_SERVER_TARGET) "bundle-cross-from-server")
                        (equal? (lookup 'CS_CROSS_SUFFIX) "-cross")))
+    (define options (if cross?
+                        (hash-set options-in 'cross? #t)
+                        options-in))
 
-    (define (built-racket . args) (built-racket* cross? args))
-    (define (built-raco . args) (built-raco* cross? args))
+    (define (built-racket* . args) (built-racket options args))
+    (define (built-raco* . args) (built-raco options args))
 
     (define (in-bundle-raco . args)
       (if cross?
-          (built-racket* #t
-                         (list "-G" "bundle/racket/etc" "-X" "bundle/racket/collects"
+          (built-racket* (list "-G" "bundle/racket/etc" "-X" "bundle/racket/collects"
                                "-C" "-A" "bundle/user" "-l" "raco")
                          args)
           (shell/wait (if (eq? 'windows (system-type))
@@ -560,7 +561,7 @@
     
     ;; Install the "distro-build" package from the server into
     ;; a local build:
-    (built-raco "pkg" "install" remote-user-auto "distro-build-client")
+    (built-raco* "pkg" "install" remote-user-auto "distro-build-client")
 
     (when cross?
       (rm* (apply build-path (cons "build/zo" (cdr (explode-path (path->complete-path (at-source "bundle"))))))))
@@ -574,44 +575,44 @@
     ;; from the server, and the run a post-adjustment script.
     (rm* "bundle")
     (mkdir-p "bundle/racket")
-    (built-racket "-l" "setup/unixstyle-install" "bundle" "racket" "bundle/racket")
-    (built-racket "-l" "setup/winstrip" "bundle/racket")
-    (built-racket "-l" "setup/winvers-change" "bundle/racket")
-    (built-racket "-l-" "distro-build/unpack-collects" (shell->strings (lookup 'UNPACK_COLLECTS_FLAGS))
-                  (~a (lookup 'SERVER_URL_SCHEME) "://" svr-prt "/" (lookup 'SERVER_COLLECTS_PATH)))
+    (built-racket* "-l" "setup/unixstyle-install" "bundle" "racket" "bundle/racket")
+    (built-racket* "-l" "setup/winstrip" "bundle/racket")
+    (built-racket* "-l" "setup/winvers-change" "bundle/racket")
+    (built-racket* "-l-" "distro-build/unpack-collects" (shell->strings (lookup 'UNPACK_COLLECTS_FLAGS))
+                   (~a (lookup 'SERVER_URL_SCHEME) "://" svr-prt "/" (lookup 'SERVER_COLLECTS_PATH)))
     (in-bundle-raco "setup" "--no-user" (get-job-options) recompile-options)
     (define pkg-source-flags (shell->strings (lookup 'PKG_SOURCE_MODE)))
     (in-bundle-raco "pkg" "install" remote-inst-auto pkg-source-flags required-pkgs)
     (in-bundle-raco "pkg" "install" remote-inst-auto pkg-source-flags (shell->strings (lookup 'PKGS)))
-    (built-racket "-l" "setup/unixstyle-install" "post-adjust" (lookup 'SOURCE_MODE) (lookup 'PKG_SOURCE_MODE) "racket" "bundle/racket")
+    (built-racket* "-l" "setup/unixstyle-install" "post-adjust" (lookup 'SOURCE_MODE) (lookup 'PKG_SOURCE_MODE) "racket" "bundle/racket")
 
-    (built-racket "-l" "distro-build/set-config" "bundle/racket/etc/config.rktd"
-                  (lookup 'INSTALL_NAME) (lookup 'BUILD_STAMP) (lookup 'DOC_SEARCH)
-                  (if (hash-ref options 'from-site? #f)
-                      (list (~a (lookup 'SERVER_URL_SCHEME) "://" svr-prt "/"
-                                (let ([s (lookup 'SITE_PATH)])
-                                  (if (or (equal? s "") (= (char "/") (string-ref s (- (string-length s) 1))))
-                                      s
-                                      (~a s "/")))
-                                "catalog/")
-                            "")
-                      (shell->strings (lookup 'DIST_CATALOGS_q))))
+    (built-racket* "-l" "distro-build/set-config" "bundle/racket/etc/config.rktd"
+                   (lookup 'INSTALL_NAME) (lookup 'BUILD_STAMP) (lookup 'DOC_SEARCH)
+                   (if (hash-ref options 'from-site? #f)
+                       (list (~a (lookup 'SERVER_URL_SCHEME) "://" svr-prt "/"
+                                 (let ([s (lookup 'SITE_PATH)])
+                                   (if (or (equal? s "") (= (char "/") (string-ref s (- (string-length s) 1))))
+                                       s
+                                       (~a s "/")))
+                                 "catalog/")
+                             "")
+                       (shell->strings (lookup 'DIST_CATALOGS_q))))
 
-    (built-racket "-l-" "distro-build/installer"
-                  "--readme" (lookup 'README) "--upload" (lookup 'UPLOAD)
-                  "--desc" (lookup 'DIST_DESC)
-                  (shell->strings (lookup 'RELEASE_MODE))
-                  (shell->strings (lookup 'SOURCE_MODE))
-                  (shell->strings (lookup 'VERSIONLESS_MODE))
-                  (shell->strings (lookup 'MAC_PKG_MODE))
-                  (shell->strings (lookup 'TGZ_MODE))
-                  "--packed-options" (lookup 'INSTALLER_OPTIONS)
-                  "--pre-process" (lookup 'INSTALLER_PRE_PROCESS_BASE64)
-                  "--post-process" (lookup 'INSTALLER_POST_PROCESS_BASE64)
-                  (shell->strings (lookup 'NOTARIZATION_CONFIG))
-                  (lookup 'DIST_NAME) (lookup 'DIST_BASE) (lookup 'DIST_DIR)
-                  (lookup 'DIST_SUFFIX)
-                  (lookup 'SIGN_IDENTITY) (lookup 'OSSLSIGNCODE_ARGS_BASE64)))
+    (built-racket* "-l-" "distro-build/installer"
+                   "--readme" (lookup 'README) "--upload" (lookup 'UPLOAD)
+                   "--desc" (lookup 'DIST_DESC)
+                   (shell->strings (lookup 'RELEASE_MODE))
+                   (shell->strings (lookup 'SOURCE_MODE))
+                   (shell->strings (lookup 'VERSIONLESS_MODE))
+                   (shell->strings (lookup 'MAC_PKG_MODE))
+                   (shell->strings (lookup 'TGZ_MODE))
+                   "--packed-options" (lookup 'INSTALLER_OPTIONS)
+                   "--pre-process" (lookup 'INSTALLER_PRE_PROCESS_BASE64)
+                   "--post-process" (lookup 'INSTALLER_POST_PROCESS_BASE64)
+                   (shell->strings (lookup 'NOTARIZATION_CONFIG))
+                   (lookup 'DIST_NAME) (lookup 'DIST_BASE) (lookup 'DIST_DIR)
+                   (lookup 'DIST_SUFFIX)
+                   (lookup 'SIGN_IDENTITY) (lookup 'OSSLSIGNCODE_ARGS_BASE64)))
   
   ;; ------------------------------------------------------------
   ;; Distribution builds: installers
@@ -621,7 +622,8 @@
     (server token (hash 'serve-during-cmd (get-drive-clients-args))))
 
   (define (installers-from-built token)
-    (built-catalog-server token (hash 'serve-during-cmd (get-drive-clients-args))))
+    (built-catalog-server token (add-server-compile-machine
+                                 (hash 'serve-during-cmd (get-drive-clients-args)))))
 
   (define (get-drive-clients-args [describe-clients? #f])
     (list "-l-" "distro-build/drive-clients"
@@ -641,25 +643,25 @@
           (lookup 'DIST_BASE) (lookup 'DIST_DIR)))
 
   (define (describe-clients token)
-    (built-racket (get-drive-clients-args #t)))
+    (built-racket (hash) (get-drive-clients-args #t)))
 
   ;; ------------------------------------------------------------
   ;; Distribution builds: site and snapshot
-
 
   (define (site token)
     (installers token)
     (site-from-installers token))
 
   (define (site-from-installers token)
+    (define options (add-server-compile-machine (hash)))
     (rm* "build/docs")
     (rm* (build-path "build/zo"
                      (apply build-path (cdr (explode-path (hash-ref (runtime-env) 'dir))))
                      "build/docs"))
-    (built-racket "-l-" "distro-build/install-for-docs" "build/docs"
+    (built-racket options "-l-" "distro-build/install-for-docs" "build/docs"
                   config+mode (lookup 'PKGS)
                   "build/built/catalog" "build/native/catalog")
-    (built-racket "-l-" "distro-build/assemble-site"
+    (built-racket options "-l-" "distro-build/assemble-site"
                   config+mode (lookup 'DIST_BASE)))
 
   (define (snapshot-site token)
@@ -667,7 +669,8 @@
     (snapshot-at-site token))
 
   (define (snapshot-at-site token)
-    (built-racket "-l-" "distro-build/manage-snapshots" config+mode (lookup 'DIST_BASE)))
+    (define options (add-server-compile-machine (hash)))
+    (built-racket options "-l-" "distro-build/manage-snapshots" config+mode (lookup 'DIST_BASE)))
 
   ;; ------------------------------------------------------------
   ;; Derived: steps that require a working `racket` to build things

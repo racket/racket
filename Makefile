@@ -140,7 +140,8 @@ SETUP_MACHINE_FLAGS =
 # Set to "-M" as a shorthand for
 #  SETUP_MACHINE_FLAGS="-MCR `pwd`build/zo:"
 #  CONFIGURE_ARGS="--enable-crossany"
-SERVER_COMPILE_MACHINE =
+# for `server` and derived targets
+SERVER_COMPILE_MACHINE = -M
 
 # ------------------------------------------------------------
 # Installation options
@@ -181,7 +182,6 @@ BUILD_VARS = MAKE=$(MAKE) \
              PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" \
              SRC_CATALOG="$(SRC_CATALOG)" \
              SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" \
-             SERVER_COMPILE_MACHINE="$(SERVER_COMPILE_MACHINE)" \
              PREFIX="$(PREFIX)" \
              RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" \
              RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" \
@@ -434,7 +434,8 @@ BUNDLE_FROM_SERVER_TARGET = bundle-from-server
 # For `client-from-site`, relative path on server for the site
 SITE_PATH =
 
-DISTRO_BUILD_VARS = DOC_SEARCH="$(DOC_SEARCH)" \
+DISTRO_BUILD_VARS = SERVER_COMPILE_MACHINE="$(SERVER_COMPILE_MACHINE)" \
+                    DOC_SEARCH="$(DOC_SEARCH)" \
                     SERVER="$(SERVER)" \
                     SERVER_PORT="$(SERVER_PORT)" \
                     SERVER_URL_SCHEME="$(SERVER_URL_SCHEME)" \
