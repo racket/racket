@@ -20,9 +20,9 @@
   (run-zuo* (list "-X" "" "-B" image-file "")
             (~a "#lang " lang " 10")
             (lambda (status out err)
+              (check err "")
               (check (and (= status 0) lang) lang)
-              (check out "10\n")
-              (check err ""))))
+              (check out "10\n"))))
 
 (try-dump "zuo")
 (try-dump "zuo/hygienic")

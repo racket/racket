@@ -1851,7 +1851,7 @@ static int peek_input(const unsigned char *s, zuo_int_t *_o, const char *want) {
 }
 
 static int all_digits_before_delim(const unsigned char *s, zuo_int_t i) {
-  while (isdigit(s[i]) || isalpha(s[i]) || strchr(symbol_chars, s[i])) {
+  while (s[i] && (isdigit(s[i]) || isalpha(s[i]) || strchr(symbol_chars, s[i]))) {
     if (!isdigit(s[i]))
       return 0;
     i++;
@@ -6644,7 +6644,7 @@ static void zuo_image_init(char *boot_image) {
 # endif
     if (boot_image) {
       /* The image supplies constants and tables */
-      zuo_raw_handle_t in = zuo_fd_open_input_handle(zuo_string(boot_image), z.o_empty_hash);
+      zuo_raw_handle_t in = zuo_fd_open_input_handle(zuo_string(boot_image), zuo_trie_node());
       zuo_t *dump = zuo_drain(in, -1);
       zuo_close_handle(in);
       zuo_fasl_restore(ZUO_STRING_PTR(dump), ZUO_STRING_LEN(dump));

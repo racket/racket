@@ -30,11 +30,12 @@
        10)
 (check-fail (call/cc 1) "not a procedure")
 
-(check (call/prompt (lambda () 10)) 10)
+(check (call/prompt (lambda () 10) 'tag) 10)
 (check (let ([k (call/prompt
                  (lambda ()
-                   (call/cc (lambda (k) k))))])
-         (+ 1 (call/prompt (lambda () (k 11)))))
+                   (call/cc (lambda (k) k)))
+                 'tag)])
+         (+ 1 (call/prompt (lambda () (k 11)) 'tag)))
        12)
 (check (let ([k (call/prompt
                  (lambda ()
@@ -43,20 +44,42 @@
                       (+ 1
                          (* 2
                             (call/cc
-                             (lambda (k) (esc k)))))))))])
-         (list (call/prompt (lambda () (k 3)))
-               (call/prompt (lambda () (k 4)))))
+                             (lambda (k) (esc k))))))))
+                 'tag)])
+         (list (call/prompt (lambda () (k 3)) 'tag)
+               (call/prompt (lambda () (k 4)) 'tag)))
        (list 7 9))
-(check-fail (call/prompt 1) "not a procedure")
+(check-fail (call/prompt 1 'tag) "not a procedure")
+(check-fail (call/prompt void 7) "not a symbol")
 
-(check (let ([k (call/prompt
-                 (lambda ()
-                   (call/cc
-                    (lambda (esc)
-                      (+ 1
-                         (* 2
-                            (call/comp esc)))))))])
-         (list (k 30)
-               (k 40)))
-       (list 61 81))
-(check-arg-fail (call/comp 1) "not a procedure")
+(check (continuation-prompt-available? 'tag) #f)
+(check (call/prompt (lambda ()
+                      (continuation-prompt-available? 'tag))
+                    'tag)
+       #t)
+(check (call/prompt (lambda ()
+                      (continuation-prompt-available? 'other))
+                    'tag)
+       #f)
+(check (call/prompt (lambda ()
+                      (call/prompt
+                       (lambda ()
+                         (continuation-prompt-available? 'tag))
+                       'other))
+                    'tag)
+       #f)
+(check (call/prompt (lambda ()
+                      (call/prompt
+                       (lambda ()
+                         (continuation-prompt-available? 'other))
+                       'other))
+                    'tag)
+       #t)
+(check (call/prompt (lambda ()
+                      (list (call/prompt
+                             (lambda ()
+                               (continuation-prompt-available? 'other))
+                             'other)
+                            (continuation-prompt-available? 'tag)))
+                    'tag)
+       '(#t #t))

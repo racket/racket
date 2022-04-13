@@ -15,7 +15,7 @@
 (check-arg-fail (fd-open-output 'stdin (hash)) "not a path string")
 (check-arg-fail (fd-open-input 'stdout) "not a path string")
 (check-arg-fail (fd-open-input 'stderr) "not a path string")
-(check-arg-fail (fd-open-output 'stdout (hash 'exists 'truncate)) "non-empty options")
+(check-arg-fail (fd-open-output 'stdout (hash 'exists 'truncate)) "unrecognized or unused option")
 
 (let ([out (fd-open-output (build-path tmp-dir "handle1.txt") :truncate)])
   (check (handle? out))
@@ -52,7 +52,7 @@
 (check-arg-fail (fd-close 'oops) "not an open input or output")
 
 (check-arg-fail (fd-open-output "file" 'oops) "not a hash table")
-(check-arg-fail (fd-open-output "file" (hash 'oops 'truncate)) "unrecognized option")
+(check-arg-fail (fd-open-output "file" (hash 'oops 'truncate)) "unrecognized or unused option")
 (check-arg-fail (fd-open-output "file" (hash 'exists 'oops)) "invalid exists mode")
 
 (check-arg-fail (fd-open-output ,(build-path tmp-dir "handle1.txt")
