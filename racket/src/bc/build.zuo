@@ -1525,12 +1525,15 @@
                 (strip-signature dest-exe)
                 (strip-debug config dest-exe)
                 (cond
+                  [windows? (void)]
                   [mac?
                    (set-collects-path racket dest-exe "../../../../collects" "../../../../etc")
                    (install_name_tool "-change"
                                       (~a "@executable_path/Racket.framework/Versions/" version fw-suffix "/Racket")
                                       (~a (get-framework-prefix #t) "Racket.framework/Versions/" version fw-suffix "/Racket")
-                                      dest-exe)])
+                                      dest-exe)]
+                  [else
+                   (set-collects-path racket dest-exe collects-path config-path)])
                 (restore-signature dest-exe)))
             (append
              (if cgc? (list racketcgc) '())
