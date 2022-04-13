@@ -7383,7 +7383,7 @@ do
 done
 
 
-LIBFFI_CONFIGURE_ARGS="$keep_configure_args$LIBFFI_CONFIGURE_EXTRAS$SUB_CONFIGURE_EXTRAS --disable-builddir"
+LIBFFI_CONFIGURE_ARGS="--disable-option-checking $keep_configure_args$LIBFFI_CONFIGURE_EXTRAS$SUB_CONFIGURE_EXTRAS --disable-builddir"
 RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
 
 ############## final output ################
