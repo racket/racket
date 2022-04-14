@@ -503,8 +503,7 @@ fi
 EXTRALIBS=
 
 # for gmp assembly:
-EXTRA_GMP_OBJ=
-EXTRA_GMP_DEP=
+EXTRA_GMP_NAME=
 
 OSX="f"
 MINGW="f"
@@ -568,16 +567,14 @@ case "$host_os" in
       ppc|powerpc)
        ;;
       alpha)
-       EXTRA_GMP_OBJ='gmp_alpha_gcc.$(LTO)'
-       EXTRA_GMP_DEP='$(EXTRA_GMP_DEP_FILE)'
+       EXTRA_GMP_NAME='gmp_alpha_gcc.s'
        ;;
       i386|i486|i586|i686)
        enable_parallel_by_default=yes
        check_for_unwind=REG_ESP
        ;;
       arm*)
-       EXTRA_GMP_OBJ='gmp_arm_gcc.$(LTO)'
-       EXTRA_GMP_DEP='$(EXTRA_GMP_DEP_FILE)'
+       EXTRA_GMP_NAME='gmp_arm_gcc.S'
        ;;
       *)
        ;;
@@ -588,8 +585,7 @@ case "$host_os" in
     if test "$CC" = "cc" ; then 
       COMPFLAGS="$COMPFLAGS -ieee_with_inexact -assume noaligned_objects"
     elif test "$CC" = "gcc" ; then 
-      EXTRA_GMP_OBJ='gmp_alpha_gcc.$(LTO)'
-      EXTRA_GMP_DEP='$(EXTRA_GMP_DEP_FILE)'
+      EXTRA_GMP_NAME='gmp_alpha_gcc.S'
     fi
     ;;
   hpux*)
@@ -1394,8 +1390,7 @@ AC_SUBST(XFORMFLAGS)
 AC_SUBST(MZBINTARGET)
 AC_SUBST(MZINSTALLTARGET)
 AC_SUBST(MZINSTALLBINDIR)
-AC_SUBST(EXTRA_GMP_OBJ)
-AC_SUBST(EXTRA_GMP_DEP)
+AC_SUBST(EXTRA_GMP_NAME)
 AC_SUBST(OSX)
 AC_SUBST(MINGW)
 AC_SUBST(FRAMEWORK_INSTALL_DIR)

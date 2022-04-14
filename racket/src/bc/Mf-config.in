@@ -54,6 +54,9 @@ RACKET = @RACKET@
 
 ENABLE_CIFY = @ENABLE_CIFY@
 
+# for gmp assembly:
+EXTRA_GMP_NAME = @EXTRA_GMP_NAME@
+
 # Whether building for Mac OS ("t" or "f"), and how the framework is
 # configured and installed
 OSX=@OSX@

@@ -667,8 +667,7 @@ FRAMEWORK_REL_INSTALL
 FRAMEWORK_INSTALL_DIR
 MINGW
 OSX
-EXTRA_GMP_DEP
-EXTRA_GMP_OBJ
+EXTRA_GMP_NAME
 MZINSTALLBINDIR
 MZINSTALLTARGET
 MZBINTARGET
@@ -4951,8 +4950,7 @@ fi
 EXTRALIBS=
 
 # for gmp assembly:
-EXTRA_GMP_OBJ=
-EXTRA_GMP_DEP=
+EXTRA_GMP_NAME=
 
 OSX="f"
 MINGW="f"
@@ -5016,16 +5014,14 @@ case "$host_os" in
       ppc|powerpc)
        ;;
       alpha)
-       EXTRA_GMP_OBJ='gmp_alpha_gcc.$(LTO)'
-       EXTRA_GMP_DEP='$(EXTRA_GMP_DEP_FILE)'
+       EXTRA_GMP_NAME='gmp_alpha_gcc.s'
        ;;
       i386|i486|i586|i686)
        enable_parallel_by_default=yes
        check_for_unwind=REG_ESP
        ;;
       arm*)
-       EXTRA_GMP_OBJ='gmp_arm_gcc.$(LTO)'
-       EXTRA_GMP_DEP='$(EXTRA_GMP_DEP_FILE)'
+       EXTRA_GMP_NAME='gmp_arm_gcc.S'
        ;;
       *)
        ;;
@@ -5036,8 +5032,7 @@ case "$host_os" in
     if test "$CC" = "cc" ; then
       COMPFLAGS="$COMPFLAGS -ieee_with_inexact -assume noaligned_objects"
     elif test "$CC" = "gcc" ; then
-      EXTRA_GMP_OBJ='gmp_alpha_gcc.$(LTO)'
-      EXTRA_GMP_DEP='$(EXTRA_GMP_DEP_FILE)'
+      EXTRA_GMP_NAME='gmp_alpha_gcc.S'
     fi
     ;;
   hpux*)
@@ -7389,7 +7384,6 @@ RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
 ############## final output ################
 
 LIBS="$LIBS $EXTRALIBS"
-
 
 
 

@@ -163,8 +163,13 @@
       "vector.c"))
 
   (define third-party-src-names
-    '("gmp/gmp.c"
-      "unwind/libunwind.c"))
+    (append
+     (let ([n (or (lookup 'EXTRA_GMP_NAME) "")])
+       (if (equal? n "")
+           '()
+           (list (build-path "gmp" n))))
+     '("gmp/gmp.c"
+       "unwind/libunwind.c")))
 
   (define src-names/no-startup
     (append
