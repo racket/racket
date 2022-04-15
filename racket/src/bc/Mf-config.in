@@ -16,16 +16,15 @@ PLAIN_CC = @PLAIN_CC@
 # different when using libtool
 MZLINKER = @MZLINKER@
 
-# We use `PREFLAGS` instead of `CPPFLAGS` for historical reasons
 CFLAGS = @CFLAGS@
-PREFLAGS = @PREFLAGS@
+CPPFLAGS = @PREFLAGS@
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
 AR = @AR@
 ARFLAGS = @ARFLAGS@
 RANLIB = @RANLIB@
 
-# More like `CPPFLAGS`/`PREFLAGS`, but some apply to subsets
+# More like `CPPFLAGS`, but some apply to subsets
 OPTIONS = @OPTIONS@
 GC2OPTIONS = @GC2OPTIONS@
 MZOPTIONS = @MZOPTIONS@

@@ -405,7 +405,6 @@
   (define (mz-config config [gc2? #f])
     (mzconfig-include
      (config-include (hash-set* config
-                                'CPPFLAGS (hash-ref config 'PREFLAGS "")
                                 'CFLAGS (build-shell
                                          (hash-ref config 'CFLAGS "")
                                          (hash-ref config 'CPPFLAGS "")
@@ -505,7 +504,7 @@
                                           (string->shell (~a "-I" ffi-arch-include)))
                              "")
                          cpp-extra
-                         (hash-ref config 'PREFLAGS "")
+                         (hash-ref config 'CPPFLAGS "")
                          (hash-ref config 'OPTIONS "")
                          (hash-ref config 'GC2OPTIONS "")
                          (hash-ref config 'MZOPTIONS ""))
@@ -1078,7 +1077,7 @@
                                (mzconfig-include
                                 (config-include (hash-set* config
                                                            'CPPFLAGS (build-shell
-                                                                      (hash-ref config 'PREFLAGS "")
+                                                                      (hash-ref config 'CPPFLAGS "")
                                                                       "-DSGC_EXPORTS")
                                                            'CFLAGS (build-shell
                                                                     (hash-ref config 'CFLAGS "")
@@ -1141,7 +1140,7 @@
                                (mzconfig-include
                                 (config-include (hash-set* config
                                                            'CPPFLAGS (build-shell
-                                                                      (hash-ref config 'PREFLAGS "")
+                                                                      (hash-ref config 'CPPFLAGS "")
                                                                       "-DSGC_EXPORTS")
                                                            'CFLAGS (build-shell
                                                                     (hash-ref config 'CFLAGS "")
@@ -1462,7 +1461,7 @@
                              (at-dir "system.rktd")
                              (build-shell (or (hash-ref config 'CPP #f)
                                               (default-cpp))
-                                          (hash-ref config 'PREFLAGS "")
+                                          (hash-ref config 'CPPFLAGS "")
                                           (hash-ref config 'OPTIONS "")
                                           (hash-ref config 'GC2OPTIONS "")
                                           (hash-ref config 'MZOPTIONS "")
