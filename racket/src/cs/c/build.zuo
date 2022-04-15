@@ -78,6 +78,7 @@
                                                            'scheme-args scheme-args
                                                            'schemify "f"
                                                            'CONFIGURE_RACKET_SO_COMPILE (lookup 'CONFIGURE_RACKET_SO_COMPILE)
+                                                           'COMPRESS_COMP (lookup 'COMPRESS_COMP)
                                                            'DISABLE_WPO (lookup 'DISABLE_WPO "f"))])
                                       (if (not xpatch?)
                                           vars

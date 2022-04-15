@@ -90,6 +90,7 @@ CONFIGURE_RACKET_SO_COMPILE = @CONFIGURE_RACKET_SO_COMPILE@
 
 # Configuration about how boot files are generated:
 BOOT_COMPRESS_COMP = @BOOT_COMPRESS_COMP@
+COMPRESS_COMP = @COMPRESS_COMP@
 DISABLE_WPO = @DISABLE_WPO@
 
 # Potentially a suffix like "cs" to add to the end of installed

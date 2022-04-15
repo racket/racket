@@ -26,7 +26,7 @@
   (define scheme-args (or (lookup 'scheme-args) '()))
   (define unsafe? (not (equal? (lookup 'UNSAFE_COMP) "no")))
   (define debug?  (equal? (lookup 'DEBUG_COMP) "yes"))
-  (define compress? (equal? (lookup 'BOOT_COMPRESS_COMP) "--compress"))
+  (define compress? (equal? (lookup 'COMPRESS_COMP) "--compress"))
   (define xpatch (lookup 'xpatch))
   (define wpo? (not (equal? (lookup 'DISABLE_WPO) "t")))
   (define schemify? (not (equal? (lookup 'schemify) "f")))
@@ -35,6 +35,7 @@
   
   (define compile-file-deps
     (append
+     (list (input-data-target 'compile-config (list unsafe? debug? compress?)))
      extra-compile-file-deps
      (map at-source '("compile-file.ss" "include.ss" "place-register.ss"))))
 
