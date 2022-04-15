@@ -548,16 +548,6 @@
 
     (define (built-racket* . args) (built-racket options args))
     (define (built-raco* . args) (built-raco options args))
-
-    (define (in-bundle-raco . args)
-      (if cross?
-          (built-racket* (list "-G" "bundle/racket/etc" "-X" "bundle/racket/collects"
-                               "-C" "-A" "bundle/user" "-l" "raco")
-                         args)
-          (shell/wait (if (eq? 'windows (system-type))
-                          "bundle\\racket\\raco.exe"
-                          "bundle/racket/bin/raco")
-                      args)))
     
     ;; Install the "distro-build" package from the server into
     ;; a local build:
@@ -580,10 +570,10 @@
     (built-racket* "-l" "setup/winvers-change" "bundle/racket")
     (built-racket* "-l-" "distro-build/unpack-collects" (shell->strings (lookup 'UNPACK_COLLECTS_FLAGS))
                    (~a (lookup 'SERVER_URL_SCHEME) "://" svr-prt "/" (lookup 'SERVER_COLLECTS_PATH)))
-    (in-bundle-raco "setup" "--no-user" (get-job-options) recompile-options)
+    (in-bundle-raco options "setup" "--no-user" (get-job-options) recompile-options)
     (define pkg-source-flags (shell->strings (lookup 'PKG_SOURCE_MODE)))
-    (in-bundle-raco "pkg" "install" remote-inst-auto pkg-source-flags required-pkgs)
-    (in-bundle-raco "pkg" "install" remote-inst-auto pkg-source-flags (shell->strings (lookup 'PKGS)))
+    (in-bundle-raco options "pkg" "install" remote-inst-auto pkg-source-flags required-pkgs)
+    (in-bundle-raco options "pkg" "install" remote-inst-auto pkg-source-flags (shell->strings (lookup 'PKGS)))
     (built-racket* "-l" "setup/unixstyle-install" "post-adjust" (lookup 'SOURCE_MODE) (lookup 'PKG_SOURCE_MODE) "racket" "bundle/racket")
 
     (built-racket* "-l" "distro-build/set-config" "bundle/racket/etc/config.rktd"
@@ -613,7 +603,25 @@
                    (lookup 'DIST_NAME) (lookup 'DIST_BASE) (lookup 'DIST_DIR)
                    (lookup 'DIST_SUFFIX)
                    (lookup 'SIGN_IDENTITY) (lookup 'OSSLSIGNCODE_ARGS_BASE64)))
-  
+
+  (define (in-bundle-raco options . args)
+    (if (hash-ref options 'cross? #f)
+        (built-racket options
+                      (list "-G" "bundle/racket/etc" "-X" "bundle/racket/collects"
+                            "-C" "-A" "bundle/user" "-l" "raco")
+                      args)
+        (shell/wait (if (eq? 'windows (system-type))
+                        "bundle\\racket\\raco.exe"
+                        "bundle/racket/bin/raco")
+                    args)))
+
+  (define (test-client token [options (hash)])
+    (in-bundle-raco options
+                    "pkg" "install" remote-inst-auto (shell->strings (lookup 'PKG_SOURCE_MODE))
+                    (shell->strings (lookup 'TEST_PKGS)))
+    (in-bundle-raco options
+                    "test" (shell->strings (lookup 'TEST_ARGS_q))))
+
   ;; ------------------------------------------------------------
   ;; Distribution builds: installers
 
@@ -728,6 +736,8 @@
        [:target client () ,(lambda (token) (client token))]
        [:target client-compile-any () ,(lambda (token) (client token (hash 'server-compile-machine? #t)))]
        [:target client-from-site () ,(lambda (token) (client token (hash 'from-site? #t)))]
+
+       [:target test-client () ,(lambda (token) (test-client token))]
 
        [:target installers () ,(lambda (token) (installers token))]
        [:target installers-from-built () ,(lambda (token) (installers-from-built token))]
