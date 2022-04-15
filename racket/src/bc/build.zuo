@@ -801,6 +801,8 @@
                                           (if msvc?
                                               (build-shell "/LD /DLL /MT"
                                                            machine-link-flags
+                                                           ;; compiler automatically adds this:
+                                                           #;
                                                            (string->shell (~a "/IMPLIB:" libmzgc.def)))
                                               (build-shell "-shared"
                                                            "-Wl,--output-def" (string->shell (~a "-Wl," libmzgc.def))
@@ -841,6 +843,8 @@
                                                 (if msvc?
                                                     (build-shell "/LD /DLL /MT"
                                                                  machine-link-flags
+                                                                 ;; compiler automatically adds this:
+                                                                 #;
                                                                  (string->shell (~a "/IMPLIB:" libracket.def)))
                                                     (build-shell "-shared"
                                                                  "-Wl,--output-def" (string->shell (~a "-Wl," libracket.def))
