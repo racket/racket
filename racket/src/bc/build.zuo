@@ -619,7 +619,7 @@
                                        ,(input-data-target 'cify cify-mode))
                  ,(lambda (path token)
                     (unless provided-racket?
-                      (build/no-dep racketcgc1 token))
+                      (build/no-dep (find-target racketcgc1 the-targets) token))
                     (mkdir-p (path-only path))
                     (define cify? (cond
                                     [(equal? cify-mode "yes") #t]
