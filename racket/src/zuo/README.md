@@ -26,7 +26,7 @@ See [`local/hello.zuo`](local/hello.zuo),
 Building and Running Zuo
 ------------------------
 
-Compile `zuo.c` with a C compiler. No additional are files needed,
+Compile `zuo.c` with a C compiler. No additional files are needed,
 other than system and C library headers. No compiler flags should be
 needed, although flags like `-o zuo` or `-O2` are a good idea.
 
