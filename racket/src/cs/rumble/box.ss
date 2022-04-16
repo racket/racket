@@ -11,17 +11,52 @@
 
 (define (box? v)
   (or (#%box? v)
-      (and (impersonator? v)
-           (#%box? (impersonator-val v)))))
+      (box-impersonator? v)
+      (box-chaperone? v)))
 
-(define (unbox b)
-  (if (#%box? b)
-      (#3%unbox b)
-      (#%$app/no-inline impersonate-unbox b)))
+(define-syntax (unbox stx)
+  (syntax-case stx ()
+    [(_ b-expr)
+     #'(let ([b b-expr])
+         (if (#%box? b)
+             (#3%unbox b)
+             (if (or (box-impersonator? b)
+                     (box-chaperone? b))
+                 (#%$app/no-inline impersonate-unbox b)
+                 ;; Let primitive report the error:
+                 (#2%unbox b))))]
+    [(_ expr ...) #'(general-unbox expr ...)]
+    [_ #'general-unbox]))
 
-(define (unsafe-unbox b)
-  ;; must handle impersonators
-  (unbox b))
+(define general-unbox
+  (|#%name|
+   unbox
+   (lambda (b)
+     (if (#%box? b)
+         (#3%unbox b)
+         (if (or (box-impersonator? b)
+                 (box-chaperone? b))
+             (#%$app/no-inline impersonate-unbox b)
+             ;; Let primitive report the error:
+             (#2%unbox b))))))
+
+(define-syntax (unsafe-unbox stx)
+  (syntax-case stx ()
+    [(_ b-expr)
+     #'(let ([b b-expr])
+         (if (#%box? b)
+             (#3%unbox b)
+             (#%$app/no-inline impersonate-unbox b)))]
+    [(_ expr ...) #'(general-unsafe-unbox expr ...)]
+    [_ #'general-unsafe-unbox]))
+
+(define general-unsafe-unbox
+  (|#%name|
+   unbox
+   (lambda (b)
+     (if (#%box? b)
+         (#3%unbox b)
+         (#%$app/no-inline impersonate-unbox b)))))
 
 (define/who (unbox* b)
   (if (#%box? b)
@@ -93,8 +128,6 @@
     (make-box-impersonator val b props ref set)))
 
 (define (impersonate-unbox orig)
-  (if (and (impersonator? orig)
-           (#%box? (impersonator-val orig)))
       (let loop ([o orig])
         (cond
          [(#%box? o) (#%unbox o)]
@@ -110,9 +143,7 @@
          [(box-impersonator? o)
           (let ([val  (loop (impersonator-next o))])
             ((box-impersonator-ref o) o val))]
-         [else (loop (impersonator-next o))]))
-      ;; Let primitive report the error:
-      (#2%unbox orig)))
+         [else (error 'impersonate-box "WHAT? ~s ~s" orig o)])))
 
 (define (impersonate-set-box! orig val)
   (cond
