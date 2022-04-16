@@ -616,11 +616,10 @@
 
         ;; Phase2 "cstartup.inc" generation as a compiled form of "startup.inc"
         [:target ,phase2/cstartup.inc (,(at-source "src/startup.inc")
-                                       ,(input-data-target 'cify cify-mode)
-                                       ,@(if provided-racket?
-                                             '()
-                                             (list racketcgc1)))
+                                       ,(input-data-target 'cify cify-mode))
                  ,(lambda (path token)
+                    (unless provided-racket?
+                      (build/no-dep racketcgc1 token))
                     (mkdir-p (path-only path))
                     (define cify? (cond
                                     [(equal? cify-mode "yes") #t]

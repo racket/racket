@@ -607,6 +607,39 @@ GEN_NARY_COMP(gt_eq, ">=", scheme_bin_gt_eq, SCHEME_REALP, "real?")
 # define fLESS_OR_EQUAL LESS_OR_EQUAL
 #endif
 
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+/* conversion from a fixnum to a double might lose precision */
+# define MAX_PRECISE_FIXNUM_AS_FLONUM ((intptr_t)1 << 53)
+# define MIN_PRECISE_FIXNUM_AS_FLONUM (-MAX_PRECISE_FIXNUM_AS_FLONUM)
+# define DEFINE_IE_COMP(name, BASE, OP, TOO_SMALL_ANSWER, TOO_BIG_ANSWER) \
+  static int name(double x, intptr_t y) {                               \
+    if ((MIN_PRECISE_FIXNUM_AS_FLONUM <= y) && (y <= MAX_PRECISE_FIXNUM_AS_FLONUM)) \
+      return BASE(x, y);                                                \
+    if (MZ_IS_NAN(x)) return 0;                                         \
+    if (x >= scheme_double_too_positive_for_fixnum) return TOO_BIG_ANSWER; \
+    if (x <= scheme_double_too_negative_for_fixnum) return TOO_SMALL_ANSWER; \
+    return ((intptr_t)x OP y);                                          \
+  }
+
+DEFINE_IE_COMP(ieEQUAL, EQUAL, ==, 0, 0)
+DEFINE_IE_COMP(ieLESS_THAN, fLESS_THAN, <, 1, 0)
+DEFINE_IE_COMP(ieLESS_OR_EQUAL, fLESS_OR_EQUAL, <=, 1, 0)
+DEFINE_IE_COMP(ieGREATER_THAN, GREATER_THAN, >, 0, 1)
+DEFINE_IE_COMP(ieGREATER_OR_EQUAL, GREATER_OR_EQUAL, >=, 0, 1)
+#else
+# define ieEQUAL(x, y) EQUAL(x, y)
+# define ieLESS_THAN(x, y) LESS_THAN(x, y)
+# define ieGREATER_THAN(x, y) GREATER_THAN(x, y)
+# define ieLESS_OR_EQUAL(x, y) LESS_OR_EQUAL(x, y)
+# define ieGREATER_OR_EQUAL(x, y) GREATER_OR_EQUAL(x, y)
+#endif
+
+# define eiEQUAL(x, y) ieEQUAL(y, x)
+# define eiLESS_THAN(x, y) ieGREATER_THAN(y, x)
+# define eiGREATER_THAN(x, y) ieLESS_THAN(y, x)
+# define eiLESS_OR_EQUAL(x, y) ieGREATER_OR_EQUAL(y, x)
+# define eiGREATER_OR_EQUAL(x, y) ieLESS_OR_EQUAL(y, x)
+
 #define COMP_IZI_LT(a, b) scheme_bin_lt(IZI_REAL_PART(a), IZI_REAL_PART(b))
 #define COMP_IZI_GT(a, b) scheme_bin_gt(IZI_REAL_PART(a), IZI_REAL_PART(b))
 #define COMP_IZI_LT_EQ(a, b) scheme_bin_lt_eq(IZI_REAL_PART(a), IZI_REAL_PART(b))
@@ -614,11 +647,11 @@ GEN_NARY_COMP(gt_eq, ">=", scheme_bin_gt_eq, SCHEME_REALP, "real?")
 
 #define GEN_IDENT_FOR_IZI GEN_OMIT
 
-GEN_BIN_COMP(scheme_bin_eq, "=", EQUAL, EQUAL, scheme_bignum_eq, scheme_rational_eq, scheme_complex_eq, 0, 0, scheme_is_inexact, scheme_is_inexact, GEN_IDENT, GEN_IDENT, "number?")
-GEN_BIN_COMP(scheme_bin_lt, "<", LESS_THAN, fLESS_THAN, scheme_bignum_lt, scheme_rational_lt, COMP_IZI_LT, 0, 1, scheme_is_positive, scheme_is_negative, GEN_IDENT_FOR_IZI, GEN_OMIT, "real?")
-GEN_BIN_COMP(scheme_bin_gt, ">", GREATER_THAN, GREATER_THAN, scheme_bignum_gt, scheme_rational_gt, COMP_IZI_GT, 1, 0, scheme_is_negative, scheme_is_positive, GEN_IDENT_FOR_IZI, GEN_OMIT, "real?")
-GEN_BIN_COMP(scheme_bin_lt_eq, "<=", LESS_OR_EQUAL, fLESS_OR_EQUAL, scheme_bignum_le, scheme_rational_le, COMP_IZI_LT_EQ, 0, 1, scheme_is_positive, scheme_is_negative, GEN_IDENT_FOR_IZI, GEN_OMIT, "real?")
-GEN_BIN_COMP(scheme_bin_gt_eq, ">=", GREATER_OR_EQUAL, GREATER_OR_EQUAL, scheme_bignum_ge, scheme_rational_ge, COMP_IZI_GT_EQ, 1, 0, scheme_is_negative, scheme_is_positive, GEN_IDENT_FOR_IZI, GEN_OMIT, "real?")
+GEN_BIN_COMP(scheme_bin_eq, "=", EQUAL, EQUAL, ieEQUAL, eiEQUAL, scheme_bignum_eq, scheme_rational_eq, scheme_complex_eq, 0, 0, scheme_is_inexact, scheme_is_inexact, GEN_IDENT, GEN_IDENT, "number?")
+GEN_BIN_COMP(scheme_bin_lt, "<", LESS_THAN, fLESS_THAN, ieLESS_THAN, eiLESS_THAN, scheme_bignum_lt, scheme_rational_lt, COMP_IZI_LT, 0, 1, scheme_is_positive, scheme_is_negative, GEN_IDENT_FOR_IZI, GEN_OMIT, "real?")
+GEN_BIN_COMP(scheme_bin_gt, ">", GREATER_THAN, GREATER_THAN, ieGREATER_THAN, eiGREATER_THAN, scheme_bignum_gt, scheme_rational_gt, COMP_IZI_GT, 1, 0, scheme_is_negative, scheme_is_positive, GEN_IDENT_FOR_IZI, GEN_OMIT, "real?")
+GEN_BIN_COMP(scheme_bin_lt_eq, "<=", LESS_OR_EQUAL, fLESS_OR_EQUAL, ieLESS_OR_EQUAL, eiLESS_OR_EQUAL, scheme_bignum_le, scheme_rational_le, COMP_IZI_LT_EQ, 0, 1, scheme_is_positive, scheme_is_negative, GEN_IDENT_FOR_IZI, GEN_OMIT, "real?")
+GEN_BIN_COMP(scheme_bin_gt_eq, ">=", GREATER_OR_EQUAL, GREATER_OR_EQUAL, ieGREATER_OR_EQUAL, eiGREATER_OR_EQUAL, scheme_bignum_ge, scheme_rational_ge, COMP_IZI_GT_EQ, 1, 0, scheme_is_negative, scheme_is_positive, GEN_IDENT_FOR_IZI, GEN_OMIT, "real?")
 
 int
 scheme_is_zero(const Scheme_Object *o)
