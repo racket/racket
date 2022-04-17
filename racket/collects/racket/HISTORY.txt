@@ -1,4 +1,5 @@
 Version 8.5, April 2022
+Add a `-y`/`--make` flag to automatically crete/update ".zo"s
 Add error-message realms
 Add `read-syntax-accept-graph`
 Change `make-temporary-file` to have keyword arguments
