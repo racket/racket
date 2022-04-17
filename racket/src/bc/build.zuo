@@ -1598,6 +1598,11 @@
           (strip-debug config starter.exe)
           (set-collects-path racketx starter.exe collects-path config-path)
 
+          (when mac?
+            (define starter-app-dest (build-path libpltdir "Starter.app"))
+            (rm* starter-app-dest)
+            (icp-r config (at-dir "Starter.app") starter-app-dest))
+
           (display-to-file (~a "CC=" (lookup 'CC) "\n"
                                "CFLAGS=" (build-shell (lookup 'CFLAGS)
                                                       (or (lookup 'CPPFLAGS) "")) "\n"
