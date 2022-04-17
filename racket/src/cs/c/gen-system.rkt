@@ -104,11 +104,15 @@
          "win32\\x86_64"
          (if (eq? machine 'a6nt)
              "win32\\x86_64"
-             (if (eq? machine 'ti3nt)
-                 "win32\\i386"
+             (if (eq? machine 'arm64nt)
+                 "win32\\arm64"
                  (if (eq? machine 'ti3nt)
                      "win32\\i386"
-                     (format "~a-~a" arch os*)))))
+                     (if (eq? machine 'ti3nt)
+                         "win32\\i386"
+                         (if (eq? machine 'tarm64nt)
+                             "win32\\arm64"
+                             (format "~a-~a" arch os*)))))))
      slsp-suffix))
 
   (define-values (ht)

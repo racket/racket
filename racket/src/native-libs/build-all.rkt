@@ -87,7 +87,9 @@
                     (list->vector
                      (append
                       (list (if win? "--win" (if linux? "--linux" "--mac"))
-                            (if m32? (if ppc? "--mppc" "--m32") "--m64"))
+                            (if m32?
+                                (if ppc? "--mppc" "--m32")
+                                (if aarch64? "--maarch64" "--m64")))
                       (cons "--archives"
                             (add-between (map ~a archives-dirs)
                                          "--archives"))

@@ -1,0 +1,31 @@
+diff -r -u old/harfbuzz-1.7.6/libtool new/harfbuzz-1.7.6/libtool
+--- old/harfbuzz-1.7.6/libtool	2022-04-17 19:47:09.000000000 -0600
++++ new/harfbuzz-1.7.6/libtool	2022-04-17 19:47:50.000000000 -0600
+@@ -11734,14 +11734,14 @@
+ old_archive_from_expsyms_cmds=""
+ 
+ # Commands used to build a shared archive.
+-archive_cmds="\$CC -shared -nostdlib \$predep_objects \$libobjs \$deplibs \$postdep_objects \$compiler_flags -o \$output_objdir/\$soname \$wl--enable-auto-image-base -Xlinker --out-implib -Xlinker \$lib"
++archive_cmds="\$CC -shared \$predep_objects \$libobjs \$deplibs \$postdep_objects \$compiler_flags -o \$output_objdir/\$soname \$wl--enable-auto-image-base -Xlinker --out-implib -Xlinker \$lib"
+ archive_expsym_cmds="if   test DEF = \\\"\\\`\$SED -n     -e 's/^[	 ]*//'     -e '/^\\\\(;.*\\\\)*\$/d'     -e 's/^\\\\(EXPORTS\\\\|LIBRARY\\\\)\\\\([	 ].*\\\\)*\$/DEF/p'     -e q     \$export_symbols\\\`\\\" ; then
+               cp \$export_symbols \$output_objdir/\$soname.def;
+             else
+               echo EXPORTS > \$output_objdir/\$soname.def;
+               cat \$export_symbols >> \$output_objdir/\$soname.def;
+             fi~
+-            \$CC -shared -nostdlib \$output_objdir/\$soname.def \$predep_objects \$libobjs \$deplibs \$postdep_objects \$compiler_flags -o \$output_objdir/\$soname \$wl--enable-auto-image-base -Xlinker --out-implib -Xlinker \$lib"
++            \$CC -shared \$output_objdir/\$soname.def \$predep_objects \$libobjs \$deplibs \$postdep_objects \$compiler_flags -o \$output_objdir/\$soname \$wl--enable-auto-image-base -Xlinker --out-implib -Xlinker \$lib"
+ 
+ # Commands used to build a loadable module if different from building
+ # a shared archive.
+@@ -11832,4 +11832,9 @@
+ # a shared library.
+ compiler_lib_search_path="-L/Users/mflatt/local/mingw64/aarch64-w64-mingw32/lib -L/Users/mflatt/local/mingw64/lib -L/Users/mflatt/local/mingw64/aarch64-w64-mingw32/sys-root/mingw/lib -L/Users/mflatt/local/mingw64/lib/clang/14.0.0/lib/windows"
+ 
++
++# Clear these back out:
++predep_objects=""
++postdep_objects=""
++postdeps=""
+ # ### END LIBTOOL TAG CONFIG: CXX
+Only in new/harfbuzz-1.7.6: libtool~

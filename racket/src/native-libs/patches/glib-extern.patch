@@ -1,0 +1,39 @@
+diff -r -u old/glib-2.56.0/glib/gtypes.h new/glib-2.56.0/glib/gtypes.h
+--- old/glib-2.56.0/glib/gtypes.h	2018-01-08 14:34:19.000000000 -0700
++++ new/glib-2.56.0/glib/gtypes.h	2022-04-18 13:06:35.000000000 -0600
+@@ -522,7 +522,7 @@
+ #    else /* !GLIB_STATIC_COMPILATION */
+ #      ifdef GLIB_COMPILATION
+ #        ifdef DLL_EXPORT
+-#          define GLIB_VAR __declspec(dllexport)
++#          define GLIB_VAR extern __declspec(dllexport)
+ #        else /* !DLL_EXPORT */
+ #          define GLIB_VAR extern
+ #        endif /* !DLL_EXPORT */
+Only in new/glib-2.56.0/glib: gtypes.h~
+diff -r -u old/glib-2.56.0/gmodule/gmodule.h new/glib-2.56.0/gmodule/gmodule.h
+--- old/glib-2.56.0/gmodule/gmodule.h	2017-07-13 17:03:39.000000000 -0600
++++ new/glib-2.56.0/gmodule/gmodule.h	2022-04-18 13:09:25.000000000 -0600
+@@ -34,7 +34,7 @@
+  */
+ #define	G_MODULE_IMPORT		extern
+ #ifdef G_PLATFORM_WIN32
+-#  define	G_MODULE_EXPORT		__declspec(dllexport)
++#  define	G_MODULE_EXPORT		extern __declspec(dllexport)
+ #elif __GNUC__ >= 4
+ #  define	G_MODULE_EXPORT		__attribute__((visibility("default")))
+ #else /* !G_PLATFORM_WIN32 && __GNUC__ < 4 */
+Only in new/glib-2.56.0/gmodule: gmodule.h~
+diff -r -u old/glib-2.56.0/gobject/gparamspecs.h new/glib-2.56.0/gobject/gparamspecs.h
+--- old/glib-2.56.0/gobject/gparamspecs.h	2017-07-13 17:03:39.000000000 -0600
++++ new/glib-2.56.0/gobject/gparamspecs.h	2022-04-18 13:08:37.000000000 -0600
+@@ -1144,7 +1144,7 @@
+ #    else /* !GOBJECT_STATIC_COMPILATION */
+ #      ifdef GOBJECT_COMPILATION
+ #        ifdef DLL_EXPORT
+-#          define GOBJECT_VAR __declspec(dllexport)
++#          define GOBJECT_VAR extern __declspec(dllexport)
+ #        else /* !DLL_EXPORT */
+ #          define GOBJECT_VAR extern
+ #        endif /* !DLL_EXPORT */
+Only in new/glib-2.56.0/gobject: gparamspecs.h~

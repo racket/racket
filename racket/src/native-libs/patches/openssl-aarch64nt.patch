@@ -1,0 +1,62 @@
+diff -r -u old/openssl-1.1.0h/Configurations/10-main.conf new/openssl-1.1.0h/Configurations/10-main.conf
+--- old/openssl-1.1.0h/Configurations/10-main.conf	2018-03-27 07:50:37.000000000 -0600
++++ new/openssl-1.1.0h/Configurations/10-main.conf	2022-04-17 16:35:04.000000000 -0600
+@@ -1485,6 +1485,26 @@
+         multilib         => "64",
+         apps_aux_src     => add("win32_init.c"),
+     },
++    "mingw-arm64" => {
++        inherit_from     => [ "BASE_unix", asm("aarch64_asm") ],
++        cc               => "gcc",
++        cflags           => combine(picker(default => "-DL_ENDIAN -DWIN32_LEAN_AND_MEAN -DUNICODE -D_UNICODE -Wall",
++                                           debug   => "-g -O0",
++                                           release => "-O3"),
++                                    threads("-D_MT")),
++        sys_id           => "MINGWARM64",
++        ex_libs          => add("-lws2_32 -lgdi32 -lcrypt32"),
++        bn_ops           => "SIXTY_FOUR_BIT EXPORT_VAR_AS_FN",
++        thread_scheme    => "winthreads",
++        perlasm_scheme   => "mingw64",
++        dso_scheme       => "win32",
++        shared_target    => "mingw-shared",
++        shared_cflag     => add("-D_WINDLL"),
++        shared_ldflag    => "-static-libgcc",
++        shared_rcflag    => "--target=aarch64-win64 -i - --preprocessor \"aarch64-w64-mingw32-gcc -E -include winapifamily.h\"",
++        shared_extension => ".dll",
++        apps_aux_src     => add("win32_init.c"),
++    },
+ 
+ #### UEFI
+     "UEFI" => {
+Only in new/openssl-1.1.0h/Configurations: 10-main.conf~
+diff -r -u old/openssl-1.1.0h/Makefile.shared new/openssl-1.1.0h/Makefile.shared
+--- old/openssl-1.1.0h/Makefile.shared	2018-03-27 07:50:37.000000000 -0600
++++ new/openssl-1.1.0h/Makefile.shared	2022-04-17 16:51:45.000000000 -0600
+@@ -237,7 +237,7 @@
+ 	@ALLSYMSFLAGS=''; \
+ 	NOALLSYMSFLAGS=''; \
+ 	base=-Wl,--enable-auto-image-base; \
+-	SHAREDFLAGS="$(CFLAGS) $(SHARED_LDFLAGS) -shared $$base -Wl,-Bsymbolic"; \
++	SHAREDFLAGS="$(CFLAGS) $(SHARED_LDFLAGS) -shared $$base"; \
+ 	$(LINK_SO_DSO)
+ link_shlib.cygwin:
+ 	@ INHIBIT_SYMLINKS=yes; \
+@@ -247,7 +247,7 @@
+ 		$(RC) $(SHARED_RCFLAGS) -o rc.o; \
+ 	ALLSYMSFLAGS='-Wl,--whole-archive'; \
+ 	NOALLSYMSFLAGS='-Wl,--no-whole-archive'; \
+-	SHAREDFLAGS="$(CFLAGS) $(SHARED_LDFLAGS) -shared -Wl,--enable-auto-image-base -Wl,-Bsymbolic -Wl,--out-implib,$(SHLIBNAME) rc.o"; \
++	SHAREDFLAGS="$(CFLAGS) $(SHARED_LDFLAGS) -shared -Wl,--enable-auto-image-base -Wl,--out-implib,$(SHLIBNAME) rc.o"; \
+ 	$(LINK_SO_SHLIB) || exit 1; \
+ 	rm rc.o
+ link_app.cygwin:
+@@ -267,7 +267,7 @@
+ 		$(RC) $(SHARED_RCFLAGS) -o rc.o; \
+ 	ALLSYMSFLAGS='-Wl,--whole-archive'; \
+ 	NOALLSYMSFLAGS='-Wl,--no-whole-archive'; \
+-	SHAREDFLAGS="$(CFLAGS) $(SHARED_LDFLAGS) -shared $$base -Wl,-Bsymbolic -Wl,--out-implib,$(SHLIBNAME) $(LIBNAME).def rc.o"; \
++	SHAREDFLAGS="$(CFLAGS) $(SHARED_LDFLAGS) -shared $$base -Wl,--out-implib,$(SHLIBNAME) $(LIBNAME).def rc.o"; \
+ 	$(LINK_SO_SHLIB) || exit 1; \
+ 	rm $(LIBNAME).def rc.o
+ 
+Only in new/openssl-1.1.0h: Makefile.shared~

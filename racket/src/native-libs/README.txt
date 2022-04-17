@@ -19,7 +19,7 @@ Currently, we use the following external packages and versions:
  sed-4.2 (Windows only, to avoid non-GNU `sed`)
  sqlite[-autoconf]-3360000 (Windows and Linux, PPC Mac OS: 3220000)
  libedit-20191231-3.1 (Mac OS only)
- openssl-1.1.1g
+ openssl-1.1.1g (Windows AArch64: openssl-3.0.2)
  libiconv-1.15 (Windows only)
  zlib-1.2.11 (Windows and Linux only)
  libffi-3.2.1 (AArch64 Mac OS: libffi-3.3)
@@ -67,11 +67,12 @@ Preliminiaries
 For Windows (cross-compile from Mac OS or Linux):
 
 The build scripts assume a MinGW cross compiler installed as
-"x86_64-w64-mingw32-gcc" and "i686-w64-mingw32-gcc", but for
-historical reasons, they'll be found in "/usr[/local]/mw32" (for
-32-bit builds) and "/usr[/local]/mw64" (for 64-bit builds) if not in
-PATH. In addition, building "glib" requires "gettext" executables that
-run on the build machine in your PATH.
+"x86_64-w64-mingw32-gcc", "i686-w64-mingw32-gcc", and
+"arm64-w64-mingw32-gcc", but for historical reasons, the first two
+will be found in "/usr[/local]/mw32" (for 32-bit builds) and
+"/usr[/local]/mw64" (for 64-bit builds) if not in PATH. In addition,
+building "glib" requires "gettext" executables that run on the build
+machine in your PATH.
 
 Beware that the "libdir" configuration in old MinGW installations at
   ..../{i686,x86_64}-w64-mingw32/lib/libstdc++.la
@@ -111,7 +112,7 @@ Build Steps (assuming no version changes)
 
      racket <here-dir>/build-all.rkt \
         --{win,mac,linux} \
-        --m{32,64} \
+        --m{32,64}|--mppc|--maarch64 \
         --archives <archive-dir>
 
     where <here-dir> is the deirectory containing this file,
@@ -122,7 +123,7 @@ Build Steps (assuming no version changes)
 
      racket <here-dir>/install.rkt \
         --{win,mac,linux} \
-        --m{32,64} \
+        --m{32,64}|--mppc|--maarch64 \
         <native-pkgs-dir>
 
    where <native-pkgs-dir> contains the package "source" directories,
