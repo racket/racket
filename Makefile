@@ -99,7 +99,7 @@ CS_HOST_WORKAREA_PREFIX =
 
 # This branch name must be changed each time the pb boot files are
 # updated:
-PB_BRANCH = circa-8.4.0.8-2
+PB_BRANCH = circa-8.5.0.2-1
 PB_REPO = https://github.com/racket/pb
 
 # Set to empty for Git before v1.7.10:
