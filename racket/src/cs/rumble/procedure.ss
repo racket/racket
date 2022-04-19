@@ -1035,7 +1035,10 @@
   (cond
    [(eq? prim make-struct-type-property) 3]
    [(eq? prim make-struct-type) 5]
-   [(eq? prim car) 1]
+   [(primitive? prim)
+    (if (procedure-known-single-valued? prim)
+        1
+        (arity-at-least 0))]
    [else
     (raise-argument-error 'primitive-result-arity "primitive?" prim)]))
 
