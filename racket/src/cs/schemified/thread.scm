@@ -5102,14 +5102,13 @@
     (|#%name|
      exit
      (case-lambda (() (begin (exit_0 #t))) ((v1_0) (exit_0 v1_0))))))
-(define finish_2167
+(define finish_2536
   (make-struct-type-install-properties
    '(custodian-box)
    2
    0
    #f
    (list
-    (cons prop:authentic #t)
     (cons
      1/prop:evt
      (lambda (cb_0)
@@ -5128,20 +5127,66 @@
    #f
    2
    1))
-(define effect_2694 (finish_2167 struct:custodian-box))
+(define effect_2694 (finish_2536 struct:custodian-box))
 (define custodian-box1.1
   (|#%name|
    custodian-box
    (record-constructor
     (make-record-constructor-descriptor struct:custodian-box #f #f))))
-(define 1/custodian-box?
+(define 1/custodian-box?_2920
   (|#%name| custodian-box? (record-predicate struct:custodian-box)))
-(define custodian-box-v
+(define 1/custodian-box?
+  (|#%name|
+   custodian-box?
+   (lambda (v)
+     (if (1/custodian-box?_2920 v)
+       #t
+       ($value
+        (if (impersonator? v)
+          (1/custodian-box?_2920 (impersonator-val v))
+          #f))))))
+(define custodian-box-v_2465
   (|#%name| custodian-box-v (record-accessor struct:custodian-box 0)))
-(define custodian-box-sema
+(define custodian-box-v
+  (|#%name|
+   custodian-box-v
+   (lambda (s)
+     (if (1/custodian-box?_2920 s)
+       (custodian-box-v_2465 s)
+       ($value
+        (impersonate-ref custodian-box-v_2465 struct:custodian-box 0 s 'v))))))
+(define custodian-box-sema_2703
   (|#%name| custodian-box-sema (record-accessor struct:custodian-box 1)))
-(define set-custodian-box-v!
+(define custodian-box-sema
+  (|#%name|
+   custodian-box-sema
+   (lambda (s)
+     (if (1/custodian-box?_2920 s)
+       (custodian-box-sema_2703 s)
+       ($value
+        (impersonate-ref
+         custodian-box-sema_2703
+         struct:custodian-box
+         1
+         s
+         'sema))))))
+(define set-custodian-box-v!_2574
   (|#%name| set-custodian-box-v! (record-mutator struct:custodian-box 0)))
+(define set-custodian-box-v!
+  (|#%name|
+   set-custodian-box-v!
+   (lambda (s v)
+     (if (1/custodian-box?_2920 s)
+       (set-custodian-box-v!_2574 s v)
+       ($value
+        (impersonate-set!
+         set-custodian-box-v!_2574
+         struct:custodian-box
+         0
+         0
+         s
+         v
+         'v))))))
 (define finish_2585
   (make-struct-type-install-properties
    '(willed-callback)

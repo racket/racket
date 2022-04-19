@@ -33,11 +33,11 @@
 
   (define knot-args
     `(;; See "boot/read-primitive.rkt" for more info:
-      "++knot" "read" ,(at-source "read/api.rkt")
-      "++knot" "read" ,(at-source "read/primitive-parameter.rkt")
-      "++knot" "read" ,(at-source "read/readtable-parameter.rkt")
-      "++knot" "read" ,(at-source "read/readtable.rkt")
-      "++knot" "read" ,(at-source "read/number.rkt")))
+      "++knot" "read" ,(path->complete-path (at-source "read/api.rkt"))
+      "++knot" "read" ,(path->complete-path (at-source "read/primitive-parameter.rkt"))
+      "++knot" "read" ,(path->complete-path (at-source "read/readtable-parameter.rkt"))
+      "++knot" "read" ,(path->complete-path (at-source "read/readtable.rkt"))
+      "++knot" "read" ,(path->complete-path (at-source "read/number.rkt"))))
   
   (define (expand-expander path startup.inc? expander-dep.rktd token)
     (define tree (at-source "../.."))

@@ -55,7 +55,6 @@
 ;; For `(struct custodian ...)`, see "custodian-object.rkt"
 
 (struct custodian-box ([v #:mutable] sema)
-  #:authentic
   #:property prop:evt (lambda (cb)
                         (wrap-evt (custodian-box-sema cb) (lambda (v) cb))))
 

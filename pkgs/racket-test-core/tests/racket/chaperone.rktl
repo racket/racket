@@ -2739,6 +2739,10 @@
                             v)))
   (test #t values checked?))
 
+(test #t evt? (chaperone-evt (make-custodian-box (current-custodian) 1)
+                             (λ (evt)
+                               (values evt values))))
+
 ;; ----------------------------------------
 ;; Evt variants where `chaperone-evt` is allowed to defeat predicates
 
