@@ -872,4 +872,13 @@
 
 ;; ----------------------------------------
 
+(test #t 'primitive-arity
+      (for/and ([v (in-list (list cons car make-struct-type eval values call/cc))])
+        (or (not (primitive? v))
+            (let ([a (primitive-result-arity v)])
+              (or (exact-nonnegative-integer? a)
+                  (arity-at-least? a))))))
+
+;; ----------------------------------------
+
 (report-errs)
