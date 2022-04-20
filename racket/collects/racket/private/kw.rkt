@@ -2078,12 +2078,13 @@
                                                (define-syntax gen-proc
                                                  (syntax-rules ()
                                                    [(_ extra-arg ...)
-                                                    (lambda (extra-arg ... kws kw-args self . args)
-                                                      ;; Chain to `kw-chaperone', pulling out the self
-                                                      ;; argument, and then putting it back:
-                                                      (define len (length args))
-                                                      (call-with-values
-                                                          (lambda () (apply kw-chaperone extra-arg ... kws kw-args args))
+                                                    (case-lambda
+                                                      [(extra-arg ... kws kw-args self . args)
+                                                       ;; Chain to `kw-chaperone', pulling out the self
+                                                       ;; argument, and then putting it back:
+                                                       (define len (length args))
+                                                       (call-with-values
+                                                        (lambda () (apply kw-chaperone extra-arg ... kws kw-args args))
                                                         (lambda results
                                                           (define r-len (length results))
                                                           (define (list-take l n)
@@ -2096,7 +2097,11 @@
                                                                               (append (list-take results (- skip 2))
                                                                                       (list (list-ref results (sub1 skip))
                                                                                             self)
-                                                                                      (list-tail results skip))))))))]))
+                                                                                      (list-tail results skip)))))))]
+                                                      ;; This extra case shoule never be reached; it's included
+                                                      ;; to allow the chaperone when `proc` accepts 0 arguments, even though
+                                                      ;; proc will never be called with 0 arguments
+                                                      [args (void)])]))
                                                (if self-arg?
                                                    (gen-proc proc-self)
                                                    (gen-proc)))))))])
