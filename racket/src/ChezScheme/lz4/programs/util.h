@@ -33,18 +33,24 @@ extern "C" {
 #include <stddef.h>       /* size_t, ptrdiff_t */
 #include <stdlib.h>       /* malloc */
 #include <string.h>       /* strlen, strncpy */
-#include <stdio.h>        /* fprintf */
+#include <stdio.h>        /* fprintf, fileno */
 #include <assert.h>
 #include <sys/types.h>    /* stat, utime */
 #include <sys/stat.h>     /* stat */
-#if defined(_MSC_VER)
+#if defined(_WIN32)
 #  include <sys/utime.h>  /* utime */
 #  include <io.h>         /* _chmod */
 #else
 #  include <unistd.h>     /* chown, stat */
+# if PLATFORM_POSIX_VERSION < 200809L
 #  include <utime.h>      /* utime */
+# else
+#  include <fcntl.h>      /* AT_FDCWD */
+#  include <sys/stat.h>   /* for utimensat */
+# endif
 #endif
 #include <time.h>         /* time */
+#include <limits.h>       /* INT_MAX */
 #include <errno.h>
 
 
@@ -115,6 +121,36 @@ extern "C" {
 #  define UTIL_sleepMilli(milli) /* disabled */
 #endif
 
+
+/*-****************************************
+*  stat() functions
+******************************************/
+#if defined(_MSC_VER)
+#  define UTIL_TYPE_stat __stat64
+#  define UTIL_stat _stat64
+#  define UTIL_fstat _fstat64
+#  define UTIL_STAT_MODE_ISREG(st_mode) ((st_mode) & S_IFREG)
+#elif   defined(__MINGW32__) && defined (__MSVCRT__)
+#  define UTIL_TYPE_stat _stati64
+#  define UTIL_stat _stati64
+#  define UTIL_fstat _fstati64
+#  define UTIL_STAT_MODE_ISREG(st_mode) ((st_mode) & S_IFREG)
+#else
+#  define UTIL_TYPE_stat stat
+#  define UTIL_stat stat
+#  define UTIL_fstat fstat
+#  define UTIL_STAT_MODE_ISREG(st_mode) (S_ISREG(st_mode))
+#endif
+
+
+/*-****************************************
+*  fileno() function
+******************************************/
+#if defined(_MSC_VER)
+#  define UTIL_fileno _fileno
+#else
+#  define UTIL_fileno fileno
+#endif
 
 /* *************************************
 *  Constants
@@ -286,14 +322,23 @@ UTIL_STATIC int UTIL_isRegFile(const char* infilename);
 UTIL_STATIC int UTIL_setFileStat(const char *filename, stat_t *statbuf)
 {
     int res = 0;
-    struct utimbuf timebuf;
 
     if (!UTIL_isRegFile(filename))
         return -1;
 
-    timebuf.actime = time(NULL);
-    timebuf.modtime = statbuf->st_mtime;
-    res += utime(filename, &timebuf);  /* set access and modification times */
+    {
+#if defined(_WIN32) || (PLATFORM_POSIX_VERSION < 200809L)
+        struct utimbuf timebuf;
+        timebuf.actime = time(NULL);
+        timebuf.modtime = statbuf->st_mtime;
+        res += utime(filename, &timebuf);  /* set access and modification times */
+#else
+        struct timespec timebuf[2] = {};
+        timebuf[0].tv_nsec = UTIME_NOW;
+        timebuf[1].tv_sec = statbuf->st_mtime;
+        res += utimensat(AT_FDCWD, filename, timebuf, 0);  /* set access and modification times */
+#endif
+    }
 
 #if !defined(_WIN32)
     res += chown(filename, statbuf->st_uid, statbuf->st_gid);  /* Copy ownership */
@@ -342,22 +387,30 @@ UTIL_STATIC U32 UTIL_isDirectory(const char* infilename)
 }
 
 
+UTIL_STATIC U64 UTIL_getOpenFileSize(FILE* file)
+{
+    int r;
+    int fd;
+    struct UTIL_TYPE_stat statbuf;
+
+    fd = UTIL_fileno(file);
+    if (fd < 0) {
+        perror("fileno");
+        exit(1);
+    }
+    r = UTIL_fstat(fd, &statbuf);
+    if (r || !UTIL_STAT_MODE_ISREG(statbuf.st_mode)) return 0;   /* No good... */
+    return (U64)statbuf.st_size;
+}
+
+
 UTIL_STATIC U64 UTIL_getFileSize(const char* infilename)
 {
     int r;
-#if defined(_MSC_VER)
-    struct __stat64 statbuf;
-    r = _stat64(infilename, &statbuf);
-    if (r || !(statbuf.st_mode & S_IFREG)) return 0;   /* No good... */
-#elif defined(__MINGW32__) && defined (__MSVCRT__)
-    struct _stati64 statbuf;
-    r = _stati64(infilename, &statbuf);
-    if (r || !(statbuf.st_mode & S_IFREG)) return 0;   /* No good... */
-#else
-    struct stat statbuf;
-    r = stat(infilename, &statbuf);
-    if (r || !S_ISREG(statbuf.st_mode)) return 0;   /* No good... */
-#endif
+    struct UTIL_TYPE_stat statbuf;
+
+    r = UTIL_stat(infilename, &statbuf);
+    if (r || !UTIL_STAT_MODE_ISREG(statbuf.st_mode)) return 0;   /* No good... */
     return (U64)statbuf.st_size;
 }
 
@@ -378,7 +431,7 @@ UTIL_STATIC U64 UTIL_getTotalFileSize(const char** fileNamesTable, unsigned nbFi
 */
 UTIL_STATIC void* UTIL_realloc(void* ptr, size_t size)
 {
-    void* newptr = realloc(ptr, size);
+    void* const newptr = realloc(ptr, size);
     if (newptr) return newptr;
     free(ptr);
     return NULL;
@@ -391,11 +444,11 @@ UTIL_STATIC void* UTIL_realloc(void* ptr, size_t size)
 UTIL_STATIC int UTIL_prepareFileList(const char* dirName, char** bufStart, size_t* pos, char** bufEnd)
 {
     char* path;
-    int dirLength, nbFiles = 0;
+    size_t dirLength, nbFiles = 0;
     WIN32_FIND_DATAA cFile;
     HANDLE hFile;
 
-    dirLength = (int)strlen(dirName);
+    dirLength = strlen(dirName);
     path = (char*) malloc(dirLength + 3);
     if (!path) return 0;
 
@@ -412,7 +465,7 @@ UTIL_STATIC int UTIL_prepareFileList(const char* dirName, char** bufStart, size_
     free(path);
 
     do {
-        int pathLength;
+        size_t pathLength;
         int const fnameLength = (int)strlen(cFile.cFileName);
         path = (char*) malloc(dirLength + fnameLength + 2);
         if (!path) { FindClose(hFile); return 0; }
@@ -445,7 +498,8 @@ UTIL_STATIC int UTIL_prepareFileList(const char* dirName, char** bufStart, size_
     } while (FindNextFileA(hFile, &cFile));
 
     FindClose(hFile);
-    return nbFiles;
+    assert(nbFiles < INT_MAX);
+    return (int)nbFiles;
 }
 
 #elif defined(__linux__) || (PLATFORM_POSIX_VERSION >= 200112L)  /* opendir, readdir require POSIX.1-2001 */
@@ -527,7 +581,8 @@ UTIL_STATIC int UTIL_prepareFileList(const char* dirName, char** bufStart, size_
  * In case of error UTIL_createFileList returns NULL and UTIL_freeFileList should not be called.
  */
 UTIL_STATIC const char**
-UTIL_createFileList(const char** inputNames, unsigned inputNamesNb, char** allocatedBuffer, unsigned* allocatedNamesNb)
+UTIL_createFileList(const char** inputNames, unsigned inputNamesNb,
+                    char** allocatedBuffer, unsigned* allocatedNamesNb)
 {
     size_t pos;
     unsigned i, nbFiles;
@@ -539,29 +594,27 @@ UTIL_createFileList(const char** inputNames, unsigned inputNamesNb, char** alloc
 
     for (i=0, pos=0, nbFiles=0; i<inputNamesNb; i++) {
         if (!UTIL_isDirectory(inputNames[i])) {
-            size_t const len = strlen(inputNames[i]);
+            size_t const len = strlen(inputNames[i]) + 1;  /* include nul char */
             if (pos + len >= bufSize) {
-                size_t newListSize = bufSize + LIST_SIZE_INCREASE;
-                buf = (char*)UTIL_realloc(buf, newListSize);
-                bufSize = newListSize;
+                while (pos + len >= bufSize) bufSize += LIST_SIZE_INCREASE;
+                buf = (char*)UTIL_realloc(buf, bufSize);
                 if (!buf) return NULL;
             }
-            if (pos + len < bufSize) {
-                strncpy(buf + pos, inputNames[i], bufSize - pos);
-                pos += len + 1;
-                nbFiles++;
-            }
+            assert(pos + len < bufSize);
+            memcpy(buf + pos, inputNames[i], len);
+            pos += len;
+            nbFiles++;
         } else {
             char* bufend = buf + bufSize;
-            nbFiles += UTIL_prepareFileList(inputNames[i], &buf, &pos, &bufend);
+            nbFiles += (unsigned)UTIL_prepareFileList(inputNames[i], &buf, &pos, &bufend);
             if (buf == NULL) return NULL;
             assert(bufend > buf);
-            bufSize = bufend - buf;
+            bufSize = (size_t)(bufend - buf);
     }   }
 
     if (nbFiles == 0) { free(buf); return NULL; }
 
-    fileTable = (const char**)malloc((nbFiles+1) * sizeof(const char*));
+    fileTable = (const char**)malloc(((size_t)nbFiles+1) * sizeof(const char*));
     if (!fileTable) { free(buf); return NULL; }
 
     for (i=0, pos=0; i<nbFiles; i++) {
@@ -569,7 +622,11 @@ UTIL_createFileList(const char** inputNames, unsigned inputNamesNb, char** alloc
         pos += strlen(fileTable[i]) + 1;
     }
 
-    if (pos > bufSize) { free(buf); free((void*)fileTable); return NULL; }   /* can this happen ? */
+    if (pos > bufSize) {
+        free(buf);
+        free((void*)fileTable);
+        return NULL;
+    }   /* can this happen ? */
 
     *allocatedBuffer = buf;
     *allocatedNamesNb = nbFiles;
