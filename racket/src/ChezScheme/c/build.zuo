@@ -308,6 +308,7 @@
                                               (config-to-env))
                                         'desc "libz configure"))])
                    (shell/wait (hash-ref config 'MAKE "make")
+                               "static"
                                (hash 'dir zlib-dir
                                      'desc "zlib make"))]))]
 
