@@ -36,7 +36,7 @@
                [positions
                 (define var (string->symbol (substring line (car positions) (cadr positions))))
                 (define rhs (substring line (+ (list-ref positions 2) 1) (string-length line)))
-                (hash-set accum var (string-trim rhs))]
+                (hash-set accum var (string-trim (remove-makefile-comment rhs)))]
                [else accum]))
            (hash)
            lines))
@@ -44,3 +44,23 @@
            (hash-set config key (hash-ref vars key) ))
          config
          (hash-keys vars)))
+
+(define (remove-makefile-comment s)
+  (define l (string-split s "#"))
+  (cond
+    [(= (length l) 1) s]
+    [else
+     ;; A `\` just before `#` escapes the `#`
+     (let loop ([l l])
+       (cond
+         [(null? l) ""]
+         [else
+          (let* ([s (car l)]
+                 [len (string-length s)])
+            (cond
+              [(= len 0) ""]
+              [(= (char "\\") (string-ref s (- len 1)))
+               (~a (substring s 0 (- len 1))
+                   "#"
+                   (loop (cdr l)))]
+              [else s]))]))]))

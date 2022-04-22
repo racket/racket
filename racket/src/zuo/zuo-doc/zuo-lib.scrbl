@@ -304,15 +304,18 @@ Parses @racket[file] as having configuration lines of the form
 @nonterm{name} @litchar{=} @nonterm{value}, with any number of ignored
 spaces at the start of the line, end of the line, or around the
 @litchar{=}, and with a trailing @litchar{\} on a line deleted along
-with its newline (to create a single line). Each @nonterm{name}
-consists of alphanumeric characters and @litchar{_}; the symbol form
-of the name is used as a key in the resulting hash table, mapped to
-the @nonterm{value} as a string. Lines in @racket[file] that do not
-match the configuration format are ignored. If a same @nonterm{name}
-is configured multiple times, the last mapping overrides earlier
-ones.
+with its newline (to create a single line). A @litchar{#} character
+terminates a line to start a comment, unless the @litchar{#} is
+preceded by @litchar{\}, in which case the @litchar{\#} combination is
+parsed as a literal @litchar{#}.
+
+Each @nonterm{name} consists of alphanumeric characters and
+@litchar{_}; the symbol form of the name is used as a key in the
+resulting hash table, mapped to the @nonterm{value} as a string. Lines
+in @racket[file] that do not match the configuration format are
+ignored. If a same @nonterm{name} is configured multiple times, the
+last mapping overrides earlier ones.
 
 After reading @racket[file], keys from @racket[overrides] are merged
 to the result hash table, where values in @racket[overrides] replace
 ones read from @racket[file].}
-
