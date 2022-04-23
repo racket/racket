@@ -17,6 +17,7 @@
          make-raco-driver
          make-zo-target
 
+         shell-subst*
          shell-subst-value
          shell-subst-pwd
 
@@ -202,6 +203,10 @@
            (hash-set config (car p) (cdr p)))
          (hash)
          l))
+
+(define (shell-subst* str config)
+  (and str
+       (shell-subst str config)))
 
 (define (shell-subst-value config key)
   (let ([v (hash-ref config key #f)])

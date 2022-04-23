@@ -694,7 +694,7 @@
                                                                               (~a "/DELAYLOAD:" (string->shell
                                                                                                  (file-name-from-path delay-dll))))
                                                                             delay-dlls)))
-                                            (let ([link-cc (shell-subst (hash-ref config 'MZLINKER #f) config)]
+                                            (let ([link-cc (shell-subst* (hash-ref config 'MZLINKER #f) config)]
                                                   [config (if (and gui? windows?)
                                                               (config-merge config
                                                                             'LDFLAGS
@@ -1438,11 +1438,11 @@
        (mkdir-p includepltdir)
        (mkdir-p configdir)
 
-       (define collects-path (or (shell-subst (lookup 'COLLECTS_PATH) config)
+       (define collects-path (or (shell-subst* (lookup 'COLLECTS_PATH) config)
                                  (if windows?
                                      "collects"
                                      (build-path ".." "collects"))))
-       (define config-path (or (shell-subst (lookup 'CONFIG_PATH) config)
+       (define config-path (or (shell-subst* (lookup 'CONFIG_PATH) config)
                                (if windows?
                                    "etc"
                                    (build-path ".." "etc"))))

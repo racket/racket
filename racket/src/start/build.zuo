@@ -57,7 +57,7 @@
                  ,(lambda (path token)
                     (c-compile path
                                (list (at-source "ustart.c"))
-                               (let ([plain-cc (shell-subst (hash-ref config 'PLAIN_CC #f) config)])
+                               (let ([plain-cc (shell-subst* (hash-ref config 'PLAIN_CC #f) config)])
                                  (if plain-cc
                                      (hash-set config 'CC plain-cc)
                                      config))))])])))

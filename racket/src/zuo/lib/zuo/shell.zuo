@@ -72,22 +72,20 @@
 (define (shell-subst str config)
   (unless (string? str) (arg-error 'shell-subst "string" str))
   (unless (hash? config) (arg-error 'shell-subst "hash table" config))
-  (and
-   str
-   (let loop ([i 0])
-     (cond
-       [(> (+ i 2) (string-length str)) str]
-       [(and (= (char "$") (string-ref str i))
-             (= (char "{") (string-ref str (+ i 1))))
-        (let ([end (let loop ([i (+ i 2)])
-                     (cond
-                       [(= i (string-length str)) (error "didn't find closer" str)]
-                       [(= (char "}") (string-ref str i)) i]
-                       [else (loop (+ i 1))]))])
-          (shell-subst (~a (substring str 0 i)
-                           (let ([key (string->symbol (substring str (+ i 2) end))])
-                             (or (hash-ref config key #f)
-                                 (error "shell-subst: no substitution found for name" key)))
-                           (substring str (+ end 1)))
-                       config))]
-       [else (loop (+ i 1))]))))
+  (let loop ([i 0])
+    (cond
+      [(> (+ i 2) (string-length str)) str]
+      [(and (= (char "$") (string-ref str i))
+            (= (char "{") (string-ref str (+ i 1))))
+       (let ([end (let loop ([i (+ i 2)])
+                    (cond
+                      [(= i (string-length str)) (error "didn't find closer" str)]
+                      [(= (char "}") (string-ref str i)) i]
+                      [else (loop (+ i 1))]))])
+         (shell-subst (~a (substring str 0 i)
+                          (let ([key (string->symbol (substring str (+ i 2) end))])
+                            (or (hash-ref config key #f)
+                                (error "shell-subst: no substitution found for name" key)))
+                          (substring str (+ end 1)))
+                      config))]
+      [else (loop (+ i 1))])))
