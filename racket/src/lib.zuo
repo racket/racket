@@ -27,6 +27,8 @@
 
          windres
 
+         adjust-linking-config
+
          setup-rktio
          setup-boot
          racket-version
@@ -286,6 +288,15 @@
       (shell/wait (hash-ref config 'WINDRES) flags
                   "-i" (string->shell in)
                   "-o" (string->shell out))))
+
+(define (adjust-linking-config config)
+  ;; For historical reasons, merge 'CPPFLAGS into 'CFLAGS so that
+  ;; 'CPPFLAGS is used for linking. The historical reason was that
+  ;; 'CPPFLAGS but not 'CFLAGS was used for xform expansion; while
+  ;; that has now changed, existing build scripts might use
+  ;; 'CPPFLAGS to hold things that belong in 'CFLAGS to make sure
+  ;; that they reach the C preprocessor for xform.
+  (config-merge config 'CFLAGS (hash-ref config 'CPPFLAGS "")))
 
 (define (setup-rktio rktio-src-dir rktio-dir config)
   (define msvc? (eq? 'windows (system-type)))

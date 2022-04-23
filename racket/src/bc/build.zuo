@@ -504,6 +504,7 @@
                                           (string->shell (~a "-I" ffi-arch-include)))
                              "")
                          cpp-extra
+                         (hash-ref config 'CFLAGS "")
                          (hash-ref config 'CPPFLAGS "")
                          (hash-ref config 'OPTIONS "")
                          (hash-ref config 'GC2OPTIONS "")
@@ -678,29 +679,30 @@
                                    (if windows?
                                        `(,MemoryModule.o ,@(if msvc? (cons "delayimp.lib" windows-libs) '()))
                                        '()))
-                                  (if framework?
-                                      (config-merge config
-                                                    'LIBS
-                                                    (string->shell
-                                                     (at-dir "Racket.framework" "Versions" (~a version fw-suffix) "Racket")))
-                                      (if msvc?
-                                          (config-merge config
-                                                        'LIBS
-                                                        (build-shell "/link"
-                                                                     (if gui? "/SUBSYSTEM:windows" "")
-                                                                     (map (lambda (delay-dll)
-                                                                            (~a "/DELAYLOAD:" (string->shell
-                                                                                               (file-name-from-path delay-dll))))
-                                                                          delay-dlls)))
-                                          (let ([link-cc (shell-subst (hash-ref config 'MZLINKER #f) config)]
-                                                [config (if (and gui? windows?)
-                                                            (config-merge config
-                                                                          'LDFLAGS
-                                                                          "-mwindows")
-                                                            config)])
-                                            (if link-cc
-                                                (hash-set config 'CC link-cc)
-                                                config)))))
+                                  (let ([config (adjust-linking-config config)])
+                                    (if framework?
+                                        (config-merge config
+                                                      'LIBS
+                                                      (string->shell
+                                                       (at-dir "Racket.framework" "Versions" (~a version fw-suffix) "Racket")))
+                                        (if msvc?
+                                            (config-merge config
+                                                          'LIBS
+                                                          (build-shell "/link"
+                                                                       (if gui? "/SUBSYSTEM:windows" "")
+                                                                       (map (lambda (delay-dll)
+                                                                              (~a "/DELAYLOAD:" (string->shell
+                                                                                                 (file-name-from-path delay-dll))))
+                                                                            delay-dlls)))
+                                            (let ([link-cc (shell-subst (hash-ref config 'MZLINKER #f) config)]
+                                                  [config (if (and gui? windows?)
+                                                              (config-merge config
+                                                                            'LDFLAGS
+                                                                            "-mwindows")
+                                                              config)])
+                                              (if link-cc
+                                                  (hash-set config 'CC link-cc)
+                                                  config))))))
                           (post-linker path)
                           (when msvc?
                             (shell/wait "mt.exe -manifest"
@@ -771,7 +773,7 @@
                               (mkdir-p framework-dir)
                               (c-link path
                                       (cons libracket.a (map target->path link-inputs))
-                                      (config-merge config
+                                      (config-merge (adjust-linking-config config)
                                                     'LDFLAGS
                                                     (build-shell
                                                      "-dynamiclib -all_load"

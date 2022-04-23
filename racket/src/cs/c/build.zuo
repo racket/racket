@@ -458,21 +458,22 @@
                                           [windows? `(,MemoryModule.o ,res.o ,@(if msvc? windows-libs '()))]
                                           [mac-fw? '()]
                                           [else (map target->path boot-objs)])))
-                                 (config-merge (if (and windows? gui?)
-                                                   (config-merge config
-                                                                 'LDFLAGS
-                                                                 (if msvc?
-                                                                     "/link /SUBSYSTEM:windows"
-                                                                     "-mwindows"))
-                                                   config)
-                                               'LDFLAGS
-                                               (lookup 'LINK_DYNAMIC)))
+                                 (let ([config (adjust-linking-config config)])
+                                   (config-merge (if (and windows? gui?)
+                                                     (config-merge config
+                                                                   'LDFLAGS
+                                                                   (if msvc?
+                                                                       "/link /SUBSYSTEM:windows"
+                                                                       "-mwindows"))
+                                                     config)
+                                                 'LDFLAGS
+                                                 (lookup 'LINK_DYNAMIC))))
                          (when (and mac-fw? (not gui?))
                            (unless (equal? dest_exe raw_exe)
                              ;; link a version that does not refer to the framework:
                              (c-link raw_exe 
                                      (cons main.o (map target->path boot-objs))
-                                     config))
+                                     (adjust-linking-config config)))
                            (strip-signature dest_exe)
                            (install_name_tool "-change"
                                               (build-path framework-dir "Racket")
@@ -502,7 +503,7 @@
                                         (if mac-fw?
                                             (list framework)
                                             (map target->path boot-objs)))
-                                  config)
+                                  (adjust-linking-config config))
                           (mac-embed-boot (~a gracketcs "_raw") gracketcs)
                           (install_name_tool "-change"
                                              (build-path framework-dir "Racket")
