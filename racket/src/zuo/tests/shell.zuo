@@ -15,3 +15,13 @@
 
 (check (build-shell "x" "" "y" "" "" "z" "") "x y z")
 (check (build-shell "x" "" '("y" "" "" "z") "") "x y z")
+
+(check (shell-subst "Hello, ${who}!" (hash 'who "World")) "Hello, World!")
+(check (shell-subst "a${b}c" (hash 'b "c${d}e" 'd "D")) "acDec")
+(check (shell-subst "${a}}" (hash 'a "${x" 'x "done")) "done")
+(check (shell-subst "${?$^}" (hash (string->symbol "?$^") "weird")) "weird")
+
+(check-fail (begin
+              (require zuo/shell)
+              (shell-subst "${a}" (hash)))
+            "no substitution found for name")

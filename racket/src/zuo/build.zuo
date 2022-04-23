@@ -17,12 +17,12 @@
     (cond
       [(file-exists? Makefile) (config-file->hash Makefile)]
       ;; no `configure`-generated `Makefile`, so use defaults
-      [(eq? (hash-ref (runtime-env) 'system-type) 'unix)
-       (hash 'INSTALL_PREFIX "/usr/local"
+      [(eq? (system-type) 'unix)
+       (hash 'prefix "/usr/local"
              'CC "cc"
              'CFLAGS "-O2")]
       [else
-       (hash 'INSTALL_PREFIX "C:\\Program Files\\Zuo"
+       (hash 'prefix "C:\\Program Files\\Zuo"
              'CC "cl.exe"
              'CFLAGS "/O2")]))
   (define config (foldl (lambda (key config)
@@ -30,7 +30,9 @@
                         config-in
                         (hash-keys vars)))
 
-  (define install-prefix (hash-ref config 'INSTALL_PREFIX))
+  (define install-prefix (hash-ref config 'prefix))
+  (define pkgdatadir (shell-subst (hash-ref config 'pkgdatadir (build-path install-prefix "lib" "zuo"))
+                                  config))
 
   ;; Get a target for "image_zuo.c" from `image.zuo`
   (define image_zuo.c
@@ -68,7 +70,7 @@
   ;; The two executable targets
   (define zuo-to-run (exe-target "to-run/zuo" (as-c-string (find-relative-path "to-run"
                                                                                (at-source "lib")))))
-  (define zuo-to-install (exe-target "to-install/zuo" (as-c-string (build-path install-prefix "lib"))))
+  (define zuo-to-install (exe-target "to-install/zuo" (as-c-string (build-path pkgdatadir ".."))))
 
   ;; A phony target to build both executables, which we'll list first
   ;; so it's used as the default target
@@ -87,15 +89,17 @@
                             (define (say-copy cp a b)
                               (displayln (~a "copying " a " to " b))
                               (cp a b))
+                            (define bindir (shell-subst (hash-ref config 'bindir (build-path install-prefix "bin"))
+                                                        config))
                             (mkdir-p install-prefix)
-                            (mkdir-p (build-path install-prefix "bin"))
-                            (define dest-exe (build-path install-prefix "bin" "zuo"))
+                            (mkdir-p bindir)
+                            (define dest-exe (build-path bindir "zuo"))
                             (when (file-exists? dest-exe) (rm dest-exe)) ; needed for macOS
                             (say-copy cp (target-name zuo-to-install) dest-exe)
-                            (mkdir-p (build-path install-prefix "lib"))
+                            (mkdir-p pkgdatadir)
                             (say-copy cp*
                                       (at-source "lib" "zuo")
-                                      (build-path install-prefix "lib" "zuo")))))))
+                                      (build-path pkgdatadir)))))))
 
   ;; Return all the targets
   (list zuos-to-run-and-install

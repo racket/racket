@@ -205,6 +205,18 @@ Note that @racket[build-shell] does @emph{not} attempt to protect any of the
 an individual path or literal string to a shell-command argument
 encoding that string.}
 
+
+@defproc[(shell-subst [str string?] [vars hash?]) string?]{
+
+Expands @racket[str] by replacing
+@litchar|{${}|@nonterm{name}@litchar|{}}| with the value that the
+symbol form of @nonterm{name} is mapped to in @racket[vars], where
+@nonterm{name} can contain any character except @litchar["}"]. After a
+replacement, the string is scanned again for further substitutions. An
+error is reported if a reference @nonterm{name} has no value in
+@racket[vars].}
+
+
 @; ------------------------------------------------------------
 
 @section[#:tag "zuo-c"]{C Tools}
