@@ -1527,7 +1527,9 @@
                    (define (gui-dir path) (apply build-path (reverse (list-tail (reverse (explode-path path)) 3))))
                    (rm* (gui-dir dest-exe))
                    (icp-r config (gui-dir gracket) (gui-dir dest-exe))
-                   (mv (build-path (path-only dest-exe) (file-name-from-path gracket)) dest-exe)]
+                   (bootstrap-racket racketx
+                                     (at-source "../mac/rename-app.rkt")
+                                     (gui-dir dest-exe) (file-name-from-path gracket) (~a "GRacket" cap-install-suffix))]
                   [else
                    (rm* dest-exe)
                    (icp* gracket dest-exe)])
