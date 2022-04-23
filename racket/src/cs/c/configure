@@ -4662,10 +4662,7 @@ if test "${enable_pb}" = "yes" ; then
   fi
 fi
 
-if test "${enable_target}" != "" ; then
-  TARGET_MACH=${enable_target}
-  CROSS_MODE="cross"
-elif test "${build_os}_${build_cpu}" != "${host_os}_${host_cpu}" ; then
+if test "${build_os}_${build_cpu}" != "${host_os}_${host_cpu}" ; then
   BUILD_THREAD_PREFIX="${thread_prefix}"
   case "$build_os" in
     solaris2*)
@@ -4727,6 +4724,11 @@ elif test "${build_os}_${build_cpu}" != "${host_os}_${host_cpu}" ; then
 else
   TARGET_MACH=${MACH}
   CROSS_MODE=""
+fi
+
+if test "${enable_target}" != "" ; then
+  TARGET_MACH=${enable_target}
+  CROSS_MODE="cross"
 fi
 
 # From this point on, `MACH` means the build machine, and
