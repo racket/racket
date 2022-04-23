@@ -585,6 +585,7 @@ PACKAGE_BUGREPORT='https://github.com/racket/racket/issues'
 PACKAGE_URL='https://github.com/racket/zuo'
 
 ac_unique_file="zuo.c"
+enable_embed="zuo"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 EMBED_LIBS
@@ -1744,6 +1745,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 # Check whether --enable-embed was given.
 if test "${enable_embed+set}" = set; then :
   enableval=$enable_embed;
+              :
 fi
 
 # Check whether --enable-big was given.
@@ -1752,12 +1754,13 @@ if test "${enable_big+set}" = set; then :
 fi
 
 
-if test "${enable_embed}" != "" ; then
+EMBED_LIBS="zuo"
+if test "x$enable_embed" = xno; then :
+  EMBED_LIBS=""
+elif test "x$enable_big" = xyes; then :
+  EMBED_LIBS="zuo zuo/hygenic"
+elif test "x$enable_embed" != xyes; then :
   EMBED_LIBS="${enable_embed}"
-elif test "${enable_big}" != "" ; then
-  EMBED_LIBS="zuo zuo/hygienic"
-else
-  EMBED_LIBS="zuo"
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${MAKE-make} sets \$(MAKE)" >&5
@@ -2582,8 +2585,10 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: zuo libraries to embed: \"${EMBED_LIBS}\"" >&5
+$as_echo "$as_me: zuo libraries to embed: \"${EMBED_LIBS}\"" >&6;}
 
-ac_config_files="$ac_config_files Makefile"
+ac_config_files="$ac_config_files Makefile main.zuo"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -3292,6 +3297,7 @@ for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
+    "main.zuo") CONFIG_FILES="$CONFIG_FILES main.zuo" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
@@ -3741,7 +3747,3 @@ if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
 $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
 
-
-echo "#lang zuo" > main.zuo
-echo "(require "'"'"${srcdir}/build.zuo"'"'")" >> main.zuo
-echo "(build/command-line* targets-at at-source)" >> main.zuo
