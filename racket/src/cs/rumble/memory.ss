@@ -49,9 +49,9 @@
 ;; pages in the allocator), so we need to detect that and force a GC.
 ;; Other patterns don't have as much overhead, so triggering only
 ;; on total size with overhead can increase peak memory use too much.
-;; Trigger a GC is either the non-overhead or with-overhead counts
-;; group enough.
-(define GC-TRIGGER-FACTOR 2)
+;; Trigger a GC when either the non-overhead or with-overhead counts
+;; grows enough.
+(define GC-TRIGGER-FACTOR (* 8 1024)) ; this times the square root of memory use is added to memory use
 (define trigger-major-gc-allocated (* 32 1024 1024))
 (define trigger-major-gc-allocated+overhead (* 64 1024 1024))
 (define non-full-gc-counter 0)
@@ -133,13 +133,23 @@
               [post-time (real-time)]
               [post-cpu-time (cpu-time)])
           (when (= gen (collect-maximum-generation))
-            ;; Trigger a major GC when twice as much memory is used. Twice
-            ;; `post-allocated+overhead` seems to be too long a wait, because
-            ;; that value may include underused pages that have locked objects.
-            ;; Using just `post-allocated` is too small, because it may force an
-            ;; immediate major GC too soon. Split the difference.
-            (set! trigger-major-gc-allocated (* GC-TRIGGER-FACTOR (- post-allocated (bytes-finalized))))
-            (set! trigger-major-gc-allocated+overhead (* GC-TRIGGER-FACTOR post-allocated+overhead)))
+            ;; Trigger a major GC when memory use is a certain factor of current use.
+            ;;
+            ;; The factor is based on the square root of current memory use, which is intended
+            ;;  to make Racket a good citizen in its environment and maximize cooperation among
+            ;;  different processes.[1] We do not attempt to measure allocation and collection
+            ;;  rates, as in the paper describing this rule. Instead, we simplify by assuming
+            ;;  that that ratio of rates is relatively constant.
+            ;;   [1] Kirisame, Shenoy, and Panchekha (2022) https://arxiv.org/abs/2204.10455
+            ;;
+            ;; A factor on `post-allocated+overhead` seems to be too long a wait, because
+            ;;  that value may include underused pages that have locked objects.
+            ;;  Using just `post-allocated` is too small, because it may force an
+            ;;  immediate major GC too soon. So, watch both.
+            (let ([scale (lambda (n)
+                           (+ n (inexact->exact (floor (* (sqrt (max 0 n)) GC-TRIGGER-FACTOR)))))])
+              (set! trigger-major-gc-allocated (scale (- post-allocated (bytes-finalized))))
+              (set! trigger-major-gc-allocated+overhead (scale post-allocated+overhead))))
           (update-eq-hash-code-table-size!)
           (update-struct-procs-table-sizes!)
           (poll-foreign-guardian)
