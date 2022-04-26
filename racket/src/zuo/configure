@@ -1758,7 +1758,7 @@ EMBED_LIBS="zuo"
 if test "x$enable_embed" = xno; then :
   EMBED_LIBS=""
 elif test "x$enable_big" = xyes; then :
-  EMBED_LIBS="zuo zuo/hygenic"
+  EMBED_LIBS="zuo zuo/hygienic"
 elif test "x$enable_embed" != xyes; then :
   EMBED_LIBS="${enable_embed}"
 fi

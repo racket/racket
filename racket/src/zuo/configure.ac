@@ -18,7 +18,7 @@ EMBED_LIBS="zuo"
 AS_IF([test "x$enable_embed" = xno],
       [EMBED_LIBS=""],
       [test "x$enable_big" = xyes],
-      [EMBED_LIBS="zuo zuo/hygenic"],
+      [EMBED_LIBS="zuo zuo/hygienic"],
       [test "x$enable_embed" != xyes],
       [EMBED_LIBS="${enable_embed}"])
 
