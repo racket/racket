@@ -545,7 +545,9 @@ an anonymous module variable as produced by
 
 Returns @racket[#t] if the module of the variable reference itself
 (not necessarily a referenced variable) is compiled in unsafe mode,
-@racket[#f] otherwise.
+@racket[#f] otherwise. @tech{Unsafe mode} can be enabled through the
+@tech{linklet} interface or enable for a module with
+@racket[(#%declare #:unsafe)].
 
 The @racket[variable-reference-from-unsafe?] procedure is intended for
 use as
@@ -557,9 +559,5 @@ use as
 which the compiler can optimize to a literal @racket[#t] or
 @racket[#f] (since the enclosing module is being compiled in
 @tech{unsafe mode} or not).
-
-Currently @tech{unsafe mode} can be controlled only through the
-@tech{linklet} interface, but future changes may make @tech{unsafe
-mode} more accessible at the module level.
 
 @history[#:added "6.12.0.4"]}
