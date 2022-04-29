@@ -702,7 +702,7 @@ Determines whether the last element of @racket[path] ends with
 @racket[ext] but is not exactly the same as @racket[ext].
 
 If @racket[ext] is a @tech{byte string} with the shape of an extension
-(i.e., starting with @litchar{.}), this check is equivalent to
+(i.e., starting with @litchar{.} and not including another @litchar{.}), this check is equivalent to
 checking whether @racket[(path-get-extension path)] produces @racket[ext].
 
 @examples[#:eval path-eval
