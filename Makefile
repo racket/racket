@@ -58,7 +58,7 @@ PB_DIR = racket/src/ChezScheme/boot/pb
 WIN32_BOOT_ARGS = SETUP_BOOT_MODE=--boot WIN32_BUILD_LEVEL=bc PLAIN_RACKET=racket\racketbc
 WIN32_SETUP_BOOT = -O "info@compiler/cm" -l- setup $(SETUP_BOOT_MODE) racket/src/setup-go.rkt racket/src/build/compiled ignored racket/src/build/ignored.d
 CSBUILD_ARGUMENTS = --pull --racketcs-suffix "$(RACKETCS_SUFFIX)" $(DISABLE_STATIC_LIBS) --boot-mode "$(SETUP_BOOT_MODE)" --extra-repos-base "$(EXTRA_REPOS_BASE)"
-SRC_CATALOG = $(DEFAULT_SRC_CATALOG)
+SRC_CATALOG = "https://download.racket-lang.org/releases/8.5/catalog/"
 DOC_SEARCH = 
 SERVER = localhost
 SERVER_PORT = 9440
