@@ -1764,5 +1764,17 @@
                #rx"animal-get: .*is-animal[?]"))
 
 ;; ----------------------------------------
+;; make sure `prop:object-name` works with applicables
+
+(let ()
+  (struct x ()
+    #:property prop:object-name
+    (let ()
+      (struct p ()
+        #:property prop:procedure (lambda (self v) 'x))
+      (p)))
+  (test 'x object-name (x)))
+
+;; ----------------------------------------
 
 (report-errs)

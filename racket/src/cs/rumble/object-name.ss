@@ -34,7 +34,7 @@
        [(exact-integer? n)
         (unsafe-struct-ref v n)]
        [else
-        (n v)]))]
+        (|#%app| n v)]))]
    [(#%procedure? v)
     (cond
      [(wrapper-procedure? v)
