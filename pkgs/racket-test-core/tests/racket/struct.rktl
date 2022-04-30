@@ -1776,5 +1776,22 @@
   (test 'x object-name (x)))
 
 ;; ----------------------------------------
+;; make sure `prop:object-name` is not used to try to get a name
+;; for the structure type itself
+
+(let ([asked? #f])
+  (struct x ()
+    #:property prop:object-name (lambda (self) (set! asked? #t) "NAME"))
+
+  (test #f values asked?)
+  (test 'x object-name struct:x)
+  (test #f values asked?)
+  (test "#<struct-type:x>" format "~a" struct:x)
+  (test #f values asked?)
+
+  (test "NAME" object-name (x))
+  (test #t values asked?))
+
+;; ----------------------------------------
 
 (report-errs)
