@@ -1,5 +1,6 @@
 #lang racket/base
-(require "wrap.rkt"
+(require racket/fixnum
+         "wrap.rkt"
          "match.rkt"
          "known.rkt"
          "import.rkt"
@@ -17,29 +18,32 @@
 (define (simple? e prim-knowns knowns imports mutated simples unsafe-mode?
                  #:pure? [pure? #t]
                  #:no-alloc? [no-alloc? #f]
+                 #:ordered? [ordered? #f] ; weakens `pure?` to allow reordering
                  #:result-arity [result-arity 1])
   (let simple? ([e e] [result-arity result-arity])
     (define-syntax-rule (cached expr)
-      (let* ([c (hash-ref simples e #(unknown unknown unknown 1))]
-             [r (vector-ref c (if pure? (if no-alloc? 1 0) 2))]
-             [arity-match? (eqv? result-arity (vector-ref c 3))])
+      (let* ([c (hash-ref simples e #(0 0 1))]
+             [bit (let ([AT (lambda (x) (fxlshift 1 x))])
+                    (if pure?
+                        (if no-alloc?
+                            (if ordered? (AT 0) (AT 1))
+                            (if ordered? (AT 2) (AT 3)))
+                        (AT 4)))]
+             [r (cond
+                  [(fx= bit (fxand (vector-ref c 0) bit)) #t]
+                  [(fx= bit (fxand (vector-ref c 1) bit)) #f]
+                  [else 'unknown])]
+             [arity-match? (eqv? result-arity (vector-ref c 2))])
         (if (or (eq? 'unknown r)
                 (not arity-match?))
             (let ([r expr])
-              (hash-set! simples e (if pure?
-                                       (if no-alloc?
-                                           (vector (if arity-match? (vector-ref c 0) 'unknown)
-                                                   r
-                                                   (if arity-match? (vector-ref c 2) 'unknown)
-                                                   result-arity)
-                                           (vector r
-                                                   (if arity-match? (vector-ref c 1) 'unknown)
-                                                   (if arity-match? (vector-ref c 2) 'unknown)
-                                                   result-arity))
-                                       (vector (if arity-match? (vector-ref c 0) 'unknown)
-                                               (if arity-match? (vector-ref c 1) 'unknown)
-                                               r
-                                               result-arity)))
+              (hash-set! simples e (vector (if r
+                                               (fxior (vector-ref c 0) bit)
+                                               (vector-ref c 0))
+                                           (if r
+                                               (vector-ref c 1)
+                                               (fxior (vector-ref c 1) bit))
+                                           (vector-ref c 2)))
               r)
             r)))
     (define (returns n)
@@ -110,11 +114,13 @@
                           (and (or (if no-alloc?
                                        (known-procedure/pure? v)
                                        (known-procedure/allocates? v))
-                                   ;; in unsafe mode, we can assume no constract error:
-                                   (and unsafe-mode?
-                                        (known-field-accessor? v)
-                                        (known-field-accessor-authentic? v)
-                                        (known-field-accessor-known-immutable? v)))
+                                   (and ordered?
+                                        (or (known-procedure/then-pure? v)
+                                            ;; in unsafe mode, we can assume no contract error:
+                                            (and unsafe-mode?
+                                                 (known-field-accessor? v)
+                                                 (known-field-accessor-authentic? v)
+                                                 (known-field-accessor-known-immutable? v)))))
                                (returns 1))
                           (or (and (known-procedure/no-prompt? v)
                                    (returns 1))

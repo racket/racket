@@ -1346,9 +1346,8 @@
                                      next-val_0
                                      (unsafe-fx+ next-index_0 1))
                                     #f)))))))))
-                     (loop_0
-                      (unsafe-vector-ref vec_0 start_0)
-                      (unsafe-fx+ start_0 1)))
+                     (let ((app_0 (unsafe-vector-ref vec_0 start_0)))
+                       (loop_0 app_0 (unsafe-fx+ start_0 1))))
                   (vector-copy! dst-vec_0 0 vec_0 start_0 end_0)
                   (if (unsafe-fx<= n_0 3)
                     (begin
@@ -1484,9 +1483,8 @@
                                          next-val_0
                                          (unsafe-fx+ next-index_0 1))
                                         #f)))))))))
-                         (loop_0
-                          (unsafe-vector-ref vec_0 start_0)
-                          (unsafe-fx+ start_0 1)))
+                         (let ((app_0 (unsafe-vector-ref vec_0 start_0)))
+                           (loop_0 app_0 (unsafe-fx+ start_0 1))))
                       (vector-copy! dst-vec_0 0 vec_0 start_0 end_0)
                       (if (unsafe-fx<= n_0 3)
                         (begin
@@ -1633,9 +1631,8 @@
                                    next-val_0
                                    (unsafe-fx+ next-index_0 1))
                                   #f)))))))))
-                   (loop_0
-                    (unsafe-vector-ref vec_0 start_0)
-                    (unsafe-fx+ start_0 1)))
+                   (let ((app_0 (unsafe-vector-ref vec_0 start_0)))
+                     (loop_0 app_0 (unsafe-fx+ start_0 1))))
                 (void)
                 (if (unsafe-fx<= n_0 3)
                   (begin
@@ -1814,9 +1811,8 @@
                                        next-val_0
                                        (unsafe-fx+ next-index_0 1))
                                       #f)))))))))
-                       (loop_0
-                        (unsafe-vector-ref vec_0 start_0)
-                        (unsafe-fx+ start_0 1)))
+                       (let ((app_0 (unsafe-vector-ref vec_0 start_0)))
+                         (loop_0 app_0 (unsafe-fx+ start_0 1))))
                     (void)
                     (if (unsafe-fx<= n_0 3)
                       (begin
@@ -25437,7 +25433,8 @@
 (define unc-without-trailing-separator?
   (lambda (p_0)
     (let ((bstr_0 (path-bytes p_0)))
-      (eqv? (parse-unc.1 #f #f bstr_0 0) (unsafe-bytes-length bstr_0)))))
+      (let ((app_0 (parse-unc.1 #f #f bstr_0 0)))
+        (eqv? app_0 (unsafe-bytes-length bstr_0))))))
 (define simplify-backslash-backslash-questionmark
   (lambda (p_0)
     (let ((bstr_0 (path-bytes p_0)))
@@ -31488,13 +31485,15 @@
                                                       (unsafe-fxrshift hi_0 8)
                                                       (fxand hi_0 255))
                                                      (let ((app_0 (+ pos_0 2)))
-                                                       (bytes-set-two!
-                                                        bstr_0
-                                                        app_0
-                                                        (unsafe-fxrshift
-                                                         lo_0
-                                                         8)
-                                                        (fxand lo_0 255)))
+                                                       (let ((app_1
+                                                              (unsafe-fxrshift
+                                                               lo_0
+                                                               8)))
+                                                         (bytes-set-two!
+                                                          bstr_0
+                                                          app_0
+                                                          app_1
+                                                          (fxand lo_0 255))))
                                                      (fx+ pos_0 4)))))
                                              (begin
                                                (bytes-set-two!
@@ -31944,15 +31943,19 @@
                                                                     (+
                                                                      new-pos1_0
                                                                      4)))
-                                                               (loop_0
-                                                                app_0
-                                                                (+
-                                                                 new-pos2_0
-                                                                 4)
-                                                                (unsafe-bytes-length
-                                                                 in-bstr1_0)
-                                                                (unsafe-bytes-length
-                                                                 in-bstr2_0))))))))))))
+                                                               (let ((app_1
+                                                                      (+
+                                                                       new-pos2_0
+                                                                       4)))
+                                                                 (let ((app_2
+                                                                        (unsafe-bytes-length
+                                                                         in-bstr1_0)))
+                                                                   (loop_0
+                                                                    app_0
+                                                                    app_1
+                                                                    app_2
+                                                                    (unsafe-bytes-length
+                                                                     in-bstr2_0))))))))))))))
                                            (if (if done1?_0 done2?_0 #f)
                                              (let ((v_0
                                                     (begin
@@ -33102,10 +33105,11 @@
         (void)
         (raise-argument-error who_0 "logger?" logger_0))
       (let ((lr_0
-             (stdio-log-receiver3.1
-              (parse-filters.1 'none parse-who_0 args_0)
-              (unsafe-place-local-ref cell.1)
-              which_0)))
+             (let ((app_0 (parse-filters.1 'none parse-who_0 args_0)))
+               (stdio-log-receiver3.1
+                app_0
+                (unsafe-place-local-ref cell.1)
+                which_0))))
         (begin
           (unsafe-start-atomic)
           (begin0
@@ -33235,10 +33239,11 @@
     (let ((lr_0
            (let ((app_0
                   (parse-filters.1 'none 'make-syslog-log-receiver args_0)))
-             (syslog-log-receiver4.1
-              app_0
-              (unsafe-place-local-ref cell.1)
-              (path-bytes (1/find-system-path 'run-file))))))
+             (let ((app_1 (unsafe-place-local-ref cell.1)))
+               (syslog-log-receiver4.1
+                app_0
+                app_1
+                (path-bytes (1/find-system-path 'run-file)))))))
       (begin
         (unsafe-start-atomic)
         (begin0
@@ -34785,11 +34790,11 @@
                 'subprocess
                 "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                 stderr_0))
-             (let ((lr1421 unsafe-undefined)
+             (let ((lr1431 unsafe-undefined)
                    (group_0 unsafe-undefined)
                    (command_0 unsafe-undefined)
                    (exact/args_0 unsafe-undefined))
-               (set! lr1421
+               (set! lr1431
                  (call-with-values
                   (lambda ()
                     (if (path-string? group/command_0)
@@ -34844,9 +34849,9 @@
                    ((group_1 command_1 exact/args_1)
                     (vector group_1 command_1 exact/args_1))
                    (args (raise-binding-result-arity-error 3 args)))))
-               (set! group_0 (unsafe-vector*-ref lr1421 0))
-               (set! command_0 (unsafe-vector*-ref lr1421 1))
-               (set! exact/args_0 (unsafe-vector*-ref lr1421 2))
+               (set! group_0 (unsafe-vector*-ref lr1431 0))
+               (set! command_0 (unsafe-vector*-ref lr1431 1))
+               (set! exact/args_0 (unsafe-vector*-ref lr1431 2))
                (call-with-values
                 (lambda ()
                   (if (if (pair? exact/args_0)
@@ -38578,10 +38583,11 @@
                                     (begin
                                       (|#%app| rktio_free r_0)
                                       (let ((app_0
-                                             (if (bytes=?
-                                                  (car address_0)
-                                                  (unsafe-place-local-ref
-                                                   cell.1$2))
+                                             (if (let ((app_0 (car address_0)))
+                                                   (bytes=?
+                                                    app_0
+                                                    (unsafe-place-local-ref
+                                                     cell.1$2)))
                                                (unsafe-place-local-ref cell.2)
                                                (begin
                                                  (unsafe-place-local-set!

@@ -5361,9 +5361,10 @@
                   (let ((c_0 (create-custodian parent_0)))
                     (begin
                       (set-custodian-place! c_0 (custodian-place parent_0))
-                      (let ((children_0 (custodian-children c_0)))
-                        (let ((cref_0
-                               (let ((temp43_0
+                      (let ((cref_0
+                             (let ((temp43_0
+                                    (let ((children_0
+                                           (custodian-children c_0)))
                                       (|#%name|
                                        temp43
                                        (lambda (c_1)
@@ -5371,32 +5372,32 @@
                                            (begin
                                              (reference-sink children_0)
                                              (do-custodian-shutdown-all
-                                              c_1)))))))
-                                 (do-custodian-register.1
-                                  #f
-                                  #f
-                                  #t
-                                  #f
-                                  #t
-                                  parent_0
-                                  c_0
-                                  temp43_0))))
-                          (begin
-                            (set-custodian-parent-reference! c_0 cref_0)
-                            (if cref_0
-                              (void)
-                              (begin-unsafe
-                               (raise-arguments-error
-                                'make-custodian
-                                "the custodian has been shut down"
-                                "custodian"
-                                parent_0)))
-                            (|#%app|
-                             host:will-register
-                             (unsafe-place-local-ref cell.1$7)
-                             c_0
-                             merge-custodian-into-parent)
-                            c_0))))))))))))
+                                              c_1))))))))
+                               (do-custodian-register.1
+                                #f
+                                #f
+                                #t
+                                #f
+                                #t
+                                parent_0
+                                c_0
+                                temp43_0))))
+                        (begin
+                          (set-custodian-parent-reference! c_0 cref_0)
+                          (if cref_0
+                            (void)
+                            (begin-unsafe
+                             (raise-arguments-error
+                              'make-custodian
+                              "the custodian has been shut down"
+                              "custodian"
+                              parent_0)))
+                          (|#%app|
+                           host:will-register
+                           (unsafe-place-local-ref cell.1$7)
+                           c_0
+                           merge-custodian-into-parent)
+                          c_0)))))))))))
     (|#%name|
      make-custodian
      (case-lambda
@@ -5739,7 +5740,9 @@
       (set! place-wakeup-initial wakeup-initial_0)
       (set! place-wakeup wakeup_0))))
 (define custodian-this-place?
-  (lambda (c_0) (eq? (custodian-place c_0) (unsafe-place-local-ref cell.1$2))))
+  (lambda (c_0)
+    (let ((app_0 (custodian-place c_0)))
+      (eq? app_0 (unsafe-place-local-ref cell.1$2)))))
 (define do-custodian-shutdown-all
   (let ((do-custodian-shutdown-all_0
          (|#%name|
@@ -8220,7 +8223,7 @@
                 (begin-unsafe (queue-add-front! (thread-mailbox t_0) msg_0)))
               lst_0))
            (end-atomic)))))))
-(define finish_2013
+(define finish_2918
   (make-struct-type-install-properties
    '(thread-receive-evt)
    0
@@ -8236,42 +8239,42 @@
             (values (list self_0) #f)
             (if (poll-ctx-poll? poll-ctx_0)
               (values #f self_0)
-              (let ((select-proc_0 (poll-ctx-select-proc poll-ctx_0)))
-                (let ((receive_0
+              (let ((receive_0
+                     (let ((select-proc_0 (poll-ctx-select-proc poll-ctx_0)))
                        (|#%name|
                         receive
                         (lambda ()
                           (begin
                             (if (is-mail? t_0)
                               (|#%app| select-proc_0)
-                              (void)))))))
-                  (let ((add-wakeup-callback!_0
-                         (|#%name|
-                          add-wakeup-callback!
-                          (lambda ()
-                            (begin
-                              (let ((wakeup_0 (thread-mailbox-wakeup t_0)))
-                                (set-thread-mailbox-wakeup!
-                                 t_0
-                                 (lambda ()
-                                   (begin
-                                     (|#%app| wakeup_0)
-                                     (|#%app| receive_0))))))))))
-                    (begin
-                      (add-wakeup-callback!_0)
-                      (values
-                       #f
-                       (control-state-evt9.1
-                        the-async-evt
-                        (lambda (v_0) self_0)
-                        (lambda () (set-thread-mailbox-wakeup! t_0 void))
-                        (lambda () (set! receive_0 void))
+                              (void))))))))
+                (let ((add-wakeup-callback!_0
+                       (|#%name|
+                        add-wakeup-callback!
                         (lambda ()
                           (begin
-                            (add-wakeup-callback!_0)
-                            (if (is-mail? t_0)
-                              (values self_0 #t)
-                              (values #f #f)))))))))))))))))
+                            (let ((wakeup_0 (thread-mailbox-wakeup t_0)))
+                              (set-thread-mailbox-wakeup!
+                               t_0
+                               (lambda ()
+                                 (begin
+                                   (|#%app| wakeup_0)
+                                   (|#%app| receive_0))))))))))
+                  (begin
+                    (add-wakeup-callback!_0)
+                    (values
+                     #f
+                     (control-state-evt9.1
+                      the-async-evt
+                      (lambda (v_0) self_0)
+                      (lambda () (set-thread-mailbox-wakeup! t_0 void))
+                      (lambda () (set! receive_0 void))
+                      (lambda ()
+                        (begin
+                          (add-wakeup-callback!_0)
+                          (if (is-mail? t_0)
+                            (values self_0 #t)
+                            (values #f #f))))))))))))))))
    (current-inspector)
    #f
    '()
@@ -8286,7 +8289,7 @@
    #f
    0
    0))
-(define effect_2506 (finish_2013 struct:thread-receiver-evt))
+(define effect_2506 (finish_2918 struct:thread-receiver-evt))
 (define thread-receiver-evt26.1
   (|#%name|
    thread-receiver-evt
@@ -12676,9 +12679,8 @@
       (end-atomic))))
 (define all-threads-poll-done?
   (lambda ()
-    (=
-     (hash-count (unsafe-place-local-ref cell.2$1))
-     (unsafe-place-local-ref cell.2))))
+    (let ((app_0 (hash-count (unsafe-place-local-ref cell.2$1))))
+      (= app_0 (unsafe-place-local-ref cell.2)))))
 (define process-sleep
   (lambda ()
     (let ((ts_0
@@ -13835,294 +13837,289 @@
                   (case-lambda
                    ((place-pch_0 child-pch_0)
                     (let ((orig-plumber_0 (1/make-plumber)))
-                      (let ((current-place15_0
-                             (unsafe-place-local-ref cell.1$2)))
-                        (let ((new-place_0
+                      (let ((new-place_0
+                             (let ((current-place15_0
+                                    (unsafe-place-local-ref cell.1$2)))
                                (make-place.1
                                 current-place15_0
                                 place-pch_0
                                 lock_0
-                                orig-cust_0)))
-                          (begin
-                            (set-custodian-place! orig-cust_0 new-place_0)
-                            (let ((done-waiting_0
-                                   (place-done-waiting new-place_0)))
-                              (let ((default-exit_0
-                                     (|#%name|
-                                      default-exit
-                                      (lambda (explicit?7_0 v9_0)
-                                        (begin
-                                          (begin
-                                            (let ((temp17_0
-                                                   (if explicit?7_0
-                                                     "exit (via `exit`)"
-                                                     "exit")))
-                                              (log-place.1
-                                               unsafe-undefined
-                                               #f
-                                               temp17_0))
-                                            (let ((flush-failed?_0 #f))
-                                              (begin
-                                                (plumber-flush-all/wrap
-                                                 orig-plumber_0
-                                                 (lambda (proc_0 h_0)
-                                                   (call-with-continuation-prompt
-                                                    (lambda ()
-                                                      (|#%app| proc_0 h_0))
-                                                    (default-continuation-prompt-tag)
-                                                    (lambda (thunk_0)
-                                                      (begin
-                                                        (set! flush-failed?_0
-                                                          #t)
-                                                        (call-with-continuation-prompt
-                                                         thunk_0))))))
-                                                (start-atomic)
-                                                (begin0
-                                                  (begin
-                                                    (|#%app|
-                                                     host:mutex-acquire
-                                                     lock_0)
-                                                    (set-place-queued-result!
-                                                     new-place_0
-                                                     (if flush-failed?_0
-                                                       1
-                                                       (if (byte? v9_0)
-                                                         v9_0
-                                                         0)))
-                                                    (place-has-activity!
-                                                     new-place_0)
-                                                    (|#%app|
-                                                     host:mutex-release
-                                                     lock_0))
-                                                  (end-atomic))
-                                                (engine-block)))))))))
-                                (begin
-                                  (start-atomic)
-                                  (let ((cref_0
-                                         (custodian-register-place
-                                          (1/current-custodian)
-                                          new-place_0
-                                          shutdown-place)))
-                                    (begin
-                                      (if cref_0
-                                        (void)
-                                        (begin
-                                          (end-atomic)
-                                          (let ((c_0 (1/current-custodian)))
-                                            (begin-unsafe
-                                             (raise-arguments-error
-                                              'dynamic-place
-                                              "the custodian has been shut down"
-                                              "custodian"
-                                              c_0)))))
+                                orig-cust_0))))
+                        (begin
+                          (set-custodian-place! orig-cust_0 new-place_0)
+                          (let ((done-waiting_0
+                                 (place-done-waiting new-place_0)))
+                            (let ((default-exit_0
+                                   (|#%name|
+                                    default-exit
+                                    (lambda (explicit?7_0 v9_0)
                                       (begin
-                                        (set-place-custodian-ref!
-                                         new-place_0
-                                         cref_0)
-                                        (call-with-values
-                                         (lambda ()
-                                           (|#%app|
-                                            make-place-ports+fds
-                                            in_0
-                                            out_0
-                                            err_0))
-                                         (case-lambda
-                                          ((parent-in_0
-                                            parent-out_0
-                                            parent-err_0
-                                            child-in-fd_0
-                                            child-out-fd_0
-                                            child-err-fd_0)
-                                           (begin
-                                             (|#%app|
-                                              host:mutex-acquire
-                                              lock_0)
-                                             (let ((host-thread_0
-                                                    (|#%app|
-                                                     host:fork-place
-                                                     (lambda ()
-                                                       (begin
-                                                         (unsafe-place-local-set!
-                                                          cell.1$2
-                                                          new-place_0)
-                                                         (call-in-another-main-thread
-                                                          orig-cust_0
-                                                          (lambda ()
+                                        (begin
+                                          (let ((temp17_0
+                                                 (if explicit?7_0
+                                                   "exit (via `exit`)"
+                                                   "exit")))
+                                            (log-place.1
+                                             unsafe-undefined
+                                             #f
+                                             temp17_0))
+                                          (let ((flush-failed?_0 #f))
+                                            (begin
+                                              (plumber-flush-all/wrap
+                                               orig-plumber_0
+                                               (lambda (proc_0 h_0)
+                                                 (call-with-continuation-prompt
+                                                  (lambda ()
+                                                    (|#%app| proc_0 h_0))
+                                                  (default-continuation-prompt-tag)
+                                                  (lambda (thunk_0)
+                                                    (begin
+                                                      (set! flush-failed?_0 #t)
+                                                      (call-with-continuation-prompt
+                                                       thunk_0))))))
+                                              (start-atomic)
+                                              (begin0
+                                                (begin
+                                                  (|#%app|
+                                                   host:mutex-acquire
+                                                   lock_0)
+                                                  (set-place-queued-result!
+                                                   new-place_0
+                                                   (if flush-failed?_0
+                                                     1
+                                                     (if (byte? v9_0) v9_0 0)))
+                                                  (place-has-activity!
+                                                   new-place_0)
+                                                  (|#%app|
+                                                   host:mutex-release
+                                                   lock_0))
+                                                (end-atomic))
+                                              (engine-block)))))))))
+                              (begin
+                                (start-atomic)
+                                (let ((cref_0
+                                       (custodian-register-place
+                                        (1/current-custodian)
+                                        new-place_0
+                                        shutdown-place)))
+                                  (begin
+                                    (if cref_0
+                                      (void)
+                                      (begin
+                                        (end-atomic)
+                                        (let ((c_0 (1/current-custodian)))
+                                          (begin-unsafe
+                                           (raise-arguments-error
+                                            'dynamic-place
+                                            "the custodian has been shut down"
+                                            "custodian"
+                                            c_0)))))
+                                    (begin
+                                      (set-place-custodian-ref!
+                                       new-place_0
+                                       cref_0)
+                                      (call-with-values
+                                       (lambda ()
+                                         (|#%app|
+                                          make-place-ports+fds
+                                          in_0
+                                          out_0
+                                          err_0))
+                                       (case-lambda
+                                        ((parent-in_0
+                                          parent-out_0
+                                          parent-err_0
+                                          child-in-fd_0
+                                          child-out-fd_0
+                                          child-err-fd_0)
+                                         (begin
+                                           (|#%app| host:mutex-acquire lock_0)
+                                           (let ((host-thread_0
+                                                  (|#%app|
+                                                   host:fork-place
+                                                   (lambda ()
+                                                     (begin
+                                                       (unsafe-place-local-set!
+                                                        cell.1$2
+                                                        new-place_0)
+                                                       (call-in-another-main-thread
+                                                        orig-cust_0
+                                                        (lambda ()
+                                                          (begin
+                                                            (set-place-id!
+                                                             new-place_0
+                                                             (|#%app|
+                                                              get-pthread-id))
                                                             (begin
-                                                              (set-place-id!
+                                                              (set-place-host-roots!
                                                                new-place_0
                                                                (|#%app|
-                                                                get-pthread-id))
+                                                                host:current-place-roots))
                                                               (begin
-                                                                (set-place-host-roots!
-                                                                 new-place_0
-                                                                 (|#%app|
-                                                                  host:current-place-roots))
+                                                                (1/current-thread-group
+                                                                 (unsafe-place-local-ref
+                                                                  cell.1))
                                                                 (begin
-                                                                  (1/current-thread-group
-                                                                   (unsafe-place-local-ref
-                                                                    cell.1))
+                                                                  (1/current-custodian
+                                                                   orig-cust_0)
                                                                   (begin
-                                                                    (1/current-custodian
-                                                                     orig-cust_0)
+                                                                    (1/current-plumber
+                                                                     orig-plumber_0)
                                                                     (begin
-                                                                      (1/current-plumber
-                                                                       orig-plumber_0)
+                                                                      (1/exit-handler
+                                                                       (lambda (v_0)
+                                                                         (default-exit_0
+                                                                          #t
+                                                                          v_0)))
                                                                       (begin
-                                                                        (1/exit-handler
-                                                                         (lambda (v_0)
-                                                                           (default-exit_0
-                                                                            #t
-                                                                            v_0)))
+                                                                        (current-pseudo-random-generator
+                                                                         (make-pseudo-random-generator))
                                                                         (begin
-                                                                          (current-pseudo-random-generator
+                                                                          (1/current-evt-pseudo-random-generator
                                                                            (make-pseudo-random-generator))
-                                                                          (begin
-                                                                            (1/current-evt-pseudo-random-generator
-                                                                             (make-pseudo-random-generator))
-                                                                            (let ((finish_0
-                                                                                   (|#%app|
-                                                                                    host:start-place
-                                                                                    child-pch_0
-                                                                                    path_0
-                                                                                    sym_0
-                                                                                    child-in-fd_0
-                                                                                    child-out-fd_0
-                                                                                    child-err-fd_0
-                                                                                    orig-cust_0
-                                                                                    orig-plumber_0
-                                                                                    inherited_0)))
-                                                                              (call-with-continuation-prompt
-                                                                               (lambda ()
-                                                                                 (begin
-                                                                                   (|#%app|
-                                                                                    host:mutex-acquire
-                                                                                    lock_0)
-                                                                                   (set-place-wakeup-handle!
-                                                                                    new-place_0
-                                                                                    (sandman-get-wakeup-handle))
-                                                                                   (|#%app|
-                                                                                    host:condition-signal
-                                                                                    started_0)
-                                                                                   (|#%app|
-                                                                                    host:mutex-release
-                                                                                    lock_0)
-                                                                                   (let ((temp20_0
-                                                                                          "enter"))
-                                                                                     (log-place.1
-                                                                                      unsafe-undefined
-                                                                                      #f
-                                                                                      temp20_0))
-                                                                                   (|#%app|
-                                                                                    finish_0)
-                                                                                   (default-exit_0
+                                                                          (let ((finish_0
+                                                                                 (|#%app|
+                                                                                  host:start-place
+                                                                                  child-pch_0
+                                                                                  path_0
+                                                                                  sym_0
+                                                                                  child-in-fd_0
+                                                                                  child-out-fd_0
+                                                                                  child-err-fd_0
+                                                                                  orig-cust_0
+                                                                                  orig-plumber_0
+                                                                                  inherited_0)))
+                                                                            (call-with-continuation-prompt
+                                                                             (lambda ()
+                                                                               (begin
+                                                                                 (|#%app|
+                                                                                  host:mutex-acquire
+                                                                                  lock_0)
+                                                                                 (set-place-wakeup-handle!
+                                                                                  new-place_0
+                                                                                  (sandman-get-wakeup-handle))
+                                                                                 (|#%app|
+                                                                                  host:condition-signal
+                                                                                  started_0)
+                                                                                 (|#%app|
+                                                                                  host:mutex-release
+                                                                                  lock_0)
+                                                                                 (let ((temp20_0
+                                                                                        "enter"))
+                                                                                   (log-place.1
+                                                                                    unsafe-undefined
                                                                                     #f
-                                                                                    0)))
-                                                                               (default-continuation-prompt-tag)
-                                                                               (lambda (thunk_0)
-                                                                                 (begin
-                                                                                   (call-with-continuation-prompt
-                                                                                    thunk_0)
-                                                                                   (default-exit_0
-                                                                                    #f
-                                                                                    1)))))))))))))))))
-                                                     (lambda (result_0)
-                                                       (begin
-                                                         (do-custodian-shutdown-all
-                                                          orig-cust_0)
-                                                         (let ((lst_0
-                                                                (place-post-shutdown
-                                                                 new-place_0)))
-                                                           (begin
-                                                             (letrec*
-                                                              ((for-loop_0
-                                                                (|#%name|
-                                                                 for-loop
-                                                                 (lambda (lst_1)
-                                                                   (begin
-                                                                     (if (pair?
-                                                                          lst_1)
-                                                                       (let ((proc_0
-                                                                              (unsafe-car
-                                                                               lst_1)))
-                                                                         (let ((rest_0
-                                                                                (unsafe-cdr
-                                                                                 lst_1)))
-                                                                           (begin
-                                                                             (|#%app|
-                                                                              proc_0)
-                                                                             (for-loop_0
-                                                                              rest_0))))
-                                                                       (values)))))))
-                                                              (for-loop_0
-                                                               lst_0))))
-                                                         (void)
-                                                         (kill-future-scheduler)
-                                                         (|#%app|
-                                                          host:mutex-acquire
-                                                          lock_0)
-                                                         (set-place-result!
-                                                          new-place_0
-                                                          result_0)
-                                                         (|#%app|
-                                                          host:mutex-release
-                                                          lock_0)
+                                                                                    temp20_0))
+                                                                                 (|#%app|
+                                                                                  finish_0)
+                                                                                 (default-exit_0
+                                                                                  #f
+                                                                                  0)))
+                                                                             (default-continuation-prompt-tag)
+                                                                             (lambda (thunk_0)
+                                                                               (begin
+                                                                                 (call-with-continuation-prompt
+                                                                                  thunk_0)
+                                                                                 (default-exit_0
+                                                                                  #f
+                                                                                  1)))))))))))))))))
+                                                   (lambda (result_0)
+                                                     (begin
+                                                       (do-custodian-shutdown-all
+                                                        orig-cust_0)
+                                                       (let ((lst_0
+                                                              (place-post-shutdown
+                                                               new-place_0)))
                                                          (begin
                                                            (letrec*
                                                             ((for-loop_0
                                                               (|#%name|
                                                                for-loop
-                                                               (lambda (i_0)
+                                                               (lambda (lst_1)
                                                                  (begin
-                                                                   (if i_0
-                                                                     (let ((pl_0
-                                                                            (hash-iterate-key
-                                                                             done-waiting_0
-                                                                             i_0)))
-                                                                       (begin
-                                                                         (wakeup-waiting
-                                                                          pl_0)
-                                                                         (for-loop_0
-                                                                          (hash-iterate-next
-                                                                           done-waiting_0
-                                                                           i_0))))
+                                                                   (if (pair?
+                                                                        lst_1)
+                                                                     (let ((proc_0
+                                                                            (unsafe-car
+                                                                             lst_1)))
+                                                                       (let ((rest_0
+                                                                              (unsafe-cdr
+                                                                               lst_1)))
+                                                                         (begin
+                                                                           (|#%app|
+                                                                            proc_0)
+                                                                           (for-loop_0
+                                                                            rest_0))))
                                                                      (values)))))))
                                                             (for-loop_0
-                                                             (hash-iterate-first
-                                                              done-waiting_0))))
-                                                         (void)
-                                                         (hash-clear!
-                                                          done-waiting_0))))))
-                                               (begin
-                                                 (set-place-host-thread!
-                                                  new-place_0
-                                                  host-thread_0)
-                                                 (|#%app|
-                                                  host:condition-wait
-                                                  started_0
-                                                  lock_0)
-                                                 (|#%app|
-                                                  host:mutex-release
-                                                  lock_0)
-                                                 (end-atomic)
-                                                 (let ((temp11_0 "create"))
-                                                   (let ((temp12_0
-                                                          (place-id
-                                                           new-place_0)))
-                                                     (let ((temp11_1 temp11_0))
-                                                       (log-place.1
-                                                        unsafe-undefined
-                                                        temp12_0
-                                                        temp11_1))))
-                                                 (values
-                                                  new-place_0
-                                                  parent-in_0
-                                                  parent-out_0
-                                                  parent-err_0)))))
-                                          (args
-                                           (raise-binding-result-arity-error
-                                            6
-                                            args)))))))))))))))
+                                                             lst_0))))
+                                                       (void)
+                                                       (kill-future-scheduler)
+                                                       (|#%app|
+                                                        host:mutex-acquire
+                                                        lock_0)
+                                                       (set-place-result!
+                                                        new-place_0
+                                                        result_0)
+                                                       (|#%app|
+                                                        host:mutex-release
+                                                        lock_0)
+                                                       (begin
+                                                         (letrec*
+                                                          ((for-loop_0
+                                                            (|#%name|
+                                                             for-loop
+                                                             (lambda (i_0)
+                                                               (begin
+                                                                 (if i_0
+                                                                   (let ((pl_0
+                                                                          (hash-iterate-key
+                                                                           done-waiting_0
+                                                                           i_0)))
+                                                                     (begin
+                                                                       (wakeup-waiting
+                                                                        pl_0)
+                                                                       (for-loop_0
+                                                                        (hash-iterate-next
+                                                                         done-waiting_0
+                                                                         i_0))))
+                                                                   (values)))))))
+                                                          (for-loop_0
+                                                           (hash-iterate-first
+                                                            done-waiting_0))))
+                                                       (void)
+                                                       (hash-clear!
+                                                        done-waiting_0))))))
+                                             (begin
+                                               (set-place-host-thread!
+                                                new-place_0
+                                                host-thread_0)
+                                               (|#%app|
+                                                host:condition-wait
+                                                started_0
+                                                lock_0)
+                                               (|#%app|
+                                                host:mutex-release
+                                                lock_0)
+                                               (end-atomic)
+                                               (let ((temp11_0 "create"))
+                                                 (let ((temp12_0
+                                                        (place-id
+                                                         new-place_0)))
+                                                   (let ((temp11_1 temp11_0))
+                                                     (log-place.1
+                                                      unsafe-undefined
+                                                      temp12_0
+                                                      temp11_1))))
+                                               (values
+                                                new-place_0
+                                                parent-in_0
+                                                parent-out_0
+                                                parent-err_0)))))
+                                        (args
+                                         (raise-binding-result-arity-error
+                                          6
+                                          args))))))))))))))
                    (args (raise-binding-result-arity-error 2 args)))))))))))))
 (define 1/place-break
   (let ((place-break_0
@@ -14794,21 +14791,23 @@
              (let ((wk1_0 (gensym 'write)))
                (let ((rk2_0 (gensym 'read)))
                  (let ((wk2_0 (gensym 'write)))
-                   (values
-                    (pchannel5.1
-                     (make-ephemeron wk1_0 mq1_0)
-                     (make-ephemeron rk2_0 mq2_0)
-                     rk1_0
-                     wk2_0
-                     (message-queue-out-key-box mq1_0)
-                     (message-queue-in-key-box mq2_0))
-                    (pchannel5.1
-                     (make-ephemeron wk2_0 mq2_0)
-                     (make-ephemeron rk1_0 mq1_0)
-                     rk2_0
-                     wk1_0
-                     (message-queue-out-key-box mq2_0)
-                     (message-queue-in-key-box mq1_0)))))))))))))
+                   (let ((app_0
+                          (pchannel5.1
+                           (make-ephemeron wk1_0 mq1_0)
+                           (make-ephemeron rk2_0 mq2_0)
+                           rk1_0
+                           wk2_0
+                           (message-queue-out-key-box mq1_0)
+                           (message-queue-in-key-box mq2_0))))
+                     (values
+                      app_0
+                      (pchannel5.1
+                       (make-ephemeron wk2_0 mq2_0)
+                       (make-ephemeron rk1_0 mq1_0)
+                       rk2_0
+                       wk1_0
+                       (message-queue-out-key-box mq2_0)
+                       (message-queue-in-key-box mq1_0))))))))))))))
 (define 1/place-channel-get
   (|#%name|
    place-channel-get

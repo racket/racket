@@ -328,17 +328,19 @@
                   [schemify.rktl (find-target "schemify.rktl" schemify-targets)]
                   [known.rktl (find-target "known.rktl" schemify-targets)]
                   [expander.rktl (find-target "expander.rktl"
-                                              (expander-targets-at (make-at-dir (at-dir "../expander")) vars expander))])
+                                              (expander-targets-at (make-at-dir (at-dir "../expander")) vars expander))]
+                  [convert-deps (cons schemify.rktl ; proxy for schemify change
+                                      primitive-tables)])
              `([:target schemified (,thread.scm ,io.scm ,regexp.scm
                                                 ,schemify.scm ,known.scm
                                                 ,expander.scm)
                         ,void]
-               [:target ,expander.scm (,expander.rktl) ,(converter expander.rktl) :precious]
-               [:target ,known.scm (,known.rktl) ,(converter known.rktl 'skip-export) :precious]
-               [:target ,schemify.scm (,schemify.rktl) ,(converter schemify.rktl 'skip-export) :precious]
-               [:target ,regexp.scm (,regexp.rktl) ,(converter regexp.rktl) :precious]
-               [:target ,io.scm (,io.rktl) ,(converter io.rktl) :precious]
-               [:target ,thread.scm (,thread.rktl) ,(converter thread.rktl) :precious]))
+               [:target ,expander.scm (,expander.rktl ,@convert-deps) ,(converter expander.rktl) :precious]
+               [:target ,known.scm (,known.rktl ,@convert-deps) ,(converter known.rktl 'skip-export) :precious]
+               [:target ,schemify.scm (,schemify.rktl ,@convert-deps) ,(converter schemify.rktl 'skip-export) :precious]
+               [:target ,regexp.scm (,regexp.rktl ,@convert-deps) ,(converter regexp.rktl) :precious]
+               [:target ,io.scm (,io.rktl ,@convert-deps) ,(converter io.rktl) :precious]
+               [:target ,thread.scm (,thread.rktl ,@convert-deps) ,(converter thread.rktl) :precious]))
            '())
 
      [:target setup (,main.so ,rktio.so)
