@@ -68,7 +68,10 @@
            #:precision precision/c
            #:format-exponent (or/c #f string? (-> exact-integer? string?))
            #:min-width exact-positive-integer?
-           #:pad-string padding/c)
+           #:pad-string padding/c
+           #:groups (listof exact-positive-integer?)
+           #:group-sep string?
+           #:decimal-sep string?)
           string?)])
 
 ;; ----------------------------------------
@@ -193,7 +196,10 @@
             #:notation [notation 'positional]
             #:format-exponent [exp-format-exponent #f]
             #:min-width [pad-digits-to 1]
-            #:pad-string [digits-padding " "])
+            #:pad-string [digits-padding " "]
+            #:groups [groups '()]
+            #:group-sep [group-sep ""]
+            #:decimal-sep [decimal-sep "."])
   (let ([notation (if (procedure? notation) (notation N) notation)])
     (case notation
       [(exponential)
@@ -204,7 +210,8 @@
               #:precision precision
               #:format-exponent exp-format-exponent
               #:pad-digits-to pad-digits-to
-              #:digits-padding digits-padding)]
+              #:digits-padding digits-padding
+              #:decimal-sep decimal-sep)]
       [(positional)
        (catnp N
               #:who 'catn
@@ -212,7 +219,10 @@
               #:base base
               #:precision precision
               #:pad-digits-to pad-digits-to
-              #:digits-padding digits-padding)])))
+              #:digits-padding digits-padding
+              #:groups groups
+              #:group-sep group-sep
+              #:decimal-sep decimal-sep)])))
 
 (define (catnp N
                #:who [who 'catnp]
@@ -220,7 +230,10 @@
                #:base [base 10]
                #:precision [precision 3]
                #:pad-digits-to [pad-digits-to 1]
-               #:digits-padding [digits-padding " "])
+               #:digits-padding [digits-padding " "]
+               #:groups groups
+               #:group-sep group-sep
+               #:decimal-sep decimal-sep)
   ;; precision: up to (or exactly) this many digits after decimal point
   ;;   precision = 0 means no decimal point
   ;;   precision = '(= 0) means keep decimal point
@@ -228,7 +241,8 @@
   (let*-values ([(upper? base) (normalize-base base)]
                 [(exactly? precision) (normalize-precision precision)])
     (let* ([N-abs (abs N)]
-           [digits-part (%positional N-abs base upper? precision exactly?)]
+           [digits-part
+            (%positional N-abs base upper? precision exactly? groups group-sep decimal-sep)]
            [padded-digits-part
             (%pad digits-part
                   #:pad-to pad-digits-to
@@ -245,12 +259,13 @@
                #:precision [precision 5]
                #:format-exponent [format-exponent #f]
                #:pad-digits-to [pad-digits-to 1]
-               #:digits-padding [digits-padding " "])
+               #:digits-padding [digits-padding " "]
+               #:decimal-sep decimal-sep)
   (let*-values ([(upper? base) (normalize-base base)]
                 [(exactly? precision) (normalize-precision precision)])
     (let* ([N-abs (abs N)]
            [digits-part
-            (%exponential N-abs base upper? format-exponent precision exactly?)]
+            (%exponential N-abs base upper? format-exponent precision exactly? decimal-sep)]
            [padded-digits-part
             (%pad digits-part
                   #:pad-to pad-digits-to
@@ -270,9 +285,9 @@
       (values #t (cadr precision))
       (values #f precision)))
 
-(define (%positional N-abs base upper? precision exactly?)
+(define (%positional N-abs base upper? precision exactly? groups group-sep decimal-sep)
   (define-values (Nw Nf) (decompose-positional N-abs base precision))
-  (let* ([whole-part (number->string* Nw base upper?)]
+  (let* ([whole-part (number->string*/whole-positional Nw base upper? groups group-sep)]
          [frac-part
           (cond [(and exactly? (= precision 0)) ""]
                 [exactly? (number->fraction-string Nf base upper? precision)]
@@ -282,7 +297,7 @@
                                (reduce-precision base precision Nf)])
                    (number->fraction-string Nf* base upper? needed-precision))])]
          [digits-part
-          (cond [frac-part (string-append whole-part "." frac-part)]
+          (cond [frac-part (string-append whole-part decimal-sep frac-part)]
                 [else whole-part])])
     digits-part))
 
@@ -310,10 +325,10 @@
           (cond [(zero? r) (loop (sub1 np) q)]
                 [else (values np N*)])))))
 
-(define (%exponential N-abs base upper? format-exponent significand-precision exactly?)
+(define (%exponential N-abs base upper? format-exponent significand-precision exactly? decimal-sep)
   (cond [(zero? N-abs)
          (string-append "0"
-                        (if exactly? "." "")
+                        (if exactly? decimal-sep "")
                         (if exactly? (make-string significand-precision #\0) "")
                         (exponent-part 0 format-exponent base))]
         [else
@@ -414,6 +429,25 @@
           [else ;; positive
            (get (car indicator-table))])))
 
+(define (separate-groups digits groups group-sep)
+  (let loop ([res '()]
+             [digits digits]
+             [pos-in-group 0]
+             [group-size (car groups)]
+             [groups-rest (cdr groups)])
+    (cond [(null? digits) res]
+          [(= pos-in-group group-size)
+           (define-values (next-group-size next-groups-rest)
+             (if (null? groups-rest)
+               (values group-size '())
+               (values (car groups-rest) (cdr groups-rest))))
+           (loop (append group-sep res) digits 0 next-group-size next-groups-rest)]
+          [else
+           (loop (cons (car digits) res)
+                 (cdr digits)
+                 (+ 1 pos-in-group)
+                 group-size groups-rest)])))
+
 (define (number->string* N base upper?)
   (cond [(memv base '(2 8 10 16))
          (let ([s (number->string N base)])
@@ -428,14 +462,34 @@
                  [else (let-values ([(q r) (quotient/remainder N base)])
                          (loop q (cons (get-digit r upper?) digits)))]))]))
 
+(define (number->string*/whole-positional N base upper? groups group-sep)
+  (if (zero? N)
+    (string #\0)    
+    (let loop ([N N] [digits null])
+      (cond
+        [(zero? N)
+         (apply string
+                (if (string=? group-sep "")
+                  digits
+                  (separate-groups (reverse digits)
+                                   (reverse groups)
+                                   (string->list group-sep))))]
+        [else
+         (let-values ([(q r) (quotient/remainder N base)])
+           (loop q (cons (get-digit r upper?) digits)))]))))
+
 (define (number->fraction-string N base upper? precision)
   (let ([s (number->string* N base upper?)])
     (string-append (make-string (max 0 (- precision (string-length s))) #\0) s)))
 
+(define A-10 (- (char->integer #\A) 10))
+(define a-10 (- (char->integer #\a) 10))
+(define char0 (char->integer #\0))
+
 ;; Allow base up to 36!
 (define (get-digit d upper?)
-  (cond [(< d 10) (integer->char (+ d (char->integer #\0)))]
-        [else (integer->char (+ (- d 10) (char->integer (if upper? #\A #\a))))]))
+  (cond [(< d 10) (integer->char (+ d char0))]
+        [else (integer->char (+ d (if upper? A-10 a-10)))]))
 
 ;; round* : nonnegative-real -> nonnegative-integer (preserving exactness)
 ;; Implements "round half up" rounding (thus this library formats using
