@@ -4596,6 +4596,17 @@ case "$host_os" in
     ;;
 esac
 
+if test "${enable_mach}" != "" ; then
+  case "${enable_mach}" in
+    t*)
+       enable_pthread_by_default=yes
+       ;;
+    *)
+       enable_pthread_by_default=no
+       ;;
+  esac
+fi
+
 if test "${enable_pthread}" = "" ; then
   if test "${enable_pthread_by_default}" = "yes" ; then
     enable_pthread=yes
@@ -4641,18 +4652,22 @@ case "$MACH_HOST_CPU" in
     ;;
 esac
 
-if test "$MACH" = "" -o "$MACH_OS" = "" ; then
+
+if test "${enable_mach}" != "" ; then
+  MACH="${enable_mach}"
+elif test "${enable_pb}" = "yes" -a "${pb_machine_name}" != "" ; then
+  if test "$MACH" = "" ; then
+    # Use specified pb variant as host machine
+    MACH=${pb_machine_name}
+  fi
+elif test "$MACH" = "" -o "$MACH_OS" = "" ; then
    echo "Platform is not supported by Racket CS."
    echo 'Try `--enable-bcdefault`, instead.'
    exit 1
 fi
 
-if test "${enable_mach}" != "" ; then
-  MACH="${enable_mach}"
-fi
-
 # For a pb build where Racket is supplied, force cross-build
-# mode on the assumption that the host is not a a pb build
+# mode on the assumption that the host is not a pb build
 # (because it should be created with default configure options)
 if test "${enable_pb}" = "yes" ; then
   if test "${enable_racket}" != "" ; then

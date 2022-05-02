@@ -62,6 +62,10 @@
      'netbsd]
     [(a6s2 ta6s2 i3s2 ti3s2) 'solaris]
     [(i3qnx) 'qnx]
+    [(pb tpb
+         pb64l tpb64l pb64b tpb64b
+         pb32l tpb32l pb32b tpb32b)
+     'unknown]
     [else (error 'system-type "internal error: unknown operating system")]))
 
 (define arch-symbol
@@ -101,6 +105,10 @@
               ppc32ob tppc32ob
               ppc32nb tppc32nb)
      'ppc]
+    [(pb tpb
+         pb64l tpb64l pb64b tpb64b
+         pb32l tpb32l pb32b tpb32b)
+     'unknown]
     [else (error 'system-type "internal error: unknown architecture")]))
 
 (define link-symbol

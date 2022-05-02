@@ -21,7 +21,7 @@ TARGET_MACH = @TARGET_MACH@
 CROSS_MODE = @CROSS_MODE@
 
 # For a pb build, we want `system-type` to return information about
-# the specific machine, not just "pb"
+# the specific machine, if possible, not just "pb"
 KERNEL_TARGET_MACH = @KERNEL_TARGET_MACH@
 
 # If `RACKET` is set to something different than empty or `auto`, it

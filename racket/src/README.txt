@@ -518,7 +518,13 @@ CS). Interpreted modes are available --- but slower, of course:
  * Racket CS: configure with `--enable-pb`, which uses a bytecode
    virtual machine instead of native code. By default, core functions
    are compiled to some extent via C; use `--disable-pbchunk` to
-   disable even that compilation.
+   disable even that compilation. The configure script tries to infer
+   the machine's word size, endianness, and threading support; to
+   override or avoid inference, supply `--enable-mach=<machine>` with
+   a <machine> that is one of `tpb64l`, `tpb64b`, `tpb32l`, `tpb32b`,
+   `pb64l`, `pb64b`, `pb32l`, or `pb32b`; the presence of absence of a
+   leading "t" determines whether threads are enabled, and the
+   trailing letter indicates endianness.
 
  * Racket BC: configure with `--disable-jit`, or run Racket with the
    `-j` flag. On some supported platforms (such as AArch64), Racket BC
