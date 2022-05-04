@@ -1282,6 +1282,13 @@ Zuo process. The hash table includes the following keys:
 
 @item{@racket['system-type]: @racket['unix] or @racket['windows]}
 
+@item{@racket['toolchain-type]: @racket['unix] (@exec{cc}, etc.) or
+      @racket['windows] (@exec{cl.exe}, etc.); on Windows, the default
+      is determined by the compiler used to build the Zuo executable,
+      but it can be set explicitly by defining either the
+      @tt{ZUO_WINDOWS_TOOLCHAIN} or @tt{ZUO_UNIX_TOOLCHAIN}
+      preprocessor symbol when compiliing Zuo}
+
 @item{@racket['sys-dir] (Windows only): the path to the system directory}
 
 @item{@racket['can-exec?]: a boolean whether @racket[process] supports

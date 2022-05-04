@@ -3995,15 +3995,22 @@ static zuo_t *zuo_finish_runtime_env(zuo_t *ht) {
   ht = zuo_hash_set(ht, zuo_symbol("env"), zuo_get_envvars());
 
   {
+    zuo_t *type, *toolchain;
 #ifdef ZUO_UNIX
-    zuo_t *type = zuo_symbol("unix");
+    type = toolchain = zuo_symbol("unix");
     ht = zuo_hash_set(ht, zuo_symbol("can-exec?"), z.o_true);
 #endif
 #ifdef ZUO_WINDOWS
-    zuo_t *type = zuo_symbol("windows");
-    ht = zuo_hash_set(ht, zuo_symbol("can-exec?"), z.o_true);
+    type = zuo_symbol("windows");
+# if defined(ZUO_WINDOWS_TOOLCHAIN) || (!defined(ZUO_UNIX_TOOLCHAIN) && defined(_MSC_VER))
+    toolchain = type;
+# else
+    toolchain = zuo_symbol("unix");
+# endif
+    ht = zuo_hash_set(ht, zuo_symbol("can-exec?"), z.o_false);
 #endif
     ht = zuo_hash_set(ht, zuo_symbol("system-type"), type);
+    ht = zuo_hash_set(ht, zuo_symbol("toolchain-type"), toolchain);
   }
 
 #ifdef ZUO_WINDOWS

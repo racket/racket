@@ -19,7 +19,7 @@
               (and (list? .c) (andmap path-string? .c)))
     (arg-error 'c-compile "path string or list of paths strings" .c))
   (unless (hash? config) (arg-error 'c-compile "hash table" config))
-  (define windows? (eq? (hash-ref (runtime-env) 'system-type) 'windows))
+  (define windows? (eq? (hash-ref (runtime-env) 'toolchain-type) 'windows))
   (define lookup (make-lookup config))
   (define command
     (build-shell (or (lookup 'CC)
@@ -42,7 +42,7 @@
   (unless (path-string? .exe) (arg-error 'c-link "path string" .exe))
   (unless (and (list? ins) (andmap path-string? ins)) (arg-error 'c-link "list of path strings" ins))
   (unless (hash? config) (arg-error 'c-link "hash table" config))
-  (define windows? (eq? (hash-ref (runtime-env) 'system-type) 'windows))
+  (define windows? (eq? (hash-ref (runtime-env) 'toolchain-type) 'windows))
   (define lookup (make-lookup config))
   (define command
     (build-shell (or (lookup 'CC)
@@ -60,7 +60,7 @@
   (unless (path-string? .a) (arg-error 'c-ar "path string" .exe))
   (unless (and (list? ins) (andmap path-string? ins)) (arg-error 'c-ar "list of path strings" ins))
   (unless (hash? config) (arg-error 'c-ar "hash table" config))
-  (define windows? (eq? (hash-ref (runtime-env) 'system-type) 'windows))
+  (define windows? (eq? (hash-ref (runtime-env) 'toolchain-type) 'windows))
   (define lookup (make-lookup config))
   (shell/wait
    (build-shell (or (lookup 'AR)
@@ -78,7 +78,7 @@
 
 (define (.c->.o .c)
   (unless (path-string? .c) (arg-error '.c->.o "path string" .c))
-  (path-replace-extension .c (if (eq? (hash-ref (runtime-env) 'system-type) 'windows)
+  (path-replace-extension .c (if (eq? (hash-ref (runtime-env) 'toolchain-type) 'windows)
                                  ".obj"
                                  ".o")))
 
@@ -90,7 +90,7 @@
 
 (define (.a name)
   (unless (path-string? name) (arg-error '.a "string" name))
-  (if (eq? (hash-ref (runtime-env) 'system-type) 'windows)
+  (if (eq? (hash-ref (runtime-env) 'toolchain-type) 'windows)
       (~a name ".lib")
       (let ([l (split-path name)])
         (build-path (or (car l) ".") (~a "lib" (cdr l) ".a")))))

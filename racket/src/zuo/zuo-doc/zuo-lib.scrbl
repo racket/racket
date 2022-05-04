@@ -226,7 +226,9 @@ error is reported if a reference @nonterm{name} has no value in
 The C-tool procedures provided by @racketmodname[zuo/c] accept a
 @deftech{tool configuration} hash table to describe a C compiler,
 linker, archiver, and associated flags. When potential configuration
-is missing, a default suitable for the current system is used. Values
+is missing, a default suitable for the current toolchain is used,
+where the toolchain is determined through @racket[(hash-ref
+(runtime-env) 'toolchain-type)]. Values
 in a tool configuration hash table are shell-command fragments, not
 individual arguments. For example, it could make sense to configure
 @racket['CC] as @racket["libtool cc"], which would run @exec{libtool}
