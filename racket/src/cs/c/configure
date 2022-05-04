@@ -4655,14 +4655,22 @@ esac
 
 if test "${enable_mach}" != "" ; then
   MACH="${enable_mach}"
+  if test "${enable_pb}" = "yes" ; then
+    pb_machine_name="${enable_mach}"
+  fi
 elif test "${enable_pb}" = "yes" -a "${pb_machine_name}" != "" ; then
   if test "$MACH" = "" ; then
     # Use specified pb variant as host machine
     MACH=${pb_machine_name}
   fi
 elif test "$MACH" = "" -o "$MACH_OS" = "" ; then
-   echo "Platform is not supported by Racket CS."
-   echo 'Try `--enable-bcdefault`, instead.'
+   echo "Platform is not supported natively by Racket CS."
+   echo 'Try `--enable-pb --enable-mach=<machine>`, instead,'
+   echo 'where <machine> is something like "tpb64l":'
+   echo ' * prefix the machine name with "t" to get threading'
+   echo ' * next is always "pb"'
+   echo ' * next is "32" or "64" for the word size'
+   echo ' * last is "l" for little endian or "b" for big endian'
    exit 1
 fi
 
