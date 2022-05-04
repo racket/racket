@@ -8,7 +8,7 @@
   (define MzStart.exe (at-dir "MzStart.exe"))
   (define MrStart.exe (at-dir "MrStart.exe"))
 
-  (define msvc? (eq? 'windows (system-type)))
+  (define msvc? (eq? 'windows (hash-ref (runtime-env) 'toolchain-type)))
 
   (define start_rc.o (at-dir (~a "start_rc" (if msvc? ".res" ".o"))))
   (define gstart_rc.o (at-dir (~a "gstart_rc" (if msvc? ".res" ".o"))))

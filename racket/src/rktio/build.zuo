@@ -4,16 +4,18 @@
 (provide-targets targets-at)
 
 (define (targets-at at-dir [vars (hash)])
+  (define msvc? (eq? 'windows (hash-ref (runtime-env) 'toolchain-type)))
+  
   (define config (let ([Makefile (at-dir "Makefile")])
                    (if (file-exists? Makefile)
                        (config-file->hash Makefile vars)
                        vars)))
   (define (lookup key) (hash-ref config key #f))
 
-  (define lto (or (lookup 'LTO) (if (eq? 'windows (system-type))
+  (define lto (or (lookup 'LTO) (if msvc?
                                     "obj"
                                     "o")))
-  (define lta (or (lookup 'LTA) (if (eq? 'windows (system-type))
+  (define lta (or (lookup 'LTA) (if msvc?
                                     "lib"
                                     "a")))
   (define libsfx (or (lookup 'LIBSFX) "so"))

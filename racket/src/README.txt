@@ -340,9 +340,8 @@ but note the following:
  Compiling for Windows
 ========================================================================
 
-For information of setting an a command-line build environment set up
-with Microsoft Visual Studio, see the instructions in
-"worksp\README.txt".
+For information on setting up a command-line build environment with
+Microsoft Visual Studio, see the instructions in "worksp\README.txt".
 
 With the command-line environment set up, the build steps are
 essentially the same as for Unix, but with `winfig.bat` in place of
@@ -354,8 +353,8 @@ essentially the same as for Unix, but with `winfig.bat` in place of
    nmake
    nmake install
 
-To compile with MinGW tools, follow the Unix instructions above; do
-not use `--enable-shared`, because DLLs will be generated
+To compile with MinGW tools using MSYS2, follow the Unix instructions
+above; do not use `--enable-shared`, because DLLs will be generated
 automatically. The result is a Windows-style build. If you are using a
 variant of MinGW without "libdelayimp.a", get the implementation of
 "delayimp.c" from MinGW-w64 and compile it to "libdelayimp.a".

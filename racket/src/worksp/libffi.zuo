@@ -3,6 +3,7 @@
 (provide targets-at)
 
 (define (targets-at at-dir config)
+  (define msvc? (eq? 'windows (hash-ref (runtime-env) 'toolchain-type)))
 
   (define srcs
     '("src/closures.c"
@@ -19,7 +20,16 @@
          srcs))
 
   (define win32_plain.asm
-    (at-dir "win32_plain.asm"))
+    (if msvc?
+        (at-dir "win32_plain.asm")
+        (let ([mach (hash-ref config 'MACH)])
+          (cond
+            [(equal? mach "ta6nt")
+             (at-source "../bc/foreign/libffi/src/x86/win64.S")]
+            [(equal? mach "ti3nt")
+             (at-source "../bc/foreign/libffi/src/x86/sysv.S")]
+            [else
+             (at-source "../bc/foreign/libffi/src/aarch64/win64_armasm.S")]))))
 
   (define win32.obj
     (at-dir "win32.obj"))
@@ -51,24 +61,32 @@
         objs
         srcs)
 
-     [:target ,win32_plain.asm (,(at-source "../worksp/libffi/win32.asm")
-                                ,(at-source "../bc/foreign/libffi/src/x86/win64_intel.S")
-                                ,(at-source "../bc/foreign/libffi/src/x86/sysv_intel.S")
-                                ,(at-source "../bc/foreign/libffi/src/aarch64/win64_armasm.S"))
-              ,(lambda (path token)
-                 (mkdir-p (path-only path))
-                 (shell/wait (build-shell
-                              "cl.exe"
-                              "/EP"
-                              (string->shell (~a "/I" (at-source "../worksp/libffi")))
-                              (string->shell (~a "/I" target-dir))
-                              (string->shell (at-source "../worksp/libffi/win32.asm"))
-                              ">"
-                              (string->shell path))))]
+     ,@(if msvc?
+           `([:target ,win32_plain.asm (,(at-source "../worksp/libffi/win32.asm")
+                                        ,(at-source "../bc/foreign/libffi/src/x86/win64_intel.S")
+                                        ,(at-source "../bc/foreign/libffi/src/x86/sysv_intel.S")
+                                        ,(at-source "../bc/foreign/libffi/src/aarch64/win64_armasm.S"))
+                      ,(lambda (path token)
+                         (mkdir-p (path-only path))
+                         (shell/wait (build-shell
+                                      "cl.exe"
+                                      "/EP"
+                                      (string->shell (~a "/I" (at-source "../worksp/libffi")))
+                                      (string->shell (~a "/I" target-dir))
+                                      (string->shell (at-source "../worksp/libffi/win32.asm"))
+                                      ">"
+                                      (string->shell path))))])
+           '())
      [:target ,win32.obj (,win32_plain.asm)
               ,(lambda (path token)
                  (define mach (hash-ref config 'MACH))
                  (cond
+                   [(not msvc?)
+                    (c-compile path
+                               win32_plain.asm
+                               (config-include config
+                                               (at-source "../worksp/libffi")
+                                               target-dir))]
                    [(equal? mach "ta6nt")
                     (shell/wait (build-shell
                                  "ml64.exe"

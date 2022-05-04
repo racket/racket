@@ -284,15 +284,17 @@
   (config-merge config 'CFLAGS (hash-ref config 'CPPFLAGS "")))
 
 (define (setup-rktio rktio-src-dir rktio-dir config)
-  (define msvc? (eq? 'windows (system-type)))
+  (define msvc? (eq? 'windows (hash-ref (runtime-env) 'toolchain-type))) 
+  (define windows? (eq? 'windows (system-type))) ; not just 'windows toolchain
   (define rktio_config.h (build-path rktio-dir "rktio_config.h"))
   (define rktio-targets
     (cond
-      [msvc?
+      [windows?
        (mkdir-p rktio-dir)
        ((dynamic-require (build-path rktio-src-dir "build.zuo")
                          'targets-at)
-        (make-at-dir rktio-dir))]
+        (make-at-dir rktio-dir)
+        config)]
       [else
        (configured-targets-at (hash
                                'configure (build-path rktio-src-dir "configure")
@@ -306,7 +308,7 @@
   (define librktio.a (find-target (~a "librktio." (if msvc? "lib" (hash-ref config 'LTA "a"))) rktio-targets))
 
   (list librktio.a
-        (if msvc?
+        (if windows?
             (find-target "rktio_config.h" rktio-targets)
             rktio_config.h)))
 
@@ -383,12 +385,12 @@
     (shell/wait (hash-ref config 'STRIP_LIB_DEBUG) (string->shell path))))
 
 (define (run-raco-setup config dest-racket cross-bootstrap-racket cross-compiler-args)
-  (define msvc? (eq? 'windows (system-type)))
+  (define windows? (eq? 'windows (system-type)))
   
-  (define collectsdir (if msvc?
+  (define collectsdir (if windows?
                           (at-source "../collects")
                           (at-destdir config (shell-subst (hash-ref config 'collectsdir) config))))
-  (define configdir (if msvc?
+  (define configdir (if windows?
                         (at-source "../etc")
                         (at-destdir config (shell-subst (hash-ref config 'configdir) config))))
   

@@ -13,8 +13,9 @@
 
   (define 3m-default? (not (equal? (lookup 'CGC_INSTALLED) "")))
 
-  (define msvc? (eq? 'windows (system-type)))
+  (define msvc? (eq? 'windows (hash-ref (runtime-env) 'toolchain-type)))
   (define windows? (or msvc? (equal? (lookup 'MINGW) "t")))
+  (define on-windows? (eq? 'windows (system-type)))
   (define windows-arch (and msvc?
                             (let ([mach (hash-ref config 'MACH)])
                               (cond
@@ -79,9 +80,10 @@
   (define libffi-targets
     (cond
       [(not libffi?) '()]
-      [msvc? ((dynamic-require (at-source "../worksp/libffi.zuo") 'targets-at)
-              (make-at-dir (at-dir "foreign/libffi"))
-              config)]
+      [(eq? 'windows (system-type)) ; not just `msvc?`
+       ((dynamic-require (at-source "../worksp/libffi.zuo") 'targets-at)
+        (make-at-dir (at-dir "foreign/libffi"))
+        config)]
       [else
        (configured-targets-at (hash
                                'configure (at-source "foreign/libffi/configure")
@@ -92,7 +94,7 @@
                                'vars config))]))
 
   (define ffi-arch-include
-    (and msvc?
+    (and on-windows?
          (if (eq? windows-arch 'arm64)
              (at-source "foreign/libffi/src/aarch64")
              (at-source "foreign/libffi/src/x86"))))
@@ -498,7 +500,7 @@
                          (string->shell (~a "-I" (at-source "../rktio")))
                          (string->shell (~a "-I" (at-dir "rktio")))
                          (string->shell (~a "-I" (at-dir "phase2")))
-                         (if msvc?
+                         (if on-windows?
                              (build-shell (string->shell (~a "-I" (at-source "../worksp")))
                                           (string->shell (~a "-I" (at-source "../worksp/libffi")))
                                           (string->shell (~a "-I" ffi-arch-include)))
@@ -575,7 +577,7 @@
                                                         "../../etc")))))))
 
   (define (call-with-bindir k)
-    (define bindir (if msvc?
+    (define bindir (if on-windows?
                        (at-source "../..")
                        (at-destdir config (shell-subst (lookup (if windows? 'prefix 'bindir)) config))))
     (k bindir))
@@ -852,7 +854,11 @@
                                                                  "-Wl,--whole-archive" (string->shell libracket.a)
                                                                  "-Wl,--no-whole-archive"
                                                                  "-static-libgcc"
-                                                                 (map string->shell (map target->path link-inputs)))))))])
+                                                                 (map string->shell
+                                                                      (map target->path
+                                                                           (filter (lambda (p)
+                                                                                     (not (equal? p libracketgc.a)))
+                                                                                   link-inputs))))))))])
            (list #t #t #f)
            (list libracketcgc1xxxxxxx.dll libracketcgcxxxxxxx.dll libracket3mxxxxxxx.dll)
            (list libracketcgc1.a libracketcgc.a libracket3m.a)
@@ -1191,7 +1197,7 @@
                                (at-source "foreign/foreign.c")
                                (let ([config (mz-config config)])
                                  (if libffi?
-                                     (config-include (if msvc?
+                                     (config-include (if on-windows?
                                                          (config-include config
                                                                          (at-source "../worksp/libffi")
                                                                          ffi-arch-include)
@@ -1414,22 +1420,22 @@
   (define (install 3m? cgc? [token #f]) ; if token is not #f, registers dependencies
     (call-with-bindir
      (lambda (bindir)
-       (define libdir (if msvc?
+       (define libdir (if on-windows?
                           (at-source "../../lib")
                           (at-destdir config (shell-subst (lookup 'libdir) config))))
-       (define libpltdir (if msvc?
+       (define libpltdir (if on-windows?
                              libdir
                              (at-destdir config (shell-subst (lookup 'libpltdir) config))))
-       (define sharepltdir (if msvc?
+       (define sharepltdir (if on-windows?
                                (at-source "../../share")
                                (at-destdir config (shell-subst (lookup 'sharepltdir) config))))
-       (define includepltdir (if msvc?
+       (define includepltdir (if on-windows?
                                  (at-source "../../include")
                                  (at-destdir config (shell-subst (lookup 'includepltdir) config))))
-       (define collectsdir (if msvc?
+       (define collectsdir (if on-windows?
                                (at-source "../../collects")
                                (at-destdir config (shell-subst (lookup 'collectsdir) config))))
-       (define configdir (if msvc?
+       (define configdir (if on-windows?
                              (at-source "../../etc")
                              (at-destdir config (shell-subst (lookup 'configdir) config))))
 

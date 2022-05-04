@@ -264,9 +264,6 @@ MROPTIONS=
 INCLUDEDEP="#"
 WX_MMD_FLAG=
 
-DIRCVTPRE=
-DIRCVTPOST=
-PWD=pwd
 WINDRES=windres
 DLLTOOL=dlltool
 
@@ -290,6 +287,9 @@ CGC=cgc
 CGC_INSTALLED=cgc
 CGC_CAP_INSTALLED=CGC
 MAIN_VARIANT=3m
+
+# Needed only for Windows build on Windows
+MACH=unknown
 
 INSTALL_SETUP_FLAGS=
 INSTALL_SETUP_RACKET_FLAGS=
@@ -625,12 +625,19 @@ case "$host_os" in
     if `which ${host}-dlltool > /dev/null` ; then
       DLLTOOL="${host}-dlltool"
     fi
-
-    case "$build_os" in
-      *cygwin*)
-        PWD="cygpath -m \\\`pwd\\\`"
-        DIRCVTPRE="\`cygpath -m "
-        DIRCVTPOST="\`"
+    case "$host_cpu" in
+      x86_64)
+        MACH="ta6nt"
+       ;;
+      x86|i*86)
+        MACH="ti3nt"
+        ;;
+      aarch64*|arm64*)
+        MACH="tarm64nt"
+        ;;
+      *)
+        echo "unknown Windows host CPU"
+        exit 1
         ;;
     esac
     ;;    
@@ -1398,6 +1405,7 @@ AC_SUBST(FRAMEWORK_REL_INSTALL)
 AC_SUBST(EXE_SUFFIX)
 AC_SUBST(SO_SUFFIX)
 AC_SUBST(OWN_LIBFFI)
+AC_SUBST(MACH)
 
 AC_SUBST(LIBSFX)
 AC_SUBST(WXLIBS)
@@ -1416,9 +1424,6 @@ AC_SUBST(USE_WXPRECOMP)
 AC_SUBST(INCLUDEDEP)
 AC_SUBST(WX_MMD_FLAG)
 
-AC_SUBST(PWD)
-AC_SUBST(DIRCVTPRE)
-AC_SUBST(DIRCVTPOST)
 AC_SUBST(WINDRES)
 AC_SUBST(DLLTOOL)
 

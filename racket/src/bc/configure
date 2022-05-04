@@ -645,9 +645,6 @@ EXTRA_OSK_LIBS
 OSKHOME
 DLLTOOL
 WINDRES
-DIRCVTPOST
-DIRCVTPRE
-PWD
 WX_MMD_FLAG
 INCLUDEDEP
 USE_WXPRECOMP
@@ -660,6 +657,7 @@ ICP
 WXVARIANT
 WXLIBS
 LIBSFX
+MACH
 OWN_LIBFFI
 SO_SUFFIX
 EXE_SUFFIX
@@ -3533,9 +3531,6 @@ MROPTIONS=
 INCLUDEDEP="#"
 WX_MMD_FLAG=
 
-DIRCVTPRE=
-DIRCVTPOST=
-PWD=pwd
 WINDRES=windres
 DLLTOOL=dlltool
 
@@ -3559,6 +3554,9 @@ CGC=cgc
 CGC_INSTALLED=cgc
 CGC_CAP_INSTALLED=CGC
 MAIN_VARIANT=3m
+
+# Needed only for Windows build on Windows
+MACH=unknown
 
 INSTALL_SETUP_FLAGS=
 INSTALL_SETUP_RACKET_FLAGS=
@@ -5074,12 +5072,19 @@ $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
     if `which ${host}-dlltool > /dev/null` ; then
       DLLTOOL="${host}-dlltool"
     fi
-
-    case "$build_os" in
-      *cygwin*)
-        PWD="cygpath -m \\\`pwd\\\`"
-        DIRCVTPRE="\`cygpath -m "
-        DIRCVTPOST="\`"
+    case "$host_cpu" in
+      x86_64)
+        MACH="ta6nt"
+       ;;
+      x86|i*86)
+        MACH="ti3nt"
+        ;;
+      aarch64*|arm64*)
+        MACH="tarm64nt"
+        ;;
+      *)
+        echo "unknown Windows host CPU"
+        exit 1
         ;;
     esac
     ;;
@@ -7384,8 +7389,6 @@ RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
 ############## final output ################
 
 LIBS="$LIBS $EXTRALIBS"
-
-
 
 
 

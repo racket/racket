@@ -21,7 +21,8 @@
   (define mac-fw? (and mac?
                        (equal? (lookup 'MACLIBRKT_LINK_MODE) "fw")))
   (define windows? (glob-match? "*nt" m))
-  (define msvc? (eq? 'windows (system-type)))
+  (define msvc? (eq? 'windows (hash-ref (runtime-env) 'toolchain-type)))
+  (define on-windows? (eq? 'windows (system-type)))
 
   (define CS "ChezScheme")
 
@@ -259,7 +260,7 @@
                                    (if (equal? r "")
                                        (at-dir "local/cs/c/racketcs")
                                        (executable->path r at-dir)))))])
-      (if msvc?
+      (if on-windows?
           (hash-set config
                     'racket-args (list "-X" (at-source "../../../collects")
                                        "-G" (at-source "../../../etc")))
@@ -305,7 +306,7 @@
                       dest collects-path config-path))
 
   (define (call-with-dest-racket k)
-    (define bindir (if msvc?
+    (define bindir (if on-windows?
                        (at-source "../../..")
                        (at-destdir config (shell-subst (lookup (if windows? 'prefix 'bindir)) config))))
     (define dest-racket (build-path bindir (if windows?
@@ -796,19 +797,19 @@
   (define (install token) ; if token is not #f, registers dependencies
     (call-with-dest-racket
      (lambda (bindir dest-racket)
-       (define libdir (if msvc?
+       (define libdir (if on-windows?
                           (at-source "../../../lib")
                           (at-destdir config (shell-subst (lookup 'libdir) config))))
-       (define libpltdir (if msvc?
+       (define libpltdir (if on-windows?
                              libdir
                              (at-destdir config (shell-subst (lookup 'libpltdir) config))))
-       (define sharepltdir (if msvc?
+       (define sharepltdir (if on-windows?
                                (at-source "../../../share")
                                (at-destdir config (shell-subst (lookup 'sharepltdir) config))))
-       (define includepltdir (if msvc?
+       (define includepltdir (if on-windows?
                                  (at-source "../../../include")
                                  (at-destdir config (shell-subst (lookup 'includepltdir) config))))
-       (define configdir (if msvc?
+       (define configdir (if on-windows?
                              (at-source "../../../etc")
                              (at-destdir config (shell-subst (lookup 'configdir) config))))
 
