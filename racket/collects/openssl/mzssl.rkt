@@ -333,6 +333,11 @@ TO DO:
 (define-crypto X509_free (_fun _X509* -> _void)
   #:wrap (deallocator))
 (define-ssl SSL_get_peer_certificate (_fun _SSL* -> _X509*/null)
+  #:make-fail (lambda (name)
+                (lambda ()
+                  (and libssl
+                       (get-ffi-obj 'SSL_get1_peer_certificate libssl (_fun _SSL* -> _X509*/null)
+                                    (lambda () (make-not-available name))))))
   #:wrap (allocator X509_free))
 (define-ssl SSL_get_certificate (_fun _SSL* -> _X509*/null)
   #:wrap (allocator X509_free))
