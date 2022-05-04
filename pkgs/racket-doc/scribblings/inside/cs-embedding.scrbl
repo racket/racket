@@ -69,7 +69,7 @@ To embed Racket CS in a program, follow these steps:
      a separator).}
      
      @item{@cpp{boot3_path} --- a path to @filepath{racket.boot}
-     (which a separator).}
+     (with a separator).}
 
   ]
 
