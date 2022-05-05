@@ -200,6 +200,15 @@
   (define jit-demand-on? (getenv "PLT_LINKLET_SHOW_JIT_DEMAND"))
   (define literals-on? (getenv "PLT_LINKLET_SHOW_LITERALS"))
   (define known-on? (getenv "PLT_LINKLET_SHOW_KNOWN"))
+  (define passes-on (cond [(getenv "PLT_LINKLET_SHOW_PASSES")
+                           =>
+                           (lambda (e)
+                             (let lp ([p (open-string-input-port e)])
+                               (define pass (read p))
+                               (if (symbol? pass)
+                                   (cons pass (lp p))
+                                   '())))]
+                          [else '()]))
   (define cp0-on? (getenv "PLT_LINKLET_SHOW_CP0"))
   (define assembly-on? (getenv "PLT_LINKLET_SHOW_ASSEMBLY"))
   (define show-on? (or gensym-on?
@@ -210,6 +219,7 @@
                        literals-on?
                        known-on?
                        cp0-on?
+                       (pair? passes-on)
                        assembly-on?
                        (getenv "PLT_LINKLET_SHOW")))
   (define show
@@ -245,11 +255,24 @@
                                                                   3
                                                                   (optimize-level))]
                                               [compile-procedure-realm realm])
-                                 (if assembly-on?
-                                     (parameterize ([#%$assembly-output (#%current-output-port)])
-                                       (printf ";; assembly ---------------------\n")
-                                       (compile e))
-                                     (compile e)))))]
+                                 (let* ([print-header (lambda ()
+                                                        (printf ";;")
+                                                        (for-each (lambda (p) (printf " ~a" p))
+                                                                  (if assembly-on?
+                                                                      (append passes-on '(assembly))
+                                                                      passes-on))
+                                                        (printf " ---------------------\n"))]
+                                        [-compile (lambda (e)
+                                                    (if (not (null? passes-on))
+                                                        (parameterize ([#%$np-tracer passes-on])
+                                                          (compile e))
+                                                        (compile e)))])
+                                   (when (or (not (null? passes-on)) assembly-on?)
+                                     (print-header))
+                                   (if assembly-on?
+                                       (parameterize ([#%$assembly-output (#%current-output-port)])
+                                        (-compile e))
+                                       (-compile e))))))]
      [(e) (compile* e #f #f)]))
   (define (interpret* e) ; result is not safe for space
     (call-with-system-wind (lambda () (interpret e))))
