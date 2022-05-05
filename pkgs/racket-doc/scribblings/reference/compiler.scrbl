@@ -119,6 +119,11 @@ forms or adjust the way forms are displayed:
          form after transformation by Chez Scheme's front-end
          optimizer}
 
+   @item{@envvar-indexed{PLT_LINKLET_SHOW_PASSES} --- show the
+         intermediate form of a schemified linklet after the specified
+         passes (listed space-separated) in Chez Scheme's internal
+         representation}
+
    @item{@envvar-indexed{PLT_LINKLET_SHOW_ASSEMBLY} --- show the
          compiled form of a schemified linklet in Chez Scheme's
          abstraction of machine instructions}
