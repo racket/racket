@@ -12,7 +12,7 @@
 
  (contract-out
   [unzip (((or/c path-string? input-port?))
-          ((or/c (procedure-arity-includes/c 2) (procedure-arity-includes/c 3))
+          ((or/c (procedure-arity-includes/c 3) (procedure-arity-includes/c 4))
            ;; More precisely (but unimplementable):
            #;
            (or/c (bytes? boolean? input-port? (or/c #f exact-integer?) . -> . any)
