@@ -455,7 +455,7 @@
                (string-upcase s)
                s))]
         [(zero? N)
-         (string #\0)]
+         "0"]
         [else
          (let loop ([N N] [digits null])
            (cond [(zero? N) (apply string digits)]
@@ -464,19 +464,14 @@
 
 (define (number->string*/whole-positional N base upper? groups group-sep)
   (if (zero? N)
-    (string #\0)    
-    (let loop ([N N] [digits null])
-      (cond
-        [(zero? N)
-         (apply string
-                (if (string=? group-sep "")
-                  digits
-                  (separate-groups (reverse digits)
-                                   (reverse groups)
-                                   (string->list group-sep))))]
-        [else
-         (let-values ([(q r) (quotient/remainder N base)])
-           (loop q (cons (get-digit r upper?) digits)))]))))
+    "0"
+    (let ([Nstr (number->string* N base upper?)])
+      (if (string=? group-sep "")
+        Nstr
+        (apply string
+               (separate-groups (reverse (string->list Nstr))
+                                (reverse groups)
+                                (string->list group-sep)))))))
 
 (define (number->fraction-string N base upper? precision)
   (let ([s (number->string* N base upper?)])
