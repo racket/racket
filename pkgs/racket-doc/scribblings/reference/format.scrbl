@@ -232,7 +232,7 @@ marker is @racket["..."].
                 #f]
                [#:min-width min-width exact-positive-integer? 1]
                [#:pad-string pad-string non-empty-string? " "]
-               [#:groups groups (listof exact-positive-integer?) '()]
+               [#:groups groups (non-empty-listof exact-positive-integer?) '(3)]
                [#:group-sep group-sep string? ""]
                [#:decimal-sep decimal-sep string? "."])
          string?]{
@@ -426,7 +426,7 @@ the resulting string is appended to the significand:
 
 ]
 @history[#:changed "8.5.0.3"
-         @elem{Added @racket[#:groups], @racket[#:groups-sep] and @racket[#:decimal-sep].}]
+         @elem{Added @racket[#:groups], @racket[#:group-sep] and @racket[#:decimal-sep].}]
 }
 
 @; ----------------------------------------

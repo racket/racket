@@ -69,7 +69,7 @@
            #:format-exponent (or/c #f string? (-> exact-integer? string?))
            #:min-width exact-positive-integer?
            #:pad-string padding/c
-           #:groups (listof exact-positive-integer?)
+           #:groups (non-empty-listof exact-positive-integer?)
            #:group-sep string?
            #:decimal-sep string?)
           string?)])
@@ -197,7 +197,7 @@
             #:format-exponent [exp-format-exponent #f]
             #:min-width [pad-digits-to 1]
             #:pad-string [digits-padding " "]
-            #:groups [groups '()]
+            #:groups [groups '(3)]
             #:group-sep [group-sep ""]
             #:decimal-sep [decimal-sep "."])
   (let ([notation (if (procedure? notation) (notation N) notation)])
