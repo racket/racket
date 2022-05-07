@@ -78,8 +78,6 @@ implementation:
 
 ;; the module implements a tv server
 
-(require racket/contract) ;; needed for provide
-
 (provide
   ;; launch the tv server function
   tv-launch
@@ -119,7 +117,7 @@ If you choose to use @racket[provide] with @racket[contract-out], you
 
 ;; the module implements a tv server
 
-(require racket/contract) ;; needed for provide
+(require racket/contract) ;; needed for contract-out
 
 (provide
   (contract-out
