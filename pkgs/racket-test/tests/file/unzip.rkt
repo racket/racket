@@ -3,6 +3,7 @@
          file/gunzip
          racket/runtime-path
          racket/port
+         racket/file
          tests/eli-tester)
 
 (define-runtime-path unzip-me.zip "unzip-me.zip")
@@ -15,6 +16,15 @@
                        (lambda ()
                          (test (read-line) => "chenxiao"))))))
 
+(define (test-with-direct-unzip in unzip)
+  (define dir (make-temporary-directory))
+  (let ([in (path->complete-path in)])
+    (parameterize ([current-directory dir])
+      (unzip in)))
+  (with-input-from-file (build-path dir "test-zip" "1" "data.dat")
+    (lambda ()
+      (test (read-line) => "chenxiao"))))
+
 (define (test-with-unzip-entry)
   (call-with-unzip-entry unzip-me.zip
                          (build-path "test-zip" "1" "data.dat")
@@ -25,6 +35,19 @@
 
 (define (run-tests)
   (test-with-unzip unzip-me.zip)
+  (test-with-direct-unzip unzip-me.zip unzip)
+  (test-with-direct-unzip unzip-me.zip (lambda (file)
+                                         (unzip file (make-filesystem-entry-reader))))
+  (test-with-direct-unzip unzip-me.zip (let ([reader (make-filesystem-entry-reader)])
+                                         (lambda (file)
+                                           (unzip file (lambda (name dir? in)
+                                                         (reader name dir? in))
+                                                  #:preserve-timestamps? #f))))
+  (test-with-direct-unzip unzip-me.zip (let ([reader (make-filesystem-entry-reader)])
+                                         (lambda (file)
+                                           (unzip file (lambda (name dir? in ts)
+                                                         (reader name dir? in ts))
+                                                  #:preserve-timestamps? #t))))
   (call-with-input-file* unzip-me.zip test-with-unzip)
   (call-with-input-file* unzip-me.zip
                          (lambda(in_port) (test-with-unzip (input-port-append #f in_port))))
