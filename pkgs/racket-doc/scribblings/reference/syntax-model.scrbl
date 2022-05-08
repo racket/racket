@@ -449,7 +449,7 @@ things:
        identifier (third case in the previous enumeration), and
        parsing continues.}
 
- @item{A core @deftech{syntactic form}, which is parsed as described
+ @item{A core @deftech{syntactic form} (often abbreviated as @deftech{core form}), which is parsed as described
        for each form in @secref["syntax"]. Parsing a core syntactic
        form typically involves recursive parsing of sub-forms, and may
        introduce @tech{bindings} that determine the parsing of
