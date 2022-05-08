@@ -54,7 +54,7 @@ m4_include(../ac/sdk_arg.m4)
 
 m4_include(../ac/vm_arg.m4)
 
-AC_ARG_ENABLE(sgc,        [  --enable-sgc            obsolte; Senora GC is always enabled])
+AC_ARG_ENABLE(sgc,        [  --enable-sgc            obsolete; Senora GC is always enabled for CGC])
 AC_ARG_ENABLE(sgcdebug,   [  --enable-sgcdebug       use Senora GC for debugging (expensive; CGC only)])
 AC_ARG_ENABLE(generations,[  --enable-generations    3m: support generational GC (enabled by default)], , enable_generations=yes)
 AC_ARG_ENABLE(backtrace,  [  --enable-backtrace      3m: support GC backtrace dumps (expensive debug mode)])

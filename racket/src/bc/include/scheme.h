@@ -25,7 +25,7 @@
 # endif
 #endif
 
-#if SGC_STD_DEBUGGING
+#if SGC_STD_DEBUGGING && !defined(MZ_PRECISE_GC)
 # ifndef USE_SENORA_GC
 #  define USE_SENORA_GC
 # endif

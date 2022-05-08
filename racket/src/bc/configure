@@ -1505,7 +1505,7 @@ Optional Features:
   --enable-bcdefault      install BC without suffix
   --enable-bconly         BC default, and skip CS build
   --enable-bc             BC enabled
-  --enable-sgc            obsolte; Senora GC is always enabled
+  --enable-sgc            obsolete; Senora GC is always enabled for CGC
   --enable-sgcdebug       use Senora GC for debugging (expensive; CGC only)
   --enable-generations    3m: support generational GC (enabled by default)
   --enable-backtrace      3m: support GC backtrace dumps (expensive debug mode)
