@@ -832,6 +832,7 @@ enable_cs
 enable_bcdefault
 enable_bconly
 enable_bc
+enable_cgcdefault
 enable_sgc
 enable_sgcdebug
 enable_generations
@@ -1505,6 +1506,7 @@ Optional Features:
   --enable-bcdefault      install BC without suffix
   --enable-bconly         BC default, and skip CS build
   --enable-bc             BC enabled
+  --enable-cgcdefault     BC CGC default (discouraged)
   --enable-sgc            obsolete; Senora GC is always enabled for CGC
   --enable-sgcdebug       use Senora GC for debugging (expensive; CGC only)
   --enable-generations    3m: support generational GC (enabled by default)
@@ -2876,6 +2878,11 @@ fi
 # Check whether --enable-bc was given.
 if test "${enable_bc+set}" = set; then :
   enableval=$enable_bc;
+fi
+
+# Check whether --enable-cgcdefault was given.
+if test "${enable_cgcdefault+set}" = set; then :
+  enableval=$enable_cgcdefault;
 fi
 
 
