@@ -1,6 +1,7 @@
 #lang zuo
 
 (provide hash-set*
+         hash-maybe-set*
          string-downcase
          string-upcase
          target->path
@@ -53,6 +54,16 @@
     (if (null? keys+vals)
         ht
         (loop (hash-set ht (car keys+vals) (cadr keys+vals))
+              (cddr keys+vals)))))
+
+(define (hash-maybe-set* ht . keys+vals)
+  (let loop ([ht ht] [keys+vals keys+vals])
+    (if (null? keys+vals)
+        ht
+        (loop (let ([val (cadr keys+vals)])
+                (if (equal? val "")
+                    ht
+                    (hash-set ht (car keys+vals) val)))
               (cddr keys+vals)))))
 
 (define (string-downcase s)

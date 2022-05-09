@@ -257,7 +257,7 @@
                      'racket (if (not cross?)
                                  raw_racketcs
                                  (let ([r (lookup 'RACKET)])
-                                   (if (equal? r "")
+                                   (if (equal? r "auto")
                                        (at-dir "local/cs/c/racketcs")
                                        (executable->path r at-dir)))))])
       (if on-windows?

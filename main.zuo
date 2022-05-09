@@ -183,30 +183,33 @@
                                                                "--enable-macprefix")]
                                                  [else '("--disable-useprefix"
                                                          "--enable-origtree")]))
-                              'vars (hash
-                                     ;; causes the `raco setup` step to not build
-                                     ;; installed packages (unless `prefix`):
-                                     'SELF_ROOT_CONFIG_DIR (if prefix
-                                                               ""
-                                                               (path-only build-config.rktd))
-                                     'SETUP_MACHINE_FLAGS (build-shell
-                                                           (lookup 'SETUP_MACHINE_FLAGS)
-                                                           (if (hash-ref options 'server-compile-machine? #f)
-                                                               (map string->shell (get-mcr-args))
-                                                               ""))
-                                     'PLT_SETUP_OPTIONS (build-shell
-                                                         (if also? "-D" "")
-                                                         (setup-options))
-                                     'DESTDIR (if prefix
-                                                  (lookup 'DESTDIR "")
-                                                  "")
-                                     'CS_INSTALLED (lookup 'RACKETCS_SUFFIX)
-                                     'MMM_INSTALLED (lookup 'RACKETBC_SUFFIX)
-                                     'MMM_CAP_INSTALLED (string-upcase (lookup 'RACKETBC_SUFFIX))
-                                     ;; for a unix-style install, we'll run any needed
-                                     ;; `DESTDIR` fixes later:
-                                     'SKIP_DESTDIR_FIX "skip"
-                                     ;; Propagate `RACKET` and similar
+                              'vars (hash-maybe-set*
+                                     (hash
+                                      ;; causes the `raco setup` step to not build
+                                      ;; installed packages (unless `prefix`):
+                                      'SELF_ROOT_CONFIG_DIR (if prefix
+                                                                ""
+                                                                (path-only build-config.rktd))
+                                      'SETUP_MACHINE_FLAGS (build-shell
+                                                            (lookup 'SETUP_MACHINE_FLAGS)
+                                                            (if (hash-ref options 'server-compile-machine? #f)
+                                                                (map string->shell (get-mcr-args))
+                                                                ""))
+                                      'PLT_SETUP_OPTIONS (build-shell
+                                                          (if also? "-D" "")
+                                                          (setup-options))
+                                      'DESTDIR (if prefix
+                                                   (lookup 'DESTDIR "")
+                                                   "")
+                                      'CS_INSTALLED (lookup 'RACKETCS_SUFFIX)
+                                      'MMM_INSTALLED (lookup 'RACKETBC_SUFFIX)
+                                      'MMM_CAP_INSTALLED (string-upcase (lookup 'RACKETBC_SUFFIX))
+                                      ;; for a unix-style install, we'll run any needed
+                                      ;; `DESTDIR` fixes later:
+                                      'SKIP_DESTDIR_FIX "skip"
+                                      ;; Propagate `MAKE`
+                                      'MAKE (lookup 'MAKE))
+                                     ;; Propagate `RACKET` and similar if specified
                                      'RACKET (get-provided-racket)
                                      'BOOTFILE_RACKET (lookup 'BOOTFILE_RACKET)
                                      'SCHEME_DIR (let ([s (lookup 'CS_HOST_WORKAREA_PREFIX)])
@@ -215,8 +218,7 @@
                                                        (build-path s "ChezScheme")))
                                      'CROSS_MODE (if (equal? (lookup 'CS_CROSS_SUFFIX) "-cross")
                                                      "cross"
-                                                     "")
-                                     'MAKE (lookup 'MAKE)))))
+                                                     "")))))
     (build (find-target "build" targets)
            #f
            (build-options))
