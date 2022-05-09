@@ -10,6 +10,11 @@
 
 (provide-targets targets-at)
 
+;; `raco cross` looks for this definition:
+(define library-xpatch-names
+  (list "chezpart" "rumble" "thread" "io"
+        "regexp" "schemify" "linklet" "expander"))
+
 (define (targets-at at-dir [vars (hash)])
   (define config (config-file->hash (at-dir "Mf-config") vars))
   (define (lookup k [default ""]) (hash-ref config k default))
@@ -994,8 +999,7 @@
          (display-to-file (apply ~a
                                  (map (lambda (name)
                                         (file->string (at-dir (~a name "." host-m))))
-                                      '("chezpart" "rumble" "thread" "io"
-                                                   "regexp" "schemify" "linklet" "expander")))
+                                      library-xpatch-names))
                           library-xpatch
                           :truncate))
 
