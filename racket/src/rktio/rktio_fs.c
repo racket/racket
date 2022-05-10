@@ -415,7 +415,7 @@ static int UNC_stat(rktio_t *rktio, const char *dirname, int *flags, int *isdir,
           init_procs();
           if (dest) free(dest);
           dest_len = len + 1;
-          dest = malloc(dest_len);
+          dest = malloc(dest_len * sizeof(wchar_t));
           len = GetFinalPathNameByHandleProc(h, dest, dest_len, rktioFILE_NAME_NORMALIZED);
         } while (len > dest_len);
 
