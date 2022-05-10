@@ -1793,5 +1793,23 @@
   (test #t values asked?))
 
 ;; ----------------------------------------
+;; Check that a property guard always gets a super structure type
+
+(let ()
+  (define-values (prop has-prop? prop-ref)
+    (make-struct-type-property
+     'prop
+     (lambda (v info)
+       (test (if (eq? (car info) 'a)
+                 #f
+                 struct:a)
+             values
+             (list-ref info 6))
+       v)))
+  (struct a (x) #:property prop 1)
+  (struct b a (y) #:property prop 2)
+  (void))
+
+;; ----------------------------------------
 
 (report-errs)

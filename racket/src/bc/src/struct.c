@@ -3007,7 +3007,7 @@ static void get_struct_type_info(int argc, Scheme_Object *argv[], Scheme_Object 
 
   p = stype->name_pos;
   while (--p >= 0) {
-    if (scheme_is_subinspector(stype->parent_types[p]->inspector, insp)) {
+    if (always || scheme_is_subinspector(stype->parent_types[p]->inspector, insp)) {
       break;
     }
   }
