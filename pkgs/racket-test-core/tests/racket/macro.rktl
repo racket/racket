@@ -1042,6 +1042,15 @@
 (require 'm-check-varref-expand)
 
 ;; ----------------------------------------
+;; Check that expand of reference to rename transformer
+;; applies the transformer
+
+(test #t eval (expand '(let ([x 10])
+                         (let-syntax ([y (make-rename-transformer #'x)])
+                           (variable-reference-constant?
+                            (#%variable-reference y))))))
+
+;; ----------------------------------------
 ;; Check that a module-level binding with 0 marks
 ;;  but lexical context is found correctly with
 ;;  1 and 2 marks (test case by Carl):
