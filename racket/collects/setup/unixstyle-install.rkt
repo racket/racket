@@ -698,6 +698,7 @@
   (define (lz4-skip? p)
     (define-values (base name dir?) (split-path p))
     (and (not (equal? (path->string name) "lib"))
+         (not (equal? (path->string name) "Makefile.inc"))
          (path? base)
          (let-values ([(base name dir?) (split-path base)])
            (and (path? base)
