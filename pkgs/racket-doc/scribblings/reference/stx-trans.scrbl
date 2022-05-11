@@ -1397,8 +1397,9 @@ Often used in combination with @racket[expand-import].
    (lambda (stx)
      (syntax-case stx ()
        [(_ path)
-        (printf "Importing: ~a~n" #'path)
-        (expand-import #'path)]))))
+        (begin
+          (printf "Importing: ~a~n" #'path)
+          (expand-import #'path))]))))
 
 (require (printing racket/match))
 ]}
