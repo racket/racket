@@ -1316,10 +1316,7 @@ typedef struct Hash_Info {
   intptr_t depth; /* always odd */
   Scheme_Object *recur;
   Scheme_Object *insp; /* obtained lazily */
-  /* mode
-     0: 'equal?
-     5: 'equal-always? */
-  intptr_t mode;
+  intptr_t mode; /* EQUAL_MODE_EQUAL or EQUAL_MODE_EQUAL_ALWAYS */
 } Hash_Info;
 
 static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi);
@@ -1338,7 +1335,7 @@ static Scheme_Object *hash_recur(int argc, Scheme_Object **argv, Scheme_Object *
   hi = (Hash_Info *)SCHEME_PRIM_CLOSURE_ELS(prim)[0];
   hi->depth += 2;
   hi->insp = NULL; /* in case recursive call is `parameterize'd */
-  hi->mode = 0; /* mode 0: 'equal? */
+  hi->mode = EQUAL_MODE_EQUAL;
 
   v = to_signed_hash(equal_hash_key(argv[0], 0, hi));
 
@@ -1452,9 +1449,6 @@ XFORM_NONGCING static uintptr_t long_dbl_hash2_val(long_double d)
 
 #define OVERFLOW_HASH() overflow_equal_hash_key(o, k - t, hi)
 
-/* mode:
-   0: 'equal?
-   5: 'equal-always? */
 XFORM_NONGCING static uintptr_t fast_equal_hash_key(Scheme_Object *o, uintptr_t k, int mode, int *_done)
 /* must cover eqv hash keys that are just eq hash keys */
 {
@@ -1530,7 +1524,7 @@ XFORM_NONGCING static uintptr_t fast_equal_hash_key(Scheme_Object *o, uintptr_t 
   case scheme_unix_path_type:
   case scheme_windows_path_type:
     {
-      if ((mode == 0) /* mode 0: 'equal? */
+      if ((mode == EQUAL_MODE_EQUAL)
           || SCHEME_IMMUTABLEP(o)) {
         int i = SCHEME_BYTE_STRLEN_VAL(o);
         char *s = SCHEME_BYTE_STR_VAL(o);
@@ -1547,7 +1541,7 @@ XFORM_NONGCING static uintptr_t fast_equal_hash_key(Scheme_Object *o, uintptr_t 
     }
   case scheme_char_string_type:
     {
-      if ((mode == 0) /* mode 0: 'equal? */
+      if ((mode == EQUAL_MODE_EQUAL)
           || SCHEME_IMMUTABLEP(o)) {
         int i = SCHEME_CHAR_STRLEN_VAL(o);
         mzchar *s = SCHEME_CHAR_STR_VAL(o);
@@ -1655,7 +1649,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
   case scheme_mutable_pair_type:
     {
 #     include "mzhashchk.inc"
-      if (hi->mode == 0) { /* mode 0: 'equal? */
+      if (hi->mode == EQUAL_MODE_EQUAL) {
         hi->depth += 2;
         k = (k << 3) + k;
         k += equal_hash_key(SCHEME_CAR(o), 0, hi);
@@ -1672,7 +1666,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       Scheme_Object *elem;
 #     include "mzhashchk.inc"
 
-      if ((hi->mode == 0) /* mode 0: 'equal? */
+      if ((hi->mode == EQUAL_MODE_EQUAL)
           || SCHEME_IMMUTABLEP(o)) {
         if (!len)
           return k + 1;
@@ -1704,7 +1698,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       intptr_t len = SCHEME_FLVEC_SIZE(o), i;
       double d;
 
-      if ((hi->mode == 0) /* mode 0: 'equal? */
+      if ((hi->mode == EQUAL_MODE_EQUAL)
           || SCHEME_IMMUTABLEP(o)) {
         if (!len)
           return k + 1;
@@ -1726,7 +1720,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       intptr_t len = SCHEME_EXTFLVEC_SIZE(o), i;
       long_double d;
 
-      if ((hi->mode == 0) /* mode 0: 'equal? */
+      if ((hi->mode == EQUAL_MODE_EQUAL)
           || SCHEME_IMMUTABLEP(o)) {
         if (!len)
           return k + 1;
@@ -1749,15 +1743,17 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       Scheme_Object *procs;
       Scheme_Struct_Type *st1 = SCHEME_STRUCT_TYPE(o);
 
-      if ((hi->mode == 5) /* mode 5: 'equal-always? */
-          && !(MZ_OPT_HASH_KEY(&st1->iso) & STRUCT_TYPE_ALL_IMMUTABLE)) {
+      procs = scheme_struct_type_property_ref(scheme_equal_property, orig_obj);
+      
+      if ((hi->mode == EQUAL_MODE_EQUAL_ALWAYS)
+          && !(MZ_OPT_HASH_KEY(&st1->iso) & STRUCT_TYPE_ALL_IMMUTABLE)
+          && (!procs || (SCHEME_VEC_SIZE(procs) != SCHEME_NEW_EQUAL_PROTOCOL_VECTOR_LENGTH))) {
         /* Mutable records must be `eq?` for `equal-always?` */
         return k + PTR_TO_LONG(o);
       }
 
-      procs = scheme_struct_type_property_ref(scheme_equal_property, orig_obj);
       if (procs) {
-        Scheme_Object *a[2], *recur, *v;
+        Scheme_Object *a[3], *recur, *v;
         Hash_Info *hi2;
 
 #       include "mzhashchk.inc"
@@ -1780,9 +1776,14 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
         a[0] = orig_obj;
         a[1] = recur;
         
-        procs = SCHEME_VEC_ELS(procs)[2];
-        
-        v = _scheme_apply(procs, 2, a);
+        if (SCHEME_VEC_SIZE(procs) == SCHEME_NEW_EQUAL_PROTOCOL_VECTOR_LENGTH) {
+          a[2] = ((hi->mode == EQUAL_MODE_EQUAL_ALWAYS) ? scheme_true : scheme_false);
+          procs = SCHEME_VEC_ELS(procs)[2];
+          v = _scheme_apply(procs, 3, a);
+        } else {
+          procs = SCHEME_VEC_ELS(procs)[2];
+          v = _scheme_apply(procs, 2, a);
+        }
 
         if (SCHEME_INTP(v))
           return k + SCHEME_INT_VAL(v);
@@ -1837,7 +1838,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
     }
   case scheme_box_type:
     {
-      if ((hi->mode == 0) /* mode 0: 'equal? */
+      if ((hi->mode == EQUAL_MODE_EQUAL)
           || SCHEME_IMMUTABLEP(o)) {
         SCHEME_USE_FUEL(1);
         k += 1;
@@ -1865,7 +1866,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       /* mult to counteract potential explosion due to old_depth reset */
 #     define GROW_RESET_DEPTH(n) ((n * 2) + 1)
 
-      if (hi->mode == 0) { /* mode 0: 'equal? */
+      if (hi->mode == EQUAL_MODE_EQUAL) {
         k = (k << 1) + 3;
         hi->depth = GROW_RESET_DEPTH(hi->depth);
         old_depth = hi->depth;
@@ -1951,7 +1952,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       
       k = (k << 1) + 7;
       
-      if (hi->mode == 0) { /* mode 0: 'equal? */
+      if (hi->mode == EQUAL_MODE_EQUAL) {
         for (i = ht->size; i--; ) {
           bucket = buckets[i];
           if (bucket) {
@@ -2015,7 +2016,7 @@ static intptr_t slow_equal_hash_key(Scheme_Object *o)
   hi.depth = 1;
   hi.recur = NULL;
   hi.insp = NULL;
-  hi.mode = 0; /* mode 0: 'equal? */
+  hi.mode = EQUAL_MODE_EQUAL;
 
   return to_signed_hash(equal_hash_key(o, 0, &hi));
 }
@@ -2025,7 +2026,7 @@ intptr_t scheme_equal_hash_key(Scheme_Object *o)
   uintptr_t k;
   int done = 1;
 
-  k = fast_equal_hash_key(o, SCHEME_TYPE(o), 0, &done); /* mode 0: 'equal? */
+  k = fast_equal_hash_key(o, SCHEME_TYPE(o), EQUAL_MODE_EQUAL, &done);
   if (done)
     return to_signed_hash(k);
   else
@@ -2039,7 +2040,7 @@ static intptr_t slow_equal_always_hash_key(Scheme_Object *o)
   hi.depth = 1;
   hi.recur = NULL;
   hi.insp = NULL;
-  hi.mode = 5; /* mode 5: 'equal-always? */
+  hi.mode = EQUAL_MODE_EQUAL_ALWAYS;
 
   return to_signed_hash(equal_hash_key(o, 0, &hi));
 }
@@ -2049,7 +2050,7 @@ intptr_t scheme_equal_always_hash_key(Scheme_Object *o)
   uintptr_t k;
   int done = 1;
 
-  k = fast_equal_hash_key(o, SCHEME_TYPE(o), 5, &done); /* mode 5: 'equal-always? */
+  k = fast_equal_hash_key(o, SCHEME_TYPE(o), EQUAL_MODE_EQUAL_ALWAYS, &done);
   if (done)
     return to_signed_hash(k);
   else
@@ -2063,7 +2064,7 @@ intptr_t scheme_equal_hash_key2(Scheme_Object *o)
   hi.depth = 1;
   hi.recur = NULL;
   hi.insp = NULL;
-  hi.mode = 0; /* mode 0: 'equal? */
+  hi.mode = EQUAL_MODE_EQUAL;
 
   return to_signed_hash(equal_hash_key2(o, &hi));
 }
@@ -2075,14 +2076,11 @@ intptr_t scheme_equal_always_hash_key2(Scheme_Object *o)
   hi.depth = 1;
   hi.recur = NULL;
   hi.insp = NULL;
-  hi.mode = 5; /* mode 5: 'equal-always? */
+  hi.mode = EQUAL_MODE_EQUAL_ALWAYS;
 
   return to_signed_hash(equal_hash_key2(o, &hi));
 }
 
-/* mode:
-   0: 'equal?
-   5: 'equal-always? */
 XFORM_NONGCING static uintptr_t fast_equal_hash_key2(Scheme_Object *o, int mode, int *_done)
 /* must cover eqv hash keys that are just eq hash keys */
 {
@@ -2143,7 +2141,7 @@ static Scheme_Object *hash2_recur(int argc, Scheme_Object **argv, Scheme_Object 
 
   hi = (Hash_Info *)SCHEME_PRIM_CLOSURE_ELS(prim)[0];
   hi->depth += 2;
-  hi->mode = 0; /* mode 0: 'equal? */
+  hi->mode = EQUAL_MODE_EQUAL;
 
   v = to_signed_hash(equal_hash_key2(argv[0], hi));
   
@@ -2224,7 +2222,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
     {
       uintptr_t v1, v2;
 #     include "mzhashchk.inc"
-      if (hi->mode == 0) { /* mode 0: 'equal? */
+      if (hi->mode == EQUAL_MODE_EQUAL) {
         hi->depth += 2;
         v1 = equal_hash_key2(SCHEME_CAR(o), hi);
         v2 = equal_hash_key2(SCHEME_CDR(o), hi);
@@ -2246,7 +2244,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
 
 #     include "mzhashchk.inc"
 
-      if ((hi->mode == 0) /* mode 0: 'equal? */
+      if ((hi->mode == EQUAL_MODE_EQUAL)
           || SCHEME_IMMUTABLEP(o)) {
         hi->depth += 2;
 
@@ -2270,7 +2268,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       double d;
       uintptr_t k = 0;
 
-      if ((hi->mode == 0) /* mode 0: 'equal? */
+      if ((hi->mode == EQUAL_MODE_EQUAL)
           || SCHEME_IMMUTABLEP(o)) {
         if (!len)
           return k + 1;
@@ -2293,7 +2291,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       long_double d;
       uintptr_t k = 0;
 
-      if ((hi->mode == 0) /* mode 0: 'equal? */
+      if ((hi->mode == EQUAL_MODE_EQUAL)
           || SCHEME_IMMUTABLEP(o)) {
         if (!len)
           return k + 1;
@@ -2317,7 +2315,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       int k = 0, i = SCHEME_BYTE_STRLEN_VAL(o);
       char *s = SCHEME_BYTE_STR_VAL(o);
     
-      if ((hi->mode == 0) /* mode 0: 'equal? */
+      if ((hi->mode == EQUAL_MODE_EQUAL)
           || SCHEME_IMMUTABLEP(o)) {
         while (i--) {
           k += s[i];
@@ -2333,7 +2331,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       int k = 0, i = SCHEME_CHAR_STRLEN_VAL(o);
       mzchar *s = SCHEME_CHAR_STR_VAL(o);
     
-      if ((hi->mode == 0) /* mode 0: 'equal? */
+      if ((hi->mode == EQUAL_MODE_EQUAL)
           || SCHEME_IMMUTABLEP(o)) {
         while (i--) {
           k += s[i];
@@ -2355,15 +2353,17 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       Scheme_Object *procs;
       Scheme_Struct_Type *st1 = SCHEME_STRUCT_TYPE(o);
 
-      if ((hi->mode == 5) /* mode 5: 'equal-always? */
-          && !(MZ_OPT_HASH_KEY(&st1->iso) & STRUCT_TYPE_ALL_IMMUTABLE)) {
+      procs = scheme_struct_type_property_ref(scheme_equal_property, orig_obj);
+
+      if ((hi->mode == EQUAL_MODE_EQUAL_ALWAYS)
+          && !(MZ_OPT_HASH_KEY(&st1->iso) & STRUCT_TYPE_ALL_IMMUTABLE)
+          && (!procs || (SCHEME_VEC_SIZE(procs) != SCHEME_NEW_EQUAL_PROTOCOL_VECTOR_LENGTH))) {
         /* Mutable records must be `eq?` for `equal-always?` */
         return PTR_TO_LONG(o) >> 1;
       }
 
-      procs = scheme_struct_type_property_ref(scheme_equal_property, orig_obj);
       if (procs) {
-        Scheme_Object *a[2], *v, *recur;
+        Scheme_Object *a[3], *v, *recur;
         Hash_Info *hi2;
 
 #       include "mzhashchk.inc"
@@ -2385,10 +2385,16 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
         
         a[0] = orig_obj;
         a[1] = recur;
-        
-        procs = SCHEME_VEC_ELS(procs)[3];
-        
-        v = _scheme_apply(procs, 2, a);
+
+        if (SCHEME_VEC_SIZE(procs) == SCHEME_NEW_EQUAL_PROTOCOL_VECTOR_LENGTH) {
+          /* new protocol uses one hash function for primary and secondary */
+          a[2] = ((hi->mode == EQUAL_MODE_EQUAL_ALWAYS) ? scheme_true : scheme_false);
+          procs = SCHEME_VEC_ELS(procs)[2];
+          v = _scheme_apply(procs, 3, a);
+        } else {
+          procs = SCHEME_VEC_ELS(procs)[3];
+          v = _scheme_apply(procs, 2, a);
+        }
 
         if (SCHEME_INTP(v))
           return SCHEME_INT_VAL(v);
@@ -2437,7 +2443,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
     }
   case scheme_box_type:
     {
-      if ((hi->mode == 0) /* mode 0: 'equal? */
+      if ((hi->mode == EQUAL_MODE_EQUAL)
           || SCHEME_IMMUTABLEP(o)) {
         if (SAME_OBJ(o, orig_obj))
           o = SCHEME_BOX_VAL(o);
@@ -2460,7 +2466,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       
 #     include "mzhashchk.inc"
 
-      if (hi->mode == 0) { /* mode 0: 'equal? */
+      if (hi->mode == EQUAL_MODE_EQUAL) {
         hi->depth = GROW_RESET_DEPTH(hi->depth);
         old_depth = hi->depth;
 
@@ -2536,7 +2542,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
 
 #     include "mzhashchk.inc"
   
-      if (hi->mode == 0) { /* mode 0: 'equal? */
+      if (hi->mode == EQUAL_MODE_EQUAL) {
         buckets = ht->buckets;
         weak = ht->weak;
 
@@ -2604,7 +2610,7 @@ intptr_t scheme_eqv_hash_key(Scheme_Object *o)
 {
   if (!SCHEME_INTP(o) && (SCHEME_NUMBERP(o) || SCHEME_CHARP(o))) {
     int done;
-    return to_signed_hash(fast_equal_hash_key(o, 0, 5, &done)); /* mode 5: 'equal-always? */
+    return to_signed_hash(fast_equal_hash_key(o, 0, EQUAL_MODE_EQUAL_ALWAYS, &done));
   } else
     return to_signed_hash(PTR_TO_LONG(o));
 }
@@ -2613,7 +2619,7 @@ intptr_t scheme_eqv_hash_key2(Scheme_Object *o)
 {
   if (!SCHEME_INTP(o) && (SCHEME_NUMBERP(o) || SCHEME_CHARP(o))) {
     int done;
-    return to_signed_hash(fast_equal_hash_key2(o, 5, &done)); /* mode 5: 'equal-always? */
+    return to_signed_hash(fast_equal_hash_key2(o, EQUAL_MODE_EQUAL_ALWAYS, &done));
   } else
     return to_signed_hash(PTR_TO_LONG(o) >> 1);
 }

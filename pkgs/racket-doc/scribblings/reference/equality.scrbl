@@ -369,17 +369,51 @@ indexing and comparison operations, especially in the implementation of
 
  A @tech{structure type property} (see @secref["structprops"])
  that supplies an equality predicate and hashing functions for a structure
- type. Using the @racket[prop:equal+hash] property is discouraged; the
- @racket[gen:equal+hash] @tech{generic interface} should be used instead.
- A @racket[prop:equal+hash] property value is a list of three procedures
- that correspond to the methods of @racket[gen:equal+hash]:
+ type. Using the @racket[prop:equal+hash] property is an alternative to
+ using he @racket[gen:equal+hash] @tech{generic interface}.
 
- @itemize[
- @item{@racket[_equal-proc :
-               (any/c any/c (any/c any/c . -> . boolean?)  . -> . any/c)]}
+ A @racket[prop:equal+hash] property value is a list of either two
+ procedures or three procedures:
 
- @item{@racket[_hash-proc :
-               (any/c (any/c . -> . exact-integer?) . -> . exact-integer?)]}
+ @itemlist[
 
- @item{@racket[_hash2-proc :
-               (any/c (any/c . -> . exact-integer?) . -> . exact-integer?)]}]}
+  @item{The two-procedure case supports customization of @racket[equal-always?],
+        and a secondary hashing function is omitted:
+
+       @itemlist[
+         @item{@racket[_equal-proc : (any/c any/c (any/c any/c . -> . boolean?)  boolean? . -> . any/c)]
+               --- the first two arguments are the values to compare, the third argument is an
+               equality function to use for recursive comparisons, and the last argument
+               is @racket[#t] for an @racket[equal-always?] comparison or @racket[#f]
+               otherwise. Any result except @racket[#f] indicates that the given two values
+               should be considered equivalent.}
+
+          @item{@racket[_hash-proc : (any/c (any/c . -> . exact-integer?) boolean? . -> . exact-integer?)]
+                ---- the first argument is the value to compute a hash code for, the
+                second argument is a hashing function to use for recursive hashing, and the
+                last argument is @racket[#t] for @racket[equal-always?] hashing or
+                @racket[#f] for @racket[equal?] hashing.}
+
+        ]
+
+       The given @racket[_hash-proc] function is used both for a
+       primary hash code and secondary hash code.}
+
+  @item{The three-procedure case customizes @racket[equal-always?]
+        only if the structure type has no mutable fields, and the
+        equality and hashing functions do not receive information
+        about whether @racket[equal?] or @racket[equal-always?]
+        comparison is required (but the given recursive equality or
+        hashing functions takes that mode into account):
+
+         @itemize[
+           @item{@racket[_equal-proc : (any/c any/c (any/c any/c . -> . boolean?)  . -> . any/c)]}
+
+           @item{@racket[_hash-proc : (any/c (any/c . -> . exact-integer?) . -> . exact-integer?)]}
+
+           @item{@racket[_hash2-proc : (any/c (any/c . -> . exact-integer?) . -> . exact-integer?)]}
+        ]}
+
+]
+
+@history[#:changed "8.5.0.3" @elem{Added support for two-procedure values to customize @racket[equal-always?].}]}

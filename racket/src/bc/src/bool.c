@@ -40,12 +40,7 @@ typedef struct Equal_Info {
   Scheme_Object *recur;
   Scheme_Object *next, *next_next;
   Scheme_Object *insp;
-  /* mode
-     0: 'equal?
-     1: 'chaperone-of?
-     3: 'impersonator-of?
-     5: 'equal-always? */
-  intptr_t mode;
+  intptr_t mode; /* EQUAL_MODE_EQUAL, etc. */
 } Equal_Info;
 
 static int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql);
@@ -189,7 +184,7 @@ XFORM_NONGCING static void init_equal_info(Equal_Info *eql)
   eql->next = NULL;
   eql->next_next = NULL;
   eql->insp = NULL;
-  eql->mode = 0; /* mode 0: 'equal? */
+  eql->mode = EQUAL_MODE_EQUAL;
 }
 
 static Scheme_Object *
@@ -631,23 +626,23 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
   }
 
  top_after_next:
-  cmp = is_fast_equal(obj1, obj2, eql->mode == 1 || eql->mode == 5); /* mode 1 or 5: 'chaperone-of? or 'equal-always? */
+  cmp = is_fast_equal(obj1, obj2, (eql->mode == EQUAL_MODE_CHAPERONE_OF) || (eql->mode == EQUAL_MODE_EQUAL_ALWAYS));
   if (cmp > -1) /* cmp 0 or 1: known */
     return cmp;
 
-  if (eql->mode /* mode 1, 3, or 5: 'chaperone-of?, 'impersonator-of?, or `equal-always? */
+  if (((eql->mode == EQUAL_MODE_CHAPERONE_OF) || (eql->mode == EQUAL_MODE_IMPERSONATOR_OF))
       && SCHEME_CHAPERONEP(obj2)
       && (!(SCHEME_CHAPERONE_FLAGS((Scheme_Chaperone *)obj2) & SCHEME_CHAPERONE_IS_IMPERSONATOR)
-          || (eql->mode > 1))
+          || (eql->mode == EQUAL_MODE_IMPERSONATOR_OF))
       && scheme_is_noninterposing_chaperone(obj2)) {
     obj2 = ((Scheme_Chaperone *)obj2)->prev;
     goto top_after_next;
   }
 
-  if (eql->mode /* mode 1, 3, or 5: 'chaperone-of?, 'impersonator-of?, or `equal-always? */
+  if (((eql->mode == EQUAL_MODE_CHAPERONE_OF) || (eql->mode == EQUAL_MODE_IMPERSONATOR_OF))
       && SCHEME_CHAPERONEP(obj1)
       && (!(SCHEME_CHAPERONE_FLAGS((Scheme_Chaperone *)obj1) & SCHEME_CHAPERONE_IS_IMPERSONATOR)
-          || (eql->mode > 1))) {
+          || (eql->mode == EQUAL_MODE_IMPERSONATOR_OF))) {
     /* `obj1` and `obj2` are not eq, otherwise is_fast_equal()
        would have returned true */
     if (SCHEME_CHAPERONEP(obj2)) {
@@ -677,7 +672,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
       obj2 = (Scheme_Object *)scheme_hash_tree_resolve_placeholder((Scheme_Hash_Tree *)obj2);
       goto top_after_next;
     }
-    if (eql->mode == 0 || eql->mode == 5) { /* mode 0 or 5: 'equal? or 'equal-always? */
+    if ((eql->mode == EQUAL_MODE_EQUAL) || (eql->mode == EQUAL_MODE_EQUAL_ALWAYS)) {
       if (SCHEME_CHAPERONEP(obj1)) {
 	/* OPT only use prev for unsafe-chaperone-vector, use val otherwise */
         obj1 = ((Scheme_Chaperone *)obj1)->prev;
@@ -710,7 +705,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     case scheme_mutable_pair_type:
       {
 #   include "mzeqchk.inc"
-        if (eql->mode == 1 || eql->mode == 5) /* mode 1 or 5: 'chaperone-of? or 'equal-always? */
+        if ((eql->mode == EQUAL_MODE_CHAPERONE_OF) || (eql->mode == EQUAL_MODE_EQUAL_ALWAYS))
           return 0;
         if (union_check(obj1, obj2, eql))
           return 1;
@@ -725,7 +720,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     case scheme_fxvector_type:
       {
 #   include "mzeqchk.inc"
-        if ((eql->mode == 1 || eql->mode == 5) /* mode 1 or 5: 'chaperone-of? or 'equal-always? */
+        if ((((eql->mode == EQUAL_MODE_CHAPERONE_OF) || (eql->mode == EQUAL_MODE_EQUAL_ALWAYS)))
             && (!SCHEME_IMMUTABLEP(obj1) || !SCHEME_IMMUTABLEP(obj2)))
           return 0;
         if (union_check(obj1, obj2, eql))
@@ -737,7 +732,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     case scheme_windows_path_type:
       {
         intptr_t l1, l2;
-        if ((eql->mode == 1 || eql->mode == 5) /* mode 1 or 5: 'chaperone-of? or 'equal-always? */
+        if (((eql->mode == EQUAL_MODE_CHAPERONE_OF) || (eql->mode == EQUAL_MODE_EQUAL_ALWAYS))
             && (!SCHEME_IMMUTABLEP(obj1) || !SCHEME_IMMUTABLEP(obj2)))
           return 0;
         l1 = SCHEME_BYTE_STRTAG_VAL(obj1);
@@ -748,7 +743,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     case scheme_char_string_type:
       {
         intptr_t l1, l2;
-        if ((eql->mode == 1 || eql->mode == 5) /* mode 1 or 5: 'chaperone-of? or 'equal-always? */
+        if (((eql->mode == EQUAL_MODE_CHAPERONE_OF) || (eql->mode == EQUAL_MODE_EQUAL_ALWAYS))
             && (!SCHEME_IMMUTABLEP(obj1) || !SCHEME_IMMUTABLEP(obj2)))
           return 0;
         l1 = SCHEME_CHAR_STRTAG_VAL(obj1);
@@ -775,13 +770,13 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
         st1 = SCHEME_STRUCT_TYPE(obj1);
         st2 = SCHEME_STRUCT_TYPE(obj2);
 
-        if (eql->mode == 1) /* mode 1: 'chaperone-of? */
+        if (eql->mode == EQUAL_MODE_CHAPERONE_OF)
           procs1 = NULL;
         else
           procs1 = scheme_struct_type_property_ref(scheme_impersonator_of_property, (Scheme_Object *)st1);
         if (procs1)
           procs1 = scheme_apply_impersonator_of(eql->mode, procs1, obj1);
-        if (eql->mode == 1 || eql->mode == 3) /* mode 1 or 3: 'chaperone-of? or 'impersonator-of? */
+        if ((eql->mode == EQUAL_MODE_CHAPERONE_OF) || (eql->mode == EQUAL_MODE_IMPERSONATOR_OF))
           procs2 = NULL;
         else {
           procs2 = scheme_struct_type_property_ref(scheme_impersonator_of_property, (Scheme_Object *)st2);
@@ -797,7 +792,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
         } else {
           /* don't discard `prop:impersonator-of` if checking for `impersonator-of?`
              or `chaperone-of?` */
-          if (eql->mode == 1 || eql->mode == 3) { /* mode 1 or 3: 'chaperone-of? or 'impersonator-of? */
+          if ((eql->mode == EQUAL_MODE_CHAPERONE_OF) || (eql->mode == EQUAL_MODE_IMPERSONATOR_OF)) {
             procs2 = scheme_struct_type_property_ref(scheme_impersonator_of_property, (Scheme_Object *)st2);
             if (procs2 && scheme_apply_impersonator_of(eql->mode, procs2, obj2))
               /* Second argument is an impersonator, so
@@ -815,9 +810,16 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
 
           if (procs1) {
             /* Has an equality property: */
-            Scheme_Object *a[3], *recur;
+            Scheme_Object *a[4], *recur;
             Equal_Info *eql2;
 #     include "mzeqchk.inc"
+
+            if ((eql->mode == EQUAL_MODE_EQUAL_ALWAYS)
+                && !(MZ_OPT_HASH_KEY(&st1->iso) & STRUCT_TYPE_ALL_IMMUTABLE)
+                && (SCHEME_VEC_SIZE(procs1) != SCHEME_NEW_EQUAL_PROTOCOL_VECTOR_LENGTH)) {
+              /* Mutable records cannot use the old protocol for `equal-always?` */
+              return 0;
+            }
 
             if (union_check(obj1, obj2, eql))
               return 1;
@@ -841,16 +843,23 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
             a[1] = orig_obj2;
             a[2] = recur;
 
-            procs1 = SCHEME_VEC_ELS(procs1)[1];
-
-            recur = _scheme_apply(procs1, 3, a);
+            if (SCHEME_VEC_SIZE(procs1) == SCHEME_NEW_EQUAL_PROTOCOL_VECTOR_LENGTH) {
+              /* new protocol */
+              procs1 = SCHEME_VEC_ELS(procs1)[1];
+              a[3] = ((eql->mode == EQUAL_MODE_EQUAL_ALWAYS) ? scheme_true : scheme_false);
+              recur = _scheme_apply(procs1, 4, a);
+            } else {
+              /* old protocol */
+              procs1 = SCHEME_VEC_ELS(procs1)[1];
+              recur = _scheme_apply(procs1, 3, a);              
+            }
 
             memcpy(eql, eql2, sizeof(Equal_Info));
 
             return SCHEME_TRUEP(recur);
           } else if (st1 != st2) {
             return 0;
-          } else if ((eql->mode == 1 || eql->mode == 5) /* mode 1 or 5: 'chaperone-of? or 'equal-always? */
+          } else if (((eql->mode == EQUAL_MODE_CHAPERONE_OF) || (eql->mode == EQUAL_MODE_EQUAL_ALWAYS))
                      && !(MZ_OPT_HASH_KEY(&st1->iso) & STRUCT_TYPE_ALL_IMMUTABLE)) {
             /* Mutable records must be `eq?` for `chaperone-of?` and `equal-always?` */
             return 0;
@@ -876,7 +885,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     case scheme_box_type:
       {
         SCHEME_USE_FUEL(1);
-        if ((eql->mode == 1 || eql->mode == 5) /* mode 1 or 5: 'chaperone-of? or 'equal-always? */
+        if (((eql->mode == EQUAL_MODE_CHAPERONE_OF) || (eql->mode == EQUAL_MODE_EQUAL_ALWAYS))
             && (!SCHEME_IMMUTABLEP(obj1) || !SCHEME_IMMUTABLEP(obj2)))
           return 0;
         if (union_check(obj1, obj2, eql))
@@ -895,7 +904,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     case scheme_hash_table_type:
       {
 #   include "mzeqchk.inc"
-        if (eql->mode == 1 || eql->mode == 5) /* mode 1 or 5: 'chaperone-of? or 'equal-always? */
+        if ((eql->mode == EQUAL_MODE_CHAPERONE_OF) || (eql->mode == EQUAL_MODE_EQUAL_ALWAYS))
           return 0;
         if (union_check(obj1, obj2, eql))
           return 1;
@@ -921,7 +930,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     case scheme_bucket_table_type:
       {
 #   include "mzeqchk.inc"
-        if (eql->mode == 1 || eql->mode == 5) /* mode 1 or 5: 'chaperone-of? or 'equal-always? */
+        if ((eql->mode == EQUAL_MODE_CHAPERONE_OF) || (eql->mode == EQUAL_MODE_EQUAL_ALWAYS))
           return 0;
         if (union_check(obj1, obj2, eql))
           return 1;
@@ -930,7 +939,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
                                              eql);
       }
     default:
-      if ((eql->mode == 0 || eql->mode == 5) /* mode 0 or 5: 'equal? or 'equal-always? */
+      if (((eql->mode == EQUAL_MODE_EQUAL) || (eql->mode == EQUAL_MODE_EQUAL_ALWAYS))
           && ((t1 == scheme_chaperone_type) || (t1 == scheme_proc_chaperone_type))) {
         /* both chaperones */
         obj1 = ((Scheme_Chaperone *)obj1)->val;
@@ -1077,11 +1086,6 @@ int scheme_impersonator_of(Scheme_Object *obj1, Scheme_Object *obj2)
   return is_equal(obj1, obj2, &eql);
 }
 
-/* mode
-   0: 'equal?
-   1: 'chaperone-of?
-   3: 'impersonator-of?
-   5: 'equal-always? */
 Scheme_Object *scheme_apply_impersonator_of(int mode, Scheme_Object *procs, Scheme_Object *obj)
 {
   Scheme_Object *a[1], *v, *oprocs;
@@ -1094,7 +1098,13 @@ Scheme_Object *scheme_apply_impersonator_of(int mode, Scheme_Object *procs, Sche
   
   oprocs = scheme_struct_type_property_ref(scheme_impersonator_of_property, v);  
   if (!oprocs || !SAME_OBJ(SCHEME_CAR(oprocs), SCHEME_CAR(procs)))
-    scheme_contract_error(((mode == 1)? "chaperone-of?" : (mode == 3)? "impersonator-of?" : (mode == 5)? "equal-always?" : "equal?"),
+    scheme_contract_error(((mode == EQUAL_MODE_CHAPERONE_OF)
+                           ? "chaperone-of?"
+                           : ((mode == EQUAL_MODE_IMPERSONATOR_OF)
+                              ? "impersonator-of?"
+                              : ((mode == EQUAL_MODE_EQUAL_ALWAYS)
+                                 ? "equal-always?"
+                                 : "equal?"))),
                           "impersonator-of property procedure returned a value with a different prop:impersonator-of source",
                           "original value", 1, obj,
                           "returned value", 1, v,
@@ -1105,7 +1115,13 @@ Scheme_Object *scheme_apply_impersonator_of(int mode, Scheme_Object *procs, Sche
   if (procs || oprocs)
     if (!procs || !oprocs || !SAME_OBJ(SCHEME_VEC_ELS(oprocs)[0], 
                                        SCHEME_VEC_ELS(procs)[0]))
-      scheme_contract_error(((mode == 1)? "chaperone-of?" : (mode == 3)? "impersonator-of?" : (mode == 5)? "equal-always?" : "equal?"),
+      scheme_contract_error(((mode == EQUAL_MODE_CHAPERONE_OF)
+                             ? "chaperone-of?"
+                             : ((mode == EQUAL_MODE_IMPERSONATOR_OF)
+                                ? "impersonator-of?"
+                                : ((mode == EQUAL_MODE_EQUAL_ALWAYS)
+                                   ? "equal-always?"
+                                   : "equal?"))),
                             "impersonator-of property procedure returned a value with a different prop:equal+hash source",
                             "original value", 1, obj,
                             "returned value", 1, v,

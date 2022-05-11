@@ -698,6 +698,14 @@ extern Scheme_Object *scheme_input_port_property, *scheme_output_port_property;
 extern Scheme_Object *scheme_cpointer_property;
 
 extern Scheme_Object *scheme_equal_property;
+
+#define SCHEME_NEW_EQUAL_PROTOCOL_VECTOR_LENGTH 3
+
+#define EQUAL_MODE_EQUAL           0
+#define EQUAL_MODE_CHAPERONE_OF    1
+#define EQUAL_MODE_IMPERSONATOR_OF 3
+#define EQUAL_MODE_EQUAL_ALWAYS    5
+
 extern Scheme_Object *scheme_object_name_property;
 extern Scheme_Object *scheme_impersonator_of_property;
 

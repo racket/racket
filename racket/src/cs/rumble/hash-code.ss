@@ -178,16 +178,24 @@
        (let ([hc (fx+/wraparound hc (fx+/wraparound hc0 5))])
          (equal-hash-loop (mcdr x) burn (mix-hash-code hc) mode)))]
     [(and (#%$record? x)
-          (or (eq? mode 'equal?) (not (struct-type-mutable? (#%$record-type-descriptor x))))
-          (#%$record-hash-procedure x))
+          (let ([rec-hash (#%$record-hash-procedure x)])
+            (and rec-hash
+                 (or (eq? mode 'equal?)
+                     (not (struct-type-mutable? (#%$record-type-descriptor x)))
+                     ;; 'equal-always? and a mutable field: must use new protocol:
+                     (procedure-arity-includes? rec-hash 3))
+                 rec-hash)))
      => (lambda (rec-hash)
           (let ([burn (fx+ burn 2)])
             (let ([hc (fx+/wraparound hc (->fx/checked
                                           'equal-hash-code
-                                          (rec-hash x (lambda (x)
+                                          (let ([hash (lambda (x)
                                                         (let-values ([(hc0 burn0) (equal-hash-loop x burn 0 mode)])
                                                           (set! burn burn0)
-                                                          hc0)))))])
+                                                          hc0))])
+                                            (if (procedure-arity-includes? rec-hash 3)
+                                                (rec-hash x hash (eq? mode 'equal-always?))
+                                                (rec-hash x hash)))))])
               (values hc burn))))]
     [(impersonator? x)
      ;; If an impersonator wraps a value where `equal?` hashing is
@@ -242,18 +250,26 @@
        (let ([hc (fx+/wraparound hc hc0)])
          (equal-secondary-hash-loop (mcdr x) burn (mix-hash-code hc) mode)))]
     [(and (#%$record? x)
-          (or (eq? mode 'equal?) (not (struct-type-mutable? (#%$record-type-descriptor x))))
-          (or (struct-property-ref 'secondary-hash (#%$record-type-descriptor x) #f)
-              ;; to use default hash proc as default secondary hash proc:
-              (#%$record-hash-procedure x)))
+          (let ([rec-hash (or (struct-property-ref 'secondary-hash (#%$record-type-descriptor x) #f)
+                              ;; to use default hash proc as default secondary hash proc:
+                              (#%$record-hash-procedure x))])
+            (and rec-hash
+                 (or (eq? mode 'equal?)
+                     (not (struct-type-mutable? (#%$record-type-descriptor x)))
+                     ;; 'equal-always? and a mutable field: must use new protocol:
+                     (procedure-arity-includes? rec-hash 3))
+                 rec-hash)))
      => (lambda (rec-hash)
           (let ([burn (fx+ burn 2)])
             (let ([hc (fx+/wraparound hc (->fx/checked
                                           'equal-secondary-hash-code
-                                          (rec-hash x (lambda (x)
+                                          (let ([hash (lambda (x)
                                                         (let-values ([(hc0 burn0) (equal-secondary-hash-loop x burn 0 mode)])
                                                           (set! burn burn0)
-                                                          hc0)))))])
+                                                          hc0))])
+                                            (if (procedure-arity-includes? rec-hash 3)
+                                                (rec-hash x hash (eq? mode 'equal-always?))
+                                                (rec-hash x hash)))))])
               (values hc burn))))]
     [(impersonator? x)
      (equal-secondary-hash-loop (impersonator-val x) burn hc mode)]
