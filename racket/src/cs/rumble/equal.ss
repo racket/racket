@@ -147,19 +147,17 @@
                                           ;; and `equal-always?`
                                           (not new-api?))
                                      #f]
-                                    [eql?
-                                     (let ([eql? (lambda (a b)
-                                                   ;; Make sure record sees only booleans:
-                                                   (and (eql? a b) #t))])
-                                       (if new-api?
-                                           (rec-equal? orig-a orig-b eql? (eq? mode 'equal-always?))
-                                           (rec-equal? orig-a orig-b eql?)))]
                                     [else
-                                     (let ([eql? (let ([ctx (deeper-context ctx)])
-                                                   (lambda (a b)
-                                                     (equal? a b ctx)))])
+                                     (let ([eql? (if eql?
+                                                     (lambda (a b)
+                                                       ;; Make sure record sees only booleans:
+                                                       (and (eql? a b) #t))
+                                                     (let ([ctx (deeper-context ctx)])
+                                                       (lambda (a b)
+                                                         (equal? a b ctx))))])
                                        (if new-api?
-                                           (rec-equal? orig-a orig-b eql? (eq? mode 'equal-always?))
+                                           (rec-equal? orig-a orig-b eql? (or (eq? mode 'equal?)
+                                                                              (eq? mode 'impersonator-of?)))
                                            (rec-equal? orig-a orig-b eql?)))])))))])))]
            [(and (or (eq? mode 'chaperone-of?) (eq? mode 'equal-always?))
                  ;; Mutable strings and bytevectors must be `eq?` for `chaperone-of?` and `equal-always?`

@@ -378,21 +378,21 @@ indexing and comparison operations, especially in the implementation of
  @itemlist[
 
   @item{The two-procedure case supports customization of @racket[equal-always?],
-        and a secondary hashing function is omitted:
+        and a separate secondary hashing function is omitted:
 
        @itemlist[
          @item{@racket[_equal-proc : (any/c any/c (any/c any/c . -> . boolean?)  boolean? . -> . any/c)]
                --- the first two arguments are the values to compare, the third argument is an
                equality function to use for recursive comparisons, and the last argument
-               is @racket[#t] for an @racket[equal-always?] comparison or @racket[#f]
-               otherwise. Any result except @racket[#f] indicates that the given two values
+               is @racket[#t] for an @racket[equal?] or @racket[impersonator-of?] comparison or @racket[#f]
+               for an @racket[equal-always?] or @racket[chaperone-of?] comparison. Any result except @racket[#f] indicates that the given two values
                should be considered equivalent.}
 
           @item{@racket[_hash-proc : (any/c (any/c . -> . exact-integer?) boolean? . -> . exact-integer?)]
                 ---- the first argument is the value to compute a hash code for, the
                 second argument is a hashing function to use for recursive hashing, and the
-                last argument is @racket[#t] for @racket[equal-always?] hashing or
-                @racket[#f] for @racket[equal?] hashing.}
+                last argument is @racket[#t] for @racket[equal?] hashing or
+                @racket[#f] for @racket[equal-always?] hashing.}
 
         ]
 

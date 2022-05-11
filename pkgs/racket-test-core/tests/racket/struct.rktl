@@ -1015,6 +1015,8 @@
   (test #t equal-always? (make-t1 0 1) (make-t1 0 1))
   (test #t equal? (make-t2 0 1) (make-t2 0 1))
   (test #f equal-always? (make-t2 0 1) (make-t2 0 1))
+  (test #f chaperone-of? (make-t2 0 1) (make-t2 0 1))
+  (test #t impersonator-of? (make-t2 0 1) (make-t2 0 1))
   (let ([t (make-t2 0 1)])
     (test #t equal-always? t t))
   (test #t equal? 
@@ -1081,12 +1083,12 @@
   ;; new `prop:equal+hash` that more fully supports `equal-always?`
   (define-struct o (x y z)
     #:property prop:equal+hash (list
-                                (lambda (a b equal? always?)
-                                  (set! was-always? always?)
+                                (lambda (a b equal? now?)
+                                  (set! was-always? (not now?))
                                   (and (equal? (o-x a) (o-x b))
                                        (equal? (o-z a) (o-z b))))
-                                (lambda (a hash always?)
-                                  (set! was-always? always?)
+                                (lambda (a hash now?)
+                                  (set! was-always? (not now?))
                                   (+ (hash (o-x a)) (* 9 (hash (o-z a))))))
     #:mutable)
 
@@ -1095,6 +1097,12 @@
   (test #f values was-always?)
   (test #t equal-always? (make-o 1 2 3) (make-o 1 20 3))
   (test #f equal-always? (make-o 1 2 3) (make-o 1 20 30))
+  (test #t values was-always?)
+  (test #t impersonator-of? (make-o 1 2 3) (make-o 1 20 3))
+  (test #f impersonator-of? (make-o 1 2 3) (make-o 1 20 30))
+  (test #f values was-always?)
+  (test #t chaperone-of? (make-o 1 2 3) (make-o 1 20 3))
+  (test #f chaperone-of? (make-o 1 2 3) (make-o 1 20 30))
   (test #t values was-always?)
 
   (test #t equal?

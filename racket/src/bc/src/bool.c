@@ -814,10 +814,10 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
             Equal_Info *eql2;
 #     include "mzeqchk.inc"
 
-            if ((eql->mode == EQUAL_MODE_EQUAL_ALWAYS)
+            if (((eql->mode == EQUAL_MODE_EQUAL_ALWAYS) || (eql->mode == EQUAL_MODE_CHAPERONE_OF))
                 && !(MZ_OPT_HASH_KEY(&st1->iso) & STRUCT_TYPE_ALL_IMMUTABLE)
                 && (SCHEME_VEC_SIZE(procs1) != SCHEME_NEW_EQUAL_PROTOCOL_VECTOR_LENGTH)) {
-              /* Mutable records cannot use the old protocol for `equal-always?` */
+              /* Mutable records cannot use the old protocol for `chapeone-of?` or `equal-always?` */
               return 0;
             }
 
@@ -846,7 +846,9 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
             if (SCHEME_VEC_SIZE(procs1) == SCHEME_NEW_EQUAL_PROTOCOL_VECTOR_LENGTH) {
               /* new protocol */
               procs1 = SCHEME_VEC_ELS(procs1)[1];
-              a[3] = ((eql->mode == EQUAL_MODE_EQUAL_ALWAYS) ? scheme_true : scheme_false);
+              a[3] = (((eql->mode == EQUAL_MODE_EQUAL_ALWAYS) || (eql->mode == EQUAL_MODE_CHAPERONE_OF))
+                      ? scheme_false
+                      : scheme_true);
               recur = _scheme_apply(procs1, 4, a);
             } else {
               /* old protocol */

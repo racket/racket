@@ -194,7 +194,7 @@
                                                           (set! burn burn0)
                                                           hc0))])
                                             (if (procedure-arity-includes? rec-hash 3)
-                                                (rec-hash x hash (eq? mode 'equal-always?))
+                                                (rec-hash x hash (eq? mode 'equal?))
                                                 (rec-hash x hash)))))])
               (values hc burn))))]
     [(impersonator? x)
@@ -268,7 +268,7 @@
                                                           (set! burn burn0)
                                                           hc0))])
                                             (if (procedure-arity-includes? rec-hash 3)
-                                                (rec-hash x hash (eq? mode 'equal-always?))
+                                                (rec-hash x hash (eq? mode 'equal?))
                                                 (rec-hash x hash)))))])
               (values hc burn))))]
     [(impersonator? x)

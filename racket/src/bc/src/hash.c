@@ -1777,7 +1777,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
         a[1] = recur;
         
         if (SCHEME_VEC_SIZE(procs) == SCHEME_NEW_EQUAL_PROTOCOL_VECTOR_LENGTH) {
-          a[2] = ((hi->mode == EQUAL_MODE_EQUAL_ALWAYS) ? scheme_true : scheme_false);
+          a[2] = ((hi->mode == EQUAL_MODE_EQUAL_ALWAYS) ? scheme_false : scheme_true);
           procs = SCHEME_VEC_ELS(procs)[2];
           v = _scheme_apply(procs, 3, a);
         } else {
@@ -2388,7 +2388,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
 
         if (SCHEME_VEC_SIZE(procs) == SCHEME_NEW_EQUAL_PROTOCOL_VECTOR_LENGTH) {
           /* new protocol uses one hash function for primary and secondary */
-          a[2] = ((hi->mode == EQUAL_MODE_EQUAL_ALWAYS) ? scheme_true : scheme_false);
+          a[2] = ((hi->mode == EQUAL_MODE_EQUAL_ALWAYS) ? scheme_false : scheme_true);
           procs = SCHEME_VEC_ELS(procs)[2];
           v = _scheme_apply(procs, 3, a);
         } else {
