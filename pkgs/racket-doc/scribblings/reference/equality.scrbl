@@ -365,6 +365,54 @@ indexing and comparison operations, especially in the implementation of
    (equal? western-farm southern-farm))}
 
 
+@defthing[gen:equal-mode+hash any/c]{
+ A @tech{generic interface} (see @secref["struct-generics"]) for types that
+ may specify differences between @racket[equal?] and @racket[equal-always?].
+ The following methods must be implemented:
+
+ @itemize[
+
+ @item{@racket[_equal-mode-proc :
+               (any/c any/c (any/c any/c . -> . boolean?) boolean? . -> . any/c)] ---
+   the first two arguments are the values to compare, the third argument is an
+   equality function to use for recursive comparisons, and the last argument is
+   the mode: @racket[#t] for an @racket[equal?] or @racket[impersonator-of?]
+   comparison or @racket[#f] for an @racket[equal-always?] or
+   @racket[chaperone-of?] comparison.}
+
+ @item{@racket[_hash-mode-proc :
+               (any/c (any/c . -> . exact-integer?) boolean? . -> . exact-integer?)] ---
+   the first argument is the value to compute a hash code for, the second
+   argument is a hashing function to use for recursive hashing, and the last
+   argument is the mode: @racket[#t] for @racket[equal?] hashing or @racket[#f]
+   for @racket[equal-always?] hashing.}]
+
+ Implementing @racket[gen:equal-mode+hash] is most useful for types that
+ specify differences between @racket[equal?] and @racket[equal-always?]. For
+ example a type that wraps mutable data with getter and setter procedures:
+ @(examples
+   (define (get gs) ((getset-getter gs)))
+   (define (set gs new) ((getset-setter gs) new))
+   (struct getset (getter setter)
+      #:methods gen:equal-mode+hash
+      [(define (equal-mode-proc self other rec mode)
+         (and mode (rec (get self) (get other))))
+       (define (hash-mode-proc self rec mode)
+         (if mode (rec (get self)) (eq-hash-code self)))])
+
+   (define x 1)
+   (define y 2)
+   (define gsx (getset (lambda () x) (lambda (new) (set! x new))))
+   (define gsy (getset (lambda () y) (lambda (new) (set! y new))))
+   (eval:check (equal? gsx gsy) #f)
+   (eval:check (equal-always? gsx gsy) #f)
+   (set gsx 3)
+   (set gsy 3)
+   (eval:check (equal? gsx gsy) #t)
+   (eval:check (equal-always? gsx gsy) #f)
+   (eval:check (equal-always? gsx gsx) #t))}
+
+
 @defthing[prop:equal+hash struct-type-property?]{
 
  A @tech{structure type property} (see @secref["structprops"])
@@ -373,7 +421,8 @@ indexing and comparison operations, especially in the implementation of
  using he @racket[gen:equal+hash] @tech{generic interface}.
 
  A @racket[prop:equal+hash] property value is a list of either two
- procedures or three procedures:
+ procedures @racket[(list _equal-mode-proc _hash-mode-proc)] or three
+ procedures @racket[(list _equal-proc _hash-proc _hash2-proc)]:
 
  @itemlist[
 
@@ -381,14 +430,14 @@ indexing and comparison operations, especially in the implementation of
         and a separate secondary hashing function is omitted:
 
        @itemlist[
-         @item{@racket[_equal-proc : (any/c any/c (any/c any/c . -> . boolean?)  boolean? . -> . any/c)]
+         @item{@racket[_equal-mode-proc : (any/c any/c (any/c any/c . -> . boolean?) boolean? . -> . any/c)]
                --- the first two arguments are the values to compare, the third argument is an
                equality function to use for recursive comparisons, and the last argument
                is @racket[#t] for an @racket[equal?] or @racket[impersonator-of?] comparison or @racket[#f]
                for an @racket[equal-always?] or @racket[chaperone-of?] comparison. Any result except @racket[#f] indicates that the given two values
                should be considered equivalent.}
 
-          @item{@racket[_hash-proc : (any/c (any/c . -> . exact-integer?) boolean? . -> . exact-integer?)]
+          @item{@racket[_hash-mode-proc : (any/c (any/c . -> . exact-integer?) boolean? . -> . exact-integer?)]
                 ---- the first argument is the value to compute a hash code for, the
                 second argument is a hashing function to use for recursive hashing, and the
                 last argument is @racket[#t] for @racket[equal?] hashing or
@@ -396,7 +445,7 @@ indexing and comparison operations, especially in the implementation of
 
         ]
 
-       The given @racket[_hash-proc] function is used both for a
+       The given @racket[_hash-mode-proc] function is used both for a
        primary hash code and secondary hash code.}
 
   @item{The three-procedure case customizes @racket[equal-always?]
