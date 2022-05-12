@@ -300,3 +300,38 @@
                     (equal-always-secondary-hash-code bw))
       (check chaperone-of? bw bw)))
   )
+
+(define ((function-passthrough f) . args) (apply f args))
+
+(struct overinclusive-arity1 ()
+  #:methods gen:equal+hash
+  [(define equal-proc (function-passthrough (λ (s o r) #t)))
+   (define hash-proc (function-passthrough (λ (s r) 0)))
+   (define hash2-proc (function-passthrough (λ (s r) 0)))])
+
+(struct overinclusive-arity2 ()
+  #:methods gen:equal-mode+hash
+  [(define equal-mode-proc (function-passthrough (λ (s o r m) #t)))
+   (define hash-mode-proc (function-passthrough (λ (s r m) 0)))])
+
+(struct overinclusive-arity3 ()
+  #:property prop:equal+hash
+  (list (function-passthrough (λ (s o r) #t))
+        (function-passthrough (λ (s r) 0))
+        (function-passthrough (λ (s r) 0))))
+
+(struct overinclusive-arity4 ()
+  #:property prop:equal+hash
+  (list (function-passthrough (λ (s o r m) #t))
+        (function-passthrough (λ (s r m) 0))))
+
+(module+ test
+  (test-case "overinclusive arity equal+hash"
+    (for ([oia (in-list (list overinclusive-arity1
+                              overinclusive-arity2
+                              overinclusive-arity3
+                              overinclusive-arity4))])
+      (check-true (equal? (oia) (oia)))
+      (check-true (equal-always? (oia) (oia)))
+      (check-equal? (equal-hash-code (oia)) 0)
+      (check-equal? (equal-always-hash-code (oia)) 0))))
