@@ -91,7 +91,9 @@ show_explicitly_disabled "${enable_pbchunk}" "pbchunk"
 m4_include(../ac/portable_show.m4)
 m4_include(../ac/natipkg_show.m4)
 show_explicitly_enabled "${enable_libz}" "Installed libz"
+show_explicitly_disabled "${enable_libz}" "Installed libz"
 show_explicitly_enabled "${enable_liblz4}" "Installed liblz4"
+show_explicitly_disabled "${enable_liblz4}" "Installed liblz4"
 show_explicitly_enabled "${enable_iconv}" "iconv"
 show_explicitly_disabled "${enable_iconv}" "iconv"
 show_explicitly_enabled "${enable_curses}" "curses"
@@ -172,6 +174,8 @@ PLT_CS_SLSP_SUFFIX=
 enable_pthread_by_default=yes
 
 compress_boot_files_by_default=no
+
+use_own_zlibs=no
 
 cs_auto_flags=--disable-auto-flags
 
@@ -284,6 +288,7 @@ case "$host_os" in
     skip_iconv_check=yes
     skip_curses_check=yes
     use_flag_pthread=no
+    use_own_zlibs=yes
     MACH_OS=nt
     LIBS="${LIBS} -lshell32 -luser32 -lole32 -lrpcrt4 -luuid -lws2_32 -ladvapi32 -lwinmm"
     MINGW="t"
@@ -339,6 +344,8 @@ case "$host_os" in
     if test "${enable_ios}" != "" ; then
       enable_curses=no
     fi
+
+    use_own_zlibs=yes
     ;;
   nto-qnx*)
     MACH_OS=qnx
@@ -629,6 +636,15 @@ fi
 if test "${enable_liblz4}" != "no" ; then
   if test ! -d "$SCHEME_SRC_DIR/lz4" ; then
     echo "No lz4 in Scheme directory, so trying installed"
+    enable_liblz4=yes
+  fi
+fi
+
+if test "${use_own_zlibs}" = "no" ; then
+  if test "${enable_libz}" = "" ; then
+    enable_libz=yes
+  fi
+  if test "${enable_liblz4}" = "" ; then
     enable_liblz4=yes
   fi
 fi
