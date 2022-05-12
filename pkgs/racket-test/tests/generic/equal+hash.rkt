@@ -49,6 +49,29 @@
                          (equal-always-hash-code (mkons 1 2)))))
   )
 
+(define (get gs) ((getset-getter gs)))
+(define (set gs new) ((getset-setter gs) new))
+(struct getset (getter setter)
+  #:methods gen:equal-mode+hash
+  [(define (equal-mode-proc self other rec mode)
+     (and mode (rec (get self) (get other))))
+   (define (hash-mode-proc self rec mode)
+     (if mode (rec (get self)) (eq-hash-code self)))])
+
+(module+ test
+  (test-case "getset equal-mode"
+    (define x 1)
+    (define y 2)
+    (define gsx (getset (lambda () x) (lambda (new) (set! x new))))
+    (define gsy (getset (lambda () y) (lambda (new) (set! y new))))
+    (check-false (equal? gsx gsy))
+    (check-false (equal-always? gsx gsy))
+    (set gsx 3)
+    (set gsy 3)
+    (check-true (equal? gsx gsy))
+    (check-false (equal-always? gsx gsy))
+    (check-true (equal-always? gsx gsx))))
+
 #|
 ;; dishonestly implement one layer deep of equal-now explicitly,
 ;; while not declaring it mutable:
@@ -104,6 +127,15 @@
      (eq-hash-code (bxwrp-shalloweq-box self)))
    (define (hash2-proc self rec)
      (eq-hash-code (bxwrp-shalloweq-box self)))])
+
+(struct bxwrp-honest-mode (box)
+  #:methods gen:equal-mode+hash
+  [(define (equal-mode-proc self other =? mode)
+     (and mode
+          (=? (unbox (bxwrp-honest-mode-box self))
+              (unbox (bxwrp-honest-mode-box other)))))
+   (define (hash-mode-proc self rec mode)
+     (if mode (rec (unbox (bxwrp-honest-mode-box self))) (eq-hash-code self)))])
 
 (module+ test
   (test-case "bxwrp-honest-mutable equal+hash"
@@ -225,4 +257,46 @@
       (check chaperone-of?
              (bxwrp-shalloweq b)
              (bxwrp-shalloweq b))))
+
+  (test-case "bxwrp-honest-mode equal+hash"
+    (check-equal? (bxwrp-honest-mode (box 1))
+                  (bxwrp-honest-mode (box 1)))
+    (check-equal? (equal-hash-code (bxwrp-honest-mode (box 2)))
+                  (equal-hash-code (bxwrp-honest-mode (box 2))))
+    (check-equal? (equal-secondary-hash-code
+                   (bxwrp-honest-mode (box 3)))
+                  (equal-secondary-hash-code
+                   (bxwrp-honest-mode (box 3))))
+    (check-false (equal-always? (bxwrp-honest-mode (box 1))
+                                (bxwrp-honest-mode (box 1))))
+    (check-false (= (equal-always-hash-code
+                     (bxwrp-honest-mode (box 2)))
+                    (equal-always-hash-code
+                     (bxwrp-honest-mode (box 2)))))
+    (check-false (= (equal-always-secondary-hash-code
+                     (bxwrp-honest-mode (box 3)))
+                    (equal-always-secondary-hash-code
+                     (bxwrp-honest-mode (box 3)))))
+    (check-false (chaperone-of? (bxwrp-honest-mode (box 1))
+                                (bxwrp-honest-mode (box 1))))
+    (let* ([b (box 4)]
+           [bw (bxwrp-honest-mode b)])
+      (check-false (equal-always? (bxwrp-honest-mode b)
+                                  (bxwrp-honest-mode b)))
+      (check-false (= (equal-always-hash-code
+                       (bxwrp-honest-mode b))
+                      (equal-always-hash-code
+                       (bxwrp-honest-mode b))))
+      (check-false (= (equal-always-secondary-hash-code
+                       (bxwrp-honest-mode b))
+                      (equal-always-secondary-hash-code
+                       (bxwrp-honest-mode b))))
+      (check-false (chaperone-of? (bxwrp-honest-mode b)
+                                  (bxwrp-honest-mode b)))
+      (check equal-always? bw bw)
+      (check-equal? (equal-always-hash-code bw)
+                    (equal-always-hash-code bw))
+      (check-equal? (equal-always-secondary-hash-code bw)
+                    (equal-always-secondary-hash-code bw))
+      (check chaperone-of? bw bw)))
   )
