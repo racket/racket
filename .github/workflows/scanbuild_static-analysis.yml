@@ -52,7 +52,7 @@ jobs:
       working-directory: sarif-files
       run: ../.github/scripts/adjust-sarif-tool.sh cgc
     - name: Upload SARIF
-      uses: github/codeql-action/upload-sarif@v1
+      uses: github/codeql-action/upload-sarif@v2
       if: always()
       with:
         sarif_file: sarif-files
@@ -115,7 +115,7 @@ jobs:
       working-directory: sarif-files
       run: ../.github/scripts/adjust-sarif-tool.sh 3m
     - name: Upload SARIF
-      uses: github/codeql-action/upload-sarif@v1
+      uses: github/codeql-action/upload-sarif@v2
       if: always()
       with:
         sarif_file: sarif-files
@@ -174,7 +174,7 @@ jobs:
       working-directory: sarif-files
       run: ../.github/scripts/adjust-sarif-tool.sh cs
     - name: Upload SARIF
-      uses: github/codeql-action/upload-sarif@v1
+      uses: github/codeql-action/upload-sarif@v2
       if: always()
       with:
         sarif_file: sarif-files
