@@ -3138,5 +3138,19 @@
 (test (void) eval '(require (combine-in)))
 
 ;; ----------------------------------------
+;; regression test
+
+(err/rt-test (eval '(module m racket/base
+                      (require (for-syntax racket/base))
+                      (define-for-syntax (f)
+                        (values 1 2))
+                      (define-for-syntax (g)
+                        (define x (f))
+                        (displayln 1)
+                        1)
+                      (begin-for-syntax
+                        (g)))))
+
+;; ----------------------------------------
 
 (report-errs)

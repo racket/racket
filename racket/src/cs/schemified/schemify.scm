@@ -53,6 +53,38 @@
             (if or-part_1 or-part_1 (absolute-path? s_0)))
           #f)))))
 (define-values
+ (prop:keyword-impersonator keyword-impersonator? keyword-impersonator-ref)
+ (make-struct-type-property 'keyword-impersonator))
+(define keyword-procedure-impersonator-of
+  (lambda (v_0)
+    (if (keyword-impersonator? v_0)
+      (|#%app| (keyword-impersonator-ref v_0) v_0)
+      #f)))
+(define-values
+ (struct:keyword-procedure
+  mk-kw-proc
+  keyword-procedure?
+  keyword-procedure-ref
+  keyword-procedure-set!)
+ (let ((app_0
+        (list
+         (cons prop:checked-procedure #t)
+         (cons prop:impersonator-of keyword-procedure-impersonator-of))))
+   (make-struct-type
+    'keyword-procedure
+    #f
+    4
+    0
+    #f
+    app_0
+    (current-inspector)
+    #f
+    '(0 1 2 3))))
+(define keyword-procedure-required
+  (make-struct-field-accessor keyword-procedure-ref 2))
+(define keyword-procedure-allowed
+  (make-struct-field-accessor keyword-procedure-ref 3))
+(define-values
  (prop:procedure-accessor procedure-accessor? procedure-accessor-ref)
  (make-struct-type-property
   'procedure
@@ -67,6 +99,26 @@
   #f
   (list (cons prop:procedure values) (cons prop:procedure-accessor values))
   #t))
+(define procedure-keywords
+  (lambda (p_0)
+    (if (keyword-procedure? p_0)
+      (let ((app_0 (keyword-procedure-required p_0)))
+        (values app_0 (keyword-procedure-allowed p_0)))
+      (if (procedure? p_0)
+        (if (new-procedure? p_0)
+          (let ((v_0 (new-procedure-ref p_0)))
+            (if (procedure? v_0)
+              (procedure-keywords v_0)
+              (let ((a_0 (procedure-accessor-ref p_0)))
+                (if a_0
+                  (procedure-keywords (|#%app| a_0 p_0))
+                  (values null null)))))
+          (values null null))
+        (raise-argument-error*
+         'procedure-keywords
+         'racket/primitive
+         "procedure?"
+         p_0)))))
 (define check-struct-type
   (lambda (name_0 what_0)
     (begin
@@ -1727,6 +1779,202 @@
      (lambda (v_0) (|#%app| (|#%app| do-stream-ref v_0 1)))
      (lambda (v_0) (|#%app| (|#%app| do-stream-ref v_0 2))))))))
 (define empty-stream (make-do-stream (lambda () #t) void void))
+(define map_1346
+  (|#%name|
+   map
+   (case-lambda
+    ((f_0 l_0)
+     (begin
+       (letrec*
+        ((loop_0
+          (|#%name|
+           loop
+           (lambda (l_1)
+             (begin
+               (if (null? l_1)
+                 null
+                 (let ((r_0 (cdr l_1)))
+                   (let ((app_0 (|#%app| f_0 (car l_1))))
+                     (cons app_0 (loop_0 r_0))))))))))
+        (loop_0 l_0))))
+    ((f_0 l1_0 l2_0)
+     (letrec*
+      ((loop_0
+        (|#%name|
+         loop
+         (lambda (l1_1 l2_1)
+           (begin
+             (if (null? l1_1)
+               null
+               (let ((r1_0 (cdr l1_1)))
+                 (let ((r2_0 (cdr l2_1)))
+                   (let ((r1_1 r1_0))
+                     (let ((app_0
+                            (let ((app_0 (car l1_1)))
+                              (|#%app| f_0 app_0 (car l2_1)))))
+                       (cons app_0 (loop_0 r1_1 r2_0))))))))))))
+      (loop_0 l1_0 l2_0)))
+    ((f_0 l_0 . args_0) (gen-map f_0 (cons l_0 args_0))))))
+(define check-args
+  (lambda (who_0 f_0 ls_0)
+    (begin
+      (if (procedure? f_0)
+        (void)
+        (raise-argument-error who_0 "procedure?" f_0))
+      (letrec*
+       ((loop_0
+         (|#%name|
+          loop
+          (lambda (prev-len_0 ls_1 i_0)
+            (begin
+              (if (null? ls_1)
+                (void)
+                (let ((l_0 (car ls_1)))
+                  (begin
+                    (if (list? l_0)
+                      (void)
+                      (raise-argument-error who_0 "list?" l_0))
+                    (let ((len_0 (length l_0)))
+                      (begin
+                        (if (if prev-len_0 (not (= len_0 prev-len_0)) #f)
+                          (raise-arguments-error
+                           who_0
+                           "all lists must have same size"
+                           "first list length"
+                           prev-len_0
+                           "other list length"
+                           len_0
+                           "procedure"
+                           f_0)
+                          (void))
+                        (let ((app_0 (cdr ls_1)))
+                          (loop_0 len_0 app_0 (add1 i_0)))))))))))))
+       (loop_0 #f ls_0 1))
+      (if (procedure-arity-includes? f_0 (length ls_0))
+        (void)
+        (call-with-values
+         (lambda () (procedure-keywords f_0))
+         (case-lambda
+          ((required-keywords_0 optional-keywords_0)
+           (let ((app_0
+                  (if (pair? required-keywords_0)
+                    (string-append
+                     "argument mismatch;\n"
+                     " the given procedure expects keyword arguments")
+                    (string-append
+                     "argument mismatch;\n"
+                     " the given procedure's expected number of arguments does not match"
+                     " the given number of lists"))))
+             (let ((app_1
+                    (unquoted-printing-string
+                     (let ((or-part_0
+                            (let ((n_0 (object-name f_0)))
+                              (if (symbol? n_0) (symbol->string n_0) #f))))
+                       (if or-part_0 or-part_0 "#<procedure>")))))
+               (apply
+                raise-arguments-error
+                who_0
+                app_0
+                "given procedure"
+                app_1
+                (let ((app_2
+                       (let ((a_0 (procedure-arity f_0)))
+                         (if (pair? required-keywords_0)
+                           null
+                           (if (integer? a_0)
+                             (list "expected" a_0)
+                             (if (arity-at-least? a_0)
+                               (list
+                                "expected"
+                                (unquoted-printing-string
+                                 (string-append
+                                  "at least "
+                                  (number->string
+                                   (arity-at-least-value a_0)))))
+                               null))))))
+                  (let ((app_3
+                         (if (pair? required-keywords_0)
+                           null
+                           (list "given" (length ls_0)))))
+                    (let ((app_4
+                           (if (pair? required-keywords_0)
+                             (list
+                              "required keywords"
+                              (unquoted-printing-string
+                               (apply
+                                string-append
+                                (cdr
+                                 (letrec*
+                                  ((loop_0
+                                    (|#%name|
+                                     loop
+                                     (lambda (kws_0)
+                                       (begin
+                                         (if (null? kws_0)
+                                           null
+                                           (let ((app_4
+                                                  (string-append
+                                                   "#:"
+                                                   (keyword->string
+                                                    (car kws_0)))))
+                                             (list*
+                                              " "
+                                              app_4
+                                              (loop_0 (cdr kws_0))))))))))
+                                  (loop_0 required-keywords_0))))))
+                             null)))
+                      (append
+                       app_2
+                       app_3
+                       app_4
+                       (let ((w_0
+                              (let ((app_5 (error-print-width)))
+                                (quotient app_5 (length ls_0)))))
+                         (if (> w_0 10)
+                           (list
+                            "argument lists..."
+                            (unquoted-printing-string
+                             (apply
+                              string-append
+                              (letrec*
+                               ((loop_0
+                                 (|#%name|
+                                  loop
+                                  (lambda (ls_1)
+                                    (begin
+                                      (if (null? ls_1)
+                                        null
+                                        (let ((app_5
+                                               (string-append
+                                                "\n   "
+                                                (let ((app_5
+                                                       (error-value->string-handler)))
+                                                  (|#%app|
+                                                   app_5
+                                                   (car ls_1)
+                                                   w_0)))))
+                                          (cons
+                                           app_5
+                                           (loop_0 (cdr ls_1))))))))))
+                               (loop_0 ls_0)))))
+                           null))))))))))
+          (args (raise-binding-result-arity-error 2 args))))))))
+(define gen-map
+  (lambda (f_0 ls_0)
+    (begin
+      #t
+      (letrec*
+       ((loop_0
+         (|#%name|
+          loop
+          (lambda (ls_1)
+            (begin
+              (if (null? (car ls_1))
+                null
+                (let ((next-ls_0 (map_1346 cdr ls_1)))
+                  (let ((app_0 (apply f_0 (map_1346 car ls_1))))
+                    (cons app_0 (loop_0 next-ls_0))))))))))
+       (loop_0 ls_0)))))
 (define hash-keys
   (let ((hash-keys_0
          (|#%name|
@@ -44867,10 +45115,14 @@
                                                                                   e_1))))
                                                                           (vector
                                                                            'beginl
-                                                                           (append
-                                                                            new-rhss_0
-                                                                            (begins->list_0
-                                                                             e_2))))
+                                                                           (let ((app_0
+                                                                                  (map_1346
+                                                                                   ensure-single-valued_0
+                                                                                   new-rhss_0)))
+                                                                             (append
+                                                                              app_0
+                                                                              (begins->list_0
+                                                                               e_2)))))
                                                                         (if (null?
                                                                              poss_2)
                                                                           #f
@@ -49174,7 +49426,23 @@
                        (loop_0 1))
                       (list e_0)))
                   (list e_0)))
-              (list e_0)))))))
+              (list e_0))))))
+      (ensure-single-valued_0
+       (|#%name|
+        ensure-single-valued
+        (lambda (e_0)
+          (begin
+            (if (vector? e_0)
+              (if (eq? 'quote (unsafe-vector*-ref e_0 0))
+                e_0
+                (if (eq? '$value (unsafe-vector*-ref e_0 0))
+                  e_0
+                  (if (eq? 'lambda (unsafe-vector*-ref e_0 0))
+                    e_0
+                    (if (eq? 'case-lambda (unsafe-vector*-ref e_0 0))
+                      e_0
+                      (list->vector (list '$value e_0))))))
+              e_0))))))
      (with-continuation-mark*
       authentic
       parameterization-key

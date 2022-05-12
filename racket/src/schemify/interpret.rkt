@@ -254,7 +254,7 @@
                                e
                                (vector 'clear poss e))])
                     ;; Use `beginl` instead of `begin` to encourage further collapsing
-                    (vector 'beginl (append new-rhss (begins->list e))))]
+                    (vector 'beginl (append (map ensure-single-valued new-rhss) (begins->list e))))]
                  [(null? poss) #f]
                  [(eqv? pos (car poss))
                   (loop (add1 pos) (cdr poss) (cdr rhss))]
@@ -623,6 +623,18 @@
            [else (list e)])]
         [#() (list e)])]
       [else (list e)]))
+
+  (define (ensure-single-valued e)
+    (cond
+      [(vector? e)
+       (interp-match
+        e
+        [#(quote) e]
+        [#($value) e]
+        [#(lambda) e]
+        [#(case-lambda) e]
+        [#() `#($value ,e)])]
+      [else e]))
 
   (with-deterministic-gensym
     (start linklet-e)))
@@ -1110,7 +1122,8 @@
                                                  (f 'vec) (g 'also-vec 'more)
                                                  one two (variable-ref two-box)
                                                  (continuation-mark-set-first #f 'x 'no)))))
-                                    #f))
+                                    #f
+                                    'racket))
   (pretty-print b)
   (define l (interpret-linklet b))
   (l 'the-x (var #f)))
