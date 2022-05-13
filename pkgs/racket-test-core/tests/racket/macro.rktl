@@ -3149,7 +3149,9 @@
                         (displayln 1)
                         1)
                       (begin-for-syntax
-                        (g)))))
+                        (g))))
+             exn:fail:contract:arity?
+             #rx"received: 2")
 
 ;; ----------------------------------------
 

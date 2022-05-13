@@ -49684,10 +49684,13 @@
                                                  stack_1
                                                  vs_0)))))))
                                         (|#%app| rator_0 rand_0)))
-                                     (args
-                                      (raise-binding-result-arity-error
-                                       2
-                                       args))))
+                                     ((stack_1 . vals_0)
+                                      (apply
+                                       raise-result-arity-error
+                                       #f
+                                       1
+                                       #f
+                                       vals_0))))
                                    (if (eq? len_0 4)
                                      (call-with-values
                                       (lambda ()
@@ -49768,14 +49771,20 @@
                                               rator_0
                                               rand1_0
                                               rand2_0)))
-                                          (args
-                                           (raise-binding-result-arity-error
-                                            2
-                                            args)))))
-                                       (args
-                                        (raise-binding-result-arity-error
-                                         2
-                                         args))))
+                                          ((stack2_0 . vals_0)
+                                           (apply
+                                            raise-result-arity-error
+                                            #f
+                                            1
+                                            #f
+                                            vals_0)))))
+                                       ((stack1_0 . vals_0)
+                                        (apply
+                                         raise-result-arity-error
+                                         #f
+                                         1
+                                         #f
+                                         vals_0))))
                                      (call-with-values
                                       (lambda ()
                                         (call-with-values
@@ -49822,10 +49831,15 @@
                                                                    (cons
                                                                     v_0
                                                                     rev-rands_0)))
-                                                                 (args
-                                                                  (raise-binding-result-arity-error
-                                                                   2
-                                                                   args)))))
+                                                                 ((new-stack_0
+                                                                   .
+                                                                   vals_0)
+                                                                  (apply
+                                                                   raise-result-arity-error
+                                                                   #f
+                                                                   1
+                                                                   #f
+                                                                   vals_0)))))
                                                              (case-lambda
                                                               ((stack_2
                                                                 rev-rands_1)
@@ -49922,8 +49936,13 @@
                                         (raise-binding-result-arity-error
                                          2
                                          args))))))))
-                              (args
-                               (raise-binding-result-arity-error 2 args))))))
+                              ((rand-stack_0 . vals_0)
+                               (apply
+                                raise-result-arity-error
+                                #f
+                                1
+                                #f
+                                vals_0))))))
                         (if (if (eq? 'quote (unsafe-vector*-ref b64_0 0))
                               #t
                               #f)
@@ -50054,10 +50073,15 @@
                                                                       i_0
                                                                       pos_1)
                                                                      val_0)))
-                                                                 (args
-                                                                  (raise-binding-result-arity-error
-                                                                   2
-                                                                   args))))))))))
+                                                                 ((new-stack_0
+                                                                   .
+                                                                   vals_0)
+                                                                  (apply
+                                                                   raise-result-arity-error
+                                                                   #f
+                                                                   1
+                                                                   #f
+                                                                   vals_0))))))))))
                                                       (loop_0 0 stack65_0))))
                                                 (interpret_1
                                                  b_1
@@ -50141,10 +50165,15 @@
                                                                                                            i_0
                                                                                                            pos_0)
                                                                                                           val_0))))
-                                                                                                     (args
-                                                                                                      (raise-binding-result-arity-error
-                                                                                                       2
-                                                                                                       args))))))))))
+                                                                                                     ((new-stack_0
+                                                                                                       .
+                                                                                                       vals_0)
+                                                                                                      (apply
+                                                                                                       raise-result-arity-error
+                                                                                                       #f
+                                                                                                       1
+                                                                                                       #f
+                                                                                                       vals_0))))))))))
                                                                                           (loop_0
                                                                                            0
                                                                                            stack_1)))))
@@ -50266,10 +50295,15 @@
                                                                        new-stack_0
                                                                        (cdr
                                                                         boxes_1)))))
-                                                                 (args
-                                                                  (raise-binding-result-arity-error
-                                                                   2
-                                                                   args))))))))))
+                                                                 ((new-stack_0
+                                                                   .
+                                                                   vals_0)
+                                                                  (apply
+                                                                   raise-result-arity-error
+                                                                   #f
+                                                                   1
+                                                                   #f
+                                                                   vals_0))))))))))
                                                       (loop_0
                                                        0
                                                        body-stack_0
@@ -50434,10 +50468,13 @@
                                                      (if return-mode63_0
                                                        (values new-stack_0 v_0)
                                                        v_0))
-                                                    (args
-                                                     (raise-binding-result-arity-error
-                                                      2
-                                                      args)))))
+                                                    ((new-stack_0 . vals_0)
+                                                     (apply
+                                                      raise-result-arity-error
+                                                      #f
+                                                      1
+                                                      #f
+                                                      vals_0)))))
                                                 (if (if (eq?
                                                          'clear
                                                          (unsafe-vector*-ref
@@ -50552,10 +50589,15 @@
                                                                     els_0
                                                                     new-stack_0
                                                                     return-mode63_0)))
-                                                                (args
-                                                                 (raise-binding-result-arity-error
-                                                                  2
-                                                                  args))))))))
+                                                                ((new-stack_0
+                                                                  .
+                                                                  vals_0)
+                                                                 (apply
+                                                                  raise-result-arity-error
+                                                                  #f
+                                                                  1
+                                                                  #f
+                                                                  vals_0))))))))
                                                       (if (if (eq?
                                                                'wcm
                                                                (unsafe-vector*-ref
@@ -50651,14 +50693,24 @@
                                                                              return-mode63_0
                                                                              k-val_0
                                                                              v-val_0))))))
-                                                                     (args
-                                                                      (raise-binding-result-arity-error
-                                                                       2
-                                                                       args)))))
-                                                                  (args
-                                                                   (raise-binding-result-arity-error
-                                                                    2
-                                                                    args))))))))
+                                                                     ((v-stack_0
+                                                                       .
+                                                                       vals_0)
+                                                                      (apply
+                                                                       raise-result-arity-error
+                                                                       #f
+                                                                       1
+                                                                       #f
+                                                                       vals_0)))))
+                                                                  ((k-stack_0
+                                                                    .
+                                                                    vals_0)
+                                                                   (apply
+                                                                    raise-result-arity-error
+                                                                    #f
+                                                                    1
+                                                                    #f
+                                                                    vals_0))))))))
                                                         (if (if (eq?
                                                                  'cwv
                                                                  (unsafe-vector*-ref
@@ -51168,10 +51220,15 @@
                                                                                          val-stack_0
                                                                                          (void))
                                                                                         (void))))
-                                                                                   (args
-                                                                                    (raise-binding-result-arity-error
-                                                                                     2
-                                                                                     args)))))
+                                                                                   ((val-stack_0
+                                                                                     .
+                                                                                     vals_0)
+                                                                                    (apply
+                                                                                     raise-result-arity-error
+                                                                                     #f
+                                                                                     1
+                                                                                     #f
+                                                                                     vals_0)))))
                                                                                 (args
                                                                                  (raise-binding-result-arity-error
                                                                                   2
@@ -51225,10 +51282,15 @@
                                                                                          val-stack_0
                                                                                          (void))
                                                                                         (void))))
-                                                                                   (args
-                                                                                    (raise-binding-result-arity-error
-                                                                                     2
-                                                                                     args)))))
+                                                                                   ((val-stack_0
+                                                                                     .
+                                                                                     vals_0)
+                                                                                    (apply
+                                                                                     raise-result-arity-error
+                                                                                     #f
+                                                                                     1
+                                                                                     #f
+                                                                                     vals_0)))))
                                                                                 (args
                                                                                  (raise-binding-result-arity-error
                                                                                   2
@@ -51281,10 +51343,15 @@
                                                                                            v-stack_0
                                                                                            (void))
                                                                                           (void))))
-                                                                                     (args
-                                                                                      (raise-binding-result-arity-error
-                                                                                       2
-                                                                                       args)))))
+                                                                                     ((v-stack_0
+                                                                                       .
+                                                                                       vals_0)
+                                                                                      (apply
+                                                                                       raise-result-arity-error
+                                                                                       #f
+                                                                                       1
+                                                                                       #f
+                                                                                       vals_0)))))
                                                                                   (args
                                                                                    (raise-binding-result-arity-error
                                                                                     2
@@ -51341,10 +51408,15 @@
                                                                                              v-stack_0
                                                                                              (void))
                                                                                             (void))))
-                                                                                       (args
-                                                                                        (raise-binding-result-arity-error
-                                                                                         2
-                                                                                         args)))))
+                                                                                       ((v-stack_0
+                                                                                         .
+                                                                                         vals_0)
+                                                                                        (apply
+                                                                                         raise-result-arity-error
+                                                                                         #f
+                                                                                         1
+                                                                                         #f
+                                                                                         vals_0)))))
                                                                                     (args
                                                                                      (raise-binding-result-arity-error
                                                                                       2
