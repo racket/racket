@@ -1,5 +1,6 @@
 #lang scribble/manual
-@(require "mz.rkt")
+@(require (only-in scribblings/style/shared compare)
+          "mz.rkt")
 
 
 @title{Equality}
@@ -314,6 +315,19 @@ indexing and comparison operations, especially in the implementation of
  value for any two structures for which @racket[_equal-proc] produces a
  true value.
 
+ The @racket[_equal-proc] is not only used for
+ @racket[equal?], it is also used for @racket[equal?/recur],
+ @racket[impersonator-of?], @racket[equal-always?], and
+ @racket[chaperone-of?]. Likewise @racket[_hash-proc] and
+ @racket[_hash2-proc] are used for
+ @racket[equal-always-hash-code] and
+ @racket[equal-always-secondary-hash-code] respectively.
+ Instances of these methods should follow the guidelines in
+ @secref["Honest_Custom_Equality"] to implement all of these
+ operations reasonably. In particular, these methods should
+ not access mutable data unless the struct is declared
+ mutable.
+
  When a structure type has no @racket[gen:equal+hash] implementation, then
  transparent structures (i.e., structures with an @tech{inspector} that
  is controlled by the current @tech{inspector}) are @racket[equal?]
@@ -410,7 +424,12 @@ indexing and comparison operations, especially in the implementation of
    (set gsy 3)
    (eval:check (equal? gsx gsy) #t)
    (eval:check (equal-always? gsx gsy) #f)
-   (eval:check (equal-always? gsx gsx) #t))}
+   (eval:check (equal-always? gsx gsx) #t))
+
+ When implementing these methods, follow the guidelines in
+ @secref["Honest_Custom_Equality"]. In particular, these
+ methods should only access mutable data if the mode is
+ true.}
 
 
 @defthing[prop:equal+hash struct-type-property?]{
@@ -465,4 +484,150 @@ indexing and comparison operations, especially in the implementation of
 
 ]
 
+When implementing these methods, follow the guidelines in
+@secref["Honest_Custom_Equality"]. In particular, these
+methods should only access mutable data if the struct is
+declared mutable or the mode is true.
+
 @history[#:changed "8.5.0.3" @elem{Added support for two-procedure values to customize @racket[equal-always?].}]}
+
+@subsection{Honest Custom Equality}
+
+Since the @racket[_equal-proc] or @racket[_equal-mode-proc]
+is used for more than just @racket[equal?], instances of
+them should follow certain guidelines to make sure the other
+operations @racket[equal-always?], @racket[chaperone-of?],
+and @racket[impersonator-of?] are honest.
+
+Due to the differences between these operations, avoid
+calling @racket[equal?] within them. Instead, use the 3rd
+argument to "recur" on the pieces. This allows
+@racket[equal?/recur] to work properly, lets the other
+operations behave in their own distinct ways on the pieces,
+and enables some cycle detection.
+
+@compare[
+@filebox[@tt{good}]{
+@racketblock0[
+  (define (equal-proc self other rec)
+    (rec (fish-size self) (fish-size other)))
+]}
+
+@filebox[@tt{bad}]{
+@racketblock0[
+  (define (equal-proc self other rec)
+    (equal? (fish-size self) (fish-size other)))
+]}
+]
+
+The operations @racket[equal?] and @racket[equal-always?]
+should be symmetric, so @racket[_equal-proc] instances
+should not change their answer when the arguments swap:
+
+@compare[
+@filebox[@tt{good}]{
+@racketblock0[
+  (define (equal-proc self other rec)
+    (rec (fish-size self) (fish-size other)))
+]}
+
+@filebox[@tt{bad}]{
+@racketblock0[
+  (define (equal-proc self other rec)
+    (<= (fish-size self) (fish-size other)))
+]}
+]
+
+However, the operations @racket[chaperone-of?] and
+@racket[impersonator-of?] are @emph{not} symmetric, so when
+calling the 3rd argument to "recur" on pieces, pass the
+pieces in the same order they came in:
+
+@compare[
+@filebox[@tt{good}]{
+@racketblock0[
+  (define (equal-proc self other rec)
+    (rec (fish-size self) (fish-size other)))
+]}
+
+@filebox[@tt{bad}]{
+@racketblock0[
+  (define (equal-proc self other rec)
+    (rec (fish-size other) (fish-size self)))
+]}
+]
+
+Mutable structs will only use the custom equality for
+@racket[equal?] and @racket[impersonator-of?], so that
+@racket[equal-always?] and @racket[chaperone-of?] don't
+change on mutation. Struct that represents mutable data
+should either be declared mutable, or use
+@racket[equal-mode-proc] from @racket[gen:equal-mode+hash]
+instead of @racket[equal-proc] from @racket[gen:equal+hash],
+and only access mutable data when the mode is true:
+
+@compare[
+@filebox[@tt{good}]{
+@racketblock0[
+  (struct mcell (value) #:mutable
+    #:methods gen:equal+hash
+    [(define (equal-proc self other rec)
+       (rec (mcell-value self)
+            (mcell-value other)))
+     (define (hash-proc self rec)
+       (+ (eq-hash-code struct:mcell)
+          (rec (mcell-value self))))
+     (define (hash2-proc self rec)
+       (+ (eq-hash-code struct:mcell)
+          (rec (mcell-value self))))])
+]}
+
+@filebox[@tt{bad}]{
+@racketblock0[
+  (struct mcell (box)
+    (code:comment "not declared mutable,")
+    (code:comment "but represents mutable data anyway")
+    #:methods gen:equal+hash
+    [(define (equal-proc self other rec)
+       (rec (unbox (mcell-box self))
+            (unbox (mcell-box other))))
+     (define (hash-proc self rec)
+       (+ (eq-hash-code struct:mcell)
+          (rec (unbox (mcell-value self)))))
+     (define (hash2-proc self rec)
+       (+ (eq-hash-code struct:mcell)
+          (rec (unbox (mcell-value self)))))])
+]}
+]
+
+@compare[
+@filebox[@tt{also good}]{
+@racketblock0[
+  (struct mcell (box)
+    (code:comment "only accesses mutable data when mode is true")
+    #:methods gen:equal-mode+hash
+    [(define (equal-mode-proc self other rec mode)
+       (and mode
+            (rec (unbox (mcell-box self))
+                 (unbox (mcell-box other)))))
+     (define (hash-mode-proc self rec mode)
+       (if mode
+           (+ (eq-hash-code struct:mcell)
+              (rec (unbox (mcell-value self))))
+           (eq-hash-code self)))])
+]}
+
+@filebox[@tt{still bad}]{
+@racketblock0[
+  (struct mcell (box)
+    (code:comment "not declared mutable,")
+    (code:comment "but accesses mutable data ignoring mode anyway")
+    #:methods gen:equal-mode+hash
+    [(define (equal-mode-proc self other rec mode)
+       (rec (unbox (mcell-box self))
+            (unbox (mcell-box other))))
+     (define (hash-mode-proc self rec mode)
+       (+ (eq-hash-code struct:mcell)
+          (rec (unbox (mcell-value self)))))])
+]}
+]
