@@ -5,7 +5,17 @@
           [make-constructor-style-printer
            (-> (-> any/c (or/c symbol? string?))
                (-> any/c sequence?)
-               (-> any/c output-port? (or/c #t #f 0 1) void?))])
+               (-> any/c output-port? (or/c #t #f 0 1) void?))]
+          [prop:constructor-style-printer
+           (struct-type-property/c
+            (list/c (-> constructor-style-printer? (or/c symbol? string?))
+                    (-> constructor-style-printer? sequence?)))]
+          [constructor-style-printer?
+           (-> any/c boolean?)]
+          [constructor-style-printer-constructor
+           (-> constructor-style-printer? (or/c symbol? string?))]
+          [constructor-style-printer-contents
+           (-> constructor-style-printer? sequence?)])
          struct->list)
 
 (define dummy-value (box 'dummy))

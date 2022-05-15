@@ -783,6 +783,18 @@ Keyword arguments can be simulated with @racket[unquoted-printing-string]:
 @history[#:added "6.3"]{}
 }
 
+@defthing[prop:constructor-style-printer
+          (struct-type-property/c
+           (list/c (-> any/c (or/c symbol? string?))
+                   (-> any/c sequence?)))]{
+
+A @tech{structure type property} for specifying that a struct
+should be printed in constructor style. It behaves exactly like
+@racket[make-constructor-style-printer], except that the constructor
+and the contents returned by the functions can be used by other
+libraries and functions, including @racket[print-convert].
+}
+
 @defproc[(struct->list [v any/c]
                        [#:on-opaque on-opaque (or/c 'error 'return-false 'skip) 'error])
          (or/c list? #f)]{

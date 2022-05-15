@@ -557,23 +557,27 @@
          (fprintf port "#<~acustom-set>" key-str)]
         [else (write-hash-set s port mode)]))
 
+(define (hash-set-constructor s)
+  (define table (custom-set-table s))
+  (define key-str
+    (cond [(immutable? table) ""]
+          [(hash-weak? table) "weak-"]
+          [else "mutable-"]))
+  (cond [(custom-set-spec s)
+         (string-append key-str "custom-set")]
+        [else
+         (define cmp-str
+           (cond [(hash-equal? table) "set"]
+                 [(hash-eqv? table) "seteqv"]
+                 [(hash-eq? table) "seteq"]))
+         (string-append key-str cmp-str)]))
+(define (hash-set-contents s)
+  (hash-keys (custom-set-table s)))
+
 (define write-hash-set
   (make-constructor-style-printer
-   (lambda (s)
-     (define table (custom-set-table s))
-     (define key-str
-       (cond [(immutable? table) ""]
-             [(hash-weak? table) "weak-"]
-             [else "mutable-"]))
-     (cond [(custom-set-spec s)
-            (string-append key-str "custom-set")]
-           [else
-            (define cmp-str
-              (cond [(hash-equal? table) "set"]
-                    [(hash-eqv? table) "seteqv"]
-                    [(hash-eq? table) "seteq"]))
-            (string-append key-str cmp-str)]))
-   (lambda (s) (hash-keys (custom-set-table s)))))
+   hash-set-constructor
+   hash-set-contents))
 
 (define (custom-in-set s)
   (define keys (in-hash-keys (custom-set-table s)))
@@ -690,6 +694,8 @@
 (define mk-not-allowed/mut (mk-not-allowed #:immut #t))
 
 (serializable-struct immutable-custom-set custom-set []
+  #:property prop:constructor-style-printer
+  (list hash-set-constructor hash-set-contents)
   #:methods gen:stream
   [(define stream-empty? custom-set-empty?)
    (define stream-first custom-set-first)
@@ -758,9 +764,13 @@
    (define set-symmetric-difference (mk-not-allowed/mut 'set-symmetric-difference))
    (define set-symmetric-difference! custom-set-symmetric-difference!)])
 
-(serializable-struct weak-custom-set imperative-custom-set [])
+(serializable-struct weak-custom-set imperative-custom-set []
+  #:property prop:constructor-style-printer
+  (list hash-set-constructor hash-set-contents))
 
-(serializable-struct mutable-custom-set imperative-custom-set [])
+(serializable-struct mutable-custom-set imperative-custom-set []
+  #:property prop:constructor-style-printer
+  (list hash-set-constructor hash-set-contents))
 
 (define-syntax (define-custom-set-types stx)
   (parameterize ([current-syntax-context stx])
