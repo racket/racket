@@ -560,10 +560,10 @@ pieces in the same order they came in:
 Mutable structs will only use the custom equality for
 @racket[equal?] and @racket[impersonator-of?], so that
 @racket[equal-always?] and @racket[chaperone-of?] don't
-change on mutation. Struct that represents mutable data
+change on mutation. Structs that represent mutable data
 should either be declared mutable, or use
-@racket[equal-mode-proc] from @racket[gen:equal-mode+hash]
-instead of @racket[equal-proc] from @racket[gen:equal+hash],
+@racket[_equal-mode-proc] from @racket[gen:equal-mode+hash]
+instead of @racket[_equal-proc] from @racket[gen:equal+hash],
 and only access mutable data when the mode is true:
 
 @compare[
