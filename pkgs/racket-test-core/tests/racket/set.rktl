@@ -830,4 +830,34 @@
   (let ([s (impersonate-hash-set (mutable-set) #f #f #f #f impersonator-prop:p 11)])
     (test 11 get-impersonator-prop:p s)))
 
+;; ----------------------------------------
+;; test set->hash
+
+(let* ([s (mutable-set 'apple)]
+       [h (set->hash s)])
+  (hash-set! h 'orange 'orange)
+  (test #t 'set->hash (set-member? s 'orange))
+  (hash-set! h 'banana #f)
+  (test '(apple banana orange) 'set->hash (sort (set->list s) symbol<?))
+  (test #t 'set->hash (set-member? s 'banana)))
+
+(err/rt-test (set->hash '(1 2)))
+(err/rt-test (set->hash (hash)))
+(let ()
+  (struct binary-set [integer]
+    #:transparent
+    #:methods gen:set
+    [(define (set-member? st i)
+       (bitwise-bit-set? (binary-set-integer st) i))
+     (define (set-add st i)
+       (binary-set (bitwise-ior (binary-set-integer st)
+                                (arithmetic-shift 1 i))))
+     (define (set-remove st i)
+       (binary-set (bitwise-and (binary-set-integer st)
+                                (bitwise-not (arithmetic-shift 1 i)))))])
+  (define bset (binary-set 5))
+  (test #t 'set->hash (generic-set? bset)) ; is a set
+  (test #f 'set->hash (set? bset)) ; but not a hash set
+  (err/rt-test (set->hash bset)))
+
 (report-errs)

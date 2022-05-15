@@ -27,6 +27,8 @@
          in-weak-set
          set-implements/c
 
+         set->hash
+
          set seteq seteqv
          weak-set weak-seteq weak-seteqv
          mutable-set mutable-seteq mutable-seteqv
