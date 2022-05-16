@@ -99,7 +99,7 @@
     (cond
      [(immutable? table)
       (for/fold ([acc (hash-copy-clear table)])
-                ([(k1 v1) (in-hash table)])
+                ([(k1 v1) (in-immutable-hash table)])
         (define-values [k2 v2] (f k1 v1))
         (hash-set acc k2 v2))]
      [else
