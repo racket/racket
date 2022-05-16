@@ -203,7 +203,7 @@ In more detail, patterns match as follows:
          the patterns @racket[(list-no-order x 1 x)] and
          @racket[(list-no-order x 1 x ...)] both produce syntax errors.}}
 
- @item{@racket[(#,(match-kw "list-no-order") _pat ... _lvp)] ---
+ @item{@racket[(#,(racketidfont "list-no-order") _pat ... _lvp)] ---
        generalizes @racketidfont{list-no-order} to allow a pattern
        that matches multiple list elements that are interspersed in
        any order with matches for the other patterns.
