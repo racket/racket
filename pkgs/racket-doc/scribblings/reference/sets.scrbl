@@ -268,8 +268,8 @@ named by the @racket[sym]s.
 
   If @racket[cmp] is @racket['equal], @racket['equal-always], @racket['eqv],
   or @racket['eq], the resulting contract accepts only @tech{hash sets} that
-  compare elements using @racket[equal?], @racket[eqv?], or @racket[eq?],
-  respectively.
+  compare elements using @racket[equal?], @racket[equal-always?],
+  @racket[eqv?], or @racket[eq?], respectively.
 
   If @racket[cmp] is @racket['eqv] or @racket['eq], then @racket[elem/c] must
   be a @tech{flat contract}.
