@@ -723,7 +723,11 @@
 
   (test (void) hash-for-each (hash 'one 1) (proc void))
   (test (void) hash-for-each (hasheq 'one 1) (proc void))
-  (test (void) hash-for-each (hasheqv 'one 1) (proc void)))
+  (test (void) hash-for-each (hasheqv 'one 1) (proc void))
+
+  (test (hash 'one 2) hash-map/copy (hash 'one 1) (proc (lambda (k v) (values k (add1 v)))))
+  (test (hasheq 'one 2) hash-map/copy (hasheq 'one 1) (proc (lambda (k v) (values k (add1 v)))))
+  (test (hasheqv 'one 2) hash-map/copy (hasheqv 'one 1) (proc (lambda (k v) (values k (add1 v))))))
 
 ;; ----------------------------------------
 
@@ -804,6 +808,17 @@
 (test #t hash-equal? (hash-copy-clear (make-ephemeron-hash)))
 (test #t hash-eq? (hash-copy-clear (make-ephemeron-hasheq)))
 (test #t hash-eqv? (hash-copy-clear (make-ephemeron-hasheqv)))
+
+;; ----------------------------------------
+
+(for ([make-hash
+       (in-list
+        (list make-immutable-hash make-immutable-hasheq make-immutable-hasheqv
+              make-hash make-hasheq make-hasheqv
+              make-weak-hash make-weak-hasheq make-weak-hasheqv
+              make-ephemeron-hash make-ephemeron-hasheq make-ephemeron-hasheqv))])
+  (define (10*v k v) (values k (* 10 v)))
+  (test (make-hash '((a . 10) (b . 20))) hash-map/copy (make-hash '((a . 1) (b . 2))) 10*v))
 
 ;; ----------------------------------------
 

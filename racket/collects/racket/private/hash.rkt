@@ -93,6 +93,22 @@
        [(hash-eqv? table) (make-hasheqv)]
        [(hash-eq? table) (make-hasheq)])]))
 
+  (define (hash-map/copy table f)
+    (unless (hash? table)
+      (raise-argument-error 'hash-map/copy "hash?" table))
+    (cond
+     [(immutable? table)
+      (for/fold ([acc (hash-copy-clear table)])
+                ([(k1 v1) (in-hash table)])
+        (define-values [k2 v2] (f k1 v1))
+        (hash-set acc k2 v2))]
+     [else
+      (define acc (hash-copy-clear table))
+      (for ([(k1 v1) (in-hash table)])
+        (define-values [k2 v2] (f k1 v1))
+        (hash-set! acc k2 v2))
+      acc]))
+
   (define (hash-empty? table)
     (unless (hash? table)
       (raise-argument-error 'hash-empty? "hash?" table))
@@ -105,4 +121,5 @@
            hash-set*
            hash-set*!
            hash-empty?
-           hash-copy-clear))
+           hash-copy-clear
+           hash-map/copy))
