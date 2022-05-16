@@ -29,7 +29,8 @@ datatypes are all sets:
 @section{Hash Sets}
 
 A @deftech{hash set} is a set whose elements are compared via @racket[equal?],
-@racket[eqv?], or @racket[eq?] and partitioned via @racket[equal-hash-code],
+@racket[equal-always?], @racket[eqv?], or @racket[eq?] and partitioned
+via @racket[equal-hash-code], @racket[equal-always-hash-code],
 @racket[eqv-hash-code], or @racket[eq-hash-code].  A hash set is either
 immutable or mutable; mutable hash sets retain their elements either strongly
 or weakly.
@@ -46,9 +47,10 @@ with @racket[exn:fail:contract], or the iteration may skip or duplicate
 elements. See also @racket[in-set].
 
 Two hash sets are @racket[equal?] when they use the same element-comparison
-procedure (@racket[equal?], @racket[eqv?], or @racket[eq?]), both hold elements
-strongly or weakly, have the same mutability, and have equivalent
-elements. Immutable hash sets support effectively constant-time access and
+procedure (@racket[equal?], @racket[equal-always?], @racket[eqv?], or
+@racket[eq?]), both hold elements strongly or weakly, have the same
+mutability, and have equivalent elements.
+Immutable hash sets support effectively constant-time access and
 update, just like mutable hash sets; the constant on immutable operations is
 usually larger, but the functional nature of immutable hash sets can pay off in
 certain algorithms.
@@ -72,13 +74,14 @@ unpredictable when keys are mutated.
 
 @deftogether[(
 @defproc[(set-equal? [x any/c]) boolean?]
+@defproc[(set-equal-always? [x any/c]) boolean?]
 @defproc[(set-eqv? [x any/c]) boolean?]
 @defproc[(set-eq? [x any/c]) boolean?]
 )]{
 
 Returns @racket[#t] if @racket[x] is a @tech{hash set} that compares
-elements with @racket[equal?], @racket[eqv?], or @racket[eq?], respectively;
-returns @racket[#f] otherwise.
+elements with @racket[equal?], @racket[equal-always?], @racket[eqv?],
+or @racket[eq?], respectively; returns @racket[#f] otherwise.
 
 }
 
@@ -96,40 +99,53 @@ returns @racket[#f] otherwise.
 
 @deftogether[(
 @defproc[(set [v any/c] ...) (and/c generic-set? set-equal? set?)]
+@defproc[(setalw [v any/c] ...)
+         (and/c generic-set? set-equal-always? set?)]
 @defproc[(seteqv [v any/c] ...) (and/c generic-set? set-eqv? set?)]
 @defproc[(seteq [v any/c] ...) (and/c generic-set? set-eq? set?)]
 @defproc[(mutable-set [v any/c] ...) (and/c generic-set? set-equal? set-mutable?)]
+@defproc[(mutable-setalw [v any/c] ...)
+         (and/c generic-set? set-equal-always? set-mutable?)]
 @defproc[(mutable-seteqv [v any/c] ...) (and/c generic-set? set-eqv? set-mutable?)]
 @defproc[(mutable-seteq [v any/c] ...) (and/c generic-set? set-eq? set-mutable?)]
 @defproc[(weak-set [v any/c] ...) (and/c generic-set? set-equal? set-weak?)]
+@defproc[(weak-setalw [v any/c] ...)
+         (and/c generic-set? set-equal-always? set-weak?)]
 @defproc[(weak-seteqv [v any/c] ...) (and/c generic-set? set-eqv? set-weak?)]
 @defproc[(weak-seteq [v any/c] ...) (and/c generic-set? set-eq? set-weak?)]
 )]{
 
 Creates a @tech{hash set} with the given @racket[v]s as elements.  The
 elements are added in the order that they appear as arguments, so in the case
-of sets that use @racket[equal?] or @racket[eqv?], an earlier element may be
-replaced by a later element that is @racket[equal?] or @racket[eqv?] but not
+of sets that use @racket[equal?], @racket[equal-always?], or @racket[eqv?],
+an earlier element may be replaced by a later element that is
+@racket[equal?], @racket[equal-always?], or @racket[eqv?], but not
 @racket[eq?].
 
 }
 
 @deftogether[(
 @defproc[(list->set [lst list?]) (and/c generic-set? set-equal? set?)]
+@defproc[(list->setalw [lst list?])
+         (and/c generic-set? set-equal-always? set?)]
 @defproc[(list->seteqv [lst list?]) (and/c generic-set? set-eqv? set?)]
 @defproc[(list->seteq [lst list?]) (and/c generic-set? set-eq? set?)]
 @defproc[(list->mutable-set [lst list?]) (and/c generic-set? set-equal? set-mutable?)]
+@defproc[(list->mutable-setalw [lst list?])
+         (and/c generic-set? set-equal-always? set-mutable?)]
 @defproc[(list->mutable-seteqv [lst list?]) (and/c generic-set? set-eqv? set-mutable?)]
 @defproc[(list->mutable-seteq [lst list?]) (and/c generic-set? set-eq? set-mutable?)]
 @defproc[(list->weak-set [lst list?]) (and/c generic-set? set-equal? set-weak?)]
+@defproc[(list->weak-setalw [lst list?])
+         (and/c generic-set? set-equal-always? set-weak?)]
 @defproc[(list->weak-seteqv [lst list?]) (and/c generic-set? set-eqv? set-weak?)]
 @defproc[(list->weak-seteq [lst list?]) (and/c generic-set? set-eq? set-weak?)]
 )]{
 
 Creates a @tech{hash set} with the elements of the given @racket[lst] as
 the elements of the set.  Equivalent to @racket[(apply set lst)],
-@racket[(apply seteqv lst)], @racket[(apply seteq lst)], and so on,
-respectively.
+@racket[(apply setalw lst)], @racket[(apply seteqv lst)],
+@racket[(apply seteq lst)], and so on, respectively.
 
 }
 
@@ -137,21 +153,27 @@ respectively.
 @defform[(for/set (for-clause ...) body ...+)]
 @defform[(for/seteq (for-clause ...) body ...+)]
 @defform[(for/seteqv (for-clause ...) body ...+)]
+@defform[(for/setalw (for-clause ...) body ...+)]
 @defform[(for*/set (for-clause ...) body ...+)]
 @defform[(for*/seteq (for-clause ...) body ...+)]
 @defform[(for*/seteqv (for-clause ...) body ...+)]
+@defform[(for*/setalw (for-clause ...) body ...+)]
 @defform[(for/mutable-set (for-clause ...) body ...+)]
 @defform[(for/mutable-seteq (for-clause ...) body ...+)]
 @defform[(for/mutable-seteqv (for-clause ...) body ...+)]
+@defform[(for/mutable-setalw (for-clause ...) body ...+)]
 @defform[(for*/mutable-set (for-clause ...) body ...+)]
 @defform[(for*/mutable-seteq (for-clause ...) body ...+)]
 @defform[(for*/mutable-seteqv (for-clause ...) body ...+)]
+@defform[(for*/mutable-setalw (for-clause ...) body ...+)]
 @defform[(for/weak-set (for-clause ...) body ...+)]
 @defform[(for/weak-seteq (for-clause ...) body ...+)]
 @defform[(for/weak-seteqv (for-clause ...) body ...+)]
+@defform[(for/weak-setalw (for-clause ...) body ...+)]
 @defform[(for*/weak-set (for-clause ...) body ...+)]
 @defform[(for*/weak-seteq (for-clause ...) body ...+)]
 @defform[(for*/weak-seteqv (for-clause ...) body ...+)]
+@defform[(for*/weak-setalw (for-clause ...) body ...+)]
 )]{
 
 Analogous to @racket[for/list] and @racket[for*/list], but to
@@ -223,7 +245,7 @@ named by the @racket[sym]s.
 
 @defproc[(set/c [elem/c chaperone-contract?]
                 [#:cmp cmp
-                 (or/c 'dont-care 'equal 'eqv 'eq)
+                 (or/c 'dont-care 'equal 'equal-always 'eqv 'eq)
                  'dont-care]
                 [#:kind kind 
                  (or/c 'dont-care 'immutable 'mutable 'weak 'mutable-or-weak)
@@ -244,9 +266,10 @@ named by the @racket[sym]s.
   resulting contract accepts any mutable @tech{hash sets}, regardless of
   key-holding strength.
 
-  If @racket[cmp] is @racket['equal], @racket['eqv], or @racket['eq], the
-  resulting contract accepts only @tech{hash sets} that compare elements
-  using @racket[equal?], @racket[eqv?], or @racket[eq?], respectively.
+  If @racket[cmp] is @racket['equal], @racket['equal-always], @racket['eqv],
+  or @racket['eq], the resulting contract accepts only @tech{hash sets} that
+  compare elements using @racket[equal?], @racket[eqv?], or @racket[eq?],
+  respectively.
 
   If @racket[cmp] is @racket['eqv] or @racket['eq], then @racket[elem/c] must
   be a @tech{flat contract}.
@@ -485,7 +508,8 @@ operation runs on lists in time proportional to the total size of the
 
 If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
 @tech{hash set} that uses the same comparison function (@racket[equal?],
-@racket[eqv?], or @racket[eq?]).  The mutability and key strength of the hash
+@racket[equal-always?], @racket[eqv?], or @racket[eq?]).
+The mutability and key strength of the hash
 sets may differ.  This operation runs on hash sets in time proportional to the
 total size of all of the sets except the largest immutable set.
 
@@ -510,7 +534,8 @@ Adds the elements from all of the @racket[st]s to @racket[st0].
 
 If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
 @tech{hash set} that uses the same comparison function (@racket[equal?],
-@racket[eqv?], or @racket[eq?]).  The mutability and key strength of the hash
+@racket[equal-always?], @racket[eqv?], or @racket[eq?]).
+The mutability and key strength of the hash
 sets may differ.  This operation runs on hash sets in time proportional to the
 total size of the @racket[st]s.
 
@@ -529,7 +554,8 @@ operation runs on lists in time proportional to the total size of the
 
 If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
 @tech{hash set} that uses the same comparison function (@racket[equal?],
-@racket[eqv?], or @racket[eq?]).  The mutability and key strength of the hash
+@racket[equal-always?], @racket[eqv?], or @racket[eq?]).
+The mutability and key strength of the hash
 sets may differ.  This operation runs on hash sets in time proportional to the
 size of the smallest immutable set.
 
@@ -545,7 +571,8 @@ Removes every element from @racket[st0] that is not contained by all of the
 
 If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
 @tech{hash set} that uses the same comparison function (@racket[equal?],
-@racket[eqv?], or @racket[eq?]).  The mutability and key strength of the hash
+@racket[equal-always?], @racket[eqv?], or @racket[eq?]).
+The mutability and key strength of the hash
 sets may differ.  This operation runs on hash sets in time proportional to the
 size of @racket[st0].
 
@@ -565,7 +592,8 @@ operation runs on lists in time proportional to the total size of the
 
 If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
 @tech{hash set} that uses the same comparison function (@racket[equal?],
-@racket[eqv?], or @racket[eq?]).  The mutability and key strength of the hash
+@racket[equal-always?], @racket[eqv?], or @racket[eq?]).
+The mutability and key strength of the hash
 sets may differ.  This operation runs on hash sets in time proportional to the
 size of @racket[st0].
 
@@ -581,7 +609,8 @@ Removes every element from @racket[st0] that is contained by any of the
 
 If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
 @tech{hash set} that uses the same comparison function (@racket[equal?],
-@racket[eqv?], or @racket[eq?]).  The mutability and key strength of the hash
+@racket[equal-always?], @racket[eqv?], or @racket[eq?]).
+The mutability and key strength of the hash
 sets may differ.  This operation runs on hash sets in time proportional to the
 size of @racket[st0].
 
@@ -602,7 +631,8 @@ operation runs on lists in time proportional to the total size of the
 
 If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
 @tech{hash set} that uses the same comparison function (@racket[equal?],
-@racket[eqv?], or @racket[eq?]).  The mutability and key strength of the hash
+@racket[equal-always?], @racket[eqv?], or @racket[eq?]).
+The mutability and key strength of the hash
 sets may differ.  This operation runs on hash sets in time proportional to the
 total size of all of the sets except the largest immutable set.
 
@@ -622,7 +652,8 @@ original contents of @racket[st0].
 
 If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
 @tech{hash set} that uses the same comparison function (@racket[equal?],
-@racket[eqv?], or @racket[eq?]).  The mutability and key strength of the hash
+@racket[equal-always?], @racket[eqv?], or @racket[eq?]).
+The mutability and key strength of the hash
 sets may differ.  This operation runs on hash sets in time proportional to the
 total size of the @racket[st]s.
 
@@ -642,7 +673,8 @@ the size of @racket[st2].
 
 If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
 @tech{hash set} that uses the same comparison function (@racket[equal?],
-@racket[eqv?], or @racket[eq?]).  The mutability and key strength of the hash
+@racket[equal-always?], @racket[eqv?], or @racket[eq?]).
+The mutability and key strength of the hash
 sets may differ.  This operation runs on hash sets in time proportional to the
 size of @racket[st] plus the size of @racket[st2].
 
@@ -672,7 +704,8 @@ the size of @racket[st2].
 
 If @racket[st] is a @tech{hash set}, then @racket[st2] must also be a
 @tech{hash set} that uses the same comparison function (@racket[equal?],
-@racket[eqv?], or @racket[eq?]).  The mutability and key strength of the hash
+@racket[equal-always?], @racket[eqv?], or @racket[eq?]).
+The mutability and key strength of the hash
 sets may differ.  This operation runs on hash sets in time proportional to the
 size of @racket[st].
 
@@ -697,7 +730,8 @@ the size of @racket[st2].
 
 If @racket[st] is a @tech{hash set}, then @racket[st2] must also be a
 @tech{hash set} that uses the same comparison function (@racket[equal?],
-@racket[eqv?], or @racket[eq?]).  The mutability and key strength of the hash
+@racket[equal-always?], @racket[eqv?], or @racket[eq?]).
+The mutability and key strength of the hash
 sets may differ.  This operation runs on hash sets in time proportional to the
 size of @racket[st] plus the size of @racket[st2].
 
