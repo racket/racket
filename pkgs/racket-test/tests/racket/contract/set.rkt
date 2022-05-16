@@ -55,6 +55,9 @@
   (test/neg-blame 'set/c.0.14
                   '(set-add! (contract (set/c string? #:kind 'mutable) (mutable-set) 'pos 'neg)
                              1))
+  (test/pos-blame 'set/c.0.15
+                  '(contract (set/c any/c #:cmp 'equal-always) (set) 'pos 'neg))
+  
   
 
   (test/spec-passed/result
@@ -86,6 +89,12 @@
    'set/c5
    '(contract (set/c integer? #:cmp 'equal)
               (seteq 0)
+              'pos 'neg))
+
+  (test/pos-blame
+   'set/c5.1
+   '(contract (set/c integer? #:cmp 'equal-always)
+              (set 0)
               'pos 'neg))
 
   (test/spec-passed/result
@@ -318,4 +327,21 @@
                          'pos 'neg)
                (λ (x) (zero? (+ x 1))))))
   
+
+  (test/neg-blame
+   'set/c34
+   '(let ([s (set-map (contract (set/c (-> integer? integer?) #:cmp 'equal-always)
+                                (setalw (λ (x) #f))
+                                'pos 'neg)
+                      values)])
+      ((car s) #f)))
+
+  (test/pos-blame
+   'set/c35
+   '(let ([s (set-map (contract (set/c (-> integer? integer?) #:cmp 'equal-always)
+                                (setalw (λ (x) #f))
+                                'pos 'neg)
+                      values)])
+      ((car s) 1)))
+
   )
