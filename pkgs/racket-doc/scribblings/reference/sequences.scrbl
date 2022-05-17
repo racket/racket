@@ -470,32 +470,32 @@ each element in the sequence.
 
 @deftogether[(
 @defproc[(in-mutable-hash
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))])
+          [hash (and/c hash? (not/c immutable?) hash-strong?)])
 	  sequence?]
 @defproc[#:link-target? #f
          (in-mutable-hash
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))] [bad-index-v any/c])
+          [hash (and/c hash? (not/c immutable?) hash-strong?)] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-mutable-hash-keys
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))])
+          [hash (and/c hash? (not/c immutable?) hash-strong?)])
 	  sequence?]
 @defproc[#:link-target? #f
          (in-mutable-hash-keys
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))] [bad-index-v any/c])
+          [hash (and/c hash? (not/c immutable?) hash-strong?)] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-mutable-hash-values
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))])
+          [hash (and/c hash? (not/c immutable?) hash-strong?)])
 	  sequence?]
 @defproc[#:link-target? #f
          (in-mutable-hash-values
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))] [bad-index-v any/c])
+          [hash (and/c hash? (not/c immutable?) hash-strong?)] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-mutable-hash-pairs
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))])
+          [hash (and/c hash? (not/c immutable?) hash-strong?)])
 	  sequence?]
 @defproc[#:link-target? #f
          (in-mutable-hash-pairs
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))] [bad-index-v any/c])
+          [hash (and/c hash? (not/c immutable?) hash-strong?)] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-immutable-hash
           [hash (and/c hash? immutable?)])
