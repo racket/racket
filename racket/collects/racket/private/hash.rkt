@@ -96,6 +96,8 @@
   (define (hash-map/copy table f)
     (unless (hash? table)
       (raise-argument-error 'hash-map/copy "hash?" table))
+    (unless (and (procedure? f) (procedure-arity-includes? f 2))
+      (raise-argument-error 'hash-map/copy "(procedure-arity-includes/c 2)" f))
     (cond
      [(immutable? table)
       (for/fold ([acc (hash-copy-clear table)])
