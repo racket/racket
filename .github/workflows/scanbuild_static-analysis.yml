@@ -51,18 +51,15 @@ jobs:
     - name: Adjust tool name
       working-directory: sarif-files
       run: ../.github/scripts/adjust-sarif-tool.sh cgc
-    - name: Upload SARIF
-      uses: github/codeql-action/upload-sarif@v2
-      if: always()
-      with:
-        sarif_file: sarif-files
-    - name: Tarballing
-      run: tar -cvjf racketcgc-report-${{ github.sha }}.tar.bz2 racketcgc-report
-    - uses: actions/upload-artifact@v1
-      if: always()
+    - name: Create file list
+      working-directory: sarif-files
+      run: |
+        find . -type f -name '*.sarif' > list.txt
+        split -d -l15 list.txt list.
+    - uses: actions/upload-artifact@v2
       with:
         name: scanbuild-cgc-${{ github.sha }}
-        path: racketcgc-report-${{ github.sha }}.tar.bz2
+        path: sarif-files/
 
   scanbuild-racket3m:
 
@@ -114,18 +111,15 @@ jobs:
     - name: Adjust tool name
       working-directory: sarif-files
       run: ../.github/scripts/adjust-sarif-tool.sh 3m
-    - name: Upload SARIF
-      uses: github/codeql-action/upload-sarif@v2
-      if: always()
-      with:
-        sarif_file: sarif-files
-    - name: Tarballing
-      run: tar -cvjf racket3m-report-${{ github.sha }}.tar.bz2 racket3m-report
-    - uses: actions/upload-artifact@v1
-      if: always()
+    - name: Create file list
+      working-directory: sarif-files
+      run: |
+        find . -type f -name '*.sarif' > list.txt
+        split -d -l15 list.txt list.
+    - uses: actions/upload-artifact@v2
       with:
         name: scanbuild-3m-${{ github.sha }}
-        path: racket3m-report-${{ github.sha }}.tar.bz2
+        path: sarif-files/
 
   scanbuild-racketcs:
 
@@ -173,15 +167,49 @@ jobs:
     - name: Adjust tool name
       working-directory: sarif-files
       run: ../.github/scripts/adjust-sarif-tool.sh cs
-    - name: Upload SARIF
-      uses: github/codeql-action/upload-sarif@v2
-      if: always()
-      with:
-        sarif_file: sarif-files
-    - name: Tarballing
-      run: tar -cvjf racketcs-report-${{ github.sha }}.tar.bz2 racketcs-report
-    - uses: actions/upload-artifact@v1
-      if: always()
+    - name: Create file list
+      working-directory: sarif-files
+      run: |
+        find . -type f -name '*.sarif' > list.txt
+        split -d -l15 list.txt list.
+    - uses: actions/upload-artifact@v2
       with:
         name: scanbuild-cs-${{ github.sha }}
-        path: racketcs-report-${{ github.sha }}.tar.bz2
+        path: sarif-files/
+
+  upload:
+    runs-on: ubuntu-20.04
+    needs: [scanbuild-racketcgc, scanbuild-racket3m, scanbuild-racketcs]
+
+    strategy:
+      matrix:
+        # Process up to 15 * 5 = 75 files
+        variants: ["cgc", "3m", "cs"]
+        chunks: ["00", "01", "02", "03", "04"]
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 100
+    - uses: actions/download-artifact@v3
+      with:
+        name: scanbuild-${{ matrix.variants }}-${{ github.sha }}
+    - name: Test for presence of the chunk
+      id: chunk_presence
+      run: |
+        if [[ -e "list.${{ matrix.chunks }}" ]]
+        then
+          echo "::set-output name=presence::1"
+        else
+          echo "::set-output name=presence::0"
+        fi
+    - name: Partition the chunk
+      if: ${{ steps.chunk_presence.outputs.presence == '1' }}
+      run: |
+        mkdir workspace
+        for file in $(cat list.${{ matrix.chunks }}); do mv "$file" workspace; done
+    - name: Upload SARIF
+      uses: github/codeql-action/upload-sarif@v2
+      if: ${{ steps.chunk_presence.outputs.presence == '1' }}
+      with:
+        sarif_file: workspace
+        category: scanbuild-${{ matrix.variants }}-${{ matrix.chunks }}-${{ github.sha }}
