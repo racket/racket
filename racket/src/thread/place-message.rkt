@@ -158,16 +158,9 @@
             (maybe-ph
              ph
              v
-             (cond
-               [(hash-eq? v)
-                (for/hasheq ([(k v) (in-hash v)])
-                  (values (loop k) (loop v)))]
-               [(hash-eqv? v)
-                (for/hasheqv ([(k v) (in-hash v)])
-                  (values (loop k) (loop v)))]
-               [else
-                (for/hash ([(k v) (in-hash v)])
-                  (values (loop k) (loop v)))]))]
+             (hash-map/copy v
+                            (lambda (k v)
+                              (values (loop k) (loop v)))))]
            [(cpointer? v)
             (ptr-add v 0)]
            [(and (or (fxvector? v)
@@ -216,16 +209,9 @@
                    (for/list ([e (in-vector (struct->vector v) 1)])
                      (loop e))))]
       [(hash? v)
-       (cond
-         [(hash-eq? v)
-          (for/hasheq ([(k v) (in-hash v)])
-            (values (loop k) (loop v)))]
-         [(hash-eqv? v)
-          (for/hasheqv ([(k v) (in-hash v)])
-            (values (loop k) (loop v)))]
-         [else
-          (for/hash ([(k v) (in-hash v)])
-            (values (loop k) (loop v)))])]
+       (hash-map/copy v
+                      (lambda (k v)
+                        (values (loop k) (loop v))))]
       [(and (cpointer? v)
             v ; not #f
             (not (bytes? v)))

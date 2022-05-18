@@ -265,6 +265,13 @@
       (raise-argument-error 'dict-map "dict?" d))
     (proc (car x) (cdr x))))
 
+(define (assoc-map/copy d proc)
+  (for/list ([x (in-list d)])
+    (unless (pair? x)
+      (raise-argument-error 'dict-map/copy "dict?" d))
+    (define-values [k v] (proc (car x) (cdr x)))
+    (cons k v)))
+
 (define (assoc-for-each d proc)
   (for ([x (in-list d)])
     (unless (pair? x)
@@ -284,7 +291,7 @@
     (cdr x)))
 
 (define (fallback-copy d)
-  (unless (dict-implements? d 'dict-clear dict-set!)
+  (unless (dict-implements? d 'dict-clear 'dict-set!)
     (raise-support-error 'dict-copy d))
   (define d2 (dict-clear d))
   (for ([(k v) (in-dict d)])
@@ -325,6 +332,23 @@
   (for ([(k v) (:in-dict d)])
     (f k v)))
 
+(define (fallback-map/copy d f)
+  (cond
+    [(dict-can-functional-set? d)
+     (for/fold ([acc (dict-clear d)])
+               ([(k1 v1) (:in-dict d)])
+       (define-values [k2 v2] (f k1 v1))
+       (dict-set acc k2 v2))]
+    [(dict-mutable? d)
+     (define acc (dict-copy d))
+     (dict-clear! acc)
+     (for ([(k1 v1) (:in-dict d)])
+       (define-values [k2 v2] (f k1 v1))
+       (dict-set! acc k2 v2))
+     acc]
+    [else
+     (raise-support-error 'dict-map/copy d)]))
+
 (define (fallback-keys d)
   (for/list ([k (:in-dict-keys d)])
     k))
@@ -354,13 +378,14 @@
     (define dict-set*! hash-set*!)
     (define dict-update! hash-update!)
     (define dict-map hash-map)
+    (define dict-map/copy hash-map/copy)
     (define dict-for-each hash-for-each)
     (define dict-keys hash-keys)
     (define dict-values hash-values)
     (define dict->list hash->list)
     (define dict-copy hash-copy)
     (define dict-empty? hash-empty?)
-    (define dict-clear hash-clear)
+    (define dict-clear hash-copy-clear)
     (define dict-clear! hash-clear!)]
    [immutable-hash? immutable-hash?
     (define dict-ref hash-ref)
@@ -375,6 +400,7 @@
     (define dict-set* hash-set*)
     (define dict-update hash-update)
     (define dict-map hash-map)
+    (define dict-map/copy hash-map/copy)
     (define dict-for-each hash-for-each)
     (define dict-keys hash-keys)
     (define dict-values hash-values)
@@ -424,6 +450,7 @@
     (define dict-iterate-value assoc-iterate-value)
     (define dict-has-key? assoc-has-key?)
     (define dict-map assoc-map)
+    (define dict-map/copy assoc-map/copy)
     (define dict-for-each assoc-for-each)
     (define dict-keys assoc-keys)
     (define dict-values assoc-values)
@@ -440,6 +467,7 @@
    (define dict-update fallback-update)
    (define dict-count fallback-count)
    (define dict-map fallback-map)
+   (define dict-map/copy fallback-map/copy)
    (define dict-for-each fallback-for-each)
    (define dict-keys fallback-keys)
    (define dict-values fallback-values)
@@ -466,6 +494,7 @@
   (dict-update! dict key proc [default])
   (dict-update dict key proc [default])
   (dict-map dict proc)
+  (dict-map/copy dict proc)
   (dict-for-each dict proc)
   (dict-keys dict)
   (dict-values dict)
@@ -651,6 +680,7 @@
          dict-update!
          dict-update
          dict-map
+         dict-map/copy
          dict-for-each
          dict-keys
          dict-values

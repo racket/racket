@@ -245,6 +245,11 @@
  [dict-for-each
   (->i ([d dict?] [proc (d) (-> (dict-key-contract d) (dict-value-contract d) any)])
        [_r void?])]
+ [dict-map/copy
+  (->i ([d dict?]
+        [proc (d) (-> (dict-key-contract d) (dict-value-contract d)
+                      (values (dict-key-contract d) (dict-value-contract d)))])
+       [_r dict?])]
 
  [dict-keys
   (->i ([d dict?])

@@ -570,6 +570,22 @@ with the following order (earlier bullets before later):
 @history[#:changed "6.3" @elem{Added the @racket[try-order?] argument.}
          #:changed "7.1.0.7" @elem{Added guarantees for @racket[try-order?].}]}
 
+@defproc[(hash-map/copy [hash hash?]
+                        [proc (any/c any/c . -> . (values any/c any/c))])
+         hash?]{
+
+Applies the procedure @racket[proc] to each element in
+@racket[hash] in an unspecified order, accumulating the results
+into a new hash of the same kind, with the same key-comparison
+procedure and mutability of @racket[hash].
+
+@examples[
+#:eval the-eval
+(hash-map/copy #hash((a . "apple") (b . "banana")) (lambda (k v) (values k (string-upcase v))))
+]
+
+@history[#:added "8.5.0.2"]}
+
 @defproc[(hash-keys [hash hash?] [try-order? any/c #f])
          (listof any/c)]{
 Returns a list of the keys of @racket[hash] in an unspecified order.
