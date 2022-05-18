@@ -291,7 +291,7 @@
     (cdr x)))
 
 (define (fallback-copy d)
-  (unless (dict-implements? d 'dict-clear dict-set!)
+  (unless (dict-implements? d 'dict-clear 'dict-set!)
     (raise-support-error 'dict-copy d))
   (define d2 (dict-clear d))
   (for ([(k v) (in-dict d)])
