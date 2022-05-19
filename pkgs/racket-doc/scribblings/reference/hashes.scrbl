@@ -586,6 +586,25 @@ procedure and mutability of @racket[hash].
 
 @history[#:added "8.5.0.2"]}
 
+@defproc[(hash-map/freeze [hash hash?]
+                          [proc (any/c any/c . -> . (values any/c any/c))])
+         (and/c hash? immutable?)]{
+
+Applies the procedure @racket[proc] to each element in
+@racket[hash] in an unspecified order, accumulating the results
+into a new immutable hash with the same key-comparison procedure
+as @racket[hash].
+
+@examples[
+#:eval the-eval
+(define frozen-capital
+  (hash-map/freeze (make-hash '((a . "apple") (b . "banana"))) (lambda (k v) (values k (string-upcase v)))))
+frozen-capital
+(immutable? frozen-capital)
+]
+
+@history[#:added "8.5.0.2"]}
+
 @defproc[(hash-keys [hash hash?] [try-order? any/c #f])
          (listof any/c)]{
 Returns a list of the keys of @racket[hash] in an unspecified order.

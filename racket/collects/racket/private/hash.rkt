@@ -111,6 +111,24 @@
         (hash-set! acc k2 v2))
       acc]))
 
+  (define (hash-freeze-clear table)
+    (unless (hash? table)
+      (raise-argument-error 'hash-freeze-clear "hash?" table))
+    (cond
+     [(hash-equal? table) (hash)]
+     [(hash-eqv? table) (hasheqv)]
+     [(hash-eq? table) (hasheq)]))
+
+  (define (hash-map/freeze table f)
+    (unless (hash? table)
+      (raise-argument-error 'hash-map/freeze "hash?" table))
+    (unless (and (procedure? f) (procedure-arity-includes? f 2))
+      (raise-argument-error 'hash-map/freeze "(procedure-arity-includes/c 2)" f))
+    (for/fold ([acc (hash-freeze-clear table)])
+              ([(k1 v1) (in-hash table)])
+      (define-values [k2 v2] (f k1 v1))
+      (hash-set acc k2 v2)))
+
   (define (hash-empty? table)
     (unless (hash? table)
       (raise-argument-error 'hash-empty? "hash?" table))
@@ -124,4 +142,5 @@
            hash-set*!
            hash-empty?
            hash-copy-clear
-           hash-map/copy))
+           hash-map/copy
+           hash-map/freeze))
