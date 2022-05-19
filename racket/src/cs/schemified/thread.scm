@@ -892,57 +892,134 @@
            (void)
            (raise-argument-error 'hash-keys "hash?" 0 h_0 try-order?_0))
          (hash-keys_0 h_0 try-order?_0)))))))
-(define hash-freeze-clear
-  (lambda (table_0)
-    (begin
-      (if (hash? table_0)
-        (void)
-        (raise-argument-error 'hash-freeze-clear "hash?" table_0))
-      (if (hash-equal? table_0)
-        (hash)
-        (if (hash-eqv? table_0)
-          (hasheqv)
-          (if (hash-eq? table_0) (hasheq) (void)))))))
-(define hash-map/freeze
-  (lambda (table_0 f_0)
-    (begin
-      (if (hash? table_0)
-        (void)
-        (raise-argument-error 'hash-map/freeze "hash?" table_0))
-      (if (if (procedure? f_0) (procedure-arity-includes? f_0 2) #f)
-        (void)
-        (raise-argument-error
-         'hash-map/freeze
-         "(procedure-arity-includes/c 2)"
-         f_0))
-      (begin
-        (letrec*
-         ((for-loop_0
-           (|#%name|
-            for-loop
-            (lambda (acc_0 i_0)
-              (begin
-                (if i_0
-                  (call-with-values
-                   (lambda () (hash-iterate-key+value table_0 i_0))
-                   (case-lambda
-                    ((k1_0 v1_0)
-                     (let ((acc_1
-                            (let ((acc_1
-                                   (call-with-values
-                                    (lambda () (|#%app| f_0 k1_0 v1_0))
-                                    (case-lambda
-                                     ((k2_0 v2_0) (hash-set acc_0 k2_0 v2_0))
-                                     (args
-                                      (raise-binding-result-arity-error
-                                       2
-                                       args))))))
-                              (values acc_1))))
-                       (for-loop_0 acc_1 (hash-iterate-next table_0 i_0))))
-                    (args (raise-binding-result-arity-error 2 args))))
-                  acc_0))))))
-         (let ((app_0 (hash-freeze-clear table_0)))
-           (for-loop_0 app_0 (hash-iterate-first table_0))))))))
+(define hash-copy-clear.1
+  (|#%name|
+   hash-copy-clear
+   (lambda (kind1_0 table3_0)
+     (begin
+       (begin
+         (if (hash? table3_0)
+           (void)
+           (raise-argument-error 'hash-copy-clear "hash?" table3_0))
+         (if (memq kind1_0 '(#f immutable mutable weak ephemeron))
+           (void)
+           (raise-argument-error
+            'hash-copy-clear
+            "(or/c #f 'immutable 'mutable 'weak 'ephemeron)"
+            kind1_0))
+         (if (if kind1_0 (eq? 'immutable kind1_0) (immutable? table3_0))
+           (if (hash-equal? table3_0)
+             (hash)
+             (if (hash-eqv? table3_0)
+               (hasheqv)
+               (if (hash-eq? table3_0) (hasheq) (void))))
+           (if (if kind1_0 (eq? 'weak kind1_0) (hash-weak? table3_0))
+             (if (hash-equal? table3_0)
+               (make-weak-hash)
+               (if (hash-eqv? table3_0)
+                 (make-weak-hasheqv)
+                 (if (hash-eq? table3_0) (make-weak-hasheq) (void))))
+             (if (if kind1_0
+                   (eq? 'ephemeron kind1_0)
+                   (hash-ephemeron? table3_0))
+               (if (hash-equal? table3_0)
+                 (make-ephemeron-hash)
+                 (if (hash-eqv? table3_0)
+                   (make-ephemeron-hasheqv)
+                   (if (hash-eq? table3_0) (make-ephemeron-hasheq) (void))))
+               (if (hash-equal? table3_0)
+                 (make-hash)
+                 (if (hash-eqv? table3_0)
+                   (make-hasheqv)
+                   (if (hash-eq? table3_0) (make-hasheq) (void))))))))))))
+(define hash-map/copy.1
+  (|#%name|
+   hash-map/copy
+   (lambda (kind5_0 table7_0 f8_0)
+     (begin
+       (begin
+         (if (hash? table7_0)
+           (void)
+           (raise-argument-error 'hash-map/copy "hash?" table7_0))
+         (begin
+           (if (if (procedure? f8_0) (procedure-arity-includes? f8_0 2) #f)
+             (void)
+             (raise-argument-error
+              'hash-map/copy
+              "(procedure-arity-includes/c 2)"
+              f8_0))
+           (begin
+             (if (memq kind5_0 '(#f immutable mutable weak ephemeron))
+               (void)
+               (raise-argument-error
+                'hash-map/copy
+                "(or/c #f 'immutable 'mutable 'weak 'ephemeron)"
+                kind5_0))
+             (let ((acc_0 (hash-copy-clear.1 kind5_0 table7_0)))
+               (if (immutable? acc_0)
+                 (begin
+                   (letrec*
+                    ((for-loop_0
+                      (|#%name|
+                       for-loop
+                       (lambda (acc_1 i_0)
+                         (begin
+                           (if i_0
+                             (call-with-values
+                              (lambda () (hash-iterate-key+value table7_0 i_0))
+                              (case-lambda
+                               ((k1_0 v1_0)
+                                (let ((acc_2
+                                       (let ((acc_2
+                                              (call-with-values
+                                               (lambda ()
+                                                 (|#%app| f8_0 k1_0 v1_0))
+                                               (case-lambda
+                                                ((k2_0 v2_0)
+                                                 (hash-set acc_1 k2_0 v2_0))
+                                                (args
+                                                 (raise-binding-result-arity-error
+                                                  2
+                                                  args))))))
+                                         (values acc_2))))
+                                  (for-loop_0
+                                   acc_2
+                                   (hash-iterate-next table7_0 i_0))))
+                               (args
+                                (raise-binding-result-arity-error 2 args))))
+                             acc_1))))))
+                    (for-loop_0 acc_0 (hash-iterate-first table7_0))))
+                 (begin
+                   (begin
+                     (letrec*
+                      ((for-loop_0
+                        (|#%name|
+                         for-loop
+                         (lambda (i_0)
+                           (begin
+                             (if i_0
+                               (call-with-values
+                                (lambda ()
+                                  (hash-iterate-key+value table7_0 i_0))
+                                (case-lambda
+                                 ((k1_0 v1_0)
+                                  (begin
+                                    (call-with-values
+                                     (lambda () (|#%app| f8_0 k1_0 v1_0))
+                                     (case-lambda
+                                      ((k2_0 v2_0) (hash-set! acc_0 k2_0 v2_0))
+                                      (args
+                                       (raise-binding-result-arity-error
+                                        2
+                                        args))))
+                                    (for-loop_0
+                                     (hash-iterate-next table7_0 i_0))))
+                                 (args
+                                  (raise-binding-result-arity-error 2 args))))
+                               (values)))))))
+                      (for-loop_0 (hash-iterate-first table7_0))))
+                   (void)
+                   acc_0))))))))))
 (define hash-empty?
   (lambda (table_0)
     (begin
@@ -3522,14 +3599,19 @@
                                                      (maybe-ph_0
                                                       ph_0
                                                       v_1
-                                                      (hash-map/freeze
-                                                       v_1
-                                                       (lambda (k_0 v_2)
-                                                         (let ((app_0
-                                                                (loop_0 k_0)))
-                                                           (values
-                                                            app_0
-                                                            (loop_0 v_2))))))))
+                                                      (let ((temp12_0
+                                                             (lambda (k_0 v_2)
+                                                               (let ((app_0
+                                                                      (loop_0
+                                                                       k_0)))
+                                                                 (values
+                                                                  app_0
+                                                                  (loop_0
+                                                                   v_2))))))
+                                                        (hash-map/copy.1
+                                                         'immutable
+                                                         v_1
+                                                         temp12_0)))))
                                                  (if (cpointer? v_1)
                                                    (ptr-add v_1 0)
                                                    (if (if (let ((or-part_0
@@ -3698,11 +3780,11 @@
                               (args
                                (raise-binding-result-arity-error 4 args))))))
                           (if (hash? v_1)
-                            (hash-map/freeze
-                             v_1
-                             (lambda (k_0 v_2)
-                               (let ((app_0 (loop_0 k_0)))
-                                 (values app_0 (loop_0 v_2)))))
+                            (let ((temp15_0
+                                   (lambda (k_0 v_2)
+                                     (let ((app_0 (loop_0 k_0)))
+                                       (values app_0 (loop_0 v_2))))))
+                              (hash-map/copy.1 'immutable v_1 temp15_0))
                             (if (if (cpointer? v_1)
                                   (if v_1 (not (bytes? v_1)) #f)
                                   #f)

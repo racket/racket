@@ -730,17 +730,20 @@
   (test (hasheqv 'one 2) hash-map/copy (hasheqv 'one 1) (proc (lambda (k v) (values k (add1 v)))))
 
   (test (hash 'one 2)
-        hash-map/freeze
+        hash-map/copy
         (make-hash '((one . 1)))
-        (proc (lambda (k v) (values k (add1 v)))))
+        (proc (lambda (k v) (values k (add1 v))))
+        #:kind 'immutable)
   (test (hasheq 'one 2)
-        hash-map/freeze
+        hash-map/copy
         (make-hasheq '((one . 1)))
-        (proc (lambda (k v) (values k (add1 v)))))
+        (proc (lambda (k v) (values k (add1 v))))
+        #:kind 'immutable)
   (test (hasheqv 'one 2)
-        hash-map/freeze
+        hash-map/copy
         (make-hasheqv '((one . 1)))
-        (proc (lambda (k v) (values k (add1 v))))))
+        (proc (lambda (k v) (values k (add1 v))))
+        #:kind 'immutable))
 
 ;; ----------------------------------------
 
@@ -835,7 +838,11 @@
               make-ephemeron-hash make-ephemeron-hasheq make-ephemeron-hasheqv))])
   (define (10*v k v) (values k (* 10 v)))
   (test (make-hash '((a . 10) (b . 20))) hash-map/copy (make-hash '((a . 1) (b . 2))) 10*v)
-  (test (make-immutable-hash '((a . 10) (b . 20))) hash-map/freeze (make-hash '((a . 1) (b . 2))) 10*v))
+  (test (make-immutable-hash '((a . 10) (b . 20)))
+        hash-map/copy
+        (make-hash '((a . 1) (b . 2)))
+        10*v
+        #:kind 'immutable))
 
 ;; ----------------------------------------
 

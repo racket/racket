@@ -158,9 +158,10 @@
             (maybe-ph
              ph
              v
-             (hash-map/freeze v
-                              (lambda (k v)
-                                (values (loop k) (loop v)))))]
+             (hash-map/copy v
+                            (lambda (k v)
+                              (values (loop k) (loop v)))
+                            #:kind 'immutable))]
            [(cpointer? v)
             (ptr-add v 0)]
            [(and (or (fxvector? v)
@@ -209,9 +210,10 @@
                    (for/list ([e (in-vector (struct->vector v) 1)])
                      (loop e))))]
       [(hash? v)
-       (hash-map/freeze v
-                        (lambda (k v)
-                          (values (loop k) (loop v))))]
+       (hash-map/copy v
+                      (lambda (k v)
+                        (values (loop k) (loop v)))
+                      #:kind 'immutable)]
       [(and (cpointer? v)
             v ; not #f
             (not (bytes? v)))

@@ -518,10 +518,24 @@ performed in constant time.  If @racket[hash] is a @tech{chaperone},
 then each key is removed one-by-one using @racket[hash-remove].}
 
 
-@defproc[(hash-copy-clear [hash hash?]) hash?]{
+@defproc[(hash-copy-clear
+          [hash hash?]
+          [#:kind kind (or/c #f 'immutable 'mutable 'weak 'ephemeron) #f])
+         hash?]{
 
 Produces an empty @tech{hash table} with the same key-comparison
-procedure and mutability of @racket[hash].}
+procedure as @racket[hash], with either the given @racket[kind]
+or the same kind as the given @racket[hash].
+
+If @racket[kind] is not supplied or @racket[#f], produces a hash
+table of the same kind and mutability as the given @racket[hash].
+If @racket[kind] is @racket['immutable], @racket['mutable],
+@racket['weak], or @racket['ephemeron], produces a table that's
+immutable, mutable with strongly-held keys, mutable with
+weakly-held keys, or mutable with ephemeron-held keys
+respectively.
+
+@history[#:changed "8.5.0.2" @elem{Added the @racket[kind] argument.}]}
 
 
 
@@ -570,35 +584,34 @@ with the following order (earlier bullets before later):
 @history[#:changed "6.3" @elem{Added the @racket[try-order?] argument.}
          #:changed "7.1.0.7" @elem{Added guarantees for @racket[try-order?].}]}
 
-@defproc[(hash-map/copy [hash hash?]
-                        [proc (any/c any/c . -> . (values any/c any/c))])
+@defproc[(hash-map/copy
+          [hash hash?]
+          [proc (any/c any/c . -> . (values any/c any/c))]
+          [#:kind kind (or/c #f 'immutable 'mutable 'weak 'ephemeron) #f])
          hash?]{
 
 Applies the procedure @racket[proc] to each element in
 @racket[hash] in an unspecified order, accumulating the results
-into a new hash of the same kind, with the same key-comparison
-procedure and mutability of @racket[hash].
+into a new hash with the same key-comparison procedure as
+@racket[hash], with either the given @racket[kind] or the same
+kind as the given @racket[hash].
+
+If @racket[kind] is not supplied or @racket[#f], produces a hash
+table of the same kind and mutability as the given @racket[hash].
+If @racket[kind] is @racket['immutable], @racket['mutable],
+@racket['weak], or @racket['ephemeron], produces a table that's
+immutable, mutable with strongly-held keys, mutable with
+weakly-held keys, or mutable with ephemeron-held keys
+respectively.
 
 @examples[
 #:eval the-eval
-(hash-map/copy #hash((a . "apple") (b . "banana")) (lambda (k v) (values k (string-upcase v))))
-]
-
-@history[#:added "8.5.0.2"]}
-
-@defproc[(hash-map/freeze [hash hash?]
-                          [proc (any/c any/c . -> . (values any/c any/c))])
-         (and/c hash? immutable?)]{
-
-Applies the procedure @racket[proc] to each element in
-@racket[hash] in an unspecified order, accumulating the results
-into a new immutable hash with the same key-comparison procedure
-as @racket[hash].
-
-@examples[
-#:eval the-eval
+(hash-map/copy #hash((a . "apple") (b . "banana"))
+               (lambda (k v) (values k (string-upcase v))))
 (define frozen-capital
-  (hash-map/freeze (make-hash '((a . "apple") (b . "banana"))) (lambda (k v) (values k (string-upcase v)))))
+  (hash-map/copy (make-hash '((a . "apple") (b . "banana")))
+                 (lambda (k v) (values k (string-upcase v)))
+                 #:kind 'immutable))
 frozen-capital
 (immutable? frozen-capital)
 ]

@@ -90,9 +90,10 @@
             (hash-set (or ht '#hasheq()) k p)
             ht)))]
     [(hash? v)
-     (hash-map/freeze v
-                      (lambda (key value)
-                        (values (->faslable key) (->faslable value))))]
+     (hash-map/copy v
+                    (lambda (key value)
+                      (values (->faslable key) (->faslable value)))
+                    #:kind 'immutable)]
     [(correlated-linklet? v)
      (faslable-correlated-linklet (->faslable (correlated-linklet-expr v))
                                   (->faslable (correlated-linklet-name v)))]
@@ -126,9 +127,10 @@
            (correlated-property c k p))
          c)]
     [(hash? v)
-     (hash-map/freeze v
-                      (lambda (key value)
-                        (values (faslable-> key) (faslable-> value))))]
+     (hash-map/copy v
+                    (lambda (key value)
+                      (values (faslable-> key) (faslable-> value)))
+                    #:kind 'immutable)]
     [(faslable-correlated-linklet? v)
      (make-correlated-linklet (faslable-> (faslable-correlated-linklet-expr v))
                               (faslable-> (faslable-correlated-linklet-name v)))]

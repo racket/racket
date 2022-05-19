@@ -86,9 +86,10 @@
                        (loop #f e seen)))))]
      [(and (hash? s) (immutable? s))
       (f #f
-         (hash-map/freeze s
-                          (lambda (k v)
-                            (values k (loop #f v seen)))))]
+         (hash-map/copy s
+                        (lambda (k v)
+                          (values k (loop #f v seen)))
+                        #:kind 'immutable))]
      [else (f #f s)])))
 
 (define (datum-has-elements? d)

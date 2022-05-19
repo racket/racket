@@ -26,8 +26,9 @@
                 k
                 (replace-context ctx (struct->list e))))]
    [(hash? e)
-    (hash-map/freeze e
-                     (lambda (k v)
-                       (values (replace-context ctx k)
-                               (replace-context ctx v))))]
+    (hash-map/copy e
+                   (lambda (k v)
+                     (values (replace-context ctx k)
+                             (replace-context ctx v)))
+                   #:kind 'immutable)]
    [else e]))
