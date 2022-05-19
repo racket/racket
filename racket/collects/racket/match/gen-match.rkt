@@ -14,6 +14,7 @@
     (pattern [p . rhs]
              #:with res (syntax/loc this-syntax [(p) . rhs])))
   (syntax-parse clauses
+    #:context stx
     [(c:cl ...)
      (go parse stx (quasisyntax/loc expr (#,expr))
          #'(c.res ...))]))
@@ -23,6 +24,7 @@
 (define (go parse stx es clauses)
   (with-disappeared-uses
     (syntax-parse clauses
+      #:context stx
       [([pats . rhs] ...)
        (unless (syntax->list es)
          (raise-syntax-error 'match* "expected a sequence of expressions to match" es))
