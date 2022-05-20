@@ -1,5 +1,5 @@
-(module match-tests mzscheme
-  (require mzlib/match
+(module match-exn-tests racket/base
+  (require racket/match
            rackunit
            syntax/macro-testing)
   (provide match-exn-tests)
