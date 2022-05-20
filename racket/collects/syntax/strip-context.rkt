@@ -29,5 +29,6 @@
     (hash-map/copy e
                    (lambda (k v)
                      (values (replace-context ctx k)
-                             (replace-context ctx v))))]
+                             (replace-context ctx v)))
+                   #:kind 'immutable)]
    [else e]))

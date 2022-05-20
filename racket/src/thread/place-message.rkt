@@ -160,7 +160,8 @@
              v
              (hash-map/copy v
                             (lambda (k v)
-                              (values (loop k) (loop v)))))]
+                              (values (loop k) (loop v)))
+                            #:kind 'immutable))]
            [(cpointer? v)
             (ptr-add v 0)]
            [(and (or (fxvector? v)
@@ -211,7 +212,8 @@
       [(hash? v)
        (hash-map/copy v
                       (lambda (k v)
-                        (values (loop k) (loop v))))]
+                        (values (loop k) (loop v)))
+                      #:kind 'immutable)]
       [(and (cpointer? v)
             v ; not #f
             (not (bytes? v)))
