@@ -2,6 +2,7 @@
 
 (require (for-syntax scheme/base)
          "match-tests.rkt" "match-exn-tests.rkt" "other-plt-tests.rkt" "other-tests.rkt"
+         "legacy-match-tests.rkt"
          "examples.rkt"
          rackunit rackunit/text-ui
          (only-in racket/base local-require))
@@ -445,6 +446,7 @@
                             plt-match-tests
                             match-tests
                             match-exn-tests
+                            legacy-match-tests
                             new-tests
                             ;; from bruce
                             other-tests 
