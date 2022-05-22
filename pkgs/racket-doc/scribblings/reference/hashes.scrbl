@@ -164,11 +164,11 @@ weakly.
 
 
 @deftogether[(
-@defproc[(hash [key any/c] [val any/c] ... ...) (and/c hash? hash-equal? immutable?)]
+@defproc[(hash [key any/c] [val any/c] ... ...) (and/c hash? hash-equal? immutable? hash-strong?)]
 @defproc[(hashalw [key any/c] [val any/c] ... ...)
-         (and/c hash? hash-equal-always? immutable?)]
-@defproc[(hasheq [key any/c] [val any/c] ... ...) (and/c hash? hash-eq? immutable?)]
-@defproc[(hasheqv [key any/c] [val any/c] ... ...) (and/c hash? hash-eqv? immutable?)]
+         (and/c hash? hash-equal-always? immutable? hash-strong?)]
+@defproc[(hasheq [key any/c] [val any/c] ... ...) (and/c hash? hash-eq? immutable? hash-strong?)]
+@defproc[(hasheqv [key any/c] [val any/c] ... ...) (and/c hash? hash-eqv? immutable? hash-strong?)]
 )]{
 
 Creates an immutable hash table with each given @racket[key] mapped to
@@ -188,11 +188,11 @@ hide earlier mappings if the @racket[key]s are equal.
 @history[#:changed "8.5.0.3" @elem{Added @racket[hashalw].}]}
 
 @deftogether[(
-@defproc[(make-hash [assocs (listof pair?) null]) (and/c hash? hash-equal?)]
+@defproc[(make-hash [assocs (listof pair?) null]) (and/c hash? hash-equal? (not/c immutable?) hash-strong?)]
 @defproc[(make-hashalw [assocs (listof pair?) null])
-         (and/c hash? hash-equal-always?)]
-@defproc[(make-hasheqv [assocs (listof pair?) null]) (and/c hash? hash-eqv?)]
-@defproc[(make-hasheq [assocs (listof pair?) null]) (and/c hash? hash-eq?)]
+         (and/c hash? hash-equal-always? (not/c immutable?) hash-strong?)]
+@defproc[(make-hasheqv [assocs (listof pair?) null]) (and/c hash? hash-eqv? (not/c immutable?) hash-strong?)]
+@defproc[(make-hasheq [assocs (listof pair?) null]) (and/c hash? hash-eq? (not/c immutable?) hash-strong?)]
 )]{
 
 Creates a mutable hash table that holds keys strongly. 
@@ -215,11 +215,11 @@ See also @racket[make-custom-hash].
 @history[#:changed "8.5.0.3" @elem{Added @racket[make-hashalw].}]}
 
 @deftogether[(
-@defproc[(make-weak-hash [assocs (listof pair?) null]) (and/c hash? hash-equal? hash-weak?)]
+@defproc[(make-weak-hash [assocs (listof pair?) null]) (and/c hash? hash-equal? (not/c immutable?) hash-weak?)]
 @defproc[(make-weak-hashalw [assocs (listof pair?) null])
-         (and/c hash? hash-equal-always? hash-weak?)]
-@defproc[(make-weak-hasheqv [assocs (listof pair?) null]) (and/c hash? hash-eqv? hash-weak?)]
-@defproc[(make-weak-hasheq [assocs (listof pair?) null]) (and/c hash? hash-eq? hash-weak?)]
+         (and/c hash? hash-equal-always? (not/c immutable?) hash-weak?)]
+@defproc[(make-weak-hasheqv [assocs (listof pair?) null]) (and/c hash? hash-eqv? (not/c immutable?) hash-weak?)]
+@defproc[(make-weak-hasheq [assocs (listof pair?) null]) (and/c hash? hash-eq? (not/c immutable?) hash-weak?)]
 )]{
 
 Like @racket[make-hash], @racket[make-hasheq],
@@ -242,11 +242,11 @@ doubt.
 
 
 @deftogether[(
-@defproc[(make-ephemeron-hash [assocs (listof pair?) null]) (and/c hash? hash-equal? hash-ephemeron?)]
+@defproc[(make-ephemeron-hash [assocs (listof pair?) null]) (and/c hash? hash-equal? (not/c immutable?) hash-ephemeron?)]
 @defproc[(make-ephemeron-hashalw [assocs (listof pair?) null])
-         (and/c hash? hash-equal-always? hash-ephemeron?)]
-@defproc[(make-ephemeron-hasheqv [assocs (listof pair?) null]) (and/c hash? hash-eqv? hash-ephemeron?)]
-@defproc[(make-ephemeron-hasheq [assocs (listof pair?) null]) (and/c hash? hash-eq? hash-ephemeron?)]
+         (and/c hash? hash-equal-always? (not/c immutable?) hash-ephemeron?)]
+@defproc[(make-ephemeron-hasheqv [assocs (listof pair?) null]) (and/c hash? hash-eqv? (not/c immutable?) hash-ephemeron?)]
+@defproc[(make-ephemeron-hasheq [assocs (listof pair?) null]) (and/c hash? hash-eq? (not/c immutable?) hash-ephemeron?)]
 )]{
 
 Like @racket[make-hash], @racket[make-hasheq],
@@ -267,13 +267,13 @@ represented more compactly than a weak hash table with explicit
 
 @deftogether[(
 @defproc[(make-immutable-hash [assocs (listof pair?) null])
-         (and/c hash? hash-equal? immutable?)]
+         (and/c hash? hash-equal? immutable? hash-strong?)]
 @defproc[(make-immutable-hashalw [assocs (listof pair?) null])
-         (and/c hash? hash-equal-always? immutable?)]
+         (and/c hash? hash-equal-always? immutable? hash-strong?)]
 @defproc[(make-immutable-hasheqv [assocs (listof pair?) null])
-         (and/c hash? hash-eqv? immutable?)]
+         (and/c hash? hash-eqv? immutable? hash-strong?)]
 @defproc[(make-immutable-hasheq [assocs (listof pair?) null])
-         (and/c hash? hash-eq? immutable?)]
+         (and/c hash? hash-eq? immutable? hash-strong?)]
 )]{
 
 Like @racket[hash], @racket[hashalw], @racket[hasheq], and
