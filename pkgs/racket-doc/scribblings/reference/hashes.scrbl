@@ -123,7 +123,9 @@ Returns @racket[#t] if @racket[hash] compares keys with @racket[equal?],
 
 Returns @racket[#t] if @racket[hash] compares keys with
 @racket[equal-always?], @racket[#f] if it compares with @racket[eq?],
-@racket[eqv?], or @racket[equal?].}
+@racket[eqv?], or @racket[equal?].
+
+@history[#:added "8.5.0.3"]}
 
 @defproc[(hash-eqv? [hash hash?]) boolean?]{
 
@@ -163,10 +165,10 @@ weakly.
 
 @deftogether[(
 @defproc[(hash [key any/c] [val any/c] ... ...) (and/c hash? hash-equal? immutable?)]
-@defproc[(hasheq [key any/c] [val any/c] ... ...) (and/c hash? hash-eq? immutable?)]
-@defproc[(hasheqv [key any/c] [val any/c] ... ...) (and/c hash? hash-eqv? immutable?)]
 @defproc[(hashalw [key any/c] [val any/c] ... ...)
          (and/c hash? hash-equal-always? immutable?)]
+@defproc[(hasheq [key any/c] [val any/c] ... ...) (and/c hash? hash-eq? immutable?)]
+@defproc[(hasheqv [key any/c] [val any/c] ... ...) (and/c hash? hash-eqv? immutable?)]
 )]{
 
 Creates an immutable hash table with each given @racket[key] mapped to
@@ -174,15 +176,16 @@ the following @racket[val]; each @racket[key] must have a @racket[val],
 so the total number of arguments to @racket[hash] must be even.
 
 The @racket[hash] procedure creates a table where keys are compared
-with @racket[equal?], @racket[hasheq] procedure creates a table where
+with @racket[equal?], @racket[hashalw] creates a table where keys are compared with
+@racket[equal-always?], @racket[hasheq] procedure creates a table where
 keys are compared with @racket[eq?], @racket[hasheqv] procedure
-creates a table where keys are compared with @racket[eqv?], and
-@racket[hashalw] creates a table where keys are compared with
-@racket[equal-always?].
+creates a table where keys are compared with @racket[eqv?].
 
 The @racket[key] to @racket[val] mappings are added to the table in
 the order that they appear in the argument list, so later mappings can
-hide earlier mappings if the @racket[key]s are equal.}
+hide earlier mappings if the @racket[key]s are equal.
+
+@history[#:changed "8.5.0.3" @elem{Added @racket[hashalw].}]}
 
 @deftogether[(
 @defproc[(make-hash [assocs (listof pair?) null]) (and/c hash? hash-equal?)]
@@ -207,7 +210,9 @@ element of @racket[assocs], the @racket[car] is a key, and the
 table in the order that they appear in @racket[assocs], so later
 mappings can hide earlier mappings.
 
-See also @racket[make-custom-hash].}
+See also @racket[make-custom-hash].
+
+@history[#:changed "8.5.0.3" @elem{Added @racket[make-hashalw].}]}
 
 @deftogether[(
 @defproc[(make-weak-hash [assocs (listof pair?) null]) (and/c hash? hash-equal? hash-weak?)]
@@ -231,7 +236,9 @@ problem, use an ephemeron hash table as created by
 For values that do not refer to keys,
 there is a modest extra cost to using an ephemeron hash table instead
 of a weak hash table, but prefer an ephemeron hash table when in
-doubt.}
+doubt.
+
+@history[#:changed "8.5.0.3" @elem{Added @racket[make-weak-hashalw].}]}
 
 
 @deftogether[(
@@ -255,8 +262,8 @@ like @racket[hash-ref]. An ephemeron hash table might also be
 represented more compactly than a weak hash table with explicit
 @tech{ephemeron} values.
 
-@history[#:added "8.0.0.10"]}
-
+@history[#:added "8.0.0.10"
+         #:changed "8.5.0.3" @elem{Added @racket[make-ephemeron-hashalw].}]}
 
 @deftogether[(
 @defproc[(make-immutable-hash [assocs (listof pair?) null])
@@ -269,11 +276,13 @@ represented more compactly than a weak hash table with explicit
          (and/c hash? hash-eq? immutable?)]
 )]{
 
-Like @racket[hash], @racket[hasheq], @racket[hasheqv], and
-@racket[hashalw], but accepts
+Like @racket[hash], @racket[hashalw], @racket[hasheq], and
+@racket[hasheqv], but accepts
 the key--value mapping in association-list form like
-@racket[make-hash], @racket[make-hasheq], @racket[make-hasheqv], and
-@racket[make-hashalw].}
+@racket[make-hash], @racket[make-hashalw], @racket[make-hasheq], and
+@racket[make-hasheqv].
+
+@history[#:changed "8.5.0.3" @elem{Added @racket[make-immutable-hashalw].}]}
 
 
 @defproc[(hash-set! [hash (and/c hash? (not/c immutable?))]

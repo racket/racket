@@ -83,7 +83,7 @@ Returns @racket[#t] if @racket[x] is a @tech{hash set} that compares
 elements with @racket[equal?], @racket[equal-always?], @racket[eqv?],
 or @racket[eq?], respectively; returns @racket[#f] otherwise.
 
-}
+@history[#:changed "8.5.0.3" @elem{Added @racket[set-equal-always?].}]}
 
 @deftogether[(
 @defproc[(set? [x any/c]) boolean?]
@@ -122,7 +122,8 @@ an earlier element may be replaced by a later element that is
 @racket[equal?], @racket[equal-always?], or @racket[eqv?], but not
 @racket[eq?].
 
-}
+@history[#:changed "8.5.0.3" @elem{Added @racket[setalw],
+                                   @racket[mutable-setalw], and @racket[weak-setalw].}]}
 
 @deftogether[(
 @defproc[(list->set [lst list?]) (and/c generic-set? set-equal? set?)]
@@ -147,7 +148,8 @@ the elements of the set.  Equivalent to @racket[(apply set lst)],
 @racket[(apply setalw lst)], @racket[(apply seteqv lst)],
 @racket[(apply seteq lst)], and so on, respectively.
 
-}
+@history[#:changed "8.5.0.3" @elem{Added @racket[list->setalw],
+                                   @racket[list->mutable-setalw], and @racket[list->weak-setalw].}]}
 
 @deftogether[(
 @defform[(for/set (for-clause ...) body ...+)]
@@ -178,7 +180,10 @@ the elements of the set.  Equivalent to @racket[(apply set lst)],
 
 Analogous to @racket[for/list] and @racket[for*/list], but to
 construct a @tech{hash set} instead of a list.
-}
+
+@history[#:changed "8.5.0.3" @elem{Added @racket[for/setalw],
+                                   @racket[for/mutable-setalw], and @racket[for/weak-setalw].}]}
+
 
 @deftogether[(
 @defproc[(in-immutable-set [st set?]) sequence?]
@@ -301,7 +306,8 @@ named by the @racket[sym]s.
  The result will be a @tech{chaperone contract} when @racket[elem/c] is a
  @tech{chaperone contract}.
 
- @history[#:changed "8.3.0.9" @elem{Added support for random generation.}]
+ @history[#:changed "8.3.0.9" @elem{Added support for random generation.}
+          #:changed "8.5.0.3" @elem{Added @racket['equal-always] support for @racket[cmp].}]
 }
 
 @section{Generic Set Interface}

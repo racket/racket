@@ -7,8 +7,8 @@
 
 
 Equality is the concept of whether two values are ``the same.'' Racket supports
-a few different kinds of equality by default, though @racket[equal?] is
-preferred for most use cases.
+a few different kinds of equality by default, although @racket[equal?] is
+preferred for most uses.
 
 @defproc[(equal? [v1 any/c] [v2 any/c]) boolean?]{
 
@@ -39,7 +39,7 @@ preferred for most use cases.
 @defproc[(equal-always? [v1 any/c] [v2 any/c]) boolean?]{
 
  Indicates whether @racket[v1] and @racket[v2] are equal and will always stay
- equal through @emph{mutations}. For them to be equal-always, corresponding
+ equal independent of @emph{mutations}. Generally, for to values to be equal-always, corresponding
  immutable values within @racket[v1] and @racket[v2] must be @racket[equal?],
  while corresponding mutable values within them must be @racket[eq?].
 
@@ -54,7 +54,8 @@ preferred for most use cases.
  if they are @racket[equal?], except that corresponding mutable
  vectors, boxes, hash tables, strings, byte strings, @tech{mutable pairs}, and
  mutable structures within
- @racket[v1] and @racket[v2] must be @racket[eq?].
+ @racket[v1] and @racket[v2] must be @racket[eq?], and equality on structures
+ can be specialized for @racket[equal-always?] through @racket[gen:equal-mode+hash].
 
  @(examples
    (equal-always? 'yes 'yes)
@@ -67,8 +68,11 @@ preferred for most use cases.
    (equal-always? (mcons 1 2) (mcons 1 2))
    (equal-always? (integer->char 955) (integer->char 955))
    (equal-always? (make-string 3 #\z) (make-string 3 #\z))
-   (equal-always? (string->immutable-string (make-string 3 #\z)) (string->immutable-string (make-string 3 #\z)))
-   (equal-always? #t #t))}
+   (equal-always? (string->immutable-string (make-string 3 #\z))
+                  (string->immutable-string (make-string 3 #\z)))
+   (equal-always? #t #t))
+
+@history[#:added "8.5.0.3"]}
 
 
 @defproc[(eqv? [v1 any/c] [v2 any/c]) boolean?]{
@@ -200,7 +204,7 @@ indexing and comparison operations, especially in the implementation of
  computed even when @racket[v] contains a cycle through pairs, vectors, boxes,
  and/or inspectable structure fields. Additionally, user-defined data types can
  customize how this hash code is computed by implementing
- @racket[gen:equal+hash].
+ @racket[gen:equal+hash] or @racket[gen:equal-mode+hash].
 
  For any @racket[v] that could be produced by @racket[read], if @racket[v2] is
  produced by @racket[read] for the same input characters, the
@@ -317,25 +321,32 @@ indexing and comparison operations, especially in the implementation of
 
  The @racket[_equal-proc] is not only used for
  @racket[equal?], it is also used for @racket[equal?/recur],
- @racket[impersonator-of?], @racket[equal-always?], and
+ and @racket[impersonator-of?]. Furthermore, if the structure type
+ has no mutable fields, @racket[_equal-proc] is used for @racket[equal-always?], and
  @racket[chaperone-of?]. Likewise @racket[_hash-proc] and
  @racket[_hash2-proc] are used for
  @racket[equal-always-hash-code] and
- @racket[equal-always-secondary-hash-code] respectively.
+ @racket[equal-always-secondary-hash-code], respectively, when
+ the structure type has no mutable fields.
  Instances of these methods should follow the guidelines in
  @secref["Honest_Custom_Equality"] to implement all of these
  operations reasonably. In particular, these methods should
  not access mutable data unless the struct is declared
  mutable.
 
- When a structure type has no @racket[gen:equal+hash] implementation, then
+ When a structure type has no @racket[gen:equal+hash] or
+ @racket[gen:equal-mode+hash] implementation, then
  transparent structures (i.e., structures with an @tech{inspector} that
  is controlled by the current @tech{inspector}) are @racket[equal?]
  when they are instances of the same structure type (not counting
  sub-types), and when they have @racket[equal?] field values.  For
  transparent structures, @racket[equal-hash-code] and
- @racket[equal-secondary-hash-code] derive hash code using the field
- values. For opaque structure types, @racket[equal?] is the same as
+ @racket[equal-secondary-hash-code] (in the case of no mutable fields)
+ derive hash code using the field
+ values. For a transparent structure type with at least one mutable field,
+ @racket[equal-always?] is the same as @racket[eq?], and an
+ @racket[equal-secondary-hash-code] result is based only on @racket[eq-hash-code].
+ For opaque structure types, @racket[equal?] is the same as
  @racket[eq?], and @racket[equal-hash-code] and
  @racket[equal-secondary-hash-code] results are based only on
  @racket[eq-hash-code]. If a structure has a @racket[prop:impersonator-of]
@@ -384,7 +395,7 @@ indexing and comparison operations, especially in the implementation of
  may specify differences between @racket[equal?] and @racket[equal-always?].
  The following methods must be implemented:
 
- @itemize[
+ @itemlist[
 
  @item{@racket[_equal-mode-proc :
                (any/c any/c (any/c any/c . -> . boolean?) boolean? . -> . any/c)] ---
@@ -401,9 +412,17 @@ indexing and comparison operations, especially in the implementation of
    argument is the mode: @racket[#t] for @racket[equal?] hashing or @racket[#f]
    for @racket[equal-always?] hashing.}]
 
+ The @racket[_hash-mode-proc] implementation is used both for a
+ primary hash code and secondary hash code.
+
+ When implementing these methods, follow the guidelines in
+ @secref["Honest_Custom_Equality"]. In particular, these
+ methods should only access mutable data if the ``mode'' argument
+ is true to indicate @racket[equal?] or @racket[impersonator-of?].
+
  Implementing @racket[gen:equal-mode+hash] is most useful for types that
- specify differences between @racket[equal?] and @racket[equal-always?]. For
- example a type that wraps mutable data with getter and setter procedures:
+ specify differences between @racket[equal?] and @racket[equal-always?], such
+ as a structure type that wraps mutable data with getter and setter procedures:
  @(examples
    (define (get gs) ((getset-getter gs)))
    (define (set gs new) ((getset-setter gs) new))
@@ -426,10 +445,7 @@ indexing and comparison operations, especially in the implementation of
    (eval:check (equal-always? gsx gsy) #f)
    (eval:check (equal-always? gsx gsx) #t))
 
- When implementing these methods, follow the guidelines in
- @secref["Honest_Custom_Equality"]. In particular, these
- methods should only access mutable data if the mode is
- true.}
+@history[#:added "8.5.0.3"]}
 
 
 @defthing[prop:equal+hash struct-type-property?]{
@@ -437,49 +453,34 @@ indexing and comparison operations, especially in the implementation of
  A @tech{structure type property} (see @secref["structprops"])
  that supplies an equality predicate and hashing functions for a structure
  type. Using the @racket[prop:equal+hash] property is an alternative to
- using he @racket[gen:equal+hash] @tech{generic interface}.
+ using the @racket[gen:equal+hash] or @racket[gen:equal-mode+hash]
+ @tech{generic interface}.
 
- A @racket[prop:equal+hash] property value is a list of either two
- procedures @racket[(list _equal-mode-proc _hash-mode-proc)] or three
- procedures @racket[(list _equal-proc _hash-proc _hash2-proc)]:
+ A @racket[prop:equal+hash] property value is a list of either three
+ procedures @racket[(list _equal-proc _hash-proc _hash2-proc)] or two
+ procedures @racket[(list _equal-mode-proc _hash-mode-proc)]:
 
  @itemlist[
 
-  @item{The two-procedure case supports customization of @racket[equal-always?],
-        and a separate secondary hashing function is omitted:
+  @item{The three-procedure case corresponds to the procedures of
+        @racket[gen:equal-hash]:
 
-       @itemlist[
-         @item{@racket[_equal-mode-proc : (any/c any/c (any/c any/c . -> . boolean?) boolean? . -> . any/c)]
-               --- the first two arguments are the values to compare, the third argument is an
-               equality function to use for recursive comparisons, and the last argument
-               is @racket[#t] for an @racket[equal?] or @racket[impersonator-of?] comparison or @racket[#f]
-               for an @racket[equal-always?] or @racket[chaperone-of?] comparison. Any result except @racket[#f] indicates that the given two values
-               should be considered equivalent.}
-
-          @item{@racket[_hash-mode-proc : (any/c (any/c . -> . exact-integer?) boolean? . -> . exact-integer?)]
-                ---- the first argument is the value to compute a hash code for, the
-                second argument is a hashing function to use for recursive hashing, and the
-                last argument is @racket[#t] for @racket[equal?] hashing or
-                @racket[#f] for @racket[equal-always?] hashing.}
-
-        ]
-
-       The given @racket[_hash-mode-proc] function is used both for a
-       primary hash code and secondary hash code.}
-
-  @item{The three-procedure case customizes @racket[equal-always?]
-        only if the structure type has no mutable fields, and the
-        equality and hashing functions do not receive information
-        about whether @racket[equal?] or @racket[equal-always?]
-        comparison is required (but the given recursive equality or
-        hashing functions takes that mode into account):
-
-         @itemize[
+         @itemlist[
            @item{@racket[_equal-proc : (any/c any/c (any/c any/c . -> . boolean?)  . -> . any/c)]}
 
            @item{@racket[_hash-proc : (any/c (any/c . -> . exact-integer?) . -> . exact-integer?)]}
 
            @item{@racket[_hash2-proc : (any/c (any/c . -> . exact-integer?) . -> . exact-integer?)]}
+        ]}
+
+  @item{The two-procedure case corresponds to the procedures of
+  @racket[gen:equal-mode-hash]:
+
+       @itemlist[
+         @item{@racket[_equal-mode-proc : (any/c any/c (any/c any/c . -> . boolean?) boolean? . -> . any/c)]}
+
+          @item{@racket[_hash-mode-proc : (any/c (any/c . -> . exact-integer?) boolean? . -> . exact-integer?)]}
+
         ]}
 
 ]
@@ -491,17 +492,17 @@ declared mutable or the mode is true.
 
 @history[#:changed "8.5.0.3" @elem{Added support for two-procedure values to customize @racket[equal-always?].}]}
 
-@subsection{Honest Custom Equality}
+@section[#:tag "Honest_Custom_Equality"]{Honest Custom Equality}
 
 Since the @racket[_equal-proc] or @racket[_equal-mode-proc]
 is used for more than just @racket[equal?], instances of
-them should follow certain guidelines to make sure the other
-operations @racket[equal-always?], @racket[chaperone-of?],
-and @racket[impersonator-of?] are honest.
+them should follow certain guidelines to make sure that they work
+correctly for @racket[equal-always?], @racket[chaperone-of?],
+and @racket[impersonator-of?].
 
 Due to the differences between these operations, avoid
-calling @racket[equal?] within them. Instead, use the 3rd
-argument to "recur" on the pieces. This allows
+calling @racket[equal?] within them. Instead, use the third
+argument to ``recur'' on the pieces, which allows
 @racket[equal?/recur] to work properly, lets the other
 operations behave in their own distinct ways on the pieces,
 and enables some cycle detection.
@@ -540,7 +541,7 @@ should not change their answer when the arguments swap:
 
 However, the operations @racket[chaperone-of?] and
 @racket[impersonator-of?] are @emph{not} symmetric, so when
-calling the 3rd argument to "recur" on pieces, pass the
+calling the third argument to ``recur'' on pieces, pass the
 pieces in the same order they came in:
 
 @compare[
