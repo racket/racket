@@ -72,6 +72,30 @@
     (check-false (equal-always? gsx gsy))
     (check-true (equal-always? gsx gsx))))
 
+(struct mcell-honest-mutable (value) #:mutable
+  #:methods gen:equal+hash
+  [(define (equal-proc self other rec)
+     (rec (mcell-honest-mutable-value self)
+          (mcell-honest-mutable-value other)))
+   (define (hash-proc self rec)
+     (+ (eq-hash-code struct:mcell-honest-mutable)
+        (rec (mcell-honest-mutable-value self))))
+   (define (hash2-proc self rec)
+     (+ (eq-hash-code struct:mcell-honest-mutable)
+        (rec (mcell-honest-mutable-value self))))])
+
+(struct mcell-honest-mode (value) #:mutable
+  #:methods gen:equal-mode+hash
+  [(define (equal-mode-proc self other rec mode)
+     (and mode
+          (rec (mcell-honest-mode-value self)
+               (mcell-honest-mode-value other))))
+   (define (hash-mode-proc self rec mode)
+     (if mode
+         (+ (eq-hash-code struct:mcell-honest-mode)
+            (rec (mcell-honest-mode-value self)))
+         (eq-hash-code self)))])
+
 #|
 ;; dishonestly implement one layer deep of equal-now explicitly,
 ;; while not declaring it mutable:
@@ -138,6 +162,50 @@
      (if mode (rec (unbox (bxwrp-honest-mode-box self))) (eq-hash-code self)))])
 
 (module+ test
+  (test-case "mcell-honest-mutable equal+hash"
+    (check-equal? (mcell-honest-mutable 1)
+                  (mcell-honest-mutable 1))
+    (check-equal? (equal-hash-code (mcell-honest-mutable 2))
+                  (equal-hash-code (mcell-honest-mutable 2)))
+    (check-equal? (equal-secondary-hash-code
+                   (mcell-honest-mutable 3))
+                  (equal-secondary-hash-code
+                   (mcell-honest-mutable 3)))
+    (check-false (equal-always? (mcell-honest-mutable 1)
+                                (mcell-honest-mutable 1)))
+    (check-false (= (equal-always-hash-code
+                     (mcell-honest-mutable 2))
+                    (equal-always-hash-code
+                     (mcell-honest-mutable 2))))
+    (check-false (= (equal-always-secondary-hash-code
+                     (mcell-honest-mutable 3))
+                    (equal-always-secondary-hash-code
+                     (mcell-honest-mutable 3))))
+    (check-false (chaperone-of? (mcell-honest-mutable 1)
+                                (mcell-honest-mutable 1))))
+
+  (test-case "mcell-honest-mode equal-mode+hash"
+    (check-equal? (mcell-honest-mode 1)
+                  (mcell-honest-mode 1))
+    (check-equal? (equal-hash-code (mcell-honest-mode 2))
+                  (equal-hash-code (mcell-honest-mode 2)))
+    (check-equal? (equal-secondary-hash-code
+                   (mcell-honest-mode 3))
+                  (equal-secondary-hash-code
+                   (mcell-honest-mode 3)))
+    (check-false (equal-always? (mcell-honest-mode 1)
+                                (mcell-honest-mode 1)))
+    (check-false (= (equal-always-hash-code
+                     (mcell-honest-mode 2))
+                    (equal-always-hash-code
+                     (mcell-honest-mode 2))))
+    (check-false (= (equal-always-secondary-hash-code
+                     (mcell-honest-mode 3))
+                    (equal-always-secondary-hash-code
+                     (mcell-honest-mode 3))))
+    (check-false (chaperone-of? (mcell-honest-mode 1)
+                                (mcell-honest-mode 1))))
+
   (test-case "bxwrp-honest-mutable equal+hash"
     (check-equal? (bxwrp-honest-mutable (box 1))
                   (bxwrp-honest-mutable (box 1)))

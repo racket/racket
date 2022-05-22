@@ -604,31 +604,30 @@ and only access mutable data when the mode is true:
 @compare[
 @filebox[@tt{also good}]{
 @racketblock0[
-  (struct mcell (box)
+  (struct mcell (value) #:mutable
     (code:comment "only accesses mutable data when mode is true")
     #:methods gen:equal-mode+hash
     [(define (equal-mode-proc self other rec mode)
        (and mode
-            (rec (unbox (mcell-box self))
-                 (unbox (mcell-box other)))))
+            (rec (mcell-value self)
+                 (mcell-value other))))
      (define (hash-mode-proc self rec mode)
        (if mode
            (+ (eq-hash-code struct:mcell)
-              (rec (unbox (mcell-value self))))
+              (rec (mcell-value self)))
            (eq-hash-code self)))])
 ]}
 
 @filebox[@tt{still bad}]{
 @racketblock0[
-  (struct mcell (box)
-    (code:comment "not declared mutable,")
-    (code:comment "but accesses mutable data ignoring mode anyway")
+  (struct mcell (value) #:mutable
+    (code:comment "accesses mutable data ignoring mode")
     #:methods gen:equal-mode+hash
     [(define (equal-mode-proc self other rec mode)
-       (rec (unbox (mcell-box self))
-            (unbox (mcell-box other))))
+       (rec (mcell-value self)
+            (mcell-value other)))
      (define (hash-mode-proc self rec mode)
        (+ (eq-hash-code struct:mcell)
-          (rec (unbox (mcell-value self)))))])
+          (rec (mcell-value self))))])
 ]}
 ]
