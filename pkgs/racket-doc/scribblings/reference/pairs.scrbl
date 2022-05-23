@@ -509,6 +509,20 @@ Returns @racket[(remove v lst eqv?)].
   (remv #\c (list #\a #\b #\c))]}
 
 
+@defproc[(remw [v any/c] [lst list?])
+         list?]{
+
+Returns @racket[(remove v lst equal-always?)].
+
+@mz-examples[
+  (remw 2 (list 1 2 3 4 5))
+  (remw '(2) (list '(1) '(2) '(3)))
+  (remw "2" (list "1" "2" "3"))
+  (remw #\c (list #\a #\b #\c))]
+
+@history[#:added "8.5.0.3"]}
+
+
 @defproc[(remove* [v-lst list?] [lst list?] [proc procedure? equal?])
          list?]{
 
@@ -539,6 +553,17 @@ Returns @racket[(remove* v-lst lst eqv?)].
 
 @mz-examples[
   (remv* (list 1 2) (list 1 2 3 2 4 5 2))]}
+
+
+@defproc[(remw* [v-lst list?] [lst list?])
+         list?]{
+
+Returns @racket[(remove* v-lst lst equal-always?)].
+
+@mz-examples[
+  (remw* (list 1 2) (list 1 2 3 2 4 5 2))]
+
+@history[#:added "8.5.0.3"]}
 
 
 @defproc[(sort [lst list?] [less-than? (any/c any/c . -> . any/c)]
@@ -616,6 +641,18 @@ non-list.
   (member 'b '(a b . etc))]}
 
 
+@defproc[(memw [v any/c] [lst (or/c list? any/c)])
+         (or/c #f list? any/c)]{
+
+Like @racket[member], but finds an element using @racket[equal-always?].
+
+@mz-examples[
+  (memw 2 (list 1 2 3 4))
+  (memw 9 (list 1 2 3 4))]
+
+@history[#:added "8.5.0.3"]}
+
+
 @defproc[(memv [v any/c] [lst (or/c list? any/c)])
          (or/c #f list? any/c)]{
 
@@ -682,6 +719,17 @@ then @racket[lst] must be a list of pairs (and not a cyclic list).
   (assoc 3.5
          (list (list 1 2) (list 3 4) (list 5 6))
          (lambda (a b) (< (abs (- a b)) 1)))]}
+
+
+@defproc[(assw [v any/c] [lst (or/c (listof pair?) any/c)])
+         (or/c pair? #f)]{
+
+Like @racket[assoc], but finds an element using @racket[equal-always?].
+
+@mz-examples[
+  (assw 3 (list (list 1 2) (list 3 4) (list 5 6)))]
+
+@history[#:added "8.5.0.3"]}
 
 
 @defproc[(assv [v any/c] [lst (or/c (listof pair?) any/c)])
