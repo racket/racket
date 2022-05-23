@@ -518,7 +518,10 @@ Returns @racket[(remove v lst equal-always?)].
   (remw 2 (list 1 2 3 4 5))
   (remw '(2) (list '(1) '(2) '(3)))
   (remw "2" (list "1" "2" "3"))
-  (remw #\c (list #\a #\b #\c))]
+  (remw #\c (list #\a #\b #\c))
+  (define b1 (box 5))
+  (define b2 (box 5))
+  (remw b2 (list 0 b1 1 b2 2))]
 
 @history[#:added "8.5.0.3"]}
 
@@ -561,7 +564,10 @@ Returns @racket[(remove* v-lst lst eqv?)].
 Returns @racket[(remove* v-lst lst equal-always?)].
 
 @mz-examples[
-  (remw* (list 1 2) (list 1 2 3 2 4 5 2))]
+  (remw* (list 1 2) (list 1 2 3 2 4 5 2))
+  (define b1 (box 5))
+  (define b2 (box 5))
+  (remw* (list b2) (list 0 b1 1 b2 2 b2 3))]
 
 @history[#:added "8.5.0.3"]}
 
@@ -648,7 +654,10 @@ Like @racket[member], but finds an element using @racket[equal-always?].
 
 @mz-examples[
   (memw 2 (list 1 2 3 4))
-  (memw 9 (list 1 2 3 4))]
+  (memw 9 (list 1 2 3 4))
+  (define b1 (box 5))
+  (define b2 (box 5))
+  (memw b2 (list 0 b1 1 b2 2))]
 
 @history[#:added "8.5.0.3"]}
 
@@ -727,7 +736,10 @@ then @racket[lst] must be a list of pairs (and not a cyclic list).
 Like @racket[assoc], but finds an element using @racket[equal-always?].
 
 @mz-examples[
-  (assw 3 (list (list 1 2) (list 3 4) (list 5 6)))]
+  (assw 3 (list (list 1 2) (list 3 4) (list 5 6)))
+  (define b1 (box 0))
+  (define b2 (box 0))
+  (assw b2 (list (cons b1 1) (cons b2 2)))]
 
 @history[#:added "8.5.0.3"]}
 
