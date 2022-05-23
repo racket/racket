@@ -358,6 +358,7 @@
 
 (test-mem memq 'memq)
 (test-mem memv 'memv)
+(test-mem memw 'memw)
 (test-mem member 'member)
 
 (test '("apple") memq "apple" '("apple")) ; literals are interned
@@ -365,12 +366,16 @@
 (test #f memq (list->string (string->list "apple")) '("apple"))
 (test #f memq (list->bytes (bytes->list #"apple")) '(#"apple"))
 (test #f memv (list->string (string->list "apple")) '("apple"))
+(test #f memw (list->string (string->list "apple")) '("apple"))
+(test '("apple") memw (string->immutable-string (list->string (string->list "apple"))) '("apple"))
 (test '("apple") member "apple" '("apple"))
 
 ; (test #f memq 1/2 '(1/2)) ; rationals are immutable and we may want to optimize
 (test '(1/2) memv 1/2 '(1/2))
+(test '(1/2) memw 1/2 '(1/2))
 (test '(1/2) member 1/2 '(1/2))
 
+(test '((1 2)) memw '(1 2) '(1 2 (1 2)))
 (test '((1 2)) member '(1 2) '(1 2 (1 2)))
 
 ;; Additional tests for member with equality check argument
@@ -382,6 +387,36 @@
 (test #f member 2 '(3 4 5 6) =)
 (test '(#"b" #"c") member #"b" '(#"a" #"b" #"c") bytes=?)
 (test #f member #"z" '(#"a" #"b" #"c") bytes=?)
+
+(let ([b1 (box 5)]
+      [b2 (box 5)])
+  (test (list b2 2)
+        memw
+        b2
+        (list 0 b1 1 b2 2))
+  (test (list (list b2) 2)
+        memw
+        (list b2)
+        (list 0 (list b1) 1 (list b2) 2)))
+
+(let ([b1 (box 5)]
+      [b2 (box 5)])
+  (test (list 0 b1 1 2)
+        remw
+        b2
+        (list 0 b1 1 b2 2))
+  (test (list 0 (list b1) 1 2)
+        remw
+        (list b2)
+        (list 0 (list b1) 1 (list b2) 2))
+  (test (list 0 b1 1 2 3)
+        remw*
+        (list b2)
+        (list 0 b1 1 b2 2 b2 3))
+  (test (list 0 (list b1) 1 2 3)
+        remw*
+        (list (list b2))
+        (list 0 (list b1) 1 (list b2) 2 (list b2) 3)))
 
 (define (test-ass assq assq-name)
   (define e '((a 1) (b 2) (c 3)))
@@ -398,15 +433,30 @@
 
 (test-ass assq 'assq)
 (test-ass assv 'assv)
+(test-ass assw 'assw)
 (test-ass assoc 'assoc)
 
 (test #f assq '(a) '(((a)) ((b)) ((c))))
 (test #f assv '(a) '(((a)) ((b)) ((c))))
+(test '((b) 1) assw '(b) '(((a)) ((b) 1) ((c))))
 (test '((b) 1) assoc '(b) '(((a)) ((b) 1) ((c))))
 
 ; (test #f assq '1/2 '(((a)) (1/2) ((c)))) ; rationals are immutable and we may want to optimize
 (test '(1/2) assv '1/2 '(((a)) (1/2) ((c))))
+(test '(1/2) assw '1/2 '(((a)) (1/2) ((c))))
 (test '(1/2) assoc '1/2 '(((a)) (1/2) ((c))))
+
+(test '(3 4) assw 3 '((1 2) (3 4) (5 6)))
+(let ([b1 (box 0)]
+      [b2 (box 0)])
+  (test (cons b2 2)
+        assw
+        b2
+        (list (cons b1 1) (cons b2 2)))
+  (test (cons (list b2) 2)
+        assw
+        (list b2)
+        (list (cons (list b1) 1) (cons (list b2) 2))))
 
 (arity-test placeholder-set! 2 2)
 (err/rt-test (placeholder-set! #f #f))
