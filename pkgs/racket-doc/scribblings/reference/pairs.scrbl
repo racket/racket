@@ -1676,3 +1676,11 @@ for use with @racket[make-reader-graph].}
 
 Like @racket[make-immutable-hasheqv], but produces a @tech{hash placeholder}
 for use with @racket[make-reader-graph].}
+
+@defproc[(make-hashalw-placeholder [assocs (listof pair?)])
+         hash-placeholder?]{
+
+Like @racket[make-immutable-hashalw], but produces a @tech{hash placeholder}
+for use with @racket[make-reader-graph].
+
+@history[#:added "8.5.0.3"]}
