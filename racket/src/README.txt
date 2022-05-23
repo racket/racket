@@ -537,7 +537,9 @@ CS). Interpreted modes are available --- but slower, of course:
 When you run `configure` or `winfig.bat`, a makefile is generated, but
 most of the build work is described by ".zuo" files. The generated
 makefiles ensure that `bin/zuo` or `zuo.exe` is built and then bounces
-the target request to `zuo`.
+the target request to `zuo`. When working on Racket's sources, it's
+often worthwhile to build and install `zuo` to make running it easier;
+see "zuo/README.md".
 
 A file named "build.zuo" is analogous to "Makefile.in": it's in a
 source directory but meant to be used from a build directory. A file
@@ -642,10 +644,11 @@ Sources shared by both Racket implementations
    already-expanded versions are included with source in
    "cs/schemified".
 
-   If you change the expander, run `make` in its directory to generate
+   If you change the expander, run `zuo` in its directory to generate
    the "startup.inc" file that holds the expander's implementation for
-   Racket BC. Also, run `make` in "cs" to rebuild expanded libraries
-   for Racket CS.
+   Racket BC. Also, run `zuo` in "cs" to rebuild expanded libraries
+   for Racket CS. (See "Make vesus Zuo" above for information on
+   running `zuo`.)
 
  * "rktio" --- portability layer for low-level I/O
 
