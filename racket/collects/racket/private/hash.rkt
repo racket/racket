@@ -80,21 +80,25 @@
      [(if kind (eq? 'immutable kind) (immutable? table))
       (cond
        [(hash-equal? table) (hash)]
+       [(hash-equal-always? table) (hashalw)]
        [(hash-eqv? table) (hasheqv)]
        [(hash-eq? table) (hasheq)])]
      [(if kind (eq? 'weak kind) (hash-weak? table))
       (cond
        [(hash-equal? table) (make-weak-hash)]
+       [(hash-equal-always? table) (make-weak-hashalw)]
        [(hash-eqv? table) (make-weak-hasheqv)]
        [(hash-eq? table) (make-weak-hasheq)])]
      [(if kind (eq? 'ephemeron kind) (hash-ephemeron? table))
       (cond
         [(hash-equal? table) (make-ephemeron-hash)]
+        [(hash-equal-always? table) (make-ephemeron-hashalw)]
         [(hash-eqv? table) (make-ephemeron-hasheqv)]
         [(hash-eq? table) (make-ephemeron-hasheq)])]
      [else
       (cond
        [(hash-equal? table) (make-hash)]
+       [(hash-equal-always? table) (make-hashalw)]
        [(hash-eqv? table) (make-hasheqv)]
        [(hash-eq? table) (make-hasheq)])]))
 

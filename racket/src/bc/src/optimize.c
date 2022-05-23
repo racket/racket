@@ -4225,6 +4225,8 @@ static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_
       return (Scheme_Object *)scheme_make_hash_tree(1);
     if (SAME_OBJ(rator, scheme_hasheqv_proc))
       return (Scheme_Object *)scheme_make_hash_tree(2);
+    if (SAME_OBJ(rator, scheme_hashalw_proc))
+      return (Scheme_Object *)scheme_make_hash_tree(3);
   }
    
   if (SCHEME_PRIMP(rator)

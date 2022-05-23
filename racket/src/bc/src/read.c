@@ -766,13 +766,22 @@ static Scheme_Object *read_inner(Scheme_Object *port, ReadParams *params, int pr
               scheme_read_err(port, "read: expected `a` after `#h`");
               return NULL;
 	    } else {
-	      GC_CAN_IGNORE const mzchar str[] = { 's', 'h', 'e', 'q', 'v', 0 };
-	      int scanpos = 0, failed = 0;
+	      GC_CAN_IGNORE const mzchar str1[] = { 's', 'h', 'e', 'q', 'v', 0 };
+	      GC_CAN_IGNORE const mzchar str2[] = { 's', 'h', 'a', 'l', 'w', 0 };
+	      int scanpos = 0, track = 0, failed = 0;
 
 	      do {
 		ch = scheme_getc(port);
-		if ((mzchar)ch == str[scanpos]) {
+		if (((mzchar)ch == str1[scanpos]) && ((mzchar)ch == str2[scanpos])) {
 		  scanpos++;
+		} else if ((track != 2) && ((mzchar)ch == str1[scanpos])) {
+		  /* track 1: hasheq or hasheqv */
+		  scanpos++;
+		  track = 1;
+		} else if ((track != 1) && ((mzchar)ch == str2[scanpos])) {
+		  /* track 2: hashalw */
+		  scanpos++;
+		  track = 2;
 		} else {
 		  if ((scanpos == 2) || (scanpos == 4)) {
 		    if (!(ch == '(')
@@ -783,21 +792,29 @@ static Scheme_Object *read_inner(Scheme_Object *port, ReadParams *params, int pr
 		    failed = 1;
 		  break;
 		}
-	      } while (str[scanpos]);
+	      } while (str1[scanpos]);
               
 	      if (!failed) {
 		/* Found recognized tag. Look for open paren... */
-                int kind;
+		int kind;
 
-		if (scanpos > 4)
+		if (scanpos > 4) {
 		  ch = scheme_getc(port);
-                
-                if (scanpos == 4)
+		}
+
+                if ((track == 1) && (scanpos == 4)) {
+                  /* hasheq */
                   kind = 0;
-                else if (scanpos == 2)
+                } else if ((track == 0) && (scanpos == 2)) {
+                  /* hash */
                   kind = 1;
-                else 
+                } else if ((track == 2) && (scanpos == 5)) {
+                  /* hashalw */
+                  kind = 3;
+                } else {
+                  /* hasheqv */
                   kind = 2;
+                }
 
 		if (ch == '(')
 		  return read_hash(port, ch, ')', kind, params);
@@ -811,7 +828,11 @@ static Scheme_Object *read_inner(Scheme_Object *port, ReadParams *params, int pr
 	      {
 		mzchar str_part[7], one_more[2];
 
-		memcpy(str_part, str, scanpos * sizeof(mzchar));
+		if (track == 2) {
+		  memcpy(str_part, str2, scanpos * sizeof(mzchar));
+		} else {
+		  memcpy(str_part, str1, scanpos * sizeof(mzchar));
+		}
 		str_part[scanpos] = 0;
 		if (NOT_EOF_OR_SPECIAL(ch)) {
 		  one_more[0] = ch;
@@ -1068,6 +1089,8 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
       mzlonglong i;
       if (scheme_is_hash_tree_equal(obj))
         kind = 1;
+      else if (scheme_is_hash_tree_equal_always(obj))
+        kind = 3;
       else if (scheme_is_hash_tree_eqv(obj))
         kind = 2;
       else
@@ -2727,7 +2750,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
         Scheme_Object *k;
 
 	kind = read_compact_number(port);
-        if ((kind < 0) || (kind > 2))
+        if ((kind < 0) || (kind > 3))
           scheme_ill_formed_code(port);
 	len = read_compact_number(port);
 

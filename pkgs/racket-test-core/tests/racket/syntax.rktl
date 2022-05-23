@@ -2393,6 +2393,7 @@
 
   (test #t check '(a b))
   (test #t check '#(a b #hash((c . 9))))
+  (test #t check '#(a b #hashalw(("c" . 10) ("d" . 11))))
   (test #t check '(#hasheqv((10 . 11) (12 . 13)) #&"str" #s(color r G #b0)))
   (test #t check '(#hasheq((x . 11) (y . 13) (z . #f)) (1 . 2))))
 

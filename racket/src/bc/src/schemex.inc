@@ -289,6 +289,7 @@
   scheme_extension_table->scheme_bucket_table_next = scheme_bucket_table_next;
   scheme_extension_table->scheme_make_hash_table = scheme_make_hash_table;
   scheme_extension_table->scheme_make_hash_table_equal = scheme_make_hash_table_equal;
+  scheme_extension_table->scheme_make_hash_table_equal_always = scheme_make_hash_table_equal_always;
   scheme_extension_table->scheme_make_hash_table_eqv = scheme_make_hash_table_eqv;
   scheme_extension_table->scheme_hash_set = scheme_hash_set;
   scheme_extension_table->scheme_hash_get = scheme_hash_get;
@@ -297,6 +298,7 @@
   scheme_extension_table->scheme_hash_get_atomic = scheme_hash_get_atomic;
   scheme_extension_table->scheme_hash_table_equal = scheme_hash_table_equal;
   scheme_extension_table->scheme_is_hash_table_equal = scheme_is_hash_table_equal;
+  scheme_extension_table->scheme_is_hash_table_equal_always = scheme_is_hash_table_equal_always;
   scheme_extension_table->scheme_is_hash_table_eqv = scheme_is_hash_table_eqv;
   scheme_extension_table->scheme_clone_hash_table = scheme_clone_hash_table;
   scheme_extension_table->scheme_clear_hash_table = scheme_clear_hash_table;
@@ -310,6 +312,7 @@
   scheme_extension_table->scheme_hash_tree_index = scheme_hash_tree_index;
   scheme_extension_table->scheme_hash_tree_equal = scheme_hash_tree_equal;
   scheme_extension_table->scheme_is_hash_tree_equal = scheme_is_hash_tree_equal;
+  scheme_extension_table->scheme_is_hash_tree_equal_always = scheme_is_hash_tree_equal_always;
   scheme_extension_table->scheme_is_hash_tree_eqv = scheme_is_hash_tree_eqv;
   scheme_extension_table->scheme_make_prim = scheme_make_prim;
   scheme_extension_table->scheme_make_noneternal_prim = scheme_make_noneternal_prim;
@@ -657,6 +660,7 @@
   scheme_extension_table->scheme_eq = scheme_eq;
   scheme_extension_table->scheme_eqv = scheme_eqv;
   scheme_extension_table->scheme_equal = scheme_equal;
+  scheme_extension_table->scheme_equal_always = scheme_equal_always;
   scheme_extension_table->scheme_chaperone_of = scheme_chaperone_of;
   scheme_extension_table->scheme_impersonator_of = scheme_impersonator_of;
 #ifdef MZ_PRECISE_GC

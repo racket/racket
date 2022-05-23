@@ -21526,7 +21526,9 @@
     (let ((tag_0
            (if (hash-eq? v_0)
              "#hasheq("
-             (if (hash-eqv? v_0) "#hasheqv(" "#hash("))))
+             (if (hash-eqv? v_0)
+               "#hasheqv("
+               (if (hash-equal-always? v_0) "#hashalw(" "#hash(")))))
       (let ((keys_0 (try-sort (hash-keys v_0))))
         (letrec*
          ((loop_0
@@ -22217,7 +22219,10 @@
                                                    "(hasheq"
                                                    (if (hash-eqv? v_0)
                                                      "(hasheqv"
-                                                     "(hash"))))
+                                                     (if (hash-equal-always?
+                                                          v_0)
+                                                       "(hashalw"
+                                                       "(hash")))))
                                             (print-list
                                              p
                                              who_0

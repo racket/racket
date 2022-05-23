@@ -960,7 +960,8 @@ enum {
 enum {
   SCHEME_hashtr_eq,
   SCHEME_hashtr_equal,
-  SCHEME_hashtr_eqv
+  SCHEME_hashtr_eqv,
+  SCHEME_hashtr_equal_always
 };
 
 typedef struct Scheme_Env Scheme_Env;

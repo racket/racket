@@ -747,6 +747,10 @@ nowhere in the sequence of list elements. The first element of each
 pair is used as the key for a table entry, and the second element of
 each pair is the associated value.
 
+A @as-index{@litchar{#hashalw}} starts a hash table like
+@litchar{#hash}, except that it constructs a hash table based on
+@racket[equal-always?] instead of @racket[equal?].
+
 A @as-index{@litchar{#hasheq}} starts a hash table like
 @litchar{#hash}, except that it constructs a hash table based on
 @racket[eq?] instead of @racket[equal?].

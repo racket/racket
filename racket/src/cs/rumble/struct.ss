@@ -413,15 +413,33 @@
                              "duplicate property binding"
                              "property" prop))
     (when (eq? prop prop:equal+hash)
-      (record-type-equal-procedure rtd (let ([p (cadr guarded-val)])
-                                         (if (#%procedure? p)
-                                             p
-                                             (lambda (v1 v2 e?) (|#%app| p v1 v2 e?)))))
-      (record-type-hash-procedure rtd (let ([p (caddr guarded-val)])
-                                        (if (#%procedure? p)
-                                            p
-                                            (lambda (v h) (|#%app| p v h)))))
-      (struct-property-set! 'secondary-hash rtd (cadddr guarded-val)))
+      (cond
+        [(= 2 (length guarded-val))
+         ;; new protocol, which fully supports `equal-always?` customization
+         (record-type-equal-procedure rtd (let ([p (car guarded-val)])
+                                            (if (#%procedure? p)
+                                                p
+                                                (lambda (v1 v2 e? always?) (|#%app| p v1 v2 e? always?)))))
+         (record-type-hash-procedure rtd (let ([p (cadr guarded-val)])
+                                           (if (#%procedure? p)
+                                               p
+                                               (lambda (v h always?) (|#%app| p v h always?)))))]
+        [else
+         ;; old protocol, which doesn't support `equal-always?` customization
+         ;; if any field is mutable
+         (record-type-equal-procedure rtd (let ([p (car guarded-val)])
+                                            (if (and (#%procedure? p)
+                                                     ;; make sure it isn't mistaken later as new protocol:
+                                                     (not (chez:procedure-arity-includes? p 4)))
+                                                p
+                                                (lambda (v1 v2 e?) (|#%app| p v1 v2 e?)))))
+         (record-type-hash-procedure rtd (let ([p (cadr guarded-val)])
+                                           (if (and (#%procedure? p)
+                                                    ;; make sure it isn't mistaken later as new protocol:
+                                                    (not (chez:procedure-arity-includes? p 3)))
+                                               p
+                                               (lambda (v h) (|#%app| p v h)))))
+         (struct-property-set! 'secondary-hash rtd (caddr guarded-val))]))
     (cond
       [(eq? prop prop:sealed)
        (#%$record-type-act-sealed! rtd)
@@ -1243,17 +1261,24 @@
                              (lambda (val info)
                                (check 'guard-for-prop:equal+hash
                                       :test (and (list? val)
-                                                 (= 3 (length val))
-                                                 (andmap procedure? val)
-                                                 (procedure-arity-includes? (car val) 3)
-                                                 (procedure-arity-includes? (cadr val) 2)
-                                                 (procedure-arity-includes? (caddr val) 2))
+                                                 (or (and (= 2 (length val))
+                                                          (procedure? (car val))
+                                                          (procedure? (cadr val))
+                                                          (procedure-arity-includes? (car val) 4)
+                                                          (procedure-arity-includes? (cadr val) 3))
+                                                     (and (= 3 (length val))
+                                                          (andmap procedure? val)
+                                                          (procedure-arity-includes? (car val) 3)
+                                                          (procedure-arity-includes? (cadr val) 2)
+                                                          (procedure-arity-includes? (caddr val) 2))))
                                       :contract (string-append
-                                                 "(list/c (procedure-arity-includes/c 3)\n"
-                                                 "        (procedure-arity-includes/c 2)\n"
-                                                 "        (procedure-arity-includes/c 2))")
+                                                 "(or/c (list/c (procedure-arity-includes/c 4)\n"
+                                                 "              (procedure-arity-includes/c 3)\n"
+                                                 "      (list/c (procedure-arity-includes/c 3)\n"
+                                                 "              (procedure-arity-includes/c 2)\n"
+                                                 "              (procedure-arity-includes/c 2))")
                                       val)
-                               (cons (box 'equal+hash) val))))
+                               val)))
 
 (define-values (prop:authentic authentic? authentic-ref)
   (make-struct-type-property 'authentic (lambda (val info) #t)))
@@ -1269,6 +1294,15 @@
 ;; record type
 (define-values (prop:sealed sealed? sealed-ref)
   (make-struct-type-property 'sealed (lambda (val info) #t)))
+
+;; Whether the struct type is considered mutable for the purposes of:
+;;  - `chaperone-of?`
+;;  - `equal-always?` and associated hash codes
+(define (struct-type-mutable? rtd)
+  (and (not (eq? 0 (struct-type-mpm rtd)))
+       (if (struct-type-prefab? rtd)
+           (with-global-lock* (hashtable-contains? rtd-mutables rtd))
+           #t)))
 
 (define (struct-type-immediate-transparent? rtd)
   (let ([insp (inspector-ref rtd)])

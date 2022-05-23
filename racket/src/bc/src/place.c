@@ -1848,6 +1848,7 @@ DEEP_SST2_L:
     case scheme_hash_tree_type:
     case scheme_eq_hash_tree_type:
     case scheme_eqv_hash_tree_type:
+    case scheme_equal_always_hash_tree_type:
       if (set_mode) {
         if (scheme_true == scheme_hash_eq_p(1, &so)) {
           nht = scheme_make_immutable_hasheq(0, NULL);
@@ -1857,6 +1858,9 @@ DEEP_SST2_L:
         }
         else if ( scheme_true == scheme_hash_equal_p(1, &so)) {
           nht = scheme_make_immutable_hash(0, NULL);
+        }
+        else if ( scheme_true == scheme_hash_equal_always_p(1, &so)) {
+          nht = scheme_make_immutable_hashalw(0, NULL);
         }
       }
       else

@@ -8,6 +8,7 @@
   (define tag (cond
                 [(hash-eq? v) "#hasheq("]
                 [(hash-eqv? v) "#hasheqv("]
+                [(hash-equal-always? v) "#hashalw("]
                 [else "#hash("]))
   (define keys (try-sort (hash-keys v)))
   (let loop ([keys keys] [max-length (write-string/max tag o max-length)] [first? #t])

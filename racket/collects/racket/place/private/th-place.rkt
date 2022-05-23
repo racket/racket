@@ -159,6 +159,9 @@
            [(hash-equal? o)
             (for/fold ([nh (hash)]) ([p (in-hash-pairs o)])
               (hash-set nh (dcw (car p)) (dcw (cdr p))))]
+           [(hash-equal-always? o)
+            (for/fold ([nh (hashalw)]) ([p (in-hash-pairs o)])
+              (hash-set nh (dcw (car p)) (dcw (cdr p))))]
            [(hash-eq? o)
             (for/fold ([nh (hasheq)]) ([p (in-hash-pairs o)])
               (hash-set nh (dcw (car p)) (dcw (cdr p))))]

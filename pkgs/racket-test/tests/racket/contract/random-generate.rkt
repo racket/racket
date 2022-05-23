@@ -103,6 +103,7 @@
 (check-not-exn (λ () (test-contract-generation (set/c boolean?))))
 (check-not-exn (λ () (test-contract-generation (set/c integer?))))
 (check-not-exn (λ () (test-contract-generation (set/c (-> number? boolean?)))))
+(check-not-exn (λ () (test-contract-generation (set/c (-> number? integer?) #:cmp 'equal-always))))
 (check-not-exn (λ () (test-contract-generation (set/c string? #:cmp 'eqv #:kind 'weak))))
 (check-not-exn (λ () (test-contract-generation (set/c string? #:cmp 'eq #:kind 'mutable))))
 

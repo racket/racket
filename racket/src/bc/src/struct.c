@@ -1003,7 +1003,7 @@ static Scheme_Object *prop_pred(int argc, Scheme_Object **args, Scheme_Object *p
       Scheme_Object *procs;
       procs = scheme_struct_type_property_ref(scheme_impersonator_of_property, v);
       if (procs) {
-        v = scheme_apply_impersonator_of(0, procs, v);
+        v = scheme_apply_impersonator_of(0, procs, v); /* mode 0: 'equal? */
         if (!v)
           return scheme_false;
       } else
@@ -1157,7 +1157,7 @@ static Scheme_Object *do_chaperone_prop_accessor(const char *who, Scheme_Object 
         Scheme_Object *procs;
         procs = scheme_struct_type_property_ref(scheme_impersonator_of_property, arg);
         if (procs) {
-          arg = scheme_apply_impersonator_of(0, procs, arg);
+          arg = scheme_apply_impersonator_of(0, procs, arg); /* mode 0: 'equal? */
           if (!arg)
             return NULL;
           /* loop to try again */
@@ -1851,12 +1851,26 @@ static Scheme_Object *check_equal_property_value_ok(int argc, Scheme_Object *arg
 /* This is the guard for prop:equal+hash */
 {
   Scheme_Object *v, *p;
+  intptr_t len;
 
   v = argv[0];
+  len = scheme_proper_list_length(v);
 
-  if (scheme_proper_list_length(v) != 3) {
-    v = NULL;
-  } else {
+  if (len == 2) {
+    /* new protocol */
+    v = scheme_make_pair(scheme_make_symbol("tag"), v);
+    v = scheme_list_to_vector(v);
+    p = SCHEME_VEC_ELS(v)[1];
+    if (!scheme_check_proc_arity(NULL, 4, 0, 1, &p)) {
+      v = NULL;
+    } else {
+      p = SCHEME_VEC_ELS(v)[2];
+      if (!scheme_check_proc_arity(NULL, 3, 0, 1, &p)) {
+        v = NULL;
+      }
+    }
+  } else if (len == 3) {
+    /* old protocol */
     v = scheme_make_pair(scheme_make_symbol("tag"), v);
     v = scheme_list_to_vector(v);
     p = SCHEME_VEC_ELS(v)[1];
@@ -1873,13 +1887,16 @@ static Scheme_Object *check_equal_property_value_ok(int argc, Scheme_Object *arg
         }
       }
     }
-  }
+  } else
+    v = NULL;
 
   if (!v) {
     wrong_property_contract("guard-for-prop:equal+hash",
-                            "(list/c (any/c any/c any/c . -> . any)\n"
-                            "        (any/c any/c . -> . any)\n"
-                            "        (any/c any/c . -> . any))",
+                            "(or/c (list/c (any/c any/c any/c any/c . -> . any)\n"
+                            "              (any/c any/c any/c . -> . any))\n"
+                            "      (list/c (any/c any/c any/c . -> . any)\n"
+                            "              (any/c any/c . -> . any)\n"
+                            "              (any/c any/c . -> . any)))",
                             argv[0]);
   }
 

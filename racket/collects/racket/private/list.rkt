@@ -6,8 +6,10 @@
 
            remv
            remq
+           remw
            remove
            remv*
+           remw*
            remq*
            remove*
 
@@ -17,6 +19,7 @@
 
            assq
            assv
+           assw
            assoc
 
            filter
@@ -74,6 +77,9 @@
   (define (remv item list)
     (do-remove 'remv item list eqv?))
 
+  (define (remw item list)
+    (do-remove 'remw item list equal-always?))
+
   (define (do-remove* who l r equal?)
     (unless (list? l)
       (raise-argument-error who "list?" l))
@@ -107,6 +113,9 @@
 
   (define (remv* l r)
     (do-remove* 'remv* l r eqv?))
+
+  (define (remw* l r)
+    (do-remove* 'remw* l r equal-always?))
 
   (define (memf f list)
     (unless (and (procedure? f) (procedure-arity-includes? f 1))
@@ -145,7 +154,7 @@
                            "non-pair" a
                            "list" orig-l))
 
-  (define-values (assq assv assoc assf)
+  (define-values (assq assv assw assoc assf)
     (let ()
       (define-syntax-rule (assoc-loop who x orig-l is-equal?)
         (let loop ([l orig-l][t orig-l])
@@ -180,6 +189,9 @@
             [assv
              (lambda (x l)
                (assoc-loop 'assv x l eqv?))]
+            [assw
+             (lambda (x l)
+               (assoc-loop 'assw x l equal-always?))]
             [assoc
              (case-lambda
                [(x l) (assoc-loop 'assoc x l equal?)]
@@ -193,7 +205,7 @@
                (unless (and (procedure? f) (procedure-arity-includes? f 1))
                  (raise-argument-error 'assf "(any/c . -> . any/c)" f))
                (assoc-loop 'assf #f l (lambda (_ a) (f a))))])
-        (values assq assv assoc assf))))
+        (values assq assv assw assoc assf))))
 
   ;; fold : ((A B -> B) B (listof A) -> B)
   ;; fold : ((A1 ... An B -> B) B (listof A1) ... (listof An) -> B)
