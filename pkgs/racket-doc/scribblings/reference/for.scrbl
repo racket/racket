@@ -222,20 +222,25 @@ mutate a shared vector.}
 @defform[(for/hash (for-clause ...) body-or-break ... body)]
 @defform[(for/hasheq (for-clause ...) body-or-break ... body)]
 @defform[(for/hasheqv (for-clause ...) body-or-break ... body)]
+@defform[(for/hashalw (for-clause ...) body-or-break ... body)]
 )]{
 
 Like @racket[for/list], but the result is an immutable @tech{hash
 table}; @racket[for/hash] creates a table using @racket[equal?] to
 distinguish keys, @racket[for/hasheq] produces a table using
-@racket[eq?], and @racket[for/hasheqv] produces a table using
-@racket[eqv?]. The last expression in the @racket[body]s must return
+@racket[eq?], @racket[for/hasheqv] produces a table using
+@racket[eqv?], and @racket[for/hashalw] produces a table using
+@racket[equal-always?].
+The last expression in the @racket[body]s must return
 two values: a key and a value to extend the hash table accumulated by
 the iteration.
 
 @examples[
 (for/hash ([i '(1 2 3)])
   (values i (number->string i)))
-]}
+]
+
+@history[#:changed "8.5.0.3" @elem{Added the @racket[for/hashalw] form.}]}
 
 
 @defform[(for/and (for-clause ...) body-or-break ... body)]{ Iterates like
@@ -584,6 +589,7 @@ nested.
 @defform[(for*/hash (for-clause ...) body-or-break ... body)]
 @defform[(for*/hasheq (for-clause ...) body-or-break ... body)]
 @defform[(for*/hasheqv (for-clause ...) body-or-break ... body)]
+@defform[(for*/hashalw (for-clause ...) body-or-break ... body)]
 @defform[(for*/and (for-clause ...) body-or-break ... body)]
 @defform[(for*/or (for-clause ...) body-or-break ... body)]
 @defform[(for*/sum (for-clause ...) body-or-break ... body)]
@@ -606,7 +612,8 @@ Like @racket[for/list], etc., but with the implicit nesting of
   (list i j))
 ]
 
-@history[#:changed "7.3.0.3" @elem{Added the @racket[for*/foldr] form.}]}
+@history[#:changed "7.3.0.3" @elem{Added the @racket[for*/foldr] form.}
+         #:changed "8.5.0.3" @elem{Added the @racket[for*/hashalw] form.}]}
 
 @;------------------------------------------------------------------------
 @section{Deriving New Iteration Forms}
