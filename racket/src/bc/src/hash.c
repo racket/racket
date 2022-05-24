@@ -2377,7 +2377,6 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
                                                    1, a,
                                                    "equal-secondary-hash-code/recur",
                                                    1, 1);
-          }
           hi->recur = recur;
         }
         memcpy(hi2, hi, sizeof(Hash_Info));
