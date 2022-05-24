@@ -131,6 +131,8 @@
      (rec (unbox (bxwrp-honest-mutable-box self))))
    (define (hash2-proc self rec)
      (rec (unbox (bxwrp-honest-mutable-box self))))])
+(define (set-bxwrp-honest-mutable-value! b v)
+  (set-box! (bxwrp-honest-mutable-box b) v))
 
 (struct bxwrp-honest-shallowrec (box)
   #:methods gen:equal+hash
@@ -141,6 +143,8 @@
      (rec (bxwrp-honest-shallowrec-box self)))
    (define (hash2-proc self rec)
      (rec (bxwrp-honest-shallowrec-box self)))])
+(define (set-bxwrp-honest-shallowrec-value! b v)
+  (set-box! (bxwrp-honest-shallowrec-box b) v))
 
 (struct bxwrp-shalloweq (box)
   #:methods gen:equal+hash
@@ -151,6 +155,8 @@
      (eq-hash-code (bxwrp-shalloweq-box self)))
    (define (hash2-proc self rec)
      (eq-hash-code (bxwrp-shalloweq-box self)))])
+(define (set-bxwrp-shalloweq-value! b v)
+  (set-box! (bxwrp-shalloweq-box b) v))
 
 (struct bxwrp-honest-mode (box)
   #:methods gen:equal-mode+hash
@@ -160,8 +166,26 @@
               (unbox (bxwrp-honest-mode-box other)))))
    (define (hash-mode-proc self rec mode)
      (if mode (rec (unbox (bxwrp-honest-mode-box self))) (eq-hash-code self)))])
+(define (set-bxwrp-honest-mode-value! b v)
+  (set-box! (bxwrp-honest-mode-box b) v))
 
 (module+ test
+  (define-check (check-stable f x set-x! y)
+    (define before (f x))
+    (set-x! x y)
+    (check-equal? (f x) before))
+
+  (test-case "box equal+hash"
+    (check-equal? (box 1) (box 1))
+    (check-equal? (equal-hash-code (box 2))
+                  (equal-hash-code (box 2)))
+    (check-equal? (equal-secondary-hash-code (box 3))
+                  (equal-secondary-hash-code (box 3)))
+    (check-false (equal-always? (box 1) (box 1)))
+    (check-false (chaperone-of? (box 1) (box 1)))
+    (check-stable equal-always-hash-code (box 2) set-box! 7)
+    (check-stable equal-always-secondary-hash-code (box 3) set-box! 13))
+
   (test-case "mcell-honest-mutable equal+hash"
     (check-equal? (mcell-honest-mutable 1)
                   (mcell-honest-mutable 1))
@@ -173,16 +197,16 @@
                    (mcell-honest-mutable 3)))
     (check-false (equal-always? (mcell-honest-mutable 1)
                                 (mcell-honest-mutable 1)))
-    (check-false (= (equal-always-hash-code
-                     (mcell-honest-mutable 2))
-                    (equal-always-hash-code
-                     (mcell-honest-mutable 2))))
-    (check-false (= (equal-always-secondary-hash-code
-                     (mcell-honest-mutable 3))
-                    (equal-always-secondary-hash-code
-                     (mcell-honest-mutable 3))))
     (check-false (chaperone-of? (mcell-honest-mutable 1)
-                                (mcell-honest-mutable 1))))
+                                (mcell-honest-mutable 1)))
+    (check-stable equal-always-hash-code
+                  (mcell-honest-mutable 2)
+                  set-mcell-honest-mutable-value!
+                  7)
+    (check-stable equal-always-secondary-hash-code
+                  (mcell-honest-mutable 3)
+                  set-mcell-honest-mutable-value!
+                  13))
 
   (test-case "mcell-honest-mode equal-mode+hash"
     (check-equal? (mcell-honest-mode 1)
@@ -195,16 +219,16 @@
                    (mcell-honest-mode 3)))
     (check-false (equal-always? (mcell-honest-mode 1)
                                 (mcell-honest-mode 1)))
-    (check-false (= (equal-always-hash-code
-                     (mcell-honest-mode 2))
-                    (equal-always-hash-code
-                     (mcell-honest-mode 2))))
-    (check-false (= (equal-always-secondary-hash-code
-                     (mcell-honest-mode 3))
-                    (equal-always-secondary-hash-code
-                     (mcell-honest-mode 3))))
     (check-false (chaperone-of? (mcell-honest-mode 1)
-                                (mcell-honest-mode 1))))
+                                (mcell-honest-mode 1)))
+    (check-stable equal-always-hash-code
+                  (mcell-honest-mode 2)
+                  set-mcell-honest-mode-value!
+                  7)
+    (check-stable equal-always-secondary-hash-code
+                  (mcell-honest-mode 3)
+                  set-mcell-honest-mode-value!
+                  13))
 
   (test-case "bxwrp-honest-mutable equal+hash"
     (check-equal? (bxwrp-honest-mutable (box 1))
@@ -217,28 +241,20 @@
                    (bxwrp-honest-mutable (box 3))))
     (check-false (equal-always? (bxwrp-honest-mutable (box 1))
                                 (bxwrp-honest-mutable (box 1))))
-    (check-false (= (equal-always-hash-code
-                     (bxwrp-honest-mutable (box 2)))
-                    (equal-always-hash-code
-                     (bxwrp-honest-mutable (box 2)))))
-    (check-false (= (equal-always-secondary-hash-code
-                     (bxwrp-honest-mutable (box 3)))
-                    (equal-always-secondary-hash-code
-                     (bxwrp-honest-mutable (box 3)))))
     (check-false (chaperone-of? (bxwrp-honest-mutable (box 1))
                                 (bxwrp-honest-mutable (box 1))))
+    (check-stable equal-always-hash-code
+                  (bxwrp-honest-mutable (box 2))
+                  set-bxwrp-honest-mutable-value!
+                  7)
+    (check-stable equal-always-secondary-hash-code
+                  (bxwrp-honest-mutable (box 3))
+                  set-bxwrp-honest-mutable-value!
+                  13)
     (let* ([b (box 4)]
            [bw (bxwrp-honest-mutable b)])
       (check-false (equal-always? (bxwrp-honest-mutable b)
                                   (bxwrp-honest-mutable b)))
-      (check-false (= (equal-always-hash-code
-                       (bxwrp-honest-mutable b))
-                      (equal-always-hash-code
-                       (bxwrp-honest-mutable b))))
-      (check-false (= (equal-always-secondary-hash-code
-                       (bxwrp-honest-mutable b))
-                      (equal-always-secondary-hash-code
-                       (bxwrp-honest-mutable b))))
       (check-false (chaperone-of? (bxwrp-honest-mutable b)
                                   (bxwrp-honest-mutable b)))
       (check equal-always? bw bw)
@@ -259,16 +275,16 @@
                    (bxwrp-honest-shallowrec (box 3))))
     (check-false (equal-always? (bxwrp-honest-shallowrec (box 1))
                                 (bxwrp-honest-shallowrec (box 1))))
-    (check-false (= (equal-always-hash-code
-                     (bxwrp-honest-shallowrec (box 2)))
-                    (equal-always-hash-code
-                     (bxwrp-honest-shallowrec (box 2)))))
-    (check-false (= (equal-always-secondary-hash-code
-                     (bxwrp-honest-shallowrec (box 3)))
-                    (equal-always-secondary-hash-code
-                     (bxwrp-honest-shallowrec (box 3)))))
     (check-false (chaperone-of? (bxwrp-honest-shallowrec (box 1))
                                 (bxwrp-honest-shallowrec (box 1))))
+    (check-stable equal-always-hash-code
+                  (bxwrp-honest-shallowrec (box 2))
+                  set-bxwrp-honest-shallowrec-value!
+                  7)
+    (check-stable equal-always-secondary-hash-code
+                  (bxwrp-honest-shallowrec (box 3))
+                  set-bxwrp-honest-shallowrec-value!
+                  13)
     (let* ([b (box 4)])
       (check equal-always?
              (bxwrp-honest-shallowrec b)
@@ -286,24 +302,26 @@
   (test-case "bxwrp-shalloweq equal+hash"
     (check-false (equal? (bxwrp-shalloweq (box 1))
                          (bxwrp-shalloweq (box 1))))
-    (check-false (= (equal-hash-code (bxwrp-shalloweq (box 2)))
-                    (equal-hash-code (bxwrp-shalloweq (box 2)))))
-    (check-false (= (equal-secondary-hash-code
-                     (bxwrp-shalloweq (box 3)))
-                    (equal-secondary-hash-code
-                     (bxwrp-shalloweq (box 3)))))
     (check-false (equal-always? (bxwrp-shalloweq (box 1))
                                 (bxwrp-shalloweq (box 1))))
-    (check-false (= (equal-always-hash-code
-                     (bxwrp-shalloweq (box 2)))
-                    (equal-always-hash-code
-                     (bxwrp-shalloweq (box 2)))))
-    (check-false (= (equal-always-secondary-hash-code
-                     (bxwrp-shalloweq (box 3)))
-                    (equal-always-secondary-hash-code
-                     (bxwrp-shalloweq (box 3)))))
     (check-false (chaperone-of? (bxwrp-shalloweq (box 1))
                                 (bxwrp-shalloweq (box 1))))
+    (check-stable equal-hash-code
+                  (bxwrp-shalloweq (box 2))
+                  set-bxwrp-shalloweq-value!
+                  7)
+    (check-stable equal-secondary-hash-code
+                  (bxwrp-shalloweq (box 3))
+                  set-bxwrp-shalloweq-value!
+                  13)
+    (check-stable equal-always-hash-code
+                  (bxwrp-shalloweq (box 2))
+                  set-bxwrp-shalloweq-value!
+                  7)
+    (check-stable equal-always-secondary-hash-code
+                  (bxwrp-shalloweq (box 3))
+                  set-bxwrp-shalloweq-value!
+                  13)
     (let* ([b (box 4)])
       (check-equal? (bxwrp-shalloweq b)
                     (bxwrp-shalloweq b))
@@ -337,28 +355,20 @@
                    (bxwrp-honest-mode (box 3))))
     (check-false (equal-always? (bxwrp-honest-mode (box 1))
                                 (bxwrp-honest-mode (box 1))))
-    (check-false (= (equal-always-hash-code
-                     (bxwrp-honest-mode (box 2)))
-                    (equal-always-hash-code
-                     (bxwrp-honest-mode (box 2)))))
-    (check-false (= (equal-always-secondary-hash-code
-                     (bxwrp-honest-mode (box 3)))
-                    (equal-always-secondary-hash-code
-                     (bxwrp-honest-mode (box 3)))))
     (check-false (chaperone-of? (bxwrp-honest-mode (box 1))
                                 (bxwrp-honest-mode (box 1))))
+    (check-stable equal-always-hash-code
+                  (bxwrp-honest-mode (box 2))
+                  set-bxwrp-honest-mode-value!
+                  7)
+    (check-stable equal-always-secondary-hash-code
+                  (bxwrp-honest-mode (box 3))
+                  set-bxwrp-honest-mode-value!
+                  13)
     (let* ([b (box 4)]
            [bw (bxwrp-honest-mode b)])
       (check-false (equal-always? (bxwrp-honest-mode b)
                                   (bxwrp-honest-mode b)))
-      (check-false (= (equal-always-hash-code
-                       (bxwrp-honest-mode b))
-                      (equal-always-hash-code
-                       (bxwrp-honest-mode b))))
-      (check-false (= (equal-always-secondary-hash-code
-                       (bxwrp-honest-mode b))
-                      (equal-always-secondary-hash-code
-                       (bxwrp-honest-mode b))))
       (check-false (chaperone-of? (bxwrp-honest-mode b)
                                   (bxwrp-honest-mode b)))
       (check equal-always? bw bw)
@@ -401,5 +411,7 @@
                               overinclusive-arity4))])
       (check-true (equal? (oia) (oia)))
       (check-true (equal-always? (oia) (oia)))
-      (check-equal? (equal-hash-code (oia)) 0)
-      (check-equal? (equal-always-hash-code (oia)) 0))))
+      (check-equal? (equal-hash-code (oia))
+                    (equal-hash-code (oia)))
+      (check-equal? (equal-always-hash-code (oia))
+                    (equal-always-hash-code (oia))))))

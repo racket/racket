@@ -1335,7 +1335,6 @@ static Scheme_Object *hash_recur(int argc, Scheme_Object **argv, Scheme_Object *
   hi = (Hash_Info *)SCHEME_PRIM_CLOSURE_ELS(prim)[0];
   hi->depth += 2;
   hi->insp = NULL; /* in case recursive call is `parameterize'd */
-  hi->mode = EQUAL_MODE_EQUAL;
 
   v = to_signed_hash(equal_hash_key(argv[0], 0, hi));
 
@@ -2141,7 +2140,6 @@ static Scheme_Object *hash2_recur(int argc, Scheme_Object **argv, Scheme_Object 
 
   hi = (Hash_Info *)SCHEME_PRIM_CLOSURE_ELS(prim)[0];
   hi->depth += 2;
-  hi->mode = EQUAL_MODE_EQUAL;
 
   v = to_signed_hash(equal_hash_key2(argv[0], hi));
   
