@@ -1335,24 +1335,6 @@ static Scheme_Object *hash_recur(int argc, Scheme_Object **argv, Scheme_Object *
   hi = (Hash_Info *)SCHEME_PRIM_CLOSURE_ELS(prim)[0];
   hi->depth += 2;
   hi->insp = NULL; /* in case recursive call is `parameterize'd */
-  hi->mode = EQUAL_MODE_EQUAL;
-
-  v = to_signed_hash(equal_hash_key(argv[0], 0, hi));
-
-  hi->insp = NULL;
-  
-  return scheme_make_integer(v);
-}
-
-static Scheme_Object *hash_always_recur(int argc, Scheme_Object **argv, Scheme_Object *prim)
-{
-  intptr_t v;
-  Hash_Info *hi;
-
-  hi = (Hash_Info *)SCHEME_PRIM_CLOSURE_ELS(prim)[0];
-  hi->depth += 2;
-  hi->insp = NULL; /* in case recursive call is `parameterize'd */
-  hi->mode = EQUAL_MODE_EQUAL_ALWAYS;
 
   v = to_signed_hash(equal_hash_key(argv[0], 0, hi));
 
@@ -1782,17 +1764,10 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
         } else {
           hi2 = (Hash_Info *)scheme_malloc(sizeof(Hash_Info));
           a[0] = (Scheme_Object *)hi2;
-          if (hi->mode == EQUAL_MODE_EQUAL_ALWAYS) {
-            recur = scheme_make_prim_closure_w_arity(hash_always_recur,
-                                                     1, a,
-                                                     "equal-always-hash-code/recur",
-                                                     1, 1);
-          } else {
-            recur = scheme_make_prim_closure_w_arity(hash_recur,
-                                                     1, a,
-                                                     "equal-hash-code/recur",
-                                                     1, 1);
-          }
+          recur = scheme_make_prim_closure_w_arity(hash_recur,
+                                                   1, a,
+                                                   "equal-hash-code/recur",
+                                                   1, 1);
           hi->recur = recur;
         }
         memcpy(hi2, hi, sizeof(Hash_Info));
@@ -2165,21 +2140,6 @@ static Scheme_Object *hash2_recur(int argc, Scheme_Object **argv, Scheme_Object 
 
   hi = (Hash_Info *)SCHEME_PRIM_CLOSURE_ELS(prim)[0];
   hi->depth += 2;
-  hi->mode = EQUAL_MODE_EQUAL;
-
-  v = to_signed_hash(equal_hash_key2(argv[0], hi));
-  
-  return scheme_make_integer(v);
-}
-
-static Scheme_Object *hash2_always_recur(int argc, Scheme_Object **argv, Scheme_Object *prim)
-{
-  intptr_t v;
-  Hash_Info *hi;
-
-  hi = (Hash_Info *)SCHEME_PRIM_CLOSURE_ELS(prim)[0];
-  hi->depth += 2;
-  hi->mode = EQUAL_MODE_EQUAL_ALWAYS;
 
   v = to_signed_hash(equal_hash_key2(argv[0], hi));
   
@@ -2413,16 +2373,10 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
         } else {
           hi2 = (Hash_Info *)scheme_malloc(sizeof(Hash_Info));
           a[0] = (Scheme_Object *)hi2;
-          if (hi->mode == EQUAL_MODE_EQUAL_ALWAYS) {
-            recur = scheme_make_prim_closure_w_arity(hash2_always_recur,
-                                                     1, a,
-                                                     "equal-always-secondary-hash-code/recur",
-                                                     1, 1);
-          } else {
-            recur = scheme_make_prim_closure_w_arity(hash2_recur,
-                                                     1, a,
-                                                     "equal-secondary-hash-code/recur",
-                                                     1, 1);
+          recur = scheme_make_prim_closure_w_arity(hash2_recur,
+                                                   1, a,
+                                                   "equal-secondary-hash-code/recur",
+                                                   1, 1);
           }
           hi->recur = recur;
         }
