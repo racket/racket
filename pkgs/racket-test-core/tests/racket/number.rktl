@@ -1477,6 +1477,7 @@
 (test (expt 3 37) gcd (expt 9 35) (- (expt 6 37)))
 (test (expt 3 75) gcd (expt 3 75))
 (test (expt 3 75) gcd (- (expt 3 75)))
+(test 1152921504606846976 gcd 5880287055120467478183936 1152921504606846976)
 (test 201 gcd (* 67 (expt 3 20)) (* 67 3))
 (test 201 gcd (* 67 3) (* 67 (expt 3 20)))
 (test 6 gcd (* 3 (expt 2 100)) 66)
@@ -1504,6 +1505,14 @@
 (test (* (expt 2 37) (expt 9 35)) lcm (expt 9 35) (expt 6 37))
 (test (* (expt 2 37) (expt 9 35)) lcm (- (expt 9 35)) (expt 6 37))
 (test (* (expt 2 37) (expt 9 35)) lcm (expt 9 35) (- (expt 6 37)))
+
+(test #t
+      'gcd-shifts
+      (for*/and ([i (in-range (* 64 3))]
+                 [j (in-range i)])
+        (let ([x (arithmetic-shift 2 i)]
+              [y (arithmetic-shift 2 j)])
+          (= y (gcd x y)))))
 
 (test 1/2 gcd 1/2)
 (test 1/2 gcd 3 1/2)
