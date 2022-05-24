@@ -2280,6 +2280,10 @@
     c/foreign.c c/gc.c c/gcwrapper.c c/intern.c c/io.c c/new-io.c c/number.c
     c/prim.c c/prim5.c c/print.c c/scheme.c c/schlib.c c/schsig.c c/segment.c
     c/thread.c mats/foreign3.c s/mkheader.ss
+- update lz4 to version 1.9.3
+    configure
+- update zlib to version 1.2.12 (which fixes CVE-2018-25032)
+    configure c/Mf-*le
 
 9.5.8 changes:
 - updated version to 9.5.8
@@ -2300,6 +2304,8 @@
     csug/csug.stex bintar/Makefile rpm/Makefile pkg/Makefile
     wininstall/Makefile wininstall/a6nt.wxs wininstall/i3nt.wxs
     wininstall/ta6nt.wxs wininstall/ti3nt.wxs
+- fix arm32le compilation systems using musl libc
+    c/arm32le.c
 - added install-docs target for make and corresponding configuration
   options: --installdoc, --installcsug, and --installreleasenotes
     configure makefiles/Makefile.in
