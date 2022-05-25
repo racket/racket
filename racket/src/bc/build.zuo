@@ -240,6 +240,9 @@
     (and libffi?
          (find-target (.a "ffi") libffi-targets)))
 
+  (define xsrc/precomp.h
+    (at-dir "xsrc/precomp.h"))
+
   ;; For phase1, we use "startup.inc" in source form; then, we use the
   ;; phase1 CGC to generate a compiled version of "startup.inc", either
   ;; by bytecode compilation or cify, and put that in "phase2"
@@ -519,7 +522,7 @@
                 (hash 'env
                       (cons (if (eq? precomp-mode 'make-precomp)
                                 (cons "XFORM_PRECOMP" "yes")
-                                (cons "XFORM_USE_PRECOMP" (at-dir "xsrc/precomp.h")))
+                                (cons "XFORM_USE_PRECOMP" xsrc/precomp.h))
                             (hash-ref (runtime-env) 'env)))))
     (for-each (lambda (file)
                 (build/dep file token))
@@ -1035,7 +1038,7 @@
         ;; 
         ,@(map (lambda (src-name obj)
                  (define src (at-dir "xsrc" src-name))
-                 `[:target ,obj (,src)
+                 `[:target ,obj (,src ,xsrc/precomp.h)
                            ,(lambda (path token)
                               (c-compile path
                                          src
@@ -1207,11 +1210,11 @@
 
         ;; Racket core implementation compiled for 3m
         ;; (the bulk of the 3m implementation)
-        [:target ,(at-dir "xsrc/precomp.h") (,(at-source "gc2/precomp.c")
-                                             ,(at-source "gc2/xform-mod.rkt")
-                                             ,@quiet-deps)
+        [:target ,xsrc/precomp.h (,(at-source "gc2/precomp.c")
+                                  ,(at-source "gc2/xform-mod.rkt")
+                                  ,@quiet-deps)
                  ,(lambda (path token)
-                    (xform (at-dir "xsrc/precomp.h")
+                    (xform xsrc/precomp.h
                            (at-source "gc2/precomp.c")
                            'make-precomp
                            token))]
@@ -1220,7 +1223,7 @@
         ,@(map (lambda (src-name)
                  (define src (at-source "src" src-name))
                  `[:target ,(at-dir "xsrc" src-name) (,src
-                                                      ,(at-dir "xsrc/precomp.h")
+                                                      ,xsrc/precomp.h
                                                       ,(at-source "gc2/xform-mod.rkt")
                                                       ,@quiet-deps)
                            ,(lambda (path token)
