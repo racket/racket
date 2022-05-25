@@ -31,8 +31,8 @@
                  (string-length span-str))))
 
   (define (parse-expr s delta)
-    (match (or (regexp-match #rx"^(.*?)([+-])(.*)$" s)
-               (regexp-match #rx"^(.*?)([*/])(.*)$" s))
+    (match (or (regexp-match #rx"^(.*)([+-])(.*?)$" s)
+               (regexp-match #rx"^(.*)([*/])(.*?)$" s))
       [(list _ a-str op-str b-str)
        (define a-len (string-length a-str))
        (define a (parse-expr a-str delta))
