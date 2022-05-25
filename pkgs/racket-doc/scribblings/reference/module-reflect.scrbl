@@ -793,3 +793,15 @@ specifically within a particular executable (such as one created by
 @exec{raco exe} or @racket[create-embedding-executable]).}
 
 @(close-eval mod-eval)
+
+@;------------------------------------------------------------------------
+@section[#:tag "modcache"]{Module Cache}
+
+The expander keeps a place-local module cache in order to save time
+while loading modules that have been previously declared.
+
+@defproc[(module-cache-clear!) void?]{
+  Clears the place-local module cache.
+
+  @history[#:added "8.4.0.5"]
+}

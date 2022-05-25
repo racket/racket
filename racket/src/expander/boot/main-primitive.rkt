@@ -3,6 +3,7 @@
          "../eval/dynamic-require.rkt"
          "../eval/reflect.rkt"
          "../eval/load.rkt"
+         "../eval/module-cache.rkt"
          "../eval/parameter.rkt"
          "../eval/collection.rkt"
          (prefix-in wrapper: "../eval/api.rkt")
@@ -92,4 +93,5 @@
           'module->realm module->realm
           'module-provide-protected? module-provide-protected?
           'module->namespace module->namespace
+          'module-cache-clear! module-cache-clear!
           'namespace-unprotect-module namespace-unprotect-module))
