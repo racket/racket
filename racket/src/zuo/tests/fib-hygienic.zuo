@@ -1,0 +1,6 @@
+#lang zuo/hygienic
+
+;; Performance should be the same as the non-hygienic parsing, but we
+;; may want to check on the startup overhead of `zuo/hygienic`
+
+(include "fib-common.zuo")

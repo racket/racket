@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cify: [cify, nocify]      
+        cify: [nocify]
     
     steps:
     - uses: actions/checkout@v2
@@ -69,13 +69,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cify: [cify, nocify]
-        cc: [gcc, clang]
-        jit: [jit, nojit]
-        efp: [efp, noefp]
-        exclude:
+        cify: [nocify]
+        jit: [jit]
+        efp: [efp]
+        cc: [gcc]
+        include:
           - jit: nojit
+            cify: cify
+            efp: noefp
+            cc: gcc
+          - jit: jit
+            cify: nocify
             efp: efp
+            cc: gcc # clang has a problem with future tests timing out
   
     steps:
     - uses: actions/checkout@v2
@@ -131,15 +137,11 @@ jobs:
     - name: Installing
       working-directory: ./racket/src
       run: make -j $((cpus+1)) install
-    # We build on Linux with clang and gcc and on MacOS with clang only.
-    # However, it makes little sense to test both builds on Linux so we tarball the
-    # gcc build only. Therefore this condition ensure we only perform the tarball
-    # and artifact upload on MacOS or (on Linux) if we are building with gcc.
+    # We build on Linux with gcc and on MacOS with clang only.
     - name: Tarballing
       working-directory: /usr/local
       run: tar -cvjf /tmp/racket3m-debian10-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha}}.tar.bz2 racket3m
     - uses: actions/upload-artifact@v2
-      if: matrix.cc == 'gcc'
       with:
         name: racket3m-debian10-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}
         path: /tmp/racket3m-debian10-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}.tar.bz2
@@ -212,7 +214,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cify: [cify, nocify]
+        cify: [nocify]
 
     steps:
       - uses: actions/checkout@v2
@@ -262,7 +264,7 @@ jobs:
       - name: Run tests/xml
         run: raco test -c tests/xml
       - name: Run tests/future
-        run: raco test -c tests/future
+        run: raco test --timeout 300 -c tests/future
       - name: Run tests/stxparse
         run: raco test -c tests/stxparse
       - name: Install db tests dependency
@@ -283,12 +285,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cify: [cify, nocify]
-        jit: [jit, nojit]
-        efp: [efp, noefp]
-        exclude:
+        cify: [nocify]
+        jit: [jit]
+        efp: [efp]
+        cc: [gcc]
+        include:
           - jit: nojit
+            cify: cify
+            efp: noefp
+            cc: gcc
+          - jit: jit
+            cify: nocify
             efp: efp
+            cc: gcc
 
     steps:
       - uses: actions/checkout@v2
@@ -338,7 +347,7 @@ jobs:
       - name: Run tests/xml
         run: raco test -c tests/xml
       - name: Run tests/future
-        run: raco test -c tests/future
+        run: raco test --timeout 300 -c tests/future
       - name: Run tests/stxparse
         run: raco test -c tests/stxparse
       - name: Install db tests dependency
@@ -404,7 +413,7 @@ jobs:
       - name: Run tests/xml
         run: raco test -c tests/xml
       - name: Run tests/future
-        run: raco test -c tests/future
+        run: raco test --timeout 300 -c tests/future
       - name: Run tests/stxparse
         run: raco test -c tests/stxparse
       - name: Install db tests dependency

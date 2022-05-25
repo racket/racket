@@ -76,7 +76,7 @@ Thread and signal conventions:
 
  - On systems where signal handling is thread-specific, as on Linux,
    then `rktio_init` should be called before any additional threads,
-   so that a suitable inheritable siganl disposition can be
+   so that a suitable inheritable signal disposition can be
    configured.
 
 */
@@ -91,8 +91,9 @@ Thread and signal conventions:
 #define RKTIO_EXTERN_NOERR  RKTIO_EXTERN
 #define RKTIO_EXTERN_STEP   RKTIO_EXTERN
 
-#define RKTIO_NULLABLE      /* empty */
-#define RKTIO_BLOCKING      /* empty */
+#define RKTIO_NULLABLE      /* empty; pointer type can be NULL */
+#define RKTIO_BLOCKING      /* empty; function blocks indefinitely */
+#define RKTIO_MSG_QUEUE     /* empty; function can dispatch events on Windows */
 
 /*************************************************/
 /* Initialization and general datatypes          */
@@ -615,6 +616,8 @@ RKTIO_EXTERN rktio_process_result_t *rktio_process(rktio_t *rktio,
 #define RKTIO_PROCESS_STDOUT_AS_STDERR          (1<<1)
 #define RKTIO_PROCESS_WINDOWS_EXACT_CMDLINE     (1<<2)
 #define RKTIO_PROCESS_WINDOWS_CHAIN_TERMINATION (1<<3)
+#define RKTIO_PROCESS_NO_CLOSE_FDS              (1<<4)
+#define RKTIO_PROCESS_NO_INHERIT_FDS            (1<<5)
 
 RKTIO_EXTERN_NOERR int rktio_process_allowed_flags(rktio_t *rktio);
 /* Reports the flags that are accepted by `rktio_process` on the
@@ -846,6 +849,10 @@ RKTIO_EXTERN rktio_ok_t rktio_set_current_directory(rktio_t *rktio, rktio_const_
 RKTIO_EXTERN rktio_ok_t rktio_make_directory(rktio_t *rktio, rktio_const_string_t filename);
 /* Can report `RKTIO_ERROR_EXISTS`. */
 
+RKTIO_EXTERN rktio_ok_t rktio_make_directory_with_permissions(rktio_t *rktio, rktio_const_string_t filename, int perm_bits);
+/* Can report `RKTIO_ERROR_EXISTS`. */
+#define RKTIO_DEFAULT_DIRECTORY_PERM_BITS 0777
+
 RKTIO_EXTERN rktio_ok_t rktio_delete_directory(rktio_t *rktio, rktio_const_string_t filename, rktio_const_string_t current_directory,
                                                rktio_bool_t enable_write_on_fail);
 /* The `current_directory` argument is used on Windows to avoid being
@@ -870,6 +877,20 @@ RKTIO_EXTERN rktio_filesize_t *rktio_file_size(rktio_t *rktio, rktio_const_strin
 
 RKTIO_EXTERN rktio_timestamp_t *rktio_get_file_modify_seconds(rktio_t *rktio, rktio_const_string_t file);
 RKTIO_EXTERN rktio_ok_t rktio_set_file_modify_seconds(rktio_t *rktio, rktio_const_string_t file, rktio_timestamp_t secs);
+
+typedef struct rktio_stat_t {
+  /* Eventually, this should use `int64_t`, available in C99 and up */
+  uintptr_t device_id, inode, mode, hardlink_count, user_id, group_id,
+            device_id_for_special_file, size, block_size, block_count,
+            access_time_seconds, access_time_nanoseconds,
+            modify_time_seconds, modify_time_nanoseconds,
+            ctime_seconds, ctime_nanoseconds;
+  /* The `st_ctime` field is status change time for Posix and creation time
+     for Windows. */
+  rktio_bool_t ctime_is_change_time;
+} rktio_stat_t;
+
+RKTIO_EXTERN rktio_stat_t *rktio_file_or_directory_stat(rktio_t *rktio, rktio_const_string_t path, rktio_bool_t follow_links);
 
 typedef struct rktio_identity_t {
   uintptr_t a, b, c;
@@ -1100,12 +1121,12 @@ enum {
   RKTIO_SW_SHOWNORMAL
 };
 
-RKTIO_EXTERN rktio_ok_t rktio_shell_execute(rktio_t *rktio,
-                                            rktio_const_string_t verb,
-                                            rktio_const_string_t target,
-                                            rktio_const_string_t arg,
-                                            rktio_const_string_t dir,
-                                            int show_mode);
+RKTIO_EXTERN RKTIO_MSG_QUEUE rktio_ok_t rktio_shell_execute(rktio_t *rktio,
+                                                            rktio_const_string_t verb,
+                                                            rktio_const_string_t target,
+                                                            rktio_const_string_t arg,
+                                                            rktio_const_string_t dir,
+                                                            int show_mode);
 /* Supported only on Windows to run `ShellExecute`. The `dir` argument
    needs to have normalized path separators. */
 

@@ -2,7 +2,7 @@
 
 (module+ test
   (module config info
-    (define timeout 500)))
+    (define timeout 1000)))
 
 (define (do-thread t) (thread t))
 (set! do-thread do-thread)

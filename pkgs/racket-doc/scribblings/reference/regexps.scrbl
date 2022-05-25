@@ -171,7 +171,11 @@ backreference can be used for repetition patterns; in the case of
 mutual dependencies among backreferences, the inference chooses the
 fixpoint that maximizes non-emptiness.  Finiteness is not inferred for
 backreferences (i.e., a backreference is assumed to match an
-arbitrarily large sequence).
+arbitrarily large sequence). No syntactic constraint prohibits a
+backreference within the group that it references, although such self
+references might create a pattern with no possible matches (as in the
+case of @litchar{(.\1)}, although @litchar{(^.|\1){2}} matches an
+input that starts with the same two characters).
 
 @type-table
 
@@ -534,8 +538,8 @@ fails.}
                                  [input-prefix bytes? #""])
           (or/c (cons/c (cons/c exact-nonnegative-integer?
                                 exact-nonnegative-integer?)
-                        (listof (or/c (cons/c exact-nonnegative-integer?
-                                              exact-nonnegative-integer?)
+                        (listof (or/c (cons/c exact-integer?
+                                              exact-integer?)
                                       #f)))
                 #f)]{
 
@@ -557,6 +561,29 @@ positions indicate the number of bytes that were read, including
 (regexp-match-positions #rx"x." "12x4x6")
 (regexp-match-positions #rx"x." "12x4x6" 3)
 (regexp-match-positions #rx"(-[0-9]*)+" "a-12--345b")
+]
+
+Range results after the first one can include negative numbers if
+@racket[input-prefix] is non-empty and if @racket[pattern] includes a
+lookbehind pattern. Such ranges start in the @racket[input-prefix]
+instead of @racket[input]. More generally, when @racket[start-pos] is
+positive, then range results that are less than @racket[start-pos]
+start in @racket[input-prefix].
+
+@examples[
+(regexp-match-positions #rx"(?<=(.))." "a" 0 #f #f #"x")
+(regexp-match-positions #rx"(?<=(..))." "a" 0 #f #f #"x")
+(regexp-match-positions #rx"(?<=(..))." "_a" 1 #f #f #"x")
+]
+
+Although @racket[input-prefix] is always a byte string, when the
+returned positions are string indices and they refer to a portion of
+@racket[input-prefix], then they correspond to a UTF-8 decoding of
+a tail of @racket[input-prefix].
+
+@examples[
+(bytes-length (string->bytes/utf-8 "\u3BB"))
+(regexp-match-positions #rx"(?<=(.))." "a" 0 #f #f (string->bytes/utf-8 "\u3BB"))
 ]}
 
 @defproc[(regexp-match-positions* [pattern (or/c string? bytes? regexp? byte-regexp?)]
@@ -608,11 +635,32 @@ match succeeds, @racket[#f] otherwise.
           boolean?]{
 
 Like @racket[regexp-match?], but @racket[#t] is only returned when the
-entire content of @racket[input] matches @racket[pattern].
+first found match is to the entire content of @racket[input].
 
 @examples[
 (regexp-match-exact? #rx"x." "12x4x6")
 (regexp-match-exact? #rx"1.*x." "12x4x6")
+]
+
+Beware that @racket[regexp-match-exact?] can return @racket[#f] if
+@racket[pattern] generates a partial match for @racket[input] first, even if
+@racket[pattern] could also generate a complete match. To check if there is any
+match of @racket[pattern] that covers all of @racket[input], use
+@racket[rexexp-match?] with @elem{@litchar{^(?:}@racket[pattern]@litchar{)$}}
+instead.
+
+@examples[
+(regexp-match-exact? #rx"a|ab" "ab")
+(regexp-match? #rx"^(?:a|ab)$" "ab")
+]
+
+The @litchar{(?:)} grouping is necessary because concatenation has
+lower precedence than alternation; the regular expression without it,
+@litchar{^a|ab$}, matches any input that either starts with
+@litchar{a} or ends with @litchar{ab}.
+
+@examples[
+(regexp-match? #rx"^a|ab$" "123ab")
 ]}
 
 
@@ -881,7 +929,7 @@ number @nonterm{n} following @litchar{\}. If a @litchar{\} in
 by itself is treated as @litchar{\0}.
 
 Note that the @litchar{\} described in the previous paragraphs is a
-character or byte of @racket[input]. To write such an @racket[input]
+character or byte of @racket[insert]. To write such an @racket[insert]
 as a Racket string literal, an escaping @litchar{\} is needed
 before the @litchar{\}. For example, the Racket constant
 @racket["\\1"] is @litchar{\1}.
@@ -908,7 +956,10 @@ before the @litchar{\}. For example, the Racket constant
 
 Like @racket[regexp-replace], except that every instance of
 @racket[pattern] in @racket[input] is replaced with @racket[insert],
-instead of just the first match. Only non-overlapping instances of
+instead of just the first match. The result is @racket[input] only if
+there are no matches, @racket[start-pos] is @racket[0], and
+@racket[end-pos] is @racket[#f] or the length of @racket[input].
+Only non-overlapping instances of
 @racket[pattern] in @racket[input] are replaced, so instances of
 @racket[pattern] within inserted strings are @italic{not} replaced
 recursively. Zero-length matches are treated the same as in
@@ -927,7 +978,10 @@ string or the stream up to an end-of-file.
                                   (string-upcase two))))
 (regexp-replace* #px"\\w" "hello world" string-upcase 0 5)
 (display (regexp-replace* #rx"x" "12x4x6" "\\\\"))
-]}
+]
+
+@history[#:changed "8.1.0.7" @elem{Changed to return @racket[input] when no
+                                   replacements are performed.}]}
 
 @defproc[(regexp-replaces [input (or/c string? bytes?)]
                           [replacements

@@ -1,0 +1,269 @@
+#lang zuo/private/looper
+
+;; A module in the `zuo/private/stitcher` language is a sequence of
+;; `define`s followed by a `hash` construction. Each `define` is like
+;; a `let*` clause in that it can only directly refer to earlier
+;; definitions.
+
+;; An `include` form is allowed at the same level as `define`s to
+;; substitute the S-expression content of a module that is implemented
+;; in the `zuo/datum` language.
+
+;; Grammar for the right-hand side of a definition:
+;;
+;; <expr> = <id>
+;;        | <literal>
+;;        | (quote <datum>)
+;;        | (lambda <formals> <expr> ...+)
+;;        | (let ([<id> <expr>] ...) <expr> ...+)
+;;        | (let* ([<id> <expr>] ...) <expr> ...+)
+;;        | (letrec ([<id> <expr>]) <expr> ...+)   ; note: single <id>
+;;        | (cond [<expr> <expr> ...+] ...)        ; `else` ok as last
+;;        | (if <expr> <expr> <expr>)
+;;        | (and <expr> ...)
+;;        | (or <expr> ...)
+;;        | (when <expr> <expr> ...+)
+;;        | (unless <expr> <expr> ...+)
+;;        | (begin <expr> ...+)
+
+;; Like `zuo/kernel`, syntactic forms in the stitcher language are
+;; still referenced by "keyword" in the sense that the names cannot be
+;; shadowed.
+
+;; Definitions are evaluated one at a time, and defined values are
+;; inlined in place of references later in the module. So, this is
+;; something like top-level evaluation, and something like partial
+;; evaluation. Free identifiers are detected and rejected before each
+;; definition is evaluated.
+
+(let* ([bad-syntax (lambda (s)
+                     (error (~a (car s) ": bad stitcher syntax: " (~s s))))]
+       [maybe-begin (lambda (l)
+                      (if (null? (cdr l))
+                          (car l)
+                          (cons 'begin l)))]
+       [ok-binding-clause? (lambda (l)
+                             (if (list? l)
+                                 (if (= (length l) 2)
+                                     (symbol? (car l))
+                                     #f)
+                                 #f))]
+       [local (string->uninterned-symbol "local")]
+       [cons-path (letrec ([cons-path (lambda (l path)
+                                        (if (null? l)
+                                            '()
+                                            (cons (cons (car l) path)
+                                                  (cons-path (cdr l) path))))])
+                    cons-path)])
+  (letrec ([compile
+            (lambda (s env maybe-name)
+              (let ([recur (lambda (e) (compile e env #f))])
+                (cond
+                  [(list? s)
+                   (cond
+                     [(eq? (car s) 'quote)
+                      (if (= 2 (length s))
+                          s
+                          (bad-syntax s))]
+                     [(eq? (car s) 'lambda)
+                      (if (>= (length s) 3)
+                          (let ([keep-names? #t])
+                            (let ([args (car (cdr s))])
+                              (letrec ([extend-env (lambda (args env)
+                                                     (cond
+                                                       [(null? args) env]
+                                                       [(symbol? args) (hash-set env args local)]
+                                                       [(pair? args) (extend-env (cdr args)
+                                                                                 (hash-set env (car args) local))]
+                                                       [else (bad-syntax s)]))])
+                                (let ([env (extend-env args env)])
+                                  (let ([body (compile (maybe-begin (cdr (cdr s))) env #f)])
+                                    (if (if keep-names? maybe-name #f)
+                                        (let ([name (symbol->string maybe-name)])
+                                          (list 'lambda args name body))
+                                        (list 'lambda args body)))))))
+                          (bad-syntax s))]
+                     [(eq? (car s) 'letrec) ; still restricted to a single binding
+                      (if (>= (length s) 3)
+                          (let ([clauses (car (cdr s))])
+                            (if (if (list? clauses)
+                                    (if (= 1 (length clauses))
+                                        (ok-binding-clause? (car clauses))
+                                        #f)
+                                    #f)
+                                (let ([id (car (car clauses))])
+                                  (let ([env (hash-set env id local)])
+                                    (list 'letrec (list (list id
+                                                              (compile (car (cdr (car clauses))) env #f)))
+                                          (compile (maybe-begin (cdr (cdr s))) env maybe-name))))
+                                (bad-syntax s)))
+                          (bad-syntax s))]
+                     [(eq? (car s) 'let)
+                      (if (>= (length s) 3)
+                          (letrec ([compile-clauses
+                                    (lambda (clauses body-env)
+                                      (cond
+                                        [(null? clauses)
+                                         (compile (maybe-begin (cdr (cdr s))) body-env maybe-name)]
+                                        [(pair? clauses)
+                                         (let ([clause (car clauses)])
+                                           (if (ok-binding-clause? clause)
+                                               (let ([id (car clause)])
+                                                 (list 'let
+                                                       (list (list id (compile (car (cdr clause)) env id)))
+                                                       (compile-clauses (cdr clauses) (hash-set body-env id local))))
+                                               (bad-syntax s)))]
+                                        [else (bad-syntax s)]))])
+                            (compile-clauses (car (cdr s)) env))
+                          (bad-syntax s))]
+                     [(eq? (car s) 'let*)
+                      (if (>= (length s) 3)
+                          (letrec ([expand-let* (lambda (clauses env)
+                                                  (cond
+                                                    [(null? clauses)
+                                                     (compile (maybe-begin (cdr (cdr s))) env maybe-name)]
+                                                    [(pair? clauses)
+                                                     (let ([clause (car clauses)])
+                                                       (if (ok-binding-clause? clause)
+                                                           (let ([id (car clause)])
+                                                             (list 'let
+                                                                   (list (list id (compile (car (cdr clause)) env id)))
+                                                                   (expand-let* (cdr clauses) (hash-set env id local))))
+                                                           (bad-syntax s)))]
+                                                    [else (bad-syntax s)]))])
+                            (expand-let* (car (cdr s)) env))
+                          (bad-syntax s))]
+                     [(eq? (car s) 'or)
+                      (letrec ([expand-or (lambda (l)
+                                            (cond
+                                              [(null? l) #f]
+                                              [(null? (cdr l)) (recur (car l))]
+                                              [else
+                                               (let ([tmp (string->uninterned-symbol "ortmp")])
+                                                 (list 'let
+                                                       (list (list tmp (recur (car l))))
+                                                       (list 'if
+                                                             tmp
+                                                             tmp
+                                                             (expand-or (cdr l)))))]))])
+                        (expand-or (cdr s)))]
+                     [(eq? (car s) 'and)
+                      (letrec ([expand-and (lambda (l)
+                                             (cond
+                                               [(null? l) #t]
+                                               [(null? (cdr l)) (recur (car l))]
+                                               [else (list 'if
+                                                           (recur (car l))
+                                                           (expand-and (cdr l))
+                                                           #f)]))])
+                        (expand-and (cdr s)))]
+                     [(eq? (car s) 'cond)
+                      (letrec ([expand-cond (lambda (l)
+                                              (cond
+                                                [(null? l) (void)]
+                                                [(if (list? (car l))
+                                                     (>= (length (car l)) 2)
+                                                     #f)
+                                                 (let ([lhs (car (car l))])
+                                                   (let ([rhs (maybe-begin (cdr (car l)))])
+                                                     (cond
+                                                       [(eq? lhs 'else)
+                                                        (if (null? (cdr l))
+                                                            (recur rhs)
+                                                            (bad-syntax s))]
+                                                       [else (list 'if
+                                                                   (recur lhs)
+                                                                   (recur (maybe-begin (cdr (car l))))
+                                                                   (expand-cond (cdr l)))])))]
+                                                [else (bad-syntax s)]))])
+                        (expand-cond (cdr s)))]
+                     [(eq? (car s) 'when)
+                      (if (>= (length s) 2)
+                          (list 'if
+                                (recur (car (cdr s)))
+                                (recur (maybe-begin (cdr (cdr s))))
+                                '(void))
+                          (bad-syntax s))]
+                     [(eq? (car s) 'unless)
+                      (if (>= (length s) 2)
+                          (list 'if
+                                (recur (car (cdr s)))
+                                '(void)
+                                (recur (maybe-begin (cdr (cdr s)))))
+                          (bad-syntax s))]
+                     [(eq? (car s) 'if)
+                      (if (= (length s) 4)
+                          (list 'if
+                                (recur (car (cdr s)))
+                                (recur (car (cdr (cdr s))))
+                                (recur (car (cdr (cdr (cdr s))))))
+                          (bad-syntax s))]
+                     [(if (eq? (car s) 'hash) (null? (cdr s)) #f) ; ad hoc optimization
+                      (hash)]
+                     [(if (eq? (car s) 'void) (null? (cdr s)) #f) ; ad hoc optimization
+                      (void)]
+                     [else (letrec ([do-app (lambda (s)
+                                              (if (null? s)
+                                                  '()
+                                                  (cons (recur (car s))
+                                                        (do-app (cdr s)))))])
+                             (if (eq? (car s) 'begin)
+                                 (cons 'begin (do-app (cdr s)))
+                                 (do-app s)))])]
+                  [(pair? s) (error (~a "bad stitcher syntax: " (~s s)))]
+                  [(symbol? s)
+                   (let ([v (hash-ref env s env)]) ; using `env` as a "not there" value
+                     (cond
+                       [(eq? v env) (error (~a "unbound variable in stitcher: " (~s s)))]
+                       [(eq? v local) s]
+                       [(symbol? v) (list 'quote v)]
+                       [(pair? v) (list 'quote v)]
+                       [else v]))]
+                  [else s])))])
+    (hash 'read-and-eval
+          (lambda (str start mod-path)
+            (let ([es (string-read str start mod-path)])
+              (letrec ([stitch
+                        (lambda (es env)
+                          (cond
+                            [(null? es) (error "stitcher module did not end with hash")]
+                            [else
+                             (let* ([e+path (car es)]
+                                    [e (car e+path)]
+                                    [a (if (pair? e) (car e) #f)])
+                               (cond
+                                 [(eq? a 'hash)
+                                  (if (null? (cdr es))
+                                      (looper-eval (compile e env #f))
+                                      (error (~a "stitcher hash is not last: " (~s e))))]
+                                 [(eq? a 'define)
+                                  (let ([lhs (if (>= (length e) 3)
+                                                 (car (cdr e))
+                                                 #f)])
+                                    (cond
+                                      [(symbol? lhs)
+                                       (if (= (length e) 3)
+                                           (let ([v (looper-eval (compile (car (cdr (cdr e))) env lhs))])
+                                             (stitch (cdr es) (hash-set env lhs v)))
+                                           (bad-syntax e))]
+                                      [(pair? lhs)
+                                       (let ([id (car lhs)])
+                                         (if (symbol? id)
+                                             (let ([v (looper-eval (compile (cons 'lambda (cons (cdr lhs) (cdr (cdr e)))) env id))])
+                                               (stitch (cdr es) (hash-set env id v)))
+                                             (bad-syntax e)))]
+                                      [else (bad-syntax e)]))]
+                                 [(eq? a 'include)
+                                  (if (= 2 (length e))
+                                      (let* ([name (car (cdr e))]
+                                             [mod-path (cdr e+path)]
+                                             [mod-path (build-module-path mod-path name)]
+                                             [mod (module->hash mod-path)])
+                                        (let ([inc-es (hash-ref mod 'datums #f)])
+                                          (if inc-es
+                                              (stitch (append (cons-path inc-es mod-path) (cdr es)) env)
+                                              (error "not stitcher-includable module" name))))
+                                      (bad-syntax e))]
+                                 [else
+                                  (error (~a "stitcher definition or include expected: " (~s e)))]))]))])
+                (stitch (cons-path es mod-path) (kernel-env))))))))

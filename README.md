@@ -30,9 +30,13 @@ For information on building Racket from this repository, see the
 Contributing
 ------------
 
-Contribute to Racket by [submitting a pull request](https://github.com/racket/racket), joining the
-[development mailing list](https://lists.racket-lang.org), or visiting
-the [IRC](https://racket-lang.org/community.html) or [Slack](https://racket-slack.herokuapp.com/) channels.
+Contribute to Racket by
+* [submitting a pull request](https://github.com/racket/racket)
+* visiting the Racket forums 
+  * [Racket Discussions Discourse](https://racket.discourse.group/)
+  * [Racket Discord](https://discord.gg/6Zq8sH5) #internals
+  * [Slack](https://racket-slack.herokuapp.com/)
+
 
 By making a contribution, you are agreeing that your contribution is
 licensed under the LGPLv3, Apache 2.0, and MIT licenses. Those
@@ -40,12 +44,13 @@ licenses are available in this repository in the files
 racket/src/LICENSE-LGPL.txt, racket/src/LICENSE-APACHE.txt, and
 racket/src/LICENSE-MIT.txt.
 
-See the [Racket Build Guide](build.md) for more guidance on
-contributing.
+See the [Building, Distributing, and Contributing to Racket](build.md) 
+for more guidance on contributing.
 
-The [Friendly Environment Policy](https://racket-lang.org/friendly.html) contains guidelines on expected behavior within the Racket community.
+The [Friendly Environment Policy](https://racket-lang.org/friendly.html) 
+contains guidelines on expected behavior within the Racket community.
 
 License
 -------
 
-Racket is free software; see [LICENSE](LICENSE) for more details.
+Racket is free software; see [LICENSE](LICENSE.txt) for more details.

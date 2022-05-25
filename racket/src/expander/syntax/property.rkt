@@ -1,6 +1,7 @@
 #lang racket/base
 (require "syntax.rkt"
          "preserved.rkt"
+         "taint.rkt"
          "../common/contract.rkt")
 
 (provide syntax-property
@@ -16,7 +17,10 @@
     [(s key)
      (check who syntax? s)
      (define v (hash-ref (syntax-props s) key #f))
-     (plain-property-value v)]
+     (define plain-v (plain-property-value v))
+     (if (syntax-taintness s)
+         (taint-content plain-v)
+         plain-v)]
     [(s key val)
      (check who syntax? s)
      (define pval (if (eq? key 'paren-shape)
@@ -53,7 +57,7 @@
 
 (define/who (syntax-property-remove s key)
   (check who syntax? s)
-  (if (hash-ref (syntax-props s) key #f)
+  (if (hash-has-key? (syntax-props s) key)
       (struct-copy syntax s
                    [props (hash-remove (syntax-props s) key)])
       s))

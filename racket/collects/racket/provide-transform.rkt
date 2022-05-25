@@ -5,7 +5,8 @@
              "private/define-et-al.rkt"
              "private/qq-and-or.rkt"
              "private/cond.rkt"
-             "private/define.rkt")
+             "private/define.rkt"
+             "phase+space.rkt")
   
   (#%provide expand-export pre-expand-export 
              syntax-local-provide-certifier 
@@ -21,9 +22,8 @@
                 (raise-argument-error 'make-export "identifier?" i))
               (unless (symbol? s)
                 (raise-argument-error 'make-export "symbol?" s))
-              (unless (or (not mode)
-                          (exact-integer? mode))
-                (raise-argument-error 'make-export "(or/c exact-integer? #f)" mode))
+              (unless (phase+space? mode)
+                (raise-argument-error 'make-export "phase+space?" mode))
               (unless (syntax? stx)
                 (raise-argument-error 'make-export "syntax?" stx))
               (values i s mode (and protect? #t) stx)))

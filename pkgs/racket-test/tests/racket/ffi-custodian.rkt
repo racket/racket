@@ -1,5 +1,6 @@
 #lang racket/base
-(require ffi/unsafe/custodian)
+(require ffi/unsafe/custodian
+         ffi/unsafe)
 
 (define c (make-custodian))
 
@@ -113,3 +114,34 @@
       (unless (and (will-try-execute we)
                    done?)
         (error "will wasn't ready")))))
+
+;; ----------------------------------------
+;; Check that `#:ordered?` works with  `register-finalizer`,
+;; including the case where an intermediate custodian is GCed
+
+(define (check-finalization #:forget-custodian? [forget-custodian? #f])
+  (define gone? #f)
+
+  (define c0 (make-custodian))
+  (define c1 (make-custodian c0))
+
+  (define x (vector 1 2))
+  ; (vector-set! x 1 x) ; prevents finalization in CS
+
+  (parameterize ([current-custodian c1])
+    (vector-set! x 0 (register-custodian-shutdown x void #:ordered? #t))
+    (register-finalizer x (lambda (x) (set! gone? #t))))
+
+  (when forget-custodian?
+    (set! c1 #f)
+    (collect-garbage)
+    (sync (system-idle-evt)))
+
+  (set! x #f)
+  (collect-garbage)
+  (sync (system-idle-evt))
+
+  (unless gone? (error "finalizer should have been called")))
+
+(check-finalization)
+(check-finalization #:forget-custodian? #t)

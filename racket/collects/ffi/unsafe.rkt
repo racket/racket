@@ -279,11 +279,19 @@
 ;; Combining the above two in a `define-c' special form which makes a Scheme
 ;; `binding', first a `parameter'-like constructor:
 (provide (protect-out make-c-parameter))
-(define (make-c-parameter name lib type)
-  (let ([obj (ffi-obj (get-ffi-obj-name 'make-c-parameter name)
-                      (get-ffi-lib-internal lib))])
-    (case-lambda [()    (ffi-get  obj type)]
-                 [(new) (ffi-set! obj type new)])))
+(define (make-c-parameter name lib type [failure #f])
+  (let ([name (get-ffi-obj-name 'get-ffi-obj name)]
+        [lib  (get-ffi-lib-internal lib)])
+    (define-values (obj error?)
+      (with-handlers
+        ([exn:fail:filesystem?
+          (lambda (e)
+            (if failure (values (failure) #t) (raise e)))])
+        (values (ffi-obj name lib) #f)))
+    (if error?
+        obj
+        (case-lambda [()    (ffi-get  obj type)]
+                     [(new) (ffi-set! obj type new)]))))
 ;; Then the fake binding syntax, uses the defined identifier to name the
 ;; object:
 (provide (protect-out define-c))
@@ -1238,7 +1246,7 @@
                                (let ([s (make-bytes n)])
                                  (memcpy s x n)
                                  s))))]
-    [(_ . xs) (_bytes/nul-teriminated . xs)]
+    [(_ . xs) (_bytes/nul-terminated . xs)]
     [_ _bytes/nul-terminated]))
 
 ;; (_array <type> <len> ...+)
@@ -1476,7 +1484,12 @@
   (define (convert p from-type to-type)
     (let ([p2 (malloc from-type)])
       (ptr-set! p2 from-type p)
-      (ptr-ref p2 to-type)))
+      (let ([v (ptr-ref p2 to-type)])
+        ;; in case there's a finalizer on `p` that could release
+        ;; underlying storage, make sure `p` stays live until we're
+        ;; done converting:
+        (void/reference-sink p)
+        v)))
   
   (cond
    [(and (cpointer? p)

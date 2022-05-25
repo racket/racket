@@ -20,7 +20,15 @@
                             [method-arity-error (correlated-property v 'method-arity-error)])
                         (define (add-name e)
                           (if (and name (not (void? name)))
-                              `(|#%name| ,name ,e)
+                              (let ([name
+                                     ;; If `name` is uninterned, then convert it to interned, because
+                                     ;; otherwise a cross-compilation conversion can go wrong (i.e.,
+                                     ;; uninterned should only appear as quoted); only the string part
+                                     ;; of the name matters, anyway
+                                     (if (uninterned-symbol? name)
+                                         (string->symbol (symbol->immutable-string name))
+                                         name)])
+                                `(|#%name| ,name ,e))
                               e))
                         (define (add-method-arity-error e)
                           (if method-arity-error

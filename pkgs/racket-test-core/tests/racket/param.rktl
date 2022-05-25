@@ -73,6 +73,12 @@
 				     (add1 'x)))))
 (define test-param3 (make-parameter 'three list))
 (define test-param4 (make-derived-parameter test-param3 box list))
+(define test-param5 (make-parameter
+		     'five
+                     (let ()
+                       (struct s (x)
+                         #:property prop:procedure 0)
+                       (s (lambda (x) x)))))
 
 (test 'one test-param1)
 (test 'two test-param2) 
@@ -127,6 +133,10 @@
   (test '(#&yet-another-three) test-param3) 
   (test '((#&yet-another-three)) test-param4))
 
+(test 'five test-param5)
+(test (void) test-param5 5)
+(test 5 test-param5)
+
 (let ([cd (make-derived-parameter current-directory values values)])
   (test (current-directory) cd)
   (let* ([v (current-directory)]
@@ -170,7 +180,7 @@
 
 (test 'this-one object-name (make-parameter 7 #f 'this-one))
 
-(arity-test make-parameter 1 3)
+(arity-test make-parameter 1 4)
 (err/rt-test (make-parameter 0 zero-arg-proc))
 (err/rt-test (make-parameter 0 two-arg-proc))
 (err/rt-test (make-parameter 0 #f 7))
@@ -205,6 +215,11 @@
 		(list read-accept-graph
 		      (list #t #f)
 		      '(read (open-input-string "#0=(1 . #0#)"))
+		      exn:fail:read?
+		      #f)
+                (list read-syntax-accept-graph
+		      (list #t #f)
+		      '(read-syntax #f (open-input-string "#0=(1 . #0#)"))
 		      exn:fail:read?
 		      #f)
 		(list read-accept-compiled
@@ -315,6 +330,20 @@
 		      '(format "~e" 10)
 		      exn:fail?
 		      (list "bad setting" zero-arg-proc one-arg-proc three-arg-proc))
+		(list error-syntax->string-handler
+		      (list (error-syntax->string-handler) (lambda (x w) (error 'converter)))
+		      '(with-handlers ([exn:fail:syntax? void])
+                         (raise-syntax-error #f "ok" #'oops))
+		      (lambda (x) (and (exn:fail? x) (regexp-match? #rx"converter" (exn-message x))))
+		      (list "bad setting" zero-arg-proc one-arg-proc three-arg-proc))
+		(list print-syntax-width
+		      (list 1024 32)
+                      '(let ([s (format "~s" (datum->syntax #f (cons 'hello (for/list ([i 100])
+                                                                              i))))])
+                         (unless (regexp-match #rx"hello" s) (error "bad format"))
+                         (unless (regexp-match #rx"99[)]" s) (error "no 99")))
+		      (lambda (x) (and (exn:fail? x) (regexp-match? #rx"no 99" (exn-message x))))
+		      (list -1 2 12.0))
 
 		(list current-print
 		      (list (current-print)

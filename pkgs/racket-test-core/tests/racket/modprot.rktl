@@ -1,6 +1,7 @@
 (load-relative "loadtest.rktl")
 
 (Section 'modprot)
+(require racket/file)
 
 ;; ============================================================
 
@@ -312,9 +313,9 @@
                   three/normal unsafe))))))
 
 (define-values (zero-c one-c two/no-protect-c two/protect-c 
-                        three/nabbed-c three/pnabbed-c three/snabbed-c 
-                        three/nfnabbed-c three/nfpnabbed-c three/nfsnabbed-c 
-                        three/normal-c unsafe-c)
+                       three/nabbed-c three/pnabbed-c three/snabbed-c 
+                       three/nfnabbed-c three/nfpnabbed-c three/nfsnabbed-c 
+                       three/normal-c unsafe-c)
   (apply
    values
    (let ([ns (make-base-namespace)])
@@ -457,6 +458,117 @@
              [(_ a b (_ (_ _ _ c) . _) . _) #'c])])
       (err/rt-test (eval s4-weak) exn:fail:syntax?))))
 
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(let ()
+  (define work-dir (make-temporary-file "deputy-check-~a" 'directory))
+  
+  (define m '(module m racket/base
+               (provide m)
+               (define (m) '(this is m))))
+
+  (define n '(module n racket/base
+               (require "am.rkt")
+               (m)))
+
+  (define (make e f)
+    (parameterize ([current-directory work-dir]
+                   [current-load-relative-directory work-dir])
+      (define c (parameterize ([current-namespace  (make-base-namespace)])
+                  (compile e)))
+      (call-with-output-file*
+       f
+       #:exists 'truncate
+       (lambda (o)
+         (write c o)))))
+
+  (make m "am.rkt")
+  (make n "an.rkt")
+
+  (parameterize ([current-namespace  (make-base-namespace)])
+    (parameterize ([current-code-inspector  (make-inspector)])
+      (parameterize ([current-module-declare-name
+                      (make-resolved-module-path
+                       (build-path work-dir "am.rkt"))])
+        (eval m)))
+    ;; attempt to import from a module with a weaker code inspector
+    (err/rt-test (dynamic-require (build-path work-dir "an.rkt") #f)
+                 exn:fail?
+                 "weaker code inspector"))
+
+  (delete-directory/files work-dir))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Check syntax-local-apply-transformer runs the transformer with
+; the weaker of the calling macro's code inspector and the inspector
+; associated with the binding of the binding-id argument.
+(parameterize ([current-namespace (make-base-namespace)])
+  ; Trusted DSL expander
+  (eval '(module Exp racket
+           (provide exp)
+           (define-syntax (exp stx)
+             (syntax-case stx ()
+               [(_ (m . rest))
+                (syntax-local-apply-transformer
+                 (syntax-local-value #'m) #'m
+                 'expression #f
+                 #'(m . rest))]))))
+
+  ; Trusted module protecting secret data, but exposing an unrelated id for-syntax
+  (eval '(module Secret racket
+           (provide (protect-out secret)
+                    secret-m
+                    (for-syntax internal-id))
+           (define-for-syntax internal-id #'not-secret)
+           (define secret 'secret)
+           ; Should be allowed to use `datum->syntax` in its own macros
+           (define-syntax (secret-m stx) #`(begin #,(datum->syntax internal-id 'secret) 'safe))))
+
+  ; Sandboxed code...
+  (parameterize ([current-code-inspector (make-inspector (current-code-inspector))])
+    (eval '(require 'Exp 'Secret (for-syntax racket/base)))
+    ; Trusted DSL macro can use datum->syntax to generate reference to secret
+    (test 'safe eval '(exp (secret-m)))
+    ; Sandboxed attacker cannot use datum->syntax in a DSL macro to access protected import
+    ; even given id with secret module scopes but different symbol.
+    (define attack-1
+      '(let-syntax ([attack-m (lambda (stx)
+                                (datum->syntax internal-id 'secret))])
+         (exp (attack-m))))
+    (err/rt-test (eval attack-1) exn:fail:syntax?)
+    ; Sandboxed macro cannot trick syntax-local-apply-transformer directly into allowing it
+    ; use of datum->syntax
+    (define attack-2
+      '(let-syntax ([attack-m (lambda (stx)
+                                (syntax-local-apply-transformer
+                                 (lambda ()
+                                   (datum->syntax internal-id 'secret))
+                                 #'secret-m
+                                 'expression #f))])
+         (attack-m)))
+
+    (err/rt-test (eval attack-2) exn:fail:syntax?)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; make sure that re-exporting a protected binding is allowed consistently
+
+(module provides-a-protected-binding-to-reexport racket/base
+  (define binding (gensym))
+  (provide (protect-out binding)))
+
+(parameterize ([current-code-inspector (make-inspector)])
+  (test #t syntax? (expand '(module module-that-reexports-protected '#%kernel
+                              (#%require 'provides-a-protected-binding-to-reexport)
+                              (#%provide binding))))
+  (test #t syntax? (expand '(module module-that-reexports-protected racket/base
+                              (require 'provides-a-protected-binding-to-reexport)
+                              (provide binding))))
+  (test #t syntax? (expand '(module module-that-reexports-protected racket/base
+                              (require 'provides-a-protected-binding-to-reexport)
+                              (provide (all-from-out 'provides-a-protected-binding-to-reexport))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  
 (report-errs)

@@ -63,7 +63,7 @@
     (parameterize ([current-directory name])
 
       ;; LICENSE files
-      (displayln "Generating LICENSE-APACHE and LICENSE-MIT files. You are free to change the license.")
+      (displayln "Initializing license (Apache-2.0 OR MIT). You are free to change the license.")
       (with-output-to-file "LICENSE-MIT"
         (lambda () (expand/display #<<EOS
 <<name>> 
@@ -135,13 +135,18 @@ jobs:
   build:
     name: "Build on Racket '${{ matrix.racket-version }}' (${{ matrix.racket-variant }})"
     runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental || false }}
     strategy:
+      fail-fast: false
       matrix:
         racket-version: ["stable", "current"]
         racket-variant: ["BC", "CS"]
+        include:
+          - racket-version: current
+            experimental: true
     steps:
       - uses: actions/checkout@v2
-      - uses: Bogdanp/setup-racket@v0.12
+      - uses: Bogdanp/setup-racket@v1.7
         with:
           architecture: x64
           distribution: full
@@ -167,6 +172,7 @@ EOS
 (define pkg-desc "Description Here")
 (define version "0.0")
 (define pkg-authors '(<<user>>))
+(define license '(Apache-2.0 OR MIT))
 
 EOS
 )))

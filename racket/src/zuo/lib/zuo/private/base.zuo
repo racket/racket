@@ -1,0 +1,18 @@
+#lang zuo/private/stitcher
+
+;; Instantiates the expander for non-hygenic-by-default macros
+
+(define macro-protocol 'defmacro)
+(define merge-bindings-export-key 'defmacro-bindings)
+(define language-mod-path 'zuo/private/base)
+
+(include "base-common/lib.zuo")
+(include "base-common/bind-struct.zuo")
+(include "base-common/state.zuo")
+
+(include "base/s-exp.zuo")
+
+(include "base-common/dynamic.zuo")
+(include "base-common/bind.zuo")
+(include "base-common/parse.zuo")
+(include "base-common/entry.zuo")

@@ -21,7 +21,15 @@
 Resolves a module path to filename path. The module path is resolved
 relative to @racket[rel-to-path-v] if it is a path string (assumed to
 be for a file), to the directory result of calling the thunk if it is
-a thunk, or to the current directory otherwise.}
+a thunk, or to the current directory otherwise.
+
+When @racket[module-path-v] refers to a module using a
+collection-based path, resolution invokes the current @tech[#:doc
+refman]{module name resolver} and loads the module if it is not
+declared. Beware that concurrent resolution in namespaces that share a
+module registry can create race conditions when loading modules; see
+also @racket[namespace-call-with-registry-lock].}
+
 
 @defproc[(resolve-module-path-index [module-path-index module-path-index?] 
                                     [rel-to-path-v (or/c #f path-string? (-> any)) #f])

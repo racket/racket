@@ -222,6 +222,18 @@
 
 (set! coverage-table (make-parameter #f))
 
+(set! for-each-mat
+  (lambda (proc mats)
+    ;; this imperative variant of `for-each` is meant to avoid running
+    ;; forever if a continuation somehow gets captured part-way
+    ;; through one mat and restored during a later mat
+    (let loop ()
+      (unless (null? mats)
+        (let ([mat (car mats)])
+          (set! mats (cdr mats))
+          (proc mat)
+          (loop))))))
+
 (set! mat-file
   (lambda (dir)
     (unless (string? dir)
@@ -231,9 +243,22 @@
       (unless (string? mat)
         (errorf 'mat-file "~s is not a string" mat))
       (let ([ifn (format "~a.ms" mat)] [ofn (format "~a.mo" mat)])
+        (define add-here
+          (let ([orig-dir (current-directory)])
+            (lambda (l)
+              (if (or (equal? dir ".")
+                      (equal? dir orig-dir))
+                  l
+                  (cons "." (map (lambda (p)
+                                   (define (convert p)
+                                     (path-build-normal orig-dir p))
+                                   (if (pair? p)
+                                       (cons (convert (car p)) (convert (cdr p)))
+                                       (convert p)))
+                                   l))))))
         (parameterize ([current-directory dir]
-                       [source-directories (cons ".." (source-directories))]
-                       [library-directories (cons ".." (library-directories))])
+                       [source-directories (add-here (source-directories))]
+                       [library-directories (add-here (library-directories))])
           (printf "matting ~a with output to ~a/~a~%" ifn dir ofn)
           (delete-file ofn #f)
           (parameterize ([mat-output (open-output-file ofn)])
@@ -427,7 +452,7 @@
 (define patch-exec-path
   (lambda (p)
     (if (windows?)
-        (list->string (subst #\\ #\/ (string->list p)))
+        (string-append "\"" (list->string (subst #\\ #\/ (string->list p))) "\"")
         p)))
 
 (module separate-eval-tools (separate-eval run-script separate-compile)
@@ -490,12 +515,17 @@
         (collect-maximum-generation (+ (random 254) 1))))))
 
 (define windows?
-  (if (memq (machine-type) '(i3nt ti3nt a6nt ta6nt))
+  (if (memq (machine-type) '(i3nt ti3nt a6nt ta6nt arm64nt tarm64nt))
       (lambda () #t)
       (lambda () #f)))
 
 (define embedded?
   (lambda () #f))
+
+(define pb?
+  (if (memq (machine-type) '(pb tpb pb32 tpb32))
+      (lambda () #t)
+      (lambda () #f)))
 
 (define ($record->vector x)
   (let* ([rtd (#%$record-type-descriptor x)]
@@ -546,6 +576,31 @@
           (sleep (make-time 'time-duration 1000000 1))
           (loop))))
     #t))
+
+(define path-build-normal
+  (lambda (dir fn)
+    (cond
+      [(path-absolute? fn) fn]
+      [(equal? dir ".") fn]
+      [(and (equal? ".." (path-first fn))
+            (not (equal? dir (path-parent dir))))
+       (path-build-normal (path-parent dir) (path-rest fn))]
+      [else
+       (path-build dir fn)])))
+
+(define path-equal?
+  (lambda (a b)
+    (or (equal? a b)
+        (equal? (path-build-normal (current-directory) a)
+                (path-build-normal (current-directory) b)))))
+
+(define find-source
+  (lambda (fn)
+    (or (ormap (lambda (dir)
+                 (let ([fn (path-build-normal dir fn)])
+                   (and (file-exists? fn) fn)))
+               (source-directories))
+        (format (path-build *mats-dir* fn)))))
 
 (define preexisting-profile-dump-entry?
   (let ([ht (make-eq-hashtable)])

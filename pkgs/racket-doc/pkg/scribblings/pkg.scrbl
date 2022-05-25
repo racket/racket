@@ -1342,6 +1342,56 @@ The following @filepath{info.rkt} fields are used by the package manager:
        set up (plus collections for global documentation indexes and
        links).}
 
+ @item{@definfofield{license} --- a @deftech{license S-expression}
+  specifying the package's license. A license S-expression represents an @deftech{SPDX}
+  @hyperlink["https://spdx.github.io/spdx-spec/appendix-IV-SPDX-license-expressions/"]{
+   license expression} as a datum with the quoted form:
+
+  @racketgrammar[#:literals (AND OR WITH) license-sexp
+                 license-id
+                 (license-id WITH exception-id)
+                 (license-sexp AND license-sexp)
+                 (license-sexp OR license-sexp)]
+
+  @margin-note{See @elemref["spdx-plus-operator"]{further details below}
+   about @racket[_license-id] and the @litchar{+} operator.}
+
+  where a:
+
+  @itemize[
+ @item{@racket[_license-id] is a short-form identifier from the
+    @hyperlink["https://spdx.org/licenses/index.html"]{SPDX License List},
+    e.g@._ @racketvalfont{LGPL-3.0-or-later}, @racketvalfont{Apache-2.0},
+    or @racket[BSD-3-Clause]; and an}
+ @item{@racket[_exception-id] is an identifier from the
+    @hyperlink["https://spdx.org/licenses/exceptions-index.html"]{
+     SPDX License Exceptions} list, e.g@._ @racketvalfont{Classpath-exception-2.0}.}]
+
+  For example, packages in the main Racket distribution
+  define @racketidfont{license} as:
+  @racketblock[(define license
+                 '(Apache-2.0 OR MIT))]
+
+  The grammar of @tech{license S-expressions} is designed so that
+  @racket[(format "~s" license)] produces a string conforming to the grammar in
+  @hyperlink["https://spdx.github.io/spdx-spec/appendix-IV-SPDX-license-expressions/"]{
+  Appendix IV} and
+  @hyperlink["https://spdx.github.io/spdx-spec/appendix-V-using-SPDX-short-identifiers-in-source-files/"]{
+  Appendix V}
+  of the SPDX Specification v2.2.0,
+  which is specified in terms of character sequences.
+
+  @elemtag["spdx-plus-operator"]{If the @litchar{+} operator is used,}
+  it must be written as part of the @racket[_license-id],
+  e.g@._ @racketvalfont{AFL-2.0+}.
+  Note that the @hyperlink["https://spdx.dev/ids/"]{SPDX Workgroup has deprecated}
+  (under ``Allowing later versions of a license'') the use of the @litchar{+}
+  operator with GNU licenses: thus, one writes
+  @racketvalfont{AFL-2.0} or @racketvalfont{AFL-2.0+} but
+  @racketvalfont{GPL-3.0-only} or @racketvalfont{GPL-3.0-or-later}
+  (and neither @racket[GPL-3.0] nor @racket[GPL-3.0+] are correct).
+ }
+
  @item{@definfofield{distribution-preference} --- either
        @racket['source], @racket['built], or @racket['binary],
        indicating the most suitable distribution mode for the package
@@ -1367,7 +1417,8 @@ The following @filepath{info.rkt} fields are used by the package manager:
 ]
 
 @history[#:changed "6.1.0.5" @elem{Added @racketidfont{update-implies}.}
-         #:changed "6.1.1.6" @elem{Added @racketidfont{distribution-preference}.}]
+         #:changed "6.1.1.6" @elem{Added @racketidfont{distribution-preference}.}
+         #:changed "8.2.0.7" @elem{Added @racketidfont{license}.}]
 
 @; ----------------------------------------
 
@@ -1736,7 +1787,7 @@ packages can install DrDr metadata to it.}
 improvements to pieces of Racket. In particular, it would be wonderful
 to have a very thorough @filepath{data} collection of different
 data-structures. However, our existing setup for Scribble would force
-each new data structue to have a different top-level documentation
+each new data structure to have a different top-level documentation
 manual, rather than extending the documentation of the existing
 @filepath{data} collection. Similar issues will exist for the
 @filepath{net} and @filepath{file} collections. We should design a way

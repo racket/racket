@@ -275,6 +275,15 @@ and the test makes sure that it does and that the first thread doesn't complete.
                       #'1))
                '(void (m)))
   (sexps=>file control-file #t)
+
+  (define compiled-dir-to-discard
+    (let-values ([(base name dir?) (split-path file-to-compile)])
+      (build-path base compiled-dir)))
+  (define dest-zo-file 
+    (let-values ([(base name dir?) (split-path file-to-compile)])
+      (build-path base 
+                  compiled-dir
+                  (bytes->path (regexp-replace #rx"[.]rkt" (path->bytes name) "_rkt.zo")))))
   
   (define p-l-c (compile-lock->parallel-lock-client (make-compile-lock) (current-custodian)))
   (define t1-finished? #f)
@@ -290,22 +299,56 @@ and the test makes sure that it does and that the first thread doesn't complete.
     (channel-get finished)
 
     (test #f 't1-finished? t1-finished?)
+
+    (test #t 'compile-lock::compiled-file-exists (file-exists? dest-zo-file))
     
-    (test #t 
-          'compile-lock::compiled-file-exists
-          (file-exists?
-           (let-values ([(base name dir?) (split-path file-to-compile)])
-             (build-path base 
-                         compiled-dir
-                         (bytes->path (regexp-replace #rx"[.]rkt" (path->bytes name) "_rkt.zo"))))))
-    
-    (define compiled-dir-to-discard
-      (let-values ([(base name dir?) (split-path file-to-compile)])
-        (build-path base compiled-dir)))
     (delete-file file-to-compile)
     (delete-file control-file)
     (delete-file about-to-get-stuck-file)
-    (delete-directory/files compiled-dir-to-discard)))
+    (delete-directory/files compiled-dir-to-discard))
+
+  ;; Check that the `current--shutdown-evt` argument works:
+  (let ()
+    (sexps=>file file-to-compile #:lang "#lang racket"
+                 `(define-syntax (m stx)
+                    (kill-thread (current-thread)))
+                 '(void (m)))
+
+    (define done-sema (make-semaphore))
+    (define current-evt (make-parameter (semaphore-peek-evt done-sema)))
+    (define p-l-c/evt (compile-lock->parallel-lock-client (make-compile-lock)
+                                                          (current-custodian)
+                                                          current-evt))
+    (parameterize ([current-namespace (make-base-namespace)])
+      (parameterize ([parallel-lock-client p-l-c/evt]
+                     [current-load/use-compiled (make-compilation-manager-load/use-compiled-handler)])
+        (define t1-finished? #f)
+        (define t1 (thread/suspend-to-kill (λ () (dynamic-require file-to-compile #f) (set! t1-finished? #t))))
+        (sync (thread-suspend-evt t1))
+
+        (test #f file-exists? dest-zo-file)
+
+        (sexps=>file file-to-compile #:lang "#lang racket")
+
+        (current-evt never-evt)
+        (define t2-finished? #f)
+        (define t2 (thread (λ () (dynamic-require file-to-compile #f) (set! t2-finished? #t))))
+        (sync (system-idle-evt)) ; wait for t2 to get stuck
+
+        (test #f file-exists? dest-zo-file)
+
+        (semaphore-post done-sema)
+
+        (sync (system-idle-evt)) ; wait for t2 to finish
+        (sleep 0.1)
+
+        (test #t file-exists? dest-zo-file)
+
+        (test #f 't1-finished? t1-finished?)
+        (test #t 't2-finished? t2-finished?)))
+
+    (delete-file file-to-compile)
+    (delete-directory/files compiled-dir-to-discard #:must-exist? #f)))
 
 ;; ----------------------------------------
 

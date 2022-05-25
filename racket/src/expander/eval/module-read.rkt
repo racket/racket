@@ -23,6 +23,7 @@
                  [read-accept-box #t]
                  [read-accept-bar-quote #t]
                  [read-accept-graph #t]
+                 [read-syntax-accept-graph #f]
                  [read-decimal-as-inexact #t]
                  [read-cdot #f]
                  [read-accept-dot #t]

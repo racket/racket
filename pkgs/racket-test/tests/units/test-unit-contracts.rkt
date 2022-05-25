@@ -1259,3 +1259,45 @@
 
   (test 11 (proc 10))
   (test-contract-error top-level "proc" "integer?" (proc 'not-an-integer)))
+
+;; ----------------------------------------
+;; Contract takes into account import tags
+
+(let ()
+  (define-signature v^
+    (v))
+
+  (define-unit a@
+    (import)
+    (export v^)
+    (define v 'a-result))
+
+  (define-unit b@
+    (import)
+    (export v^)
+    (define v 'b-result))
+
+  (define-signature rslt^
+    (rslt))
+
+  (define-unit/contract rslt@
+    (import (tag a (rename v^ [a:v v]))
+            (tag b (rename v^ [b:v v])))
+    (export rslt^)
+    (init-depend (tag a v^)
+                 (tag b v^))
+    (define rslt (list a:v b:v)))
+
+  (define-compound-unit compound@
+    (import)
+    (export rslt)
+    (link [([a-link : v^]) a@]
+          [([b-link : v^]) b@]
+          [([rslt : rslt^])
+           rslt@ (tag a a-link) (tag b b-link)]))
+
+  (define-values/invoke-unit/infer compound@)
+
+  (test '(a-result b-result) rslt))
+
+

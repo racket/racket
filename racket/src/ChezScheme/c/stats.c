@@ -52,7 +52,7 @@ static long adjust_time_zone(ptr dtvec, struct tm *tmxp, ptr given_tzoff);
 
 #include <rpc.h>
 
-ptr S_unique_id() {
+ptr S_unique_id(void) {
   union {UUID uuid; U32 foo[4];} u;
   u.foo[0] = 0;
   u.foo[1] = 0;
@@ -117,7 +117,7 @@ ptr S_unique_id() {
 
 #include <ossp/uuid.h>
 
-ptr S_unique_id() {
+ptr S_unique_id(void) {
   uuid_t *uuid;
   U32 bin[4];
   void *bin_ptr = &bin;
@@ -138,7 +138,7 @@ ptr S_unique_id() {
 
 #include <uuid.h>
 
-ptr S_unique_id() {
+ptr S_unique_id(void) {
   uuid_t uuid;
   uint32_t status;
   unsigned char bin[16];
@@ -160,7 +160,7 @@ ptr S_unique_id() {
 
 #include <uuid/uuid.h>
 
-ptr S_unique_id() {
+ptr S_unique_id(void) {
   union {uuid_t uuid; U32 foo[4];} u;
   u.foo[0] = 0;
   u.foo[1] = 0;
@@ -309,6 +309,10 @@ void S_gettime(INT typeno, struct timespec *tp) {
 #endif
      /* fall back on getrusage if clock_gettime fails */
       {
+#ifdef __EMSCRIPTEN__
+        tp->tv_sec = 0;
+        tp->tv_nsec = 0;
+#else
         struct rusage rbuf;
 
         if (getrusage(RUSAGE_SELF,&rbuf) != 0)
@@ -319,6 +323,7 @@ void S_gettime(INT typeno, struct timespec *tp) {
           tp->tv_sec += 1;
           tp->tv_nsec -= 1000000000;
         }
+#endif
         return;
       }
     case time_duration:
@@ -515,13 +520,13 @@ static long adjust_time_zone(ptr dtvec, struct tm *tmxp, ptr given_tzoff) {
     }
   }
 #else
-# if defined(SOLARIS)
+# if defined(SOLARIS) || defined(sun)
   tzoff = timezone;
 # else
   tzoff = tmxp->tm_gmtoff;
 # endif
   if (given_tzoff == Sfalse) {
-# if defined(__linux__) || defined(SOLARIS)
+# if defined(__linux__) || defined(SOLARIS) || defined(sun)
     /* Linux and Solaris set `tzname`: */
     tz_name = Sstring_utf8(tzname[tmxp->tm_isdst], -1);
 # else
@@ -571,7 +576,7 @@ ptr S_realtime(void) {
 
 /********  initialization  ********/
 
-void S_stats_init() {
+void S_stats_init(void) {
 #ifdef WIN32
   /* Use GetSystemTimePreciseAsFileTime when available (Windows 8 and later). */
   HMODULE h = LoadLibraryW(L"kernel32.dll");

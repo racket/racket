@@ -7,6 +7,7 @@
          racket/string
          racket/set
          racket/function
+         racket/promise
          openssl/sha1
          version/utils
          setup/link
@@ -174,7 +175,9 @@
   (define current-scope-db (read-pkg-db))
   (define all-db (merge-pkg-dbs))
   (define path-pkg-cache (make-hash))
-  (define (install-package/outer infos desc info)
+  (define (install-package/outer desc info
+                                 all-infos simultaneous-installs
+                                 descs infos) ; these two are delays
     (match-define (pkg-desc pkg type orig-name given-checksum auto? pkg-extra-path) desc)
     (match-define
      (install-info pkg-name orig-pkg pkg-dir git-dir clean? checksum module-paths additional-installs)
@@ -204,9 +207,6 @@
                       (if update?
                           (format-deps unique-deps)
                           (format-list unique-deps)))))
-    (define simultaneous-installs
-      (for/hash ([i (in-list infos)])
-        (values (install-info-name i) (install-info-directory i))))
 
     (when (and (pair? orig-pkg)
                (or (eq? (car orig-pkg) 'link)
@@ -294,7 +294,7 @@
             (cons (path->pkg found-f #:cache path-pkg-cache) mp)]
            [else
             ;; Compare with simultaneous installs
-            (for/or ([other-pkg-info (in-list infos)]
+            (for/or ([other-pkg-info (in-list all-infos)]
                      #:unless (eq? other-pkg-info info))
               (and (set-member? (install-info-module-paths other-pkg-info) mp)
                    (cons (install-info-name other-pkg-info) 
@@ -346,7 +346,7 @@
             (cons #f ai)]
            [else
             ;; Compare with simultaneous installs
-            (for/or ([other-pkg-info (in-list infos)]
+            (for/or ([other-pkg-info (in-list all-infos)]
                      #:unless (eq? other-pkg-info info))
               (and (set-member? (install-info-additional-installs other-pkg-info) ai)
                    (cons (install-info-name other-pkg-info)
@@ -408,16 +408,16 @@
                        (format-list unsatisfied-deps))]
            ['search-auto
             ;; (show-dependencies unsatisfied-deps #f #t)
-            (raise (vector updating? infos pkg-name unsatisfied-deps void 'always-yes clone-info))]
+            (raise (vector updating? (force infos) (force descs) pkg-name unsatisfied-deps void 'always-yes clone-info))]
            ['search-ask
             (show-dependencies unsatisfied-deps #f #f)
             (case (if (eq? conversation 'always-yes)
                       'always-yes
                       (ask "Would you like to install these dependencies?"))
               [(yes)
-               (raise (vector updating? infos pkg-name unsatisfied-deps void 'again clone-info))]
+               (raise (vector updating? (force infos) (force descs) pkg-name unsatisfied-deps void 'again clone-info))]
               [(always-yes)
-               (raise (vector updating? infos pkg-name unsatisfied-deps void 'always-yes clone-info))]
+               (raise (vector updating? (force infos) (force descs) pkg-name unsatisfied-deps void 'always-yes clone-info))]
               [(cancel)
                (clean!)
                (pkg-error "canceled")]
@@ -467,7 +467,7 @@
                update-pkgs
                (let ()
                  (define (continue conversation)
-                   (raise (vector #t infos pkg-name update-pkgs
+                   (raise (vector #t (force infos) (force descs) pkg-name update-pkgs
                                   (λ () (for-each (compose (remove-package #t quiet? use-trash? dry-run?) pkg-desc-name) update-pkgs))
                                   conversation
                                   clone-info)))
@@ -580,16 +580,16 @@
                (report-mismatch update-deps)]
               ['search-auto
                (show-dependencies update-deps #t #t)
-               (raise (vector #t infos pkg-name update-pkgs (make-pre-succeed) 'always-yes clone-info))]
+               (raise (vector #t (force infos) (force descs) pkg-name update-pkgs (make-pre-succeed) 'always-yes clone-info))]
               ['search-ask
                (show-dependencies update-deps #t #f)
                (case (if (eq? conversation 'always-yes)
                          'always-yes
                          (ask "Would you like to update these dependencies?"))
                  [(yes)
-                  (raise (vector #t infos pkg-name update-pkgs (make-pre-succeed) 'again clone-info))]
+                  (raise (vector #t (force infos) (force descs) pkg-name update-pkgs (make-pre-succeed) 'again clone-info))]
                  [(always-yes)
-                  (raise (vector #t infos pkg-name update-pkgs (make-pre-succeed) 'always-yes clone-info))]
+                  (raise (vector #t (force infos) (force descs) pkg-name update-pkgs (make-pre-succeed) 'always-yes clone-info))]
                  [(cancel)
                   (clean!)
                   (pkg-error "canceled")]
@@ -684,13 +684,41 @@
                  (pkg-desc-source desc)))
     (hash-set ht name desc))
 
-  (define all-descs (append old-descs descs))
-  (define all-infos (append old-infos infos))
+  (define all-descs (append descs old-descs))
+  (define all-infos (append infos old-infos))
+
+  (define simultaneous-installs
+    (for/hash ([i (in-list all-infos)])
+      (values (install-info-name i) (install-info-directory i))))
+
+  ;; the following loop may escape: when a new dependency is
+  ;; discovered, `install-package/outer` raises an exception to report
+  ;; the new dependencies; that exception is caught and leads to a
+  ;; fresh call to `install-packages` with the added dependencies; to
+  ;; reduce the mpact of this quadratic-time approach, we rotate the
+  ;; list of packages in `info`s
 
   (define repo+do-its ; list of (cons #f-or-(list git-dir checksum) do-it-thunk)
-    (map (curry install-package/outer all-infos)
-         all-descs
-         all-infos))
+    (let loop ([repo+do-its '()]
+               [descs all-descs] [infos all-infos]
+               [done-descs '()] [done-infos '()])
+      (cond
+        [(null? descs) (reverse repo+do-its)]
+        [else
+         (define desc (car descs))
+         (define info (car infos))
+         (define repo+do-it (install-package/outer desc info
+                                                   all-infos
+                                                   simultaneous-installs
+                                                   ;; rotate done to end so that we don't check
+                                                   ;; them again until we've checked other packages
+                                                   (delay (append (cdr descs) (reverse (cons desc done-descs))))
+                                                   (delay (append (cdr infos) (reverse (cons info done-infos))))))
+         (loop (cons repo+do-it repo+do-its)
+               (cdr descs) (cdr infos)
+               (cons desc done-descs) (cons info done-infos))])))
+
+  ;; since we got here, no new dependencies were discovered among `all-infos`
   
   ;; collapse planned repo actions:
   (define repos
@@ -924,11 +952,11 @@
 
     (with-handlers* ([vector?
                       (match-lambda
-                       [(vector updating? new-infos dep-pkg deps more-pre-succeed conv clone-info)
+                       [(vector updating? new-infos new-descs dep-pkg deps more-pre-succeed conv clone-info)
                         (pkg-install
                          #:summary-deps (snoc summary-deps (vector dep-pkg deps))
                          #:old-infos new-infos
-                         #:old-descs (append done-descs new-descs)
+                         #:old-descs new-descs
                          #:all-platforms? all-platforms?
                          #:force? force
                          #:ignore-checksums? ignore-checksums?

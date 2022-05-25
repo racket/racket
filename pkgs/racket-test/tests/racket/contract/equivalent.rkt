@@ -5,7 +5,8 @@
                 (make-basic-contract-namespace 'racket/contract
                                                'racket/list
                                                'racket/class
-                                               'racket/math)])
+                                               'racket/math
+                                               'racket/sequence)])
   
   (contract-eval '(define-contract-struct couple (hd tl)))
   (contract-eval '(define-contract-struct triple (a b c)))
@@ -224,6 +225,9 @@
   (ctest #f contract-equivalent?
          (parameter/c (between/c 1 4) (between/c 0 5))
          (parameter/c (between/c 0 5) (between/c 1 4)))
+  (ctest #f contract-equivalent?
+         (parameter/c (between/c 0 5))
+         (parameter/c (between/c 0 5) (between/c 1 6)))
 
   (ctest #f contract-equivalent? (symbols 'x 'y) (symbols 'x 'y 'z))
   (ctest #f contract-equivalent? (symbols 'x 'y 'z) (symbols 'x 'y))
@@ -411,6 +415,15 @@
   (ctest #f contract-equivalent? (syntax/c (<=/c 4)) (syntax/c (<=/c 3)))
   (ctest #t contract-equivalent? (syntax/c (<=/c 4)) (syntax/c (<=/c 4)))
   
+  (ctest #f contract-equivalent? (sequence/c (<=/c 3)) (sequence/c (<=/c 4)))
+  (ctest #f contract-equivalent? (sequence/c (<=/c 3) (<=/c 3)) (sequence/c (<=/c 3)))
+  (ctest #f contract-equivalent? (sequence/c (<=/c 3)) (sequence/c (<=/c 3) (<=/c 3)))
+  (ctest #f contract-equivalent? (sequence/c (<=/c 4)) (sequence/c (<=/c 3)))
+  (ctest #t contract-equivalent? (sequence/c (<=/c 4)) (sequence/c (<=/c 4)))
+  (ctest #t contract-equivalent? (sequence/c (<=/c 4) #:min-count 1) (sequence/c (<=/c 4) #:min-count 1))
+  (ctest #f contract-equivalent? (sequence/c (<=/c 4) #:min-count 2) (sequence/c (<=/c 4) #:min-count 1))
+  (ctest #f contract-equivalent? (sequence/c (<=/c 4) #:min-count 2) (sequence/c (<=/c 4)))
+
   (ctest #t contract-equivalent? (parametric->/c (x) (-> x x)) (parametric->/c (x) (-> x x)))
   (ctest #f contract-equivalent? (parametric->/c (x) (-> x x)) (parametric->/c (x) (-> x (or/c x #f))))
   (ctest #f contract-equivalent? (parametric->/c (x) (-> x x)) (parametric->/c (x) (-> x (first-or/c x #f))))

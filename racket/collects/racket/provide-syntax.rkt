@@ -15,7 +15,7 @@
 (define-for-syntax (make-provide-macro proc)
   (make-provide-transformer
    (lambda (stx modes)
-     (expand-export (local-apply-transformer proc stx 'expression) modes))))
+     (expand-export (syntax-local-apply-transformer proc #f 'expression #f stx) modes))))
 
 (define-syntax (define-provide-syntax stx)
   (syntax-case stx ()

@@ -67,7 +67,7 @@ used at the initial import. The path @racketmodname[racket] is shorthand for
 @racket[racket/main]; when an @racket[id] has no @litchar{/}, then
 @racket[/main] is automatically added to the end. Thus,
 @racketmodname[racket] or @racket[racket/main] refers to the module whose
-source is the @filepath{main.rkt} file in the @filepath{racket}
+source is the @as-index{@filepath{main.rkt}} file in the @filepath{racket}
 collection.
 
 @examples[

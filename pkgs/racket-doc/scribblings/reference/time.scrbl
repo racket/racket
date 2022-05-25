@@ -5,8 +5,8 @@
 
 @defproc[(current-seconds) exact-integer?]{
 
-Returns the current time in seconds since midnight UTC, January 1,
-1970.}
+Returns the current time in seconds since @deftech{the epoch}:
+midnight UTC, January 1, 1970.}
 
 
 @defproc[(current-inexact-milliseconds) real?]{

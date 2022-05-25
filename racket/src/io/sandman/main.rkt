@@ -73,7 +73,7 @@
            [else
             (fd-adders ps)]))
        (define sleep-secs (and timeout-at
-                               (/ (- timeout-at (current-inexact-milliseconds)) 1000.0)))
+                               (/ (- timeout-at (current-inexact-monotonic-milliseconds)) 1000.0)))
        (unless (and sleep-secs (sleep-secs . <= . 0.0))
          (cond
            [background-sleep

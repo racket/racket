@@ -1,11 +1,11 @@
-(fasl-compressed #f)
+(define compressed? #f)
 
 (define-values (src dest machine)
   (let loop ([args (command-line-arguments)])
     (cond
       [(and (pair? args)
             (equal? (car args) "--compress"))
-       (fasl-compressed #t)
+       (set! compressed? #t)
        (loop (cdr args))]
       [(and (pair? args)
             (equal? (car args) "--xpatch")
@@ -23,4 +23,5 @@
       [else
        (values (car args) (cadr args) (caddr args))])))
 
+(fasl-compressed compressed?)
 (#%$make-boot-file dest (string->symbol machine) '("petite" "scheme") src)

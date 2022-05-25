@@ -26,3 +26,6 @@
                             "scribblings/main/user/compiled/release_scrbl.zo"
                             "scribblings/main/user/compiled/search_scrbl.zo"
                             "scribblings/main/user/compiled/start_scrbl.zo"))
+
+(define license
+  '(Apache-2.0 OR MIT))

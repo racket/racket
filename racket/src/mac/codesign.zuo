@@ -1,0 +1,37 @@
+#lang zuo
+(require "../lib.zuo")
+
+(provide codesign-via-racket?
+         strip-signature*
+         restore-signature*
+         install_name_tool*)
+
+;; Always using the Racket implementation of `codesign` avoids
+;; problems on Monterey, which seems to leave the executable in
+;; a state that `install_name_tool` and `strip` don't like.
+;; Also, older versions of Mac OS don't have `codesign`, and this
+;; mode avoids having to distinguish.
+(define codesign-via-racket? #t)
+
+(define (strip-signature* cross? bootstrap-racket dest)
+  (if (or cross? codesign-via-racket?)
+      (bootstrap-racket (at-source "codesign.rkt") "--remove-signature"
+                        dest)
+      (shell/wait "codesign --remove-signature"
+                  (string->shell dest))))
+
+(define (restore-signature* cross? bootstrap-racket dest)
+  (if (or cross? codesign-via-racket?)
+      (bootstrap-racket (at-source "codesign.rkt")
+                        "-s" "-"
+                        "--entitlements" (at-source "entitlements.plist")
+                        dest)
+      (shell/wait "codesign -s -"
+                  "--entitlements" (at-source "entitlements.plist")
+                  (string->shell dest))))
+
+(define (install_name_tool* cross? bootstrap-racket args)
+  (if cross?
+      (bootstrap-racket (at-source "install_name_tool.rkt")
+                        args)
+      (shell/wait "install_name_tool" (map string->shell args))))

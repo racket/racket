@@ -1,0 +1,4 @@
+#lang zuo/kernel
+
+(let ([maker (hash-ref (module->hash 'zuo/private/base) 'make-language #f)])
+  (maker 'zuo/private/main))

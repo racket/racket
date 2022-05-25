@@ -379,19 +379,10 @@ static int main_after_stack(void *data)
 #ifdef WINDOWS_UNICODE_MAIN
   {
     char *a;
-    int i, j, l;
+    int i;
     argv = (char **)malloc(sizeof(char*)*argc);
     for (i = 0; i < argc; i++) {
-      for (j = 0; wargv[i][j]; j++) {
-      }
-      l = scheme_utf8_encode((unsigned int*)wargv[i], 0, j, 
-                             NULL, 0,
-                             1 /* UTF-16 */);
-      a = malloc(l + 1);
-      scheme_utf8_encode((unsigned int *)wargv[i], 0, j, 
-                         (unsigned char *)a, 0,
-                         1 /* UTF-16 */);
-      a[l] = 0;
+      a = string_to_utf8(wargv[i]);
       argv[i] = a;
     }
   }

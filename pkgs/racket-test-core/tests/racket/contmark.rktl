@@ -848,6 +848,9 @@
     (test (list s #t)
           list s (for/and ([i (in-range 100)]) (go)))))
 
+(test #t andmap (lambda (p) (pair? p)) (continuation-mark-set->context (current-continuation-marks)))
+(test #t andmap (lambda (v) (vector? v)) (continuation-mark-set->context (current-continuation-marks) #t))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test interaction of prompts and `continuation-mark-set-first'
 

@@ -570,7 +570,7 @@
          (not post?)
          (null? kwd-infos)
          (not rngs)
-         (andmap any/c? doms)
+         (andmap prop:any/c? doms)
          (= optionals-length 0)))
   (λ (orig-blame)
     (define-values (partial-doms

@@ -4,13 +4,9 @@
          racket/unsafe/ops
          "for-util.rkt")
 
-(define 64-bit? (= (system-type 'word) 64))
-
-(define (fixnum-width) (if (eq? 'racket (system-type 'vm))
-                           (if 64-bit? 63 31)
-                           (if 64-bit? 61 30)))
-(define (least-fixnum) (- (expt 2 (sub1 (fixnum-width)))))
-(define (greatest-fixnum) (sub1 (expt 2 (sub1 (fixnum-width)))))
+(define (least-fixnum) (most-negative-fixnum))
+(define (greatest-fixnum) (most-positive-fixnum))
+(define (fixnum-width) (add1 (integer-length (most-positive-fixnum))))
 
 (test #t fixnum? (least-fixnum))
 (test #t fixnum? (greatest-fixnum))
@@ -32,9 +28,22 @@
     (unless (fixnum? x) (raise-argument-error 'wraparound "fixnum?" x))
     (unless (fixnum? y) (raise-argument-error 'wraparound "fixnum?" y))
     (define v (op x y))
-    (if (zero? (bitwise-and v (add1 (greatext-fixnum))))
-        (bitwise-ior v (- -1 (greatest-fixnum)))
-        (bitwise-and v (greatest-fixnum)))))
+    (if (zero? (bitwise-and v (add1 (greatest-fixnum))))
+        (bitwise-and v (greatest-fixnum))
+        (bitwise-ior v (least-fixnum)))))
+
+; Check some special cases of the wraparound versions
+(let ()
+  (define fxw+ (wraparound +))
+  (define fxw- (wraparound -))
+  (define fxw* (wraparound *))
+  (test 0 fxw+ (least-fixnum) (least-fixnum))
+  (test -2 fxw+ (greatest-fixnum) (greatest-fixnum))
+  (test 1 fxw- (least-fixnum) (greatest-fixnum))
+  (test -1 fxw- (greatest-fixnum) (least-fixnum))
+  (test 0 fxw* (least-fixnum) (least-fixnum))
+  (test (least-fixnum) fxw* (least-fixnum) (greatest-fixnum))
+  (test 1 fxw* (greatest-fixnum) (greatest-fixnum)))
 
 (define (lshift x y)
   (unless (<= 0 y (integer-length (greatest-fixnum)))

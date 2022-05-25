@@ -29,13 +29,16 @@ for the common use case where sandboxes are very limited.
                                         null]
                             [#:allow-for-require allow-for-require (listof (or/c module-path? path?)) null]
                             [#:allow-for-load allow-for-load (listof path-string?) null]
-                            [#:allow-read allow-read (listof (or/c module-path? path-string?)) null])
+                            [#:allow-read allow-read (listof (or/c module-path? path-string?)) null]
+                            [#:allow-syntactic-requires allow-syntactic-requires (or/c #f (listof module-path?)) #f])
             (any/c . -> . any)]
            [(make-module-evaluator [module-decl (or/c syntax? pair? path? input-port? string? bytes?)]
-                                   [#:language   lang  (or/c #f module-path?) #f]
+                                   [#:language  lang  (or/c #f module-path?) #f]
+                                   [#:readers   readers  (or/c #f (listof module-path?)) (and lang (default-language-readers lang))]
                                    [#:allow-for-require allow-for-require (listof (or/c module-path? path?)) null]
                                    [#:allow-for-load allow-for-load (listof path-string?) null]
-                                   [#:allow-read allow-read (listof (or/c module-path? path-string?)) null])
+                                   [#:allow-read allow-read (listof (or/c module-path? path-string?)) null]
+                                   [#:allow-syntactic-requires allow-syntactic-requires (or/c #f (listof module-path?)) #f])
             (any/c . -> . any)])]{
 
 The @racket[make-evaluator] function creates an evaluator with a
@@ -50,11 +53,15 @@ environment. In particular, filesystem access is restricted, which may
 interfere with using modules from the filesystem that are not
 in a @tech{collection}.  See below for
 information on the @racket[allow-for-require],
-@racket[allow-for-load], and @racket[allow-read] arguments.  When
+@racket[allow-for-load], and @racket[allow-read] arguments; collection-based
+module files typically do not need to be included in those lists.  When
 @racket[language] is a module path or when @racket[requires] is
 provided, the indicated modules are implicitly included in the
-@racket[allow-for-require] list. (For backward compatibility,
-non-@racket[module-path?] path strings are allowed in
+@racket[allow-for-require] list. When @racket[allow-syntactic-requires]
+is not @racket[#f], it constraints the set of modules that can be directly
+referenced in a module; see below for more information.
+(For backward compatibility,
+non-@racket[module-path?] path strings are allowed in arguments like
 @racket[requires]; they are implicitly converted to paths before
 addition to @racket[allow-for-require].)
 
@@ -142,6 +149,14 @@ argument:
 The @racket[requires] list adds additional imports to the module or
 namespace for the @racket[input-program]s, even in the case that
 @racket[require] is not made available through the @racket[language].
+The @racket[allow-syntactic-requires] argument, if non-@racket[#f],
+constrains @racket[require] references expanded in the module when the
+@racket[language] argument implies a @racket[module] wrapper; more
+precisely, it constrains the module paths that can be resolved when a
+syntax object is provided to the @tech{module name resolver}, which
+will include @racket[require] forms that are created by macro
+expansion. A relative-submodule path using @racket[submod] followed by
+either @racket["."] or @racket[".."] is always allowed.
 
 The following examples illustrate the difference between an evaluator
 that puts the program in a module and one that merely initializes a
@@ -170,9 +185,15 @@ The @racket[make-module-evaluator] function is essentially a
 restriction of @racket[make-evaluator], where the program must be a
 module, and all imports are part of the program.  In some cases it is
 useful to restrict the program to be a module using a specific module
-in its language position --- use the optional @racket[lang] argument
-to specify such a restriction (the default, @racket[#f], means no
-restriction is enforced). When the program is specified as a path, then
+in its language position; use the optional @racket[lang] argument
+to specify such a restriction, where @racket[#f] means that no
+restriction is enforced. The @racket[readers] argument similarly
+constrains the paths that can follow @hash-lang[] or @schememetafont{#reader}
+if it is not @racket[#f], and the default is based on @racket[lang].
+The @racket[allow-syntactic-requires] argument is treated the same as
+for @racket[make-evaluator] in the module-wrapper case.
+
+When the program is specified as a path, then
 the path is implicitly added to the @racket[allow-for-load] list.
 
 @racketblock[
@@ -240,41 +261,30 @@ An error will be signaled in such cases.
 If the value of @racket[sandbox-propagate-exceptions] is true (the
 default) when the sandbox is created, then exceptions (both syntax and
 run-time) are propagated as usual to the caller of the evaluation
-function (i.e., catch them with @racket[with-handlers]).  If the value
+function (i.e., catch them with @racket[with-handlers]). See below
+for a caveat about using raised exceptions directly. If the value
 of @racket[sandbox-propagate-exceptions] is @racket[#f] when the
 sandbox is created, then uncaught exceptions in a sandbox evaluation
 cause the error to be printed to the sandbox's error port, and the
 caller of the evaluation receives @|void-const|.
 
-Finally, the fact that a sandboxed evaluator accept syntax objects
-makes it usable as the value for @racket[current-eval], which means
-that you can easily start a sandboxed read-eval-print-loop:
+Take care when using a value returned from a sandbox or raised as an
+exception by a sandbox. The value might by an impersonator, or it
+might be a structure whose structure type redirects equality
+comparisons or printing operations. To safely handle an unknown value
+produced by a sandbox, manipulate it within the sandbox, possibly
+using @racket[call-in-sandbox-context].
 
-@racketblock[
-(define e (make-evaluator 'racket/base))
-(parameterize ([current-eval e])
-  (read-eval-print-loop))
-]
+An evaluator can be used only by one thread at a time, and detected
+concurrent use triggers an exception. Beware of using an evaluator in
+a non-main thread, because the default value of
+@racket[sandbox-make-plumber] registers a callback in the current
+plumber to flush the evaluator's plumber, and that means a flush of
+the current plumber (such as when the Racket process is about to exit)
+implies a use of the evaluator.
 
-Note that in this code only the REPL interactions will be printed to
-the current output ports; using I/O operations inside the REPL will
-still use the usual sandbox parameters (defaulting to no I/O).  In
-addition, the code works only from an existing toplevel REPL ---
-specifically, @racket[read-eval-print-loop] reads a syntax value and
-gives it the lexical context of the current namespace.  Here is a
-variation that also allows I/O over the current input and output
-ports, and works when used from a module (by using a new namespace):
-
-@racketblock[
-(parameterize ([sandbox-input        current-input-port]
-               [sandbox-output       current-output-port]
-               [sandbox-error-output current-error-port]
-               [current-namespace (make-empty-namespace)])
-  (parameterize ([current-eval (make-evaluator 'racket/base)])
-    (read-eval-print-loop)))
-]
-
-}
+@history[#:changed "1.2" @elem{Added the @racket[#:readers] and
+         @racket[#:allow-syntactic-require] arguments.}]}
 
 
 @defproc*[([(exn:fail:sandbox-terminated? [v any/c]) boolean?]
@@ -283,8 +293,7 @@ ports, and works when used from a module (by using a new namespace):
 
 A predicate and accessor for exceptions that are raised when a sandbox
 is terminated.  Once a sandbox raises such an exception, it will
-continue to raise it on further evaluation attempts.
-}
+continue to raise it on further evaluation attempts.}
 
 @; ----------------------------------------------------------------------
 
@@ -824,6 +833,31 @@ parameter value constructs a new @tech{environment variable set} using
 @racket[(environment-variables-copy
 (current-environment-variables))].}
 
+@defproc[(default-language-readers [lang module-path?]) (listof module-path?)]{
+
+Creates a default list of readers that should be allowed to produce a
+module that uses @racket[lang] as the language.
+
+This default list includes the following (and more paths may be added
+in the future):
+
+@itemlist[
+
+ @item{@racket[`(submod ,lang reader)]}
+
+ @item{@racketvalfont{'}@racket[lang]@racketvalfont{/lang/reader} if @racket[lang] is a symbol}
+
+ @item{the module path producing by adding the relative path @racket["lang/reader.rkt"]
+       to @racket[lang] if @racket[lang] is not a symbol}
+
+ @item{@racket['(submod at-exp reader)]}
+
+ @item{@racket['at-exp/lang/reader]}
+
+]
+
+@history[#:added "1.2"]}
+
 @; ----------------------------------------------------------------------
 
 @section{Interacting with Evaluators}
@@ -860,7 +894,7 @@ propagates the break to the evaluator's context.}
 
 Retrieves the @racket[evaluator]'s toplevel custodian.  This returns a
 value that is different from @racket[(evaluator '(current-custodian))]
-or @racket[call-in-sandbox-context evaluator current-custodian] --- each
+or @racket[(call-in-sandbox-context evaluator current-custodian)] --- each
 sandbox interaction is wrapped in its own custodian, which is what these
 would return.
 
@@ -1045,6 +1079,13 @@ the thunk is returned as usual (a value, multiple values, or an
 exception).  Each of the two limits can be @racket[#f] to indicate the
 absence of a limit. See also @racket[custodian-limit-memory] for
 information on memory limits.
+
+To enforce limits, @racket[thunk] is run in a new thread. As usual,
+the new thread starts with the same parameter values as the one that
+calls @racket[call-with-limits]. @emph{Not} as usual, parameter values
+from the thread used to run @racket[thunk] are copied back to the
+thread that called @racket[call-with-limits] when @racket[thunk]
+completes.
 
 Sandboxed evaluators use @racket[call-with-limits], according to the
 @racket[sandbox-eval-limits] setting and uses of

@@ -194,6 +194,7 @@ static Scheme_Object *use_jit(int argc, Scheme_Object **argv);
 static Scheme_Object *disallow_inline(int argc, Scheme_Object **argv);
 static Scheme_Object *compile_target_machine(int argc, Scheme_Object **argv);
 static Scheme_Object *compile_is_target_machine(int argc, Scheme_Object **argv);
+static Scheme_Object *compile_realm(int argc, Scheme_Object **argv);
 
 void scheme_escape_to_continuation(Scheme_Object *obj, int num_rands, Scheme_Object **rands, Scheme_Object *alt_full);
 
@@ -243,7 +244,8 @@ scheme_init_eval (Scheme_Startup_Env *env)
   ADD_PARAMETER("compile-enforce-module-constants",  compile_module_constants, MZCONFIG_COMPILE_MODULE_CONSTS, env);
   ADD_PARAMETER("eval-jit-enabled",                  use_jit,                  MZCONFIG_USE_JIT,               env);
   ADD_PARAMETER("compile-context-preservation-enabled", disallow_inline,       MZCONFIG_DISALLOW_INLINE,       env);
-  ADD_PARAMETER("current-compile-target-machine",    compile_target_machine,  MZCONFIG_COMPILE_TARGET_MACHINE, env);
+  ADD_PARAMETER("current-compile-target-machine",    compile_target_machine,   MZCONFIG_COMPILE_TARGET_MACHINE, env);
+  ADD_PARAMETER("current-compile-realm",             compile_realm,            MZCONFIG_COMPILE_REALM, env);
 
   ADD_PRIM_W_ARITY("compile-target-machine?",        compile_is_target_machine,                       1, 1, env);
 }
@@ -3797,7 +3799,35 @@ int scheme_is_predefined_module_path(Scheme_Object *m)
   return SCHEME_TRUEP(r);
 }
 
+Scheme_Object *scheme_read_installation_config_table(Scheme_Env *global_env)
+{
+  mz_jmp_buf * volatile save, newbuf;
+  Scheme_Thread * volatile p;
+  Scheme_Object *config_table = scheme_false;
+  p = scheme_get_current_thread();
+  save = p->error_buf;
+  p->error_buf = &newbuf;
+  if (!scheme_setjmp(newbuf)) {
+    Scheme_Object *rct;
+
+    rct = scheme_builtin_value("read-installation-configuration-table");
+    config_table = _scheme_apply(rct, 0, NULL);
+  } else {
+    scheme_clear_escape();
+  }
+  p->error_buf = save;
+
+  return config_table;
+}
+
 void scheme_init_collection_paths_post(Scheme_Env *env, Scheme_Object *extra_dirs, Scheme_Object *post_dirs)
+{
+  scheme_init_collection_paths_post_config(env, extra_dirs, post_dirs,
+                                           scheme_read_installation_config_table(env));
+}
+
+void scheme_init_collection_paths_post_config(Scheme_Env *env, Scheme_Object *extra_dirs, Scheme_Object *post_dirs,
+                                              Scheme_Object *config_table)
 {
   mz_jmp_buf * volatile save, newbuf;
   Scheme_Thread * volatile p;
@@ -3805,13 +3835,19 @@ void scheme_init_collection_paths_post(Scheme_Env *env, Scheme_Object *extra_dir
   save = p->error_buf;
   p->error_buf = &newbuf;
   if (!scheme_setjmp(newbuf)) {
-    Scheme_Object *clcp, *flcp, *a[2];
+    Scheme_Object *gin, *clcp, *flcp, *a[4], *name;
+
+    gin = scheme_builtin_value("get-installation-name");
+    a[0] = config_table;
+    name = _scheme_apply(gin, 1, a);
 
     clcp = scheme_builtin_value("current-library-collection-links");
     flcp = scheme_builtin_value("find-library-collection-links");
 
     if (clcp && flcp) {
-      a[0] = _scheme_apply(flcp, 0, NULL);
+      a[0] = config_table;
+      a[1] = name;
+      a[0] = _scheme_apply(flcp, 2, a);
       _scheme_apply(clcp, 1, a);
     }
 
@@ -3821,7 +3857,9 @@ void scheme_init_collection_paths_post(Scheme_Env *env, Scheme_Object *extra_dir
     if (clcp && flcp) {
       a[0] = extra_dirs;
       a[1] = post_dirs;
-      a[0] = _scheme_apply(flcp, 2, a);
+      a[2] = config_table;
+      a[3] = name;
+      a[0] = _scheme_apply(flcp, 4, a);
       _scheme_apply(clcp, 1, a);
     }
   } else {
@@ -3836,6 +3874,11 @@ void scheme_init_collection_paths(Scheme_Env *env, Scheme_Object *extra_dirs)
 }
 
 void scheme_init_compiled_roots(Scheme_Env *global_env, const char *paths)
+{
+  scheme_init_compiled_roots_config(global_env, paths, scheme_read_installation_config_table(global_env));
+}
+
+void scheme_init_compiled_roots_config(Scheme_Env *global_env, const char *paths, Scheme_Object *config_table)
 {
   mz_jmp_buf * volatile save, newbuf;
   Scheme_Thread * volatile p;
@@ -3924,6 +3967,20 @@ static Scheme_Object *compile_is_target_machine(int argc, Scheme_Object **argv)
   if (!SCHEME_SYMBOLP(argv[0]))
     scheme_wrong_contract("compile-target-machine?", "symbol?", 0, argc, argv);
   return scheme_compile_target_check(argc, argv);
+}
+
+static Scheme_Object *compile_realm_check(int argc, Scheme_Object **argv)
+{
+  return SCHEME_SYMBOLP(argv[0]) ? scheme_true : scheme_false;
+}
+
+static Scheme_Object *compile_realm(int argc, Scheme_Object **argv)
+{
+  return scheme_param_config2("current-compile-realm", 
+                              scheme_make_integer(MZCONFIG_COMPILE_REALM),
+                              argc, argv,
+                              -1, compile_realm_check, 
+                              "symbol?", 0);
 }
 
 static Scheme_Object *

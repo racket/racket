@@ -3,7 +3,8 @@
 
 @(require (for-label syntax/module-reader
                      (only-in scribble/reader
-                              read-syntax-inside read-inside)))
+                              read-syntax-inside read-inside)
+                     racket/interaction-info))
 
 @(begin
    (define-syntax-rule (define-mb name)
@@ -40,6 +41,7 @@ language, though it may also be @racket[require]d to get
                   (code:line #:module-wrapper module-wrapper-expr)
                   (code:line #:language    lang-expr)
                   (code:line #:info        info-expr)
+                  (code:line #:interaction-info interaction-info-expr)
                   (code:line #:language-info language-info-expr)])
   #:contracts ([read-expr (input-port? . -> . any/c)]
                [read-syntax-expr (any/c input-port? . -> . any/c)]
@@ -50,9 +52,10 @@ language, though it may also be @racket[require]d to get
                                      . -> . any/c)
                                     (input-port? (input-port? . -> . any/c) 
                                      boolean? . -> . any/c))]
-               [module-wrapper (or/c ((-> any/c) . -> . any/c)
+               [module-wrapper-expr (or/c ((-> any/c) . -> . any/c)
                                      ((-> any/c) boolean? . -> . any/c))]
                [info-expr (symbol? any/c (symbol? any/c . -> . any/c) . -> . any/c)]
+               [interaction-info-expr (or/c (symbol? any/c . -> . any/c) #f)]
                [language-info-expr (or/c (vector/c module-path? symbol? any/c) #f)]
                [lang-expr (or/c module-path?
                                 (and/c syntax? (compose module-path? syntax->datum))
@@ -208,6 +211,33 @@ identifiers used by the @racket[reader-option]s.
        function) currently just returns the default for
        @racket['color-lexer].}
 
+ @item{@racket[#:interaction-info] specifies an implementation of
+       reflective information that is used by external tools for
+       interactive evaluation. When @racket[interaction-info-expr]
+       produces a function, the function accepts two arguments: a
+       symbol a symbol indicating the kind of information requested
+       (as defined by external tools), and a default value that
+       normally should be returned if the symbol is not recognized.
+
+       As long as @racket[interaction-info-expr] is specified,
+       @racket[module-path] is specified, or @racket[lang-expr] is
+       literally a @racket[quote] form, then
+       @racket[get-interaction-info] is defined an exported.
+       Normally, interaction information is used by setting
+       @racket[current-interaction-info] to a vector with the
+       enclosing module's path as its first element and
+       @racket['get-interaction-info] as its second element. The third
+       element of the vector is an argument to
+       @racket[get-interaction-info], and it is bound as
+       @racket[language-data] in @racket[interaction-info-expr].
+
+       If @racket[interaction-info-expr] is omitted or is literally
+       @racket[#f], and if @racket[module-path] is specified or
+       @racket[lang-expr] is literally a @racket[quote] form, then
+       @racketidfont{get-interaction-info} is automatically defined to
+       use the same implementation as @racket[#:info], but
+       instantiated with @racket[language-module] as @racket[#f].}
+       
  @item{@racket[#:language-info] specifies an implementation of
        reflective information that is used by external tools to
        manipulate the module in the language @racket[_something] in

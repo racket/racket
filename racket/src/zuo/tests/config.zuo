@@ -1,0 +1,45 @@
+#lang zuo
+
+(require "harness.zuo")
+
+(alert "config")
+
+(define Mf-config (build-path tmp-dir "Mf-config"))
+
+(define (config->hash content [overrides (hash)])
+  (display-to-file content Mf-config :truncate)
+  (config-file->hash Mf-config overrides))
+
+(check (config->hash "") (hash))
+(check (config->hash "" (hash 'X "x")) (hash 'X "x"))
+(check (config->hash "This is not a confg line" (hash 'X "x")) (hash 'X "x"))
+(check (config->hash "Comment # no=6" (hash 'X "x")) (hash 'X "x"))
+
+(check (config->hash "X=5") (hash 'X "5"))
+(check (config->hash "X =5") (hash 'X "5"))
+(check (config->hash "X= 5   ") (hash 'X "5"))
+(check (config->hash "  X = 5   ") (hash 'X "5"))
+(check (config->hash "\n\n  X = 5   \n\n") (hash 'X "5"))
+(check (config->hash "X = 5\\\n1") (hash 'X "51"))
+
+(check (config->hash "X_1=5") (hash 'X_1 "5"))
+(check (config->hash "abcdefg_ZXSGFH_=5") (hash 'abcdefg_ZXSGFH_ "5"))
+(check (config->hash "123=5") (hash (string->symbol "123") "5"))
+(check (config->hash "1%23=5") (hash))
+(check (config->hash "x%23=5") (hash))
+
+(check (config->hash "X=5\nY=8") (hash 'X "5" 'Y "8"))
+(check (config->hash "X=5\nX=8") (hash 'X "8"))
+(check (config->hash "X=5\nX=8" (hash 'X "0")) (hash 'X "0"))
+(check (config->hash "X=5\nY=8" (hash 'X "0")) (hash 'X "0" 'Y "8"))
+
+(check (config->hash "X=5 # Comment after") (hash 'X "5"))
+(check (config->hash "X=5 # Comment after\nY=8") (hash 'X "5" 'Y "8"))
+(check (config->hash "X=5 \\# 7") (hash 'X "5 # 7"))
+(check (config->hash "X=5 \\\\# 7") (hash 'X "5 \\# 7"))
+(check (config->hash "X=5# \\\\# 7") (hash 'X "5"))
+(check (config->hash "X=# # #") (hash 'X ""))
+(check (config->hash "X = 5\\\n# 1 \\\n 2") (hash 'X "5"))
+(check (config->hash "X = 5\\\n 1 \\\n 2") (hash 'X "5 1  2"))
+
+(rm* Mf-config)

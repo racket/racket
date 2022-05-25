@@ -52,7 +52,6 @@
       ;; still have semi-parsed `begin-for-syntax`
       (define s (semi-parsed-begin-for-syntax-s i))
       (define nested-bodys (semi-parsed-begin-for-syntax-body i))
-      (let ([disarmed-s (syntax-disarm s)])
-        (define-match m disarmed-s '(begin-for-syntax _ ...))
-        (rebuild s `(,(m 'begin-for-syntax) ,@(syntax-only nested-bodys))))]
+      (define-match m s '(begin-for-syntax _ ...))
+      (rebuild s `(,(m 'begin-for-syntax) ,@(syntax-only nested-bodys)))]
      [else i])))

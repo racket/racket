@@ -11,9 +11,9 @@ LIBS = $(RKTIO_LIB) \
        $(WIN32_LIBS)
 
 LZ4_DLL = ..\liblz4mt.dll
-LZ4_LIB = $(SCHEME_DIR)\$(MACHINE)\lz4\lib\liblz4.lib
+LZ4_LIB = $(SCHEME_DIR)\$(MACHINE)\lz4\lib\liblz4mt.lib
 
-DEST_DLL = ..\..\build\raw_libracketcs.dll
+DEST_DLL = ..\..\build\libracketcsxxx_raw.dll
 DEST = ..\..\build\raw_racketcs.exe
 GDEST = ..\..\build\raw_gracketcs.exe
 CSDIR = ..\..\cs\c

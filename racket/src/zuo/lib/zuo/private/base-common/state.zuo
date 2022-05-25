@@ -1,0 +1,59 @@
+#lang zuo/datum
+
+;; The state of expansion is a combinion of
+;;  * bindings
+;;  * defined variables being lifted, or #f for a module top
+;;  * "nominals", which is information about `require`s that is
+;;    used to implement `(provide (all-from-out ....))`
+
+(define make-state (lambda (binds nominals) (cons binds (cons #f nominals))))
+(define state-binds car)
+(define state-variables cadr)
+(define state-nominals cddr)
+(define (state-set-binds state binds) (cons binds (cdr state)))
+(define (state-set-nominals state nominals) (cons (car state) (cons (cadr state) nominals)))
+(define (state-set-variables state variables) (cons (car state) (cons variables (cddr state))))
+
+;; helper to lookup or update nominals:
+(define (call-with-nominal state mod-path default-ids k)
+  (let* ([fronted
+          (letrec ([assoc-to-front
+                    (lambda (l)
+                      (cond
+                        [(null? l) (list (cons mod-path default-ids))]
+                        [(mod-path=? mod-path (caar l)) l]
+                        [else (let ([new-l (assoc-to-front (cdr l))])
+                                (cons (car new-l) (cons (car l) (cdr new-l))))]))])
+            (assoc-to-front (state-nominals state)))])
+    (k (cdar fronted)
+       (lambda (new-sym+bs)
+         (let* ([new-noms (cons (cons (caar fronted) new-sym+bs)
+                                (cdr fronted))])
+           (state-set-nominals state new-noms))))))
+
+(define (init-nominal state mod-path)
+  (call-with-nominal state mod-path '()
+                     (lambda (sym+binds install)
+                       (install sym+binds))))
+
+(define (record-nominal state mod-path sym bind)
+  (call-with-nominal state mod-path '()
+                     (lambda (sym+binds install)
+                       (install (cons (cons sym bind) sym+binds)))))
+
+(define (lookup-nominal state mod-path)
+  (call-with-nominal state mod-path #f
+                     (lambda (sym+binds install)
+                       sym+binds)))
+
+;; in case `all-from-out` is used on the initial import,
+;; adds all the current ids in `binds` as nominally imported
+(define (initial-nominals mod-path sym+bs)
+  (list (cons mod-path sym+bs)))
+
+;; Module top-level state contains provides and submodules
+(define empty-modtop (cons '() '()))
+(define modtop-provides car)
+(define modtop-modules cdr)
+(define (modtop-set-provides modtop provides) (cons provides (cdr modtop)))
+(define (modtop-set-modules modtop modules) (cons (car modtop) modules))

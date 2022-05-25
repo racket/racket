@@ -26,17 +26,9 @@
                 k
                 (replace-context ctx (struct->list e))))]
    [(hash? e)
-    (cond
-      [(hash-eq? e)
-       (for/hasheq ([(k v) (in-hash e)])
-         (values (replace-context ctx k)
-                 (replace-context ctx v)))]
-      [(hash-eqv? e)
-       (for/hasheqv ([(k v) (in-hash e)])
-         (values (replace-context ctx k)
-                 (replace-context ctx v)))]
-      [else
-       (for/hash ([(k v) (in-hash e)])
-         (values (replace-context ctx k)
-                 (replace-context ctx v)))])]
+    (hash-map/copy e
+                   (lambda (k v)
+                     (values (replace-context ctx k)
+                             (replace-context ctx v)))
+                   #:kind 'immutable)]
    [else e]))

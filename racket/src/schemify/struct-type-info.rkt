@@ -131,7 +131,7 @@
               (and (symbol? u-prop)
                    (or (known-struct-type-property/immediate-guard?
                         (find-known u-prop prim-knowns knowns imports mutated)))
-                   (simple? val prim-knowns knowns imports mutated simples #f))))
+                   (simple? #:ordered? #t val prim-knowns knowns imports mutated simples #f))))
           vals)]
     [`null null]
     [`'() null]

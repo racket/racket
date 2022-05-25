@@ -91,6 +91,7 @@
    "Sarah Spall, "
    "Mike Sperber, "
    "Vincent St-Amour, "
+   "Paul Stansifer, "
    "Paul Steckler, "
    "Stevie Strickland, "
    "James Swaine, "

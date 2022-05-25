@@ -72,5 +72,7 @@
   [make-fxvector (known-procedure/no-prompt 6)]
   [make-shared-flvector (known-procedure/no-prompt 6)]
   [make-shared-fxvector (known-procedure/no-prompt 6)]
+  [most-positive-fixnum (known-procedure/pure 1)]
+  [most-negative-fixnum (known-procedure/pure 1)]
   [shared-flvector (known-procedure/no-prompt -1)]
   [shared-fxvector (known-procedure/no-prompt -1)])

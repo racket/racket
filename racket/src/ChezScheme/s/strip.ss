@@ -898,9 +898,10 @@
               (let ([op ($open-file-output-port who ofn (file-options replace))])
                 (on-reset (delete-file ofn #f)
                   (on-reset (close-port op)
-                    (write script-header mode entry* op)
-                    (close-port op)
-                    (unless-feature windows (when mode (chmod ofn mode))))))))))
+                    (let ([result (write script-header mode entry* op)])
+                      (close-port op)
+                      (unless-feature windows (when mode (chmod ofn mode)))
+                      result))))))))
       (set-who! $describe-fasl-from-port
         (rec $describe-fasl-from-port
           (case-lambda
@@ -922,6 +923,32 @@
                              (lambda (script-header mode entry* op)
                                (when script-header (put-bytevector op script-header))
                                (for-each (lambda (entry) (write-entry op entry)) entry*)))))
+      (set-who! pbchunk-convert-file
+        (lambda (ifn ofn c-ofns reg-proc-names start-index)
+          (unless (string? ifn) ($oops who "~s is not a string" ifn))
+          (unless (string? ofn) ($oops who "~s is not a string" ofn))
+          (unless (and (pair? c-ofns) (list? c-ofns) (andmap string? c-ofns))
+            ($oops who "~s is not a nonempty list of strings" c-ofns))
+          (unless (and (pair? reg-proc-names) (list? reg-proc-names) (andmap string? reg-proc-names))
+            ($oops who "~s is not a nonempty list of strings" reg-proc-names))
+          (unless (and (fixnum? start-index) (fx>= start-index 0))
+            ($oops who "~s is not a nonnegative fixnum" start-index))
+          (unless (fx= (length c-ofns) (length reg-proc-names))
+            ($oops who "length of file-name list ~s does not match the length of function-name list ~s"
+                   c-ofns
+                   reg-proc-names))
+          (convert-fasl-file who ifn ofn (fasl-strip-options)
+                             (lambda (script-header mode entry* op)
+                               ($fasl-pbchunk!
+                                who
+                                c-ofns
+                                reg-proc-names
+                                start-index
+                                entry*
+                                handle-entry
+                                (lambda ()
+                                  (when script-header (put-bytevector op script-header))
+                                  (for-each (lambda (entry) (write-entry op entry)) entry*)))))))
       (set-who! vfasl-convert-file
         (lambda (ifn ofn bootfile*)
           (convert-fasl-file who ifn ofn (fasl-strip-options)
@@ -982,24 +1009,25 @@
 
     (define-syntax cmp-case
       (lambda (x)
-        (define (make-clause t x-case)
+        (define (make-clause t x-case top-e)
           (lambda (variant arg* e)
             (with-syntax ([(arg1 ...) (map (lambda (x) (construct-name x x "1")) arg*)]
                           [(arg2 ...) (map (lambda (x) (construct-name x x "2")) arg*)]
                           [variant variant]
                           [e e]
                           [t t]
-                          [x-case x-case])
+                          [x-case x-case]
+                          [top-e top-e])
               #'[variant (arg1 ...)
                  (or (x-case t
                        [variant (arg2 ...) e]
                        [else #f])
-                     (fail 'variant))])))
+                     (fail 'variant top-e))])))
         (syntax-case x ()
           [(_ x-case e1 e2 [variant (arg ...) e] ...)
            #`(let ([t2 e2])
                (x-case e1
-                 #,@(map (make-clause #'t2 #'x-case) #'(variant ...) #'((arg ...) ...) #'(e ...))))])))
+                 #,@(map (make-clause #'t2 #'x-case #'e1) #'(variant ...) #'((arg ...) ...) #'(e ...))))])))
 
     (define-who vandmap
       (lambda (p v1 v2)
@@ -1023,11 +1051,15 @@
 
     (define (fasl=? entry1 entry2)
       (let ([entry1 (follow-indirect entry1)] [entry2 (follow-indirect entry2)])
-        (let ([a (eq-hashtable-cell cmp-ht entry1 #f)])
-          (or (eq? entry2 (cdr a))
-              (and (not (cdr a))
+        (let ([a (eq-hashtable-cell cmp-ht entry1 #f)]
+              [b (eq-hashtable-cell cmp-ht entry2 #f)])
+          (or (and (eq? entry2 (cdr a))
+                   (eq? entry1 (cdr b)))
+              (and (or (not (cdr a)) (fail 'sharing1 entry1))
+                   (or (not (cdr b)) (fail 'sharing2 entry2))
                    (begin
                      (set-cdr! a entry2)
+                     (set-cdr! b entry1)
                      (cmp-case fasl-case entry1 entry2
                        [entry (situation fasl) (and (= situation1 situation2) (fasl=? fasl1 fasl2))]
                        [header (version machine dependencies)
@@ -1123,12 +1155,18 @@
       (rec fasl-file-equal?
         (case-lambda
           [(ifn1 ifn2) (fasl-file-equal? ifn1 ifn2 #f)]
-          [(ifn1 ifn2 error?)
+          [(ifn1 ifn2 error?) (fasl-file-equal? ifn1 ifn2 error? #f)]
+          [(ifn1 ifn2 error? detail?)
            (unless (string? ifn1) ($oops who "~s is not a string" ifn1))
            (unless (string? ifn2) ($oops who "~s is not a string" ifn2))
            (fluid-let ([fasl-who who]
                        [fasl-count 0]
-                       [fail (if error? (lambda (what) (bogus "~s comparison failed while comparing ~a and ~a" what ifn1 ifn2)) (lambda (what) #f))]
+                       [fail (if error?
+                                 (lambda (what where) (bogus "~s comparison failed while comparing ~a and ~a~a" what ifn1 ifn2
+                                                             (if detail?
+                                                                 (format " at ~s" where)
+                                                                 "")))
+                                 (lambda (what where) #f))]
                        [eq-hashtable-warning-issued? #f])
              (call-with-port ($open-file-input-port who ifn1)
                (lambda (ip1)

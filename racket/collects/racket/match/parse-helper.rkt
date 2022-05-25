@@ -2,7 +2,6 @@
 
 (require (for-template racket/base)
          syntax/boundmap
-         syntax/apply-transformer
          racket/struct-info
          "patterns.rkt")
 
@@ -173,12 +172,14 @@
                                (set!-transformer-procedure transformer)
                                transformer)])
     (unless transformer (raise-syntax-error #f error-msg expander*))
-    (parse (local-apply-transformer
+    (parse (syntax-local-apply-transformer
             (λ (stx) (if (procedure-arity-includes? transformer-proc 2)
                          (transformer-proc expander* stx)
                          (transformer-proc stx)))
-            stx
-            'expression))))
+            expander
+            'expression
+            #f
+            stx))))
 
 ;; raise an error, blaming stx
 (define (match:syntax-err stx msg)

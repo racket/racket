@@ -11,6 +11,7 @@
          "../port/input-port.rkt"
          "../port/fd-port.rkt"
          "../port/file-stream.rkt"
+         "../port/check.rkt"
          "../file/host.rkt"
          "../string/convert.rkt"
          "../locale/string.rkt"
@@ -25,6 +26,7 @@
          subprocess-pid
          current-subprocess-custodian-mode
          subprocess-group-enabled
+         current-subprocess-keep-file-descriptors
          shell-execute)
 
 (struct subprocess ([process #:mutable]
@@ -117,7 +119,11 @@
                              (positive? (bitwise-and (rktio_process_allowed_flags rktio)
                                                      RKTIO_PROCESS_WINDOWS_CHAIN_TERMINATION)))
                         (bitwise-ior flags RKTIO_PROCESS_WINDOWS_CHAIN_TERMINATION)
-                        flags)])
+                        flags)]
+             [flags (case (current-subprocess-keep-file-descriptors)
+                      [(all) (bitwise-ior flags RKTIO_PROCESS_NO_CLOSE_FDS)]
+                      [(inherited) flags]
+                      [else (bitwise-ior flags RKTIO_PROCESS_NO_INHERIT_FDS)])])
         
         (define command-bstr (->host (->path command) who '(execute)))
 
@@ -130,6 +136,9 @@
           (maybe-wait stderr))
 
         (start-atomic)
+        (when stdout (check-not-closed who stdout))
+        (when stdin (check-not-closed who stdin))
+        (when (and stderr (not (eq? stderr 'stdout))) (check-not-closed who stderr))
         (poll-subprocess-finalizations)
         (check-current-custodian who)
         (define envvars (rktio_empty_envvars rktio))
@@ -275,6 +284,14 @@
 (define subprocess-group-enabled
   (make-parameter #f (lambda (v) (and v #t)) 'subprocess-group-enabled))
 
+(define/who current-subprocess-keep-file-descriptors
+  (make-parameter 'inherited
+                  (lambda (v)
+                    (unless (or (null? v) (eq? v 'all) (eq? v 'inherited))
+                      (raise-argument-error who "(or/c '() 'uninherited 'all)" v))
+                    v)
+                  'current-subprocess-keep-file-descriptors))
+
 ;; ----------------------------------------
 
 (define/who (shell-execute verb target parameters dir show-mode)
@@ -297,6 +314,9 @@
       [(sw_shownoactivate SW_SHOWNOACTIVATE) RKTIO_SW_SHOWNOACTIVATE]
       [(sw_shownormal SW_SHOWNORMAL) RKTIO_SW_SHOWNORMAL]
       [else (raise-argument-error who "(or/c 'sw_hide ....)" show-mode)]))
+  ;; Let `rktio_shell_execute` handle its own atomicity. That's because
+  ;; it can yield to Windows events, and events need to be handled by callbacks
+  ;; starting from a mode that's like a Racket foreign call.
   (define r (rktio_shell_execute rktio
                                  (and verb (string->bytes/utf-8 verb))
                                  (string->bytes/utf-8 target)

@@ -330,6 +330,12 @@
       (equal? method-bss "HEAD")
       (equal? method-bss 'HEAD)))
 
+;; https://datatracker.ietf.org/doc/html/rfc2616#section-10.1
+;; https://datatracker.ietf.org/doc/html/rfc2616#section-10.2.5
+;; https://datatracker.ietf.org/doc/html/rfc2616#section-10.3.5
+(define (no-content? status)
+  (regexp-match? #rx#"^HTTP.... (1..|204|304) " status))
+
 (define (http-conn-recv! hc
                          #:method [method-bss #"GET"]
                          #:content-decode [decodes '(gzip deflate)]
@@ -344,7 +350,8 @@
     (http-conn-abandon! hc))
   (define-values (raw-response-port wait-for-close?)
     (cond
-      [(head? method-bss) (values (open-input-bytes #"") #f)]
+      [(head? method-bss)
+       (values (open-input-bytes #"") #f)]
       [(regexp-member #rx#"^(?i:Transfer-Encoding: +chunked)$" headers)
        (values (http-conn-response-port/chunked! hc #:close? #t)
                #t)]
@@ -359,6 +366,12 @@
        (λ (count)
          (values (http-conn-response-port/length! hc count #:close? close?)
                  close?))]
+      ;; Perform this check after the previous two in case the server
+      ;; side returns an empty-but-chunked body, an explicit content
+      ;; length of 0, or decides to return a body despite what the
+      ;; spec says.
+      [(no-content? status)
+       (values (open-input-bytes #"") #f)]
       [else
        (values (http-conn-response-port/rest! hc) #t)]))
   (define decoded-response-port

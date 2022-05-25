@@ -117,6 +117,8 @@
   (define currently-locked-files (make-hash))
   (define pending-requests '())
   (define running-compiles '())
+
+  (define-logger compile-lock)
   
   (thread
    (λ ()
@@ -135,18 +137,18 @@
              [(lock)
               (cond
                 [(hash-ref currently-locked-files zo-path #f)
-                 (log-info (format "compile-lock: ~s ~a already locked" zo-path compilation-thread-id))
+                 (log-compile-lock-info "~s ~a already locked" zo-path compilation-thread-id)
                  (set! pending-requests (cons (pending response-manager-side zo-path died-chan-manager-side)
                                               pending-requests))
                  (loop)]
                 [else
-                 (log-info (format "compile-lock: ~s ~a obtained lock" zo-path compilation-thread-id))
+                 (log-compile-lock-info "~s ~a obtained lock" zo-path compilation-thread-id)
                  (hash-set! currently-locked-files zo-path #t)
                  (place-channel-put response-manager-side #t)
                  (set! running-compiles (cons (running zo-path died-chan-manager-side) running-compiles))
                  (loop)])]
              [(unlock)
-              (log-info (format "compile-lock: ~s ~a unlocked" zo-path compilation-thread-id))
+              (log-compile-lock-info "~s ~a unlocked" zo-path compilation-thread-id)
               (define (same-pending-zo-path? pending) (equal? (pending-zo-path pending) zo-path))
               (define to-unlock (filter same-pending-zo-path? pending-requests))
               (set! pending-requests (filter (compose not same-pending-zo-path?) pending-requests))
@@ -167,11 +169,11 @@
                        pending-requests))
              (cond
                [(null? same-zo-pending)
-                (log-info (format "compile-lock: ~s ~a died; no else waiting" zo-path compilation-thread-id))
+                (log-compile-lock-info "compile-lock: ~s ~a died; no else waiting" zo-path compilation-thread-id)
                 (hash-remove! currently-locked-files zo-path)
                 (loop)]
                [else
-                (log-info (format "compile-lock: ~s ~a died; someone else waiting" zo-path compilation-thread-id))
+                (log-compile-lock-info "compile-lock: ~s ~a died; someone else waiting" zo-path compilation-thread-id)
                 (define to-be-running (car same-zo-pending))
                 (set! pending-requests (remq to-be-running pending-requests))
                 (place-channel-put (pending-response-chan to-be-running) #t)
@@ -182,7 +184,9 @@
   
   build-side-chan)
 
-(define (compile-lock->parallel-lock-client build-side-chan [custodian #f])
+(define (compile-lock->parallel-lock-client build-side-chan
+                                            [custodian #f]
+                                            [current-shutdown-evt (lambda () never-evt)])
   (define monitor-threads (make-hash))
   (define add-monitor-chan (make-channel))
   (define kill-monitor-chan (make-channel))
@@ -195,25 +199,28 @@
            (sync
             (handle-evt add-monitor-chan
                         (λ (arg)
-                          (define-values (zo-path monitor-thread) (apply values arg))
-                          (hash-set! monitor-threads zo-path monitor-thread)
+                          (define-values (key monitor-thread) (apply values arg))
+                          (hash-set! monitor-threads key monitor-thread)
                           (loop)))
             (handle-evt kill-monitor-chan
-                        (λ (zo-path)
-                          (define thd/f (hash-ref monitor-threads zo-path #f))
-                          (when thd/f (kill-thread thd/f))
-                          (hash-remove! monitor-threads zo-path)
+                        (λ (key)
+                          (define thd/f (hash-ref monitor-threads key #f))
+                          (when thd/f
+                            (kill-thread thd/f))
+                          (hash-remove! monitor-threads key)
                           (loop)))))))))
   
   (λ (command zo-path)
     (define compiling-thread (current-thread))
+    (define key (cons zo-path compiling-thread)) ; key used to locate monitor thread
     (define-values (response-builder-side response-manager-side) (place-channel))
     (define-values (died-chan-compiling-side died-chan-manager-side) (place-channel))
-    (place-channel-put build-side-chan (list command 
-                                             zo-path
-                                             response-manager-side
-                                             died-chan-manager-side 
-                                             (eq-hash-code compiling-thread)))
+    (define (send-request) ; after monitor created, if any
+      (place-channel-put build-side-chan (list command
+                                               zo-path
+                                               response-manager-side
+                                               died-chan-manager-side
+                                               (eq-hash-code compiling-thread))))
     (cond
       [(eq? command 'lock)
        (define monitor-thread
@@ -221,18 +228,20 @@
              (parameterize ([current-custodian custodian])
                (thread
                 (λ ()
-                  (thread-wait compiling-thread)
+                  (sync compiling-thread (current-shutdown-evt))
                   ;; compiling thread died; alert the server
                   ;; & remove this thread from the table
                   (place-channel-put died-chan-compiling-side (eq-hash-code compiling-thread))
-                  (channel-put kill-monitor-chan zo-path))))))
-       (when monitor-thread (channel-put add-monitor-chan (list zo-path monitor-thread)))
+                  (channel-put kill-monitor-chan key))))))
+       (when monitor-thread (channel-put add-monitor-chan (list key monitor-thread)))
+       (send-request)
        (define res (place-channel-get response-builder-side))
        (when monitor-thread
          (unless res ;; someone else finished compilation for us; kill the monitor
-           (channel-put kill-monitor-chan zo-path)))
+           (channel-put kill-monitor-chan key)))
        res]
       [(eq? command 'unlock)
+       (send-request)
        (when custodian 
          ;; we finished the compilation; kill the monitor
-         (channel-put kill-monitor-chan zo-path))])))
+         (channel-put kill-monitor-chan key))])))

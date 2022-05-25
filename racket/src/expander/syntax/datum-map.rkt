@@ -85,19 +85,11 @@
                      (for/list ([e (in-vector (struct->vector s) 1)])
                        (loop #f e seen)))))]
      [(and (hash? s) (immutable? s))
-      (cond
-       [(hash-eq? s)
-        (f #f
-           (for/hasheq ([(k v) (in-hash s)])
-             (values k (loop #f v seen))))]
-       [(hash-eqv? s)
-        (f #f
-           (for/hasheqv ([(k v) (in-hash s)])
-             (values k (loop #f v seen))))]
-       [else
-        (f #f
-           (for/hash ([(k v) (in-hash s)])
-             (values k (loop #f v seen))))])]
+      (f #f
+         (hash-map/copy s
+                        (lambda (k v)
+                          (values k (loop #f v seen)))
+                        #:kind 'immutable))]
      [else (f #f s)])))
 
 (define (datum-has-elements? d)

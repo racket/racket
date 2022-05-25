@@ -7,7 +7,8 @@
          "../file/host.rkt"
          "../file/error.rkt"
          "../string/convert.rkt"
-         "../locale/string.rkt")
+         "../locale/string.rkt"
+         "../error/message.rkt")
 
 (provide ffi-get-lib
          ffi-unload-lib
@@ -64,8 +65,9 @@
        [err-str
         (raise
          (exn:fail:filesystem
-          (string-append (symbol->string who) ": " msg
-                         "\n  system error: " (->string err-str))
+          (error-message->string who
+                                 (string-append msg
+                                                "\n  system error: " (->string err-str)))
           (current-continuation-marks)))]
        [else
         (raise-filesystem-error who dll msg)])]
@@ -88,8 +90,9 @@
     [err-str
      (raise
       (exn:fail:filesystem
-       (string-append (symbol->string who) ": " msg
-                      "\n  system error: " (->string err-str))
+       (error-message->string who
+                              (string-append msg
+                                             "\n  system error: " (->string err-str)))
        (current-continuation-marks)))]
     [else
      (raise-filesystem-error who v msg)]))
@@ -105,7 +108,7 @@
   (check who path-string? path)
   (check who symbol? sym)
   (raise (exn:fail:unsupported
-          "default-load-extension: extensions are not supported"
+          (error-message->string "default-load-extension" "extensions are not supported")
           (current-continuation-marks))))
 
 

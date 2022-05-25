@@ -36,7 +36,7 @@
                       [(expt arithmetic-shift)
                        (known-procedure/folding/limited a 'expt)]
                       [(unsafe-fx+)
-                       (known-procedure/pure/folding-unsafe a 'fx+)]
+                       (known-procedure/then-pure/folding-unsafe a 'fx+)]
                       [else
                        (known-procedure a)]))]
          [else
@@ -89,6 +89,15 @@
                                   (integer->char 48)
                                   (char->integer '#\1)
                                   (void (void) eof-object null)))
+                          (define-values (adds-unsafe) (lambda (x)
+                                                         (list (unsafe-fx+ x 1)
+                                                               (unsafe-fx+ x 2))))
+                          (define-values (adds-safe) (lambda (x)
+                                                       (list (fx+ x 1)
+                                                             (unsafe-fx+ x 2))))
+                          (define-values (adds-still-unsafe) (lambda (x)
+                                                               (list (unsafe-fx+ x 1)
+                                                                     (fx+ x 2))))
                           (define-values (done) (z))
                           (define-values (call) (lambda () (values 'c1 'c2)))
                           (define-values (c1 c2) (call)))))

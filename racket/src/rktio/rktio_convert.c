@@ -307,7 +307,7 @@ static char *nl_langinfo_dup(rktio_t *rktio)
   int i;
   char *current_locale_name;
 
-  current_locale_name = setlocale(LC_NUMERIC, NULL);
+  current_locale_name = setlocale(LC_CTYPE, NULL);
   if (!current_locale_name)
     current_locale_name = "";
 

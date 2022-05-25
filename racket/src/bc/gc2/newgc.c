@@ -5517,7 +5517,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full,
 
   /* ------------------------------------------------------------ */
   /* Determine this collection's configuration                    */
-  
+
   /* full collection or not */
   gc->gc_full = (force_full
                  || !gc->generations_available

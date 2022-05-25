@@ -310,32 +310,11 @@ static void extract_built_in_arguments(const self_exe_t self_exe, char **_prog, 
   GC_CAN_IGNORE char *sprog = *_sprog;
   
 #ifdef DOS_FILE_SYSTEM
-  {
-    /* For consistency, strip trailing spaces and dots, and make sure the .exe
-       extension is present. */
-    int l = strlen(prog);
-    if ((l > 0) && ((prog[l-1] == ' ') || (prog[l-1] == '.'))) {
-      char *s;
-      while ((l > 0) && ((prog[l-1] == ' ') || (prog[l-1] == '.'))) {
-	l--;
-      }
-      s  = (char *)malloc(l + 1);
-      memcpy(s, prog, l);
-      s[l] = 0;
-      prog = s;
-    }
-    if (l <= 4 
-	|| (prog[l - 4] != '.')
-	|| (tolower(((unsigned char *)prog)[l - 3]) != 'e')
-	|| (tolower(((unsigned char *)prog)[l - 2]) != 'x')
-	|| (tolower(((unsigned char *)prog)[l - 1]) != 'e')) {
-      char *s;
-      s  = (char *)malloc(l + 4 + 1);
-      memcpy(s, prog, l);
-      memcpy(s + l, ".exe", 5);
-      prog = s;
-    }
-  }
+  /* Replacing `prog` with `self_exe` has the effect of stripping trailing spaces
+     and dots, if they were in the command line, as well as adding an `.exe`
+     if its wasn't alerady present. It also avoids the problem that WSL2 currently
+     launches Windows programs without the path used to reference them. */
+  prog = string_to_utf8(self_exe);
 #endif
 
   /* If scheme_cmdline_exe_hack is changed, then we extract built-in
@@ -395,19 +374,13 @@ static void extract_built_in_arguments(const self_exe_t self_exe, char **_prog, 
 	  } else {
 	    /* Make it absolute, relative to this executable */
 	    int plen = strlen(prog);
-	    int mlen, len;
+	    int mlen;
 	    char *s2, *p2;
 
 	    /* UTF-8 encode path: */
-	    for (len = 0; path[len]; len++) { }
-	    mlen = scheme_utf8_encode((unsigned int *)path, 0, len,
-				      NULL, 0,
-				      1 /* UTF-16 */);
-	    p2 = (char *)malloc(mlen + 1);
-	    mlen = scheme_utf8_encode((unsigned int *)path, 0, len,
-				      (unsigned char *)p2, 0,
-				      1 /* UTF-16 */);
+            p2 = string_to_utf8(path);
 
+	    for (mlen = 0; p2[mlen]; mlen++) { }
 	    while (mlen && (p2[mlen - 1] != '\\')) {
 	      mlen--;
 	    }

@@ -494,7 +494,10 @@
      || ((defined(_MSC_VER) || defined(__MINGW32__)) \
          && (defined(__WIN32__) || defined(WIN32) || defined(_WIN32))))
 
-# ifdef _WIN64
+# if defined(_M_ARM64)
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "win32\\arm64"
+#  define SCHEME_ARCH "aarch64"
+# elif defined(_WIN64)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "win32\\x86_64"
 #  define SCHEME_ARCH "x86_64"
 # else
@@ -594,7 +597,8 @@
 # define USE_ICONV_DLL
 # define NO_MBTOWC_FUNCTIONS
 
-# ifdef _WIN64
+# if defined(_M_ARM64)
+# elif defined(_WIN64)
 #  define MZ_USE_JIT_X86_64
 # else
 #  define MZ_USE_JIT_I386
@@ -642,7 +646,7 @@
 
 # if defined(XONX)
 #  define SCHEME_OS "darwin"
-# elif TARGET_OS_IPHONE
+# elif defined(TARGET_OS_IPHONE)
 #  define SCHEME_OS "ios"
 # else
 #  define SCHEME_OS "macosx"

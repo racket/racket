@@ -1,0 +1,103 @@
+#lang zuo/datum
+
+(define macro-dir (build-path tmp-dir "macros"))
+(rm* macro-dir)
+(mkdir macro-dir)
+
+(check ((lambda lambda lambda) 3) '(3))
+(check (let ([let 10]) let) 10)
+(check (let ([let 11]) (let* ([let let]) let)) 11)
+(check (let ([quote list]) '1) '(1))
+
+(let ()
+  (define-syntax (let-one stx)
+    (list (quote-syntax let)
+          (list (list (cadr stx) 1))
+          (cadr (cdr stx))))
+  (check (let-one x (list x x)) '(1 1))
+  (check (let-one x (let ([let 0]) (list x let x))) '(1 0 1)))
+
+(let ([five 5])
+  (define-syntax (let-five stx)
+    (list (quote-syntax let)
+          (list (list (cadr stx) (quote-syntax five)))
+          (cadr (cdr stx))))
+  (check (let-five x (list x x)) '(5 5))
+  (check (let-five x (let ([five 10]) (list x x))) '(5 5))
+  (check (let ([five 10]) (let-five x (list x x))) '(5 5)))
+
+(define (make-file* path content)
+  (let ([fd (fd-open-output (build-path macro-dir path) :truncate)])
+    (fd-write fd (~a "#lang " lang-name "\n"
+                     (~s (cons 'begin content))))
+    (fd-close fd)))
+
+(define-syntax (make-file stx)
+  (list (quote-syntax make-file*)
+        (cadr stx)
+        (cons (quote-syntax list)
+              (map (lambda (c) (list (quote-syntax quote) c))
+                   (cddr stx)))))
+
+(make-file "exports-macro.zuo"
+           (provide macro)
+           (define (my-list . x) x)
+           (define-syntax (macro stx)
+             (list (quote-syntax my-list)
+                   (cadr stx)
+                   (cadr stx))))
+  
+(make-file "uses-macro.zuo"
+           (require "exports-macro.zuo")
+           (provide macro-to-macro)
+           (define hello "hi")
+           (macro hello)
+           (define-syntax (macro-to-macro stx)
+             (list (quote-syntax list)
+                   (list (quote-syntax macro) (cadr stx))
+                   (list (quote-syntax macro) (cadr stx)))))
+
+(run-zuo* (list (build-path macro-dir "uses-macro.zuo"))
+          ""
+          (lambda (status out err)
+            (check err "")
+            (check status 0)
+            (check out "(list \"hi\" \"hi\")\n")))
+
+(make-file "uses-macro-to-macro.zuo"
+           (require "uses-macro.zuo")
+           (define-syntax (go stx) (quote-syntax 'went))
+           (macro-to-macro go))
+
+(run-zuo* (list (build-path macro-dir "uses-macro-to-macro.zuo"))
+          ""
+          (lambda (status out err)
+            (check err "")
+            (check status 0)
+            (check out "(list \"hi\" \"hi\")\n(list (list 'went 'went) (list 'went 'went))\n")))
+
+(make-file "exports-helper.zuo"
+           (provide doubled)
+           (define (my-list . x) x)
+           (define (doubled stx)
+             (list (quote-syntax my-list)
+                   stx
+                   stx)))
+  
+(make-file "uses-helper.zuo"
+           (provide macro)
+           (require "exports-helper.zuo")
+           (define-syntax (macro stx)
+             (doubled (cadr stx))))
+
+(make-file "uses-macro-with-helper.zuo"
+           (require "uses-helper.zuo")
+           (define hello "hi")
+           (macro hello))
+
+(run-zuo* (list (build-path macro-dir "uses-macro-with-helper.zuo"))
+          ""
+          (lambda (status out err)
+            (check err "")
+            (check status 0)
+            (check out "(list \"hi\" \"hi\")\n")))

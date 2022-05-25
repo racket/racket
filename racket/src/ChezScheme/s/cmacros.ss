@@ -357,7 +357,7 @@
 ;; ---------------------------------------------------------------------
 ;; Version and machine types:
 
-(define-constant scheme-version #x09050505)
+(define-constant scheme-version #x09050901)
 
 (define-syntax define-machine-types
   (lambda (x)
@@ -375,7 +375,11 @@
 
 (define-machine-types
   any
-  pb
+  pb        tpb
+  pb64l     tpb64l
+  pb64b     tpb64b
+  pb32l     tpb32l
+  pb32b     tpb32b
   i3le      ti3le
   i3nt      ti3nt
   i3fb      ti3fb
@@ -405,6 +409,7 @@
   arm32nb   tarm32nb
   ppc32nb   tppc32nb
   arm64nb   tarm64nb
+  arm64nt   tarm64nt
 )
 
 (include "machine.def")
@@ -412,8 +417,8 @@
 (define-constant machine-type-name (cdr (assv (constant machine-type) (constant machine-type-alist))))
 
 (define-constant fasl-endianness
-  (constant-case architecture
-    [(pb) 'little]
+  (constant-case native-endianness
+    [(unknown) 'little] ; determines generic pb fasl endianness
     [else (constant native-endianness)]))
 
 ;; ---------------------------------------------------------------------
@@ -1386,6 +1391,13 @@
                      ...))))))])))
 
 ;; ---------------------------------------------------------------------
+;; PB machine state
+
+(define-constant pb-reg-count (constant-case architecture [(pb) 16] [else 0]))
+(define-constant pb-fpreg-count (constant-case architecture [(pb) 8] [else 0]))
+(define-constant pb-call-arena-size (constant-case architecture [(pb) 128] [else 0]))
+
+;; ---------------------------------------------------------------------
 ;; Object layouts:
 
 (define-primitive-structure-disps typed-object type-typed-object
@@ -1619,6 +1631,9 @@
    [ptr DSTBV]
    [ptr SRCBV]
    [double fpregs (constant asm-fpreg-max)]
+   [uptr pb-regs (constant pb-reg-count)] ; "pb.c" assumes that `pb-regs` through `pb-call-arena` are together
+   [double pb-fpregs (constant pb-fpreg-count)]
+   [uptr pb-call-arena (constant pb-call-arena-size)]
    [xptr gc-data]))
 
 (define tc-field-list
@@ -3211,7 +3226,7 @@
   ;; Some instructions have size variants, always combined
   ;; with register- and immediate-argument possibilties
   ;; -- although some combinations may be unimplemented
-  ;; or not make sense, such as immediate-arrgument operations
+  ;; or not make sense, such as immediate-argument operations
   ;; on double-precision floating-point numbers
   (define-pb-enum pb-sizes << pb-argument-types
     pb-int8
@@ -3284,12 +3299,19 @@
     pb-shift2
     pb-shift3)
 
-  (define-pb-enum pk-keeps << pb-shifts
+  (define-pb-enum pb-keeps << pb-shifts
     pb-zero-bits
     pb-keep-bits)
 
+  (define-pb-enum pb-fences
+    pb-fence-store-store
+    pb-fence-acquire
+    pb-fence-release)
+
   (define-pb-opcode
-    [pb-mov16 pk-keeps pb-shifts]
+    [pb-nop]
+    [pb-literal]
+    [pb-mov16 pb-keeps pb-shifts]
     [pb-mov pb-move-types]
     [pb-bin-op pb-signals pb-binaries pb-argument-types]
     [pb-cmp-op pb-compares pb-argument-types]
@@ -3309,7 +3331,11 @@
     [pb-inc pb-argument-types]
     [pb-lock]
     [pb-cas]
-    [pb-link]) ; used by linker
+    [pb-call-arena-in] [pb-call-arena-out]
+    [pb-fp-call-arena-in] [pb-fp-call-arena-out]
+    [pb-stack-call]
+    [pb-fence pb-fences]
+    [pb-chunk]) ; dispatch to C-implemented chunks
 
   ;; Only foreign procedures that match specific prototypes are
   ;; supported, where each prototype must be handled in "pb.c"
@@ -3343,6 +3369,7 @@
     [void uptr uint32]
     [void int32 uptr]
     [void int32 int32]
+    [void uint32 uint32]
     [void uptr uptr]
     [void int32 void*]
     [void uptr void*]
@@ -3366,6 +3393,7 @@
     [double uptr]
     [double double double]
     [int32 uptr uptr uptr uptr uptr]
+    [int32 uptr uptr uptr]
     [uptr]
     [uptr uptr]
     [uptr int32]
@@ -3404,3 +3432,18 @@
   ;; end pb
   ]
  [else (void)])
+
+(define-enumerated-constants
+  ffi-typerep-void
+  ffi-typerep-uint8
+  ffi-typerep-sint8
+  ffi-typerep-uint16
+  ffi-typerep-sint16
+  ffi-typerep-uint32
+  ffi-typerep-sint32
+  ffi-typerep-uint64
+  ffi-typerep-sint64
+  ffi-typerep-float
+  ffi-typerep-double
+  ffi-typerep-pointer
+  ffi-default-abi)

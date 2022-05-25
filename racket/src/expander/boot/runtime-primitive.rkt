@@ -49,4 +49,5 @@
     #%extfl
     #%network
     #%place
-    #%futures))
+    #%futures
+    #%terminal))

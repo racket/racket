@@ -170,6 +170,12 @@
 ;; avoid a print before NULL check
 (define-runtime-path glib-debugprint-patch "patches/glib-debugprint.patch")
 
+;; Pull in a repair for building for Arm64 Windows with MinGW
+(define-runtime-path glib-arm64nt-patch "patches/glib-arm64nt.patch")
+
+;; Avoid duplicate symbol definitions
+(define-runtime-path glib-extern-patch "patches/glib-extern.patch")
+
 ;; For now, disable glib functionality that depends on Mac OS 10.8:
 (define-runtime-path gcocoanotify-patch "patches/gcocoanotify.patch")
 
@@ -188,6 +194,7 @@
 ;; Disable libtool's management of standard libs so that
 ;; MinGW's -static-libstdc++ works:
 (define-runtime-path libtool-link-patch "patches/libtool-link.patch")
+(define-runtime-path libtoolhb-link-patch "patches/libtoolhb-link.patch")
 
 ;; Add FcSetFallbackDirs to set fallback directories dynamically:
 (define-runtime-path fcdirs-patch "patches/fcdirs.patch")
@@ -204,6 +211,10 @@
 
 ;; Configure for AArch64
 (define-runtime-path openssl-aarch64osx-patch "patches/openssl-aarch64osx.patch")
+(define-runtime-path openssl-aarch64nt-patch "patches/openssl3-aarch64nt.patch")
+
+;; libffi via MinGW for AArch64:
+(define-runtime-path libffi-arm64nt-patch "patches/libffi-arm64nt.patch")
   
 ;; --------------------------------------------------
 
@@ -219,9 +230,10 @@
 ;; --------------------------------------------------
 ;; General environment and flag configuration:
 
-(define win-prefix (if m32?
-                       "i686-w64-mingw32"
-                       "x86_64-w64-mingw32"))
+(define win-prefix (cond
+                     [m32? "i686-w64-mingw32"]
+                     [aarch64? "aarch64-w64-mingw32"]
+                     [else "x86_64-w64-mingw32"]))
 
 ;; Build GNU sed to avoid potential BSD sed:
 (define need-sed? win?)
@@ -301,6 +313,8 @@
         (cond
          [m32?
           (list "--host=i686-w64-mingw32")]
+         [aarch64?
+          (list "--host=aarch64-w64-mingw32")]
          [else
           (list "--host=x86_64-w64-mingw32")])])]
     [else null])
@@ -384,7 +398,7 @@
                                 null))]
     [("libiconv")
      (nonmac-only)
-     (config)]
+     (config #:configure '("--enable-extra-encodings"))]
     [("sqlite")
      (nonmac-only)
      (config #:fixup (and win?
@@ -395,14 +409,19 @@
        (if linux?
            (~a "make SHARED_LDFLAGS=" "-Wl,-rpath," dest "/lib")
            "make"))
+     (define vers (if aarch64? #"3" #"1_1"))
      (config #:configure-exe (find-executable-path "perl")
              #:configure (cond
                           [win?
-                           (list "./Configure"
-                                 (~a "--cross-compile-prefix=" win-prefix "-")
-                                 #f ; other flags here
-                                 (~a "mingw" (if m32? "" "64"))
-                                 "shared")]
+                           (append
+                            (list "./Configure"
+                                  (~a "--cross-compile-prefix=" win-prefix "-")
+                                  #f ; other flags here
+                                  (~a "mingw" (if m32? "" (if aarch64? "-arm64" "64")))
+                                  "shared")
+                            (if aarch64?
+				'("no-asm")
+				null))]
                           [mac?
 			   (append
                             (list "./Configure"
@@ -425,19 +444,25 @@
                                  "linux-x86_64")])
 	     #:make make
              #:make-install (~a make " install_sw")
-	     #:patches (list openssl-aarch64osx-patch)
+	     #:patches (if (and win? aarch64?)
+                           (list openssl-aarch64nt-patch)
+                           (list openssl-aarch64osx-patch))
              #:fixup (and win?
                           (~a "cd " (build-path dest "bin")
-                              " && mv libssl-1_1" (if m32? "" "-x64") ".dll ssleay32.dll"
-                              " && mv libcrypto-1_1" (if m32? "" "-x64") ".dll libeay32.dll"))
+                              " && mv libssl-" vers (if (or m32? aarch64?) "" "-x64") ".dll ssleay32.dll"
+                              " && mv libcrypto-" vers (if (or m32? aarch64?) "" "-x64") ".dll libeay32.dll"))
              #:fixup-proc (and win?
                                (lambda ()
                                  (replace-in-file (build-path dest "bin" "ssleay32.dll")
-                                                  (bytes-append #"libcrypto-1_1" (if m32? #"" #"-x64") #".dll\0")
+                                                  (bytes-append #"libcrypto-" vers (if (or m32? aarch64?) #"" #"-x64") #".dll\0")
                                                   #"libeay32.dll\0"))))]
     [("expat") (config)]
     [("gettext") (config #:depends (if win? '("libiconv") '())
-                         #:configure '("--enable-languages=c")
+                         #:configure (append
+                                      '("--enable-languages=c")
+                                      (if (and win? aarch64?)
+                                          '("--enable-threads=windows")
+                                          null))
                          #:make (if win?
                                     ;; We only need libintl, and building
                                     ;; only that avoids other problems.
@@ -486,9 +511,14 @@
                                 " FreeSerif.ttf" 
                                 " " dest "/lib/fonts"))]
     [("libffi")
-     (if (and mac? aarch64?)
-	 (config #:configure '("-host=aarch64-apple-darwin"))
-	 (config))]
+     (cond
+       [(and mac? aarch64?)
+        (config #:configure '("-host=aarch64-apple-darwin"))]
+       [(and win? aarch64?)
+        (config #:env (list (list "CPPFLAGS" "-D_M_ARM64"))
+                #:patches (list libffi-arm64nt-patch))]
+       [else
+        (config)])]
     [("zlib")
      (nonmac-only)
      (config #:make (if win?
@@ -507,6 +537,11 @@
                                           (if linux? '("--enable-libmount=no") '())
                                           (if mac?
                                               '("CFLAGS=-include Kernel/uuid/uuid.h")
+                                              '())
+                                          (if (and win? (not aarch64?))
+                                              ;; abuse of `LIBS`, but avoids conflict with `path-flags`
+                                              '("LIBS=-Wl,--allow-multiple-definition"
+                                                "--disable-compile-warnings")
                                               '()))
                       #:env (append path-flags
                                     ;; Disable Valgrind support, which particularly
@@ -514,8 +549,13 @@
                                     (list (list "CPPFLAGS" "-DNVALGRIND=1")))
                       #:patches (append
                                  (cond
-                                   [win? (list glib-win32-weekday-patch
-                                               glib-strerror-patch)]
+                                   [win? (append
+                                          (list glib-win32-weekday-patch
+                                                glib-strerror-patch
+                                                glib-arm64nt-patch)
+                                          (if aarch64?
+                                              (list glib-extern-patch)
+                                              null))]
                                    [mac? (list gcocoanotify-patch)]
                                    [else null])
                                  (list glib-debugprint-patch)))]
@@ -579,7 +619,10 @@
                           #:env cxx-env
                           #:patches (if ppc?
                                         (list harfbuzz-oldcompiler-patch)
-                                        null))]
+                                        null)
+                          #:post-patches (if (and win? aarch64?)
+                                             (list libtoolhb-link-patch)
+                                             null))]
     [("fribidi") (config #:configure '("--disable-docs"))]
     [("pango") (config #:depends '("cairo" "harfbuzz" "fribidi")
                        #:env (if win? path-flags null)
@@ -608,9 +651,15 @@
                                   (if (or mac? win?)
                                       (list pango-emoji-patch)
                                       null)))]
-    [("gmp") (config #:patches (if gcc-4.0? (list gmp-weak-patch) null)
+    [("gmp") (config #:patches (cond
+                                 [gcc-4.0?
+                                  (list gmp-weak-patch)]
+                                 [else null])
                      #:configure (append
                                   '("--enable-shared" "--disable-static")
+                                  (if (and win? aarch64?)
+                                      '("--disable-assembly")
+                                      '())
 				  (if (and mac? aarch64?)
 				      '("-host=aarch64-apple-darwin")
 				      null)
@@ -623,7 +672,9 @@
                      #:post-patches (if (and mac? ppc?)
                                         (list gmp-inline-patch)
                                         null))]
-    [("mpfr") (config #:configure (append (if win? '("--enable-thread-safe") null)
+    [("mpfr") (config #:configure (append (if (and win? (not aarch64?))
+                                              '("--enable-thread-safe")
+                                              null)
                                           '("--enable-shared" "--disable-static"))
                       #:depends '("gmp")
                       #:env path-flags)]

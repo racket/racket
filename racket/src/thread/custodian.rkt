@@ -10,7 +10,8 @@
          "semaphore.rkt"
          "parameter.rkt"
          "sink.rkt"
-         "exit.rkt")
+         "exit.rkt"
+         "error.rkt")
 
 (provide current-custodian
          make-custodian
@@ -54,7 +55,6 @@
 ;; For `(struct custodian ...)`, see "custodian-object.rkt"
 
 (struct custodian-box ([v #:mutable] sema)
-  #:authentic
   #:property prop:evt (lambda (cb)
                         (wrap-evt (custodian-box-sema cb) (lambda (v) cb))))
 
@@ -116,25 +116,30 @@
 ;; finalizer; in that case, if `obj` is exposed to safe code, it can
 ;; have its own finalizers, but weak boxes or hashtable references will
 ;; not be cleared until the value is explicitly shut down.
+;; The `callback-wrapped?` mode is needed to preserve any existing order
+;; of finalizer callbacks when a custodian is merged into another.
 (define (do-custodian-register cust obj callback
-                               #:at-exit? [at-exit? #f]
-                               #:weak? [weak? #f]
-                               #:late? [late? #f]
+                               #:callback-wrapped? [callback-wrapped? #f]
+                               #:at-exit? [at-exit? #f] ; not used if `callback-wrapped?`
+                               #:weak? [weak? #f]       ; not used if `callback-wrapped?`
+                               #:late? [late? #f]       ; not used if `callback-wrapped?`
                                #:gc-root? [gc-root? #f])
   (atomically
    (cond
      [(custodian-shut-down? cust) #f]
      [else
-      (define we (and (not weak?)
+      (define we (and (not callback-wrapped?)
+                      (not weak?)
                       (if late?
                           ;; caller is responsible for ensuring that a late
                           ;; executor makes sense for `obj` --- especially
                           ;; that it doesn't refer back to itself
-                          (host:make-late-will-executor void)
+                          (host:make-late-will-executor void #f)
                           (host:make-will-executor void))))
       (hash-set! (custodian-children cust)
                  obj
                  (cond
+                   [callback-wrapped? callback]
                    [weak? (if late? (late-callback callback) callback)]
                    [at-exit? (at-exit-callback callback we late?)]
                    [else (willed-callback callback we late?)]))
@@ -192,19 +197,9 @@
     (for ([(child callback) (in-hash (custodian-children c) #f)])
       (when child
         (define gc-root? (and gc-roots (hash-ref gc-roots child #f) #t))
-        (cond
-          [(willed-callback? callback)
-           (do-custodian-register parent child (willed-callback-proc callback)
-                                  #:at-exit? (at-exit-callback? callback)
-                                  #:gc-root? gc-root?
-                                  #:late? (willed-callback-late? callback))]
-          [else
-           (do-custodian-register parent child (if (late-callback? callback)
-                                                   (late-callback-proc callback)
-                                                   callback)
-                                  #:weak? #t
-                                  #:gc-root? gc-root?
-                                  #:late? (late-callback? callback))])))
+        (do-custodian-register parent child callback
+                               #:gc-root? gc-root?
+                               #:callback-wrapped? #t)))
     (define self-ref (custodian-self-reference c))
     (when self-ref
       (set-custodian-reference-weak-c! self-ref (custodian-self-reference parent)))
@@ -406,7 +401,7 @@
   (check who exact-nonnegative-integer? need-amt)
   (check who custodian? stop-cust)
   (raise (exn:fail:unsupported
-          "custodian-require-memory: unsupported"
+          (error-message->string 'custodian-require-memory "unsupported")
           (current-continuation-marks))))
 
 (define/who (custodian-limit-memory limit-cust need-amt [stop-cust limit-cust])
@@ -659,6 +654,6 @@
         (define limit (custodian-immediate-limit c))
         (when (and limit (n . >= . limit))
           (raise (exn:fail:out-of-memory
-                  "out of memory"
+                  (error-message->string #f "out of memory")
                   (current-continuation-marks))))
         (loop (custodian-parent-reference c))))))

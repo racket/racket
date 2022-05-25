@@ -270,15 +270,28 @@
   (foreign-procedure "(cs)fxdiv" (fixnum fixnum)
     fixnum))
 
-(define $procedure-name
+(define-who $procedure-name
   (lambda (x)
     (unless (procedure? x)
-      ($oops '$procedure-name "~s is not a procedure" x))
+      ($oops who "~s is not a procedure" x))
     (let name ([x x])
       (let ([code ($closure-code x)])
         (if ($code-arity-in-closure? code)
             (name ($closure-ref x 0))
             ($code-name code))))))
+
+(define-who $procedure-realm
+  (lambda (x)
+    (unless (procedure? x)
+      ($oops who "~s is not a procedure" x))
+    (let realm ([x x])
+      (let ([code ($closure-code x)])
+        (if ($code-arity-in-closure? code)
+            (realm ($closure-ref x 0))
+            (let ([info ($code-info code)])
+              (include "types.ss")
+              (and (code-info? info)
+                   (code-info-realm info))))))))
 
 (define-who procedure-arity-mask
   (lambda (x)
@@ -356,6 +369,12 @@
   (unless (and (fixnum? n) (not ($fxu< (string-length st) n)))
     ($oops who "invalid new length ~s for ~s" n st))
   (string-truncate! st n))
+
+(define-who $make-uninitialized-string
+  (lambda (n)
+    (unless (and (fixnum? n) (not ($fxu< (constant maximum-string-length) n)))
+      ($oops who "~s is not a valid string length" n))
+    ($make-uninitialized-string n)))
 
 (define-who make-string
   (case-lambda
@@ -642,15 +661,29 @@
 
 (define foreign-callable-entry-point
   (lambda (x)
-    (unless ($code? x)
-      ($oops 'foreign-callable-entry-point "~s is not a code object" x))
-    ($object-address x (constant code-data-disp))))
+    (constant-case architecture
+      [(pb)
+       (unless (vector? x)
+         ($oops 'foreign-callable-entry-point "~s is not a vector" x))
+       (bitwise-arithmetic-shift-left (vector-ref x 2) (constant fixnum-offset))]
+      [else
+       (unless ($code? x)
+         ($oops 'foreign-callable-entry-point "~s is not a code object" x))
+       ($object-address x (constant code-data-disp))])))
 
 (define-who foreign-callable-code-object
-  (lambda (x)
-    (unless (and (integer? x) (exact? x) ($address-in-heap? x))
-      ($oops who "~s is not an entry point" x))
-    ($address->object x (constant code-data-disp))))
+  (constant-case architecture
+    [(pb)
+     (let ([find-callable-code-object (foreign-procedure "(cs)find_callable_code_object" (uptr) ptr)])
+       (lambda (x)
+         (unless (and (integer? x) (exact? x))
+           ($oops who "~s is not an entry point" x))
+         (find-callable-code-object x)))]
+    [else
+     (lambda (x)
+       (unless (and (integer? x) (exact? x) ($address-in-heap? x))
+         ($oops who "~s is not an entry point" x))
+       ($address->object x (constant code-data-disp)))]))
 
 (define $closure-code
    (lambda (x)
@@ -1974,11 +2007,14 @@
   (lambda (t)
     (unless (thread? t)
       ($oops who "~a is not a thread" t))
-    (with-tc-mutex
-     (let f ()
-       (unless (eq? ($thread-tc t) 0)
-         (condition-wait $terminated-cond $tc-mutex)
-         (f))))))
+    ;; not using `with-tc-mutex` because we don't want to
+    ;; disable interrupts
+    (mutex-acquire $tc-mutex)
+    (let f ()
+      (unless (eq? ($thread-tc t) 0)
+        (condition-wait $terminated-cond $tc-mutex)
+        (f)))
+    (mutex-release $tc-mutex)))
 
 (set-who! thread-preserve-ownership!
   (let ([preserve! (foreign-procedure "(cs)thread_preserve_ownership" (ptr) void)])

@@ -45,43 +45,57 @@
                   (string->bytes/utf-8 insert)
                   insert))
 
-  (let loop ([search-pos 0])
+  (define need-lookbehind (rx:regexp-max-lookbehind rx))
+
+  (let loop ([search-pos 0] [get-list? #f])
+    (define use-prefix (and (search-pos . < . need-lookbehind) prefix))
+    (define in-start (if use-prefix 0 (max 0 (- search-pos need-lookbehind))))
+
     (define poss
-      (drive-regexp-match who rx in 0 #:search-offset search-pos #f #f prefix
+      (drive-regexp-match who rx in in-start #:search-offset search-pos #f #f prefix
                           #:in-port-ok? #f
                           #:in-path-ok? #f
                           #:mode 'positions))
-    
+
     (define (recur)
-      (define pos (cdar poss))
+      (define end (cdar poss))
       (cond
-       [(= pos search-pos)
-        (if (= search-pos (chytes-length in))
-            (subchytes in 0 0)
-            (chytes-append (subchytes in search-pos (add1 search-pos))
-                           (loop (add1 search-pos))))]
-       [else (loop (cdar poss))]))
+        [(= (caar poss) end)
+         (if (= end (chytes-length in))
+             null
+             (cons (subchytes in end (add1 end))
+                   (loop (add1 end) #t)))]
+        [else (loop end #t)]))
     
     (cond
-     [(not poss) (cond
-                  [(zero? search-pos) in]
-                  [else (subchytes in search-pos)])]
-     [else
-      (chytes-append (subchytes in search-pos (caar poss))
-                     (replacements who in poss ins)
-                     (if all?
-                         (recur)
-                         (subchytes in (cdar poss))))])))
+      [(not poss)
+       (define result (cond
+                        [(zero? search-pos) in]
+                        [else (subchytes in search-pos)]))
+       (if get-list?
+           (list result)
+           result)]
+      [else
+       (define pre (subchytes in search-pos (caar poss)))
+       (define new (replacements who in poss ins prefix))
+       (cond
+         [all?
+          (define result (list* pre new (recur)))
+          (if get-list?
+              result
+              (apply chytes-append result))]
+         [else
+          (chytes-append pre new (subchytes in (cdar poss)))])])))
 
 ;; ----------------------------------------
 
-(define (replacements who in poss insert)
+(define (replacements who in poss insert prefix)
   (cond
    [(procedure? insert)
     (define a (apply insert
                      (for/list ([pos (in-list poss)])
                        (and pos
-                            (subchytes in (car pos) (cdr pos))))))
+                            (subchytes* in (car pos) (cdr pos) prefix)))))
     (unless (chytes? in a)
       (raise-result-error who (if (bytes? in) "bytes?" "string?") a))
     a]
@@ -95,7 +109,7 @@
         (define pos (list-ref poss n))
 
         (if pos
-            (subchytes in (car pos) (cdr pos))
+            (subchytes* in (car pos) (cdr pos) prefix)
             (subchytes in 0 0))]
        [else (subchytes in 0 0)]))
   
@@ -142,3 +156,42 @@
                                   (loop pos pos)))]))])))]
               [else
                (loop (add1 pos) since)])))]))
+
+(define (subchytes* in start end prefix)
+  (cond
+    [(start . < . 0)
+     (define len (bytes-length prefix))
+     (cond
+       [(string? in)
+        ;; need to find characters working backward from the end of
+        ;; the prefix; we know that the end encodes valid characters,
+        ;; since they matched, we can exploit the property that
+        ;; characters start with bytes that have the high bit cleared
+        ;; or top two bits set
+        (let loop ([index len] [start start] [end-index len] [end end])
+          (cond
+            [(zero? start)
+             (define pre-part (bytes->string/utf-8 (subbytes prefix index end-index)))
+             (if (end . > . 0)
+                 (string-append pre-part (substring in 0 end))
+                 pre-part)]
+            [else
+             (let bloop ([index (sub1 index)])
+               (define b (bytes-ref prefix index))
+               (cond
+                 [(or (not (bitwise-bit-set? b 7))
+                      (bitwise-bit-set? b 6))
+                  ;; found character start
+                  (if (end . >= . 0)
+                      (loop index (add1 start) end-index end)
+                      (loop index (add1 start) index (add1 end)))]
+                 [else (bloop (sub1 index))]))]))]
+       [else
+        (define pre-part
+          (subbytes prefix
+                    (+ (bytes-length prefix) start)
+                    (+ (bytes-length prefix) (min 0 end))))
+        (if (end . > . 0)
+            (bytes-append pre-part (subbytes in 0 end))
+            pre-part)])]
+    [else (subchytes in start end)]))

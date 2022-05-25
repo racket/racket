@@ -24,12 +24,23 @@ the Racket wrapper.
 collected any time that @cpp{racket_...} functions are used to run
 Racket code. Do not retain a reference to any Racket value across such
 a call. This requirement contrasts with the BC implementation of
-Racket, which provide a way for C code to more directly cooperate with
+Racket, which provides a way for C code to more directly cooperate with
 the memory manager.
 
 API functions that start with @cpp{S} do not collect or move objects
 unless noted otherwise, so references to Racket values across such
 calls is safe.
+
+The @cpp{Slock_object} function can prevent an object from being moved
+or garbage collected, but it should be used sparingly. Garbage
+collection can be disabled entirely by calling the Chez Scheme
+function @tt{disable-interrupts}, and then reenabled with a balancing
+call to @tt{enable-interrupts}; access those functions via
+@cpp{racket_primitive} and call them via @cpp{Scall0}. Beware that
+disabling interrupts also disables context switching for Racket
+threads and signal handling for breaks. Assuming that interrupts start
+out enabled, calling @tt{disable-interrupts} could trigger a garbage
+collection before further collections are disabled.
 
 @; ----------------------------------------------------------------------
 

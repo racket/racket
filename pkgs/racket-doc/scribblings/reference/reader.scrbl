@@ -53,11 +53,20 @@ necessarily produce an interned value at the receiving
 @tech{place}. See also @racket[datum-intern-literal] and
 @racket[datum->syntax].
 
+Note that @tech{interned} values are only weakly held by the reader's
+internal table, so they may be @tech[#:key "garbage collection"]{garbage
+collected} if they are no longer otherwise @tech{reachable}. This weakness
+can never affect the result of an @racket[eq?], @racket[eqv?], or
+@racket[equal?] test, but an interned value may disappear when placed into
+a weak box (see @secref["weakbox"]), used as the key in a weak @tech{hash
+table} (see @secref["hashtables"]), or used as an ephemeron key (see
+@secref["ephemerons"]).
+
 @;------------------------------------------------------------------------
 @section[#:tag "default-readtable-dispatch"]{Delimiters and Dispatch}
 
 Along with @racketlink[char-whitespace?]{whitespace} and a BOM
-character, the following characters are @defterm{delimiters}:
+character, the following characters are @deftech{delimiters}:
 
 @t{
   @hspace[2] @ilitchar{(} @ilitchar{)} @ilitchar{[} @ilitchar{]}
@@ -203,15 +212,18 @@ characters in the input stream as follows:
 
 @guideintro["symbols"]{the syntax of symbols}
 
-A sequence that does not start with a delimiter or @litchar{#} is
+A sequence that does not start with a @tech{delimiter} or @litchar{#} is
 parsed as either a @tech{symbol}, a @tech{number} (see
 @secref["parse-number"]), or a @tech{extflonum}
 (see @secref["parse-extflonum"]), 
 except that @litchar{.} by itself is never
 parsed as a symbol or number (unless the @racket[read-accept-dot]
-parameter is set to @racket[#f]). A @as-index{@litchar{#%}} also
-starts a symbol. The resulting symbol is @tech{interned}. A successful
+parameter is set to @racket[#f]). A successful
 number or extflonum parse takes precedence over a symbol parse.
+A @as-index{@litchar{#%}} also
+starts a symbol. The resulting symbol is @tech{interned}.
+See the start of @secref["default-readtable-dispatch"] for information
+about @litchar{|} and @litchar{\} in parsing symbols.
 
 @index["case-sensitivity"]{@index["case-insensitive"]{When}} the
 @racket[read-case-sensitive] @tech{parameter} is set to @racket[#f],
@@ -243,7 +255,7 @@ case-sensitive mode.
 
 @section-index["numbers" "parsing"]
 
-A sequence that does not start with a delimiter is parsed as a @tech{number}
+A sequence that does not start with a @tech{delimiter} is parsed as a @tech{number}
 when it matches the following grammar case-insensitively for
 @nonterm{number@sub{10}} (decimal), where @metavar{n} is a
 meta-meta-variable in the grammar. The resulting number is @tech{interned} in 
@@ -263,7 +275,7 @@ exact.
 If the reader encounters @as-index{@litchar{#b}} (binary),
 @as-index{@litchar{#o}} (octal), @as-index{@litchar{#d}} (decimal), or
 @as-index{@litchar{#x}} (hexadecimal), it must be followed by a
-sequence that is terminated by a delimiter or end-of-file, and that
+sequence that is terminated by a @tech{delimiter} or end-of-file, and that
 is either an @tech{extflonum} (see @secref["parse-extflonum"]) or
 matches the @nonterm{general-number@sub{2}},
 @nonterm{general-number@sub{8}}, @nonterm{general-number@sub{10}}, or
@@ -372,10 +384,10 @@ extflonum reading.
 @section[#:tag "parse-boolean"]{Reading Booleans}
 
 A @as-index{@litchar{#true}}, @as-index{@litchar{#t}},
-@as-index{@litchar{#T}} followed by a delimiter is the input syntax
+@as-index{@litchar{#T}} followed by a @tech{delimiter} is the input syntax
 for the @tech{boolean} constant ``true,'' and @as-index{@litchar{#false}},
 @as-index{@litchar{#f}}, or @as-index{@litchar{#F}} followed by a
-delimiter is the complete input syntax for the @tech{boolean} constant
+@tech{delimiter} is the complete input syntax for the @tech{boolean} constant
 ``false.''
 
 
@@ -389,7 +401,7 @@ and lists.
 To parse the pair or list, the reader recursively reads data
 until a matching @as-index{@litchar{)}}, @as-index{@litchar{]}}, or
 @as-index{@litchar["}"]} (respectively) is found, and it specially handles
-a delimited @litchar{.}.  Pairs @litchar{()}, @litchar{[]}, and
+a @litchar{.} surrounded by @tech{delimiters}.  Pairs @litchar{()}, @litchar{[]}, and
 @litchar{{}} are treated the same way, so the remainder of this
 section simply uses ``parentheses'' to mean any of these pair.
 
@@ -423,14 +435,14 @@ Whether wrapping a pair or list, if the pair or list was formed with
 property is attached to the result with the value @racket[#\[]. If the
 @racket[read-square-bracket-with-tag] @tech{parameter} is set to
 @racket[#t], then the resulting pair or list is wrapped by the
-equivalent of @racket[(cons '#%brackets _pair-or-list)].
+equivalent of @racket[(cons @#,indexed-racket['#%brackets] _pair-or-list)].
 
 Similarly, if the list or pair was formed with @litchar["{"] and
 @litchar["}"], then a @racket['paren-shape] property is attached to
 the result with the value @racket[#\{].  If the
 @racket[read-curly-brace-with-tag] @tech{parameter} is set to
 @racket[#t], then the resulting pair or list is wrapped by the
-equivalent of @racket[(cons '#%braces _pair-or-list)].
+equivalent of @racket[(cons @#,indexed-racket['#%braces] _pair-or-list)].
 
 If a delimited @litchar{.} appears in any other configuration, then
 the @exnraise[exn:fail:read]. Similarly, if the reader encounters a
@@ -735,6 +747,10 @@ nowhere in the sequence of list elements. The first element of each
 pair is used as the key for a table entry, and the second element of
 each pair is the associated value.
 
+A @as-index{@litchar{#hashalw}} starts a hash table like
+@litchar{#hash}, except that it constructs a hash table based on
+@racket[equal-always?] instead of @racket[equal?].
+
 A @as-index{@litchar{#hasheq}} starts a hash table like
 @litchar{#hash}, except that it constructs a hash table based on
 @racket[eq?] instead of @racket[equal?].
@@ -868,18 +884,29 @@ as constructed by @racket[pregexp], @litchar{#rx#} as constructed by
 
 A @graph-defn[] tags the following datum for reference via
 @graph-ref[], which allows the reader to produce a datum that
-has graph structure. Neither form is allowed in
-@racket[read-syntax] mode.
+has graph structure.
 
-For a specific @graph-tag[] in a single read result, each @graph-ref[]
-reference is replaced by the datum read for the corresponding
-@graph-defn[]; the definition @graph-defn[] also produces just the
-datum after it. A @graph-defn[] definition can appear at most once,
-and a @graph-defn[] definition must appear before a @graph-ref[]
-reference appears, otherwise the @exnraise[exn:fail:read]. If the
-@racket[read-accept-graph] parameter is set to @racket[#f], then
+In @racket[read] mode, for a specific @graph-tag[] in a single read
+result, each @graph-ref[] reference is replaced by the datum read for
+the corresponding @graph-defn[]; the definition @graph-defn[] also
+produces just the datum after it. A @graph-defn[] definition can appear
+at most once, and a @graph-defn[] definition must appear before a
+@graph-ref[] reference appears, otherwise the @exnraise[exn:fail:read].
+If the @racket[read-accept-graph] parameter is set to @racket[#f], then
 @graph-defn[] or @graph-ref[] triggers a @racket[exn:fail:read]
 exception.
+
+In @racket[read-syntax] mode, graph structure is parsed the same way
+as in @racket[read] mode. However, since @tech{syntax objects} made
+from plain S-expressions may not contain cycles, each @graph-defn[]
+definition and @graph-ref[] reference is replaced with a
+@tech{placeholder} in the result that contains the referenced value.
+Since such syntax objects are not directly useful (they cannot be
+marshaled to compiled code and are therefore rejected by the default
+@tech{compilation handler}), parsing of graph structure in
+@racket[read-syntax] mode is controlled by the separate
+@racket[read-syntax-accept-graph] parameter, which is initially set
+to @racket[#f].
 
 Although a comment parsed via @litchar{#;} discards the datum
 afterward, @graph-defn[] definitions in the discarded datum
@@ -892,6 +919,11 @@ neither defines nor uses graph tags for other top-level forms.
 "(#1=100 #1# #1#)"
 "#0=(1 . #0#)"
 ]
+
+@history[
+ #:changed "8.4.0.8" @elem{Added support for reading graph structure
+                           in @racket[read-syntax] mode if enabled by
+                           @racket[read-syntax-accept-graph].}]
 
 @local-table-of-contents[]
 
@@ -909,7 +941,9 @@ and passes it to the procedure that is the value of the
 module path. The module path is passed to @racket[dynamic-require]
 with either @racket['read] or @racket['read-syntax] (depending on
 whether the reader is in @racket[read] or @racket[read-syntax]
-mode). The module is loaded in a @tech{root namespace} of the
+mode) while holding the registry lock via
+@racket[namespace-call-with-registry-lock].
+The module is loaded in a @tech{root namespace} of the
 @tech{current namespace}.
 
 The arity of the resulting procedure determines whether it accepts
@@ -974,6 +1008,10 @@ If the @racket[read-accept-reader] or @racket[read-accept-lang]
 @tech{parameter} is set to @racket[#f], then if the reader encounters
 @litchar{#lang} or equivalent @litchar{#!}, the @exnraise[exn:fail:read].
 
+@history[#:changed "8.2.0.2" @elem{Changed reader-module loading for @litchar{#reader}
+                                   and @litchar{#lang} to hold the current namespace
+                                   registry's lock.}]
+
 @section[#:tag "parse-cdot"]{Reading with C-style Infix-Dot Notation}
 
 When the @racket[read-cdot] @tech{parameter} is set to @racket[#t],
@@ -987,20 +1025,20 @@ unless the number is prefixed with @litchar{#e}, @litchar{#i},
 @litchar{#b}, @litchar{#o}, @litchar{#d}, @litchar{#x}, or an
 equivalent prefix as discussed in @secref["parse-number"]. If these
 numbers are followed by a @litchar{.} intended to be read as a C-style
-infix dot, then a delimiter must precede the @litchar{.}.
+infix dot, then a @tech{delimiter} must precede the @litchar{.}.
 
 Finally, after reading any datum @racket[_x], the reader will consume 
 whitespace, BOM characters, and comments to look for zero or more sequences of a
 @litchar{.} followed by another datum @racket[_y]. It will then group
-@racket[_x] and @racket[_y] together in a @racket[#%dot] form so that
-@racket[_x.y] reads equal to @racket[(#%dot _x _y)].
+@racket[_x] and @racket[_y] with @indexed-racket['#%dot] so that
+@racket[_x.y] reads equal to reading @racket[(#%dot _x _y)].
 
 If @racket[_x.y] has another @litchar{.} after it, the reader will
 accumulate more @litchar{.}-separated datums, grouping them from
-left-to-right. For example, @racket[_x.y.z] reads equal to
+left-to-right. For example, @racket[_x.y.z] reads equal to reading
 @racket[(#%dot (#%dot _x _y) _z)].
 
-In @racket[read-syntax] mode, the @racket[#%dot] symbol has the
+In @racket[read-syntax] mode, the @racket['#%dot] symbol has the
 source location information of the @litchar{.} character and the
 entire list has the source location information spanning from the
 start of @racket[_x] to the end of @racket[_y].

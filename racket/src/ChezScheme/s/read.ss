@@ -1141,7 +1141,7 @@
              (rd-fix-graph (vector-ref x m) rd-set-vector-tail! x m))))]
       [($record? x)
        (let ((d ($record-type-descriptor x)))
-         (do ([fields (csv7:record-type-field-indices d) (cdr fields)]
+         (do ([fields ($record-type-field-indices d) (cdr fields)]
               [i 0 (+ i 1)])
              ((null? fields))
            (when (csv7:record-field-accessible? d i)
@@ -1165,7 +1165,7 @@
           (let* ((dr (car wl))
                  (rtd (delayed-record-rtd dr))
                  (vals (delayed-record-vals dr))
-                 (fields (csv7:record-type-field-indices rtd)))
+                 (fields ($record-type-field-indices rtd)))
             (if (andmap
                   (lambda (f v)
                     (or (not (delayed-record? v))
@@ -1515,11 +1515,16 @@
       [(rparen) (xvalues (make-bytevector i))]
       [(eof) (let ([bfp expr-bfp]) (xcall rd-eof-error "bytevector"))]
       [else
-       (unless (and (eq? type 'atomic) (fixnum? value) (fx<= 0 value 255))
-         (xcall rd-error #f #t "invalid value ~s found in bytevector" value))
+       (xcall rd-bytevector-check type value)
        (xmvlet ((v) (xcall rd-bytevector expr-bfp (fx+ i 1)))
          (bytevector-u8-set! v i value)
          (xvalues v))])))
+
+(xdefine (rd-bytevector-check type value)
+  (unless (and (eq? type 'atomic) (fixnum? value) (fx<= 0 value 255))
+    (if (eq? type 'atomic)
+        (xcall rd-error #f #t "invalid value ~:[~s~;~a~] found in bytevector" (symbol? value) value)
+        (xcall rd-error #f #t "non-octet found in bytevector"))))
 
 (xdefine (rd-sized-bytevector n)
   (unless (and (fixnum? n) (fxnonnegative? n))
@@ -1539,8 +1544,7 @@
        (xvalues v)]
       [(eof) (let ([bfp expr-bfp]) (xcall rd-eof-error "bytevector"))]
       [else
-       (unless (and (eq? type 'atomic) (fixnum? value) (fx<= 0 value 255))
-         (xcall rd-error #f #t "invalid value ~s found in bytevector" value))
+       (xcall rd-bytevector-check type value)
        (unless (fx< i n)
          (let ([bfp expr-bfp])
            (xcall rd-error #f #t "too many bytevector elements supplied")))
@@ -1696,12 +1700,7 @@
                  (let ([dir (car dir*)])
                    (if (or (string=? dir "") (string=? dir "."))
                        name
-                       (format (if (directory-separator?
-                                     (string-ref dir
-                                       (fx- (string-length dir) 1)))
-                                   "~a~a"
-                                   "~a/~a")
-                         dir name))))
+                       (path-build dir name))))
                (search name (cdr dir*)))))
     (let ([name (source-file-descriptor-name sfd)])
       (and (string? name)
@@ -1879,7 +1878,6 @@
       (unless (and (list? x) (andmap string? x))
         ($oops 'source-directories "invalid path list ~s" x))
       x)))
-
 
 (define record-reader
   (case-lambda

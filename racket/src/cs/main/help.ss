@@ -58,6 +58,8 @@
     "     Skip `((executable-yield-handler) <status>)` on exit\n"
     "\n"
     "Configuration options:\n\n"
+    "  -y, --make\n"
+    "     Yes, enable automatic update of compiled files\n"
     "  -c, --no-compiled\n"
     "     Disable loading of compiled files\n"
     "  -q, --no-init-file\n"

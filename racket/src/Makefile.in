@@ -1,289 +1,41 @@
-# Dispatches to CS or BC to build Racket, and drives the main install
+# `configure` adds some variables before this line, and
+# the rest dispatch to "build.zuo" to build
 
-PACKAGE = racket
+ZUO=bin/zuo
 
-srcdir = @srcdir@
-prefix = @prefix@
-exec_prefix = @exec_prefix@
-datarootdir = @datarootdir@
-bindir = @bindir@
-libdir = @libdir@
-includepltdir = @includepltdir@
-libpltdir = @libpltdir@
-sharepltdir = @sharepltdir@
-configdir = @etcpltdir@
-collectsdir = @collectsdir@
-pkgsdir = @pkgsdir@
-appsdir = @appsdir@
-mandir = @mandir@
-docdir = @docdir@
-builddir = @builddir@
+all: $(ZUO)
+	$(ZUO) . all
 
-NOOP = :
+install: $(ZUO)
+	$(ZUO) . install
 
-ALLDIRINFO = "$(DESTDIR)$(bindir)" \
-             "$(DESTDIR)$(collectsdir)" \
-             "$(DESTDIR)$(pkgsdir)" \
-             "$(DESTDIR)$(docdir)" \
-             "$(DESTDIR)$(libdir)" \
-             "$(DESTDIR)$(includepltdir)" \
-             "$(DESTDIR)$(libpltdir)" \
-             "$(DESTDIR)$(sharepltdir)" \
-             "$(DESTDIR)$(configdir)" \
-             "$(DESTDIR)$(appsdir)" \
-             "$(DESTDIR)$(mandir)"
+plain-install: $(ZUO)
+	$(ZUO) . plain-install
 
-COPYING = "$(srcdir)/LICENSE-libscheme.txt" \
-          "$(srcdir)/LICENSE-MIT.txt" \
-          "$(srcdir)/LICENSE-APACHE.txt" \
-          "$(srcdir)/LICENSE-LGPL.txt" \
-          "$(srcdir)/LICENSE-GPL.txt"
+cs: $(ZUO)
+	$(ZUO) . cs
 
-all:
-	$(MAKE) @MAIN_MAKE_TARGET@
+cs-install: $(ZUO)
+	$(ZUO) . cs-install
 
-racketbc:
-	$(MAKE) @MAIN_VARIANT@
+plain-cs-install: $(ZUO)
+	$(ZUO) . plain-cs-install
 
-.PHONY: bc
-bc:
-	$(MAKE) racketbc
+bc: $(ZUO)
+	$(ZUO) . bc
 
-TAGS:
-	etags `find "@srcdir@/racket" -type f`
+bc-install: $(ZUO)
+	$(ZUO) . bc-install
 
-3m:
-	if [ ! -f bc/Makefile ]; then $(MAKE) bc-explain-configure; fi
-	$(MAKE) @MAKE_LOCAL_RACKET@
-	cd bc && $(MAKE) 3m-with-gracket
+plain-bc-install: $(ZUO)
+	$(ZUO) . plain-bc-install
 
-no-3m:
-	$(NOOP)
+3m: $(ZUO)
+	$(ZUO) . 3m
 
-.PHONY: cgc
-cgc:
-	if [ ! -f bc/Makefile ]; then $(MAKE) bc-explain-configure; fi
-	$(MAKE) @MAKE_LOCAL_RACKET@
-	cd bc && $(MAKE) cgc-with-gracket
+cgc: $(ZUO)
+	$(ZUO) . cgc
 
-both:
-	$(MAKE) cgc
-	$(MAKE) 3m
-
-bc-explain-configure:
-	echo configure with --enable-bc or similar to enable
-	exit 1
-
-racketcs:
-	if [ ! -f cs/c/Makefile ]; then $(MAKE) cs-explain-configure; fi
-	$(MAKE) @MAKE_LOCAL_RACKET@
-	$(MAKE) @CS_BOOTSTRAP_HELP@
-	cd cs/c && $(MAKE) @CS_USE_BOOTSTRAP_HELP@
-
-.PHONY: cs
-cs:
-	$(MAKE) racketcs
-
-cs-explain-configure:
-	echo configure with --enable-cs or similar to enable
-	exit 1
-
-# Cross-compilation helper:
-
-no-local-racket:
-	$(NOOP)
-
-@RUN_LOCAL_RACKET@:
-	mkdir -p local
-	$(MAKE) local/Makefile
-	cd local && $(MAKE) @LOCAL_RACKET_TARGET@
-
-local/Makefile:
-	cd local && `cd ..; cd $(srcdir); pwd`/configure --disable-gracket @CONFIGURE_LOCAL_RACKET@
-
-# Install (common) ----------------------------------------
-
-# Needed for non-GNU makes:
-SELF_ROOT_CONFIG_FLAG = -Z
-PROPAGATE_VARIABLES = SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)" \
-                      PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" \
-                      SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)"
-
-install:
-	$(MAKE) install-@MAIN_MAKE_TARGET@ $(PROPAGATE_VARIABLES)
-
-install-bc:
-	$(MAKE) install-@MAIN_VARIANT@ $(PROPAGATE_VARIABLES)
-
-plain-install:
-	if [ "$(DESTDIR)" != "" ]; then \
-          echo "cannot use plain-install with DESTDIR=$(DESTDIR)"; exit 1; \
-        fi
-	$(MAKE) plain-install-@MAIN_MAKE_TARGET@
-
-install-common-first:
-	case "$(DESTDIR)" in \
-	  "" | /*) ;; \
-	  *) echo "expected an absolute path for DESTDIR; given: $(DESTDIR)"; exit 1;; \
-        esac
-	mkdir -p $(ALLDIRINFO)
-
-MIDDLE_POST_COLLECTS = install-no-post-collects
-
-install-common-middle:
-	$(MAKE) @MAKE_COPYTREE@-run
-
-install-common-last:
-	$(MAKE) move-compiled-@INSTALL_LIBZO@
-	$(MAKE) fix-paths
-	$(MAKE) @MAKE_INSTALL_PKGSCOPE@-raco-pkg-default-scope
-	cp $(COPYING) "$(DESTDIR)$(sharepltdir)"/
-
-install-no:
-	$(NOOP)
-
-no-run:
-	$(NOOP)
-
-copytree-run:
-	@RUN_RACKET@ $(SELF_RACKET_FLAGS) -u \
-          "$(srcdir)/../collects/setup/unixstyle-install.rkt" \
-          make-install-copytree "$(srcdir)/.." \
-          $(ALLDIRINFO) "@INSTALL_ORIG_TREE@"
-
-adjust-raco-pkg-default-scope:
-	@RUN_RACKET@ -l raco pkg config -i --set default-scope @INSTALL_PKGSCOPE@
-
-preserve-raco-pkg-default-scope:
-	$(NOOP)
-
-install-no-post-collects:
-	$(NOOP)
-
-move-compiled-no:
-	$(NOOP)
-
-move-compiled-libzo:
-	@RUN_RACKET@ $(SELF_RACKET_FLAGS) -u \
-              "$(srcdir)/../collects/setup/unixstyle-install.rkt" \
-              make-install-libzo-move "$(srcdir)/.." \
-              $(ALLDIRINFO) \
-
-fix-paths:
-	if [ "$(DESTDIR)" != "" ]; then \
-          if [ "$(SKIP_DESTDIR_FIX)" = "" ]; then \
-            @RUN_RACKET@ $(SELF_RACKET_FLAGS) -u \
-              "$(srcdir)/../collects/setup/unixstyle-install.rkt" \
-              make-install-destdir-fix "$(srcdir)/.." \
-              $(ALLDIRINFO) "@INSTALL_ORIG_TREE@" "@INSTALL_LIBZO@"; \
-          fi \
-        fi
-
-# 3m install ----------------------------------------
-
-install-3m-common:
-	$(MAKE) install-common-first
-	cd bc && $(MAKE) install-3m
-	$(MAKE) install-common-middle
-	$(MAKE) install-bc-common-post-collects
-
-install-3m:
-	$(MAKE) install-3m-common
-	cd bc && $(MAKE) install-setup-3m $(PROPAGATE_VARIABLES)
-	$(MAKE) install-common-last
-
-plain-install-3m:
-	$(MAKE) install-3m-common
-	$(MAKE) install-common-last
-
-install-no-3m:
-	$(NOOP)
-
-install-bc-common-post-collects:
-	cd bc && $(MAKE) install-post-collects
-	cd bc && $(MAKE) install-lib-finish DESTDIR="$(DESTDIR)" LIB_FINISH_DIR="$(libdir)"
-
-# CGC install ----------------------------------------
-
-install-cgc-common:
-	$(MAKE) install-common-first
-	cd bc && $(MAKE) install-cgc
-	$(MAKE) install-common-middle
-	$(MAKE) install-bc-common-post-collects
-
-install-cgc:
-	$(MAKE) install-cgc-common
-	cd bc && $(MAKE) install-setup-cgc $(PROPAGATE_VARIABLES)
-	$(MAKE) install-common-last
-
-plain-install-cgc:
-	$(MAKE) install-cgc-common
-	$(MAKE) install-common-last
-
-install-no-cgc:
-	$(NOOP)
-
-# Both install ----------------------------------------
-
-install-both-common:
-	$(MAKE) install-common-first
-	cd bc && $(MAKE) install-both
-	$(MAKE) install-common-middle
-
-install-both:
-	$(MAKE) install-both-common
-	cd bc && $(MAKE) install-setup-3m
-	$(MAKE) install-common-last
-
-plain-install-both:
-	$(MAKE) install-both-common
-	$(MAKE) install-common-last
-
-install-no-both:
-	$(NOOP)
-
-# CS install ----------------------------------------
-
-CS_SETUP_INSTALL_TARGET = setup-install
-
-install-cs-common:
-	$(MAKE) install-common-first
-	cd cs/c && $(MAKE) plain-install
-	$(MAKE) install-common-middle
-	cd cs/c && $(MAKE) $(CS_SETUP_INSTALL_TARGET) $(PROPAGATE_VARIABLES)
-	$(MAKE) install-common-last
-
-install-racketcs:
-	$(MAKE) install-cs-common $(PROPAGATE_VARIABLES)
-
-plain-install-racketcs:
-	$(MAKE) install-cs-common CS_SETUP_INSTALL_TARGET=no-setup-install
-
-install-cs:
-	$(MAKE) install-racketcs $(PROPAGATE_VARIABLES)
-
-plain-install-cs:
-	$(MAKE) plain-install-racketcs
-
-# Docs install ----------------------------------------
-
-# The "install" target already does this, but it does tons more too.
-install-html:
-	$(MAKE) install PLT_SETUP_OPTIONS="-nxiId $(PLT_SETUP_OPTIONS)"
-
-install-pdf:
-	$(MAKE) install PLT_SETUP_OPTIONS="-nxiId --doc-pdf $(docdir)/pdf $(PLT_SETUP_OPTIONS)"
-
-# Clean ----------------------------------------
-
-clean:
-	if [ -f cs/c/Makefile ]; then $(MAKE) clean-cs; fi
-	if [ -f bc/Makefile ]; then $(MAKE) clean-bc; fi
-
-clean-cs:
-	cd cs/c && $(MAKE) clean
-
-clean-bc:
-	cd bc && $(MAKE) clean
-	rm -rf compiled
-	rm -f TAGS
+$(ZUO):
+	mkdir -p bin
+	$(HOSTCC) -DZUO_LIB_PATH='"'"$(upsrcdir)/zuo/lib"'"' -o $(ZUO) $(srcdir)/zuo/zuo.c

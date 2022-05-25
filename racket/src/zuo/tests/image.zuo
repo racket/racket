@@ -1,0 +1,30 @@
+#lang zuo
+
+(require "harness.zuo")
+
+(alert "image")
+
+(define dump.zuo (build-path tmp-dir "dump.zuo"))
+(define image-file (build-path tmp-dir "image.boot"))
+
+(define (try-dump lang)
+  (define out (fd-open-output dump.zuo :truncate))
+  (fd-write out (~a "#lang " lang "\n"
+                    "(dump-image-and-exit (fd-open-output (car (hash-ref (runtime-env) 'args)) :truncate))\n"))
+  (fd-close out)
+
+  (check (run-zuo* (list dump.zuo image-file)
+                   ""
+                   (lambda (status out err)
+                     (= status 0))))
+  (run-zuo* (list "-X" "" "-B" image-file "")
+            (~a "#lang " lang " 10")
+            (lambda (status out err)
+              (check err "")
+              (check (and (= status 0) lang) lang)
+              (check out "10\n"))))
+
+(try-dump "zuo")
+(try-dump "zuo/hygienic")
+
+(check-arg-fail (dump-image-and-exit "oops") "open output file")

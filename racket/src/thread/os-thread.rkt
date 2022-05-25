@@ -2,7 +2,8 @@
 (require "check.rkt"
          "host.rkt"
          "atomic.rkt"
-         "parameter.rkt")
+         "parameter.rkt"
+         "error.rkt")
 
 (provide unsafe-os-thread-enabled?
          unsafe-call-in-os-thread
@@ -55,5 +56,5 @@
 (define (raise-unsupported who)
   (raise
    (exn:fail:unsupported
-    (string-append (symbol->string who) ": unsupported on this platform")
+    (error-message->string who "unsupported on this platform")
     (current-continuation-marks))))

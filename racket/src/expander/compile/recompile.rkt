@@ -139,8 +139,10 @@
 
   (define self (decl 'self-mpi))
   (define phase-to-link-modules (decl 'phase-to-link-modules))
+  (define portal-stxes (decl 'portal-stxes))
 
   (define unsafe? (hash-ref orig-h 'unsafe? #f))
+  (define realm (hash-ref orig-h 'realm 'racket))
 
   (define (find-submodule mod-name phase)
     ;; If `mod-name` refers to a submodule in the same linklet directory,
@@ -193,7 +195,8 @@
                                 #:optimize-linklet? #t
                                 #:unsafe? unsafe?
                                 #:load-modules? #t
-                                #:namespace ns))
+                                #:namespace ns
+                                #:realm realm))
       (values phase (cons linklet new-module-use*s))))
 
   (define h/new-body-linklets
@@ -214,7 +217,8 @@
     (compile-linklet (generate-module-declaration-linklet mpis self 
                                                           (decl 'requires)
                                                           (decl 'provides)
-                                                          phase-to-link-module-uses-expr)
+                                                          phase-to-link-module-uses-expr
+                                                          portal-stxes)
                      'decl))
 
   (define new-bundle

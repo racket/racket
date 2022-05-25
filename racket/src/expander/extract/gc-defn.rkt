@@ -80,7 +80,7 @@
      [(defn? (car body))
       (define defn (car body))
       (cond
-        [(defn-side-effects? defn)
+       [(defn-side-effects? defn)
         ;; Right-hand side has an effect, so keep the
         ;; definition and mark everything as used:
         (for ([sym (in-list (defn-syms defn))])

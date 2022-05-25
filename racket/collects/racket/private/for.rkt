@@ -33,6 +33,7 @@
              for/hash for*/hash
              for/hasheq for*/hasheq
              for/hasheqv for*/hasheqv
+             for/hashalw for*/hashalw
 
              for/fold/derived for*/fold/derived
              for/foldr/derived for*/foldr/derived
@@ -106,6 +107,8 @@
              make-do-sequence
              :do-in
 
+             define-splicing-for-clause-syntax
+
              define-in-vector-like
              define-:vector-like-gen
              (for-syntax make-in-vector-like
@@ -163,51 +166,8 @@
            proc1)
        proc2))
 
-    (define (arm-for-clause clause cert)
-      (define (map-cert s) (map cert (syntax->list s)))
-      (syntax-case clause (:do-in)
-        [[(id ...) (:do-in ([(outer-id ...) outer-expr] ...)
-                           outer-check
-                           ([loop-id loop-expr] ...)
-                           pos-guard
-                           ([(inner-id ...) inner-expr] ...)
-                           pre-guard
-                           post-guard
-                           (loop-arg ...))]
-         (with-syntax ([((outer-id ...) ...)
-                        (map map-cert
-                             (syntax->list #'((outer-id ...) ...)))]
-                       [(outer-expr ...) (map-cert #'(outer-expr ...))]
-                       [outer-check (cert #'outer-check)]
-                       [(loop-expr ...) (map-cert #'(loop-expr ...))]
-                       [pos-guard (cert #'pos-guard)]
-                       [((inner-id ...) ...)
-                        (map map-cert (syntax->list #'((inner-id ...) ...)))]
-                       [pre-guard (cert #'pre-guard)]
-                       [post-guard (cert #'post-guard)]
-                       [(loop-arg ...) (map-cert #'(loop-arg ...))])
-           #`[(id ...) (:do-in ([(outer-id ...) outer-expr] ...)
-                               outer-check
-                               ([loop-id loop-expr] ...)
-                               pos-guard
-                               ([(inner-id ...) inner-expr] ...)
-                               pre-guard
-                               post-guard
-                               (loop-arg ...))])]
-        [[(id ...) rhs]
-         #`[(id ...) #,(cert #'rhs)]]
-        [_
-         ;; ill-formed clause...
-         clause]))
-
-    (define orig-insp (variable-reference->module-declaration-inspector
-                       (#%variable-reference)))
-
     (define (for-clause-syntax-protect clause)
-      ;; This is slightly painful. The expansion into `:do-in' involves a lot
-      ;; of pieces that are not treated as sub-expressions. We have to push the
-      ;; taints down to all the relevant identifiers and expressions:
-      (arm-for-clause clause syntax-arm))
+      clause)
 
     (define sequence-specialization-logger
       (make-logger 'sequence-specialization (current-logger)))
@@ -229,20 +189,9 @@
         result))
 
     (define (expand-clause orig-stx clause)
-      (define (unpack stx)
-        (syntax-case stx ()
-          [[ids rhs] ; remove dye pack on `rhs' in case it's `(form . rest)'
-           #`[ids #,(syntax-disarm #'rhs orig-insp)]]
-          [_ stx]))
-      (define (make-rearm)
-        (syntax-case clause ()
-          [(_ rhs)
-           (lambda (stx)
-             (syntax-rearm stx #'rhs))]))
       ;; expanded-rhs :: (or/c #f syntax?)
       (let eloop ([use-transformer? #t] [expanded-rhs #f])
-        (define unpacked-clause (unpack clause))
-        (syntax-case unpacked-clause (values in-parallel stop-before stop-after :do-in)
+        (syntax-case clause (values in-parallel stop-before stop-after :do-in)
           [[(id ...) rhs]
            (check-identifier-bindings orig-stx #'(id ...) "sequence" #f)
            'just-checking]
@@ -253,12 +202,10 @@
            (let ([m (syntax-local-value #'form)])
              (let ([xformer (sequence-transformer-ref m 1)]
                    [introducer (make-syntax-introducer)])
-               (let ([xformed (xformer (introducer (syntax-local-introduce unpacked-clause)))])
+               (let ([xformed (xformer (introducer (syntax-local-introduce clause)))])
                  (if xformed
                      (let ([r (expand-clause orig-stx
-                                             (arm-for-clause
-                                              (syntax-local-introduce (introducer xformed))
-                                              (make-rearm)))])
+                                             (syntax-local-introduce (introducer xformed)))])
                        (syntax-property r
                                         'disappeared-use
                                         (cons (syntax-local-introduce #'form)
@@ -353,7 +300,6 @@
              (with-syntax ([[(id ...) rhs*]
                             (introducer (syntax-local-introduce #`[(id ...) #,expanded-rhs]))])
                (with-syntax ([(post-id ...) (generate-temporaries #'(id ...))])
-                 (arm-for-clause
                   (syntax-local-introduce
                    (introducer
                     #`(([(pos->vals pos-pre-inc pos-next init pos-cont? val-cont? all-cont?)
@@ -387,41 +333,26 @@
                           'feature-profile:generic-sequence #t)
                        #,(syntax-property
                           (syntax/loc #'rhs ((pos-next pos)))
-                          'feature-profile:generic-sequence #t))))
-                  (make-rearm)))))]
+                          'feature-profile:generic-sequence #t)))))))]
           [[(id ...) rhs]
            (not (syntax-property #'rhs 'for:no-implicit-optimization))
-           (with-syntax ([expanded-rhs (syntax-disarm (local-expand #'rhs 'expression (list #'quote)) orig-insp)])
+           (with-syntax ([expanded-rhs (local-expand #'rhs 'expression (list #'quote))])
              (syntax-case #'expanded-rhs (quote)
                [(quote e)
                 (let ([content (syntax-e #'e)])
                   (cond
                     [(exact-nonnegative-integer? content)
-                     (expand-clause orig-stx (arm-for-clause
-                                              #'[(id ...) (*in-range e)]
-                                              (make-rearm)))]
+                     (expand-clause orig-stx #'[(id ...) (*in-range (quote e))])]
                     [(list? content)
-                     (expand-clause orig-stx (arm-for-clause
-                                              ;; list is the only case we need to specifically quote it
-                                              ;; because it would turn into a function application otherwise
-                                              #'[(id ...) (*in-list expanded-rhs)]
-                                              (make-rearm)))]
+                     (expand-clause orig-stx #'[(id ...) (*in-list (quote e))])]
                     [(vector? content)
-                     (expand-clause orig-stx (arm-for-clause
-                                              #'[(id ...) (*in-vector e)]
-                                              (make-rearm)))]
+                     (expand-clause orig-stx #'[(id ...) (*in-vector (quote e))])]
                     [(and (hash? content) (immutable? content))
-                     (expand-clause orig-stx (arm-for-clause
-                                              #'[(id ...) (in-immutable-hash e)]
-                                              (make-rearm)))]
+                     (expand-clause orig-stx #'[(id ...) (in-immutable-hash (quote e))])]
                     [(string? content)
-                     (expand-clause orig-stx (arm-for-clause
-                                              #'[(id ...) (*in-string e)]
-                                              (make-rearm)))]
+                     (expand-clause orig-stx #'[(id ...) (*in-string (quote e))])]
                     [(bytes? content)
-                     (expand-clause orig-stx (arm-for-clause
-                                              #'[(id ...) (*in-bytes e)]
-                                              (make-rearm)))]
+                     (expand-clause orig-stx #'[(id ...) (*in-bytes (quote e))])]
                     [else (eloop #f #'expanded-rhs)]))]
                [_ (eloop #f #'expanded-rhs)]))]
           ;; when for:no-implicit-optimization is true
@@ -436,6 +367,56 @@
 
   (define-syntax-rule (unless-unsafe e)
     (unless (variable-reference-from-unsafe? (#%variable-reference)) e))
+
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;  splicing clause expansions
+
+  (begin-for-syntax
+    (define-values (struct:splicing-for-clause-transformer
+                    make-splicing-for-clause-transformer
+                    splicing-for-clause-transformer?
+                    splicing-for-clause-transformer-ref
+                    splicing-for-clause-transformer-set!)
+      (make-struct-type 'splicing-for-clause-transformer #f
+                        1 0 #f
+                        null (current-inspector)
+                        0))
+
+    (define (create-splicing-for-clause-transformer proc)
+      (unless (and (procedure? proc)
+                   (procedure-arity-includes? proc 1))
+        (raise-argument-error 'define-splicing-for-clause-syntax
+                              "(procedure-arity-includes/c 1)"
+                              proc))
+      (make-splicing-for-clause-transformer proc)))
+
+  (define-syntax define-splicing-for-clause-syntax
+    (syntax-rules ()
+      [(_ id transformer-expr)
+       (define-syntax id
+         (create-splicing-for-clause-transformer transformer-expr))]))
+
+  (define-for-syntax (expand-splicing-clause orig-form form)
+    (syntax-case form ()
+      [(id . _)
+       (and (identifier? #'id)
+            (splicing-for-clause-transformer? (syntax-local-value #'id (lambda () #f))))
+       (let ([xformer (splicing-for-clause-transformer-ref (syntax-local-value #'id) 0)]
+             [introducer (make-syntax-introducer)])
+         (let ([xformed (xformer (introducer (syntax-local-introduce form)))])
+           (syntax-case xformed ()
+             [(_ ...)
+              (cons #'id (syntax-local-introduce (introducer xformed)))]
+             [_
+              (raise-syntax-error #f
+                                  "expansion is not a sequence"
+                                  orig-form
+                                  form)])))]
+      [_
+       (raise-syntax-error #f
+                           "not a splicing for-clause form"
+                           orig-form
+                           form)]))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;  streams & sequences
@@ -716,7 +697,7 @@
     (values car cdr values l pair? #f #f))
 
   (define (in-mlist l)
-    (unless (mpair? l) (raise-argument-error 'in-mlist "mpair?" l))
+    (unless (or (null? l) (mpair? l)) (raise-argument-error 'in-mlist "(or/c mpair? null)" l))
     (make-do-sequence (lambda () (:mlist-gen l))))
 
   (define (:mlist-gen l)
@@ -883,25 +864,24 @@
                       (define (transform stx)
                         (syntax-case stx ()
                           [[(V ...) (_ ht-expr . extra-args)]
-                           (for-clause-syntax-protect
-                            #'[(V ...)
-                               (:do-in
-                                ;;outer bindings
-                                ([(ht) ht-expr])
-                                ;; outer check
-                                (unless-unsafe (CHECK-SEQ ht))
-                                ;; loop bindings
-                                ([i (-first ht)])
-                                ;; pos check
-                                i
-                                ;; inner bindings
-                                ([(V ...) (-VAL ht i . extra-args)])
-                                ;; pre guard
-                                #t
-                                ;; post guard
-                                #t
-                                ;; loop args
-                                ((-next ht i)))])]))
+                           #'[(V ...)
+                              (:do-in
+                               ;;outer bindings
+                               ([(ht) ht-expr])
+                               ;; outer check
+                               (unless-unsafe (CHECK-SEQ ht))
+                               ;; loop bindings
+                               ([i (-first ht)])
+                               ;; pos check
+                               i
+                               ;; inner bindings
+                               ([(V ...) (-VAL ht i . extra-args)])
+                               ;; pre guard
+                               #t
+                               ;; post guard
+                               #t
+                               ;; loop args
+                               ((-next ht i)))]]))
                       (syntax-case stx ()
                         [[(V ...) (_ ht-expr)]
                          (transform stx)]
@@ -927,10 +907,13 @@
   ;; the largest fixnum, after running these checks start,
   ;; stop, and step are guaranteed to be fixnums.
   (define (check-ranges who type-name vec start stop step len)
-    (unless (and (exact-nonnegative-integer? start)
-                 (or (< start len) (= len start stop)))
+    (unless (exact-nonnegative-integer? start)
+      (raise-argument-error who "exact-nonnegative-integer?" start))
+    (unless (or (< start len) (= len start stop))
       (raise-range-error who type-name "starting " start vec 0 (sub1 len)))
-    (unless (and (exact-integer? stop) (<= -1 stop) (<= stop len))
+    (unless (exact-integer? stop)
+      (raise-argument-error who "exact-integer?" stop))
+    (unless (and (<= -1 stop) (<= stop len))
       (raise-range-error who type-name "stopping " stop vec -1 len))
     (unless (and (exact-integer? step) (not (zero? step)))
       (raise-argument-error who "(and/c exact-integer? (not/c zero?))" step))
@@ -1022,27 +1005,26 @@
         (syntax-case stx ()
           ;; Fast case
           [[(id) (_ vec-expr)]
-           (for-clause-syntax-protect
-            #'[(id)
-               (:do-in
-                ;;outer bindings
-                ([(vec len) (let ([vec vec-expr])
-                              (check-vector vec)
-                              (values vec (unsafe-vector-length vec)))])
-                ;; outer check
-                #f
-                ;; loop bindings
-                ([pos 0])
-                ;; pos check
-                (pos . unsafe-fx< . len)
-                ;; inner bindings
-                ([(id) (unsafe-vector-ref vec pos)])
-                ;; pre guard
-                #t
-                ;; post guard
-                #t
-                ;; loop args
-                ((unsafe-fx+ 1 pos)))])]
+           #'[(id)
+              (:do-in
+               ;;outer bindings
+               ([(vec len) (let ([vec vec-expr])
+                             (check-vector vec)
+                             (values vec (unsafe-vector-length vec)))])
+               ;; outer check
+               #f
+               ;; loop bindings
+               ([pos 0])
+               ;; pos check
+               (pos . unsafe-fx< . len)
+               ;; inner bindings
+               ([(id) (unsafe-vector-ref vec pos)])
+               ;; pre guard
+               #t
+               ;; post guard
+               #t
+               ;; loop args
+               ((unsafe-fx+ 1 pos)))]]
           ;; General case
           [((id) (_ vec-expr start))
            (in-vector-like (syntax ((id) (_ vec-expr start #f 1))))]
@@ -1050,45 +1032,44 @@
            (in-vector-like (syntax ((id) (_ vec-expr start stop 1))))]
           [((id) (_ vec-expr start stop step))
            (let ([all-fx? (memq (syntax-e #'step) '(1 -1))])
-             (for-clause-syntax-protect
-              #`[(id)
-                 (:do-in
-                  ;; Outer bindings
-                  ;; start*, stop*, and step* are guaranteed to be exact integers
-                  ([(v* start* stop* step*)
-                    (if (variable-reference-from-unsafe? (#%variable-reference))
-                        (unsafe-normalise-inputs unsafe-vector-length
-                                                 vec-expr start stop step)
-                        (normalise-inputs (quote in-vector-name) type-name
-                                          ;; reverse-eta triggers JIT inlining of
-                                          ;; primitives, which is good for futures:
-                                          (lambda (x) (vector? x))
-                                          (lambda (x) (unsafe-vector-length x))
-                                          vec-expr start stop step))])
-                  ;; Outer check is done by normalise-inputs
-                  #t
-                  ;; Loop bindings
-                  ([idx start*])
-                  ;; Pos guard
-                  #,(cond
-                      [(not (number? (syntax-e #'step)))
-                       #`(if (step* . >= . 0) (< idx stop*) (> idx stop*))]
-                      [((syntax-e #'step) . >= . 0)
-                       (if all-fx?
-                           #'(unsafe-fx< idx stop*)
-                           #'(< idx stop*))]
-                      [else
-                       (if all-fx?
-                           #'(unsafe-fx> idx stop*)
-                           #'(> idx stop*))])
-                  ;; Inner bindings
-                  ([(id) (unsafe-vector-ref v* idx)])
-                  ;; Pre guard
-                  #t
-                  ;; Post guard
-                  #t
-                  ;; Loop args
-                  ((#,(if all-fx? #'unsafe-fx+ #'+) idx step)))]))]
+             #`[(id)
+                (:do-in
+                 ;; Outer bindings
+                 ;; start*, stop*, and step* are guaranteed to be exact integers
+                 ([(v* start* stop* step*)
+                   (if (variable-reference-from-unsafe? (#%variable-reference))
+                       (unsafe-normalise-inputs unsafe-vector-length
+                                                vec-expr start stop step)
+                       (normalise-inputs (quote in-vector-name) type-name
+                                         ;; reverse-eta triggers JIT inlining of
+                                         ;; primitives, which is good for futures:
+                                         (lambda (x) (vector? x))
+                                         (lambda (x) (unsafe-vector-length x))
+                                         vec-expr start stop step))])
+                 ;; Outer check is done by normalise-inputs
+                 #t
+                 ;; Loop bindings
+                 ([idx start*])
+                 ;; Pos guard
+                 #,(cond
+                     [(not (number? (syntax-e #'step)))
+                      #`(if (step* . >= . 0) (< idx stop*) (> idx stop*))]
+                     [((syntax-e #'step) . >= . 0)
+                      (if all-fx?
+                          #'(unsafe-fx< idx stop*)
+                          #'(< idx stop*))]
+                     [else
+                      (if all-fx?
+                          #'(unsafe-fx> idx stop*)
+                          #'(> idx stop*))])
+                 ;; Inner bindings
+                 ([(id) (unsafe-vector-ref v* idx)])
+                 ;; Pre guard
+                 #t
+                 ;; Post guard
+                 #t
+                 ;; Loop args
+                 ((#,(if all-fx? #'unsafe-fx+ #'+) idx step)))])]
           [_ #f])))
     in-vector-like)
 
@@ -1514,7 +1495,7 @@
                      [delayed-id (syntax-local-introduce delayed-id)]
                      [delayer-id delayer-id])
          #`(let*-values
-               ([(delayed-id) (delayer-id #,(syntax-protect #'next-k))]
+               ([(delayed-id) (delayer-id next-k)]
                 #,@(cond
                      [(= (length fold-vars) 1)
                       #`([(fold-var ...) delayed-id])]
@@ -1532,23 +1513,20 @@
          (cond
           [(null? l) 
            ;; No #:break form
-           (syntax-protect
-            #'(inner-recur fold-vars [expr ...] (if final?-id break-k next-k)))]
+           #'(inner-recur fold-vars [expr ...] (if final?-id break-k next-k))]
           [(eq? '#:break (syntax-e (car l)))
            ;; Found a #:break form
-           (syntax-protect
-            #`(let-values ()
-                #,@(reverse pre-accum)
-                (if #,(cadr l)
-                    break-k
-                    (push-under-break inner-recur fold-vars #,(cddr l) next-k break-k final?-id))))]
+           #`(let-values ()
+               #,@(reverse pre-accum)
+               (if #,(cadr l)
+                   break-k
+                   (push-under-break inner-recur fold-vars #,(cddr l) next-k break-k final?-id)))]
           [(eq? '#:final (syntax-e (car l)))
            ;; Found a #:final form
-           (syntax-protect
-            #`(let-values ()
-                #,@(reverse pre-accum)
-                (let ([final? (or #,(cadr l) final?-id)])
-                  (push-under-break inner-recur fold-vars #,(cddr l) next-k break-k final?))))]
+           #`(let-values ()
+               #,@(reverse pre-accum)
+               (let ([final? (or #,(cadr l) final?-id)])
+                 (push-under-break inner-recur fold-vars #,(cddr l) next-k break-k final?)))]
           [else (loop (cdr l) (cons (car l) pre-accum))]))]))
 
   (define-syntax (for/foldX/derived stx)
@@ -1562,18 +1540,15 @@
           expr1 expr ...)
        (if (syntax-e #'inner-recur)
            ;; General, non-nested-loop approach:
-           (syntax-protect
-            #`(let ([fold-var fold-init] ...)
-                (push-under-break inner-recur (fold-var ...) [expr1 expr ...] next-k break-k final?-id)))
+           #`(let ([fold-var fold-init] ...)
+               (push-under-break inner-recur (fold-var ...) [expr1 expr ...] next-k break-k final?-id))
            ;; Nested-loop approach (which is slightly faster when it works):
-           (syntax-protect
-            #`(let ([fold-var fold-init] ...)
-                (let-values ([(fold-var ...) (let () expr1 expr ...)])
-                  (values fold-var ...)))))]
+           #`(let ([fold-var fold-init] ...)
+               (let-values ([(fold-var ...) (let () expr1 expr ...)])
+                 (values fold-var ...))))]
       ;; Switch-to-emit case (no more clauses to generate):
       [(_ [orig-stx inner-recur nested? #f binds] fold-bind next-k break-k final?-id () . body)
-       (syntax-protect
-        #`(for/foldX/derived [orig-stx inner-recur nested? #t binds] fold-bind next-k break-k final?-id () . body))]
+       #`(for/foldX/derived [orig-stx inner-recur nested? #t binds] fold-bind next-k break-k final?-id () . body)]
       ;; Emit case:
       [(_ [orig-stx inner-recur nested? #t binds] ([fold-var fold-init] ...) next-k break-k final?-id rest expr1 . body)
        (with-syntax ([(([outer-binding ...]
@@ -1585,7 +1560,6 @@
                         post-guard
                         [loop-arg ...]) ...)
                       (reverse (syntax->list #'binds))])
-         (syntax-protect
           (quasisyntax/loc #'orig-stx
             (let-values (outer-binding ... ...)
               outer-check ...
@@ -1617,7 +1591,7 @@
                                             (for-loop fold-var ... loop-arg ... ...)
                                             next-k)))
                               next-k))
-                        next-k)))))))]
+                        next-k))))))]
       ;; Bad body cases:
       [(_ [orig-stx . _] fold-bind next-k break-k final?-id ())
        (raise-syntax-error
@@ -1625,52 +1599,64 @@
       [(_ [orig-stx . _] fold-bind next-k break-k final?-id () . rest)
        (raise-syntax-error
         #f "bad syntax (illegal use of `.') after sequence bindings" #'orig-stx)]
+      ;; Splicing-expand case:
+      [(_ [orig-stx inner-recur nested? emit? binds] folds next-k break-k final?-id (#:splice form . rest) . body)
+       (with-syntax ([(id clause ...) (expand-splicing-clause #'orig-stx #'form)])
+         (syntax-property #'(for/foldX/derived [orig-stx inner-recur nested? emit? binds]
+                              folds next-k break-k final?-id (clause ... #:when #t . rest) . body)
+                          'disappeared-use
+                          (syntax-local-introduce #'id)))]
       ;; Guard case, no pending emits:
       [(_ [orig-stx inner-recur nested? #f ()] ([fold-var fold-init] ...) next-k break-k final?-id (#:when expr . rest) . body)
-       (syntax-protect
-        #'(let ([fold-var fold-init] ...)
-            (if expr
-                (for/foldX/derived [orig-stx inner-recur nested? #f ()]
-                                   ([fold-var fold-var] ...) next-k break-k final?-id rest . body)
-                next-k)))]
+       #'(let ([fold-var fold-init] ...)
+           (if expr
+               (for/foldX/derived [orig-stx inner-recur nested? #f ()]
+                 ([fold-var fold-var] ...) next-k break-k final?-id rest . body)
+               next-k))]
       ;; Negative guard case, no pending emits:
       [(_ [orig-stx inner-recur nested? #f ()] ([fold-var fold-init] ...) next-k break-k final?-id (#:unless expr . rest) . body)
-       (syntax-protect
-        #'(let ([fold-var fold-init] ...)
-            (if expr
-                (if final?-id break-k next-k)
-                (for/foldX/derived [orig-stx inner-recur nested? #f ()]
-                                   ([fold-var fold-var] ...) next-k break-k final?-id rest . body))))]
+       #'(let ([fold-var fold-init] ...)
+           (if expr
+               (if final?-id break-k next-k)
+               (for/foldX/derived [orig-stx inner-recur nested? #f ()]
+                 ([fold-var fold-var] ...) next-k break-k final?-id rest . body)))]
       ;; Break case, no pending emits:
       [(_ [orig-stx inner-recur nested? #f ()] ([fold-var fold-init] ...) next-k break-k final?-id (#:break expr . rest) . body)
-       (syntax-protect
-        #'(let ([fold-var fold-init] ...)
-            (if expr
-                break-k
-                (for/foldX/derived [orig-stx inner-recur nested? #f ()]
-                                   ([fold-var fold-var] ...) next-k break-k final?-id rest . body))))]
+       #'(let ([fold-var fold-init] ...)
+           (if expr
+               break-k
+               (for/foldX/derived [orig-stx inner-recur nested? #f ()]
+                 ([fold-var fold-var] ...) next-k break-k final?-id rest . body)))]
       ;; Final case, no pending emits:
       [(_ [orig-stx inner-recur nested? #f ()] ([fold-var fold-init] ...) next-k break-k final?-id (#:final expr . rest) . body)
-       (syntax-protect
-        #'(let ([fold-var fold-init] ...)
-            (let ([final? (or expr final?-id)])
+       #'(let ([fold-var fold-init] ...)
+           (let ([final? (or expr final?-id)])
+             (for/foldX/derived [orig-stx inner-recur nested? #f ()]
+               ([fold-var fold-var] ...) next-k break-k final? rest . body)))]
+      ;; General "do" case, no pending emits:
+      [(_ [orig-stx inner-recur nested? #f ()] ([fold-var fold-init] ...) next-k break-k final?-id (#:do forms . rest) . body)
+       (syntax-case #'forms ()
+         [(form ...)
+          #'(let ([fold-var fold-init] ...)
+              form ...
               (for/foldX/derived [orig-stx inner-recur nested? #f ()]
-                                 ([fold-var fold-var] ...) next-k break-k final? rest . body))))]
+                ([fold-var fold-var] ...) next-k break-k final?-id rest . body))]
+         [_
+          (raise-syntax-error #f "expected parenthesized sequence after `#:do`" #'orig-stx #'forms)])]
       ;; Keyword case, pending emits need to be flushed first
       [(frm [orig-stx inner-recur nested? #f binds] ([fold-var fold-init] ...) next-k break-k final?-id (kw expr . rest) . body)
        (or (eq? (syntax-e #'kw) '#:when)
            (eq? (syntax-e #'kw) '#:unless)
            (eq? (syntax-e #'kw) '#:break)
-           (eq? (syntax-e #'kw) '#:final))
-       (syntax-protect
-        #'(frm [orig-stx inner-recur nested? #t binds] ([fold-var fold-init] ...) next-k break-k final?-id (kw expr . rest) . body))]
+           (eq? (syntax-e #'kw) '#:final)
+           (eq? (syntax-e #'kw) '#:do))
+       #'(frm [orig-stx inner-recur nested? #t binds] ([fold-var fold-init] ...) next-k break-k final?-id (kw expr . rest) . body)]
       ;; Convert single-value form to multi-value form:
       [(_ [orig-stx inner-recur nested? #f binds] fold-bind next-k break-k final?-id ([id rhs] . rest) . body)
        (identifier? #'id)
-       (syntax-protect
-        #'(for/foldX/derived [orig-stx inner-recur nested? #f binds]
-                             fold-bind next-k break-k final?-id
-                             ([(id) rhs] . rest) . body))]
+       #'(for/foldX/derived [orig-stx inner-recur nested? #f binds]
+           fold-bind next-k break-k final?-id
+           ([(id) rhs] . rest) . body)]
       ;; Expand one multi-value clause, and push it into the results to emit:
       [(frm [orig-stx inner-recur nested? #f binds] ([fold-var fold-init] ...) next-k break-k final?-id (clause . rest) . body)
        (with-syntax ([bind (expand-clause #'orig-stx #'clause)])
@@ -1691,14 +1677,15 @@
       [(_ [orig-stx nested?] fold-bind done-k (clause ...) expr ...)
        ;; If there's a `#:break` or `#:final`, then we need to use the
        ;; non-nested loop approach to implement them:
-       (ormap (lambda (s) (or (eq? '#:break (syntax-e s)) (eq? '#:final (syntax-e s))))
+       (ormap (lambda (s) (or (eq? '#:break (syntax-e s))
+                              (eq? '#:final (syntax-e s))
+                              ;; might generate `#:break` or `#:final`:
+                              (eq? '#:splice (syntax-e s))))
               (syntax->list #'(clause ... expr ...)))
-       (syntax-protect
-        #'(for/foldX/derived [orig-stx inner-recur/fold nested? #f ()] fold-bind done-k done-k #f (clause ...) expr ...))]
+       #'(for/foldX/derived [orig-stx inner-recur/fold nested? #f ()] fold-bind done-k done-k #f (clause ...) expr ...)]
       [(_ [orig-stx nested?] fold-bind done-k . rest)
        ;; Otherwise, allow compilation as nested loops, which can be slightly faster:
-       (syntax-protect
-        #'(for/foldX/derived [orig-stx #f nested? #f ()] fold-bind done-k done-k #f . rest))]))
+       #'(for/foldX/derived [orig-stx #f nested? #f ()] fold-bind done-k done-k #f . rest)]))
 
   (define-syntaxes (for/fold/derived for*/fold/derived for/foldr/derived for*/foldr/derived)
     (let ()
@@ -1768,7 +1755,6 @@
                            [delayed-id delayed-id]
                            [delayer-id delayer-id])
                (check-identifier-bindings #'orig-stx #`(fold-var ... delayed-id) "accumulator" (void))
-               (syntax-protect
                 (cond
                   [right?
                    (define loop-stx
@@ -1805,7 +1791,7 @@
                        (quasisyntax/loc #'orig-stx
                          (let-values ([(fold-var ...) #,loop-stx])
                            #,result-expr))
-                       loop-stx)]))))]
+                       loop-stx)])))]
           [(_ orig-stx . rst)
            (raise-syntax-error #f "bad syntax" #'orig-stx)]))
 
@@ -1844,63 +1830,102 @@
               (loop (cdr exprs) pre-kw (cons (car exprs) post-kw))]))
           (raise-syntax-error #f "bad syntax" stx))))
 
-  (define-for-syntax (for-variant-stx stx derived-id-stx fold-bind-stx wrap rhs-wrap combine)
-    (with-syntax ([derived-id derived-id-stx]
-                  [fold-bind fold-bind-stx])
+  (define-for-syntax (for-variant-stx stx derived-id-stx nonnested-id-stx fold-bind-stx wrap rhs-wrap combine combine*)
+    (with-syntax ([fold-bind fold-bind-stx])
       (syntax-case stx ()
         ;; When there's a bindings clause...
         [(_ (bind ...) expr1 expr ...)
-         (with-syntax ([(bind ...)
-                        (let loop ([bs (syntax->list #'(bind ...))])
-                          (if (null? bs)
-                              null
-                              (syntax-case (car bs) ()
-                                [[ids rhs]
-                                 (or (identifier? #'ids)
-                                     (andmap identifier? (or (syntax->list #'ids) '(#f))))
-                                 (cons #`[ids #,(rhs-wrap #'rhs)]
-                                       (loop (cdr bs)))]
-                                [kw
-                                 (memq (syntax-e #'kw) '(#:when #:unless #:break #:final))
-                                 (cons (car bs)
-                                       (if (null? (cdr bs))
-                                           null
-                                           (cons (cadr bs) (loop (cddr bs)))))]
-                                [_
-                                 ;; a syntax error; let the /derived form
-                                 ;; handle it, and no need to wrap any more:
-                                 bs])))]
-                       [((middle-expr ...) (end-expr ...))
-                        (split-for-body stx #'(expr1 expr ...))])
-           (quasisyntax/loc stx
-             #,(wrap (quasisyntax/loc stx
-                       (derived-id #,stx fold-bind (bind ...)
-                                   middle-expr ...
-                                   #,(combine (syntax/loc stx (let () end-expr ...))))))))]
+         (let ([bs (syntax->list #'(bind ...))])
+           (define wrap? (and combine*
+                              (not (ormap (lambda (b) (eq? '#:splice (syntax-e b))) bs))))
+           (with-syntax ([(bind ...)
+                          (cond
+                            [wrap?
+                             ;; wrap each binding clause
+                             (let loop ([bs bs])
+                               (if (null? bs)
+                                   null
+                                   (syntax-case (car bs) ()
+                                     [[ids rhs]
+                                      (or (identifier? #'ids)
+                                          (andmap identifier? (or (syntax->list #'ids) '(#f))))
+                                      (cons #`[ids #,(rhs-wrap #'rhs)]
+                                            (loop (cdr bs)))]
+                                     [kw
+                                      (memq (syntax-e #'kw) '(#:when #:unless #:break #:final #:do))
+                                      (cons (car bs)
+                                            (if (null? (cdr bs))
+                                                null
+                                                (cons (cadr bs) (loop (cddr bs)))))]
+                                     [_
+                                      ;; a syntax error; let the /derived form
+                                      ;; handle it, and no need to wrap any more:
+                                      bs])))]
+                            [(not (free-identifier=? derived-id-stx nonnested-id-stx))
+                             ;; add `#:when? #t` after each binding clause to trigger nesting
+                             (let loop ([bs bs])
+                               (if (null? bs)
+                                   null
+                                   (syntax-case (car bs) ()
+                                     [[_ _]
+                                      (list* (car bs)
+                                             #'#:when
+                                             #'#t
+                                             (loop (cdr bs)))]
+                                     [kw
+                                      (memq (syntax-e #'kw) '(#:when #:unless #:break #:final #:do #:splice))
+                                      (cons (car bs)
+                                            (if (null? (cdr bs))
+                                                null
+                                                (cons (cadr bs) (loop (cddr bs)))))]
+                                     [_
+                                      ;; a syntax error; let the /derived form
+                                      ;; handle it, and no need to insert any more:
+                                      bs])))]
+                            [else bs])]
+                         [derived-id (if wrap?
+                                         derived-id-stx
+                                         nonnested-id-stx)]
+                         [((middle-expr ...) (end-expr ...))
+                          (split-for-body stx #'(expr1 expr ...))])
+             (quasisyntax/loc stx
+               #,(wrap (quasisyntax/loc stx
+                         (derived-id #,stx fold-bind (bind ...)
+                                     middle-expr ...
+                                     #,@(let ([e (syntax/loc stx (let () end-expr ...))])
+                                          (if (and (not wrap?) combine*)
+                                              (combine* e)
+                                              (list (combine e))))))))))]
         ;; Let `derived-id' complain about the missing bindings and body expression:
         [(_ . rest)
          #`(derived-id #,stx fold-bind . rest)])))
   
   (define-syntax define-syntax-via-derived
     (syntax-rules ()
-      [(_ id derived-id fold-bind wrap rhs-wrap combine)
+      [(_ id derived-id nonnested-id fold-bind wrap rhs-wrap combine combine*)
        (define-syntax (id stx)
-         (for-variant-stx stx #'derived-id #'fold-bind wrap rhs-wrap combine))]))
+         (for-variant-stx stx #'derived-id #'nonnested-id  #'fold-bind wrap rhs-wrap combine combine*))]))
 
   (define-syntax define-for-variants
     (syntax-rules ()
-      [(_ (for for*) fold-bind wrap rhs-wrap combine)
+      [(_ (for for*) fold-bind wrap
+          ;; used for original mode, which creates expansions for `for/or`, etc.,
+          ;; that Typed Racket can recognize:
+          rhs-wrap combine
+          ;; used for newer mode that doesn't try to wrap binding clauses before
+          ;; expansion, so `#:splice` can work, can be #f if `rhs-wrap` doesn't wrap:
+          combine*)
        (begin
-         (define-syntax-via-derived for for/fold/derived fold-bind wrap rhs-wrap combine)
-         (define-syntax-via-derived for* for*/fold/derived fold-bind wrap rhs-wrap combine))]))
+         (define-syntax-via-derived for for/fold/derived for/fold/derived fold-bind wrap rhs-wrap combine combine*)
+         (define-syntax-via-derived for* for*/fold/derived for/fold/derived fold-bind wrap rhs-wrap combine combine*))]))
 
   (define-syntaxes (for/fold for*/fold for/foldr for*/foldr)
     (let ()
       (define ((make f/f/d-id) stx)
         (syntax-case stx ()
           [(_ . rest)
-           (syntax-protect (quasisyntax/loc stx
-                             (#,f/f/d-id #,stx . rest)))]))
+           (quasisyntax/loc stx
+             (#,f/f/d-id #,stx . rest))]))
       (values (make #'for/fold/derived)
               (make #'for*/fold/derived)
               (make #'for/foldr/derived)
@@ -1910,13 +1935,15 @@
     ()
     (lambda (x) `(,#'begin ,x ,#'(void)))
     (lambda (x) x)
-    (lambda (x) `(,#'begin ,x ,#'(values))))
+    (lambda (x) `(,#'begin ,x ,#'(values)))
+    #f)
 
   (define-for-variants (for/list for*/list)
     ([fold-var null])
     (lambda (x) `(,#'alt-reverse ,x))
     (lambda (x) x)
-    (lambda (x) `(,#'cons ,x ,#'fold-var)))
+    (lambda (x) `(,#'cons ,x ,#'fold-var))
+    #f)
 
   (define (grow-vector vec)
     (define n (vector-length vec))
@@ -1935,7 +1962,6 @@
        (with-syntax ([orig-stx orig-stx]
                      [for_/fold/derived for_/fold/derived-stx]
                      [((middle-body ...) (last-body ...)) (split-for-body stx #'(body ...))])
-         (syntax-protect
           (syntax/loc stx
             (let-values ([(vec i)
                           (for_/fold/derived
@@ -1949,7 +1975,7 @@
                                               vec)])
                              (unsafe-vector*-set! new-vec i (let () last-body ...))
                              (values new-vec (unsafe-fx+ i 1))))])
-              (shrink-vector vec i)))))]
+              (shrink-vector vec i))))]
       [(_ #:length length-expr #:fill fill-expr (for-clause ...) body ...)
        (with-syntax ([orig-stx orig-stx]
                      [(limited-for-clause ...)
@@ -1982,7 +2008,6 @@
                      [((middle-body ...) (last-body ...)) (split-for-body stx #'(body ...))]
                      [for_/vector for_/vector-stx]
                      [for_/fold/derived for_/fold/derived-stx])
-         (syntax-protect
           (syntax/loc stx
             (let ([len length-expr])
               (unless (exact-nonnegative-integer? len)
@@ -1996,7 +2021,7 @@
                    middle-body ...
                    (unsafe-vector*-set! v i (let () last-body ...))
                    (unsafe-fx+ 1 i)))
-                v)))))]
+                v))))]
       [(_ #:length length-expr (for-clause ...) body ...)
        (for_/vector #'(fv #:length length-expr #:fill 0 (for-clause ...) body ...) 
                     orig-stx for_/vector-stx for_/fold/derived-stx wrap-all?)]))
@@ -2031,14 +2056,12 @@
               (values* (alt-reverse id) ...)))))
     (syntax-case stx ()
       [(_ (id ... #:result result-expr) bindings expr1 expr ...)
-       (syntax-protect
         #`(let-values ([(id ...)
                         #,(do-without-result-clause
                            #'(_ (id ...) bindings expr1 expr ...))])
-            result-expr))]
+            result-expr)]
       [(_ (id ...) bindings expr1 expr ...)
-       (syntax-protect
-        (do-without-result-clause stx))]))
+       (do-without-result-clause stx)]))
 
   (define-syntax (for/lists stx) (do-for/lists #'for/fold/derived stx))
   (define-syntax (for*/lists stx) (do-for/lists #'for*/fold/derived stx))
@@ -2047,37 +2070,48 @@
     ([result #t])
     (lambda (x) x)
     (lambda (rhs) #`(stop-after #,rhs (lambda x (not result))))
-    (lambda (x) x))
+    (lambda (x) x)
+    (lambda (x) #`((define result #,x)
+                   #:final? (not result)
+                   result)))
 
   (define-for-variants (for/or for*/or)
     ([result #f])
     (lambda (x) x)
     (lambda (rhs) #`(stop-after #,rhs (lambda x result)))
-    (lambda (x) x))
+    (lambda (x) x)
+    (lambda (x) #`((define result #,x)
+                   #:final? result
+                   result)))
 
   (define-for-variants (for/first for*/first)
     ([val #f] [stop? #f])
     (lambda (x) #`(let-values ([(val _) #,x]) val))
     (lambda (rhs) #`(stop-after #,rhs (lambda x stop?)))
-    (lambda (x) #`(values #,x #t)))
+    (lambda (x) #`(values #,x #t))
+    (lambda (x) #`(#:final? #t
+                   (values x #t))))
 
   (define-for-variants (for/last for*/last)
     ([result #f])
     (lambda (x) x)
     (lambda (rhs) rhs)
-    (lambda (x) x))
+    (lambda (x) x)
+    #f)
 
   (define-for-variants (for/sum for*/sum)
     ([result 0])
     (lambda (x) x)
     (lambda (rhs) rhs)
-    (lambda (x) #`(+ result #,x)))
+    (lambda (x) #`(+ result #,x))
+    #f)
 
   (define-for-variants (for/product for*/product)
     ([result 1])
     (lambda (x) x)
     (lambda (rhs) rhs)
-    (lambda (x) #`(* result #,x)))
+    (lambda (x) #`(* result #,x))
+    #f)
 
   (define-for-variants (for/hash for*/hash)
     ([table #hash()])
@@ -2085,7 +2119,8 @@
     (lambda (rhs) rhs)
     (lambda (x)
       #`(let-values ([(key val) #,x])
-          (hash-set table key val))))
+          (hash-set table key val)))
+    #f)
 
   (define-for-variants (for/hasheq for*/hasheq)
     ([table #hasheq()])
@@ -2093,7 +2128,8 @@
     (lambda (rhs) rhs)
     (lambda (x)
       #`(let-values ([(key val) #,x])
-          (hash-set table key val))))
+          (hash-set table key val)))
+    #f)
 
   (define-for-variants (for/hasheqv for*/hasheqv)
     ([table #hasheqv()])
@@ -2101,7 +2137,17 @@
     (lambda (rhs) rhs)
     (lambda (x)
       #`(let-values ([(key val) #,x])
-          (hash-set table key val))))
+          (hash-set table key val)))
+    #f)
+
+  (define-for-variants (for/hashalw for*/hashalw)
+    ([table (hashalw)])
+    (lambda (x) x)
+    (lambda (rhs) rhs)
+    (lambda (x)
+      #`(let-values ([(key val) #,x])
+          (hash-set table key val)))
+    #f)
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;  specific sequences
@@ -2119,37 +2165,36 @@
                   [unsafe-fx> unsafe-fx>]
                   [< <]
                   [> >])
-      (for-clause-syntax-protect
-       #`[(id)
-          (:do-in
-           ;; outer bindings:
-           ([(start) a] [(end) b] [(inc) step])
-           ;; outer check:
-           ;; let `check' report the error:
-           (unless-unsafe (check ... start end inc))
-           ;; loop bindings:
-           ([pos start])
-           ;; pos check
-           #,(cond [all-fx?
-                    ;; Special case, can use unsafe ops:
-                    (if ((syntax-e #'step) . >= . 0)
-                        #'(unsafe-fx< pos end)
-                        #'(unsafe-fx> pos end))]
-                   ;; General cases:
-                   [(not (number? (syntax-e #'step)))
-                    #'(if (step . >= . 0) (< pos end) (> pos end))]
-                   [((syntax-e #'step) . >= . 0)
-                    #'(< pos end)]
-                   [else
-                    #'(> pos end)])
-           ;; inner bindings
-           ([(id) pos])
-           ;; pre guard
-           #t
-           ;; post guard
-           #t
-           ;; loop args
-           ((#,(if all-fx? #'unsafe-fx+ #'+) pos inc)))])))
+      #`[(id)
+         (:do-in
+          ;; outer bindings:
+          ([(start) a] [(end) b] [(inc) step])
+          ;; outer check:
+          ;; let `check' report the error:
+          (unless-unsafe (check ... start end inc))
+          ;; loop bindings:
+          ([pos start])
+          ;; pos check
+          #,(cond [all-fx?
+                   ;; Special case, can use unsafe ops:
+                   (if ((syntax-e #'step) . >= . 0)
+                       #'(unsafe-fx< pos end)
+                       #'(unsafe-fx> pos end))]
+                  ;; General cases:
+                  [(not (number? (syntax-e #'step)))
+                   #'(if (step . >= . 0) (< pos end) (> pos end))]
+                  [((syntax-e #'step) . >= . 0)
+                   #'(< pos end)]
+                  [else
+                   #'(> pos end)])
+          ;; inner bindings
+          ([(id) pos])
+          ;; pre guard
+          #t
+          ;; post guard
+          #t
+          ;; loop args
+          ((#,(if all-fx? #'unsafe-fx+ #'+) pos inc)))]))
 
   (define-sequence-syntax *in-range
     (lambda () #'in-range)
@@ -2192,26 +2237,25 @@
       (let loop ([stx stx])
         (syntax-case stx ()
           [[(id) (_ start-expr)]
-           (for-clause-syntax-protect
-            #`[(id)
-               (:do-in
-                ;; outer bindings:
-                ([(start) start-expr])
-                ;; outer check:
-                ;; let `check-naturals' report the error:
-                (unless-unsafe (check-naturals start))
-                ;; loop bindings:
-                ([pos start])
-                ;; pos check
-                #t
-                ;; inner bindings
-                ([(id) pos])
-                ;; pre guard
-                #t
-                ;; post guard
-                #t
-                ;; loop args
-                ((+ pos 1)))])]
+           #`[(id)
+              (:do-in
+               ;; outer bindings:
+               ([(start) start-expr])
+               ;; outer check:
+               ;; let `check-naturals' report the error:
+               (unless-unsafe (check-naturals start))
+               ;; loop bindings:
+               ([pos start])
+               ;; pos check
+               #t
+               ;; inner bindings
+               ([(id) pos])
+               ;; pre guard
+               #t
+               ;; post guard
+               #t
+               ;; loop args
+               ((+ pos 1)))]]
           [[(id) (_)]
            (loop #'[(id) (_ 0)])]
           [_ #f]))))
@@ -2222,26 +2266,25 @@
       (syntax-case stx (list)
         [[(id) (_ (list expr))] #'[(id) (:do-in ([(id) expr]) #t () #t () #t #f ())]]
         [[(id) (_ lst-expr)]
-         (for-clause-syntax-protect
-          #'[(id)
-             (:do-in
-              ;;outer bindings
-              ([(lst) lst-expr])
-              ;; outer check
-              (unless-unsafe (check-list lst))
-              ;; loop bindings
-              ([lst lst])
-              ;; pos check
-              (pair? lst)
-              ;; inner bindings
-              ([(id) (unsafe-car lst)]
-               [(rest) (unsafe-cdr lst)]) ; so `lst` is not necessarily retained during body
-              ;; pre guard
-              #t
-              ;; post guard
-              #t
-              ;; loop args
-              (rest))])]
+         #'[(id)
+            (:do-in
+             ;;outer bindings
+             ([(lst) lst-expr])
+             ;; outer check
+             (unless-unsafe (check-list lst))
+             ;; loop bindings
+             ([lst lst])
+             ;; pos check
+             (pair? lst)
+             ;; inner bindings
+             ([(id) (unsafe-car lst)]
+              [(rest) (unsafe-cdr lst)]) ; so `lst` is not necessarily retained during body
+             ;; pre guard
+             #t
+             ;; post guard
+             #t
+             ;; loop args
+             (rest))]]
         [_ #f])))
 
   (define-sequence-syntax *in-mlist
@@ -2250,25 +2293,24 @@
       (syntax-case stx (mlist)
         [[(id) (_ (mlist expr))] #'[(id) (:do-in ([(id) expr]) #t () #t () #t #f ())]]
         [[(id) (_ lst-expr)]
-         (for-clause-syntax-protect
-          #'[(id)
-             (:do-in
-              ;;outer bindings
-              ([(lst) lst-expr])
-              ;; outer check
-              (void) ; (unless (list? lst) (in-list lst))
-              ;; loop bindings
-              ([lst lst])
-              ;; pos check
-              (not (null? lst))
-              ;; inner bindings
-              ([(id) (mcar lst)])
-              ;; pre guard
-              #t
-              ;; post guard
-              #t
-              ;; loop args
-              ((mcdr lst)))])]
+         #'[(id)
+            (:do-in
+             ;;outer bindings
+             ([(lst) lst-expr])
+             ;; outer check
+             (void) ; (unless (list? lst) (in-list lst))
+             ;; loop bindings
+             ([lst lst])
+             ;; pos check
+             (not (null? lst))
+             ;; inner bindings
+             ([(id) (mcar lst)])
+             ;; pre guard
+             #t
+             ;; post guard
+             #t
+             ;; loop args
+             ((mcdr lst)))]]
         [_ #f])))
 
   (define-sequence-syntax *in-stream
@@ -2276,26 +2318,25 @@
     (lambda (stx)
       (syntax-case stx ()
         [[(id) (_ lst-expr)]
-         (for-clause-syntax-protect
-          #'[(id)
-             (:do-in
-              ;;outer bindings
-              ([(lst) lst-expr])
-              ;; outer check
-              (unless (unless-unsafe (stream? lst)) (in-stream lst))
-              ;; loop bindings
-              ([lst lst])
-              ;; pos check
-              (unsafe-stream-not-empty? lst)
-              ;; inner bindings
-              ([(id) (unsafe-stream-first lst)]
-               [(rest) (unsafe-stream-rest lst)])  ; so `lst` is not necessarily retained during body
-              ;; pre guard
-              #t
-              ;; post guard
-              #t
-              ;; loop args
-              (rest))])]
+         #'[(id)
+            (:do-in
+             ;;outer bindings
+             ([(lst) lst-expr])
+             ;; outer check
+             (unless (unless-unsafe (stream? lst)) (in-stream lst))
+             ;; loop bindings
+             ([lst lst])
+             ;; pos check
+             (unsafe-stream-not-empty? lst)
+             ;; inner bindings
+             ([(id) (unsafe-stream-first lst)]
+              [(rest) (unsafe-stream-rest lst)])  ; so `lst` is not necessarily retained during body
+             ;; pre guard
+             #t
+             ;; post guard
+             #t
+             ;; loop args
+             (rest))]]
         [_ #f])))
 
   (define-sequence-syntax *in-indexed

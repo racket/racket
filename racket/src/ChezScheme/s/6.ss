@@ -179,20 +179,39 @@
     (#3%directory-separator? c)))
 
 (define-who directory-list
-  (let ([dl (if-feature windows
-              (let ([wl (foreign-procedure "(cs)find_files" (string) scheme-object)])
-                (lambda (path)
-                  (let ([n (string-length path)])
-                    (unless (and (fx> n 0)
-                                 (let nostars? ([i 0])
-                                   (or (fx= i n)
-                                       (and (not (char=? (string-ref path i) #\*))
-                                            (nostars? (fx+ i 1))))))
-                      ($oops who "invalid directory name ~s" path))
-                    (wl (if (memv (string-ref path (fx- n 1)) '(#\\ #\/ #\:))
-                            (string-append path "*")
-                            (string-append path "\\*"))))))
-              (foreign-procedure "(cs)directory_list" (string) scheme-object))])
+  (let ([dl (let ()
+              (define-syntax windows-directory-list
+                (syntax-rules ()
+                  [(_)
+                   (let ([wl (foreign-procedure "(cs)find_files" (string) scheme-object)])
+                     (lambda (path)
+                       (let ([n (string-length path)])
+                         (unless (and (fx> n 0)
+                                      (let nostars? ([i 0])
+                                        (or (fx= i n)
+                                            (and (not (char=? (string-ref path i) #\*))
+                                                 (nostars? (fx+ i 1))))))
+                           ($oops who "invalid directory name ~s" path))
+                         (wl (if (memv (string-ref path (fx- n 1)) '(#\\ #\/ #\:))
+                                (string-append path "*")
+                                (string-append path "\\*"))))))]))
+              (define-syntax posix-directory-list
+                (syntax-rules ()
+                  [(_) (foreign-procedure "(cs)directory_list" (string) scheme-object)]))
+              (constant-case architecture
+                [(pb) (if (foreign-entry? "(cs)find_files")
+                          (let ([wl (windows-directory-list)])
+                            (lambda (path)
+                              (let ([bv* (wl path)])
+                                (if (string? bv*)
+                                    bv*
+                                    (map (lambda (bv)
+                                           (string->utf8 (utf16->string bv 'little #t)))
+                                         bv*)))))
+                          (posix-directory-list))]
+                [else (if-feature windows
+                        (windows-directory-list)
+                        (posix-directory-list))]))])
     (lambda (path)
       (unless (string? path) ($oops who "~s is not a string" path))
       (let ([bv* (dl path)])
@@ -501,5 +520,17 @@
                  (substring s (skip-sep s (fx+ i 1) n) n)]
                 [else (loop (fx+ i 1))]))
             (substring s (skip-sep s base n) n)))))
+
+  (set-who! path-build
+    (lambda (dir fn)
+      (unless (string? dir) ($oops who "~s is not a string" dir))
+      (unless (string? fn) ($oops who "~s is not a string" fn))
+      (format
+       (if (directory-separator?
+            (string-ref dir
+                        (fx- (string-length dir) 1)))
+           "~a~a"
+           (string-append "~a" (string (directory-separator)) "~a"))
+       dir fn)))
 )
 )

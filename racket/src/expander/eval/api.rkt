@@ -2,9 +2,11 @@
 (require (prefix-in direct: "main.rkt")
          (prefix-in direct: "../namespace/api.rkt")
          "../syntax/api.rkt"
+         "../syntax/taint.rkt"
          "../namespace/namespace.rkt"
          "../common/contract.rkt"
-         "parameter.rkt")
+         "parameter.rkt"
+         "../eval/protect.rkt")
 
 ;; These wrappers implement the protocol for whether to use
 ;; `namespace-synatx-introduce` on the argument to `eval`, etc.
@@ -50,28 +52,51 @@
   (check who syntax? s)
   ((current-compile) s #f))
 
-(define (expand s)
-  (direct:expand (intro s) (current-namespace) #t))
+(define/who (expand s [insp (current-code-inspector)])
+  (check who inspector? insp)
+  (maybe-taint-expanded
+   insp
+   (direct:expand (intro s) (current-namespace) #t)))
 
-(define/who (expand-syntax s)
+(define/who (expand-syntax s [insp (current-code-inspector)])
   (check who syntax? s)
-  (direct:expand s (current-namespace) #t))
+  (check who inspector? insp)
+  (maybe-taint-expanded
+   insp
+   (direct:expand s (current-namespace) #t)))
 
-(define (expand-once s)
-  (direct:expand-once (intro s)))
+(define/who (expand-once s [insp (current-code-inspector)])
+  (check who inspector? insp)
+  (maybe-taint-expanded
+   insp
+   (direct:expand-once (intro s))))
 
-(define/who (expand-syntax-once s)
+(define/who (expand-syntax-once s [insp (current-code-inspector)])
   (check who syntax? s)
-  (direct:expand-once s))
+  (check who inspector? insp)
+  (maybe-taint-expanded
+   insp
+   (direct:expand-once s)))
 
-(define (expand-to-top-form s)
-  (direct:expand-to-top-form (intro s)))
+(define/who (expand-to-top-form s [insp (current-code-inspector)])
+  (check who inspector? insp)
+  (maybe-taint-expanded
+   insp
+   (direct:expand-to-top-form (intro s))))
 
-(define/who (expand-syntax-to-top-form s)
+(define/who (expand-syntax-to-top-form s [insp (current-code-inspector)])
   (check who syntax? s)
-  (direct:expand-to-top-form s))
+  (check who inspector? insp)
+  (maybe-taint-expanded
+   insp
+   (direct:expand-to-top-form s)))
 
 
 (define (intro given-s [ns (current-namespace)])
   (define s (if (syntax? given-s) given-s (datum->syntax #f given-s)))
   (direct:namespace-syntax-introduce s ns))
+
+(define (maybe-taint-expanded insp s)
+  (if (eq? insp initial-code-inspector)
+      s
+      (syntax-taint s)))

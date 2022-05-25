@@ -196,6 +196,17 @@
     '(lambda (x) (vector-set! x 0 0) (set-box! x 0) 1)
     '(lambda (x) (vector-set! x 0 0) (set-box! x 0) 2))
   (cptypes-equivalent-expansion?
+    '(lambda (x) (vector-set! x x x) 1)
+    '(lambda (x) (vector-set! x x x) 2))
+  ;This test may fail because the subexpressions may be reordered
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (+ (unbox x) (car x)))
+    '(lambda (x) (- (unbox x) (car x))))
+  ;Regresion test for primitives with 0 arguments after an error
+  (cptypes-equivalent-expansion?
+    '(lambda () (box (let ([x (error 'who "msg")]) (cons x (random)))))
+    '(lambda () (error 'who "msg")))
+  (cptypes-equivalent-expansion?
     '(lambda (x) (vector-set! (box 5) 0 0) 1)
     '(lambda (x) (vector-set! (box 5) 0 0) 2))
   (cptypes-equivalent-expansion?
@@ -216,6 +227,9 @@
   (cptypes-equivalent-expansion?
     '(lambda (x) (when (and (fixnum? x) (zero? x)) x))
     '(lambda (x) (when (and (fixnum? x) (zero? x)) 0)))
+  (cptypes/once-equivalent-expansion?
+    '(lambda (x) (when (fixnum? x) (zero? x) 7))
+    '(lambda (x) (when (fixnum? x) 7)))
   (cptypes-equivalent-expansion?
     '(lambda (x f) (when (list-assuming-immutable? x) (f x) (list-assuming-immutable? x)))
     '(lambda (x f) (when (list-assuming-immutable? x) (f x) #t)))
@@ -403,6 +417,33 @@
        (if (if t (unbox b) #f) #f (box? b))))
 )
 
+(mat cptypes-type-specialize-numbers
+  (cptypes-equivalent-expansion?
+    '(lambda (x y) (when (and (fixnum? x) (fixnum? y)) (= x y)))
+    '(lambda (x y) (when (and (fixnum? x) (fixnum? y)) (#3%fx= x y))))
+  (cptypes-equivalent-expansion?
+    '(lambda (x y) (when (and (flonum? x) (flonum? y)) (= x y)))
+    '(lambda (x y) (when (and (flonum? x) (flonum? y)) (#3%fl= x y))))
+  (cptypes-equivalent-expansion?
+    '(lambda (x y) (when (and (fixnum? x) (fixnum? y)) (> x y)))
+    '(lambda (x y) (when (and (fixnum? x) (fixnum? y)) (#3%fx> x y))))
+  (cptypes-equivalent-expansion?
+    '(lambda (x y) (when (and (flonum? x) (flonum? y)) (> x y)))
+    '(lambda (x y) (when (and (flonum? x) (flonum? y)) (#3%fl> x y))))
+  (cptypes-equivalent-expansion?
+    '(lambda (x y) (when (and (fixnum? x) (fixnum? y)) (max x y)))
+    '(lambda (x y) (when (and (fixnum? x) (fixnum? y)) (#3%fxmax x y))))
+  (cptypes-equivalent-expansion?
+    '(lambda (x y) (when (and (flonum? x) (flonum? y)) (max x y)))
+    '(lambda (x y) (when (and (flonum? x) (flonum? y)) (#3%flmax x y))))
+  (cptypes/once-equivalent-expansion?
+    '(lambda (x y) (when (and (fixnum? x) (fixnum? y)) (fixnum? (max x y))))
+    '(lambda (x y) (when (and (fixnum? x) (fixnum? y)) (#3%fxmax x y) #t)))
+  (cptypes/once-equivalent-expansion?
+    '(lambda (x y) (when (and (flonum? x) (flonum? y)) (flonum? (max x y))))
+    '(lambda (x y) (when (and (flonum? x) (flonum? y)) (#3%flmax x y) #t)))
+)
+
 (mat cptype-directly-applied-case-lambda
   (equal?
     (parameterize ([enable-type-recovery #t]
@@ -515,6 +556,36 @@
                                `(let ()
                                   ,preamble
                                   (lambda (x) (when (,(car t) x) #t)))))
+                        (or (not check-self?)
+                            (cptypes-equivalent-expansion?
+                              `(let ()
+                                 ,preamble
+                                 (lambda (x) (when (and (,(car l) x) (,(car t) x)) (,(car l) x))))
+                              `(let ()
+                                 ,preamble
+                                 (lambda (x) (when (and (,(car l) x) (,(car t) x)) #t))))
+                            (cptypes-equivalent-expansion?
+                              `(let ()
+                                 ,preamble
+                                 (lambda (x) (when (and (,(car t) x) (,(car l) x)) (,(car l) x))))
+                              `(let ()
+                                 ,preamble
+                                 (lambda (x) (when (and (,(car t) x) (,(car l) x)) #t))))
+                            (cptypes-equivalent-expansion?
+                              `(let ()
+                                 ,preamble
+                                 (lambda (x) (when (or (,(car l) x) (,(car t) x)) (,(car t) x))))
+                              `(let ()
+                                 ,preamble
+                                 (lambda (x) (when (or (,(car l) x) (,(car t) x)) #t))))
+                            (cptypes-equivalent-expansion?
+                              `(let ()
+                                 ,preamble
+                                 (lambda (x) (when (or (,(car l) x) (,(car t) x)) (,(car t) x))))
+                              `(let ()
+                                 ,preamble
+                                 (lambda (x) (when (or (,(car t) x) (,(car l) x)) #t))))
+                            )
                         (loop (cdr t)))))
              (loop (cdr l))))))
 
@@ -575,12 +646,12 @@
   (test-disjoint/preamble/self preamble #f l))
 
 (mat cptypes-type-implies?
-  (test-chain '((lambda (x) (eq? x 0)) fixnum? #;exact-integer? real? number?))
-  (test-chain* '((lambda (x) (or (eq? x 0) (eq? x 10))) fixnum? #;exact-integer? real? number?))
+  (test-chain '((lambda (x) (eq? x 0)) fixnum? (lambda (x) (and (integer? x) (exact? x))) real? number?))
+  (test-chain* '((lambda (x) (or (eq? x 0) (eq? x 10))) fixnum? (lambda (x) (and (integer? x) (exact? x))) real? number?))
   (test-chain* '(fixnum? integer? real?))
   (test-chain* '(fixnum? exact? number?)) ; exact? may raise an error
   (test-chain* '(bignum? exact? number?)) ; exact? may raise an error
-  (test-chain '((lambda (x) (eqv? x (expt 256 100))) bignum? real? number?))
+  (test-chain '((lambda (x) (eqv? x (expt 256 100))) bignum? integer? real? number?))
   (test-chain '((lambda (x) (eqv? 0.0 x)) flonum? real? number?))
   (test-chain* '((lambda (x) (or (eqv? x 0.0) (eqv? x 3.14))) flonum? real? number?))
   (test-chain* '((lambda (x) (or (eq? x 0) (eqv? x 3.14))) real? number?))
@@ -591,7 +662,7 @@
   (test-chain* '(record? #3%$record?))
   (test-chain* '((lambda (x) (eq? x car)) procedure?))
   (test-chain* '(record-type-descriptor? #3%$record?))
-  (test-chain* '(null? list-assuming-immutable? list? #;(lambda (x) (or (null? x) (pair? x)))))
+  (test-chain* '(null? list-assuming-immutable? list? (lambda (x) (or (null? x) (pair? x)))))
   (test-disjoint '(pair? box? #3%$record? number?
                    vector? string? bytevector? fxvector? symbol?
                    char? boolean? null? (lambda (x) (eq? x (void)))
@@ -601,6 +672,8 @@
   (test-disjoint '(pair? box? fixnum? flonum? (lambda (x) (eq? #t x))))
   (test-disjoint '((lambda (x) (eq? x 0)) (lambda (x) (eq? x 1)) flonum?))
   (test-disjoint '((lambda (x) (eqv? x 0.0)) (lambda (x) (eqv? x 1.0)) fixnum?))
+  (test-disjoint '(exact? inexact?))
+  (test-disjoint '(integer? ratnum?))
   (test-disjoint '((lambda (x) (eq? x 'banana)) (lambda (x) (eq? x 'apple))))
   (test-disjoint* '(list? record? vector?))
   (not (test-disjoint* '(list? null?)))
@@ -1172,8 +1245,7 @@
   (cptypes-equivalent-expansion?
     '(number? (optimize-level))
     '(begin (optimize-level) #t))
-  ; this does't work for now, test a few weaker versions
-  #;(cptypes-equivalent-expansion?
+  (cptypes-equivalent-expansion?
       '(eq? (optimize-level 0) (void))
       '(begin (optimize-level 0) #t))
   (cptypes-equivalent-expansion?
@@ -1237,14 +1309,143 @@
     '(lambda (s) (define x (string->number s)) (when x (number? x)))
     '(lambda (s) (define x (string->number s)) (when x #t)))
   (cptypes-equivalent-expansion?
+    '(lambda (s) (define x (string->number s)) (unless (number? x) x))
+    '(lambda (s) (define x (string->number s)) (unless (number? x) #f)))
+  (cptypes-equivalent-expansion?
+    '(lambda (s) (define x (string->number s)) (unless (eq? x #f) (number? x)))
+    '(lambda (s) (define x (string->number s)) (unless (eq? x #f) #t)))
+  (cptypes-equivalent-expansion?
+    '(lambda (s) (define x (string->number s)) (unless (number? x) (eq? x #f)))
+    '(lambda (s) (define x (string->number s)) (unless (number? x) #t)))
+  (cptypes-equivalent-expansion?
     '(lambda (p) (define x (get-char p)) (not x))
     '(lambda (p) (define x (get-char p)) #f))
   (cptypes-equivalent-expansion?
     '(lambda (p) (define x (get-char p)) (box? x))
     '(lambda (p) (define x (get-char p)) #f))
-(cptypes-equivalent-expansion?
-    '(lambda (p) (define x (get-u8 p)) (when (number? p) (fixnum? p)))
-    '(lambda (p) (define x (get-u8 p)) (when (number? p) #t)))
+  (cptypes-equivalent-expansion?
+    '(lambda (p) (define x (get-char p)) (unless (eof-object? x) (char? x)))
+    '(lambda (p) (define x (get-char p)) (unless (eof-object? x) #t)))
+  (cptypes-equivalent-expansion?
+    '(lambda (p) (define x (get-char p)) (unless (char? x) (eof-object? x)))
+    '(lambda (p) (define x (get-char p)) (unless (char? x) #t)))
+  (cptypes-equivalent-expansion?
+    '(lambda (p) (define x (get-u8 p)) (when (number? x) (fixnum? x)))
+    '(lambda (p) (define x (get-u8 p)) (when (number? x) #t)))
+  (cptypes-equivalent-expansion?
+    '(lambda (p) (define x (get-u8 p)) (unless (eof-object? x) (fixnum? x)))
+    '(lambda (p) (define x (get-u8 p)) (unless (eof-object? x) #t)))
+  (cptypes-equivalent-expansion?
+    '(lambda (p) (define x (get-u8 p)) (unless (fixnum? x) (eof-object? x)))
+    '(lambda (p) (define x (get-u8 p)) (unless (fixnum? x) #t)))
+  (cptypes-equivalent-expansion?
+    '(lambda (p) (define x (get-u8 p)) (unless (eq? x (eof-object)) (fixnum? x)))
+    '(lambda (p) (define x (get-u8 p)) (unless (eq? x (eof-object)) #t)))
+  (cptypes-equivalent-expansion?
+    '(lambda (p) (define x (get-u8 p)) (unless (fixnum? x) (eq? x (eof-object))))
+    '(lambda (p) (define x (get-u8 p)) (unless (fixnum? x) #t)))
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (unless (char? x) (char? x)))
+    '(lambda (x) (unless (char? x) #f)))
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (when (and (char? x) (eq? x #\A)) (char? x)))
+    '(lambda (x) (when (and (char? x) (eq? x #\A)) #t)))
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (when (and (char? x) (eq? x #\A)) (eq? x #\A)))
+    '(lambda (x) (when (and (char? x) (eq? x #\A)) #t)))
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (when (or (char? x) (eq? x #\A)) (char? x)))
+    '(lambda (x) (when (or (char? x) (eq? x #\A)) #t)))
+  (not (cptypes-equivalent-expansion?
+         '(lambda (x) (when (or (char? x) (eq? x #\A)) (eq? x #\A)))
+         '(lambda (x) (when (or (char? x) (eq? x #\A)) #t))))
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (when (char? x) (unless (eq? x #\A) (char? x))))
+    '(lambda (x) (when (char? x) (unless (eq? x #\A) #t))))
+  (not (cptypes-equivalent-expansion?
+         '(lambda (x) (when (char? x) (unless (eq? x #\A) (eq? x #\A))))
+         '(lambda (x) (when (char? x) (unless (eq? x #\A) #t)))))
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (when (eq? x #\A) (unless (char? x) 1)))
+    '(lambda (x) (when (eq? x #\A) (unless (char? x) 2))))
+)
+
+(mat exact-integer
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (when (or (fixnum? x) (bignum? x)) (or (fixnum? x) (bignum? x))))
+    '(lambda (x) (when (or (fixnum? x) (bignum? x)) #t)))
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (when (or (fixnum? x) (bignum? x)) (or (bignum? x) (fixnum? x))))
+    '(lambda (x) (when (or (fixnum? x) (bignum? x)) #t)))
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (when (or (fixnum? x) (bignum? x)) (and (integer? x) (exact? x))))
+    '(lambda (x) (when (or (fixnum? x) (bignum? x)) #t)))
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (when (and (integer? x) (exact? x)) (or (fixnum? x) (bignum? x))))
+    '(lambda (x) (when (and (integer? x) (exact? x)) #t)))
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (when (or (fixnum? x) (eq? x 7)) (fixnum? x)))
+    '(lambda (x) (when (or (fixnum? x) (eq? x 7)) #t)))
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (when (or (eq? x 7) (fixnum? x)) (fixnum? x)))
+    '(lambda (x) (when (or (eq? x 7) (fixnum? x)) #t)))
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (when (and (fixnum? x) (eq? x 7)) (eq? x 7)))
+    '(lambda (x) (when (and (fixnum? x) (eq? x 7)) #t)))
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (when (and (eq? x 7) (fixnum? x)) (eq? x 7)))
+    '(lambda (x) (when (and (eq? x 7) (fixnum? x)) #t)))
+  ; check that non-fixnum? is not lost
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (unless (fixnum? x) (unless (fixnum? x) x)))
+    '(lambda (x) (unless (fixnum? x) x)))
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (when (real? x) (unless (fixnum? x) (unless (fixnum? x) x))))
+    '(lambda (x) (when (real? x) (unless (fixnum? x) x))))
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (unless (fixnum? x) (when (real? x) (unless (fixnum? x) x))))
+    '(lambda (x) (unless (fixnum? x) (when (real? x) x))))
+)
+
+(mat bitwise
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (when (fixnum? x) (bitwise-and x 7)))
+    '(lambda (x) (when (fixnum? x) (fxand x 7))))
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (when (fixnum? x) (bitwise-ior x 7)))
+    '(lambda (x) (when (fixnum? x) (fxior x 7))))
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (when (fixnum? x) (bitwise-xor x 7)))
+    '(lambda (x) (when (fixnum? x) (fxxor x 7))))
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (when (fixnum? x) (bitwise-not x)))
+    '(lambda (x) (when (fixnum? x) (fxnot x))))
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (fixnum? (bitwise-and x 7)))
+    '(lambda (x) (bitwise-and x 7) #t))
+  (not (cptypes-equivalent-expansion?
+         '(lambda (x) (fixnum? (bitwise-and x -7)))
+         '(lambda (x) (bitwise-and x -7) #t)))
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (fixnum? (bitwise-ior x -7)))
+    '(lambda (x) (bitwise-ior x -7) #t))
+  (not (cptypes-equivalent-expansion?
+         '(lambda (x) (fixnum? (bitwise-ior x 7)))
+         '(lambda (x) (bitwise-ior x 7) #t)))
+  (cptypes-equivalent-expansion?
+    '(lambda (f x) (when (fixnum? x) (bitwise-and (f) x)))
+    '(lambda (f x) (when (fixnum? x)
+                     (let ([y (f)])
+                       (if (#2%fixnum? y) ;the specialization uses #2%fixnum?
+                           (fxand y x)
+                           (bitwise-and y x))))))
+  (cptypes-equivalent-expansion?
+    '(lambda (f x) (when (fixnum? x) (bitwise-and x (f))))
+    '(lambda (f x) (when (fixnum? x)
+                     (let ([y (f)])
+                       (if (#2%fixnum? y) ;the specialization uses #2%fixnum?
+                           (fxand x y)
+                           (bitwise-and x y))))))
 )
 
 (mat cptypes-unreachable

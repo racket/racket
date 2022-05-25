@@ -3,19 +3,21 @@
          rackunit
          racket/runtime-path)
 
-(define (make-sctx pem)
-  (define sctx (ssl-make-server-context 'tls))
+(define (make-sctx key-file cert-file)
+  (define sctx (ssl-make-server-context 'auto))
   (ssl-load-default-verify-sources! sctx)
   (ssl-set-ciphers! sctx "DEFAULT:!aNULL:!eNULL:!LOW:!EXPORT:!SSLv2")
-  (ssl-load-certificate-chain! sctx pem)
-  (ssl-load-private-key! sctx pem)
+  (ssl-load-certificate-chain! sctx cert-file)
+  (ssl-load-private-key! sctx key-file)
   sctx)
 
-(define-runtime-path test-pem '(lib "openssl/test.pem"))
-(define-runtime-path test2-pem "sni-test2.pem")
+(define-runtime-path lambda-key "server_key.pem")
+(define-runtime-path lambda-cert "server_lambda_crt.pem")
+(define-runtime-path theultimate-key "server_ultimate_key.pem")
+(define-runtime-path theultimate-cert "server_ultimate_crt.pem")
 
-(define lambda-sctx (make-sctx test-pem))
-(define theultimate-sctx (make-sctx test2-pem))
+(define lambda-sctx (make-sctx lambda-key lambda-cert))
+(define theultimate-sctx (make-sctx theultimate-key theultimate-cert))
 
 (define (callback name)
   (cond [(equal? name "lambda") lambda-sctx]
@@ -37,7 +39,7 @@
   (let*-values ([(in out) (tcp-connect "localhost" 4433)]
 		[(ssl-in ssl-out)
                  (ports->ssl-ports in out
-                                   #:encrypt 'tls
+                                   #:encrypt 'auto
                                    #:hostname name)])
     ;; (printf "testing ~a: ~a~n" name (ssl-peer-certificate-hostnames ssl-in))
     (list (ssl-peer-certificate-hostnames ssl-in)

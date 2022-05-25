@@ -19,8 +19,10 @@
 (define (file-or-directory-permissions* path permissions)
   (file-or-directory-permissions
    path
-   (for/fold ([n 0]) ([p '(["r" #o400] ["w" #o200] ["x" #o100])])
-     (if (regexp-match? (car p) permissions) (bitwise-ior n (cadr p)) n))))
+   (if (eq? 'windows (system-type))
+       (if (regexp-match? #rx"w" permissions) #o777 #o555)
+       (for/fold ([n 0]) ([p '(["r" #o400] ["w" #o200] ["x" #o100])])
+	 (if (regexp-match? (car p) permissions) (bitwise-ior n (cadr p)) n)))))
 
 (define (make-file path [mod-time #f] [permissions #f])
   (with-output-to-file path
@@ -40,24 +42,26 @@
 (define zip (make-packer zip-exe "-r" "-q"))
 
 (define (diff src dest check-attributes?)
-  (define (compare-attributes p1 p2)
+  (define (compare-attributes p1 p2 check-time?)
     (or (not check-attributes?)
-        (and (= (file-or-directory-modify-seconds p1)
-                (file-or-directory-modify-seconds p2))
-             (equal? (file-or-directory-permissions p1)
-                     (file-or-directory-permissions p2)))))
+        (and (or (not check-time?)
+		 (= (file-or-directory-modify-seconds p1)
+                    (file-or-directory-modify-seconds p2)))
+	     (or (eq? 'windows (system-type)) ; tar on Windows don't preserve permissions
+		 (equal? (file-or-directory-permissions p1)
+			 (file-or-directory-permissions p2))))))
   (cond
-    [(link-exists? src)
+   [(link-exists? src)
      (and (link-exists? dest)
           (diff (resolve-path src) (resolve-path dest) check-attributes?))]
     [(file-exists? src)
      (and (file-exists? dest)
           (= (file-size src) (file-size dest))
-          (compare-attributes src dest)
+          (compare-attributes src dest #t)
           (equal? (file->bytes src) (file->bytes dest)))]
     [(directory-exists? src)
      (and (directory-exists? dest)
-          (compare-attributes src dest)
+          (compare-attributes src dest (not (eq? 'windows (system-type))))
           (let* ([sort-paths (λ (l) (sort l bytes<? #:key path->bytes))]
                  [srcs       (sort-paths (directory-list src))]
                  [dests      (sort-paths (directory-list dest))])
@@ -90,11 +94,13 @@
   (reverse got))
   
 (define (untar-tests*)
+  (define links-ok? (not (eq? 'windows (system-type))))
   (make-directory* "ex1")
   (make-file (build-path "ex1" "f1") (- (current-seconds) 12) "rw")
   (make-file (build-path "ex1" "f2") (+ (current-seconds) 12) "rwx")
   (make-file (build-path "ex1" "f3") (- (current-seconds)  7) "r")
-  (make-file-or-directory-link "fnone" (build-path "ex1" "f4"))
+  (when links-ok?
+    (make-file-or-directory-link "fnone" (build-path "ex1" "f4")))
   (make-directory* more-dir)
   (make-file (build-path more-dir "f4") (current-seconds) "rw")
   (file-or-directory-permissions* more-dir "rx") ; not "w"
@@ -104,11 +110,17 @@
       (unless (for/or ([e (in-list got1)])
                 (equal? path (tar-entry-path e)))
         (error "missing in entries" path)))
-    (check-find (build-path "ex1" "f1"))
-    (check-find (build-path "ex1" "f2"))
-    (check-find (build-path "ex1" "f3"))
-    (check-find (build-path "ex1" "f4"))
-    (check-find (build-path "ex1" "more" "f4"))
+    (define build-tar-path
+      ;; untar always uses "/"
+      (case-lambda
+       [(a b) (string->path (string-append a "/" b))]
+       [(a b c) (string->path (string-append a "/" b "/" c))]))
+    (check-find (build-tar-path "ex1" "f1"))
+    (check-find (build-tar-path "ex1" "f2"))
+    (check-find (build-tar-path "ex1" "f3"))
+    (when links-ok?
+      (check-find (build-tar-path "ex1" "f4")))
+    (check-find (build-tar-path "ex1" "more" "f4"))
     (define-values (i o) (make-pipe))
     (tar->output got1 o)
     (close-output-port o)
@@ -140,10 +152,11 @@
   (delete-directory/files "sub")
   (untar a.tar #:dest "sub" #:filter (lambda args #f))
   (when (directory-exists? "sub") (error "should not have been unpacked"))
-  (void (system* gzip-exe a.tar))
-  (untgz (path-replace-suffix a.tar #".tar.gz") #:dest "sub")
-  (test (diff "ex1" (build-path "sub" "ex1") #t))
-  (delete-directory/files "sub")
+  (when gzip-exe
+    (void (system* gzip-exe a.tar))
+    (untgz (path-replace-suffix a.tar #".tar.gz") #:dest "sub")
+    (test (diff "ex1" (build-path "sub" "ex1") #t))
+    (delete-directory/files "sub"))
   (file-or-directory-permissions* more-dir "rwx")
   
   ;; make sure top-level file extraction works

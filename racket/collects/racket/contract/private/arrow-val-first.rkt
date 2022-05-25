@@ -1155,7 +1155,7 @@ plus1 arg list construction: build-plus-one-arity-function/real
   (define dom (coerce-contract '-> _dom))
   (define rng (coerce-contract '-> _rng))
   (cond
-    [(and (any/c? dom)
+    [(and (prop:any/c? dom)
           (flat-contract? rng)
           (eq? boolean? (flat-contract-predicate rng)))
      any/c->boolean-contract]
@@ -1260,7 +1260,7 @@ plus1 arg list construction: build-plus-one-arity-function/real
      ->void-contract]
     [(and (pair? regular-doms)
           (null? (cdr regular-doms))
-          (any/c? (car regular-doms))
+          (prop:any/c? (car regular-doms))
           (null? kwd-infos)
           (not rest-ctc)
           (not pre-cond)

@@ -692,7 +692,9 @@
                      'hasheq
                      (if (hash-eqv? obj)
                          'hasheqv
-                         'hash)))
+                         (if (hash-equal-always? obj)
+                             'hashalw
+                             'hash))))
                 (apply append l))
           l)))
   
@@ -933,7 +935,9 @@
                               "#hasheq"
                               (if (hash-eqv? obj)
                                   "#hasheqv"
-                                  "#hash"))))
+                                  (if (hash-equal-always? obj)
+                                      "#hashalw"
+                                      "#hash")))))
                    (wr-lst (convert-hash obj expr?)
                            #f depth
                            pair? car cdr "(" ")" qd))))
@@ -1141,7 +1145,9 @@
                                      "#hasheq"
                                      (if (hash-eqv? obj)
                                          "#hasheqv"
-                                         "#hash"))))
+                                         (if (hash-equal-always? obj)
+                                             "#hashalw"
+                                             "#hash")))))
                           (pp-list (convert-hash obj expr?) extra pp-expr #f depth
                                    pair? car cdr pair-open pair-close
                                    qd))]
@@ -1482,10 +1488,10 @@
         ((do letrec-syntaxes+values)
          (and (no-sharing? expr 2 apair? acdr)
               pp-do))
-        ((module)
+        ((module send)
          (and (no-sharing? expr 2 apair? acdr)
               pp-module))
-        ((send syntax-case instantiate)
+        ((syntax-case instantiate)
          (and (no-sharing? expr 2 apair? acdr)
               pp-syntax-case))
         ((make-object)

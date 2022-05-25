@@ -1,11 +1,14 @@
 
 /* Extra configuration and support for Windows */
 
+#ifndef DLL_3M_SUFFIX
 # ifdef MZ_PRECISE_GC
 #  define DLL_3M_SUFFIX "3m"
 # else
 #  define DLL_3M_SUFFIX ""
 # endif
+#endif
+
 static wchar_t *_dlldir = L"dLl dIRECTORy:" /* <- this tag stays, so we can find it again */
                           DLL_RELATIVE_PATH L"\0"
                           /* Pad with 512 characters: */

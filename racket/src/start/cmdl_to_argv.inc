@@ -25,11 +25,12 @@ static char **cmdline_to_argv(int *_argc, char **_normalized_path)
   argc = parse_command_line(1, &w_argv, &argv_len, m_lpCmdLine, 1);
 
   argv = (char **)malloc((argc + 1) * sizeof(char *));
-  for (j = 0; j < argc; j++) {
+  for (j = 1; j < argc; j++) {
     int len;
     for (len = 0; w_argv[j][len] != 0; len++);
     argv[j] = wchar_to_char(w_argv[j], len);
   }
+  argv[argc] = NULL; /* CheckSingleInstance relies on this terminator */
 
   /* argv[0] should be the name of the executable, but Windows doesn't
      specify really where this name comes from, so we get it from

@@ -18,7 +18,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - uses: Bogdanp/setup-racket@v0.10
+    - uses: Bogdanp/setup-racket@v1.5
       with:
         architecture: 'x64'
         distribution: 'full'
@@ -32,7 +32,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - uses: Bogdanp/setup-racket@v0.10
+    - uses: Bogdanp/setup-racket@v1.5
       with:
         architecture: 'x64'
         distribution: 'full'

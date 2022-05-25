@@ -54,6 +54,11 @@
 (syntax-test #'(module m racket/base (#%declare something)))
 (syntax-test #'(module m racket/base (#%declare "something")))
 (syntax-test #'(module m racket/base (#%declare #:something)))
+(syntax-test #'(module m racket/base (#%declare #:realm)))
+(syntax-test #'(module m racket/base (#%declare #:unsafe #:unsafe)))
+(syntax-test #'(module m racket/base (#%declare #:unsafe) (#%declare #:unsafe)))
+(syntax-test #'(module m racket/base (#%declare #:realm elsewhere #:realm elsewhere)))
+(syntax-test #'(module m racket/base (#%declare #:realm elsewhere) (#%declare #:realm elsewhere)))
 
 (syntax-test #'(#%provide))
 (syntax-test #'(#%provide . x))
@@ -340,6 +345,164 @@
          (pseudo-+ ++))
 (test 12 values (++ 7 5))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test binding-space support
+
+(let ()
+  (define-syntax (in-space stx)
+    (syntax-case stx ()
+      [(_ space id) #`(quote-syntax
+                       #,((make-interned-syntax-introducer (syntax-e #'space))
+                          (syntax-local-introduce (datum->syntax #f (syntax-e #'id)))))]))
+  
+  (define (make-soup-module #:with-default? with-default?
+                            #:all-defined-out? [all-defined-out? #f])
+    `(module soup-kettle racket/base
+       (require (for-syntax racket/base))
+       (provide (for-space soup ,(if all-defined-out?
+                                     '(all-defined-out)
+                                     'kettle))
+                ,@(if with-default?
+                      '(kettle)
+                      '()))
+       (define-syntax (define-soup stx)
+         (syntax-case stx ()
+           [(_ id rhs)
+            #`(define #,((make-interned-syntax-introducer 'soup)
+                         #'id)
+                rhs)]))
+       (define-soup kettle 'soup)
+       (define kettle 'default)))
+
+  ;; check just providing in `soup` space
+  (parameterize ([current-namespace (make-base-namespace)])
+    (err/rt-test/once
+     (eval '(module soup-kettle racket/base
+              (#%provide (for-space soup kettle))
+              (define kettle 'default)))
+     exn:fail:syntax?
+     #rx"defined only outside the space")
+
+    (eval (make-soup-module #:with-default? #f))
+    (eval '(require 'soup-kettle))
+
+    (err/rt-test/once (eval 'kettle) exn:fail:contract:variable?)
+
+    (test 'soup eval (namespace-syntax-introduce (in-space soup kettle)))
+
+    (test #t namespace? (module->namespace ''soup-kettle))
+    (test (void) namespace-require '(rename 'soup-kettle also-kettle kettle))
+    (test (void) namespace-require '(for-space bisque 'soup-kettle)))
+
+  ;; check providing in `soup` and default spaces
+  (parameterize ([current-namespace (make-base-namespace)])
+    (eval (make-soup-module #:with-default? #t))
+    (eval '(require 'soup-kettle))
+    (test 'soup eval (namespace-syntax-introduce (in-space soup kettle)))
+    (test 'default eval 'kettle))
+
+  ;; check all-from-out and spaces
+  (for ([with-default? '(#f #t)])
+    (parameterize ([current-namespace (make-base-namespace)])
+      (eval (make-soup-module #:with-default? with-default?))
+      (eval '(module also-soup-kettle racket/base
+               (require 'soup-kettle)
+               (provide (all-from-out 'soup-kettle))))
+      (eval '(require 'also-soup-kettle))
+      (test 'soup eval (namespace-syntax-introduce (in-space soup kettle)))
+      (if with-default?
+          (test 'default eval 'kettle)
+          (err/rt-test/once (eval 'kettle) exn:fail:contract:variable?))))
+
+    ;; check all-defined-out and spaces
+  (for ([with-default? '(#f #t)])
+    (parameterize ([current-namespace (make-base-namespace)])
+      (eval (make-soup-module #:with-default? with-default? #:all-defined-out? #t))
+      (eval '(require 'soup-kettle))
+      (test 'soup eval (namespace-syntax-introduce (in-space soup kettle)))
+      (if with-default?
+          (test 'default eval 'kettle)
+          (err/rt-test/once (eval 'kettle) exn:fail:contract:variable?))))
+
+  ;; check shifting spaces when both `soup` and default are provided
+  (parameterize ([current-namespace (make-base-namespace)])
+    (eval (make-soup-module #:with-default? #t))
+    (err/rt-test/once (eval '(require (for-space bisque 'soup-kettle)))
+                      exn:fail:syntax?
+                      #rx"identifier already required")
+    (eval '(require (for-space bisque (only-space-in soup 'soup-kettle))))
+    (test 'soup eval (namespace-syntax-introduce (in-space bisque kettle)))
+    (err/rt-test/once (eval 'kettle) exn:fail:contract:variable?))
+
+  ;; check shifting phase for `soup` and default spaces
+  (parameterize ([current-namespace (make-base-namespace)])
+    (eval (make-soup-module #:with-default? #t))
+    (eval '(require (for-syntax 'soup-kettle racket/base)))
+    (err/rt-test/once (eval 'kettle) exn:fail:contract:variable?)
+    (err/rt-test/once (eval (namespace-syntax-introduce (in-space bisque kettle))) exn:fail:contract:variable?)
+    (eval '(define-syntax (m stx) #`(quote #,(datum->syntax #'here kettle))))
+    (test 'default eval '(m))
+    (eval (namespace-syntax-introduce
+           (datum->syntax #f `(define-syntax (soup-m stx) #`(quote #,(datum->syntax #'here ,(in-space soup kettle)))))))
+    (test 'soup eval '(soup-m)))
+
+  ;; check that definition in the default space makes the soup-space binding ambiguous
+  (for ([with-default? '(#f #t)])
+    (parameterize ([current-namespace (make-base-namespace)])
+      (eval (make-soup-module #:with-default? with-default?))
+      (err/rt-test/once (eval `(module m racket/base
+                                 (require 'soup-kettle)
+                                 (define kettle 'fish)
+                                 ,(in-space soup kettle)))
+                        exn:fail:syntax?
+                        #rx"ambiguous")
+      (err/rt-test/once (eval `(module m racket/base
+                                 (require (only-in 'soup-kettle kettle)) ; non-bulk
+                                 (define kettle 'fish)
+                                 ,(in-space soup kettle)))
+                        exn:fail:syntax?
+                        #rx"ambiguous")))
+
+  ;; same, but define before `require`
+  (for ([with-default? '(#f #t)])
+    (parameterize ([current-namespace (make-base-namespace)])
+      (eval (make-soup-module #:with-default? with-default?))
+      (err/rt-test/once (eval `(module m racket/base
+                                 (define kettle 'fish)
+                                 (require 'soup-kettle)
+                                 ,(in-space soup kettle)))
+                        exn:fail:syntax?
+                        #rx"ambiguous")
+      (err/rt-test/once (eval `(module m racket/base
+                                 (define kettle 'fish)
+                                 (require (only-in 'soup-kettle kettle)) ; non-bulk
+                                 ,(in-space soup kettle)))
+                        exn:fail:syntax?
+                        #rx"ambiguous")))
+
+  ;; same idea, but `require` shadowing initial import
+  (for ([with-default? '(#f #t)])
+    (parameterize ([current-namespace (make-base-namespace)])
+      (eval (make-soup-module #:with-default? with-default?))
+      (eval `(module soup-base racket/base
+               (require 'soup-kettle)
+               (provide (all-from-out racket/base)
+                        (for-space soup kettle))))
+      (define-values (b-vals b-stxs) (module->exports 'racket/base))
+      (define-values (sb-vals sb-stxs) (module->exports ''soup-base))
+      (test #t = (length b-stxs) (length sb-stxs))
+      (test (length b-vals) sub1 (length sb-vals))
+      (eval `(module fish-kettle racket/base
+               (provide kettle)
+               (define kettle 'fish)))
+      (err/rt-test/once (eval `(module m 'soup-base
+                                 (require 'fish-kettle)
+                                 ,(in-space soup kettle)))
+                        exn:fail:syntax?
+                        #rx"ambiguous")
+      (void)))
+
+  (void))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test proper bindings for `#%module-begin'
@@ -606,6 +769,19 @@
   (check `(relative-in ,(collection-file-path "promise.rkt" "racket") "string.rkt"))
   (check '(relative-in racket (relative-in "private/reqprov.rkt" "../string.rkt"))))
 
+
+(module module-that-defines-submodule-named-a racket/base
+  (module a racket/base
+    (define a 'a)
+    (provide a)))
+
+(module module-that-uses-submodule-named-a racket/base
+  (require (relative-in (submod 'module-that-defines-submodule-named-a a) (submod ".." a)))
+  (define got-a a)
+  (provide got-a))
+
+(test 'a dynamic-require ''module-that-uses-submodule-named-a 'got-a)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; check collection-path details
 
@@ -658,6 +834,20 @@
   (test '(nested) cdr (resolved-module-path-name m)))
 
 (test #f module-declared? '(submod no-such-collection/x nested) #t)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; provide a source-location syntax object to `module-path-index-resolve`
+
+(let ([bad #'no-such-collection-based-module])
+  (err/rt-test (module-path-index-resolve (module-path-index-join (syntax-e bad) #f)
+                                          #t
+                                          bad)
+               exn:fail:syntax:missing-module?))
+
+(let ([bad #'no-such-collection-based-module])
+  (err/rt-test (module-path-index-resolve (module-path-index-join (syntax-e bad) #f)
+                                          #t)
+               exn:fail:filesystem:missing-module?))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check shadowing of initial imports:
@@ -1900,14 +2090,27 @@ case of module-leve bindings; it doesn't cover local bindings.
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check 'module-body-context-simple? and 'module-body-...context properties
 
-(define (check-module-body-context-properties with-kar?)
+(define (check-module-body-context-properties #:rename? [with-kar? #f]
+                                              #:intro [intro #f])
+  (define scope-intro
+    (if intro
+        (let ([scope-intro (if (eq? intro 'space)
+                               (make-interned-syntax-introducer 'racket-test-space)
+                               (make-syntax-introducer))])
+          (lambda (d) (scope-intro (datum->syntax #f d))))
+        (lambda (d) d)))
   (define m (expand `(module m racket/base
                       ,@(if with-kar?
                             `((require (rename-in racket/base [car kar])))
                             null)
+                      ,(if (eq? intro 'space)
+                           '(require (for-space racket-test-space racket/promise))
+                           (scope-intro '(require racket/promise)))
+                      (require (for-meta 2 racket/promise))
                       (define inside 7))))
 
-  (test (not with-kar?) syntax-property m 'module-body-context-simple?)
+  (test (and (not with-kar?) (not intro))
+        syntax-property m 'module-body-context-simple?)
 
   (define i (syntax-property m 'module-body-context))
   (define o (syntax-property m 'module-body-inside-context))
@@ -1921,10 +2124,16 @@ case of module-leve bindings; it doesn't cover local bindings.
   (test (if with-kar? 'car #f)
         'kar-binding
         (let ([v (identifier-binding (datum->syntax i 'kar))])
-          (and v (cadr v)))))
+          (and v (cadr v))))
 
-(check-module-body-context-properties #f)
-(check-module-body-context-properties #t)
+  (test (and intro #t) not (identifier-binding (datum->syntax i 'force)))
+  (test 'force cadr (identifier-binding (scope-intro (datum->syntax i 'force)))))
+
+(check-module-body-context-properties)
+(check-module-body-context-properties #:rename? #t)
+(check-module-body-context-properties #:intro 'scope)
+(check-module-body-context-properties #:intro 'space)
+(check-module-body-context-properties #:rename? #t #:intro 'scope)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that nesting `module+` under multiple `begin-for-syntax`
@@ -2503,14 +2712,26 @@ case of module-leve bindings; it doesn't cover local bindings.
     (module->exports (variable-reference->resolved-module-path
                       (#%variable-reference)))))
 
-(let ([l (dynamic-require ''export-of-force-has-three-different-nominals 'result)])
-  (define (same-mod? a b) (equal? (module-path-index-resolve a)
-                                  (module-path-index-resolve b)))
-  (define b (cadr (assoc 'force (cdr (assoc 0 l)))))
-  (test 3 length b)
-  (test #f same-mod? (car b) (cadr b))
-  (test #f same-mod? (cadr b) (caddr b))
-  (test #f same-mod? (car b) (caddr b)))
+(module export-of-force-has-three-different-nominals-no-bulk racket/base
+  (require (only-in racket force)
+           (only-in racket/promise force)
+           (only-in racket/private/promise force))
+  (provide force result)
+
+  (define-values (result other)
+    (module->exports (variable-reference->resolved-module-path
+                      (#%variable-reference)))))
+
+(for ([modname (list ''export-of-force-has-three-different-nominals
+                     ''export-of-force-has-three-different-nominals-no-bulk)])
+  (let ([l (dynamic-require modname 'result)])
+    (define (same-mod? a b) (equal? (module-path-index-resolve a)
+                                    (module-path-index-resolve b)))
+    (define b (cadr (assoc 'force (cdr (assoc 0 l)))))
+    (test 3 length b)
+    (test #f same-mod? (car b) (cadr b))
+    (test #f same-mod? (cadr b) (caddr b))
+    (test #f same-mod? (car b) (caddr b))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2609,6 +2830,50 @@ case of module-leve bindings; it doesn't cover local bindings.
     (void)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `local-require` works with spaces and does not have an
+;; unnecessary space shift
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval `(module n racket/base
+           (define abcdef 1)
+           (provide abcdef)
+           (require (for-syntax racket/base))
+           (define-syntax (define-at-soup stx)
+             (syntax-case stx ()
+               [(_ id) #`(define #,((make-interned-syntax-introducer 'soup) #'id) 'ok)]))
+           (define-at-soup kettle)
+           (provide (for-space soup kettle))))
+
+  (define stx
+    (expand `(module m racket/base
+               (require (for-syntax racket/base))
+               (provide result)
+               (begin-for-syntax (local-require 'n) abcdef)
+               (define-syntax (at-soup stx)
+                 (syntax-case stx ()
+                   [(_ id) ((make-interned-syntax-introducer 'soup) #'id)]))
+               (define result
+                 (let ()
+                   (local-require 'n)
+                   (at-soup kettle))))))
+
+  (eval stx)
+  (test 'ok dynamic-require ''m 'result)
+
+  (let loop ([stx stx])
+    (cond
+      [(and (identifier? stx) (equal? 'abcdef (syntax-e stx)))
+       (define binding (identifier-binding stx))
+       (when binding
+         (unless (memq (list-ref binding 5) '(0 1))
+           (error 'local-require-test "shift for ~a: ~a" stx (list-ref binding 5))))]
+      [(pair? stx)
+       (loop (car stx))
+       (loop (cdr stx))]
+      [(syntax? stx)
+       (loop (syntax-e stx))])))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; `make-interned-syntax-introducer`
 
 (let ([ns-code '(module ns racket/base
@@ -2655,6 +2920,26 @@ case of module-leve bindings; it doesn't cover local bindings.
       (compile/eval p-code)
       (compile/eval u-code)
       (test 'ns-val dynamic-require ''u 'v))))
+
+(err/rt-test (make-interned-syntax-introducer 5))
+(err/rt-test (make-interned-syntax-introducer (gensym)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; check that bulk bindings based on interned scopes are preserved,
+;; even if the scope is not otherwise referenced
+
+(let ([m '(module provides-x-with-tester-scope-bindings racket/base
+            (require (for-space tester (prefix-in t: racket/base)))
+            (provide x)
+            (define x #'x))])
+  (define o (open-output-bytes))
+  (write (compile m) o)
+  (eval (parameterize ([read-accept-compiled #t])
+          (read (open-input-bytes (get-output-bytes o))))))
+
+(test #t pair?
+      (identifier-binding ((make-interned-syntax-introducer 'tester)
+                           (datum->syntax (dynamic-require ''provides-x-with-tester-scope-bindings 'x) 't:cons))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Another example to check that re-expansion generates definition
@@ -2783,6 +3068,45 @@ case of module-leve bindings; it doesn't cover local bindings.
 (require 'unsafe-module-so-call-provided-carefully)
 (test 3 unsafe-first '(3 4 5))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check `#:realm`
+
+(module module-with-body-in-elsewhere-realm racket/base
+  (#%declare #:realm elsewhere)
+  (provide f1 f2 f3 f4)
+  (define (f1 x) x)
+  (define f2 (lambda (x) x))
+  (define f3 (case-lambda
+               [(x) x]
+               [(x y) y]))
+  (define f4 (lambda (x)
+               (lambda (y) x))))
+
+(test 'elsewhere procedure-realm (dynamic-require ''module-with-body-in-elsewhere-realm 'f1))
+(test 'elsewhere procedure-realm (dynamic-require ''module-with-body-in-elsewhere-realm 'f2))
+(test 'elsewhere procedure-realm (dynamic-require ''module-with-body-in-elsewhere-realm 'f3))
+(test 'elsewhere procedure-realm ((dynamic-require ''module-with-body-in-elsewhere-realm 'f4) 1))
+
+(test 'elsewhere module->realm ''module-with-body-in-elsewhere-realm)
+(test 'elsewhere values (module-compiled-realm (compile '(module m racket/base
+                                                           (#%declare #:realm elsewhere)))))
+
+(parameterize ([current-compile-realm 'somewhere])
+  (eval '(module module-with-body-in-parameterized-realm racket/base
+           (provide f1)
+           (define (f1 x) x)))
+  (test 'somewhere procedure-realm (eval '(lambda (x) x)))
+  (test 'somewhere procedure-realm (eval '(begin
+                                            (define procedure-that-is-somewhere (lambda (x) x))
+                                            procedure-that-is-somewhere)))
+  (eval '(module module-with-body-still-in-elsewhere-realm racket/base
+           (#%declare #:realm elsewhere)
+           (provide f1)
+           (define (f1 x) x))))
+
+(test 'somewhere procedure-realm (dynamic-require ''module-with-body-in-parameterized-realm 'f1))
+(test 'elsewhere procedure-realm (dynamic-require ''module-with-body-still-in-elsewhere-realm 'f1))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Make sure that a module with an attached instance
 ;; cannot be redeclared in the target namespace
@@ -2818,7 +3142,8 @@ case of module-leve bindings; it doesn't cover local bindings.
      (module use (submod ".." mb)
        (module* m racket/base)
        (require (submod "." m "..")))))
- exn:fail?)
+ exn:fail?
+ #rx"cycle detected")
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; If `local-expand` creates a macro binding, and if
@@ -3643,6 +3968,57 @@ case of module-leve bindings; it doesn't cover local bindings.
   (test 10 'top-begin/compile-any
         (eval (parameterize ([read-accept-compiled #t])
                 (read (open-input-bytes (get-output-bytes o)))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(let ([o (open-output-bytes)])
+  (parameterize ([current-output-port o])
+    (define m
+      '(module continuations-at-phase-1 racket/base
+         (require (for-syntax racket/base))
+         
+         (begin-for-syntax
+           (define k (call/cc (lambda (k) k)))
+           (set! k k)
+           (k 5)
+           (printf "~s\n" k)
+           (define more #f)
+           (let ([me (call/cc (lambda (k) (lambda (v) (k v))))])
+             (set! more me)
+             (printf "~s\n" me))
+           (more 88))))
+    (eval m))
+  (test "5\n#<procedure>\n88\n" get-output-string o))
+
+(let ([o (open-output-bytes)])
+  (parameterize ([current-output-port o])
+    (namespace-require ''continuations-at-phase-1))
+  (test "" get-output-string o)
+  (parameterize ([current-output-port o])
+    (eval 'car))
+  (test "5\n#<procedure>\n88\n" get-output-string o))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; check that expanded `require` doens't keep use-site scopes
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval
+   `(module p2 racket/base
+      (provide cons)
+      (define cons 'p)))
+
+  (eval
+    (expand
+     `(module p racket/base
+        (require (for-syntax racket/base))
+        (define-syntax (bounce stx)
+          (syntax-case stx ()
+            [(_ mod ...)
+             (with-syntax ([(mod ...) ((make-syntax-introducer) #'(mod ...))])
+               #'(begin (begin (require mod)
+                               (provide (all-from-out mod)))
+                        ...))]))
+        (bounce 'p2)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -32,7 +32,7 @@ jobs:
         raco test -l tests/match/main
         raco test -l tests/zo-path
         raco test -c tests/xml
-        raco test -c tests/future
+        raco test --timeout 300 -c tests/future
         raco test -l tests/db/all-tests
         raco test -c tests/stxparse
         raco test -c tests/syntax
@@ -62,7 +62,7 @@ jobs:
         raco test -l tests/match/main
         raco test -l tests/zo-path
         raco test -c tests/xml
-        raco test -c tests/future
+        raco test --timeout 300 -c tests/future
         raco test -l tests/db/all-tests
         raco test -c tests/stxparse
         raco test -c tests/syntax
@@ -88,7 +88,7 @@ jobs:
         tar -xvjf racketcs-macos-x64_git${{ github.sha }}.tar.bz2 -C host-racket --strip-components 1
     - name: Build iOS Racket
       run: |
-        set -euo pipefail
+        set -euxo pipefail
         mkdir -p racket/src/build-ios
         pushd racket/src/build-ios
         ../configure \

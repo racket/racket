@@ -7,6 +7,7 @@
          "../file/parameter.rkt"
          "../file/host.rkt"
          "../file/error.rkt"
+         "../file/permissions.rkt"
          "../format/main.rkt"
          "fd-port.rkt"
          "close.rkt"
@@ -53,10 +54,6 @@
   (when (port-count-lines-enabled)
     (port-count-lines! p))
   p)
-
-(define (permissions? perms)
-  (and (exact-integer? perms) (<= 0 perms 65535)))
-(define permissions-desc "(integer-in 0 65535)")
 
 (define (do-open-output-file #:plus-input? [plus-input? #f] who path mode1 mode2 perms)
   (check who path-string? path)
@@ -110,7 +107,7 @@
                                           "error deleting file\n"
                                           "  path: ~a")
                                          (host-> host-path))))
-       (rktio_open rktio host-path flags)]
+       (rktio_open_with_create_permissions rktio host-path flags perms)]
       [else fd0]))
   (when (rktio-error? fd)
     (end-atomic)

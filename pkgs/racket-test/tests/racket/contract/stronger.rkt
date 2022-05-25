@@ -5,7 +5,8 @@
                 (make-basic-contract-namespace 'racket/contract
                                                'racket/list
                                                'racket/class
-                                               'racket/math)])
+                                               'racket/math
+                                               'racket/sequence)])
 
   (contract-eval '(define-contract-struct couple (hd tl)))
   (contract-eval '(define-contract-struct triple (a b c)))
@@ -238,6 +239,7 @@
                                (parameter/c (between/c 1 4) (between/c 0 5)))
   (ctest #f trust/not-stronger? (parameter/c (between/c 1 4) (between/c 0 5))
                                (parameter/c (between/c 0 5) (between/c 1 4)))
+  (ctest #f trust/not-stronger? (parameter/c (between/c 0 5)) (parameter/c (between/c 0 5) (between/c 1 6)))
 
   (ctest #t trust/not-stronger? (symbols 'x 'y) (symbols 'x 'y 'z))
   (ctest #f trust/not-stronger? (symbols 'x 'y 'z) (symbols 'x 'y))
@@ -396,6 +398,15 @@
 
   (ctest #t trust/not-stronger? (syntax/c (<=/c 3)) (syntax/c (<=/c 4)))
   (ctest #f trust/not-stronger? (syntax/c (<=/c 4)) (syntax/c (<=/c 3)))
+
+  (ctest #t trust/not-stronger? (sequence/c (<=/c 3)) (sequence/c (<=/c 4)))
+  (ctest #f trust/not-stronger? (sequence/c (<=/c 3) (<=/c 3)) (sequence/c (<=/c 3)))
+  (ctest #f trust/not-stronger? (sequence/c (<=/c 3)) (sequence/c (<=/c 3) (<=/c 3)))
+  (ctest #f trust/not-stronger? (sequence/c (<=/c 4)) (sequence/c (<=/c 3)))
+  (ctest #t trust/not-stronger? (sequence/c (<=/c 3) #:min-count 5) (sequence/c (<=/c 3)))
+  (ctest #f trust/not-stronger? (sequence/c (<=/c 3)) (sequence/c (<=/c 3) #:min-count 5))
+  (ctest #t trust/not-stronger? (sequence/c (<=/c 3) #:min-count 5) (sequence/c (<=/c 3) #:min-count 4))
+  (ctest #f trust/not-stronger? (sequence/c (<=/c 3) #:min-count 4) (sequence/c (<=/c 3) #:min-count 5))
 
   (ctest #t trust/not-stronger? (parametric->/c (x) (-> x x)) (parametric->/c (x) (-> x (or/c x #f))))
   (ctest #t trust/not-stronger? (parametric->/c (x) (-> x x)) (parametric->/c (x) (-> x (first-or/c x #f))))

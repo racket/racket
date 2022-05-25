@@ -8,7 +8,8 @@
 
          schedule-info-current-exts
          schedule-info-add-timeout-at!
-         schedule-info-did-work!)
+         schedule-info-did-work!
+         schedule-info-repoll?)
 
 ;; A `schedule-info` record allows an event poller to communicate
 ;; extra information to the scheduler when an even is not ready.
@@ -33,3 +34,7 @@
 
 (define (schedule-info-did-work! sched-info)
   (set-schedule-info-did-work?! sched-info #t))
+
+(define (schedule-info-repoll? sched-info)
+  (or (schedule-info-did-work? sched-info)
+      (schedule-info-exts sched-info)))

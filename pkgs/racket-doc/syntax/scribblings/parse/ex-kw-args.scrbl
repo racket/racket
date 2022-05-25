@@ -88,7 +88,7 @@ Here's an alternative definition that re-uses Racket's @racket[cond] macro:
   (syntax-parse stx
     [(mycond (~optional (~seq #:error-on-fallthrough who:expr))
              clause ...)
-     #'(cond clause ... (~? [else (error 'who "no clause matched")] (~@)))]))
+     #'(cond clause ... (~? [else (error who "no clause matched")] (~@)))]))
 ]
 
 In this version, we optionally insert an @racket[else] clause at the

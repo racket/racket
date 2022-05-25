@@ -41,7 +41,12 @@
                                           #:delta [delta 0]
                                           #:result-offset [result-offset 0])
   (define (string-offset pos)
-    (+ result-offset (bytes-utf-8-length bstr-in #\? start-index (- pos delta))))
+    (define end-index (- pos delta))
+    (if (end-index . < . start-index)
+        ;; unusual: range spans prefix
+        (- result-offset (bytes-utf-8-length bstr-in #\? end-index start-index))
+        ;; normal: range is within the non-prefix input
+        (+ result-offset (bytes-utf-8-length bstr-in #\? start-index end-index))))
   (cons (cons (string-offset ms-pos) (string-offset me-pos))
         (if state
             (for/list ([p (in-vector state)])

@@ -14,6 +14,7 @@
          file/ico
          racket/private/so-search
          racket/private/share-search
+         racket/private/link-path
          setup/cross-system
          "private/cm-minimal.rkt"
          "private/winsubsys.rkt"
@@ -106,7 +107,7 @@
          [fixup (lambda (re sfx)
                   (if (regexp-match re (path->bytes path))
                       path
-                      (path-replace-extension path sfx)))])
+                      (path-add-extension path sfx #".")))])
     (case (cross-system-type)
       [(windows) (fixup #rx#".[.][eE][xX][eE]$" #".exe")]
       [(macosx) (if mred?
@@ -511,7 +512,8 @@
         (hash-set! working filename full-name)
         (let* ([get-module-code*
                 ;; Re-used when swapping code during cross-compilation.
-                (lambda (#:roots [roots (current-compiled-file-roots)])
+                (lambda (#:roots [roots (current-compiled-file-roots)]
+                         #:host? [host? #f])
                   (get-module-code just-filename
                                    #:roots roots
                                    #:submodule-path submod-path
@@ -519,7 +521,11 @@
                                      (if (pair? l)
                                          (car l)
                                          "compiled"))
-                                   compiler
+                                   (if (and host? (cross-compiling?))
+                                       (lambda (e)
+                                         (parameterize ([current-compile-target-machine (system-type 'target-machine)])
+                                           (compiler e)))
+                                       compiler)
                                    (if on-extension
                                        (lambda (f l?)
                                          (on-extension f l?)
@@ -540,7 +546,7 @@
                                                   ((file-date so) . >= . (file-date zo)))
                                              'so
                                              #f)))))]
-               [code (or ready-code (get-module-code*))])
+               [code (or ready-code (get-module-code* #:host? #t))])
           (cond
            [(extension? code)
             (when verbose?
@@ -731,7 +737,10 @@
                                                                            (error 'embed "unexpected nested module path index ~s" base)))
                                                                        (cons path (lookup-full-name sub-filename)))))
                                                               ;; a run-time path:
-                                                              (cons sub-path (lookup-full-name sub-filename)))))
+                                                              (cons (if (path? sub-path)
+                                                                        `(path ,(encode-link-path sub-path))
+                                                                        sub-path)
+                                                                    (lookup-full-name sub-filename)))))
                                                    (append all-file-imports (map (lambda (p) #f) extra-runtime-paths))
                                                    (append sub-files (take extra-files (length extra-runtime-paths)))
                                                    (append sub-paths extra-runtime-paths)))
@@ -1309,7 +1318,10 @@
                                                                      (path->bytes p)
                                                                      (if (and (pair? p)
                                                                               (eq? 'module (car p)))
-                                                                         (list 'module (cadr p))
+                                                                         (list 'module (let ([p (cadr p)])
+                                                                                         (if (path? p)
+                                                                                             `(path ,(encode-link-path p))
+                                                                                             p)))
                                                                          p)))
                                                            (let ([p (cond
                                                                      [(bytes? p) (bytes->path p)]

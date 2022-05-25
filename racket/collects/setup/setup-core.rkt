@@ -1354,27 +1354,28 @@
       ;; already there, if the collection has an "info.ss" file:
       (when (or (file-exists? (build-path (cc-path cc) "info.rkt"))
                 (file-exists? (build-path (cc-path cc) "info.ss")))
-        (hash-set! t
-                   (case (cc-info-path-mode cc)
-                     [(relative)
-                       ;; Use relative path:
-                      (path->info-relative (apply build-path
-                                                  (cc-info-root cc)
-                                                  (cc-collection cc)))]
-                     [(abs-in-relative) 
-                      ;; Try relative to `lib':
-                      (let ([p (path->main-lib-relative (cc-path cc))])
-                        (if (path? p)
-                            ;; Fall back to relative (with ".."s) to info root:
-                            (let ([rp (find-relative-path (cc-info-root cc)
-                                                          p
-                                                          #:more-than-root? #t)])
-                              (if (relative-path? rp)
-                                  (encode-relative-path rp)
-                                  (path->bytes rp)))
-                            p))]
-                     [else (path->bytes (cc-path cc))])
-                   (cons (domain) (cc-shadowing-policy cc)))))
+        (unless (eq? 'all (omitted-paths (cc-path cc) getinfo/log-failure (cc-omit-root cc)))
+          (hash-set! t
+                     (case (cc-info-path-mode cc)
+                       [(relative)
+                        ;; Use relative path:
+                        (path->info-relative (apply build-path
+                                                    (cc-info-root cc)
+                                                    (cc-collection cc)))]
+                       [(abs-in-relative)
+                        ;; Try relative to `lib':
+                        (let ([p (path->main-lib-relative (cc-path cc))])
+                          (if (path? p)
+                              ;; Fall back to relative (with ".."s) to info root:
+                              (let ([rp (find-relative-path (cc-info-root cc)
+                                                            p
+                                                            #:more-than-root? #t)])
+                                (if (relative-path? rp)
+                                    (encode-relative-path rp)
+                                    (path->bytes rp)))
+                              p))]
+                       [else (path->bytes (cc-path cc))])
+                     (cons (domain) (cc-shadowing-policy cc))))))
     ;; In "tidy" mode, make sure we check each "cache.rktd":
     (when (or (make-tidy)
               no-specific-collections?)
@@ -1852,8 +1853,12 @@
                                   [(and (cc-main? cc)
                                         (for/or ([s-dir (in-list (get-extra-search-dirs))])
                                           (let ([p (build-dest-path s-dir lib-name)])
-                                            (or (file-exists? p)
-                                                (directory-exists? p)))))
+                                            (and (or (file-exists? p)
+                                                     (directory-exists? p))
+                                                 (or (and moving?
+                                                          (not (file-exists? src))
+                                                          (not (directory-exists? src)))
+                                                     (same-content? src p))))))
                                    ;; already exists in one of the search directories, so
                                    ;; don't copy/move to this one
                                    #f]

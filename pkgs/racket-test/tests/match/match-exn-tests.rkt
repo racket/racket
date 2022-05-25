@@ -1,5 +1,7 @@
-(module match-tests mzscheme
-  (require mzlib/match rackunit)
+(module match-exn-tests racket/base
+  (require racket/match
+           rackunit
+           syntax/macro-testing)
   (provide match-exn-tests)
 
   (define simple-fail-tests
@@ -63,8 +65,18 @@
        (check-exn #rx"match-define-values: no matching clause for \\(6 7\\)"
                   (lambda () (match-define-values (3 x) (values 6 7)) x)))))
 
+  (define exn-message-tests-3
+    (test-suite "Empty clause"
+      (test-case "match"
+        (check-exn #rx"match: expected more terms starting with any term"
+                   (lambda () (convert-syntax-error (match 1 [])))))
+      (test-case "match*"
+        (check-exn #rx"match\\*: expected more terms starting with any term"
+                   (lambda () (convert-syntax-error (match* 1 [])))))))
+
   (define match-exn-tests
     (test-suite "Tests for exceptions raised by match.rkt"
                 simple-fail-tests
                 exn-message-tests-1
-                exn-message-tests-2)))
+                exn-message-tests-2
+                exn-message-tests-3)))

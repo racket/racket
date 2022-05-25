@@ -144,6 +144,7 @@
          call-with-bytevector-output-port
          make-compile-time-value
          optimize-level
+         self-evaluating-vectors
          symbol-value
          set-symbol-value!)
 
@@ -802,22 +803,34 @@
 
 ;; Note: fixnums here are compile-time fixnums, so "config.rkt" is not needed
 
-(define 64-bit? (= (system-type 'word) 64))
+(define-syntax (define-if-needed stx)
+  (syntax-case stx ()
+    [(_ most-positive-fixnum most-negative-fixnum)
+     (cond
+       [(identifier-binding #'most-positive-fixnum)
+        ;; already defined
+        #'(begin)]
+       [else
+        #'(begin
+            (define 64-bit? (= (system-type 'word) 64))
+            (define fixnum-bits (if (eq? 'racket (system-type 'vm))
+                                    (if 64-bit? 63 31)
+                                    (if 64-bit? 61 30)))
+            (define low-fixnum (- (expt 2 (sub1 fixnum-bits))))
+            (define high-fixnum (sub1 (expt 2 (sub1 fixnum-bits))))
+            (define (most-positive-fixnum) high-fixnum)
+            (define (most-negative-fixnum) low-fixnum))])]))
 
-(define (fixnum-width) (if (eq? 'racket (system-type 'vm))
-                           (if 64-bit? 63 31)
-                           (if 64-bit? 61 30)))
-(define low-fixnum (- (expt 2 (sub1 (fixnum-width)))))
-(define high-fixnum (sub1 (expt 2 (sub1 (fixnum-width)))))
+(define-if-needed most-positive-fixnum most-negative-fixnum)
 
+(define (fixnum-width) (add1 (integer-length (most-positive-fixnum))))
 (define s:fixnum? fixnum?)
-
-(define (most-positive-fixnum) high-fixnum)
-(define (most-negative-fixnum) low-fixnum)
 
 (define (make-compile-time-value v) v)
 
 (define optimize-level (make-parameter optimize-level-init))
+
+(define self-evaluating-vectors (make-parameter #f))
 
 ;; For "implementation-helpers.ikarus.ss":
 (define (symbol-value s) (namespace-variable-value s #f))

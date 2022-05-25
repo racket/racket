@@ -19,12 +19,12 @@ jobs:
       run: |
         rm -rf ~/.racket/
         
-    - uses: Bogdanp/setup-racket@v0.8
+    - uses: Bogdanp/setup-racket@v1.5
       with:
           architecture: 'x64'
           # FIXME: use the binary s3-sync pkg
           distribution: 'full'
-          variant: 'regular'
+          variant: 'CS'
           version: '7.7'
           packages: 's3-sync'
 

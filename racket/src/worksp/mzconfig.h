@@ -36,11 +36,15 @@
 #define HAVE_GETADDRINFO 1
 
 /* Enable futures: */
-#define MZ_USE_FUTURES
+#ifndef _M_ARM64
+# define MZ_USE_FUTURES
+#endif
 
 /* Enable places --- 3m only: */
 #ifdef MZ_PRECISE_GC
-# define MZ_USE_PLACES
+# ifndef _M_ARM64
+#  define MZ_USE_PLACES
+# endif
 #endif
 
 /* Enable single-precision floats: */
@@ -48,6 +52,9 @@
 
 /* Always enable generations in GC */
 #define USE_GC_GENS 1
+
+/* Use terminal support from Chez Scheme: */
+#define MZ_TERMINAL_SUPPORT 1
 
 /* Might define COMPILED_PATH_AS_BC */
 #include "bc_suffix.h"

@@ -20,7 +20,9 @@
          shared-fxvector make-shared-fxvector
          fxvector-length fxvector-ref fxvector-set!
          fxvector-copy
-         in-fxvector for/fxvector for*/fxvector)
+         in-fxvector for/fxvector for*/fxvector
+         most-positive-fixnum
+         most-negative-fixnum)
 
 (define-vector-wraps "fxvector"
   "fixnum?" fixnum?

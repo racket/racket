@@ -169,7 +169,7 @@
 ;; Chez Scheme makefile
 (define scheme-lib
   (call-with-input-file*
-   (build-path scheme-dir "c" (format "Makefile.~a" machine))
+   (build-path scheme-dir "c" "Makefile.nt")
    (lambda (i)
      (for/or ([l (in-lines i)])
        (define m (regexp-match #rx"MTKernelLib *= *.*(csv.*mt.lib)" l))
@@ -241,7 +241,8 @@
                    compress-flag
                    "++exe" "../build/raw_racketcs.exe" (format "../../Racket~a.exe" cs-suffix)
                    "++exe" "../build/raw_gracketcs.exe" (format "../../lib/GRacket~a.exe" cs-suffix)
-                   "../build/raw_libracketcs.dll" "../../lib/libracketcsxxxxxxx.dll"
+                   "++rewrite" "libracketcsxxx_raw.dll" "libracketcsxxxxxxx.dll"
+                   "../build/libracketcsxxx_raw.dll" "../../lib/libracketcsxxxxxxx.dll"
                    "../build/petite-v.boot"
                    "../build/scheme-v.boot"
                    "../build/racket-v.boot")
@@ -315,6 +316,7 @@
 (system*! (find-exe)
           "../cs/c/gen-system.rkt"
           (format "../../lib/system~a.rktd" cs-suffix)
+          machine
           machine
           "machine"
           "../cs/c"

@@ -435,6 +435,7 @@
 (err/rt-test (readstr "#hashe") exn:fail:read:eof?)
 (err/rt-test (readstr "#hasheq") exn:fail:read:eof?)
 (err/rt-test (readstr "#hasheqv") exn:fail:read:eof?)
+(err/rt-test (readstr "#hashalw") exn:fail:read:eof?)
 (err/rt-test (readstr "#hash(") (make-exn:fail:read:eof?/span 1 6))
 (err/rt-test (readstr "#hash((1") exn:fail:read:eof?)
 (err/rt-test (readstr "#hash((1 .") exn:fail:read:eof?)
@@ -460,6 +461,7 @@
 (test #t eq? (readstr "#hash()") (hash))
 (test #t eq? (readstr "#hasheq()") (hasheq))
 (test #t eq? (readstr "#hasheqv()") (hasheqv))
+(test #t eq? (readstr "#hashalw()") (hashalw))
 
 (define (test-ht t size eq? key val)
   (test #t hash? t)
@@ -476,15 +478,21 @@
 (test-ht (readstr "#hash{[1 . 2]}") 1 #f 1 2)
 (test-ht (readstr "#hasheq((1 . 2))") 1 #t 1 2)
 (test-ht (readstr "#hasheqv((1 . 2))") 1 #f 1 2)
+(test-ht (readstr "#hashalw((1 . 2))") 1 #f 1 2)
 (test-ht (readstr "#hash((\"apple\" . 1))") 1 #f "apple" 1)
 (test-ht (readstr "#hasheq((\"apple\" . 1))") 1 #t "apple" #f)
 (test-ht (readstr "#hasheqv((\"apple\" . 1))") 1 #f "apple" #f)
+;; NOTE: these strings produced by the `read` are mutable! so not equal-always?
+(test-ht (readstr "#hashalw((\"apple\" . 1))") 1 #f "apple" #f)
 (test-ht (readstr "#hash((\"apple\" . 1) (\"apple\" . 10))") 1 #f "apple" 10)
 (test-ht (readstr "#hasheq((\"apple\" . 1) (\"apple\" . 10))") 2 #t "apple" #f)
 (test-ht (readstr "#hasheqv((\"apple\" . 1) (\"apple\" . 10))") 2 #f "apple" #f)
+;; NOTE: these strings produced by the `read` are mutable! so not equal-always?
+(test-ht (readstr "#hashalw((\"apple\" . 1) (\"apple\" . 10))") 2 #f "apple" #f)
 (test-ht (readstr "#hash((apple . 1) (apple . 10))") 1 #f 'apple 10)
 (test-ht (readstr "#hasheq((apple . 1) (apple . 10))") 1 #t 'apple 10)
 (test-ht (readstr "#hasheqv((apple . 1) (apple . 10))") 1 #f 'apple 10)
+(test-ht (readstr "#hashalw((apple . 1) (apple . 10))") 1 #f 'apple 10)
 (test-ht (readstr "#hasheq((#0=\"apple\" . 1) (#0# . 10))") 1 #t "apple" #f)
 (test-ht (readstr "#hash((#0=\"apple\" . 1) (\"banana\" . #0#))") 2 #f "banana" "apple")
 (test-ht (readstr "#hash((a . 1) (b . 2) (c . 3) (e . 4) (f . 5) (g . 6) (h . 7) (i . 8))") 8 #f 'f 5)
@@ -568,6 +576,28 @@
 (test #t (lambda (x) (and (vector? x) (eq? x (vector-ref x 0)) (eq? x (vector-ref x 1)))) (readstr "#0=#2(#0#)"))
 (test #t (lambda (x) (and (vector? x) (eq? (vector-ref x 1) (vector-ref x 2)))) (readstr "#3(#0=(1 2) #0#)"))
 (test '(1 1 1) readstr "(#0=1 #1=#0# #1#)")
+
+(err/rt-test (read-syntax #f (open-input-string "(#0=1 #1=#0# #1#)")) exn:fail:read?)
+(let ()
+  (define (stx-placeholder-get* stx)
+    (if (placeholder? (syntax-e stx))
+        (stx-placeholder-get* (placeholder-get (syntax-e stx)))
+        stx))
+
+  (let ()
+    (define stxs (syntax->list
+                  (parameterize ([read-accept-graph #f]
+                                 [read-syntax-accept-graph #t])
+                    (read-syntax #f (open-input-string "(#0=1 #1=#0# #1#)")))))
+    (test #t (lambda (xs) (andmap (lambda (x) (placeholder? (syntax-e x))) xs)) stxs)
+    (test '(1 1 1) (lambda (xs) (map (lambda (x) (syntax-e (stx-placeholder-get* x))) xs)) stxs))
+
+  (test #t
+        (lambda (stx)
+          (define lst-stx (placeholder-get (syntax-e stx)))
+          (eq? lst-stx (placeholder-get (syntax-e (cdr (syntax-e lst-stx))))))
+        (parameterize ([read-syntax-accept-graph #t])
+          (read-syntax #f (open-input-string "#0=(1 . #0#)")))))
 
 ;; Show that syntax, expansion, etc. do not preserve vector sharing
 (test #f 

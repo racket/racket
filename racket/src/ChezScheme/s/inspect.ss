@@ -95,13 +95,7 @@
                          (and (not (string=? rest path))
                               (pathloop rest)))
                        (or (find-source-file
-                             (let* ((dir (car dir*)) (n (string-length dir)))
-                               (format (if (and (fx> n 0)
-                                                (directory-separator?
-                                                  (string-ref dir (fx- n 1))))
-                                           "~a~a"
-                                           "~a/~a")
-                                 dir path))
+                             (path-build (car dir*) path)
                              line)
                            (dirloop (cdr dir*))))))))
          (inspect-error "Cannot open ~a" path))]))
@@ -2095,7 +2089,7 @@
         (let* ((rtd ($record-type-descriptor x))
                (fields (if (record-type-named-fields? rtd)
                            (csv7:record-type-field-names rtd)
-                           (csv7:record-type-field-indices rtd))))
+                           ($record-type-field-indices rtd))))
           (define check-field
             (lambda (f)
               (unless (or (and (symbol? f) (memq f fields))
@@ -2217,7 +2211,7 @@
       (foreign-procedure "(cs)s_get_reloc"
         (scheme-object boolean) scheme-object))
 
-    (module (get-code-src get-code-sexpr)
+    (module (get-code-src get-code-sexpr get-code-realm)
       (include "types.ss")
       (define get-code-src
         (lambda (x)
@@ -2226,7 +2220,11 @@
       (define get-code-sexpr
         (lambda (x)
           (let ([info ($code-info x)])
-            (and (code-info? info) (code-info-sexpr info))))))
+            (and (code-info? info) (code-info-sexpr info)))))
+      (define get-code-realm
+        (lambda (x)
+          (let ([info ($code-info x)])
+            (and (code-info? info) (code-info-realm info))))))
 
     (define make-code-object
       (make-object-maker code (x)
@@ -2241,6 +2239,7 @@
             [else #f])]
         [source-path () (return-source (get-code-src x))]
         [source-object () (get-code-src x)]
+        [realm () (get-code-realm x)]
         [reloc () (make-object (get-reloc-objs x #f))]
         [reloc+offset () (make-object (get-reloc-objs x #t))]
         [size (g) (compute-size x g)]

@@ -36,20 +36,20 @@ Low-level Memory management strategy:
 #include "sort.h"
 #include <sys/types.h>
 
-static void out_of_memory PROTO((void));
-static void initialize_seginfo PROTO((seginfo *si, thread_gc *creator, ISPC s, IGEN g));
-static seginfo *allocate_segments PROTO((uptr nreq, IBOOL for_code));
-static void expand_segment_table PROTO((uptr base, uptr end, seginfo *si));
-static void contract_segment_table PROTO((uptr base, uptr end));
-static void add_to_chunk_list PROTO((chunkinfo *chunk, chunkinfo **pchunk_list));
-static seginfo *sort_seginfo PROTO((seginfo *si, uptr n));
-static seginfo *merge_seginfo PROTO((seginfo *si1, seginfo *si2));
+static void out_of_memory(void);
+static void initialize_seginfo(seginfo *si, thread_gc *creator, ISPC s, IGEN g);
+static seginfo *allocate_segments(uptr nreq, IBOOL for_code);
+static void expand_segment_table(uptr base, uptr end, seginfo *si);
+static void contract_segment_table(uptr base, uptr end);
+static void add_to_chunk_list(chunkinfo *chunk, chunkinfo **pchunk_list);
+static seginfo *sort_seginfo(seginfo *si, uptr n);
+static seginfo *merge_seginfo(seginfo *si1, seginfo *si2);
 
 #if defined(WRITE_XOR_EXECUTE_CODE)
-static void enable_code_write PROTO((ptr tc, IGEN maxg, IBOOL on, IBOOL current, void *hint, uptr hint_len));
+static void enable_code_write(ptr tc, IGEN maxg, IBOOL on, IBOOL current, void *hint, uptr hint_len);
 #endif
 
-void S_segment_init() {
+void S_segment_init(void) {
   IGEN g; ISPC s; int i;
 
   if (!S_boot_time) return;
@@ -107,7 +107,7 @@ void *S_getmem(iptr bytes, IBOOL zerofill, UNUSED IBOOL for_code) {
   return addr;
 }
 
-void S_freemem(void *addr, iptr bytes) {
+void S_freemem(void *addr, iptr bytes, UNUSED IBOOL for_code) {
   debug(printf("freemem(%p, %p)\n", addr, TO_VOIDP(bytes)))
   free(addr);
   membytes -= bytes;
@@ -115,7 +115,7 @@ void S_freemem(void *addr, iptr bytes) {
 #endif
 
 #if defined(USE_VIRTUAL_ALLOC)
-#include <winbase.h>
+# include <winbase.h>
 void *S_getmem(iptr bytes, IBOOL zerofill, IBOOL for_code) {
   void *addr;
 
@@ -128,14 +128,14 @@ void *S_getmem(iptr bytes, IBOOL zerofill, IBOOL for_code) {
     uptr n = S_pagesize - 1; iptr p_bytes = (iptr)(((uptr)bytes + n) & ~n);
     int perm = (for_code ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
     if ((addr = VirtualAlloc((void *)0, (SIZE_T)p_bytes, MEM_COMMIT, perm)) == (void *)0) out_of_memory();
-    if ((membytes += p_bytes) > maxmembytes) maxmembytes = membytes;
+    if ((membytes += p_bytes) > maxmembytes) maxmembytes = membytes;    
     debug(printf("getmem VirtualAlloc(%p => %p) -> %p\n", TO_VOIDP(bytes), TO_VOIDP(p_bytes), addr))
   }
 
   return addr;
 }
 
-void S_freemem(void *addr, iptr bytes) {
+void S_freemem(void *addr, iptr bytes, UNUSED IBOOL for_code) {
   if ((uptr)bytes < S_pagesize) {
     debug(printf("freemem free(%p, %p)\n", addr, bytes))
     membytes -= bytes;
@@ -152,7 +152,11 @@ void S_freemem(void *addr, iptr bytes) {
 #if defined(USE_MMAP)
 #include <sys/mman.h>
 #ifndef MAP_ANONYMOUS
-#define MAP_ANONYMOUS MAP_ANON
+# define MAP_ANONYMOUS MAP_ANON
+#endif
+#ifdef PORTABLE_BYTECODE
+# undef S_PROT_CODE
+# define S_PROT_CODE (PROT_WRITE | PROT_READ)
 #endif
 void *S_getmem(iptr bytes, IBOOL zerofill, IBOOL for_code) {
   void *addr;
@@ -188,7 +192,7 @@ void *S_getmem(iptr bytes, IBOOL zerofill, IBOOL for_code) {
   return addr;
 }
 
-void S_freemem(void *addr, iptr bytes) {
+void S_freemem(void *addr, iptr bytes, UNUSED IBOOL for_code) {
   if ((uptr)bytes < S_pagesize) {
     debug(printf("freemem free(%p, %p)\n", addr, TO_VOIDP(bytes)))
     free(addr);
@@ -283,7 +287,7 @@ static void initialize_seginfo(seginfo *si, NO_THREADS_UNUSED thread_gc *creator
 }
 
 /* allocation mutex must be held */
-iptr S_find_segments(creator, s, g, n) thread_gc *creator; ISPC s; IGEN g; iptr n; {
+iptr S_find_segments(thread_gc *creator, ISPC s, IGEN g, iptr n) {
   chunkinfo *chunk, *nextchunk, **chunks;
   seginfo *si, *nextsi, **prevsi;
   iptr nunused_segs, j;
@@ -443,14 +447,14 @@ static seginfo *allocate_segments(uptr nreq, UNUSED IBOOL for_code) {
   return &chunk->sis[0];
 }
 
-void S_free_chunk(chunkinfo *chunk) {
+void S_free_chunk(chunkinfo *chunk, IBOOL for_code) {
   chunkinfo *nextchunk = chunk->next;
   contract_segment_table(chunk->base, chunk->base + chunk->segs);
   S_G.number_of_empty_segments -= chunk->segs;
   *chunk->prev = nextchunk;
   if (nextchunk != NULL) nextchunk->prev = chunk->prev;
-  S_freemem(chunk->addr, chunk->bytes);
-  S_freemem(chunk, sizeof(chunkinfo) + sizeof(seginfo) * chunk->segs);
+  S_freemem(chunk->addr, chunk->bytes, for_code);
+  S_freemem(chunk, sizeof(chunkinfo) + sizeof(seginfo) * chunk->segs, for_code);
 }
 
 /* retain approximately heap-reserve-ratio segments for every
@@ -468,12 +472,12 @@ void S_free_chunks(void) {
     if (chunk) {
       nextchunk = chunk->next;
       ntofree -= chunk->segs;
-      S_free_chunk(chunk);
+      S_free_chunk(chunk, 0);
     }
     if (code_chunk) {
       code_nextchunk = code_chunk->next;
       ntofree -= code_chunk->segs;
-      S_free_chunk(code_chunk);
+      S_free_chunk(code_chunk, 1);
     }
   }
 }
@@ -556,10 +560,10 @@ static void contract_segment_table(uptr base, uptr end) {
     t1end = t1 + end - base < t1i->t1 + SEGMENT_T1_SIZE ? t1 + end - base : t1i->t1 + SEGMENT_T1_SIZE;
     n = t1end - t1;
     if ((t1i->refcount -= n) == 0) {
-      S_freemem((void *)t1i, sizeof(t1table));
+      S_freemem((void *)t1i, sizeof(t1table), 0);
 #ifdef segment_t3_bits
       if ((t2i->refcount -= 1) == 0) {
-        S_freemem((void *)t2i, sizeof(t2table));
+        S_freemem((void *)t2i, sizeof(t2table), 0);
         S_segment_info[SEGMENT_T3_IDX(base)] = NULL;
       } else {
         S_segment_info[SEGMENT_T3_IDX(base)]->t2[SEGMENT_T2_IDX(base)] = NULL;

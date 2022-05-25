@@ -229,6 +229,7 @@ scheme_bucket_table_equal
 scheme_clone_bucket_table
 scheme_make_hash_table
 scheme_make_hash_table_equal
+scheme_make_hash_table_equal_always
 scheme_make_hash_table_eqv
 scheme_hash_set
 scheme_hash_get
@@ -237,6 +238,7 @@ scheme_hash_set_atomic
 scheme_hash_get_atomic
 scheme_hash_table_equal
 scheme_is_hash_table_equal
+scheme_is_hash_table_equal_always
 scheme_is_hash_table_eqv
 scheme_clone_hash_table
 scheme_make_hash_tree
@@ -246,6 +248,7 @@ scheme_hash_tree_next
 scheme_hash_tree_index
 scheme_hash_tree_equal
 scheme_is_hash_tree_equal
+scheme_is_hash_tree_equal_always
 scheme_is_hash_tree_eqv
 scheme_make_prim
 scheme_make_noneternal_prim
@@ -546,6 +549,7 @@ scheme_is_subinspector
 scheme_eq
 scheme_eqv
 scheme_equal
+scheme_equal_always
 scheme_chaperone_of
 scheme_hash_key
 scheme_equal_hash_key

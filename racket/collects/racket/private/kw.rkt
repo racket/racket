@@ -42,6 +42,7 @@
              new-prop:procedure
              new:procedure->method
              new:procedure-rename
+             new:procedure-realm
              new:chaperone-procedure
              (protect new:unsafe-chaperone-procedure)
              new:impersonate-procedure
@@ -375,7 +376,7 @@
   ;; Constructor generator for a wrapper on a procedure with a required keyword.
   ;; The `procedure' property is a per-type method that has exactly
   ;;  the right arity, and that sends all arguments to `missing-kw'.
-  (define (make-required name fail-proc method? impersonator?)
+  (define (make-required name realm fail-proc method? impersonator?)
     (let-values ([(s: mk ? -ref -set!)
                   (make-struct-type (or name 'unknown)
                                     (if impersonator?
@@ -387,7 +388,7 @@
                                             struct:keyword-procedure/arity-error))
                                     0 0 #f
                                     (list (cons prop:named-keyword-procedure
-                                                (cons name fail-proc)))
+                                                (vector name realm fail-proc)))
                                     (current-inspector)
                                     fail-proc)])
       mk))
@@ -403,12 +404,12 @@
   ;;  is used for each evaluation of a keyword lambda.)
   (define-syntax (make-required* stx)
     (syntax-case stx ()
-      [(_ struct:km/ae name fail-proc)
+      [(_ struct:km/ae name realm fail-proc)
        #'(make-struct-type name
                            struct:km/ae
                            0 0 #f
                            (list (cons prop:named-keyword-procedure
-                                       (cons name fail-proc)))
+                                       (vector name realm fail-proc)))
                            (current-inspector)
                            fail-proc)]))
 
@@ -446,14 +447,25 @@
   (define make-keyword-procedure
     (case-lambda 
      [(proc) (let ([proc-name (object-name proc)]
+                   [proc-realm (and (procedure? proc) ; redundant check helps purity analysis
+                                    (procedure-realm proc))]
                    [plain-proc (no-inferred-name
                                 (lambda args
                                   (apply proc null null args)))])
                (make-keyword-procedure
                 proc
-                (if (symbol? proc-name)
-                    (procedure-rename plain-proc proc-name)
-                    plain-proc)))]
+                ;; This is written with redundant checks to help purity analysis
+                (let ([mask (and (procedure? proc)
+                                 (arithmetic-shift (procedure-arity-mask proc) -2))])
+                  (if (procedure? plain-proc)
+                      (if (exact-integer? mask)
+                          (if (symbol? proc-name)
+                              (if (symbol? proc-realm)
+                                  (procedure-reduce-arity-mask plain-proc mask proc-name proc-realm)
+                                  (procedure-reduce-arity-mask plain-proc mask #f 'ignored))
+                              (procedure-reduce-arity-mask plain-proc mask #f 'ignored))
+                          plain-proc)
+                      plain-proc))))]
      [(proc plain-proc)
       (make-optional-keyword-procedure
        (make-keyword-checker null #f (and (procedure? proc) ; reundant check helps purity inference
@@ -493,8 +505,9 @@
       (unless (list? kw-vals)
         (type-error "list?" 2))
       (unless (= (length kws) (length kw-vals))
-        (raise-arguments-error
+        (raise-arguments-error*
          'keyword-apply
+         'racket/primitive
          "keyword list length does not match value list length"
          "keyword list length" (length kws)
          "value list length" (length kw-vals)
@@ -533,9 +546,25 @@
                       (procedure-keywords (a p))
                       (values null null)))))
           (values null null))]
-     [else (raise-argument-error 'procedure-keywords
-                                 "procedure?"
-                                 p)]))
+     [else (raise-argument-error* 'procedure-keywords
+                                  'racket/primitive
+                                  "procedure?"
+                                  p)]))
+
+  ;; determines whether `p` requires keyword arguments, and if
+  ;; so, returns the (potentially nested) `keyword-procedure`
+  ;; that has keyword information
+  (define (extract-keyword-root p)
+    (cond
+      [(keyword-procedure? p) p]
+      [(procedure? p)
+       (let ([v (new-procedure-ref p #f)])
+         (if (procedure? v)
+             (extract-keyword-root v)
+             (let ([a (procedure-accessor-ref p #f)])
+               (and a
+                    (extract-keyword-root (a p))))))]
+      [else #f]))
 
   ;; ----------------------------------------
   ;; `lambda' with optional and keyword arguments
@@ -816,10 +845,9 @@
                     [(null? kws)
                      ;; just the no-kw part
                      (non-kw-k
-                      (syntax-protect
-                       (quasisyntax/loc stx
-                         (let ([core #,(mk-core #f)])
-                           #,(mk-no-kws #f)))))]
+                      (quasisyntax/loc stx
+                        (let ([core #,(mk-core #f)])
+                          #,(mk-no-kws #f))))]
                     [(null? needed-kws)
                      ;; both parts dispatch to core
                      (kw-k*
@@ -855,7 +883,7 @@
                                                                  [call-fail (mk-kw-arity-stub)])
                                                      (syntax-local-lift-values-expression
                                                       5
-                                                      #'(make-required* struct:kp/ae 'n call-fail)))])
+                                                      #'(make-required* struct:kp/ae 'n #f call-fail)))])
                         (quasisyntax/loc stx
                           (mk-id
                            (lambda (given-kws given-argc)
@@ -877,11 +905,10 @@
                   #f
                   (lambda (e) e)
                   (lambda (impl kwimpl wrap core-id unpack-id n-req opt-not-supplieds rest? req-kws all-kws)
-                    (syntax-protect
-                     (quasisyntax/loc stx
-                       (let ([#,core-id #,impl])
-                         (let ([#,unpack-id #,kwimpl])
-                           #,wrap))))))
+                    (quasisyntax/loc stx
+                      (let ([#,core-id #,impl])
+                        (let ([#,unpack-id #,kwimpl])
+                          #,wrap)))))
                  (quasisyntax/loc stx (#%expression #,stx))))])
       (values new-lambda new-lambda)))
   
@@ -1142,22 +1169,21 @@
                                                 core-id unpack-id
                                                 n-req opt-not-supplieds rest? req-kws all-kws)
                                     (with-syntax ([proc (car (generate-temporaries (list id)))])
-                                      (syntax-protect
-                                       (quasisyntax/loc stx
-                                         (begin
-                                           #,(quasisyntax/loc stx
-                                               (define-syntax #,id
-                                                 (make-keyword-syntax (lambda ()
-                                                                        (values (quote-syntax #,core-id)
-                                                                                (quote-syntax proc)))
-                                                                      #,n-req '#,opt-not-supplieds #,rest?
-                                                                      '#,req-kws '#,all-kws)))
-                                           #,(quasisyntax/loc stx
-                                               (define #,core-id #,(core-wrap impl)))
-                                           #,(quasisyntax/loc stx
-                                               (define #,unpack-id #,kwimpl))
-                                           #,(quasisyntax/loc stx
-                                               (define proc #,(syntax-track-origin wrap rhs lam-id))))))))))])
+                                      (quasisyntax/loc stx
+                                        (begin
+                                          #,(quasisyntax/loc stx
+                                              (define-syntax #,id
+                                                (make-keyword-syntax (lambda ()
+                                                                       (values (quote-syntax #,core-id)
+                                                                               (quote-syntax proc)))
+                                                                     #,n-req '#,opt-not-supplieds #,rest?
+                                                                     '#,req-kws '#,all-kws)))
+                                          #,(quasisyntax/loc stx
+                                              (define #,core-id #,(core-wrap impl)))
+                                          #,(quasisyntax/loc stx
+                                              (define #,unpack-id #,kwimpl))
+                                          #,(quasisyntax/loc stx
+                                              (define proc #,(syntax-track-origin wrap rhs lam-id)))))))))])
         (syntax-case rhs (begin quote)
           [(lam-id . _)
            (can-opt? #'lam-id)
@@ -1256,20 +1282,19 @@
                                                          (syntax-e (car b)))))]
                           [cnt (+ 1 (length args))])
                      (check-arity (- cnt 2))
-                     (syntax-protect
-                      (quasisyntax/loc stx
-                        (let #,(reverse bind-accum)
-                          #,(generate-direct 
-                             (cdr args) sorted-kws #t
-                             (quasisyntax/loc stx
-                               ((checked-procedure-check-and-extract struct:keyword-procedure
-                                                                     #,(car args)
-                                                                     keyword-procedure-extract 
-                                                                     '#,(map car sorted-kws) 
-                                                                     #,cnt)
-                                '#,(map car sorted-kws)
-                                (list #,@(map cdr sorted-kws))
-                                . #,(cdr args))))))))]
+                     (quasisyntax/loc stx
+                       (let #,(reverse bind-accum)
+                         #,(generate-direct 
+                            (cdr args) sorted-kws #t
+                            (quasisyntax/loc stx
+                              ((checked-procedure-check-and-extract struct:keyword-procedure
+                                                                    #,(car args)
+                                                                    keyword-procedure-extract 
+                                                                    '#,(map car sorted-kws) 
+                                                                    #,cnt)
+                               '#,(map car sorted-kws)
+                               (list #,@(map cdr sorted-kws))
+                               . #,(cdr args)))))))]
                   [(keyword? (syntax-e (car l)))
                    (loop (cddr l)
                          (cdr ids)
@@ -1296,7 +1321,7 @@
 
   (define-for-syntax (syntax-procedure-converted-arguments-property stx) 
     (unless (syntax? stx)
-      (raise-argument-error 'syntax-procedure-converted-arguments "syntax?" stx))
+      (raise-argument-error* 'syntax-procedure-converted-arguments 'racket/primitive "syntax?" stx))
     (syntax-property stx kw-converted-arguments-variant-of))
 
   (define-for-syntax (make-keyword-syntax get-ids n-req opt-not-supplieds rest? req-kws all-kws)
@@ -1335,7 +1360,15 @@
                  (syntax-property wrap-id alias-of 
                                   (cons (syntax-taint (syntax-local-introduce #'self))
                                         (syntax-taint (syntax-local-introduce wrap-id))))]
-                [n-opt (length opt-not-supplieds)])
+                [n-opt (length opt-not-supplieds)]
+                [convert-default-expr (lambda (e)
+                                        ;; default-value expressions get quoted along the way,
+                                        ;; instead of syntax-quoted; in the case of `unsafe-undefined`,
+                                        ;; we need to switch back to a reference that has this module's
+                                        ;; inspector to allow access in an untrusted context
+                                        (if (eq? e 'unsafe-undefined)
+                                            #'unsafe-undefined
+                                            e))])
             (if (free-identifier=? #'new-app (datum->syntax stx '#%app))
                 (parse-app (datum->syntax #f (cons #'new-app stx) stx)
                            (lambda (n)
@@ -1390,47 +1423,46 @@
                                                   #f]
                                                  [else
                                                   (loop (cdr kw-args) req-kws (cdr all-kws))]))]))
-                                     (syntax-protect
-                                      (lift-args
-                                       (lambda (args)
-                                         (quasisyntax/loc stx
-                                           (if (variable-reference-constant? (#%variable-reference #,wrap-id))
-                                               #,(quasisyntax/loc stx
-                                                   (#%app
-                                                    #,impl-id/prop
-                                                    ;; keyword arguments:
-                                                    #,@(let loop ([kw-args kw-args] [all-kws all-kws])
-                                                         (cond
-                                                           [(null? all-kws) null]
-                                                           [(and (pair? kw-args)
-                                                                 (eq? (syntax-e (caar kw-args)) (caar all-kws)))
-                                                            (cons (cdar kw-args)
-                                                                  (loop (cdr kw-args) (cdr all-kws)))]
-                                                           [else
-                                                            (cons (list-ref (car all-kws) 4)
-                                                                  (loop kw-args (cdr all-kws)))]))
-                                                    ;; required arguments:
-                                                    #,@(let loop ([i n-req] [args args])
-                                                         (if (zero? i)
-                                                             null
-                                                             (cons (car args)
-                                                                   (loop (sub1 i) (cdr args)))))
-                                                    ;; optional arguments:
-                                                    #,@(let loop ([opt-not-supplieds opt-not-supplieds] [args (list-tail args n-req)])
-                                                         (cond
-                                                           [(null? opt-not-supplieds) null]
-                                                           [(null? args)
-                                                            (cons (car opt-not-supplieds)
-                                                                  (loop (cdr opt-not-supplieds) null))]
-                                                           [else
-                                                            (cons (car args) (loop (cdr opt-not-supplieds) (cdr args)))]))
-                                                    ;; rest args:
-                                                    #,@(if rest?
-                                                           #`((list #,@(list-tail args (min (length args) (+ n-req n-opt)))))
-                                                           null)))
-                                               #,(if lifted?
-                                                     orig
-                                                     (quasisyntax/loc stx (#%app #,wrap-id/prop . #,args)))))))))
+                                     (lift-args
+                                      (lambda (args)
+                                        (quasisyntax/loc stx
+                                          (if (variable-reference-constant? (#%variable-reference #,wrap-id))
+                                              #,(quasisyntax/loc stx
+                                                  (#%app
+                                                   #,impl-id/prop
+                                                   ;; keyword arguments:
+                                                   #,@(let loop ([kw-args kw-args] [all-kws all-kws])
+                                                        (cond
+                                                          [(null? all-kws) null]
+                                                          [(and (pair? kw-args)
+                                                                (eq? (syntax-e (caar kw-args)) (caar all-kws)))
+                                                           (cons (cdar kw-args)
+                                                                 (loop (cdr kw-args) (cdr all-kws)))]
+                                                          [else
+                                                           (cons (convert-default-expr (list-ref (car all-kws) 4))
+                                                                 (loop kw-args (cdr all-kws)))]))
+                                                   ;; required arguments:
+                                                   #,@(let loop ([i n-req] [args args])
+                                                        (if (zero? i)
+                                                            null
+                                                            (cons (convert-default-expr (car args))
+                                                                  (loop (sub1 i) (cdr args)))))
+                                                   ;; optional arguments:
+                                                   #,@(let loop ([opt-not-supplieds opt-not-supplieds] [args (list-tail args n-req)])
+                                                        (cond
+                                                          [(null? opt-not-supplieds) null]
+                                                          [(null? args)
+                                                           (cons (convert-default-expr (car opt-not-supplieds))
+                                                                 (loop (cdr opt-not-supplieds) null))]
+                                                          [else
+                                                           (cons (car args) (loop (cdr opt-not-supplieds) (cdr args)))]))
+                                                   ;; rest args:
+                                                   #,@(if rest?
+                                                          #`((list #,@(list-tail args (min (length args) (+ n-req n-opt)))))
+                                                          null)))
+                                              #,(if lifted?
+                                                    orig
+                                                    (quasisyntax/loc stx (#%app #,wrap-id/prop . #,args))))))))
                                 orig))))
                 (datum->syntax stx (cons wrap-id/prop #'(arg ...)) stx stx)))]
          [self
@@ -1579,49 +1611,59 @@
                                     (format "\n   ~a ~e" kw kw-arg))
                                   kws kw-args))))]
                       [proc-name (lambda (p) (or (and (named-keyword-procedure? p)
-                                                 (car (keyword-procedure-name+fail p)))
+                                                 (vector-ref (keyword-procedure-name+fail p) 0))
                                             (object-name p)
                                             p))])
+                  (define (application-message str)
+                    (error-message->adjusted-string 'application
+                                                    'racket/primitive
+                                                    str
+                                                    'racket/primitive))
                   (raise
                    ((if (or extra-kw missing-kw) exn:fail:contract exn:fail:contract:arity)
                     (if extra-kw
                         (if (keyword-procedure? p)
-                            (format
-                             (string-append
-                              "application: procedure does not expect an argument with given keyword\n"
-                              "  procedure: ~a\n"
-                              "  given keyword: ~a"
-                              "~a")
-                             (proc-name p) extra-kw args-str)
+                            (application-message
+                             (format
+                              (string-append
+                               "procedure does not expect an argument with given keyword\n"
+                               "  procedure: ~a\n"
+                               "  given keyword: ~a"
+                               "~a")
+                              (proc-name p) extra-kw args-str))
                             (if (procedure? p)
-                                (format
-                                 (string-append
-                                  "application: procedure does not accept keyword arguments\n"
-                                  "  procedure: ~a"
-                                  "~a")
-                                 (proc-name p) args-str)
-                                (format
-                                 (string-append
-                                  "application: not a procedure;\n"
-                                  " expected a procedure that can be applied to arguments\n"
-                                  "  given: ~e"
-                                  "~a")
-                                 p args-str)))
+                                (application-message
+                                 (format
+                                  (string-append
+                                   "procedure does not accept keyword arguments\n"
+                                   "  procedure: ~a"
+                                   "~a")
+                                  (proc-name p) args-str))
+                                (application-message
+                                 (format
+                                  (string-append
+                                   "not a procedure;\n"
+                                   " expected a procedure that can be applied to arguments\n"
+                                   "  given: ~e"
+                                   "~a")
+                                  p args-str))))
                         (if missing-kw
-                            (format
-                             (string-append
-                              "application: required keyword argument not supplied\n"
-                              "  procedure: ~a\n"
-                              "  required keyword: ~a"
-                              "~a")
-                             (proc-name p) missing-kw args-str)
-                            (format
-                             (string-append
-                              "application: no case matching ~a non-keyword argument~a\n"
-                              "  procedure: ~a"
-                              "~a")
-                             (- n 2) (if (= 1 (- n 2)) "" "s")
-                             (proc-name p) args-str)))
+                            (application-message
+                             (format
+                              (string-append
+                               "required keyword argument not supplied\n"
+                               "  procedure: ~a\n"
+                               "  required keyword: ~a"
+                               "~a")
+                              (proc-name p) missing-kw args-str))
+                            (application-message
+                             (format
+                              (string-append
+                               "no case matching ~a non-keyword argument~a\n"
+                               "  procedure: ~a"
+                               "~a")
+                              (- n 2) (if (= 1 (- n 2)) "" "s")
+                              (proc-name p) args-str))))
                     (current-continuation-marks)))))))))
   (define (keyword-procedure-extract p kws n)
     (keyword-procedure-extract/method kws n p 0))
@@ -1629,24 +1671,28 @@
   ;; setting procedure arity
   (define procedure-reduce-keyword-arity 
     (case-lambda
+      [(proc arity req-kw allowed-kw name realm)
+       (do-procedure-reduce-keyword-arity 'procedure-reduce-keyword-arity proc arity #f name realm req-kw allowed-kw)]
       [(proc arity req-kw allowed-kw name)
-       (do-procedure-reduce-keyword-arity 'procedure-reduce-keyword-arity proc arity #f name req-kw allowed-kw)]
+       (do-procedure-reduce-keyword-arity 'procedure-reduce-keyword-arity proc arity #f name 'racket req-kw allowed-kw)]
       [(proc arity req-kw allowed-kw)
-       (do-procedure-reduce-keyword-arity 'procedure-reduce-keyword-arity proc arity #f #f req-kw allowed-kw)]))
+       (do-procedure-reduce-keyword-arity 'procedure-reduce-keyword-arity proc arity #f #f 'racket req-kw allowed-kw)]))
   (define procedure-reduce-keyword-arity-mask
     (case-lambda
+      [(proc mask req-kw allowed-kw name realm)
+       (do-procedure-reduce-keyword-arity 'procedure-reduce-keyword-arity-mask proc #f mask name realm req-kw allowed-kw)]
       [(proc mask req-kw allowed-kw name)
-       (do-procedure-reduce-keyword-arity 'procedure-reduce-keyword-arity-mask proc #f mask name req-kw allowed-kw)]
+       (do-procedure-reduce-keyword-arity 'procedure-reduce-keyword-arity-mask proc #f mask name 'racket req-kw allowed-kw)]
       [(proc mask req-kw allowed-kw)
-       (do-procedure-reduce-keyword-arity 'procedure-reduce-keyword-arity-mask proc #f mask #f req-kw allowed-kw)]))
+       (do-procedure-reduce-keyword-arity 'procedure-reduce-keyword-arity-mask proc #f mask #f 'racket req-kw allowed-kw)]))
   
-  (define (do-procedure-reduce-keyword-arity who proc arity mask name req-kw allowed-kw)
+  (define (do-procedure-reduce-keyword-arity who proc arity mask name realm req-kw allowed-kw)
     (let* ([plain-proc (let ([p (if (okp? proc) 
                                     (okp-ref proc 0)
                                     proc)])
                          (if arity
-                             (procedure-reduce-arity p arity)
-                             (procedure-reduce-arity-mask p mask name)))])
+                             (procedure-reduce-arity p arity name realm)
+                             (procedure-reduce-arity-mask p mask name realm)))])
       (define (sorted? kws)
         (let loop ([kws kws])
           (cond
@@ -1657,36 +1703,38 @@
 
       (unless (and (list? req-kw) (andmap keyword? req-kw)
                    (sorted? req-kw))
-        (raise-argument-error who "(and/c (listof? keyword?) sorted? distinct?)"
-                              2 proc (or arity mask) req-kw allowed-kw))
+        (raise-argument-error* who 'racket/primitive
+                               "(and/c (listof? keyword?) sorted? distinct?)"
+                               2 proc (or arity mask) req-kw allowed-kw))
       (when allowed-kw
         (unless (and (list? allowed-kw) (andmap keyword? allowed-kw)
                      (sorted? allowed-kw))
-          (raise-argument-error who "(or/c (and/c (listof? keyword?) sorted? distinct?) #f)"
-                                3 proc (or arity mask) req-kw allowed-kw))
+          (raise-argument-error* who 'racket/primitive
+                                 "(or/c (and/c (listof? keyword?) sorted? distinct?) #f)"
+                                 3 proc (or arity mask) req-kw allowed-kw))
         (unless (subset? req-kw allowed-kw)
-          (raise-arguments-error who
-                                 "allowed-keyword list does not include all required keywords"
-                                 "allowed-keyword list" allowed-kw
-                                 "required keywords" req-kw)))
+          (raise-arguments-error* who 'racket/primitive
+                                  "allowed-keyword list does not include all required keywords"
+                                  "allowed-keyword list" allowed-kw
+                                  "required keywords" req-kw)))
       (let-values ([(old-req old-allowed) (procedure-keywords proc)])
         (unless (subset? old-req req-kw)
-          (raise-arguments-error who
-                                 "cannot reduce required keyword set"
-                                 "required keywords" old-req
-                                 "requested required keywords" req-kw))
+          (raise-arguments-error* who 'racket/primitive
+                                  "cannot reduce required keyword set"
+                                  "required keywords" old-req
+                                  "requested required keywords" req-kw))
         (when old-allowed
           (unless (subset? req-kw old-allowed)
-            (raise-arguments-error who
-                                   "cannot require keywords not in original allowed set"
-                                   "original allowed keywords" old-allowed
-                                   "requested required keywords" req-kw))
+            (raise-arguments-error* who 'racket/primitive
+                                    "cannot require keywords not in original allowed set"
+                                    "original allowed keywords" old-allowed
+                                    "requested required keywords" req-kw))
           (unless (or (not allowed-kw)
                       (subset? allowed-kw old-allowed))
-            (raise-arguments-error who
-                                   "cannot allow keywords not in original allowed set"
-                                   "original allowed keywords" old-allowed
-                                   "requested allowed keywords" allowed-kw))))
+            (raise-arguments-error* who 'racket/primitive
+                                    "cannot allow keywords not in original allowed set"
+                                    "original allowed keywords" old-allowed
+                                    "requested allowed keywords" allowed-kw))))
       (if (null? allowed-kw)
           plain-proc
           (let* ([mask (or mask (arity->mask arity))]
@@ -1707,9 +1755,16 @@
                  plain-proc)
                 ;; Some keywords are required, so "plain" proc is
                 ;;  irrelevant; we build a new one that wraps `missing-kws'.
-                ((make-required (or (and (named-keyword-procedure? proc)
-                                         (car (keyword-procedure-name+fail proc)))
+                ((make-required (or name
+                                    (and (named-keyword-procedure? proc)
+                                         (vector-ref (keyword-procedure-name+fail proc) 0))
                                     (object-name proc))
+                                (or (and name realm)
+                                    (and (named-keyword-procedure? proc)
+                                         (or (vector-ref (keyword-procedure-name+fail proc) 1)
+                                             (procedure-realm
+                                              (vector-ref (keyword-procedure-name+fail proc) 2))))
+                                    (procedure-realm proc))
                                 (procedure-reduce-arity-mask
                                  missing-kw
                                  (arithmetic-shift mask 1))
@@ -1743,41 +1798,47 @@
   (define new:procedure-reduce-arity
     (let ([procedure-reduce-arity
            (case-lambda
-             [(proc arity name)
+             [(proc arity name realm)
               (if (and (procedure? proc)
                        (let-values ([(req allows) (procedure-keywords proc)])
                          (pair? req))
                        (not (null? arity)))
-                  (raise-arguments-error 'procedure-reduce-arity
-                                         "procedure has required keyword arguments"
-                                         "procedure" proc)
+                  (raise-arguments-error* 'procedure-reduce-arity 'racket/primitive
+                                          "procedure has required keyword arguments"
+                                          "procedure" proc)
                   (procedure-reduce-arity (if (okm? proc)
                                               (procedure->method proc)
                                               proc)
                                           arity
-                                          name))]
+                                          name
+                                          realm))]
+             [(proc arity name)
+              (new:procedure-reduce-arity proc arity name 'racket)]
              [(proc arity)
-              (new:procedure-reduce-arity proc arity #f)])])
+              (new:procedure-reduce-arity proc arity #f 'racket)])])
       procedure-reduce-arity))
 
   (define new:procedure-reduce-arity-mask
     (let ([procedure-reduce-arity
            (case-lambda
-             [(proc mask name)
+             [(proc mask name realm)
               (if (and (procedure? proc)
                        (let-values ([(req allows) (procedure-keywords proc)])
                          (pair? req))
                        (not (eqv? mask 0)))
-                  (raise-arguments-error 'procedure-reduce-arity
-                                         "procedure has required keyword arguments"
-                                         "procedure" proc)
+                  (raise-arguments-error* 'procedure-reduce-arity 'racket/primitive
+                                          "procedure has required keyword arguments"
+                                          "procedure" proc)
                   (procedure-reduce-arity-mask (if (okm? proc)
                                                    (procedure->method proc)
                                                    proc)
                                                mask
-                                               name))]
+                                               name
+                                               realm))]
+             [(proc mask name)
+              (new:procedure-reduce-arity-mask proc mask name 'racket)]
              [(proc mask)
-              (new:procedure-reduce-arity-mask proc mask #f)])])
+              (new:procedure-reduce-arity-mask proc mask #f 'racket)])])
       procedure-reduce-arity))
     
   (define new:procedure->method
@@ -1798,7 +1859,10 @@
                      ;; Constructor must be from `make-required', but not a method.
                      ;; Make a new variant that's a method:
                      (let* ([name+fail (keyword-procedure-name+fail proc)]
-                            [mk (make-required (car name+fail) (cdr name+fail) #t #f)])
+                            [mk (make-required (vector-ref name+fail 0)
+                                               (vector-ref name+fail 1)
+                                               (vector-ref name+fail 2)
+                                               #t #f)])
                        (mk
                         (keyword-procedure-checker proc)
                         (keyword-procedure-proc proc)
@@ -1810,31 +1874,44 @@
 
   (define new:procedure-rename
     (let ([procedure-rename 
-           (lambda (proc name)
-             (if (not (and (keyword-procedure? proc)
-                           (symbol? name)))
-                 (procedure-rename proc name)
-                 ;; Rename a keyword procedure:
-                 (cond
-                  [(okp? proc)
-                   ((if (okm? proc)
-                        make-optional-keyword-method
-                        make-optional-keyword-procedure)
-                    (keyword-procedure-checker proc)
-                    (keyword-procedure-proc proc)
-                    (keyword-procedure-required proc)
-                    (keyword-procedure-allowed proc)
-                    (procedure-rename (okp-ref proc 0) name))]
-                  [else
-                   ;; Constructor must be from `make-required':
-                   (let* ([name+fail (keyword-procedure-name+fail proc)]
-                          [mk (make-required name (cdr name+fail) (keyword-method? proc) #f)])
-                     (mk
-                      (keyword-procedure-checker proc)
-                      (keyword-procedure-proc proc)
-                      (keyword-procedure-required proc)
-                      (keyword-procedure-allowed proc)))])))])
+           (case-lambda
+             [(proc name realm)
+              (cond
+                [(not (and (symbol? name)
+                           (symbol? realm)))
+                 (procedure-rename proc name realm)]
+                [(extract-keyword-root proc)
+                 => (lambda (kw-p)
+                      (do-procedure-reduce-keyword-arity 'procedure-rename
+                                                         proc
+                                                         #f
+                                                         (procedure-arity-mask proc)
+                                                         name
+                                                         realm
+                                                         (keyword-procedure-required kw-p)
+                                                         (keyword-procedure-allowed kw-p)))]
+                [else
+                 (procedure-rename proc name realm)])]
+             [(proc name)
+              (new:procedure-rename proc name 'racket)])])
       procedure-rename))
+
+  (define new:procedure-realm
+    (let ([procedure-realm
+           (lambda (proc)
+             (if (keyword-procedure? proc)
+                 (cond
+                   [(named-keyword-procedure? proc)
+                    (define name+fail (keyword-procedure-name+fail proc))
+                    (or (vector-ref name+fail 1)
+                        (procedure-realm (vector-ref name+fail 2)))]
+                   [(okp? proc)
+                    (procedure-realm (okp-ref proc 0))]
+                   [else
+                    (procedure-realm (keyword-procedure-proc proc))])
+                 ;; Not a keyword-accepting procedure:
+                 (procedure-realm proc)))])
+      procedure-realm))
 
   (define new:chaperone-procedure
     (let ([chaperone-procedure
@@ -1906,8 +1983,9 @@
                                          (let* ([len (length results)]
                                                 [alen (length rest)])
                                            (when (< len (+ alen 1))
-                                             (raise-arguments-error
+                                             (raise-arguments-error*
                                               '|keyword procedure chaperone|
+                                              'racket/primitive
                                               "wrong number of results from wrapper procedure"
                                               "expected minimum number of results" (+ alen 1)
                                               "received number of results" len
@@ -1916,8 +1994,9 @@
                                              (let ([new-args (list-ref results num-extra)])
                                                (unless (and (list? new-args)
                                                             (= (length new-args) (length args)))
-                                                 (raise-arguments-error
+                                                 (raise-arguments-error*
                                                   '|keyword procedure chaperone|
+                                                  'racket/primitive
                                                   (format
                                                    "expected a list of keyword-argument values as first result~a from wrapper procedure"
                                                    (if (= len alen)
@@ -1929,8 +2008,9 @@
                                                 (lambda (kw new-arg arg)
                                                   (unless is-impersonator?
                                                     (unless (chaperone-of? new-arg arg)
-                                                      (raise-arguments-error
+                                                      (raise-arguments-error*
                                                        '|keyword procedure chaperone|
+                                                       'racket/primitive
                                                        (format
                                                         "~a keyword result is not a chaperone of original argument from chaperoning procedure"
                                                         kw)
@@ -1998,12 +2078,13 @@
                                                (define-syntax gen-proc
                                                  (syntax-rules ()
                                                    [(_ extra-arg ...)
-                                                    (lambda (extra-arg ... kws kw-args self . args)
-                                                      ;; Chain to `kw-chaperone', pulling out the self
-                                                      ;; argument, and then putting it back:
-                                                      (define len (length args))
-                                                      (call-with-values
-                                                          (lambda () (apply kw-chaperone extra-arg ... kws kw-args args))
+                                                    (case-lambda
+                                                      [(extra-arg ... kws kw-args self . args)
+                                                       ;; Chain to `kw-chaperone', pulling out the self
+                                                       ;; argument, and then putting it back:
+                                                       (define len (length args))
+                                                       (call-with-values
+                                                        (lambda () (apply kw-chaperone extra-arg ... kws kw-args args))
                                                         (lambda results
                                                           (define r-len (length results))
                                                           (define (list-take l n)
@@ -2016,7 +2097,11 @@
                                                                               (append (list-take results (- skip 2))
                                                                                       (list (list-ref results (sub1 skip))
                                                                                             self)
-                                                                                      (list-tail results skip))))))))]))
+                                                                                      (list-tail results skip)))))))]
+                                                      ;; This extra case shoule never be reached; it's included
+                                                      ;; to allow the chaperone when `proc` accepts 0 arguments, even though
+                                                      ;; proc will never be called with 0 arguments
+                                                      [args (void)])]))
                                                (if self-arg?
                                                    (gen-proc proc-self)
                                                    (gen-proc)))))))])
@@ -2053,7 +2138,10 @@
                                 (if is-impersonator?
                                     ;; Constructor must be from `make-required':
                                     (let* ([name+fail (keyword-procedure-name+fail n-proc)]
-                                           [mk (make-required (car name+fail) (cdr name+fail) (keyword-method? n-proc) #t)])
+                                           [mk (make-required (vector-ref name+fail 0)
+                                                              (vector-ref name+fail 1)
+                                                              (vector-ref name+fail 2)
+                                                              (keyword-method? n-proc) #t)])
                                       (mk
                                        (keyword-procedure-checker n-proc)
                                        (chaperone-procedure/add-mark (keyword-procedure-proc n-proc) kw-chaperone)
@@ -2120,16 +2208,18 @@
         ;; Let core report error:
         (apply chaperone-procedure proc wrap-proc props))
       (unless (subset? b-req a-req)
-        (raise-arguments-error
+        (raise-arguments-error*
          name
+         'racket/primitive
          "wrapper procedure requires more keywords than original procedure"
          "wrapper procedure" wrap-proc
          "original procedure" proc))
       (unless (or (not b-allow)
                   (and a-allow
                        (subset? a-allow b-allow)))
-        (raise-arguments-error
+        (raise-arguments-error*
          name
+         'racket/primitive
          "wrapper procedure does not accept all keywords of original procedure"
          "wrapper procedure" wrap-proc
          "original procedure" proc))

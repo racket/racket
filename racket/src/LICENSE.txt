@@ -4,12 +4,11 @@ components distributed under other licenses. In short:
 
   * The Racket CS runtime system embeds Chez Scheme, which is
     distributed under the Apache version 2.0 license. This runtime
-    system is built from code in racket/src/cs and
-    racket/src/ChezScheme.
+    system is built from code in cs and ChezScheme.
 
   * The Racket BC runtime system includes code distributed under the
     GNU Lesser General Public License, version 3. This runtime system
-    is built from code in racket/src/racket.
+    is built from code in bc.
 
 Except for Windows executables that are created with the "embed DLLs"
 option, the runtime system remains separate as a shared library or
@@ -45,19 +44,15 @@ The following are used only in the Racket BC executable:
   racket. See the file LICENSE-libscheme.txt
 
 * GNU Lightning. Code from GNU Lightning can be found in
-  racket/src. GNU Lightning is distributed under the GNU
+  bc/src. GNU Lightning is distributed under the GNU
   Lesser General Public License version 3.
 
-* GMP. Code from GMP can be found in racket/src. The
+* GMP. Code from GMP can be found in bc/src. The
   version of GMP used is distributed under the GNU Lesser General
   Public License version 3.
 
-* The Boehm Collector. Code for this package can be found in
-  racket/gc. See the file racket/gc/README.QUICK
-  for license information.
-
 * zlib. Code translated from earlier versions of zlib can be found in
-  racket/racket/collects/file/{gzip,gunzip}.rkt. Zlib is distributed
+  ../collects/file/{gzip,gunzip}.rkt. Zlib is distributed
   under a liberal license, see http://zlib.net/.
 
 * libffi. Code from libffi can be found in foreign/libffi.

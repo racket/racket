@@ -16,6 +16,7 @@
          "../compile/compiled-in-memory.rkt"
          "../compile/correlated-linklet.rkt"
          "../expand/context.rkt"
+         "../expand/portal-syntax.rkt"
          "../expand/root-expand-context.rkt"
          "root-context.rkt"
          "protect.rkt"
@@ -77,6 +78,7 @@
    (define min-phase (hash-ref h 'min-phase 0))
    (define max-phase (hash-ref h 'max-phase 0))
    (define language-info (hash-ref h 'language-info #f))
+   (define realm (hash-ref h 'realm 'racket))
 
    ;; Evaluate linklets, so that they're JITted just once (on demand).
    ;; Also, filter the bundle hash to just the phase-specific linklets, so that
@@ -99,6 +101,7 @@
    (define provides (decl 'provides))
    (define original-self (decl 'self-mpi))
    (define phase-to-link-modules (decl 'phase-to-link-modules))
+   (define portal-stxes (decl 'portal-stxes))
 
    (define create-root-expand-context-from-module ; might be used to create root-expand-context
      (make-create-root-expand-context-from-module requires phases-h))
@@ -134,6 +137,7 @@
                               #:requires requires
                               #:provides provides
                               #:language-info language-info
+                              #:realm realm
                               #:min-phase-level min-phase
                               #:max-phase-level max-phase
                               #:cross-phase-persistent? cross-phase-persistent?
@@ -163,14 +167,33 @@
                                                        syntax-literals-linklet data-instance syntax-literals-data-instance
                                                        phase-shift original-self self bulk-binding-registry insp
                                                        create-root-expand-context-from-module)))
+                              #:get-portal-syntax-callback
+                              (lambda (data-box phase sym)
+                                (define ht (hash-ref portal-stxes phase #hasheq()))
+                                (define pos (hash-ref ht sym #f))
+                                (cond
+                                  [pos
+                                   (define syntax-literals-instance (instance-data-syntax-literals-instance
+                                                                     (unbox data-box)))
+                                   ((instance-variable-value syntax-literals-instance get-syntax-literal!-id) pos)]
+                                  [else #f]))
                               #:instantiate-phase-callback
                               (lambda (data-box ns phase-shift phase-level self bulk-binding-registry insp)
                                 (performance-region
                                  ['eval 'instantiate]
                                  (define syntax-literals-instance (instance-data-syntax-literals-instance
                                                                    (unbox data-box)))
-                                 (define phase-linklet (hash-ref phases-h phase-level #f))
+
+                                 ;; create portal-syntax bindings
+                                 (define phase-portal-stxes (hash-ref portal-stxes (sub1 phase-level) #hasheq()))
+                                 (unless (zero? (hash-count phase-portal-stxes))
+                                   (define get-syntax-literal! (instance-variable-value syntax-literals-instance get-syntax-literal!-id))
+                                   (for ([(key pos) (in-hash phase-portal-stxes)])
+                                     (when (symbol? key)
+                                       (define portal-stx (get-syntax-literal! pos))
+                                       (namespace-set-transformer! ns (sub1 phase-level) key (portal-syntax portal-stx)))))
                                  
+                                 (define phase-linklet (hash-ref phases-h phase-level #f))                                 
                                  (when phase-linklet
                                    (define module-uses (hash-ref phase-to-link-modules phase-level))
                                    (define-values (import-module-instances import-instances)
@@ -396,7 +419,8 @@
                  'self-mpi (compiled-in-memory-original-self cim)
                  'requires (compiled-in-memory-requires cim)
                  'provides (compiled-in-memory-provides cim)
-                 'phase-to-link-modules (compiled-in-memory-phase-to-link-module-uses cim)))
+                 'phase-to-link-modules (compiled-in-memory-phase-to-link-module-uses cim)
+                 'portal-stxes (compiled-in-memory-portal-stxes cim)))
 
 (define (make-syntax-literal-data-instance-from-compiled-in-memory cim)
   (make-instance 'syntax-literal-data #f #f

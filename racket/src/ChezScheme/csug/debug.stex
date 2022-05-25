@@ -1118,7 +1118,7 @@ See the description below of variable inspector objects.
 \var{n} must be nonnegative and less than the length of the procedure.
 
 \insmsg{procedure}{\scheme{'eval} \var{expr}}
-evaluates expr and returns its value.
+evaluates \var{expr} and returns its value.
 The values of the procedure's free variables are bound within the
 evaluated expression to
 identifiers of the form \%$n$, where $n$ is the location number
@@ -1152,7 +1152,7 @@ See the description below of variable inspector objects.
 \var{n} must be nonnegative and less than the length of the continuation.
 
 \insmsg{continuation}{\scheme{'eval} \var{expr}}
-evaluates expr and returns its value.
+evaluates \var{expr} and returns its value.
 The values of frame locations are bound within the
 evaluated expression to
 identifiers of the form \%$n$, where $n$ is the location number
@@ -1216,6 +1216,11 @@ Since the binding of a variable can be changed, this name association
 may not always be accurate.
 \scheme{#f} is returned if the inspector cannot determine a name for the
 procedure.
+
+\insmsg{code}{\scheme{'realm}}
+returns a symbol or \scheme{#f}. The realm of a code object is determined
+by the \scheme{compile-procedure-realm} parameter at the time that the code
+object is compiled.
 
 \insmsg{code}{\scheme{'source}}
 returns an inspector object containing the source information attached

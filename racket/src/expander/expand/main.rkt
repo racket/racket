@@ -6,7 +6,6 @@
          "../syntax/property.rkt"
          "../syntax/scope.rkt"
          "../syntax/taint.rkt"
-         "../syntax/taint-dispatch.rkt"
          "../syntax/match.rkt"
          "../syntax/original.rkt"
          "../namespace/namespace.rkt"
@@ -40,7 +39,8 @@
          "rebuild.rkt"
          "parsed.rkt"
          "expanded+parsed.rkt"
-         "implicit-property.rkt")
+         "implicit-property.rkt"
+         "bindings-arity-error.rkt")
 
 (provide expand
          lookup
@@ -54,6 +54,7 @@
          context->transformer-context
          eval-for-syntaxes-binding
          eval-for-bindings
+         raise-bindings-arity-error
          apply-rename-transformer
 
          keep-properties-only
@@ -64,7 +65,10 @@
          increment-binding-layer
          accumulate-def-ctx-scopes
          rename-transformer-target-in-context
-         maybe-install-free=id-in-context!)
+         maybe-install-free=id-in-context!
+         
+         maybe-create-use-site-scope
+         maybe-add-post-expansion)
 
 ;; ----------------------------------------
 
@@ -122,7 +126,7 @@
 ;; An "application" form that starts with an identifier
 (define (expand-id-application-form s ctx alternate-id
                                     #:fail-non-transformer fail-non-transformer)
-  (define id (or alternate-id (car (syntax-e/no-taint s))))
+  (define id (or alternate-id (car (syntax-e s))))
   (guard-stop
    id ctx s
    (define binding (resolve+shift id (expand-context-phase ctx)
@@ -141,7 +145,7 @@
      ;; Find out whether it's bound as a variable, syntax, or core form
      (define-values (t primitive? insp-of-t protected?)
        (lookup binding ctx id
-               #:in (and alternate-id (car (syntax-e/no-taint s)))
+               #:in (and alternate-id (car (syntax-e s)))
                #:out-of-context-as-variable? (expand-context-in-local-expand? ctx)))
      (cond
        [(variable? t)
@@ -163,8 +167,7 @@
      (log-expand ctx 'stop/return s)
      s]
     [else
-     (define disarmed-s (syntax-disarm s))
-     (define id (datum->syntax disarmed-s sym))
+     (define id (datum->syntax s sym))
      (guard-stop
       id ctx s
       (define b (resolve+shift id (expand-context-phase ctx)
@@ -184,7 +187,7 @@
               (and (rename-transformer? t)
                    (lambda ()
                      (raise-syntax-implicit-error s sym trigger-id ctx))))
-            (dispatch-transformer t insp-of-t (make-explicit ctx sym s disarmed-s) id ctx b
+            (dispatch-transformer t insp-of-t (make-explicit ctx sym s) id ctx b
                                   #:fail-non-transformer fail-non-transformer)]
            [(core-form? t)
             (cond
@@ -193,7 +196,7 @@
                     (expand-context-in-local-expand? ctx))
                (dispatch-implicit-#%top-core-form t s ctx)]
               [else
-               (dispatch-core-form t (make-explicit ctx sym s disarmed-s) ctx)])]
+               (dispatch-core-form t (make-explicit ctx sym s) ctx)])]
            [else
             (define tl-id
               (and (eq? sym '#%top)
@@ -241,18 +244,17 @@
          (expand result-s ctx) ; fully expanded to compiled
          result-s)]))
 
-(define (make-explicit ctx sym s disarmed-s)
+(define (make-explicit ctx sym s)
   (define insp (current-module-code-inspector))
-  (define sym-s (immediate-datum->syntax disarmed-s sym s
+  (define sym-s (immediate-datum->syntax s sym s
                                          (if (syntax-has-property? s original-property-sym)
                                              original-implicit-made-explicit-properties
                                              implicit-made-explicit-properties)
                                          insp))
-  (define new-s (syntax-rearm (immediate-datum->syntax disarmed-s (cons sym-s disarmed-s) s
-                                                       (syntax-props s)
-                                                       insp)
-                              s))
-  (log-expand ctx 'tag2 new-s disarmed-s)
+  (define new-s (immediate-datum->syntax s (cons sym-s s) s
+                                         (syntax-props s)
+                                         insp))
+  (log-expand ctx 'tag2 new-s s)
   new-s)
 
 ;; ----------------------------------------
@@ -260,8 +262,7 @@
 ;; Expand `s` given that the value `t` of the relevant binding,
 ;; where `t` is either a core form, a macro transformer, some
 ;; other compile-time value (which is an error), or a token
-;; indicating that the binding is a run-time variable; note that
-;; `s` is not disarmed
+;; indicating that the binding is a run-time variable
 (define (dispatch t insp-of-t s id ctx binding primitive? protected?
                   #:fail-non-transformer [fail-non-transformer #f])
   (cond
@@ -369,20 +370,18 @@
 ;; Given a macro transformer `t`, apply it --- adding appropriate
 ;; scopes to represent the expansion step; the `insp-of-t` inspector
 ;; is the inspector of the module that defines `t`, which gives its
-;; privilege for `syntax-arm` and similar
+;; privilege for accessing bindings
 (define (apply-transformer t insp-of-t s id ctx binding
                            #:origin-id [origin-id #f])
   (performance-region
    ['expand '_ 'macro]
 
-   (define disarmed-s (syntax-disarm s))
-   (log-expand ctx 'enter-macro disarmed-s s)
+   (log-expand ctx 'enter-macro s s)
    (define intro-scope (new-scope 'macro))
-   (define intro-s (flip-scope disarmed-s intro-scope))
+   (define intro-s (flip-scope s intro-scope))
    ;; In a definition context, we need use-site scopes
-   (define-values (use-s use-scopes) (maybe-add-use-site-scope intro-s ctx binding))
-   ;; Avoid accidental transfer of taint-controlling properties:
-   (define cleaned-s (syntax-remove-taint-dispatch-properties use-s))
+   (define use-scopes (maybe-create-use-site-scope ctx binding))
+   (define use-s (add-scopes intro-s use-scopes))
    ;; Prepare to accumulate definition contexts created by the transformer
    (define def-ctx-scopes (box null))
    
@@ -390,7 +389,7 @@
    ;; for `syntax-local-....` functions, and we may accumulate scopes from
    ;; definition contexts created by the transformer
    (define transformed-s
-     (apply-transformer-in-context t cleaned-s ctx insp-of-t
+     (apply-transformer-in-context t use-s ctx insp-of-t
                                    intro-scope use-scopes def-ctx-scopes
                                    id))
    
@@ -400,19 +399,18 @@
    ;; any expansion result
    (define post-s (maybe-add-post-expansion result-s ctx))
    ;; Track expansion:
-   (define tracked-s (syntax-track-origin post-s cleaned-s (or origin-id (if (syntax-identifier? s) s (car (syntax-e s))))))
-   (define rearmed-s (taint-dispatch tracked-s (lambda (t-s) (syntax-rearm t-s s)) (expand-context-phase ctx)))
-   (log-expand ctx 'exit-macro rearmed-s post-s)
-   (values rearmed-s
+   (define tracked-s (syntax-track-origin post-s use-s (or origin-id (if (syntax-identifier? s) s (car (syntax-e s))))))
+   (log-expand ctx 'exit-macro tracked-s post-s)
+   (values tracked-s
            (accumulate-def-ctx-scopes ctx def-ctx-scopes))))
 
 ;; With all the pre-call scope work done and post-call scope work in
 ;; the continuation, actually call the transformer function in the
 ;; appropriate context
-(define (apply-transformer-in-context t cleaned-s ctx insp-of-t
+(define (apply-transformer-in-context t use-s ctx insp-of-t
                                       intro-scope use-scopes def-ctx-scopes
                                       id)
-  (log-expand ctx 'macro-pre-x cleaned-s)
+  (log-expand ctx 'macro-pre-x use-s)
   (define confine-def-ctx-scopes?
     (not (or (expand-context-only-immediate? ctx)
              (not (free-id-set-empty-or-just-module*? (expand-context-stops ctx))))))
@@ -442,27 +440,37 @@
        (call-with-continuation-barrier
         (lambda ()
           ;; Call the transformer!
-          ((transformer->procedure t) cleaned-s))))))
-  (log-expand ctx 'macro-post-x transformed-s cleaned-s)
+          ((transformer->procedure t) use-s))))))
+  (log-expand ctx 'macro-post-x transformed-s use-s)
   (unless (syntax? transformed-s)
     (raise-arguments-error (syntax-e id)
                            "received value from syntax expander was not syntax"
                            "received" transformed-s))
   transformed-s)
 
-(define (maybe-add-use-site-scope s ctx binding)
+(define (maybe-create-use-site-scope ctx binding)
   (cond
    [(and (root-expand-context-use-site-scopes ctx)
-         (matching-frame? (root-expand-context-frame-id ctx)
-                          (binding-frame-id binding)))
+         (or
+          ;; conservatively use a use-site scope when the origin of the
+          ;; transformer is unknown (as in some uses of
+          ;; syntax-local-apply-transformer)
+          (not binding)
+          (matching-frame? (root-expand-context-frame-id ctx)
+                           (binding-frame-id binding))))
     ;; We're in a recursive definition context where use-site scopes
     ;; are needed, so create one, record it, and add to the given
     ;; syntax
     (define sc (new-scope 'use-site))
     (define b (root-expand-context-use-site-scopes ctx))
     (set-box! b (cons sc (unbox b)))
-    (values (add-scope s sc) (list sc))]
-   [else (values s null)]))
+
+    (define def-ctx-b (expand-context-def-ctx-scopes ctx))
+    (when def-ctx-b
+      (set-box! def-ctx-b (cons sc (unbox def-ctx-b))))
+
+    (list sc)]
+   [else null]))
 
 (define (matching-frame? current-frame-id bind-frame-id)
   (and current-frame-id
@@ -527,16 +535,13 @@
 (define (substitute-alternate-id s alternate-id)
   (cond
    [(not alternate-id) s]
-   [(syntax-identifier? s) (syntax-rearm (syntax-track-origin alternate-id s) s)]
-   [else
-    (define disarmed-s (syntax-disarm s))
-    (syntax-rearm (syntax-track-origin (datum->syntax
-                                        disarmed-s
-                                        (cons alternate-id
-                                              (cdr (syntax-e disarmed-s)))
-                                        s)
-                                       s)
-                       s)]))
+   [(syntax-identifier? s) (syntax-track-origin alternate-id s)]
+   [else (syntax-track-origin (datum->syntax
+                               s
+                               (cons alternate-id
+                                     (cdr (syntax-e s)))
+                               s)
+                              s)]))
 
 (define (register-variable-referenced-if-local! binding ctx)
   ;; If the binding's frame has a reference record, then register
@@ -654,7 +659,8 @@
 ;; the number of returned values matches the number of target
 ;; identifiers; return the expanded form as well as its values
 (define (expand+eval-for-syntaxes-binding who rhs ids ctx
-                                          #:log-next? [log-next? #t])
+                                          #:log-next? [log-next? #t]
+                                          #:wrap [wrap #f])
   (define exp-rhs (expand-transformer rhs (as-named-context ctx ids)))
   (define phase (add1 (expand-context-phase ctx)))
   (define parsed-rhs (if (expand-context-to-parsed? ctx)
@@ -671,7 +677,8 @@
                              (namespace->namespace-at-phase
                               (expand-context-namespace ctx)
                               phase)
-                             ctx)))
+                             ctx
+                             #:wrap wrap)))
 
 ;; Expand and evaluate `s` as a compile-time expression, returning
 ;; only the compile-time values
@@ -683,7 +690,8 @@
 ;; Expand and evaluate `s` as an expression in the given phase;
 ;; ensuring that the number of returned values matches the number of
 ;; target identifiers; return the values
-(define (eval-for-bindings who ids p phase ns ctx)
+(define (eval-for-bindings who ids p phase ns ctx
+                           #:wrap [wrap #f])
   (define compiled (if (can-direct-eval? p ns (root-expand-context-self-mpi ctx))
                        #f
                        (compile-single p (make-compile-context
@@ -698,17 +706,16 @@
                              (parameterize-like
                               #:with ([current-expand-context ctx])
                               (if compiled
-                                  (eval-single-top compiled ns)
-                                  (direct-eval p ns (root-expand-context-self-mpi ctx))))))))
+                                  (if wrap
+                                      (wrap (lambda () (eval-single-top compiled ns)))
+                                      (eval-single-top compiled ns))
+                                  (let ([self-mpi (root-expand-context-self-mpi ctx)])
+                                    (if wrap
+                                        (wrap (lambda () (direct-eval p ns self-mpi)))
+                                        (direct-eval p ns self-mpi)))))))))
       list))
-  (unless (= (length vals) (length ids))
-    (apply raise-result-arity-error
-           who
-           (length ids)
-           (cond
-             [(null? ids) ""]
-             [else (format "\n  in: definition of ~a~a" (syntax-e (car ids)) (if (pair? (cdr ids)) " ..." ""))])
-           vals))
+  (unless (or wrap (= (length vals) (length ids)))
+    (raise-bindings-arity-error who ids vals))
   vals)
 
 ;; ----------------------------------------
@@ -734,7 +741,7 @@
                         #:for-track? [for-track? #f]
                         #:keep-for-parsed? [keep-for-parsed? #f]
                         #:keep-for-error? [keep-for-error? #f])
-  (define d (syntax-e/no-taint s))
+  (define d (syntax-e s))
   (define keep-e (cond
                   [(symbol? d) d]
                   [(and (pair? d) (syntax-identifier? (car d))) (syntax-e (car d))]
@@ -746,9 +753,7 @@
     ;; Synthesize form to preserve just source and properties for tracking
     ;; without affecting the identifier that is kept in 'origin
     (datum->syntax #f (list (car d)) s s)]
-   [else
-    (syntax-rearm (datum->syntax (syntax-disarm s) keep-e s s)
-                  s)]))
+   [else (datum->syntax s keep-e s s)]))
 
 (define (attach-disappeared-transformer-bindings s trans-idss)
    (cond

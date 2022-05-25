@@ -1,0 +1,27 @@
+#lang zuo
+
+(require "harness.zuo")
+
+(alert "shell")
+
+(define unix? (eq? (hash-ref (runtime-env) 'system-type) 'unix))
+
+(when unix?
+  (let ([p (shell "echo hi" (hash 'stdout 'pipe))])
+    (check (fd-read (hash-ref p 'stdout) eof) "hi\n")
+    (fd-close (hash-ref p 'stdout))
+    (process-wait (hash-ref p 'process))
+    (check (process-status (hash-ref p 'process)) 0)))
+
+(check (build-shell "x" "" "y" "" "" "z" "") "x y z")
+(check (build-shell "x" "" '("y" "" "" "z") "") "x y z")
+
+(check (shell-subst "Hello, ${who}!" (hash 'who "World")) "Hello, World!")
+(check (shell-subst "a${b}c" (hash 'b "c${d}e" 'd "D")) "acDec")
+(check (shell-subst "${a}}" (hash 'a "${x" 'x "done")) "done")
+(check (shell-subst "${?$^}" (hash (string->symbol "?$^") "weird")) "weird")
+
+(check-fail (begin
+              (require zuo/shell)
+              (shell-subst "${a}" (hash)))
+            "no substitution found for name")

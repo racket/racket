@@ -2294,7 +2294,7 @@
       ;; Check that expansion matches or doesn't match under various conditions.
       ;; Expansion should not match in safe mode for expression involving the names
       ;; `$xxx`, `$yyy`, and `$zzz`, but it should match when those are wrapped with
-      ;; `add1` (whcih makes the expression known-single-valued).
+      ;; `add1` (which makes the expression known-single-valued).
       ;; The names `$nontail-xxx`, `$nontail-yyy`, and `$nontail-zzz` must similarly
       ;; be wrapped to match in either safe or unsafe mode, since unsafe mode is obliged
       ;; to preserve non-tailness.
@@ -3190,8 +3190,17 @@
                                         [(f g) (if (g)
                                                    (abort 'oops)
                                                    (#3%$app/no-return f))])))
-
-)
+   (or (not (enable-cp0))
+       (eq? (current-eval) interpret)
+       (let ([mk (make-wrapper-procedure
+                  (lambda (x)
+                    (+ (x) 1))
+                  2
+                  'data)])
+         (procedure-known-single-valued? (lambda (f)
+                                           (if (f #t)
+                                               (mk (mk f))
+                                               #f))))))
 
 (mat make-wrapper-procedure
   (equivalent-expansion?
@@ -3368,4 +3377,19 @@
   (eq? 'b (let ()
             (import (cross-library-inlining-test))
             (b 10)))
+
+  (begin
+    (library (check-that-inlined-set!-is-handled-correctly)
+      (export make-param)
+      (import (scheme))
+      (define (make-param initial)
+        (let ([v initial])
+          (case-lambda
+           [() v]
+           [(x) (set! v x)]))))
+    (import (check-that-inlined-set!-is-handled-correctly))
+    (define parameter-porentially-inlined (make-param #f))
+    (not (parameter-porentially-inlined)))
+  (eq? (void) (parameter-porentially-inlined 'other))
+  (eq? 'other (parameter-porentially-inlined))
   )

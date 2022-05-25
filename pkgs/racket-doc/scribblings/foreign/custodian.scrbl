@@ -38,7 +38,9 @@ later-registered finalizers or wills apply.
 
 If @racket[ordered?] is true when @racket[weak] is @racket[#f], then
 @racket[v] is retained in a way that allows finalization of @racket[v]
-via @racket[register-finalizer] to proceed.
+via @racket[register-finalizer] to proceed. For the @CS[]
+implementation of Racket, @racket[v] must not refer to itself or to
+a value that can refer back to @racket[v].
 
 Normally, @racket[weak?] should be false. To trigger actions based on
 finalization or custodian shutdown---whichever happens first---leave

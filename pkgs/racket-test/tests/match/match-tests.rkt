@@ -1,5 +1,6 @@
-(module match-tests mzscheme
-  (require mzlib/match rackunit)
+(module match-tests racket/base
+  (require racket/match rackunit
+           (for-syntax racket/base))
   
   (provide match-tests)
   
@@ -8,18 +9,18 @@
      "Tests for define-match-expander"
      (test-case "Trivial expander"
                      (let ()
-                       (define-match-expander bar #f (lambda (x) #'_) +)
-                       (check = 4 (match 3 [(= add1 x) x])) ; other stuff still works
+                       (define-match-expander bar
+                         (lambda (x) #'_)
+                         (lambda (stx)
+                           (syntax-case stx ()
+                             [(_ x ...) #'(+ x ...)]
+                             [_
+                              (identifier? stx)
+                              #'+])))
+                       (check = 4 (match 3 [(app add1 x) x])) ; other stuff still works
                        (check-true (match 3 [(bar) #t])) ; (bar) matches anything
                        (check = 12 (bar 3 4 5))
                        (check = 12 (apply bar '(3 4 5))))) ; bar works like +     
-     (test-case "Trivial expander w/ keywords"
-                     (let ()
-                       (define-match-expander bar  #:match (lambda (x) #'_) #:expression +)
-                       (check = 4 (match 3 [(= add1 x) x])) ; other stuff still works
-                       (check-true (match 3 [(bar) #t])) ; (bar) matches anything
-                       (check = 12 (bar 3 4 5))
-                       (check = 12 (apply bar '(3 4 5))))) ; bar works like +        
      ))
   
  
@@ -29,43 +30,47 @@
      "Some Simple Tests"
      (test-case "Trivial"
                      (check = 3 (match 3 [x x])))
-     (test-case "= pattern"
-                     (check = 4 (match 3 [(= add1 y) y])))
+     (test-case "app pattern"
+                     (check = 4 (match 3 [(app add1 y) y])))
      (test-case "struct patterns"
                      (let ()
                        (define-struct point (x y))
                        (define (origin? pt)
                          (match pt
-                           (($ point 0 0) #t)
+                           ((struct point (0 0)) #t)
                            (_ #f)))
                        (check-true (origin? (make-point 0 0)))
                        (check-false (origin? (make-point 1 1)))))
      (test-case "empty hash-table pattern bug"
-                (check string=? "non-empty"
-                       (match #hash((1 . 2))
-                         [(hash-table) "empty"]
-                         [_ "non-empty"])))
+       (check-equal? (match #hash((1 . 2))
+                       [(hash-table) "empty"]
+                       [_ "non-empty"])
+                     "non-empty")
+       (check-equal? (match #hash()
+                       [(hash-table) "empty"]
+                       [_ "non-empty"])
+                     "empty"))
      ))
   
   (define nonlinear-tests
     (test-suite 
      "Non-linear patterns"
      (test-case "Very simple"
-                     (check = 3 (match '(3 3) [(a a) a])))
+                     (check = 3 (match '(3 3) [(list a a) a])))
      (test-case "Fails"
-                     (check-exn exn:misc:match? (lambda () (match '(3 4) [(a a) a]))))
+                     (check-exn exn:misc:match? (lambda () (match '(3 4) [(list a a) a]))))
      (test-case "Use parameter"
                      (parameterize ([match-equality-test eq?])
-                       (check = 5 (match '((3) (3)) [(a a) a] [_ 5]))))
+                       (check = 5 (match '((3) (3)) [(list a a) a] [_ 5]))))
      (test-case "Uses equal?"
-                     (check equal? '(3) (match '((3) (3)) [(a a) a] [_ 5])))))
+                     (check equal? '(3) (match '((3) (3)) [(list a a) a] [_ 5])))))
     
   
   (define doc-tests
     (test-suite 
      "Tests from Help Desk Documentation"
      (test-case "match-let"
-                     (check = 6 (match-let ([(x y z) (list 1 2 3)]) (+ x y z))))
+                     (check = 6 (match-let ([(list x y z) (list 1 2 3)]) (+ x y z))))
      #;
      (test-case "set! pattern"
                      (let ()
@@ -85,9 +90,9 @@
                             (make-Var s)]
                            [(? number? n)
                             (make-Const n)]
-                           [('lambda (and args ((? symbol?) ...) (not (? repeats?))) body)
+                           [(list 'lambda (and args (list (? symbol?) ...) (not (? repeats?))) body)
                             (make-Lam args (parse body))]
-                           [(f args ...)
+                           [(list f args ...)
                             (make-App
                              (parse f)
                              (map parse args))]
@@ -100,21 +105,21 @@
                        
                        (define unparse
                          (match-lambda
-                           [($ Var s) s]
-                           [($ Const n) n]
-                           [($ Lam args body) `(lambda ,args ,(unparse body))]
-                           [($ App f args) `(,(unparse f) ,@(map unparse args))]))
+                           [(struct Var (s)) s]
+                           [(struct Const (n)) n]
+                           [(struct Lam (args body)) `(lambda ,args ,(unparse body))]
+                           [(struct App (f args)) `(,(unparse f) ,@(map unparse args))]))
                        
                        (check equal? '(lambda (x y) x) (unparse (parse '(lambda (x y) x))))))
      
      (test-case "counter : match-define"
                      (let ()
-                       (match-define (inc value reset)
-                                     (let ([val 0])
-                                       (list
-                                        (lambda () (set! val (add1 val)))
-                                        (lambda () val)
-                                        (lambda () (set! val 0)))))
+                       (match-define (list inc value reset)
+                         (let ([val 0])
+                           (list
+                            (lambda () (set! val (add1 val)))
+                            (lambda () val)
+                            (lambda () (set! val 0)))))
                        (inc)
                        (inc)
                        (check =  2 (value))

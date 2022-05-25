@@ -56,7 +56,8 @@
 
 (define-record-type parameter-data
   (fields guard
-          (mutable name))) ; not actually mutable, but ensures fresh allocations
+          (mutable name) ; not actually mutable, but ensures fresh allocations
+          realm))
 
 (define-record-type derived-parameter-data
   (parent parameter-data)
@@ -84,13 +85,15 @@
 
 (define/who make-parameter
   (case-lambda
-    [(v) (make-parameter v #f 'parameter-procedure)]
-    [(v guard) (make-parameter v guard 'parameter-procedure)]
-    [(v guard name)
+    [(v) (make-parameter v #f 'parameter-procedure default-realm)]
+    [(v guard) (make-parameter v guard 'parameter-procedure default-realm)]
+    [(v guard name) (make-parameter v guard name default-realm)]
+    [(v guard name realm)
      (check who (procedure-arity-includes/c 1) :or-false guard)
      (check who symbol? name)
+     (check who symbol? realm)
      (let ([default-c (make-thread-cell v #t)]
-           [data (make-parameter-data guard name)])
+           [data (make-parameter-data guard name realm)])
        (make-arity-wrapper-procedure
         (case-lambda
          [()
@@ -101,7 +104,7 @@
           (let ([c (or (parameter-cell data)
                        default-c)])
             (thread-cell-set! c (if guard
-                                    (guard v)
+                                    (|#%app| guard v)
                                     v)))])
         3
         data))]))
@@ -120,6 +123,8 @@
    (make-derived-parameter-data
     guard
     (parameter-data-name
+     (wrapper-procedure-data p))
+    (parameter-data-realm
      (wrapper-procedure-data p))
     p)))
 

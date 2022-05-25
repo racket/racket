@@ -111,6 +111,22 @@ If @racket[else] appears in a pattern then its binding from
      [else 'also-not-evaluated])])
 ]
 
+To match against a value bound to an identifier, use @racket[==].
+
+@interaction[
+#:eval match-eval
+(define val 42)
+(match (list 42)
+  [(list (== val)) 'matched])
+(match (list 43)
+  [(list (== val)) 'not-matched]
+  [_ 'this-branch-is-evaluated])
+(match (list 43)
+  [(list val)
+   (code:comment @#,t{without @racket[==], @racket[val] is a pattern variable})
+   (format "match binds val to ~a" val)])
+]
+
 An ellipsis, written @litchar{...}, acts like a Kleene star within a
 list or vector pattern: the preceding sub-pattern can be used to match
 any number of times for any number of consecutive elements of the list

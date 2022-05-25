@@ -107,11 +107,15 @@
                       val-expr)]))])]
       [else #`(#%expression #,stx)]))
 
-  (define (relative-source base-mpi rel-mod-path)
+  (define (relative-source base-mpi rel-mod-paths)
     (define r
       (resolved-module-path-name
        (module-path-index-resolve
-        (module-path-index-join rel-mod-path base-mpi))))
+        (let loop ([rel-mod-paths rel-mod-paths])
+          (module-path-index-join (car rel-mod-paths)
+                                  (if (null? (cdr rel-mod-paths))
+                                      base-mpi
+                                      (loop (cdr rel-mod-paths))))))))
     (cond [(pair? r)
            (cons 'submod r)]
           [(symbol? r)
@@ -191,15 +195,28 @@
          (cond [(eq? collapsed #f)
                 #'(quote-module-path)]
                [(relative-module-path? collapsed)
+                ;; Instead of using `collapsed`, use the original steps in `source`,
+                ;; because an executable created by `raco exe` may need the individual
+                ;; steps to find the right module (i.e., it resolves through relative
+                ;; references).
                 #`(relative-source (variable-reference->module-path-index
                                     (#%variable-reference))
-                                   '#,collapsed)]
+                                   '#,(let loop ([mp source])
+                                        (cond
+                                          [(or (not mp) (self-mpi? mp)) '()]
+                                          [else
+                                           (define-values (name base) (module-path-index-split mp))
+                                           (cons name (loop base))])))]
                [else #`(quote #,collapsed)])]))
 
 (define (relative-module-path? mp)
   (or (string? mp) (path? mp)
       (and (pair? mp) (eq? (car mp) 'submod)
            (let ([base (cadr mp)]) (or (string? base) (path? base))))))
+
+(define (self-mpi? mpi)
+  (define-values (base name) (module-path-index-split mpi))
+  (and (not base) (not name)))
 
 ;; extract-source : (U Syntax #f) -> (U ModulePathIndex 'use-site 'unknown)
 (define (extract-source stx)

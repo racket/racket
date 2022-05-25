@@ -37,6 +37,7 @@
 (void (rktio_set_default_locale #""))
 (void (sync-locale!))
 
+;; potentially in atomic mode
 (define (locale-encoding-is-utf-8?)
   (define t (system-type))
   (define loc (current-locale))
@@ -48,16 +49,19 @@
 
 ;; in atomic mode
 (define (locale-string-encoding/bytes)
-  (sync-locale!)
-  (define e (rktio_locale_encoding rktio))
   (cond
-    [(rktio-error? e)
-     (end-atomic)
-     (raise-rktio-error 'locale-string-encoding e "error getting locale encoding")]
+    [(locale-encoding-is-utf-8?) #"UTF-8"]
     [else
-     (begin0
-       (rktio_to_bytes e)
-       (rktio_free e))]))
+     (sync-locale!)
+     (define e (rktio_locale_encoding rktio))
+     (cond
+       [(rktio-error? e)
+        (end-atomic)
+        (raise-rktio-error 'locale-string-encoding e "error getting locale encoding")]
+       [else
+        (begin0
+          (rktio_to_bytes e)
+          (rktio_free e))])]))
 
 (define (locale-string-encoding)
   (bytes->string/utf-8 (atomically (locale-string-encoding/bytes)) #\?))
@@ -70,7 +74,9 @@
      (end-atomic)
      (raise-rktio-error who c "error getting language and country information")]
     [else
-     (begin0
-       (rktio_to_bytes c)
-       (rktio_free c)
-       (end-atomic))]))
+     (bytes->string/utf-8
+      (begin0
+        (rktio_to_bytes c)
+        (rktio_free c)
+        (end-atomic))
+      #\?)]))

@@ -251,8 +251,15 @@ more information.}
 
 @defboolparam[read-accept-graph on?]{
 
-A parameter value that controls parsing input with sharing. See
-@secref["parse-graph"] for more information.}
+A parameter value that controls parsing input with sharing in
+@racket[read] mode. See @secref["parse-graph"] for more information.}
+
+@defboolparam[read-syntax-accept-graph on?]{
+
+A parameter value that controls parsing input with sharing in
+@racket[read-syntax] mode. See @secref["parse-graph"] for more information.
+
+@history[#:added "8.4.0.8"]}
 
 @defboolparam[read-decimal-as-inexact on?]{
 

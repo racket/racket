@@ -213,12 +213,14 @@
       (define rng-blame (blame-add-context blame "the range of"))
       (define blame-party-info (get-blame-party-info blame))
       (define projs (append rng-lol-ctcs
-                            (map (λ (f) ((cdr f)
+                            (map (λ (f) ((cddr f)
                                          (blame-add-context 
                                           (blame-add-context 
                                            blame 
                                            (nth-case-of (+ (car f) 1)))
-                                          "the domain of"
+                                          (if (cadr f)
+                                              (nth-argument-of (+ (cadr f) 1))
+                                              "the rest argument of")
                                           #:swap? #t)))
                                  dom-ctcs+case-nums)
                             (map (let ([memo '()])
@@ -320,12 +322,14 @@
       ([doms (in-list (base-case->-dom-ctcs ctc))]
        [rst  (in-list (base-case->-rst-ctcs ctc))]
        [i (in-naturals)])
-    (define dom+case-nums 
-      (map (λ (dom) (cons i (get/build-late-neg-projection dom))) doms))
+    (define dom+case-nums
+      (for/list ([dom (in-list doms)]
+                 [j (in-naturals)])
+        (cons i (cons j (get/build-late-neg-projection dom)))))
     (append acc
             (if rst
                 (append dom+case-nums
-                        (list (cons i (get/build-late-neg-projection rst))))
+                        (list (cons i (cons #f (get/build-late-neg-projection rst)))))
                 dom+case-nums))))
 
 (define (get-case->-rng-ctcs ctc)

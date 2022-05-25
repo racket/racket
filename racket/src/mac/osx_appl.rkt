@@ -3,8 +3,8 @@
 # OS X pre-make script
 # builds resource files, makes template Starter.app and GRacket.app
 #
-# The script must be run from the gracket build directory,
-# and srcdir must be provided as the first argument
+# srcdir must be provided as the first argument
+# and destdir as the second argument
 
 |#
 
@@ -27,10 +27,9 @@
 		       (try "/Applications/Xcode.app/Contents/Developer/Tools/Rez"
 			    "/Developer/Tools/Rez")))
 
-  (define for-3m? (getenv "BUILDING_3M"))
-
   (define plthome (build-path (vector-ref (current-command-line-arguments) 0) 'up))
-  (define suffix (vector-ref (current-command-line-arguments) 1))
+  (define dest-dir (vector-ref (current-command-line-arguments) 1))
+  (define suffix (vector-ref (current-command-line-arguments) 2))
 
   ; Rez where needed:
   (let* ([cw-path (build-path plthome "src" "mac" "cw")]
@@ -39,7 +38,8 @@
 		   (system* rez-path 
 			    (path->string (build-path cw-path (string-append src ".r")))
 			    "-UseDF" "-o" 
-			    (path->string
+			    (build-path
+                             dest-dir
 			     (path-replace-suffix app #".rsrc.OSX"))))])
     ; (rez-it "Racket") ; useless under OS X...
     (rez-it "GRacket" "GRacket"))
@@ -116,13 +116,13 @@
 	   (assoc-pair "NSRequiresAquaSystemAppearance" (false))
 	   (assoc-pair "NSSupportsAutomaticGraphicsSwitching" (true))))
 
-    (create-app (build-path (current-directory) (if for-3m? 'up 'same))
+    (create-app dest-dir
                 (string-append "GRacket" suffix)
 		"GRacket"
 		"APPLmReD"
 		(make-info-plist (string-append "GRacket" suffix) "mReD" #t))
 
-    (create-app (build-path (current-directory) (if for-3m? 'up 'same))
+    (create-app dest-dir
                 "Starter"
                 "Starter"
                 "APPLMrSt"

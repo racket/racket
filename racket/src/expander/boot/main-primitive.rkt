@@ -32,7 +32,7 @@
           'load/use-compiled load/use-compiled
 
           'current-eval current-eval
-          'current-compile current-compile
+          'current-compile current-compile ; protected
           'current-load current-load
           'current-load/use-compiled current-load/use-compiled
 
@@ -41,6 +41,7 @@
           'find-library-collection-paths find-library-collection-paths
           'find-library-collection-links find-library-collection-links
           'find-compiled-file-roots find-compiled-file-roots
+          'read-installation-configuration-table read-installation-configuration-table
 
           'current-library-collection-paths current-library-collection-paths
           'current-library-collection-links current-library-collection-links
@@ -58,6 +59,8 @@
           'module-compiled-imports module-compiled-imports
           'module-compiled-exports module-compiled-exports
           'module-compiled-indirect-exports module-compiled-indirect-exports
+          'module-compiled-cross-phase-persistent? module-compiled-cross-phase-persistent?
+          'module-compiled-realm module-compiled-realm
 
           'compiled-expression-recompile compiled-expression-recompile
 
@@ -86,7 +89,7 @@
           'module->imports module->imports
           'module->exports module->exports
           'module->indirect-exports module->indirect-exports
-          'module-compiled-cross-phase-persistent? module-compiled-cross-phase-persistent?
+          'module->realm module->realm
           'module-provide-protected? module-provide-protected?
           'module->namespace module->namespace
           'namespace-unprotect-module namespace-unprotect-module))

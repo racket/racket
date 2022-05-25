@@ -32,9 +32,9 @@
 
 /* locally defined functions */
 #ifdef WIN32
-static ptr s_wstring_to_bytevector PROTO((const wchar_t *s));
+static ptr s_wstring_to_bytevector(const wchar_t *s);
 #else
-static ptr s_string_to_bytevector PROTO((const char *s));
+static ptr s_string_to_bytevector(const char *s);
 # define WIN32_UNUSED
 #endif
 
@@ -116,7 +116,7 @@ wchar_t *S_malloc_wide_pathname(const char *inpath) {
 }
 #endif
 
-IBOOL S_fixedpathp(inpath) const char *inpath; {
+IBOOL S_fixedpathp(const char *inpath) {
   char c; IBOOL res; char *path;
 
   path = S_malloc_pathname(inpath);

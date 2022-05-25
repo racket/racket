@@ -182,7 +182,8 @@
             (last-fo? v)])))]))
 
 (define (listof-late-neg-projection ctc)
-  (define elem-proj (get/build-late-neg-projection (listof-ctc-elem-c ctc)))
+  (define elem-ctc (listof-ctc-elem-c ctc))
+  (define elem-proj (get/build-late-neg-projection elem-ctc))
   (define pred? (if (pe-listof-ctc? ctc)
                     list?
                     non-empty-list?))
@@ -206,14 +207,19 @@
                  (last-elem-proj+blame val neg-party)]))
             val)]
          [else
-          (λ (val neg-party)
-            (cond
-              [(pred? val)
-               (for ([x (in-list val)])
-                 (elem-proj+blame x neg-party))
-               val]
-              [else
-               (raise-listof-blame-error blame val (pe-listof-ctc? ctc) neg-party)]))])]
+          (if (prop:any/c? elem-ctc)
+              (λ (val neg-party)
+                (if (list? val)
+                    val
+                    (raise-listof-blame-error blame val (pe-listof-ctc? ctc) neg-party)))
+              (λ (val neg-party)
+                (cond
+                  [(pred? val)
+                   (for ([x (in-list val)])
+                     (elem-proj+blame x neg-party))
+                   val]
+                  [else
+                   (raise-listof-blame-error blame val (pe-listof-ctc? ctc) neg-party)])))])]
       [else
        (cond
          [(im-listof-ctc? ctc)
@@ -386,7 +392,7 @@
   (define ctc-car (the-cons/c-hd-ctc ctc))
   (define ctc-cdr (the-cons/c-tl-ctc ctc))
   (cond
-    [(and (any/c? ctc-car) (any/c? ctc-cdr))
+    [(and (prop:any/c? ctc-car) (prop:any/c? ctc-cdr))
      'pair?]
     [else
      (build-compound-type-name 'cons/c ctc-car ctc-cdr)]))

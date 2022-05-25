@@ -125,6 +125,10 @@
       (syntax-case stx (ref)
         [(_ (ref _) v) #'(address->ptr v)]
         [(_ _ v) #'v]))
+
+    (define-syntax (wrap-result/allow-callbacks stx)
+      (syntax-case stx ()
+        [(_ t v) #'(call-enabling-ffi-callbacks (lambda () (wrap-result t v)))]))
     
     (meta define (convert-function stx)
           (syntax-case stx ()
@@ -133,7 +137,10 @@
                            [(arg-type ...) (map convert-type #'(orig-arg-type ...))]
                            [(conv ...) (if (#%memq 'blocking (map syntax->datum #'(flag ...)))
                                            #'(__collect_safe)
-                                           #'())])
+                                           #'())]
+                           [wrap-result (if (#%memq 'msg-queue (map syntax->datum #'(flag ...)))
+                                            #'wrap-result/allow-callbacks
+                                            #'wrap-result)])
                #'(let ([proc (foreign-procedure conv ... (rktio-lookup 'name)
                                                 (arg-type ...)
                                                 ret-type)])
@@ -180,13 +187,25 @@
 
     (define loaded-librktio
       (or (foreign-entry? "rktio_init")
-          (load-shared-object (string-append (string-append (current-directory) "/../../lib/librktio")
-                                             (utf8->string (system-type 'so-suffix))))))
+          (load-shared-object (path-build (or (#%getenv "RACKET_IO_SOURCE_DIR")
+                                              (#%current-directory))
+                                          (string-append "../../lib/librktio" (utf8->string (system-type 'so-suffix)))))))
 
     (define (rktio-lookup name)
       (foreign-entry (symbol->string name)))
 
-    (include "../rktio/rktio.rktl")
+    ;; workaround for `include` not using `(source-directories)` when
+    ;; a path starts with "..":
+    (define-syntax (include-rel stx)
+      (syntax-case stx ()
+        [(inc path)
+         (let ([new-path (ormap (lambda (dir)
+                                  (let ([p (path-build dir (#%syntax->datum #'path))])
+                                    (and (#%file-exists? p)
+                                         p)))
+                                (source-directories))])
+           (#%datum->syntax #'inc `(include ,(or new-path #'path))))]))
+    (include-rel "../rktio/rktio.rktl")
 
     (define (rktio_filesize_ref fs)
       (ftype-ref rktio_filesize_t () (make-ftype-pointer rktio_filesize_t (ptr->address fs))))
@@ -202,6 +221,27 @@
     (define (rktio_recv_address_ref fs)
       (make-ptr
        (ftype-ref rktio_length_and_addrinfo_t (address) (make-ftype-pointer rktio_length_and_addrinfo_t (ptr->address fs)) 0)))
+
+    (define (rktio_stat_to_vector p)
+      (let ([p (make-ftype-pointer rktio_stat_t (ptr->address p))])
+        (vector
+         (ftype-ref rktio_stat_t (device_id) p)
+         (ftype-ref rktio_stat_t (inode) p)
+         (ftype-ref rktio_stat_t (mode) p)
+         (ftype-ref rktio_stat_t (hardlink_count) p)
+         (ftype-ref rktio_stat_t (user_id) p)
+         (ftype-ref rktio_stat_t (group_id) p)
+         (ftype-ref rktio_stat_t (device_id_for_special_file) p)
+         (ftype-ref rktio_stat_t (size) p)
+         (ftype-ref rktio_stat_t (block_size) p)
+         (ftype-ref rktio_stat_t (block_count) p)
+         (ftype-ref rktio_stat_t (access_time_seconds) p)
+         (ftype-ref rktio_stat_t (access_time_nanoseconds) p)
+         (ftype-ref rktio_stat_t (modify_time_seconds) p)
+         (ftype-ref rktio_stat_t (modify_time_nanoseconds) p)
+         (ftype-ref rktio_stat_t (ctime_seconds) p)
+         (ftype-ref rktio_stat_t (ctime_nanoseconds) p)
+         (ftype-ref rktio_stat_t (ctime_is_change_time) p))))
 
     (define (rktio_identity_to_vector p)
       (let ([p (make-ftype-pointer rktio_identity_t (ptr->address p))])
@@ -399,6 +439,7 @@
                                  'rktio_is_timestamp rktio_is_timestamp
                                  'rktio_recv_length_ref rktio_recv_length_ref
                                  'rktio_recv_address_ref rktio_recv_address_ref
+                                 'rktio_stat_to_vector rktio_stat_to_vector
                                  'rktio_identity_to_vector rktio_identity_to_vector
                                  'rktio_seconds_to_date* rktio_seconds_to_date*
                                  'rktio_convert_result_to_vector rktio_convert_result_to_vector
@@ -421,7 +462,7 @@
                                  'rktio_do_install_os_signal_handler rktio_do_install_os_signal_handler
                                  'rktio_get_ctl_c_handler rktio_get_ctl_c_handler]
                                 form ...)]))
-        (include "../rktio/rktio.rktl"))))
+        (include-rel "../rktio/rktio.rktl"))))
 
   (define (immobile-cell->address p)
     (address->ptr (rumble:immobile-cell->address p)))
@@ -532,6 +573,8 @@
 
   (include "include.ss")
   (include-generated "io.scm")
+
+  (include "io/terminal.ss")
 
   ;; Initialize:
   (set-log-system-message! (lambda (level str)

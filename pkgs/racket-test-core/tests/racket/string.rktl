@@ -392,6 +392,15 @@
   (test "x y z" string-join '("x" "y" "z") " ")
   (test "x,y,z" string-join '("x" "y" "z") ",")
   (test "x, y and z" string-join '("x" "y" "z") ", " #:before-last " and ")
+
+  ;; test empty string optimization
+  (test "xyz" string-join '("x" "y" "z") "")
+  (test "xyz" string-join '("x" "y" "z") "" #:before-last "")
+  (test "xy and z" string-join '("x" "y" "z") "" #:before-last " and ")
+  (test "xy" string-join '("x" "y") "")
+  (test "xy" string-join '("x" "y") "" #:before-last "")
+  (test "x and y" string-join '("x" "y") "" #:before-last " and ")
+
   (for ([strs+res
          (in-list '((("x" "y" "z") "x, y and z")
                     (("x" "y")     "x and y")
@@ -601,5 +610,40 @@
   ; examples from https://en.wikipedia.org/wiki/Knuth–Morris–Pratt_algorithm
   (test #(#f 0 0 0 #f 0 2 0) build-kmp-table "abcdabd")
   (test #(#f 0 #f 1 #f 0 #f 3 2 0) build-kmp-table "abacababc"))
+
+;; ---------- regexp-try-match ----------
+
+(define (check-try-match expect pattern in-bstr
+                         #:after [after-amt 0]
+                         #:prefix [prefix #""])
+  (define in (open-input-bytes in-bstr))
+  (test expect regexp-try-match pattern in 0 #f #f prefix)
+
+  ;; make sure suitable bytes remain:
+  (define delta (- (+ (bytes-length in-bstr)
+                      (bytes-length prefix))
+                   after-amt
+                   (bytes-length (car expect))))
+  (test (bytes-append prefix in-bstr)
+        bytes-append
+        (subbytes prefix 0 (min after-amt (bytes-length prefix)))
+        (subbytes in-bstr 0 (max 0 (- after-amt (bytes-length prefix))))
+        (car expect)
+        (read-bytes delta in))
+
+  (define in2 (open-input-bytes in-bstr))
+  (define out (open-output-bytes))
+  (test expect regexp-try-match pattern in2 0 #f out prefix)
+  (test (subbytes in-bstr 0 (max 0 (- after-amt (bytes-length prefix)))) get-output-bytes out))
+
+(check-try-match '(#"hello") #px"he..." #"hello world")
+(check-try-match '(#"" #"a") #px"^(?=(a))" #"a")
+(check-try-match '(#"some" #"a") #px"^some(?=(a))" #"someathing")
+(check-try-match '(#"some" #"a") #px"some(?=(a))" #"try someathing" #:after 4)
+(check-try-match '(#"c" #"ab") #rx"(?<=(..))." #"abc" #:after 2)
+(check-try-match '(#"b" #"!a") #rx"(?<=(..))." #"abc" #:prefix #"!" #:after 2)
+(check-try-match '(#"" #"xa") #rx"(?<=(..))" #"aaa" #:prefix #"x" #:after 2)
+
+;; ----------------------------------------
 
 (report-errs)

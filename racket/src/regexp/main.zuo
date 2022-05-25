@@ -1,0 +1,38 @@
+#lang zuo
+(require "../lib.zuo"
+         (only-in "../expander/main.zuo"
+                  expander-target
+                  expander-main
+                  register-expansion-dependencies))
+
+(provide-targets targets-at)
+
+(define (targets-at at-dir
+                    [vars (hash)]
+                    [expander (expander-target (make-at-dir (at-dir "../expander")) vars)])
+  (define regexp.rktl (at-dir "compiled/regexp.rktl"))
+  (define regexp-dep.rktd (at-dir "compiled/regexp-dep.rktd"))
+  
+  (make-targets
+   `([:target regexp-src (,regexp.rktl) ,void]
+
+     [:target ,regexp.rktl (,expander)
+              ,(lambda (path token)
+                 (racket vars
+                         (expander-main)
+                         "-t" (at-source "main.rkt")
+                         "-c" (at-dir "compiled/cache-src")
+                         "-k" (at-source "../..")
+                         "-s" "-x"
+                         "--depends" regexp-dep.rktd
+                         ;; Enable the sanity check for global state:
+                         "--no-global"
+                         "-o" path)
+                 (register-expansion-dependencies regexp-dep.rktd token))]
+
+     [:target demo ()
+              ,(lambda (token)
+                 (raco vars "make" (at-source "demo.rkt"))
+                 (racket vars (at-source "demo.rkt")))]
+
+     [:db-dir ,(at-dir "compiled")])))

@@ -11,9 +11,11 @@
          "../syntax/module-binding.rkt"
          "../syntax/local-binding.rkt"
          "../syntax/bulk-binding.rkt"
+         "../syntax/like-ambiguous-binding.rkt"
          "../namespace/provided.rkt"
          "../common/module-path.rkt"
          "../common/module-path-intern.rkt"
+         "../common/phase+space.rkt"
          "module-use.rkt"
          "../host/linklet.rkt"
          "built-in-symbol.rkt"
@@ -227,7 +229,8 @@
       ,(generate-module-path-index-deserialize mpis))))
 
 (define (generate-module-declaration-linklet mpis self requires provides
-                                             phase-to-link-module-uses-expr)
+                                             phase-to-link-module-uses-expr
+                                             portal-stxes)
   `(linklet
     ;; imports
     (,deserialize-imports
@@ -236,12 +239,15 @@
     (self-mpi
      requires
      provides
-     phase-to-link-modules)
+     phase-to-link-modules
+     portal-stxes)
     ;; body
     (define-values (self-mpi) ,(add-module-path-index! mpis self))
     (define-values (requires) ,(generate-deserialize requires #:mpis mpis #:syntax-support? #f))
-    (define-values (provides) ,(generate-deserialize provides #:mpis mpis #:syntax-support? #f))
-    (define-values (phase-to-link-modules) ,phase-to-link-module-uses-expr)))
+    (define-values (provides) ,(generate-deserialize provides #:mpis mpis #:syntax-support? #f
+                                                     #:phase+space-hasheqv provides))
+    (define-values (phase-to-link-modules) ,phase-to-link-module-uses-expr)
+    (define-values (portal-stxes) (quote ,portal-stxes))))
 
 ;; ----------------------------------------
 ;; Module-use serialization --- as an expression, like module path
@@ -279,7 +285,8 @@
                               #:as-data? [as-data? #f]
                               #:syntax-support? [syntax-support? #t]
                               #:preserve-prop-keys [preserve-prop-keys #hasheq()]
-                              #:keep-provides? [keep-provides? #f])
+                              #:keep-provides? [keep-provides? #f]
+                              #:phase+space-hasheqv [phase+space-hasheqv #f]) ; keys of this value must be interned
   (define bulk-shifts (and keep-provides? (list (make-hasheq))))
 
   (define reachable-scopes (find-reachable-scopes v bulk-shifts))
@@ -508,7 +515,9 @@
                            [else '#:set])
                           (cond
                            [(hash-eq? v) '#:hasheq]
-                           [(hash-eqv? v) '#:hasheqv]
+                           [(hash-eqv? v) (if (eq? v phase+space-hasheqv)
+                                              '#:hasheqv/phase+space
+                                              '#:hasheqv)]
                            [else '#:hash])))
       (ser-push! 'exact (hash-count v))
       (define ks (sorted-hash-keys v))
@@ -823,6 +832,11 @@
      (define len (vector*-ref vec (add1 pos)))
      (for/fold ([ht ht] [pos (+ pos 2)]) ([i (in-range len)])
        (decodes #:pos pos (k v) (hash-set ht k v)))]
+    [(#:hasheqv/phase+space)
+     (define ht (hasheqv))
+     (define len (vector*-ref vec (add1 pos)))
+     (for/fold ([ht ht] [pos (+ pos 2)]) ([i (in-range len)])
+       (decodes #:pos pos (k v) (hash-set ht (intern-phase+space k) v)))]
     [(#:set #:seteq #:seteqv)
      (define s (case (vector*-ref vec pos)
                  [(#:set) (set)]
@@ -871,6 +885,8 @@
      (decode* (deserialize-full-local-binding key free=id))]
     [(#:bulk-binding)
      (decode* (deserialize-bulk-binding prefix excepts mpi provide-phase-level phase-shift bulk-binding-registry))]
+    [(#:like-ambiguous-binding)
+     (decode* (like-ambiguous-binding))]
     [(#:bulk-binding+provides)
      (decode* (deserialize-bulk-binding+provides provides self prefix excepts mpi provide-phase-level phase-shift bulk-binding-registry))]
     [(#:provided)
@@ -924,14 +940,14 @@
 
 (define (find-reachable-scopes v bulk-shifts)
   (define seen (make-hasheq))
-  (define reachable-scopes (seteq))
+  (define reachable-scopes (interned-scopes))
   (define (get-reachable-scopes) reachable-scopes)
   (define scope-triggers (make-hasheq))
 
   ;; `bulk-shifts` is used to propagate shifts from a syntax object to
   ;; binding tables when bulk-binding provides will be preserved, in
   ;; case scope-specific bindings need to be reified; a `bulk-shifts`
-  ;; list an an `extra-shifts` prefixed by an eq-based table to record
+  ;; list is an `extra-shifts` prefixed by an eq-based table to record
   ;; resolved module paths; setting it to #f means that bulk-binding
   ;; provides are not preserved (i.e., they will be shared with the
   ;; providing module on demand), and no bulk-shifts propagation is
@@ -957,7 +973,7 @@
         ;; A binding may have a `free-id=?` equivalence;
         ;; that equivalence is reachable if all the scopes in the
         ;; binding set are reachable; for a so-far unreachable scope,
-        ;; record a trigger in case the scope bcomes reachable later
+        ;; record a trigger in case the scope becomes reachable later
         ((scope-with-bindings-ref v)
          v
          get-reachable-scopes

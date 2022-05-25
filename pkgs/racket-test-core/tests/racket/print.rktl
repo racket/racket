@@ -100,6 +100,8 @@
   (ptest "'#hasheq((1 . 2))" (make-hasheq (list (cons 1 2))))
   (ptest "'#hasheqv((1 . 2))" (hasheqv 1 2))
   (ptest "'#hasheqv((1 . 2))" (make-hasheqv (list (cons 1 2))))
+  (ptest "'#hashalw((1 . 2))" (hashalw 1 2))
+  (ptest "'#hashalw((1 . 2))" (make-hashalw (list (cons 1 2))))
 
   (ptest "(mcons 1 2)" (mcons 1 2))
   (ptest "(mcons 1 '())" (mcons 1 null))
@@ -339,9 +341,13 @@
   (test "'()" format "~e" (list (show-nothing))))
 
 ;; ----------------------------------------
-;; make sure +inf.0 is ok for `print-syntax-width':
+;; make sure +inf.0, 3, and 0 are ok for `print-syntax-width':
 (parameterize ([print-syntax-width +inf.0])
   (test +inf.0 print-syntax-width))
+(parameterize ([print-syntax-width 0])
+  (test 0 print-syntax-width))
+(parameterize ([print-syntax-width 3])
+  (test 3 print-syntax-width))
 
 ;; ----------------------------------------
 ;; Try to provoke a stack overflow during printing of truncated

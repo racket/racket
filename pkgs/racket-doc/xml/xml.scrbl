@@ -195,7 +195,7 @@ from @racketmodname[xml] with minimal dependencies.
 
 @defproc[(read-xml [in input-port? (current-input-port)]) document?]{
 
-Reads in an XML document from the given or current input port XML
+Reads in an XML document from the given or current input port. XML
 documents contain exactly one element, raising @racket[xml-read:error]
 if the input stream has zero elements or more than one element.
        
@@ -377,7 +377,7 @@ insert strings directly into attribute positions of HTML.
          element?]{
 
 Some elements should not contain any text, only other tags, except
-they often contain whitespace for formating purposes.  Given a list of
+they often contain whitespace for formatting purposes.  Given a list of
 tag names as @racket[tag]s and the identity function as
 @racket[choose], @racket[eliminate-whitespace] produces a function
 that filters out PCDATA consisting solely of whitespace from those

@@ -152,7 +152,7 @@ executable once the shell has transferred control.
 
 \scheme{process} is similar to \scheme{open-process-ports}, but less
 general.
-It does not return a port from which the subproces's standard error output
+It does not return a port from which the subprocess's standard error output
 can be read, and it always creates textual ports.
 It returns a list of three values rather than the four separate values
 of \scheme{open-process-ports}.
@@ -296,8 +296,10 @@ The types
 \index{\scheme{u16*}}\scheme{u16*},
 \index{\scheme{u32*}}\scheme{u32*},
 \index{\scheme{utf-8}}\scheme{utf-8},
+\index{\scheme{utf-16}}\scheme{utf-16},
 \index{\scheme{utf-16le}}\scheme{utf-16le},
 \index{\scheme{utf-16be}}\scheme{utf-16be},
+\index{\scheme{utf-32}}\scheme{utf-32},
 \index{\scheme{utf-32le}}\scheme{utf-32le},
 and
 \index{\scheme{utf-32be}}\scheme{utf-32be},
@@ -314,8 +316,10 @@ foreign variables and data structures.
 
 For argument types \scheme{string}, \scheme{wstring},
 \index{\scheme{utf-8}}\scheme{utf-8},
+\index{\scheme{utf-16}}\scheme{utf-16},
 \index{\scheme{utf-16le}}\scheme{utf-16le},
 \index{\scheme{utf-16be}}\scheme{utf-16be},
+\index{\scheme{utf-32}}\scheme{utf-32},
 \index{\scheme{utf-32le}}\scheme{utf-32le}, and
 \index{\scheme{utf-32be}}\scheme{utf-32be}, an argument is converted
 to a fresh object that is passed to the foreign procedure. Since the
@@ -565,6 +569,12 @@ them between foreign procedure calls and use their storage for some
 other purpose. The \scheme{utf-8} argument type is not allowed for a
 \scheme{__collect_safe} foreign procedure.
 
+\foreigntype{\scheme{utf-16}}
+\index{\scheme{utf-16}}Arguments of this type are treated like arguments
+of type \scheme{utf-8}, except they are converted as if via
+\scheme{string->utf16} with endianness \scheme{(native-endianness)}, and they are
+extended by two null bytes rather than one.
+
 \foreigntype{\scheme{utf-16le}}
 \index{\scheme{utf-16le}}Arguments of this type are treated like arguments
 of type \scheme{utf-8}, except they are converted as if via
@@ -576,6 +586,12 @@ extended by two null bytes rather than one.
 of type \scheme{utf-8}, except they are converted as if via
 \scheme{string->utf16} with endianness \scheme{big}, and they are
 extended by two null bytes rather than one.
+
+\foreigntype{\scheme{utf-32}}
+\index{\scheme{utf-32}}Arguments of this type are treated like arguments
+of type \scheme{utf-8}, except they are converted as if via
+\scheme{string->utf32} with endianness \scheme{(native-endianness)}, and they are
+extended by four null bytes rather than one.
 
 \foreigntype{\scheme{utf-32le}}
 \index{\scheme{utf-32le}}Arguments of this type are treated like arguments
@@ -593,11 +609,11 @@ extended by four null bytes rather than one.
 \index{\scheme{string}}This type is an alias for \scheme{utf-8}.
 
 \foreigntype{\scheme{wstring}}
-\index{\scheme{string}}This type is an alias for \scheme{utf-16le},
-\scheme{utf-16be}, \scheme{utf-32le}, or \scheme{utf-32be} as
+\index{\scheme{string}}This type is an alias for \scheme{utf-16},
+or \scheme{utf-32} as
 appropriate depending on the size of a C \scheme{wchar_t} and
 the endianness of the target machine.
-For example, \scheme{wstring} is equivalent to \scheme{utf-16le}
+For example, \scheme{wstring} is equivalent to \scheme{utf-16}
 under Windows running on Intel hardware.
 
 \foreigntype{\scheme{(* \var{ftype-name})}}
@@ -822,6 +838,16 @@ If the result is a null pointer, \scheme{#f} is returned.
 Otherwise, the sequence of bytes is converted into a Scheme string, as if
 via \scheme{utf8->string}, and the string is returned to Scheme.
 
+\foreigntype{\scheme{utf-16}}
+\index{\scheme{utf-16}}The result is interpreted as a pointer to a
+null-terminated sequence of 16-bit unsigned integers.
+If the result is a null pointer, \scheme{#f} is returned.
+Otherwise, the sequence of integers is converted into a Scheme string, as if
+via \scheme{utf16->string} with endianness \scheme{(native-endianness)},
+and the string is returned to Scheme.
+A byte-order mark in the sequence of integers as treated as an ordinary
+character value and does not affect the byte ordering.
+
 \foreigntype{\scheme{utf-16le}}
 \index{\scheme{utf-16le}}The result is interpreted as a pointer to a
 null-terminated sequence of 16-bit unsigned integers.
@@ -838,6 +864,16 @@ null-terminated sequence of 16-bit unsigned integers.
 If the result is a null pointer, \scheme{#f} is returned.
 Otherwise, the sequence of integers is converted into a Scheme string, as if
 via \scheme{utf16->string} with endianness \scheme{big},
+and the string is returned to Scheme.
+A byte-order mark in the sequence of integers as treated as an ordinary
+character value and does not affect the byte ordering.
+
+\foreigntype{\scheme{utf-32}}
+\index{\scheme{utf-32}}The result is interpreted as a pointer to a
+null-terminated sequence of 32-bit unsigned integers.
+If the result is a null pointer, \scheme{#f} is returned.
+Otherwise, the sequence of integers is converted into a Scheme string, as if
+via \scheme{utf32->string} with endianness \scheme{(native-endianness)},
 and the string is returned to Scheme.
 A byte-order mark in the sequence of integers as treated as an ordinary
 character value and does not affect the byte ordering.
@@ -866,11 +902,10 @@ character value and does not affect the byte ordering.
 \index{\scheme{string}}This type is an alias for \scheme{utf-8}.
 
 \foreigntype{\scheme{wstring}}
-\index{\scheme{string}}This type is an alias for \scheme{utf-16le},
-\scheme{utf-16be}, \scheme{utf-32le}, or \scheme{utf-32be} as
-appropriate depending on the size of a C \scheme{wchar_t} and
+\index{\scheme{string}}This type is an alias for \scheme{utf-16},
+or \scheme{utf-32} as appropriate depending on the size of a C \scheme{wchar_t} and
 the endianness of the target machine.
-For example, \scheme{wstring} is equivalent to \scheme{utf-16le}
+For example, \scheme{wstring} is equivalent to \scheme{utf-16}
 under Windows running on Intel hardware.
 
 \foreigntype{\scheme{(* \var{ftype-name})}}
@@ -1347,7 +1382,7 @@ It should be an address returned by an earlier call to
 \endentryheader
 
 \scheme{foreign-ref} extracts the value of type \var{type}
-\var{offset} bytes into the block of foreign data addressed by
+from the memory location at \var{offset} bytes offset from
 \var{address}.
 
 \var{type} must be a symbol identifying the type of value
@@ -1589,9 +1624,9 @@ takes two arguments, a wide character and an integer, and returns an
 integer.
 The ftype \scheme{A} is simply an array of 10 \scheme{wchar_t} values,
 and its size will be 10 times the size of a single \scheme{wchar_t}.
-The ftype \scheme{E} is a structure with five fields: an integer
+The ftype \scheme{E} is a structure with six fields: an integer
 \scheme{a}, a double-float \scheme{b}, an array \scheme{c}, a
-union \scheme{d}, and a pointer \scheme{e}.
+union \scheme{d}, and a pointer \scheme{e}, and a pointer \scheme{f}.
 The array \scheme{c} is an array of 25 structs, each of which
 contains a short integer, a long integer, and a \scheme{A} array.
 The size of the \scheme{c} array will be 25 times the size of a
@@ -1713,6 +1748,7 @@ The \scheme{swapped} specifier can be used to swap the
 representation relative to the default or enclosing representation.
 Each \scheme{endian} form affects only ftypes nested syntactically
 within it and not nested within a closer \scheme{endian} form.
+The endianness of an ftype is fixed once it is defined.
 
 The total size $n$ of the fields within an ftype bits form must
 be 8, 16, 24, 32, 40, 48, 56, or 64.  Padding must be added manually, if needed.
@@ -2450,7 +2486,7 @@ representation of a foreign address; see
 \noindent
 The result is \scheme{0} if \scheme{obj} is \scheme{#f}, and it is the
 address of \var{objs}'s content in the case that \var{obj} is a
-bytevector of flvector---at least, at the point where
+bytevector or flvector---at least, at the point where
 \scheme{object->reference-address} was called. Unless \var{obj} is
 a locked or immobile bytevector or flvector, its address can change at
 any time that a garbage collection is possible (i.e., when interrupts
@@ -2988,6 +3024,11 @@ The preprocessor macros may evaluate their arguments more than once
 (or not at all), so care should be taken to ensure that this does not
 cause problems.
 
+\def\NLhphantom#1{\\\hphantom{#1}}
+\ifhtml
+\def\NLhphantom#1{ }
+\fi
+
 % these must be xdef, since their expansions contain \scheme{...}
 \xdef\cconst#1#2{\noindent\index{\scheme{#2}}%
 [macro] \scheme{#1} \scheme{#2}\\}
@@ -2999,7 +3040,7 @@ cause problems.
 [func] \scheme{#1} \scheme{#2}\scheme{(#3)}\\}
 
 \xdef\cfunctTwo#1#2#3#4{\noindent\index{\scheme{#2}}%
-[func] \scheme{#1} \scheme{#2}\scheme{(#3}\\\hphantom{[func] \scheme{#1} \scheme{#2}\scheme{(}}\scheme{#4)}\\}
+[func] \scheme{#1} \scheme{#2}\scheme{(#3}\NLhphantom{[func] \scheme{#1} \scheme{#2}\scheme{(}}\scheme{#4)}\\}
 
 \parheader{Customization}
 The functions described here are used to initialize the Scheme system,

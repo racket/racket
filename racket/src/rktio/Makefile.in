@@ -1,3 +1,6 @@
+# The intent is that "main.zuo" is used, which consults "Makefile"
+# just for the configuration at the start here. But we keep a simple
+# makefile with targets around, just in case it's useful.
 
 srcdir = @srcdir@
 
@@ -12,14 +15,19 @@ STATIC_AR = @STATIC_AR@
 ARFLAGS = @ARFLAGS@
 RANLIB = @RANLIB@
 
-# Used only for standalone builds:
+LIBSFX = @LIBSFX@
+LTO = @LTO@
+LTA = @LTA@
+
 AR = @AR@
 ICP_LIB = @ICP_LIB@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 libdir = @libdir@
 
-RACKET = racket
+AS_STANDALONE = @AS_STANDALONE@
+
+# The rest of this file is the just-in-case-it's-useful part
 
 RKTIO_HEADERS = $(srcdir)/rktio.h $(srcdir)/rktio_private.h $(srcdir)/rktio_platform.h rktio_config.h
 
@@ -50,20 +58,15 @@ OBJS = rktio_fs.@LTO@ \
        rktio_console.@LTO@ \
        rktio_main.@LTO@
 
-default_rktio:
-	$(MAKE) @HIDE_STANDALONE@@HIDE_NOT_STANDALONE@librktio
+via_zuo:
+	zuo $(srcdir)
 
-@HIDE_STANDALONE@librktio:
-	$(MAKE) librktio.@LTA@
-
-@HIDE_NOT_STANDALONE@librktio.@LTA@: $(OBJS)
+librktio.@LTA@: $(OBJS)
 	$(STATIC_AR) $(ARFLAGS) @HIDE_NOT_STANDALONE@librktio.@LTA@ $(OBJS)
 
-demo: rktio_demo
-	./rktio_demo $(ARGS)
-
-rktio_demo: librktio.@LTA@ demo.@LTO@
-	$(RKTLINKER) -o rktio_demo $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) demo.@LTO@ librktio.@LTA@ $(LIBS)
+# Builds a shared object; requires `configure --enable-standalone`
+librktio.@LIBSFX@: $(OBJS)
+	$(AR) librktio.@LIBSFX@ $(OBJS) $(LDFLAGS) $(LIBS)
 
 rktio_fs.@LTO@: $(srcdir)/rktio_fs.c $(RKTIO_HEADERS)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(srcdir) -I. -o rktio_fs.@LTO@ -c $(srcdir)/rktio_fs.c
@@ -148,36 +151,3 @@ demo.@LTO@: $(srcdir)/demo.c $(RKTIO_HEADERS)
 
 clean:
 	rm -f $(OBJS) librktio.@LTA@ rktio_demo demo_fifo
-
-# ----------------------------------------
-
-# To rebuild the S-expression form of "rktio.h"
-
-rktio-rktl rktio-inc rktio-def:
-	$(MAKE) $(srcdir)/rktio.rktl
-	$(MAKE) $(srcdir)/rktio.inc
-	$(MAKE) $(srcdir)/rktio.def
-
-$(srcdir)/rktio.rktl: $(srcdir)/rktio.h $(srcdir)/parse.rkt
-	$(RACKET) $(srcdir)/parse.rkt -o $(srcdir)/rktio.rktl $(srcdir)/rktio.h
-
-$(srcdir)/rktio.inc: $(srcdir)/rktio.h $(srcdir)/parse.rkt
-	$(RACKET) $(srcdir)/parse.rkt -c -o $(srcdir)/rktio.inc $(srcdir)/rktio.h
-
-$(srcdir)/rktio.def: $(srcdir)/rktio.h $(srcdir)/parse.rkt
-	$(RACKET) $(srcdir)/parse.rkt -d -o $(srcdir)/rktio.def $(srcdir)/rktio.h
-
-# ----------------------------------------
-
-@HIDE_NOT_STANDALONE@librktio:
-	$(MAKE) librktio.@LIBSFX@
-
-# Builds a shared object; requires `configure --enable-standalone`
-@HIDE_STANDALONE@librktio.@LIBSFX@: $(OBJS)
-	$(AR) @HIDE_STANDALONE@librktio.@LIBSFX@ $(OBJS) $(LDFLAGS) $(LIBS)
-
-# Builds a shared object and installs it to `configure --prefix=...` target
-install-shared-object:
-	$(MAKE) librktio.@LIBSFX@
-	mkdir -p "$(DESTDIR)$(libdir)/"
-	$(ICP_LIB) librktio.@LIBSFX@ "$(DESTDIR)$(libdir)/librktio.@LIBSFX@"

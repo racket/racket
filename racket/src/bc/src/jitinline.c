@@ -1416,6 +1416,11 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
 
     __START_SHORT_JUMPS__(branch_short);
 
+    if (for_branch) {
+      scheme_prepare_branch_jump(jitter, for_branch);
+      CHECK_LIMIT();
+    }
+
     __START_INNER_TINY__(branch_short);
     ref1 = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
     __END_INNER_TINY__(branch_short);
@@ -4747,6 +4752,12 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
     return 1;
   } else if (IS_NAMED_PRIM(rator, "unsafe-fl>=")) {
     scheme_generate_nary_arith(jitter, app, 0, CMP_GEQ, for_branch, branch_short, 0, 1, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "most-positive-fixnum")) {
+    (void)jit_movi_p(dest, scheme_make_integer(MOST_POSITIVE_FIXNUM));
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "most-negative-fixnum")) {
+    (void)jit_movi_p(dest, scheme_make_integer(MOST_NEGATIVE_FIXNUM));
     return 1;
   } else if (IS_NAMED_PRIM(rator, "current-future")) { 
     mz_rs_sync();

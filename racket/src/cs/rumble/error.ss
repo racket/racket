@@ -51,7 +51,8 @@
                            :contract "(and/c exact-integer? (>=/c 3))"
                            v)
                     v)
-                  'error-print-width))
+                  'error-print-width
+                  primitive-realm))
 
 (define/who error-value->string-handler
   (make-parameter (lambda (v len)
@@ -66,14 +67,25 @@
                   (lambda (v)
                     (check who (procedure-arity-includes/c 2) v)
                     v)
-                  'error-value->string-handler))
+                  'error-value->string-handler
+                  primitive-realm))
+
+(define/who error-syntax->string-handler
+  (make-parameter (lambda (v len)
+                    (#%format "~s" v))
+                  (lambda (v)
+                    (check who (procedure-arity-includes/c 2) v)
+                    v)
+                  'error-syntax->string-handler
+                  primitive-realm))
 
 (define/who error-print-context-length
   (make-parameter 16
                   (lambda (v)
                     (check who exact-nonnegative-integer? v)
                     v)
-                  'error-print-context-length))
+                  'error-print-context-length
+                  primitive-realm))
 
 ;; ----------------------------------------
 
@@ -129,49 +141,96 @@
 
 ;; ----------------------------------------
 
-(define (raise-arguments-error who what . more)
-  (unless (symbol? who)
-    (raise-argument-error 'raise-arguments-error "symbol?" who))
-  (unless (string? what)
-    (raise-argument-error 'raise-arguments-error "string?" what))
-  (#%$app/no-return do-raise-arguments-error who what exn:fail:contract more))
+;; this is the real `raise-arguments-error`:
+(define raise-arguments-error/user
+  (|#%name|
+   raise-arguments-error
+   (lambda (who-in what . more)
+     (#%$app/no-return do-raise-arguments-error 'raise-arguments-error who-in default-realm what exn:fail:contract more))))
+
+(define/who (raise-arguments-error who-in what . more)
+  (#%$app/no-return do-raise-arguments-error who who-in primitive-realm what exn:fail:contract more))
+
+(define/who (raise-arguments-error* who-in realm what . more)
+  (#%$app/no-return do-raise-arguments-error who who-in realm what exn:fail:contract more))
   
-(define (do-raise-arguments-error who what exn:fail:contract more)
+(define (do-raise-arguments-error e-who who realm what exn:fail:contract more)
+  (check e-who symbol? who)
+  (check e-who symbol? realm)
+  (check e-who string? what)
   (raise
    (|#%app|
     exn:fail:contract
-    (apply
-     string-append
-     (symbol->string who)
-     ": "
-     what
-     (let loop ([more more])
-       (cond
-        [(null? more) '()]
-        [(string? (car more))
-         (cond
-          [(null? (cdr more))
-           (raise-arguments-error 'raise-arguments-error
-                                  "missing value after field string"
-                                  "string"
-                                  (car more))]
+    (error-message->adjusted-string
+     who realm
+     (apply
+      string-append
+      what
+      (let loop ([more more])
+        (cond
+          [(null? more) '()]
+          [(string? (car more))
+           (cond
+             [(null? (cdr more))
+              (raise-arguments-error 'raise-arguments-error
+                                     "missing value after field string"
+                                     "string"
+                                     (car more))]
+             [else
+              (cons (string-append "\n  "
+                                   (car more) ": "
+                                   (let ([val (cadr more)])
+                                     (if (unquoted-printing-string? val)
+                                         (unquoted-printing-string-value val)
+                                         (error-value->string val))))
+                    (loop (cddr more)))])]
           [else
-           (cons (string-append "\n  "
-                                (car more) ": "
-                                (let ([val (cadr more)])
-                                  (if (unquoted-printing-string? val)
-                                      (unquoted-printing-string-value val)
-                                      (error-value->string val))))
-                 (loop (cddr more)))])]
-        [else
-         (raise-argument-error 'raise-arguments-error "string?" (car more))])))
+           (raise-argument-error 'raise-arguments-error "string?" (car more))])))
+     realm)
     (current-continuation-marks))))
 
-(define (do-raise-argument-error e-who tag who what pos arg args)
-  (unless (symbol? who)
-    (raise-argument-error e-who "symbol?" who))
-  (unless (string? what)
-    (raise-argument-error e-who "string?" what))
+;; this is the real `raise-argument-error`:
+(define raise-argument-error/user
+  (|#%name|
+   raise-argument-error
+   (case-lambda
+    [(who-in what arg)
+     (#%$app/no-return do-raise-argument-error 'raise-argument-error "given" who-in default-realm what #f arg #f)]
+    [(who-in what pos arg . args)
+     (#%$app/no-return do-raise-argument-error 'raise-argument-error "given" who-in default-realm what pos arg args)])))
+
+(define/who raise-argument-error
+   (case-lambda
+    [(who-in what arg)
+     (#%$app/no-return do-raise-argument-error who "given" who-in primitive-realm what #f arg #f)]
+    [(who-in what pos arg . args)
+     (#%$app/no-return do-raise-argument-error who "given" who-in primitive-realm what pos arg args)]))
+
+(define/who raise-argument-error*
+   (case-lambda
+    [(who-in realm what arg)
+     (#%$app/no-return do-raise-argument-error who "given" who-in realm what #f arg #f)]
+    [(who-in realm what pos arg . args)
+     (#%$app/no-return do-raise-argument-error who "given" who-in realm what pos arg args)]))
+
+(define/who raise-result-error
+  (case-lambda
+    [(who-in what arg)
+     (#%$app/no-return do-raise-argument-error who "result" who-in default-realm what #f arg #f)]
+    [(who-in what pos arg . args)
+     (#%$app/no-return do-raise-argument-error who "result" who-in default-realm what pos arg args)]))
+
+(define/who raise-result-error*
+  (case-lambda
+    [(who-in realm what arg)
+     (#%$app/no-return do-raise-argument-error who "result" who-in realm what #f arg #f)]
+    [(who-in realm what pos arg . args)
+     (#%$app/no-return do-raise-argument-error who "result" who-in realm what pos arg args)]))
+
+(define (do-raise-argument-error e-who tag who realm what pos arg args)
+  (check e-who symbol? who)
+  (check e-who symbol? realm)
+  (check e-who string? what)
   (when pos
     (unless (and (integer? pos)
                  (exact? pos)
@@ -180,25 +239,28 @@
   (raise
    (|#%app|
     exn:fail:contract
-    (string-append (symbol->string who)
-                   ": contract violation\n  expected: "
-                   (reindent what (string-length "  expected: "))
-                   "\n  " tag ": "
-                   (error-value->string
-                    (if pos (list-ref (cons arg args) pos) arg))
-                   (if (and pos (pair? args))
-                       (apply
-                        string-append
-                        "\n  argument position: "
-                        (nth-str (add1 pos))
-                        "\n  other arguments...:"
-                        (let loop ([pos pos] [args (cons arg args)])
-                          (cond
-                           [(null? args) '()]
-                           [(zero? pos) (loop (sub1 pos) (cdr args))]
-                           [else (cons (string-append "\n   " (error-value->string (car args)))
-                                       (loop (sub1 pos) (cdr args)))])))
-                       ""))
+    (error-message->adjusted-string
+     who realm
+     (string-append "contract violation\n  expected: "
+                    (reindent (error-contract->adjusted-string what realm)
+                              (string-length "  expected: "))
+                    "\n  " tag ": "
+                    (error-value->string
+                     (if pos (list-ref (cons arg args) pos) arg))
+                    (if (and pos (pair? args))
+                        (apply
+                         string-append
+                         "\n  argument position: "
+                         (nth-str (add1 pos))
+                         "\n  other arguments...:"
+                         (let loop ([pos pos] [args (cons arg args)])
+                           (cond
+                             [(null? args) '()]
+                             [(zero? pos) (loop (sub1 pos) (cdr args))]
+                             [else (cons (string-append "\n   " (error-value->string (car args)))
+                                         (loop (sub1 pos) (cdr args)))])))
+                        ""))
+     realm)
     (current-continuation-marks))))
 
 (define (reindent s amt)
@@ -220,23 +282,23 @@
           (loop i s end)]))])))
 
 (define (error-value->string v)
-  ((|#%app| error-value->string-handler)
-   v
-   (|#%app| error-print-width)))
+  (let ([s (|#%app|
+            (|#%app| error-value->string-handler)
+            v
+            (|#%app| error-print-width))])
+    (cond
+      [(string? s) s]
+      [(bytes? s)
+       ;; Racket BC allows byte strings, and we approximate that here
+       (utf8->string s)]
+      [else "..."])))
 
-(define raise-argument-error
+(define raise-type-error
   (case-lambda
     [(who what arg)
-     (#%$app/no-return do-raise-argument-error 'raise-argument-error "given" who what #f arg #f)]
+     (#%$app/no-return do-raise-type-error 'raise-argument-error "given" who what #f arg #f)]
     [(who what pos arg . args)
-     (#%$app/no-return do-raise-argument-error 'raise-argument-error "given" who what pos arg args)]))
-
-(define raise-result-error
-  (case-lambda
-    [(who what arg)
-     (#%$app/no-return do-raise-argument-error 'raise-result-error "result" who what #f arg #f)]
-    [(who what pos arg . args)
-     (#%$app/no-return do-raise-argument-error 'raise-result-error "result" who what pos arg args)]))
+     (#%$app/no-return do-raise-type-error 'raise-argument-error "given" who what pos arg args)]))
 
 (define (do-raise-type-error e-who tag who what pos arg args)
   (unless (symbol? who)
@@ -251,30 +313,26 @@
   (raise
    (|#%app|
     exn:fail:contract
-    (string-append (symbol->string who)
-                   ": expected argument of type <" what ">"
-                   "; given: "
-                   (error-value->string
-                    (if pos (list-ref (cons arg args) pos) arg))
-                   (if (and pos (pair? args))
-                       (apply
-                        string-append
-                        "; other arguments:"
-                        (let loop ([pos pos] [args (cons arg args)])
-                          (cond
-                           [(null? args) '()]
-                           [(zero? pos) (loop (sub1 pos) (cdr args))]
-                           [else (cons (string-append " " (error-value->string (car args)))
-                                       (loop (sub1 pos) (cdr args)))])))
-                       ""))
+    (error-message->adjusted-string
+     who default-realm
+     (string-append-immutable
+      "expected argument of type <" what ">"
+      "; given: "
+      (error-value->string
+       (if pos (list-ref (cons arg args) pos) arg))
+      (if (and pos (pair? args))
+          (apply
+           string-append
+           "; other arguments:"
+           (let loop ([pos pos] [args (cons arg args)])
+             (cond
+               [(null? args) '()]
+               [(zero? pos) (loop (sub1 pos) (cdr args))]
+               [else (cons (string-append " " (error-value->string (car args)))
+                           (loop (sub1 pos) (cdr args)))])))
+          ""))
+     default-realm)
     (current-continuation-marks))))
-
-(define raise-type-error
-  (case-lambda
-    [(who what arg)
-     (#%$app/no-return do-raise-type-error 'raise-argument-error "given" who what #f arg #f)]
-    [(who what pos arg . args)
-     (#%$app/no-return do-raise-type-error 'raise-argument-error "given" who what pos arg args)]))
 
 (define/who (raise-mismatch-error in-who what v . more)
   (check who symbol? in-who)
@@ -282,18 +340,58 @@
   (raise
    (|#%app|
     exn:fail:contract
-    (apply
-     string-append
-     (symbol->string in-who)
-     ": "
-     what
-     (let loop ([more (cons v more)])
-       (cond
-        [(null? more) '()]
-        [else
-         (cons (error-value->string (car more))
-               (loop (cdr more)))])))
+    (error-message->adjusted-string
+     in-who default-realm
+     (apply
+      string-append-immutable
+      what
+      (let loop ([more (cons v more)])
+        (cond
+          [(null? more) '()]
+          [else
+           (cons (error-value->string (car more))
+                 (loop (cdr more)))])))
+     default-realm)
     (current-continuation-marks))))
+
+;; this is the real `raise-range-error`:
+(define raise-range-error/user
+  (|#%name|
+   raise-range-error/user
+   (case-lambda
+    [(in-who
+      type-description
+      index-prefix
+      index
+      in-value
+      lower-bound
+      upper-bound
+      alt-lower-bound)
+     (do-raise-range-error 'raise-range-error
+                           in-who
+                           default-realm
+                           type-description
+                           index-prefix
+                           index
+                           in-value
+                           lower-bound
+                           upper-bound
+                           alt-lower-bound)]
+    [(in-who
+      type-description
+      index-prefix
+      index
+      in-value
+      lower-bound
+      upper-bound)
+     (raise-range-error/user in-who
+                             type-description
+                             index-prefix
+                             index
+                             in-value
+                             lower-bound
+                             upper-bound
+                             #f)])))
 
 (define/who raise-range-error
   (case-lambda
@@ -305,48 +403,24 @@
      lower-bound
      upper-bound
      alt-lower-bound)
-    (check who symbol? in-who)
-    (check who string? type-description)
-    (check who string? index-prefix)
-    (check who exact-integer? index)
-    (check who exact-integer? lower-bound)
-    (check who exact-integer? upper-bound)
-    (check who :or-false exact-integer? alt-lower-bound)
-    (raise
-     (|#%app|
-      exn:fail:contract
-      (string-append (symbol->string in-who)
-                     ": "
-                     index-prefix "index is "
-                     (cond
-                      [(< upper-bound lower-bound)
-                       (string-append "out of range for empty " type-description "\n"
-                                      "  index: " (number->string index))]
-                      [else
-                       (string-append
-                        (cond
-                         [(and alt-lower-bound
-                               (>= index alt-lower-bound)
-                               (< index upper-bound))
-                          (string-append "smaller than starting index\n"
-                                         "  " index-prefix "index: " (number->string index) "\n"
-                                         "  starting index: "  (number->string lower-bound) "\n")]
-                         [else
-                          (string-append "out of range\n"
-                                         "  " index-prefix "index: " (number->string index) "\n")])
-                        "  valid range: ["
-                        (number->string (or alt-lower-bound lower-bound)) ", "
-                        (number->string upper-bound) "]" "\n"
-                        "  " type-description ": " (error-value->string in-value))]))
-      (current-continuation-marks)))]
-   [(who
+    (do-raise-range-error who
+                          in-who
+                          primitive-realm
+                          type-description
+                          index-prefix
+                          index
+                          in-value
+                          lower-bound
+                          upper-bound
+                          alt-lower-bound)]
+   [(in-who
      type-description
      index-prefix
      index
      in-value
      lower-bound
      upper-bound)
-    (raise-range-error who
+    (raise-range-error in-who
                        type-description
                        index-prefix
                        index
@@ -354,6 +428,92 @@
                        lower-bound
                        upper-bound
                        #f)]))
+
+(define/who raise-range-error*
+  (case-lambda
+   [(in-who
+     realm
+     type-description
+     index-prefix
+     index
+     in-value
+     lower-bound
+     upper-bound
+     alt-lower-bound)
+    (do-raise-range-error who
+                          in-who
+                          primitive-realm
+                          type-description
+                          index-prefix
+                          index
+                          in-value
+                          lower-bound
+                          upper-bound
+                          alt-lower-bound)]
+   [(in-who
+     realm
+     type-description
+     index-prefix
+     index
+     in-value
+     lower-bound
+     upper-bound)
+    (raise-range-error* in-who
+                        realm
+                        type-description
+                        index-prefix
+                        index
+                        in-value
+                        lower-bound
+                        upper-bound
+                        #f)]))
+
+(define (do-raise-range-error e-who
+                              in-who
+                              realm
+                              type-description
+                              index-prefix
+                              index
+                              in-value
+                              lower-bound
+                              upper-bound
+                              alt-lower-bound)
+    (check e-who symbol? in-who)
+    (check e-who string? type-description)
+    (check e-who string? index-prefix)
+    (check e-who exact-integer? index)
+    (check e-who exact-integer? lower-bound)
+    (check e-who exact-integer? upper-bound)
+    (check e-who :or-false exact-integer? alt-lower-bound)
+  (raise
+   (|#%app|
+    exn:fail:contract
+    (error-message->adjusted-string
+     in-who realm
+     (string-append-immutable
+      index-prefix "index is "
+      (cond
+        [(< upper-bound lower-bound)
+         (string-append-immutable "out of range for empty " type-description "\n"
+                                  "  index: " (number->string index))]
+        [else
+         (string-append-immutable
+          (cond
+            [(and alt-lower-bound
+                  (>= index alt-lower-bound)
+                  (< index upper-bound))
+             (string-append-immutable "smaller than starting index\n"
+                                      "  " index-prefix "index: " (number->string index) "\n"
+                                      "  starting index: "  (number->string lower-bound) "\n")]
+            [else
+             (string-append-immutable "out of range\n"
+                                      "  " index-prefix "index: " (number->string index) "\n")])
+          "  valid range: ["
+          (number->string (or alt-lower-bound lower-bound)) ", "
+          (number->string upper-bound) "]" "\n"
+          "  " type-description ": " (error-value->string in-value))]))
+     realm)
+    (current-continuation-marks))))
 
 (define (arguments->context-string args)
   (cond
@@ -367,39 +527,49 @@
               [else (cons (string-append "\n   " (error-value->string (car args)))
                           (loop (cdr args)))])))]))
 
-(define (do-raise-arity-error name arity-or-expect-string args)
+(define/who (raise-arity-error name arity . args)
+  (|#%app/no-return| do-raise-arity-error who name default-realm arity #f args))
+
+(define/who (raise-arity-mask-error name arity-mask . args)
+  (|#%app/no-return| do-raise-arity-error who name default-realm arity-mask #t args))
+
+(define/who (raise-arity-error* name realm arity . args)
+  (|#%app/no-return| do-raise-arity-error who name realm arity #f args))
+
+(define/who (raise-arity-mask-error* name realm arity-mask . args)
+  (|#%app/no-return| do-raise-arity-error who name realm arity-mask #t args))
+
+(define (do-raise-arity-error who name realm arity/mask mask? args)
+  (check who (lambda (p) (or (symbol? name) (procedure? name)))
+         :contract "(or/c symbol? procedure?)"
+         name)
+  (check who symbol? realm)
+  (if mask?
+      (check who exact-integer? arity/mask)
+      (check who procedure-arity? arity/mask))
+  (do-arity-error name realm (if mask? (mask->arity arity/mask) arity/mask) args))
+
+(define (do-arity-error name realm arity-or-expect-string args)
   (raise
    (|#%app|
     exn:fail:contract:arity
-    (string-append
-     (let ([name (if (procedure? name)
-                     (object-name name)
-                     name)])
-       (if (symbol? name)
-           (string-append (symbol->string name) ": ")
-           ""))
-     "arity mismatch;\n"
-     " the expected number of arguments does not match the given number\n"
-     (if (string? arity-or-expect-string)
-         arity-or-expect-string
-         (expected-arity-string arity-or-expect-string))
-     "  given: " (number->string (length args))
-     (arguments->context-string args))
+    (error-message->adjusted-string
+     (if (procedure? name)
+         (object-name name)
+         name)
+     (if (procedure? name)
+         (procedure-realm name)
+         (or realm default-realm))
+     (string-append
+      "arity mismatch;\n"
+      " the expected number of arguments does not match the given number\n"
+      (if (string? arity-or-expect-string)
+          arity-or-expect-string
+          (expected-arity-string arity-or-expect-string))
+      "  given: " (number->string (length args))
+      (arguments->context-string args))
+     primitive-realm)
     (current-continuation-marks))))
-
-(define/who (raise-arity-error name arity . args)
-  (check who (lambda (p) (or (symbol? name) (procedure? name)))
-         :contract "(or/c symbol? procedure?)"
-         name)
-  (check who procedure-arity? arity)
-  (do-raise-arity-error name arity args))
-  
-(define/who (raise-arity-mask-error name mask . args)
-  (check who (lambda (p) (or (symbol? name) (procedure? name)))
-         :contract "(or/c symbol? procedure?)"
-         name)
-  (check who exact-integer? mask)
-  (apply raise-arity-error name (mask->arity mask) args))
 
 (define (expected-arity-string arity)
   (let ([expected
@@ -411,26 +581,36 @@
                                               (number->string (arity-at-least-value arity))))]
      [else ""])))
 
-(define/who (raise-result-arity-error who num-expected-args where . args)
+(define/who (raise-result-arity-error who-in num-expected-args where . args)
+  (do-raise-result-arity-error who who-in default-realm num-expected-args where args))
+
+(define/who (raise-result-arity-error* who-in realm num-expected-args where . args)
+  (do-raise-result-arity-error who who-in realm num-expected-args where args))
+
+(define/who (do-raise-result-arity-error who who-in realm num-expected-args where args)
   (check who symbol? :or-false who)
   (check who exact-nonnegative-integer? num-expected-args)
   (check who string? :or-false where)
   (raise
    (|#%app|
     exn:fail:contract:arity
-    (string-append
-     (if who (string-append (symbol->string who) ": ") "")
-     "result arity mismatch;\n"
-     " expected number of values not received\n"
-     "  expected: " (number->string num-expected-args) "\n"
-     "  received: " (number->string (length args))
-     (or where "")
-     (arguments->context-string args))
+    (error-message->adjusted-string
+     who-in realm
+     (string-append
+      "result arity mismatch;\n"
+      " expected number of values not received\n"
+      "  expected: " (number->string num-expected-args) "\n"
+      "  received: " (number->string (length args))
+      (or where "")
+      (arguments->context-string args))
+     primitive-realm)
     (current-continuation-marks))))
 
 (define (raise-binding-result-arity-error expected-args args)
-  (|#%app/no-return| #%apply
-   raise-result-arity-error #f
+  (do-raise-result-arity-error
+   'internal
+   #f
+   default-realm
    (if (integer? expected-args)
        expected-args
        (length expected-args))
@@ -438,8 +618,10 @@
    args))
 
 (define (raise-definition-result-arity-error expected-args args)
-  (|#%app/no-return| #%apply
-   raise-result-arity-error 'define-values
+  (do-raise-result-arity-error
+   'internal
+   'define-values
+   primitive-realm
    (length expected-args)
    (if (null? expected-args)
        ""
@@ -448,15 +630,25 @@
                       " ..."))
    args))
 
-(define raise-unsupported-error
+(define (do-raise-unsupported-error who name realm msg)
+  (check who symbol? name)
+  (check who symbol? realm)
+  (check who string? msg)
+  (raise
+   (|#%app|
+    exn:fail:unsupported
+    (error-message->adjusted-string
+     name realm
+     msg
+     realm)
+    (current-continuation-marks))))
+   
+(define/who raise-unsupported-error
   (case-lambda
-   [(id msg)
-    (raise
-     (|#%app|
-      exn:fail:unsupported
-      (string-append (symbol->string id) ": " msg)
-      (current-continuation-marks)))]
-   [(id) (raise-unsupported-error id "unsupported")]))
+   [(name msg)
+    (|#%app/no-return| do-raise-unsupported-error who name primitive-realm msg)]
+   [(name)
+    (|#%app/no-return| do-raise-unsupported-error who name primitive-realm "unsupported")]))
 
 ;; ----------------------------------------
 
@@ -655,7 +847,7 @@
           (#%$split-continuation k 0)
           (loop (#%$continuation-link k))]))])))
 
-(define (traces->context ls)
+(define (traces->context ls realms?)
   (let loop ([l '()] [ls ls])
     (cond
      [(null? l)
@@ -669,6 +861,10 @@
                           (if (string? s)
                               (string->symbol s)
                               s)))]
+             [realm (or (and realms?
+                             (procedure? (car p))
+                             (procedure-realm (car p)))
+                        default-realm)]
              [loc (and (cdr p)
                        (call-with-values (lambda ()
                                            (let* ([src (cdr p)]
@@ -692,7 +888,10 @@
                           [(path line col pos end) (|#%app| srcloc path line (sub1 col) (add1 pos) (- end pos))]
                           [(path pos end) (|#%app| srcloc path #f #f (add1 pos) (- end pos))])))])
         (if (or name loc)
-            (cons (cons name loc) (loop (cdr l) ls))
+            (cons (if realms?
+                      (vector->immutable-vector (vector name loc realm))
+                      (cons name loc))
+                  (loop (cdr l) ls))
             (loop (cdr l) ls)))])))
 
 (define (default-error-display-handler msg v)
@@ -710,7 +909,8 @@
                   (traces->context
                    (if (exn? v)
                        (continuation-mark-set-traces (exn-continuation-marks v))
-                       (list (continuation->trace (condition-continuation v))))))])
+                       (list (continuation->trace (condition-continuation v))))
+                   #f))])
       (unless (null? locs)
         (unless (and (list? locs)
                      (andmap srcloc? locs))
@@ -793,31 +993,33 @@
    [else 'unknown-who]))
 
 (define (exn->string v)
-  (format "~a~a"
-          (if (who-condition? v)
-              (format "~a: " (rewrite-who (who->symbol (condition-who v))))
-              "")
-          (cond
-           [(exn? v)
-            (exn-message v)]
-           [(format-condition? v)
-            (let-values ([(fmt irritants)
-                          (rewrite-format (and (who-condition? v) (who->symbol (condition-who v)))
-                                          (condition-message v)
-                                          (condition-irritants v))])
-              (apply format fmt irritants))]
-           [(syntax-violation? v)
-            (let ([show (lambda (s)
-                          (cond
-                           [(not s) ""]
-                           [else (format " ~s" (syntax->datum s))]))])
-              (format "~a~a~a"
-                      (condition-message v)
-                      (show (syntax-violation-form v))
-                      (show (syntax-violation-subform v))))]
-           [(message-condition? v)
-            (condition-message v)]
-           [else (format "~s" v)])))
+  (error-message->adjusted-string
+   (and (who-condition? v)
+        (rewrite-who (who->symbol (condition-who v))))
+   primitive-realm
+   (cond
+     [(exn? v)
+      (exn-message v)]
+     [(format-condition? v)
+      (let-values ([(fmt irritants)
+                    (rewrite-format (and (who-condition? v)
+                                         (who->symbol (condition-who v)))
+                                    (condition-message v)
+                                    (condition-irritants v))])
+        (apply format fmt irritants))]
+     [(syntax-violation? v)
+      (let ([show (lambda (s)
+                    (cond
+                      [(not s) ""]
+                      [else (format " ~s" (syntax->datum s))]))])
+        (format "~a~a~a"
+                (condition-message v)
+                (show (syntax-violation-form v))
+                (show (syntax-violation-subform v))))]
+     [(message-condition? v)
+      (condition-message v)]
+     [else (format "~s" v)])
+   primitive-realm))
 
 (define (condition->exn v)
   (if (condition? v)
@@ -844,6 +1046,7 @@
 
 (define (make-arity-exn proc n-args)
   (let* ([name (object-name proc)]
+         [realm (procedure-realm proc)]
          [make-str (arity-string-maker proc)]
          [arity (procedure-arity proc)]
          [adjust-for-method (lambda (n)
@@ -853,27 +1056,29 @@
                                   n))])
     (|#%app|
      exn:fail:contract:arity
-     (string-append
-      (if (symbol? name) (symbol->string name) "#<procedure>")
-      ": arity mismatch;\n the expected number of arguments does not match the given number"
-      (cond
-       [make-str
-        (let ([str (make-str)])
-          (if (string? str)
-              (string-append "\n  expected: " str)
-              ""))]
-       [(list? arity)
-        ""]
-       [else
-        (string-append
-         "\n  expected: "
-         (cond
-          [(arity-at-least? arity) (string-append "at least " (number->string
-                                                               (adjust-for-method (arity-at-least-value arity))))]
-          [else (number->string (adjust-for-method arity))]))])
-      (cond
-       [(not n-args) ""]
-       [else (string-append "\n  given: " (number->string (adjust-for-method n-args)))]))
+     (error-message->adjusted-string
+      name realm
+      (string-append
+       "arity mismatch;\n the expected number of arguments does not match the given number"
+       (cond
+         [make-str
+          (let ([str (make-str)])
+            (if (string? str)
+                (string-append "\n  expected: " str)
+                ""))]
+         [(list? arity)
+          ""]
+         [else
+          (string-append
+           "\n  expected: "
+           (cond
+             [(arity-at-least? arity) (string-append "at least " (number->string
+                                                                  (adjust-for-method (arity-at-least-value arity))))]
+             [else (number->string (adjust-for-method arity))]))])
+       (cond
+         [(not n-args) ""]
+         [else (string-append "\n  given: " (number->string (adjust-for-method n-args)))]))
+      primitive-realm)
      (current-continuation-marks))))
 
 (define/who uncaught-exception-handler
@@ -929,28 +1134,31 @@
 (define (make-nested-exception-handler what old-exn)
   (lambda (exn)
     (let ([msg
-           (string-append
-            (cond
-             [(not what)
-              "handler for uncaught exceptions: did not escape"]
-             [else
-              (string-append
-               (cond [(exn? exn)
-                      (string-append "exception raised by " what)]
-                     [else
-                      (string-append "raise called (with non-exception value) by " what)])
-               ": "
-               (if (exn? exn)
-                   (exn-message exn)
-                   (error-value->string exn)))])
-            "; original "
-            (if (exn? old-exn)
-                "exception raised"
-                "raise called (with non-exception value)")
-            ": "
-            (if (exn? old-exn)
-                (exn-message old-exn)
-                (error-value->string old-exn)))])
+           (error-message->adjusted-string
+            #f primitive-realm
+            (string-append
+             (cond
+               [(not what)
+                "handler for uncaught exceptions: did not escape"]
+               [else
+                (string-append
+                 (cond [(exn? exn)
+                        (string-append "exception raised by " what)]
+                       [else
+                        (string-append "raise called (with non-exception value) by " what)])
+                 ": "
+                 (if (exn? exn)
+                     (exn-message exn)
+                     (error-value->string exn)))])
+             "; original "
+             (if (exn? old-exn)
+                 "exception raised"
+                 "raise called (with non-exception value)")
+             ": "
+             (if (exn? old-exn)
+                 (exn-message old-exn)
+                 (error-value->string old-exn)))
+            primitive-realm)])
       (default-uncaught-exception-handler
         (|#%app| exn:fail msg (current-continuation-marks))))))
 

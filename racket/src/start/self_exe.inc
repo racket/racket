@@ -42,8 +42,11 @@ static char *get_self_path(char *exec_file)
     } else
       break;
   }
-  buf[len] = 0;
-  return strdup(buf);
+  s[len] = 0;
+  if (s == buf)
+    return strdup(buf);
+  else
+    return s;
 }
 # undef USE_GENERIC_GET_SELF_PATH
 #endif

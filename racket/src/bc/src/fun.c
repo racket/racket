@@ -130,6 +130,7 @@ static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_reduce_arity_mask(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_rename(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_to_method(int argc, Scheme_Object *argv[]);
+static Scheme_Object *procedure_realm(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_specialize(int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_procedure(int argc, Scheme_Object *argv[]);
@@ -148,6 +149,7 @@ static Scheme_Object *current_print(int argc, Scheme_Object **argv);
 static Scheme_Object *current_prompt_read(int, Scheme_Object **);
 static Scheme_Object *current_read(int, Scheme_Object **);
 static Scheme_Object *current_get_read_input_port(int, Scheme_Object **);
+static Scheme_Object *current_get_interaction_evt(int, Scheme_Object **);
 
 static Scheme_Object *chaperone_wrap_cc_guard(Scheme_Object *obj, Scheme_Object *proc);
 static Scheme_Object *do_cc_guard(Scheme_Object *v, Scheme_Object *cc_guard, Scheme_Object *chaperone);
@@ -454,7 +456,7 @@ scheme_init_fun (Scheme_Startup_Env *env)
   scheme_addto_prim_instance("continuation-mark-set->context",
 			     scheme_make_prim_w_arity(extract_cc_proc_marks,
 						      "continuation-mark-set->context",
-						      1, 1),
+						      1, 2),
 			     env);
 
   REGISTER_SO(scheme_void_proc);
@@ -555,22 +557,28 @@ scheme_init_fun (Scheme_Startup_Env *env)
   scheme_addto_prim_instance("procedure-reduce-arity",
 			     scheme_make_prim_w_arity(procedure_reduce_arity,
 						      "procedure-reduce-arity",
-						      2, 3),
+						      2, 4),
 			     env);
   scheme_addto_prim_instance("procedure-rename",
 			     scheme_make_prim_w_arity(procedure_rename,
 						      "procedure-rename",
-						      2, 2),
+						      2, 3),
 			     env);
   scheme_addto_prim_instance("procedure-reduce-arity-mask",
 			     scheme_make_prim_w_arity(procedure_reduce_arity_mask,
 						      "procedure-reduce-arity-mask",
-						      2, 3),
+						      2, 4),
 			     env);
   scheme_addto_prim_instance("procedure->method",
 			     scheme_make_prim_w_arity(procedure_to_method,
 						      "procedure->method",
 						      1, 1),
+			     env);
+  
+  scheme_addto_prim_instance("procedure-realm",
+			     scheme_make_folding_prim(procedure_realm,
+						      "procedure-realm",
+						      1, 1, 1),
 			     env);
 
   o = scheme_make_folding_prim(procedure_equal_closure_p,
@@ -650,6 +658,12 @@ scheme_init_fun (Scheme_Startup_Env *env)
 			     scheme_register_parameter(current_get_read_input_port,
 						       "current-get-interaction-input-port",
 						       MZCONFIG_READ_INPUT_PORT_HANDLER),
+			     env);
+
+  scheme_addto_prim_instance("current-get-interaction-evt",
+			     scheme_register_parameter(current_get_interaction_evt,
+						       "current-get-interaction-evt",
+						       MZCONFIG_READ_GET_EVT),
 			     env);
 
   REGISTER_SO(certify_mode_symbol);
@@ -775,7 +789,7 @@ make_prim_closure(Scheme_Prim *fun, int eternal,
 {
   Scheme_Primitive_Proc *prim;
   int hasr, size;
-  
+
   hasr = ((minr != 1) || (maxr != 1));
   size = (hasr 
 	  ? sizeof(Scheme_Prim_W_Result_Arity) 
@@ -2450,8 +2464,8 @@ Scheme_Object *scheme_proc_struct_name_source(Scheme_Object *a)
         && scheme_struct_type_property_ref(scheme_object_name_property, a)) {
       return a;
     } else if (scheme_reduced_procedure_struct
-        && scheme_is_struct_instance(scheme_reduced_procedure_struct, a)
-        && SCHEME_TRUEP(((Scheme_Structure *)a)->slots[2])) {
+               && scheme_is_struct_instance(scheme_reduced_procedure_struct, a)
+               && SCHEME_TRUEP(((Scheme_Structure *)a)->slots[2])) {
       return a;
     } else {
       /* Either use struct name, or extract proc, depending
@@ -2505,8 +2519,11 @@ const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_error)
 	  return NULL;
       }
 
-      if (SCHEME_VECTORP(n))
+      if (SCHEME_VECTORP(n)) {
 	n = SCHEME_VEC_ELS(n)[0];
+        if (SCHEME_FALSEP(n))
+          return NULL;
+      }
 
       if (for_error < 0) {
 	s = (char *)n;
@@ -2582,8 +2599,11 @@ const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_error)
     }
 
     if (name) {
-      if (SCHEME_VECTORP(name))
+      if (SCHEME_VECTORP(name)) {
 	name = SCHEME_VEC_ELS(name)[0];
+        if (SCHEME_FALSEP(name))
+          return NULL;
+      }
       if (for_error < 0) {
 	s = (char *)name;
 	*len = -1;
@@ -2607,6 +2627,91 @@ const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_error)
   }
 
   return s;
+}
+
+Scheme_Object *scheme_get_proc_realm(Scheme_Object *p)
+{
+  Scheme_Type type;
+
+ top:
+
+  type = SCHEME_TYPE(p);
+  if (type == scheme_prim_type) {
+    if (((((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK) == SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER)
+        || ((((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK) == SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER)) {
+      Scheme_Object *name_info = SCHEME_PRIM_CLOSURE_ELS(p)[2];
+      if (SCHEME_PAIRP(name_info))
+        return SCHEME_CAR(name_info);
+      else
+        return name_info;
+    } else if ((((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK) == SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER) {
+      Scheme_Struct_Property *prop = (Scheme_Struct_Property *)SCHEME_PRIM_CLOSURE_ELS(p)[0];
+      return prop->realm;
+    } else if ((((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK) == SCHEME_PRIM_TYPE_PARAMETER) {
+      return SCHEME_PRIM_CLOSURE_ELS(p)[1];
+    }
+    return scheme_primitive_realm;
+  } else if (type == scheme_closed_prim_type) {
+    return scheme_primitive_realm;
+  } else if (type == scheme_cont_type || type == scheme_escaping_cont_type) {
+    return scheme_default_realm;
+  } else if (type == scheme_case_closure_type) {
+    Scheme_Object *n = ((Scheme_Case_Lambda *)p)->name;
+    if (n) {
+      if (SCHEME_BOXP(n))
+	n = SCHEME_BOX_VAL(n);
+      if (SCHEME_VECTORP(n) && (SCHEME_VEC_SIZE(n) > 7))
+	return SCHEME_VEC_ELS(n)[7];
+    }
+    return scheme_default_realm;
+  } else if (type == scheme_proc_struct_type) {
+    while (SCHEME_CHAPERONE_PROC_STRUCTP(p)) {
+      SCHEME_USE_FUEL(1);
+      if (SCHEME_CHAPERONEP(p))
+        p = SCHEME_CHAPERONE_VAL(p);
+      if (scheme_reduced_procedure_struct
+          && scheme_is_struct_instance(scheme_reduced_procedure_struct, p)) {
+        if (SCHEME_TRUEP(((Scheme_Structure *)p)->slots[2]))
+          return ((Scheme_Structure *)p)->slots[4];
+        p = ((Scheme_Structure *)p)->slots[0];
+      } else {
+        int is_method;
+        p = scheme_extract_struct_procedure(p, -1, NULL, &is_method);
+      }
+    }
+    if (SCHEME_PROCP(p))
+      goto top;
+  } else if (type == scheme_proc_chaperone_type) {
+    p = SCHEME_CHAPERONE_VAL(p);
+    SCHEME_USE_FUEL(1);
+    goto top;
+  } else {
+    Scheme_Object *name;
+
+    if (type == scheme_closure_type) {
+      name = SCHEME_CLOSURE_CODE(p)->name;
+    } else if (type == scheme_case_lambda_sequence_type) {
+      Scheme_Case_Lambda *cl = (Scheme_Case_Lambda *)p;
+      if (!cl->count)
+        name = NULL;
+      else
+        name = ((Scheme_Lambda *)cl->array[0])->name;
+    } else {
+      /* Native closure: */
+      name = ((Scheme_Native_Closure *)p)->code->u2.name;
+      if (name && SAME_TYPE(SCHEME_TYPE(name), scheme_lambda_type)) {
+	/* Not yet jitted. Use `name' as the other alternative of 
+	   the union: */
+	name = ((Scheme_Lambda *)name)->name;
+      }
+    }
+
+    if (name && SCHEME_VECTORP(name)
+        && (SCHEME_VEC_SIZE(name) > 7))
+      return SCHEME_VEC_ELS(name)[7];
+  }
+  
+  return scheme_default_realm;
 }
 
 static Scheme_Object *primitive_result_arity(int argc, Scheme_Object *argv[])
@@ -2693,7 +2798,10 @@ Scheme_Object *scheme_object_name(Scheme_Object *a)
 {
   Scheme_Object *v;
 
-  v = scheme_struct_type_property_ref(scheme_object_name_property, a);
+  if (SCHEME_CHAPERONE_STRUCT_TYPEP(a))
+    v = NULL;
+  else
+    v = scheme_struct_type_property_ref(scheme_object_name_property, a);
 
   if (v) {
     if (SCHEME_INTP(v))
@@ -2888,7 +2996,7 @@ void scheme_init_reduced_proc_struct(Scheme_Startup_Env *env)
     scheme_reduced_procedure_struct = scheme_make_struct_type2(scheme_intern_symbol("procedure"),
                                                                NULL,
                                                                (Scheme_Object *)insp,
-                                                               4, 0,
+                                                               5, 0,
                                                                scheme_false,
                                                                scheme_null,
                                                                scheme_make_integer(0),
@@ -2987,22 +3095,26 @@ Scheme_Object *scheme_arity_mask_to_arity(Scheme_Object *mask, int mode)
 
 static Scheme_Object *make_reduced_proc(Scheme_Object *proc,
                                         Scheme_Object *mask,
-                                        Scheme_Object *name, Scheme_Object *is_meth)
+                                        Scheme_Object *name,
+                                        Scheme_Object *realm,
+                                        Scheme_Object *is_meth)
 {
   Scheme_Structure *inst;
   
   if (SCHEME_STRUCTP(proc)
       && scheme_is_struct_instance(scheme_reduced_procedure_struct, proc)) {
     /* Don't need the intermediate layer */
-    if (!name)
+    if (!name) {
       name = ((Scheme_Structure *)proc)->slots[2];
+      realm = ((Scheme_Structure *)proc)->slots[4];
+    }
     if (!is_meth)
       is_meth = ((Scheme_Structure *)proc)->slots[3];
     proc = ((Scheme_Structure *)proc)->slots[0];
   }
 
   inst = (Scheme_Structure *)scheme_malloc_tagged(sizeof(Scheme_Structure)
-                                                  + ((4 - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
+                                                  + ((5 - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
   inst->so.type = scheme_proc_struct_type;
   inst->stype = (Scheme_Struct_Type *)scheme_reduced_procedure_struct;
 
@@ -3010,6 +3122,7 @@ static Scheme_Object *make_reduced_proc(Scheme_Object *proc,
   inst->slots[1] = mask;
   inst->slots[2] = (name ? name : scheme_false);
   inst->slots[3] = (is_meth ? is_meth : scheme_false);
+  inst->slots[4] = (name ? realm : scheme_false);
 
   return (Scheme_Object *)inst;
 }
@@ -3181,7 +3294,7 @@ static int proc_is_method(Scheme_Object *proc)
 
 static Scheme_Object *do_procedure_reduce_arity(const char *who, int argc, Scheme_Object *argv[], int as_arity)
 {
-  Scheme_Object *orig, *mask, *is_meth = NULL, *name = NULL;
+  Scheme_Object *orig, *mask, *is_meth = NULL, *name = NULL, *realm = NULL;
 
   if (!SCHEME_PROCP(argv[0]))
     scheme_wrong_contract("procedure-reduce-arity", "procedure?", 0, argc, argv);
@@ -3209,8 +3322,16 @@ static Scheme_Object *do_procedure_reduce_arity(const char *who, int argc, Schem
       scheme_wrong_contract(who, "(or/c symbol? #f)", 2, argc, argv);
       return NULL;
     }
-  } else
+    if (argc > 3) {
+      realm = argv[3];
+      if (!SCHEME_SYMBOLP(realm))
+        scheme_wrong_contract(who, "symbol?", 3, argc, argv);
+    } else
+      realm = scheme_default_realm;
+  } else {
     name = NULL;
+    realm = NULL;
+  }
 
   /* Check whether current arity covers the requested arity. */
 
@@ -3231,7 +3352,7 @@ static Scheme_Object *do_procedure_reduce_arity(const char *who, int argc, Schem
     is_meth = scheme_true;
 
   /* Construct a procedure that has the given arity. */
-  return make_reduced_proc(argv[0], mask, name, is_meth);
+  return make_reduced_proc(argv[0], mask, name, realm, is_meth);
 }
 
 static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[])
@@ -3246,19 +3367,25 @@ static Scheme_Object *procedure_reduce_arity_mask(int argc, Scheme_Object *argv[
 
 static Scheme_Object *procedure_rename(int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *p, *mask;
+  Scheme_Object *p, *mask, *realm;
 
   if (!SCHEME_PROCP(argv[0]))
     scheme_wrong_contract("procedure-rename", "procedure?", 0, argc, argv);
   if (!SCHEME_SYMBOLP(argv[1]))
     scheme_wrong_contract("procedure-rename", "symbol?", 1, argc, argv);
+  if (argc > 2) {
+    realm = argv[2];
+    if (!SCHEME_SYMBOLP(realm))
+      scheme_wrong_contract("procedure-rename", "symbol?", 2, argc, argv);
+  } else
+    realm = scheme_default_realm;
 
-  p = scheme_rename_struct_proc(argv[0], argv[1]);
+  p = scheme_rename_struct_proc(argv[0], argv[1], realm);
   if (p) return p;
 
   mask = get_or_check_arity(argv[0], -4, NULL, 1);
 
-  return make_reduced_proc(argv[0], mask, argv[1], NULL);
+  return make_reduced_proc(argv[0], mask, argv[1], realm, NULL);
 }
 
 static Scheme_Object *procedure_to_method(int argc, Scheme_Object *argv[])
@@ -3270,7 +3397,15 @@ static Scheme_Object *procedure_to_method(int argc, Scheme_Object *argv[])
 
   mask = get_or_check_arity(argv[0], -4, NULL, 1);
 
-  return make_reduced_proc(argv[0], mask, NULL, scheme_true);
+  return make_reduced_proc(argv[0], mask, NULL, NULL, scheme_true);
+}
+
+static Scheme_Object *procedure_realm(int argc, Scheme_Object *argv[])
+{
+ if (!SCHEME_PROCP(argv[0]))
+   scheme_wrong_contract("procedure-realm", "procedure?", 0, argc, argv);
+ 
+ return scheme_get_proc_realm(argv[0]);
 }
 
 static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[])
@@ -6970,7 +7105,7 @@ static Scheme_Object **chaperone_do_control(const char *name, int mode,
 
         if (mode == 3) {
           if (!scheme_check_proc_arity(NULL, 1, 0, argc, vals)) {
-            scheme_wrong_type("call/cc guard-wrapping function", "(procedure-arity-includes/c 2)", 0, -1, vals);
+            scheme_wrong_contract("call/cc guard-wrapping function", "(procedure-arity-includes/c 2)", 0, -1, vals);
           }
         }
 
@@ -8233,6 +8368,15 @@ extract_cc_marks(int argc, Scheme_Object *argv[])
   return first;
 }
 
+Scheme_Object *scheme_extract_cc_mark_list(Scheme_Object *mark_set, Scheme_Object *key, Scheme_Object *prompt_tag)
+{
+  Scheme_Object *argv[3];
+  argv[0] = (mark_set ? mark_set : scheme_false);
+  argv[1] = key;
+  argv[2] = prompt_tag;
+  return extract_cc_marks(3, argv);
+}
+
 static Scheme_Object *
 iterate_cc_markses(const char *who,
                    Scheme_Object *prompt_tag, Scheme_Object *none,
@@ -8412,9 +8556,9 @@ extract_cc_iterator(int argc, Scheme_Object *argv[])
 }
 
 Scheme_Object *
-scheme_get_stack_trace(Scheme_Object *mark_set)
+scheme_get_stack_trace(Scheme_Object *mark_set, int with_realms)
 {
-  Scheme_Object *l, *n, *m, *name, *loc;
+  Scheme_Object *l, *n, *m, *name, *loc, *realm, *e;
   Scheme_Object *a[2];
 
   l = ((Scheme_Cont_Mark_Set *)mark_set)->native_stack_trace;
@@ -8458,17 +8602,24 @@ scheme_get_stack_trace(Scheme_Object *mark_set)
   for (n = l; SCHEME_PAIRP(n); n = SCHEME_CDR(n)) { 
     name = SCHEME_CAR(n);
     if (SCHEME_VECTORP(name)) {
-      loc = scheme_make_location(SCHEME_VEC_ELS(name)[1],
-				 SCHEME_VEC_ELS(name)[2],
-				 SCHEME_VEC_ELS(name)[3],
-				 SCHEME_VEC_ELS(name)[4],
-				 SCHEME_VEC_ELS(name)[5]);
-      if (SCHEME_TRUEP(SCHEME_VEC_ELS(name)[6]))
-	name = scheme_make_pair(scheme_false, loc);
+      if (SCHEME_TRUEP(SCHEME_VEC_ELS(name)[1]))
+        loc = scheme_make_location(SCHEME_VEC_ELS(name)[1],
+                                   SCHEME_VEC_ELS(name)[2],
+                                   SCHEME_VEC_ELS(name)[3],
+                                   SCHEME_VEC_ELS(name)[4],
+                                   SCHEME_VEC_ELS(name)[5]);
       else
-	name = scheme_make_pair(SCHEME_VEC_ELS(name)[0], loc);
+        loc = scheme_false;
+      if (SCHEME_VEC_SIZE(name) > 7)
+        realm = SCHEME_VEC_ELS(name)[7];
+      else
+        realm = scheme_default_realm;
+      if (SCHEME_TRUEP(SCHEME_VEC_ELS(name)[6]))
+	name = scheme_false;
+      else
+	name = SCHEME_VEC_ELS(name)[0];
     } else if (SCHEME_PAIRP(name) && SAME_OBJ(SCHEME_CDR(name), scheme_true)) {
-      /* a pair with #t we're running a module body */
+      /* a pair with #t => we're running a module body */
       const char *what;
 
       what = "[running body]";
@@ -8477,11 +8628,22 @@ scheme_get_stack_trace(Scheme_Object *mark_set)
       loc = scheme_make_location(name, scheme_false, scheme_false, scheme_false, scheme_false);
 
       name = scheme_intern_symbol(what);
-      name = scheme_make_pair(name, loc);
+      realm = scheme_default_realm;
     } else {
-      name = scheme_make_pair(name, scheme_false);
+      loc = scheme_false;
+      realm = scheme_default_realm;
     }
-    SCHEME_CAR(n) = name;
+
+    if (with_realms) {
+      e = scheme_make_vector(3, NULL);
+      SCHEME_VEC_ELS(e)[0] = name;
+      SCHEME_VEC_ELS(e)[1] = loc;
+      SCHEME_VEC_ELS(e)[2] = realm;
+      SCHEME_SET_IMMUTABLE(e);
+    } else
+      e = scheme_make_pair(name, loc);
+    
+    SCHEME_CAR(n) = e;
   }
 
   return l;
@@ -8495,7 +8657,7 @@ extract_cc_proc_marks(int argc, Scheme_Object *argv[])
     return NULL;
   }
 
-  return scheme_get_stack_trace(argv[0]);
+  return scheme_get_stack_trace(argv[0], (argc > 1) && SCHEME_TRUEP(argv[1]));
 }
 
 XFORM_NONGCING static Scheme_Object *default_mark_value(Scheme_Object *key)
@@ -10049,6 +10211,15 @@ current_get_read_input_port(int argc, Scheme_Object **argv)
 			     0, NULL, NULL, 0);
 }
 
+static Scheme_Object *
+current_get_interaction_evt(int argc, Scheme_Object **argv)
+{
+  return scheme_param_config("current-get-interaction-evt",
+			     scheme_make_integer(MZCONFIG_READ_GET_EVT),
+			     argc, argv,
+			     0, NULL, NULL, 0);
+}
+
 Scheme_Object *
 scheme_default_print_handler(int argc, Scheme_Object *argv[])
 {
@@ -10082,6 +10253,12 @@ scheme_default_read_input_port_handler(int argc, Scheme_Object *argv[])
     scheme_flush_orig_outputs();
 
   return inport;
+}
+
+Scheme_Object *
+scheme_default_read_get_evt(int argc, Scheme_Object *argv[])
+{
+  return scheme_never_ready_evt;
 }
 
 Scheme_Object *
@@ -10154,9 +10331,13 @@ scheme_default_read_handler(int argc, Scheme_Object *argv[])
                           argv);
 
   config = scheme_current_config();
-  // FIXME
-  // config = scheme_extend_config(config, MZCONFIG_CAN_READ_READER, scheme_true);
-  // config = scheme_extend_config(config, MZCONFIG_CAN_READ_LANG, scheme_false);
+
+  /* Used to have:
+       config = scheme_extend_config(config, MZCONFIG_CAN_READ_READER, scheme_true);
+       config = scheme_extend_config(config, MZCONFIG_CAN_READ_LANG, scheme_false);
+     But those parameters have moved to the expander/reader layer, and that
+     layer also installs a replacement handler. So, this handler shouldn't be called
+     at all, and it's only here for historial reasons. */
 
   scheme_push_continuation_frame(&cframe);
   scheme_install_config(config);

@@ -86,7 +86,7 @@
          record-type-field-names
          record-type-field-indices
          csv7:record-type-field-names
-         csv7:record-type-field-indices
+         $record-type-field-indices
          csv7:record-type-field-decls
          (rename-out [record-rtd $record-type-descriptor])
          record?
@@ -334,6 +334,7 @@
          priminfo-libraries
          $c-bufsiz
          $foreign-procedure
+         $separator-character
          make-guardian
          $lambda/lift-barrier)
 
@@ -346,7 +347,8 @@
 (define-syntax include
   (lambda (stx)
     (syntax-case stx ()
-      [(form p) #'(r:include-at/relative-to form form p)])))
+      [(form p)
+       #'(r:include-at/relative-to form form p)])))
 
 ;; If we have to avoid `read-syntax`:
 #;
@@ -705,6 +707,7 @@
            [(prelex-sticky-mask) prelex-sticky-mask]
            [(prelex-is-mask) prelex-is-mask]
            [(code-flag-lift-barrier) code-flag-lift-barrier]
+           [(machine-type-name) `(quote ,machine-type-name)]
            [else (error 'constant "unknown: ~s" #'id)])]))
 
 (define $target-machine (make-parameter (string->symbol target-machine)))
@@ -1166,7 +1169,10 @@
 (define who 'some-who)
 
 (define (with-source-path who name procedure)
-  (procedure name))
+  (procedure (if (or (equal? name "unicode-char-cases.ss")
+                     (equal? name "unicode-charinfo.ss"))
+                 (string-append "../unicode/" name)
+                 name)))
 
 (define ($make-source-oops . args) #f)
 
@@ -1280,6 +1286,11 @@
 (define-syntax ($foreign-procedure stx)
   (syntax-case stx ()
     [(_ _ name . _) #'name]))
+
+(define ($separator-character)
+  (if (eq? (system-type) 'windows)
+      #\;
+      #\:))
 
 (define (make-guardian)
   (case-lambda

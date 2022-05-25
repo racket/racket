@@ -6,7 +6,8 @@
          racket/list
          "../name.rkt"
          "download.rkt"
-         "desc.rkt")
+         "desc.rkt"
+         "github-url.rkt")
 
 (provide split-github-url
          split-git-url
@@ -25,7 +26,7 @@
       (let* ([paths (map path/param-path (url-path/no-slash pkg-url))])
         (list* (car paths)
                (regexp-replace* #rx"[.]git$" (cadr paths) "")
-               (or (url-fragment pkg-url) "master")
+               (or (url-fragment pkg-url) 'head)
                (extract-git-path pkg-url)))))
 
 (define (extract-git-path pkg-url)
@@ -72,7 +73,7 @@
 
 (define (real-git-url pkg-url host port repo #:type [type #f])
   (url->string
-   (if (or (equal? "github" (url-scheme pkg-url))
+   (if (or (github-url? pkg-url)
            (eq? type 'github))
        ;; Convert "github://" to a real URL:
        (url "https" #f host port #t
@@ -81,5 +82,9 @@
             #f)
        ;; Drop any query or fragment in the URL:
        (struct-copy url pkg-url
+                    [scheme (case (url-scheme pkg-url)
+                              [("git+http") "http"]
+                              [("git+https") "https"]
+                              [else (url-scheme pkg-url)])]
                     [query null]
                     [fragment #f]))))

@@ -114,13 +114,7 @@
                 (let ([path (let ([dir (car ls)])
                               (if (or (string=? dir "") (string=? dir "."))
                                   fn
-                                  (format
-                                    (if (directory-separator?
-                                          (string-ref dir
-                                            (fx- (string-length dir) 1)))
-                                        "~a~a"
-                                        "~a/~a")
-                                    dir fn)))])
+                                  (path-build dir fn)))])
                   (if (guard (c [#t #f]) (close-input-port (open-input-file path)) #t)
                       (p path)
                       (loop (cdr ls))))))))))
@@ -777,7 +771,7 @@
 
 (define $scheme-greeting
   (lambda ()
-    (format "~a\nCopyright 1984-2020 Cisco Systems, Inc.\n"
+    (format "~a\nCopyright 1984-2022 Cisco Systems, Inc.\n"
       (scheme-version))))
 
 (define $session-key #f)

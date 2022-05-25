@@ -2475,7 +2475,9 @@ implementation notes:
                    (constant-case native-endianness
                      [(little) "UTF-32LE"]
                      [(big) "UTF-32BE"]
-                     [(unknown) "UTF-32"]))
+                     [(unknown) (case (native-endianness)
+                                  [(little) "UTF-32LE"]
+                                  [else "UTF-32BE"])]))
                  (define (iconv-open to from)
                    (let ([desc ($iconv-open to from)])
                      (when (string? desc) ($oops who "~a" desc))
@@ -6310,6 +6312,11 @@ implementation notes:
       (register-open-file $console-output-port)
       (unless (eq? $console-error-port $console-output-port)
         (register-open-file $console-error-port))))
+
+  (set! $separator-character
+    (constant-case architecture
+      [(pb) (foreign-procedure "(cs)s_separatorchar" () ptr)]
+      [else (if-feature windows (lambda () #\;) (lambda () #\:))]))
 
   ; utf8->string, etc., are in prims.ss, since they are used by
   ; foreign procedures argument and return values

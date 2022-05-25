@@ -177,6 +177,8 @@
 
 # define RKTIO_GROWABLE_FDSET
 
+# define RKTIO_STAT_TIMESPEC_FIELD
+
 # endif
 
   /************ QNX *************/
@@ -259,6 +261,9 @@
 
  /* MKDIR_NO_MODE_FLAG specifies that mkdir() takes only one argument,
      instead of a directory name and mode flags. */
+
+ /* RKTIO_STAT_TIMESPEC_FIELD selects the names `st_atimespec`, etc.,
+    from a `struct stat` instead of `st_atim`. */
 
   /***********************/
  /*  File descriptors   */

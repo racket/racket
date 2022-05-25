@@ -1,0 +1,19 @@
+diff -u -r old/openssl-3.0.2/Configurations/10-main.conf new/openssl-3.0.2/Configurations/10-main.conf
+--- old/openssl-3.0.2/Configurations/10-main.conf	2022-03-15 08:30:24.000000000 -0600
++++ new/openssl-3.0.2/Configurations/10-main.conf	2022-04-18 06:20:32.000000000 -0600
+@@ -1517,6 +1517,14 @@
+         shared_rcflag    => "--target=pe-x86-64",
+         multilib         => "64",
+     },
++    "mingw-arm64" => {
++        inherit_from     => [ "mingw-common" ],
++        cc               => 'clang',
++        bn_ops           => add("RC4_CHAR"),
++        asm_arch         => 'aarch64',
++        perlasm_scheme   => "linux64",
++        multilib         => "64",
++    },
+ 
+ #### UEFI
+     "UEFI" => {
+Only in new/openssl-3.0.2/Configurations: 10-main.conf~

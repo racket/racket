@@ -467,14 +467,22 @@ element from first to last.
 
 Returns a list that is like @racket[lst], omitting the first element of
 @racket[lst] that is equal to @racket[v] using the comparison procedure
-@racket[proc] (which must accept two arguments).
+@racket[proc] (which must accept two arguments),
+with @racket[v] as the first argument and an element in @racket[lst] as the second argument.
+If no element in @racket[lst] is equal to @racket[v] (according to @racket[proc]),
+@racket[lst] is returned unchanged.
 
 @mz-examples[
   (remove 2 (list 1 2 3 2 4))
-  (remove 2 (list 1 2 3 2 4) =)
   (remove '(2) (list '(1) '(2) '(3)))
   (remove "2" (list "1" "2" "3"))
-  (remove #\c (list #\a #\b #\c))]}
+  (remove #\c (list #\a #\b #\c))
+  (remove "B" (list "a" "A" "b" "B") string-ci=?)
+  (remove 5 (list 1 2 3 2 4))]
+
+@history[#:changed "8.2.0.2"
+         @elem{Guaranteed that the output is @racket[eq?] to @racket[lst]
+               if no removal occurs.}]}
 
 
 @defproc[(remq [v any/c] [lst list?])
@@ -501,6 +509,23 @@ Returns @racket[(remove v lst eqv?)].
   (remv #\c (list #\a #\b #\c))]}
 
 
+@defproc[(remw [v any/c] [lst list?])
+         list?]{
+
+Returns @racket[(remove v lst equal-always?)].
+
+@mz-examples[
+  (remw 2 (list 1 2 3 4 5))
+  (remw '(2) (list '(1) '(2) '(3)))
+  (remw "2" (list "1" "2" "3"))
+  (remw #\c (list #\a #\b #\c))
+  (define b1 (box 5))
+  (define b2 (box 5))
+  (remw b2 (list 0 b1 1 b2 2))]
+
+@history[#:added "8.5.0.3"]}
+
+
 @defproc[(remove* [v-lst list?] [lst list?] [proc procedure? equal?])
          list?]{
 
@@ -508,7 +533,11 @@ Like @racket[remove], but removes from @racket[lst] every instance of
 every element of @racket[v-lst].
 
 @mz-examples[
-  (remove* (list 1 2) (list 1 2 3 2 4 5 2))]}
+  (remove* (list 1 2) (list 1 2 3 2 4 5 2))]
+
+@history[#:changed "8.2.0.2"
+         @elem{Guaranteed that the output is @racket[eq?] to @racket[lst]
+               if no removal occurs.}]}
 
 
 @defproc[(remq* [v-lst list?] [lst list?])
@@ -527,6 +556,20 @@ Returns @racket[(remove* v-lst lst eqv?)].
 
 @mz-examples[
   (remv* (list 1 2) (list 1 2 3 2 4 5 2))]}
+
+
+@defproc[(remw* [v-lst list?] [lst list?])
+         list?]{
+
+Returns @racket[(remove* v-lst lst equal-always?)].
+
+@mz-examples[
+  (remw* (list 1 2) (list 1 2 3 2 4 5 2))
+  (define b1 (box 5))
+  (define b2 (box 5))
+  (remw* (list b2) (list 0 b1 1 b2 2 b2 3))]
+
+@history[#:added "8.5.0.3"]}
 
 
 @defproc[(sort [lst list?] [less-than? (any/c any/c . -> . any/c)]
@@ -604,6 +647,21 @@ non-list.
   (member 'b '(a b . etc))]}
 
 
+@defproc[(memw [v any/c] [lst (or/c list? any/c)])
+         (or/c #f list? any/c)]{
+
+Like @racket[member], but finds an element using @racket[equal-always?].
+
+@mz-examples[
+  (memw 2 (list 1 2 3 4))
+  (memw 9 (list 1 2 3 4))
+  (define b1 (box 5))
+  (define b2 (box 5))
+  (memw b2 (list 0 b1 1 b2 2))]
+
+@history[#:added "8.5.0.3"]}
+
+
 @defproc[(memv [v any/c] [lst (or/c list? any/c)])
          (or/c #f list? any/c)]{
 
@@ -670,6 +728,20 @@ then @racket[lst] must be a list of pairs (and not a cyclic list).
   (assoc 3.5
          (list (list 1 2) (list 3 4) (list 5 6))
          (lambda (a b) (< (abs (- a b)) 1)))]}
+
+
+@defproc[(assw [v any/c] [lst (or/c (listof pair?) any/c)])
+         (or/c pair? #f)]{
+
+Like @racket[assoc], but finds an element using @racket[equal-always?].
+
+@mz-examples[
+  (assw 3 (list (list 1 2) (list 3 4) (list 5 6)))
+  (define b1 (box 0))
+  (define b2 (box 0))
+  (assw b2 (list (cons b1 1) (cons b2 2)))]
+
+@history[#:added "8.5.0.3"]}
 
 
 @defproc[(assv [v any/c] [lst (or/c (listof pair?) any/c)])
@@ -1524,12 +1596,12 @@ produces a true value.
 @defproc[(make-reader-graph [v any/c])
          any/c]{
 
-Returns a value like @racket[v], with placeholders created by
-@racket[make-placeholder] replaced with the values that they contain,
-and with placeholders created by @racket[make-hash-placeholder] with an
-immutable hash table.  No part of @racket[v] is mutated; instead, parts
-of @racket[v] are copied as necessary to construct the resulting graph,
-where at most one copy is created for any given value.
+Returns a value like @racket[v], with @deftech{placeholders} created by
+@racket[make-placeholder] replaced with the values that they contain, and
+with @deftech{hash placeholders} created by @racket[make-hash-placeholder]
+with an immutable hash table.  No part of @racket[v] is mutated; instead,
+parts of @racket[v] are copied as necessary to construct the resulting
+graph, where at most one copy is created for any given value.
 
 Since the copied values can be immutable, and since the copy is also
 immutable, @racket[make-reader-graph] can create cycles involving only
@@ -1566,15 +1638,15 @@ the same sort of cyclic values as @racket[read].
 @defproc[(placeholder? [v any/c])
          boolean?]{
 
-Returns @racket[#t] if @racket[v] is a placeholder created by
+Returns @racket[#t] if @racket[v] is a @tech{placeholder} created by
 @racket[make-placeholder], @racket[#f] otherwise.}
 
 
 @defproc[(make-placeholder [v any/c])
          placeholder?]{
 
-Returns a placeholder for use with @racket[placeholder-set!]  and
-@racket[make-reader-graph]. The @racket[v] argument supplies the
+Returns a @tech{placeholder} for use with @racket[placeholder-set!]
+and @racket[make-reader-graph]. The @racket[v] argument supplies the
 initial value for the placeholder.}
 
 
@@ -1593,26 +1665,34 @@ Returns the value of @racket[ph].}
 @defproc[(hash-placeholder? [v any/c])
          boolean?]{
 
-Returns @racket[#t] if @racket[v] is a placeholder created by
-@racket[make-hash-placeholder], @racket[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is a @tech{hash placeholder} created
+by @racket[make-hash-placeholder], @racket[#f] otherwise.}
 
 
 @defproc[(make-hash-placeholder [assocs (listof pair?)])
          hash-placeholder?]{
 
-Like @racket[make-immutable-hash], but produces a table placeholder
+Like @racket[make-immutable-hash], but produces a @tech{hash placeholder}
 for use with @racket[make-reader-graph].}
 
 
 @defproc[(make-hasheq-placeholder [assocs (listof pair?)])
          hash-placeholder?]{
 
-Like @racket[make-immutable-hasheq], but produces a table placeholder
+Like @racket[make-immutable-hasheq], but produces a @tech{hash placeholder}
 for use with @racket[make-reader-graph].}
 
 
 @defproc[(make-hasheqv-placeholder [assocs (listof pair?)])
          hash-placeholder?]{
 
-Like @racket[make-immutable-hasheqv], but produces a table placeholder
+Like @racket[make-immutable-hasheqv], but produces a @tech{hash placeholder}
 for use with @racket[make-reader-graph].}
+
+@defproc[(make-hashalw-placeholder [assocs (listof pair?)])
+         hash-placeholder?]{
+
+Like @racket[make-immutable-hashalw], but produces a @tech{hash placeholder}
+for use with @racket[make-reader-graph].
+
+@history[#:added "8.5.0.3"]}

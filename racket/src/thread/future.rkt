@@ -16,7 +16,8 @@
          "future-object.rkt"
          "future-id.rkt"
          "future-lock.rkt"
-         "future-logging.rkt")
+         "future-logging.rkt"
+         "error.rkt")
 
 ;; See "README.txt" for some general information about this
 ;; implementation of futures.
@@ -231,7 +232,9 @@
      (apply values (future*-results f))]
     [(eq? s 'aborted)
      (lock-release-both f)
-     (raise (exn:fail "touch: future previously aborted"
+     (raise (exn:fail (error-message->string
+                       'touch
+                       "future previously aborted")
                       (current-continuation-marks)))]
     [(eq? s 'blocked)
      (cond

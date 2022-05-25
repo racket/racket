@@ -54,7 +54,7 @@ extern "C" {
  *  Block Compression
  **************************************/
 /*! LZ4_compress_HC() :
- *  Compress data from `src` into `dst`, using the more powerful but slower "HC" algorithm.
+ *  Compress data from `src` into `dst`, using the powerful but slower "HC" algorithm.
  * `dst` must be already allocated.
  *  Compression is guaranteed to succeed if `dstCapacity >= LZ4_compressBound(srcSize)` (see "lz4.h")
  *  Max supported `srcSize` value is LZ4_MAX_INPUT_SIZE (see "lz4.h")
@@ -77,7 +77,21 @@ LZ4LIB_API int LZ4_compress_HC (const char* src, char* dst, int srcSize, int dst
  *  Memory segment must be aligned on 8-bytes boundaries (which a normal malloc() should do properly).
  */
 LZ4LIB_API int LZ4_sizeofStateHC(void);
-LZ4LIB_API int LZ4_compress_HC_extStateHC(void* state, const char* src, char* dst, int srcSize, int maxDstSize, int compressionLevel);
+LZ4LIB_API int LZ4_compress_HC_extStateHC(void* stateHC, const char* src, char* dst, int srcSize, int maxDstSize, int compressionLevel);
+
+
+/*! LZ4_compress_HC_destSize() : v1.9.0+
+ *  Will compress as much data as possible from `src`
+ *  to fit into `targetDstSize` budget.
+ *  Result is provided in 2 parts :
+ * @return : the number of bytes written into 'dst' (necessarily <= targetDstSize)
+ *           or 0 if compression fails.
+ * `srcSizePtr` : on success, *srcSizePtr is updated to indicate how much bytes were read from `src`
+ */
+LZ4LIB_API int LZ4_compress_HC_destSize(void* stateHC,
+                                  const char* src, char* dst,
+                                        int* srcSizePtr, int targetDstSize,
+                                        int compressionLevel);
 
 
 /*-************************************
@@ -89,39 +103,77 @@ LZ4LIB_API int LZ4_compress_HC_extStateHC(void* state, const char* src, char* ds
 /*! LZ4_createStreamHC() and LZ4_freeStreamHC() :
  *  These functions create and release memory for LZ4 HC streaming state.
  *  Newly created states are automatically initialized.
- *  Existing states can be re-used several times, using LZ4_resetStreamHC().
- *  These methods are API and ABI stable, they can be used in combination with a DLL.
+ *  A same state can be used multiple times consecutively,
+ *  starting with LZ4_resetStreamHC_fast() to start a new stream of blocks.
  */
 LZ4LIB_API LZ4_streamHC_t* LZ4_createStreamHC(void);
 LZ4LIB_API int             LZ4_freeStreamHC (LZ4_streamHC_t* streamHCPtr);
 
-LZ4LIB_API void LZ4_resetStreamHC (LZ4_streamHC_t* streamHCPtr, int compressionLevel);
-LZ4LIB_API int  LZ4_loadDictHC (LZ4_streamHC_t* streamHCPtr, const char* dictionary, int dictSize);
-
-LZ4LIB_API int LZ4_compress_HC_continue (LZ4_streamHC_t* streamHCPtr, const char* src, char* dst, int srcSize, int maxDstSize);
-
-LZ4LIB_API int LZ4_saveDictHC (LZ4_streamHC_t* streamHCPtr, char* safeBuffer, int maxDictSize);
-
 /*
-  These functions compress data in successive blocks of any size, using previous blocks as dictionary.
+  These functions compress data in successive blocks of any size,
+  using previous blocks as dictionary, to improve compression ratio.
   One key assumption is that previous blocks (up to 64 KB) remain read-accessible while compressing next blocks.
   There is an exception for ring buffers, which can be smaller than 64 KB.
-  Ring buffers scenario is automatically detected and handled by LZ4_compress_HC_continue().
+  Ring-buffer scenario is automatically detected and handled within LZ4_compress_HC_continue().
 
-  Before starting compression, state must be properly initialized, using LZ4_resetStreamHC().
-  A first "fictional block" can then be designated as initial dictionary, using LZ4_loadDictHC() (Optional).
+  Before starting compression, state must be allocated and properly initialized.
+  LZ4_createStreamHC() does both, though compression level is set to LZ4HC_CLEVEL_DEFAULT.
 
-  Then, use LZ4_compress_HC_continue() to compress each successive block.
-  Previous memory blocks (including initial dictionary when present) must remain accessible and unmodified during compression.
-  'dst' buffer should be sized to handle worst case scenarios (see LZ4_compressBound()), to ensure operation success.
-  Because in case of failure, the API does not guarantee context recovery, and context will have to be reset.
-  If `dst` buffer budget cannot be >= LZ4_compressBound(), consider using LZ4_compress_HC_continue_destSize() instead.
+  Selecting the compression level can be done with LZ4_resetStreamHC_fast() (starts a new stream)
+  or LZ4_setCompressionLevel() (anytime, between blocks in the same stream) (experimental).
+  LZ4_resetStreamHC_fast() only works on states which have been properly initialized at least once,
+  which is automatically the case when state is created using LZ4_createStreamHC().
 
-  If, for any reason, previous data block can't be preserved unmodified in memory for next compression block,
-  you can save it to a more stable memory space, using LZ4_saveDictHC().
-  Return value of LZ4_saveDictHC() is the size of dictionary effectively saved into 'safeBuffer'.
+  After reset, a first "fictional block" can be designated as initial dictionary,
+  using LZ4_loadDictHC() (Optional).
+
+  Invoke LZ4_compress_HC_continue() to compress each successive block.
+  The number of blocks is unlimited.
+  Previous input blocks, including initial dictionary when present,
+  must remain accessible and unmodified during compression.
+
+  It's allowed to update compression level anytime between blocks,
+  using LZ4_setCompressionLevel() (experimental).
+
+  'dst' buffer should be sized to handle worst case scenarios
+  (see LZ4_compressBound(), it ensures compression success).
+  In case of failure, the API does not guarantee recovery,
+  so the state _must_ be reset.
+  To ensure compression success
+  whenever `dst` buffer size cannot be made >= LZ4_compressBound(),
+  consider using LZ4_compress_HC_continue_destSize().
+
+  Whenever previous input blocks can't be preserved unmodified in-place during compression of next blocks,
+  it's possible to copy the last blocks into a more stable memory space, using LZ4_saveDictHC().
+  Return value of LZ4_saveDictHC() is the size of dictionary effectively saved into 'safeBuffer' (<= 64 KB)
+
+  After completing a streaming compression,
+  it's possible to start a new stream of blocks, using the same LZ4_streamHC_t state,
+  just by resetting it, using LZ4_resetStreamHC_fast().
 */
 
+LZ4LIB_API void LZ4_resetStreamHC_fast(LZ4_streamHC_t* streamHCPtr, int compressionLevel);   /* v1.9.0+ */
+LZ4LIB_API int  LZ4_loadDictHC (LZ4_streamHC_t* streamHCPtr, const char* dictionary, int dictSize);
+
+LZ4LIB_API int LZ4_compress_HC_continue (LZ4_streamHC_t* streamHCPtr,
+                                   const char* src, char* dst,
+                                         int srcSize, int maxDstSize);
+
+/*! LZ4_compress_HC_continue_destSize() : v1.9.0+
+ *  Similar to LZ4_compress_HC_continue(),
+ *  but will read as much data as possible from `src`
+ *  to fit into `targetDstSize` budget.
+ *  Result is provided into 2 parts :
+ * @return : the number of bytes written into 'dst' (necessarily <= targetDstSize)
+ *           or 0 if compression fails.
+ * `srcSizePtr` : on success, *srcSizePtr will be updated to indicate how much bytes were read from `src`.
+ *           Note that this function may not consume the entire input.
+ */
+LZ4LIB_API int LZ4_compress_HC_continue_destSize(LZ4_streamHC_t* LZ4_streamHCPtr,
+                                           const char* src, char* dst,
+                                                 int* srcSizePtr, int targetDstSize);
+
+LZ4LIB_API int LZ4_saveDictHC (LZ4_streamHC_t* streamHCPtr, char* safeBuffer, int maxDictSize);
 
 
 
@@ -146,65 +198,53 @@ LZ4LIB_API int LZ4_saveDictHC (LZ4_streamHC_t* streamHCPtr, char* safeBuffer, in
 #define LZ4HC_HASH_MASK (LZ4HC_HASHTABLESIZE - 1)
 
 
-#if defined(__cplusplus) || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) /* C99 */)
-#include <stdint.h>
-
 typedef struct LZ4HC_CCtx_internal LZ4HC_CCtx_internal;
 struct LZ4HC_CCtx_internal
 {
-    uint32_t   hashTable[LZ4HC_HASHTABLESIZE];
-    uint16_t   chainTable[LZ4HC_MAXD];
-    const uint8_t* end;         /* next block here to continue on current prefix */
-    const uint8_t* base;        /* All index relative to this position */
-    const uint8_t* dictBase;    /* alternate base for extDict */
-    uint32_t   dictLimit;       /* below that point, need extDict */
-    uint32_t   lowLimit;        /* below that point, no more dict */
-    uint32_t   nextToUpdate;    /* index from which to continue dictionary update */
-    short      compressionLevel;
-    int8_t     favorDecSpeed;   /* favor decompression speed if this flag set,
-                                   otherwise, favor compression ratio */
-    int8_t     dirty;           /* stream has to be fully reset if this flag is set */
+    LZ4_u32   hashTable[LZ4HC_HASHTABLESIZE];
+    LZ4_u16   chainTable[LZ4HC_MAXD];
+    const LZ4_byte* end;       /* next block here to continue on current prefix */
+    const LZ4_byte* base;      /* All index relative to this position */
+    const LZ4_byte* dictBase;  /* alternate base for extDict */
+    LZ4_u32   dictLimit;       /* below that point, need extDict */
+    LZ4_u32   lowLimit;        /* below that point, no more dict */
+    LZ4_u32   nextToUpdate;    /* index from which to continue dictionary update */
+    short     compressionLevel;
+    LZ4_i8    favorDecSpeed;   /* favor decompression speed if this flag set,
+                                  otherwise, favor compression ratio */
+    LZ4_i8    dirty;           /* stream has to be fully reset if this flag is set */
     const LZ4HC_CCtx_internal* dictCtx;
 };
 
-#else
 
-typedef struct LZ4HC_CCtx_internal LZ4HC_CCtx_internal;
-struct LZ4HC_CCtx_internal
-{
-    unsigned int   hashTable[LZ4HC_HASHTABLESIZE];
-    unsigned short chainTable[LZ4HC_MAXD];
-    const unsigned char* end;        /* next block here to continue on current prefix */
-    const unsigned char* base;       /* All index relative to this position */
-    const unsigned char* dictBase;   /* alternate base for extDict */
-    unsigned int   dictLimit;        /* below that point, need extDict */
-    unsigned int   lowLimit;         /* below that point, no more dict */
-    unsigned int   nextToUpdate;     /* index from which to continue dictionary update */
-    short          compressionLevel;
-    char           favorDecSpeed;    /* favor decompression speed if this flag set,
-                                        otherwise, favor compression ratio */
-    char           dirty;            /* stream has to be fully reset if this flag is set */
-    const LZ4HC_CCtx_internal* dictCtx;
-};
-
-#endif
-
-
-/* do not use these definitions directly.
- * allocate an LZ4_streamHC_t instead. */
-#define LZ4_STREAMHCSIZE       (4*LZ4HC_HASHTABLESIZE + 2*LZ4HC_MAXD + 56 + ((sizeof(void*)==16) ? 56 : 0) /* AS400*/ ) /* 262200 or 262256*/
-#define LZ4_STREAMHCSIZE_SIZET (LZ4_STREAMHCSIZE / sizeof(size_t))
+/* Do not use these definitions directly !
+ * Declare or allocate an LZ4_streamHC_t instead.
+ */
+#define LZ4_STREAMHCSIZE       262200  /* static size, for inter-version compatibility */
+#define LZ4_STREAMHCSIZE_VOIDP (LZ4_STREAMHCSIZE / sizeof(void*))
 union LZ4_streamHC_u {
-    size_t table[LZ4_STREAMHCSIZE_SIZET];
+    void* table[LZ4_STREAMHCSIZE_VOIDP];
     LZ4HC_CCtx_internal internal_donotuse;
 }; /* previously typedef'd to LZ4_streamHC_t */
+
 /* LZ4_streamHC_t :
  * This structure allows static allocation of LZ4 HC streaming state.
- * State must be initialized using LZ4_resetStreamHC() before first use.
+ * This can be used to allocate statically, on state, or as part of a larger structure.
+ *
+ * Such state **must** be initialized using LZ4_initStreamHC() before first use.
+ *
+ * Note that invoking LZ4_initStreamHC() is not required when
+ * the state was created using LZ4_createStreamHC() (which is recommended).
+ * Using the normal builder, a newly created state is automatically initialized.
  *
  * Static allocation shall only be used in combination with static linking.
- * When invoking LZ4 from a DLL, use create/free functions instead, which are API and ABI stable.
  */
+
+/* LZ4_initStreamHC() : v1.9.0+
+ * Required before first use of a statically allocated LZ4_streamHC_t.
+ * Before v1.9.0 : use LZ4_resetStreamHC() instead
+ */
+LZ4LIB_API LZ4_streamHC_t* LZ4_initStreamHC (void* buffer, size_t size);
 
 
 /*-************************************
@@ -215,11 +255,11 @@ union LZ4_streamHC_u {
 /* deprecated compression functions */
 LZ4_DEPRECATED("use LZ4_compress_HC() instead") LZ4LIB_API int LZ4_compressHC               (const char* source, char* dest, int inputSize);
 LZ4_DEPRECATED("use LZ4_compress_HC() instead") LZ4LIB_API int LZ4_compressHC_limitedOutput (const char* source, char* dest, int inputSize, int maxOutputSize);
-LZ4_DEPRECATED("use LZ4_compress_HC() instead") LZ4LIB_API int LZ4_compressHC2 (const char* source, char* dest, int inputSize, int compressionLevel);
-LZ4_DEPRECATED("use LZ4_compress_HC() instead") LZ4LIB_API int LZ4_compressHC2_limitedOutput (const char* source, char* dest, int inputSize, int maxOutputSize, int compressionLevel);
+LZ4_DEPRECATED("use LZ4_compress_HC() instead") LZ4LIB_API int LZ4_compressHC2              (const char* source, char* dest, int inputSize, int compressionLevel);
+LZ4_DEPRECATED("use LZ4_compress_HC() instead") LZ4LIB_API int LZ4_compressHC2_limitedOutput(const char* source, char* dest, int inputSize, int maxOutputSize, int compressionLevel);
 LZ4_DEPRECATED("use LZ4_compress_HC_extStateHC() instead") LZ4LIB_API int LZ4_compressHC_withStateHC               (void* state, const char* source, char* dest, int inputSize);
 LZ4_DEPRECATED("use LZ4_compress_HC_extStateHC() instead") LZ4LIB_API int LZ4_compressHC_limitedOutput_withStateHC (void* state, const char* source, char* dest, int inputSize, int maxOutputSize);
-LZ4_DEPRECATED("use LZ4_compress_HC_extStateHC() instead") LZ4LIB_API int LZ4_compressHC2_withStateHC (void* state, const char* source, char* dest, int inputSize, int compressionLevel);
+LZ4_DEPRECATED("use LZ4_compress_HC_extStateHC() instead") LZ4LIB_API int LZ4_compressHC2_withStateHC              (void* state, const char* source, char* dest, int inputSize, int compressionLevel);
 LZ4_DEPRECATED("use LZ4_compress_HC_extStateHC() instead") LZ4LIB_API int LZ4_compressHC2_limitedOutput_withStateHC(void* state, const char* source, char* dest, int inputSize, int maxOutputSize, int compressionLevel);
 LZ4_DEPRECATED("use LZ4_compress_HC_continue() instead") LZ4LIB_API int LZ4_compressHC_continue               (LZ4_streamHC_t* LZ4_streamHCPtr, const char* source, char* dest, int inputSize);
 LZ4_DEPRECATED("use LZ4_compress_HC_continue() instead") LZ4LIB_API int LZ4_compressHC_limitedOutput_continue (LZ4_streamHC_t* LZ4_streamHCPtr, const char* source, char* dest, int inputSize, int maxOutputSize);
@@ -235,10 +275,21 @@ LZ4_DEPRECATED("use LZ4_compress_HC_continue() instead") LZ4LIB_API int LZ4_comp
 LZ4_DEPRECATED("use LZ4_createStreamHC() instead") LZ4LIB_API void* LZ4_createHC (const char* inputBuffer);
 LZ4_DEPRECATED("use LZ4_saveDictHC() instead") LZ4LIB_API     char* LZ4_slideInputBufferHC (void* LZ4HC_Data);
 LZ4_DEPRECATED("use LZ4_freeStreamHC() instead") LZ4LIB_API   int   LZ4_freeHC (void* LZ4HC_Data);
-LZ4_DEPRECATED("use LZ4_compress_HC_continue() instead") LZ4LIB_API int LZ4_compressHC2_continue (void* LZ4HC_Data, const char* source, char* dest, int inputSize, int compressionLevel);
+LZ4_DEPRECATED("use LZ4_compress_HC_continue() instead") LZ4LIB_API int LZ4_compressHC2_continue               (void* LZ4HC_Data, const char* source, char* dest, int inputSize, int compressionLevel);
 LZ4_DEPRECATED("use LZ4_compress_HC_continue() instead") LZ4LIB_API int LZ4_compressHC2_limitedOutput_continue (void* LZ4HC_Data, const char* source, char* dest, int inputSize, int maxOutputSize, int compressionLevel);
 LZ4_DEPRECATED("use LZ4_createStreamHC() instead") LZ4LIB_API int   LZ4_sizeofStreamStateHC(void);
-LZ4_DEPRECATED("use LZ4_resetStreamHC() instead") LZ4LIB_API  int   LZ4_resetStreamStateHC(void* state, char* inputBuffer);
+LZ4_DEPRECATED("use LZ4_initStreamHC() instead") LZ4LIB_API  int   LZ4_resetStreamStateHC(void* state, char* inputBuffer);
+
+
+/* LZ4_resetStreamHC() is now replaced by LZ4_initStreamHC().
+ * The intention is to emphasize the difference with LZ4_resetStreamHC_fast(),
+ * which is now the recommended function to start a new stream of blocks,
+ * but cannot be used to initialize a memory segment containing arbitrary garbage data.
+ *
+ * It is recommended to switch to LZ4_initStreamHC().
+ * LZ4_resetStreamHC() will generate deprecation warnings in a future version.
+ */
+LZ4LIB_API void LZ4_resetStreamHC (LZ4_streamHC_t* streamHCPtr, int compressionLevel);
 
 
 #if defined (__cplusplus)
@@ -260,52 +311,29 @@ LZ4_DEPRECATED("use LZ4_resetStreamHC() instead") LZ4LIB_API  int   LZ4_resetStr
 #ifndef LZ4_HC_SLO_098092834
 #define LZ4_HC_SLO_098092834
 
+#define LZ4_STATIC_LINKING_ONLY   /* LZ4LIB_STATIC_API */
+#include "lz4.h"
+
 #if defined (__cplusplus)
 extern "C" {
 #endif
 
-/*! LZ4_compress_HC_destSize() : v1.8.0 (experimental)
- *  Will try to compress as much data from `src` as possible
- *  that can fit into `targetDstSize` budget.
- *  Result is provided in 2 parts :
- * @return : the number of bytes written into 'dst'
- *           or 0 if compression fails.
- * `srcSizePtr` : value will be updated to indicate how much bytes were read from `src`
- */
-LZ4LIB_STATIC_API int LZ4_compress_HC_destSize(
-    void* LZ4HC_Data,
-    const char* src, char* dst,
-    int* srcSizePtr, int targetDstSize,
-    int compressionLevel);
-
-/*! LZ4_compress_HC_continue_destSize() : v1.8.0 (experimental)
- *  Similar as LZ4_compress_HC_continue(),
- *  but will read a variable nb of bytes from `src`
- *  to fit into `targetDstSize` budget.
- *  Result is provided in 2 parts :
- * @return : the number of bytes written into 'dst'
- *           or 0 if compression fails.
- * `srcSizePtr` : value will be updated to indicate how much bytes were read from `src`.
- */
-LZ4LIB_STATIC_API int LZ4_compress_HC_continue_destSize(
-    LZ4_streamHC_t* LZ4_streamHCPtr,
-    const char* src, char* dst,
-    int* srcSizePtr, int targetDstSize);
-
-/*! LZ4_setCompressionLevel() : v1.8.0 (experimental)
- *  It's possible to change compression level between 2 invocations of LZ4_compress_HC_continue*()
+/*! LZ4_setCompressionLevel() : v1.8.0+ (experimental)
+ *  It's possible to change compression level
+ *  between successive invocations of LZ4_compress_HC_continue*()
+ *  for dynamic adaptation.
  */
 LZ4LIB_STATIC_API void LZ4_setCompressionLevel(
     LZ4_streamHC_t* LZ4_streamHCPtr, int compressionLevel);
 
-/*! LZ4_favorDecompressionSpeed() : v1.8.2 (experimental)
- *  Parser will select decisions favoring decompression over compression ratio.
- *  Only work at highest compression settings (level >= LZ4HC_CLEVEL_OPT_MIN)
+/*! LZ4_favorDecompressionSpeed() : v1.8.2+ (experimental)
+ *  Opt. Parser will favor decompression speed over compression ratio.
+ *  Only applicable to levels >= LZ4HC_CLEVEL_OPT_MIN.
  */
 LZ4LIB_STATIC_API void LZ4_favorDecompressionSpeed(
     LZ4_streamHC_t* LZ4_streamHCPtr, int favor);
 
-/*! LZ4_resetStreamHC_fast() :
+/*! LZ4_resetStreamHC_fast() : v1.9.0+
  *  When an LZ4_streamHC_t is known to be in a internally coherent state,
  *  it can often be prepared for a new compression with almost no work, only
  *  sometimes falling back to the full, expensive reset that is always required

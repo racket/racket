@@ -11,6 +11,7 @@
          "../port/bytes-output.rkt"
          "../port/bytes-port.rkt"
          "../port/parameter.rkt"
+         "../error/message.rkt"
          "custom-write.rkt"
          "write-with-max.rkt"
          "string.rkt"
@@ -290,6 +291,7 @@
            (define prefix (cond
                             [(hash-eq? v) "(hasheq"]
                             [(hash-eqv? v) "(hasheqv"]
+                            [(hash-equal-always? v) "(hashalw"]
                             [else "(hash"]))
            (print-list p who l mode o max-length graph config #f prefix)]
           [else
@@ -355,11 +357,12 @@
 
 (define (fail-unreadable who v)
   (raise (exn:fail
-          (string-append (symbol->immutable-string who)
-                         ": printing disabled for unreadable value"
-                         "\n  value: "
-                         (parameterize ([print-unreadable #t])
-                           ((error-value->string-handler) v (error-print-width))))
+          (error-message->string
+           who
+           (string-append "printing disabled for unreadable value"
+                          "\n  value: "
+                          (parameterize ([print-unreadable #t])
+                            ((error-value->string-handler) v (error-print-width)))))
           (current-continuation-marks))))
 
 (define (check-unreadable who config mode v)

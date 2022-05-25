@@ -278,6 +278,9 @@
                                                       (car kwds)))
                                       (loop (cdr kwds) auto-value-stx
                                             transparent? mutable? #f def-vals?)]
+                                     ;; To support this option, more changes are
+                                     ;; needed in the generated definitions:
+                                     #;
                                      [(eq? kwd '#:omit-define-values)
                                       (when (not def-vals?)
                                         (syntax-error "redundant #:omit-define-values"
@@ -464,7 +467,7 @@
                                                                   (λ () (car (syntax->list #'(temp-maker-name ...)))))))]
                                                            [else
                                                             (list
-                                                             #'(define-syntax struct-name
+                                                             #`(define-syntax struct-name
                                                                  (make-struct-info
                                                                   (λ ()
                                                                     (list #f #f #f

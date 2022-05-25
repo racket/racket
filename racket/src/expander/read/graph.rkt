@@ -6,7 +6,8 @@
          "parameter.rkt"
          "error.rkt"
          "digit.rkt"
-         "vector.rkt")
+         "vector.rkt"
+         "wrap.rkt")
 
 (provide read-vector-or-graph
          get-graph-hash)
@@ -51,14 +52,16 @@
     [else
      (case c
        [(#\= #\#)
-        (when (or (read-config-for-syntax? config)
-                  (not (check-parameter read-accept-graph config)))
+        (unless (check-parameter (if (read-config-for-syntax? config)
+                                     read-syntax-accept-graph
+                                     read-accept-graph)
+                                 config)
           (reader-error in config
-                        "`#...~a` forms not ~a"
+                        "`#...~a` forms not enabled for `~a` mode"
                         c
                         (if (read-config-for-syntax? config)
-                            "allowed in `read-syntax` mode"
-                            "enabled")))
+                            "read-syntax"
+                            "read")))
         (unless ((accum-string-count accum-str) . <= . 8)
           (reader-error in config
                         "graph ID too long in `~a~a~a`"
@@ -79,19 +82,19 @@
                            dispatch-c (accum-string-get! accum-str config) c))
            (accum-string-abandon! accum-str config)
            (placeholder-set! ph result-v)
-           ph]
+           (wrap ph in config ph)]
           [(#\#)
-           (begin0
-            (hash-ref 
-             (or (read-config-state-graph (read-config-st config))
-                 #hash())
-             v
-             (lambda ()
-               (reader-error in config
-                             "no preceding `~a~a=` for `~a~a~a`"
-                             dispatch-c v
-                             dispatch-c (accum-string-get! accum-str config) c)))
-            (accum-string-abandon! accum-str config))])]
+           (define ph (hash-ref
+                       (or (read-config-state-graph (read-config-st config))
+                           #hash())
+                       v
+                       (lambda ()
+                         (reader-error in config
+                                       "no preceding `~a~a=` for `~a~a~a`"
+                                       dispatch-c v
+                                       dispatch-c (accum-string-get! accum-str config) c))))
+           (accum-string-abandon! accum-str config)
+           (wrap ph in config ph)])]
        [else
         (reader-error in config
                       #:due-to c

@@ -1,15 +1,15 @@
 #lang racket
-(require setup/dirs)
+(require setup/dirs
+         compiler/find-exe)
 
-(define raco (build-path (find-console-bin-dir)
-                         (if (eq? (system-type) 'windows)
-                             "raco.exe"
-                             "raco")))
+(define racket (find-exe))
 
 (define tmp (make-temporary-file))
 (define tmp-dir (make-temporary-file "mztmp~a" 'directory))
 
-(system* raco
+(system* racket
+         "-l-"
+         "raco"
          "ctool"
          "--3m"
          "--c-mods"
@@ -17,7 +17,9 @@
          "++lib"
          "racket")
 
-(system* raco
+(system* racket
+         "-l-"
+         "raco"
          "ctool"
          "--3m"
          "--c-mods"

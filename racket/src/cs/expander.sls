@@ -8,7 +8,8 @@
           compile-keep-source-locations!)
   (import (rename (except (chezpart)
                           syntax->datum
-                          datum->syntax)
+                          datum->syntax
+                          getenv)
                   [define chez:define])
           (rename (rumble)
                   [correlated? syntax?]
@@ -22,6 +23,12 @@
                   [datum->correlated datum->syntax]
                   [correlated-property syntax-property]
                   [correlated-property-symbol-keys syntax-property-symbol-keys]
+                  [raise-argument-error raise-argument-error/primitive]
+                  [raise-argument-error/user raise-argument-error]
+                  [raise-arguments-error raise-arguments-error/primitive]
+                  [raise-arguments-error/user raise-arguments-error]
+                  [raise-range-error raise-range-error/primitive]
+                  [raise-range-error/user raise-range-error]
                   ;; Remapped to place-local register operations:
                   [unsafe-place-local-ref rumble:unsafe-place-local-ref]
                   [unsafe-place-local-set! rumble:unsafe-place-local-set!])
@@ -53,6 +60,7 @@
         [(|#%flfxnum|) flfxnum-table]
         [(|#%extfl|) extfl-table]
         [(|#%network|) network-table]
+        [(|#%terminal|) terminal-table]
         [else (hash-ref user-installed-tables key #f)])]
      [(key table)
       (hash-set! user-installed-tables key table)]))
@@ -77,6 +85,7 @@
   (include "primitive/place.ss")
   (include "primitive/foreign.ss")
   (include "primitive/linklet.ss")
+  (include "primitive/terminal.ss")
   (include "primitive/internal.ss")
 
   ;; ----------------------------------------

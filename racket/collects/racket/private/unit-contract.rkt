@@ -18,7 +18,7 @@
 
 (define-for-syntax (contract-imports/exports import?)
   (λ (table-stx import-tagged-infos import-sigs ctc-table blame-id)
-    (define def-table (make-bound-identifier-mapping))
+    (define def-tables (make-hasheq)) ; tag (or #f) =>  bound-identifier-mapping
     
     (define (convert-reference var vref ctc sig-ctc rename-bindings)
       (let ([wrap-with-proj
@@ -48,13 +48,16 @@
             vref)))
     (for ([tagged-info (in-list import-tagged-infos)]
           [sig         (in-list import-sigs)])
+         (define def-table (hash-ref! def-tables (car tagged-info) make-bound-identifier-mapping))
          (let ([v #`(hash-ref #,table-stx #,(car (tagged-info->keys tagged-info)))])
            (for ([int/ext-name (in-list (car sig))]
                  [index        (in-list (build-list (length (car sig)) values))])
-                (bound-identifier-mapping-put! def-table (car int/ext-name)
-                                               #`(vector-ref #,v #,index)))))
+             (bound-identifier-mapping-put! def-table (car int/ext-name)
+                                            #`(vector-ref #,v #,index)))))
     (with-syntax ((((eloc ...) ...)
-                   (for/list ([target-sig import-sigs])
+                   (for/list ([tagged-info (in-list import-tagged-infos)]
+                              [target-sig (in-list import-sigs)])
+                     (define def-table (hash-ref def-tables (car tagged-info)))
                      (let ([rename-bindings (get-member-bindings def-table target-sig #`(blame-positive #,blame-id) #f)])
                        (for/list ([target-int/ext-name (in-list (car target-sig))]
                                   [sig-ctc (in-list (cadddr target-sig))])

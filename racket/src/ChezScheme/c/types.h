@@ -362,7 +362,7 @@ typedef struct {
   s_thread_mutex_t pmutex;
 } scheme_mutex_t;
 
-#define get_thread_context() (ptr)s_thread_getspecific(S_tc_key)
+#define get_thread_context() TO_PTR(s_thread_getspecific(S_tc_key))
 /* deactivate thread prepares the thread for a possible collection.
    if it's the last active thread, it signals one of the threads
    waiting on the collect condition, if any, so that a collection
@@ -518,7 +518,7 @@ typedef struct thread_gc {
 
 #define main_sweeper_index maximum_parallel_collect_threads
 
-#ifdef __MINGW32__
+#if defined(__MINGW32__) && !defined(HAND_CODED_SETJMP_SIZE)
 /* With MinGW on 64-bit Windows, setjmp/longjmp is not reliable. Using
    __builtin_setjmp/__builtin_longjmp is reliable, but
    __builtin_longjmp requires 1 as its second argument. So, allocate
@@ -528,6 +528,11 @@ typedef struct thread_gc {
 # define FREEJMPBUF(jb) free(jb)
 # define SETJMP(jb) (JMPBUF_RET(jb) = 0, __builtin_setjmp(jb), JMPBUF_RET(jb))
 # define LONGJMP(jb,n) (JMPBUF_RET(jb) = n, __builtin_longjmp(jb, 1))
+#elif defined(HAND_CODED_SETJMP_SIZE)
+# define CREATEJMPBUF() malloc(sizeof(ptr) * HAND_CODED_SETJMP_SIZE)
+# define FREEJMPBUF(jb) free(jb)
+# define SETJMP(jb) S_setjmp(jb)
+# define LONGJMP(jb,n) S_longjmp(jb, n)
 #else
 /* assuming malloc will give us required alignment */
 # define CREATEJMPBUF() malloc(sizeof(jmp_buf))

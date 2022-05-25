@@ -5,7 +5,8 @@
 /TAGS
 /bin/
 /boot/
-/pb/
+/pb*/
+/tpb*/
 /a6*/
 /i3*/
 /ta6*/
@@ -15,6 +16,7 @@
 /ppc*/
 /tppc*/
 /xc-*/
+/em-*/
 *.*run
 /csug/math/csug/
 /csug/Makefile

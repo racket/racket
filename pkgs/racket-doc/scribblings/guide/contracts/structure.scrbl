@@ -17,22 +17,25 @@ uses.
 @; ----------------------------------------------------------------------
 @ctc-section[#:tag "single-struct"]{Guarantees for a Specific Value}
 
-If your module defines a variable to be a structure, then you can
-specify the structure's shape using @racket[struct/c]:
+If your module defines a variable to be a structure value, then you can
+specify the structure's shape using @racket[struct/c]. 
 
 @racketmod[
 racket
-(require lang/posn)
-  
-(define origin (make-posn 0 0))
 
-(provide (contract-out
-          [origin (struct/c posn zero? zero?)]))
+(struct posn [x y])
+
+(define origin (posn 0 0))
+
+(provide
+  (contract-out
+    [origin (struct/c posn zero? zero?)]))
 ]
 
-In this example, the module imports a library for representing positions, which
-exports a @racket[posn] structure. One of the @racket[posn]s it creates
-and exports stands for the origin, i.e., @tt{(0,0)}, of the grid. 
+In this example, the module defines a structure shape for representing
+2-dimensional positions and then creates one specific instance:
+@racket[origin]. The export of this instance guarantees that its fields
+are @racket[0], i.e., they represent @tt{(0,0)}, on the Cartesian grid. 
 
 @margin-note{See also @racket[vector/c] and similar contract
 combinators for (flat) compound data.}
@@ -48,10 +51,11 @@ informal data definition as follows:
 racket
 (struct posn (x y))
   
-(provide (contract-out
-          [struct posn ((x number?) (y number?))]
-          [p-okay posn?]
-          [p-sick posn?]))
+(provide
+  (contract-out
+    [struct posn ((x number?) (y number?))]
+    [p-okay posn?]
+    [p-sick posn?]))
 
 (define p-okay (posn 10 20))
 (define p-sick (posn 'a 'b))
@@ -167,9 +171,10 @@ racket
 (define (bst? b) (bst-between? b -inf.0 +inf.0))
   
 (provide (struct-out node))
-(provide (contract-out
-          [bst? (any/c . -> . boolean?)]
-          [in? (number? bst? . -> . boolean?)]))
+(provide
+  (contract-out
+    [bst? (any/c . -> . boolean?)]
+    [in? (number? bst? . -> . boolean?)]))
 ]
 
 In a full binary search tree, this means that
@@ -229,9 +234,10 @@ racket
 (define bst/c (bst-between/c -inf.0 +inf.0))
 
 (provide (struct-out node))
-(provide (contract-out
-          [bst/c contract?]
-          [in? (number? bst/c . -> . boolean?)]))
+(provide
+  (contract-out
+    [bst/c contract?]
+    [in? (number? bst/c . -> . boolean?)]))
 ]
 
 In general, each use of @racket[struct/dc] must name the

@@ -194,6 +194,7 @@ typedef struct Place_Start_Data {
   Scheme_Object *current_library_collection_paths;
   Scheme_Object *current_library_collection_links;
   Scheme_Object *compiled_roots;
+  Scheme_Object *current_directory;
   mzrt_sema *ready;  /* malloc'ed item */
   struct Scheme_Place_Object *place_obj;   /* malloc'ed item */
   struct NewGC *parent_gc;
@@ -259,6 +260,7 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   mz_proc_thread        *proc_thread;
   Scheme_Object         *collection_paths;
   Scheme_Object         *collection_links;
+  Scheme_Object         *directory;
   Scheme_Place_Object   *place_obj;
   mzrt_sema             *ready;
   struct NewGC          *parent_gc;
@@ -315,8 +317,8 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
     out_arg = args[3];
     err_arg = args[4];
 
-    if (!scheme_is_module_path(args[0]) && !SCHEME_PATHP(args[0]) && !scheme_is_resolved_module_path(args[0])) {
-      scheme_wrong_contract("dynamic-place", "(or/c module-path? path? resolved-module-path?)", 0, argc, args);
+    if (!scheme_is_module_path(args[0]) && !SCHEME_PATHP(args[0])) {
+      scheme_wrong_contract("dynamic-place", "(or/c module-path? path?)", 0, argc, args);
     }
     if (!SCHEME_SYMBOLP(args[1])) {
       scheme_wrong_contract("dynamic-place", "symbol?", 1, argc, args);
@@ -361,6 +363,9 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
 
   collection_paths = scheme_compiled_file_roots(0, NULL);
   place_data->compiled_roots = collection_paths;
+
+  directory = scheme_current_directory(0, NULL);
+  place_data->current_directory = directory;
 
   cust = scheme_get_current_custodian();
   mem_limit = GC_get_account_memory_limit(cust);
@@ -464,6 +469,8 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
     place_data->current_library_collection_links = tmp;
     tmp = places_prepare_direct(place_data->compiled_roots);
     place_data->compiled_roots = tmp;
+    tmp = places_prepare_direct(place_data->current_directory);
+    place_data->current_directory = tmp;
     tmp = places_prepare_direct(place_data->channel);
     place_data->channel = tmp;
     tmp = places_prepare_direct(place_data->module);
@@ -1482,6 +1489,7 @@ static Scheme_Object *places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
   
   /* lifted variables for xform*/
   Scheme_Object *pair;
+  Scheme_Object *box;
   Scheme_Object *vec;
   Scheme_Object *nht;
   Scheme_Object *hti;
@@ -1494,15 +1502,16 @@ static Scheme_Object *places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
 
 #define DEEP_DO_CDR       1
 #define DEEP_DO_FIN_PAIR  2
-#define DEEP_VEC1         3
-#define DEEP_ST1          4   
-#define DEEP_ST2          5
-#define DEEP_SST1         6
-#define DEEP_SST2         7      
-#define DEEP_HT1          8
-#define DEEP_HT2          9      
-#define DEEP_RETURN      10
-#define DEEP_DONE        11
+#define DEEP_BOX1         3
+#define DEEP_VEC1         4
+#define DEEP_ST1          5
+#define DEEP_ST2          6
+#define DEEP_SST1         7
+#define DEEP_SST2         8
+#define DEEP_HT1          9
+#define DEEP_HT2         10
+#define DEEP_RETURN      11
+#define DEEP_DONE        12
 #define RETURN do { goto DEEP_RETURN_L; } while(0);
 #define ABORT do { goto DEEP_DONE_L; } while(0);
 #define IFS_PUSH(x) inf_push(&inf_stack, x, &inf_stack_depth, &inf_max_depth, gcable)
@@ -1603,6 +1612,39 @@ DEEP_DO_FIN_PAIR_L:
         SCHEME_CDR(pair) = GET_R0();
         new_so = pair;
       }
+      RETURN;
+      break;
+
+      /* --------- box ----------- */
+    case scheme_box_type:
+      if ((mode == mzPDC_COPY) || (mode == mzPDC_UNCOPY) || (mode == mzPDC_DIRECT_UNCOPY))
+        box = scheme_box(0);
+      else
+        box = so;
+
+      /* handle cycles: */
+      scheme_hash_set(*ht, so, box);
+
+      IFS_PUSH(box);
+      IFS_PUSH(so);
+
+      SET_R0(SCHEME_BOX_VAL(so));
+      GOTO_NEXT_CONT(DEEP_DO, DEEP_BOX1);
+
+DEEP_BOX1_L:
+      box  = IFS_GET(1);
+      if (set_mode) {
+        SCHEME_BOX_VAL(box) = GET_R0();
+      }
+
+      so   = IFS_POP;
+      box  = IFS_POP;
+
+      if (set_mode) {
+        SCHEME_SET_IMMUTABLE(box);
+        new_so = box;
+      } else
+        new_so = box;
       RETURN;
       break;
 
@@ -1806,6 +1848,7 @@ DEEP_SST2_L:
     case scheme_hash_tree_type:
     case scheme_eq_hash_tree_type:
     case scheme_eqv_hash_tree_type:
+    case scheme_equal_always_hash_tree_type:
       if (set_mode) {
         if (scheme_true == scheme_hash_eq_p(1, &so)) {
           nht = scheme_make_immutable_hasheq(0, NULL);
@@ -1815,6 +1858,9 @@ DEEP_SST2_L:
         }
         else if ( scheme_true == scheme_hash_equal_p(1, &so)) {
           nht = scheme_make_immutable_hash(0, NULL);
+        }
+        else if ( scheme_true == scheme_hash_equal_always_p(1, &so)) {
+          nht = scheme_make_immutable_hashalw(0, NULL);
         }
       }
       else
@@ -1915,6 +1961,7 @@ DEEP_RETURN_L:
     switch(SCHEME_INT_VAL(IFS_POP)) {
       case DEEP_DO_CDR:      goto DEEP_DO_CDR_L;
       case DEEP_DO_FIN_PAIR: goto DEEP_DO_FIN_PAIR_L;
+      case DEEP_BOX1:        goto DEEP_BOX1_L;
       case DEEP_VEC1:        goto DEEP_VEC1_L;
       case DEEP_ST1:         goto DEEP_ST1_L;
       case DEEP_ST2:         goto DEEP_ST2_L;
@@ -1936,6 +1983,7 @@ DEEP_DONE_L:
 
 #undef DEEP_DO_CDR
 #undef DEEP_DO_FIN_PAIR
+#undef DEEP_BOX1
 #undef DEEP_VEC1
 #undef DEEP_ST1
 #undef DEEP_ST2
@@ -2399,6 +2447,8 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   scheme_current_library_collection_links(1, a);
   a[0] = places_deep_direct_uncopy(place_data->compiled_roots);
   scheme_compiled_file_roots(1, a);
+  a[0] = places_deep_direct_uncopy(place_data->current_directory);
+  scheme_current_directory(1, a);
   scheme_seal_parameters();
 
   a[0] = places_deep_direct_uncopy(place_data->module);

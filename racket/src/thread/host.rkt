@@ -71,13 +71,14 @@
         [disable-interrupts host:disable-interrupts]
         [enable-interrupts host:enable-interrupts]
 
-        ;; Support for the thre scheduler and interrupts
+        ;; Support for the thread scheduler and interrupts
         ;; across places
         [sleep host:sleep]
         [get-wakeup-handle host:get-wakeup-handle]
         [wakeup host:wakeup]
 
         [fork-place host:fork-place]
+        [place-get-inherit host:place-get-inherit]
         [start-place host:start-place]
         [exit host:exit]
         [current-place-roots host:current-place-roots]

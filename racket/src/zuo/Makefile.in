@@ -1,0 +1,35 @@
+# @PACKAGE_NAME@ @configure_input@
+@SET_MAKE@
+
+srcdir = @srcdir@
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+datarootdir = @datarootdir@
+datadir = @datadir@
+
+bindir = @bindir@
+pkgdatadir = @datadir@/@PACKAGE_TARNAME@
+
+CC = @CC@
+CFLAGS = @CFLAGS@
+CPPFLAGS = @CPPFLAGS@
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
+
+EMBED_LIBS = @EMBED_LIBS@
+
+.PHONY: zuos-to-run-and-install
+zuos-to-run-and-install: zuo
+	./zuo . zuos-to-run-and-install
+
+zuo: $(srcdir)/zuo.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DZUO_LIB_PATH='"'"$(srcdir)/lib"'"' -o zuo $(srcdir)/zuo.c $(LDFLAGS) $(LIBS)
+
+.PHONY: check
+check: zuo
+	./zuo . check
+
+.PHONY: install
+install: zuo
+	./zuo . install

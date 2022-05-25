@@ -219,12 +219,12 @@
                           [(pb)
                            (record-case c
                              [(pb-abs) (n x)
-                              (let ([a1 (fx- a 16)]) ; movz, movk, movk, movk
+                              (let ([a1 (fx- a (constant ptr-bytes))]) ; nops
                                 (let ([x* (cons (mkcode x) x*)])
                                   (let ([r ($reloc (constant reloc-pb-abs) n (fx- a1 ra))])
                                     (mkc0 (cdr c*) a (cons r r*) a1 x*))))]
                              [(pb-proc) (n x)
-                              (let ([a1 (fx- a 20)]) ; movz, movk, movk, movk, b/call
+                              (let ([a1 (fx- a (constant ptr-bytes) 4)]) ; nops, b/call
                                 (let ([x* (cons (mkcode x) x*)])
                                   (let ([r ($reloc (constant reloc-pb-proc) n (fx- a1 ra))])
                                     (mkc0 (cdr c*) a (cons r r*) a1 x*))))]
@@ -468,11 +468,11 @@
                          [(pb)
                           (record-case c
                             [(pb-abs) (n x)
-                             (let ([a1 (fx- a 16)]) ; movz, movk, movk, movk
+                             (let ([a1 (fx- a (constant ptr-bytes))]) ; nops
                                (let ([r ($reloc (constant reloc-pb-abs) n (fx- a1 ra))])
                                  (prf0 (cdr c*) a (cons r r*) a1 (cons x x*))))]
                             [(pb-proc) (n x)
-                             (let ([a1 (fx- a 20)]) ; movz, movk, movk, movk, b/call
+                             (let ([a1 (fx- a (constant ptr-bytes) 4)]) ; nops, b/call
                                (let ([r ($reloc (constant reloc-pb-proc) n (fx- a1 ra))])
                                  (prf0 (cdr c*) a (cons r r*) a1 (cons x x*))))]
                             [else (c-assembler-output-error c)])]
@@ -977,7 +977,9 @@
         (lambda (src-path lib-path lib-exists?)
           (and lib-exists?
                (begin
-                 (when (and src-path (time<? (file-modification-time lib-path) (file-modification-time src-path)))
+                 (when (and src-path
+                            (eq? (library-timestamp-mode) 'modification-time)
+                            (time<? (file-modification-time lib-path) (file-modification-time src-path)))
                    (warningf who "~a file ~a is older than source file ~a" what lib-path src-path))
                  (when (import-notify) (fprintf (console-output-port) "reading ~a\n" lib-path))
                  lib-path))))))
@@ -1823,7 +1825,7 @@
 
   (set-who! make-boot-file
     (lambda (outfn bootfile* . infn*)
-      (do-make-boot-file who outfn (machine-type) bootfile* infn*)))
+      (do-make-boot-file who outfn (constant machine-type-name) bootfile* infn*)))
 
   (set-who! $make-boot-file
     (lambda (outfn machine bootfile* . infn*)
@@ -1833,7 +1835,7 @@
    ; exported interface: machine-type implicit and requires one or more
    ; subordinate boot files
     (lambda (out bootfile . bootfiles)
-      (do-make-boot-header who out (machine-type) (cons bootfile bootfiles))))
+      (do-make-boot-header who out (constant machine-type-name) (cons bootfile bootfiles))))
 
   (set-who! $make-boot-header
     ; create boot loader (invoke) for entry into Scheme from C

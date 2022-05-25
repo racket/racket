@@ -17,15 +17,16 @@ operations, and on Windows when @as-index{@filepath{longdouble.dll}}
 is available).
 
 A extflonum is @bold{not} a @tech{number} in the sense of
-@racket[number?]. Only extflonum-specific operations such as 
+@racket[number?]. Only extflonum-specific operations such as
 @racket[extfl+] perform extflonum arithmetic.
 
 A literal extflonum is written like an @tech{inexact number},
 but using an explicit @litchar{t} or @litchar{T} exponent marker (see
 @secref["parse-extflonum"]). For example, @racket[3.5t0] is an
-extflonum. The extflonum values for infinity are 
+extflonum. The extflonum values for infinity are
 @as-index{@racket[+inf.t]} and @as-index{@racket[-inf.t]}. The
-extflonum value for not-a-number is @as-index{@racket[+nan.t]}.
+extflonum value for not-a-number is @as-index{@racket[+nan.t]} or
+@as-index{@racket[-nan.t]}.
 
 If @racket[(extflonum-available?)] produces @racket[#f], then all
 operations exported by @racketmodname[racket/extflonum] raise
@@ -156,7 +157,7 @@ and if the values in corresponding slots of the @tech{extflvectors} are
          extflonum?]
 @defproc[(extflvector-copy [vec extflvector?]
                            [start exact-nonnegative-integer? 0]
-                           [end exact-nonnegative-integer? (vector-length v)]) 
+                           [end exact-nonnegative-integer? (vector-length v)])
          extflvector?]
 )]{
 

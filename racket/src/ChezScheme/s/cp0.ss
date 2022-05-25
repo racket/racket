@@ -969,9 +969,15 @@
             (boolean? obj)
             (null? obj)
             (eqv? obj "")
+            (eqv? obj (string->immutable-string ""))
             (eqv? obj '#())
+            (eqv? obj (vector->immutable-vector '#()))
             (eqv? obj '#vu8())
+            (eqv? obj (bytevector->immutable-bytevector '#vu8()))
             (eqv? obj '#vfx())
+            ; no null-immutable-fxvector
+            (eqv? obj '#vfl())
+            ; no null-immutable-flvector
             (eq? obj (void))
             (eof-object? obj)
             (bwp-object? obj)
@@ -1022,7 +1028,7 @@
                           [(set! ,maybe-src ,x ,e)
                            (unless (memq x ids) (exit #f))
                            (bump!)
-                           (do-expr e)]
+                           `(set! ,maybe-src ,x ,(do-expr e))]
                           [(call ,preinfo ,e ,e* ...)
                            ; reject calls to gensyms, since they might represent library exports,
                            ; and we have no way to set up the required invoke dependencies, unless
@@ -1462,6 +1468,10 @@
                                   ;; could send us into a loop for a `letrec`
                                   ;; binding. But use the prelex as a summary
                                   ;; or a way to tie a loop:
+                                  (preinfo->single-valued preinfo x)]
+                                 [(call ,preinfo0 ,pr (case-lambda ,preinfo ,cl* ...) ,e ...)
+                                  (or (eq? (primref-name pr) 'make-wrapper-procedure)
+                                      (eq? (primref-name pr) 'make-arity-wrapper-procedure))
                                   (preinfo->single-valued preinfo x)]
                                  [else #f])))]
                        ;; Recognize call to a loop, and use the loop's prelex in that case:
@@ -3614,14 +3624,14 @@
                                                                        (f (ctrcd-ctprcd ctprcd) prtd pprtd vars))]
                                                                     [else
                                                                      (let ([new-vars (map (lambda (x) (cp0-make-temp #f))
-                                                                                       (csv7:record-type-field-indices prtd))])
+                                                                                       ($record-type-field-indices prtd))])
                                                                        (build-lambda new-vars
                                                                          `(call ,(app-preinfo ctxt) ,(go (< level 3) rtd rtd-e ctxt)
                                                                             ,(map build-ref (append new-vars vars))
                                                                             ...)))])))]
                                                            [else
                                                             (let ([new-vars (map (lambda (x) (cp0-make-temp #f))
-                                                                              (csv7:record-type-field-indices prtd))])
+                                                                              ($record-type-field-indices prtd))])
                                                               (build-lambda new-vars
                                                                 `(call ,(app-preinfo ctxt) ,(go (< level 3) rtd rtd-e ctxt)
                                                                    ,(map build-ref (append new-vars vars)) ...)))])
@@ -3980,30 +3990,32 @@
                (lambda (instance-rtd rtd)
                  (let ([flds1 (rtd-flds instance-rtd)]
                        [flds2 (rtd-flds rtd)])
-                   (cond
-                    [(or (fixnum? flds1) (fixnum? flds2))
-                     (or (not (fixnum? flds1))
-                         (not (fixnum? flds2))
-                         (fx< flds1 flds2)
-                         (not (= (rtd-mpm instance-rtd)
-                                 (bitwise-and (rtd-mpm rtd)
-                                              (sub1 (bitwise-arithmetic-shift-left 1 (fx+ flds1 1)))))))]
-                    [else
-                     (let f ([ls1 flds1] [ls2 flds2])
-                       (if (null? ls2)
-                           (if (record-type-parent instance-rtd)
-                               ; could work harder here, though it gets trickier (so not obvious)...
-                               #f
-                               ; instance has no parent, so rtds are compatible only if they are the same modulo incomplete info if one or both are ctrtds
-                               (or (not (null? ls1))
-                                   (and (record-type-parent rtd) #t)
-                                   (and (and (record-type-sealed-known? rtd) (record-type-sealed-known? instance-rtd))
-                                        (not (eq? (record-type-sealed? instance-rtd) (record-type-sealed? rtd))))
-                                   (and (and (record-type-opaque-known? rtd) (record-type-opaque-known? instance-rtd))
-                                        (not (eq? (record-type-opaque? instance-rtd) (record-type-opaque? rtd))))))
-                           (or (null? ls1)
-                               (not (equal? (car ls1) (car ls2)))
-                               (f (cdr ls1) (cdr ls2)))))]))))
+                   (or (cond
+                         [(or (fixnum? flds1) (fixnum? flds2))
+                          (or (not (fixnum? flds1))
+                              (not (fixnum? flds2))
+                              (fx< flds1 flds2)
+                              (not (= (rtd-mpm rtd)
+                                      (bitwise-and (rtd-mpm instance-rtd)
+                                                   (sub1 (bitwise-arithmetic-shift-left 1 (fx+ 1 flds2)))))))]
+                         [else
+                          (let f ([ls1 flds1] [ls2 flds2])
+                            (if (null? ls2)
+                                (and (not (record-type-parent instance-rtd))
+                                     (not (null? ls1)))
+                                (or (null? ls1)
+                                    (not (equal? (car ls1) (car ls2)))
+                                    (f (cdr ls1) (cdr ls2)))))])
+                       (if (record-type-parent instance-rtd)
+                           ;; could work harder here, though it gets trickier (so not obvious)...
+                           #f
+                           ;; instance has no parent, so rtds are compatible only if they are the same modulo
+                           ;; incomplete info if one or both are ctrtds
+                           (or (and (record-type-parent rtd) #t)
+                               (and (and (record-type-sealed-known? rtd) (record-type-sealed-known? instance-rtd))
+                                    (not (eq? (record-type-sealed? instance-rtd) (record-type-sealed? rtd))))
+                               (and (and (record-type-opaque-known? rtd) (record-type-opaque-known? instance-rtd))
+                                    (not (eq? (record-type-opaque? instance-rtd) (record-type-opaque? rtd))))))))))
              (nanopass-case (Lsrc Expr) (result-exp rtdval)
                [(quote ,d0)
                 (and (record-type-descriptor? d0)
@@ -4820,7 +4832,7 @@
                    (residualize-seq '() (list ?x) ctxt)
                    (make-nontail (app-ctxt ctxt) (car e*))))]
            [(call ,preinfo ,pr ,e1 ,e2)
-            (guard (eq? (primref-name pr) 'cons))
+            (guard (memq (primref-name pr) '(cons weak-cons ephemeron-cons)))
             (residualize-seq (list ?x) '() ctxt)
             (non-result-exp (operand-value ?x)
               (make-1seq (app-ctxt ctxt) e2 (make-nontail (app-ctxt ctxt) e1)))]
@@ -4845,7 +4857,7 @@
                       ,(build-primcall (app-preinfo ctxt) 3 'cdr
                          (list e)))))]
            [(call ,preinfo ,pr ,e1 ,e2)
-            (guard (eq? (primref-name pr) 'cons))
+            (guard (memq (primref-name pr) '(cons weak-cons ephemeron-cons)))
             (residualize-seq (list ?x) '() ctxt)
             (non-result-exp (operand-value ?x)
               (make-1seq (app-ctxt ctxt) e1 (make-nontail (app-ctxt ctxt) e2)))]
@@ -4861,6 +4873,42 @@
             (non-result-exp (operand-value ?x)
               (make-1seq (app-ctxt ctxt) (car e*)
                 (build-call (app-preinfo ctxt) pr (cdr e*))))]
+           [else #f])])
+
+      (define-inline 2 cadr
+        [(?x)
+         (nanopass-case (Lsrc Expr) (result-exp (value-visit-operand! ?x))
+           [(immutable-list (,e* ...) ,e)
+            (and (>= (length e*) 2))
+                 (begin
+                   (residualize-seq '() (list ?x) ctxt)
+                   (make-nontail (app-ctxt ctxt) (cadr e*)))]
+           [(call ,preinfo ,pr ,e* ...)
+            (guard (eq? (primref-name pr) 'list) (>= (length e*) 2))
+            (residualize-seq (list ?x) '() ctxt)
+            (non-result-exp (operand-value ?x)
+              (fold-right
+                (lambda (e1 e2) (make-1seq (app-ctxt ctxt) e1 e2))
+                (make-nontail (app-ctxt ctxt) (cadr e*))
+                (cons (car e*) (cddr e*))))]
+           [(call ,preinfo ,pr ,e* ...)
+            (guard (memq (primref-name pr) '(list list* cons*)) (> (length e*) 2))
+            (residualize-seq (list ?x) '() ctxt)
+            (non-result-exp (operand-value ?x)
+              (fold-right
+                (lambda (e1 e2) (make-1seq (app-ctxt ctxt) e1 e2))
+                (make-nontail (app-ctxt ctxt) (cadr e*))
+                (cons (car e*) (cddr e*))))]
+           [else #f])])
+
+      (define-inline 2 unbox
+        [(?x)
+         (nanopass-case (Lsrc Expr) (result-exp (value-visit-operand! ?x))
+           [(call ,preinfo ,pr ,e)
+            (guard (memq (primref-name pr) '(box box-immobile box-immutable)))
+            (residualize-seq (list ?x) '() ctxt)
+            (non-result-exp (operand-value ?x)
+              (make-nontail (app-ctxt ctxt) e))]
            [else #f])])
 
       (let ()

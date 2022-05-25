@@ -1120,13 +1120,16 @@
           out)))
     "(aye captain)\n")
   (equal?
-    (begin
-      (unless (or (embedded?) (equal? *scheme* (format "~a/bin/~a/scheme~a" (path-parent *mats-dir*) (machine-type) (if (windows?) ".exe" ""))))
-        (errorf #f "not testing boot file based on ../boot/~a/petite.boot, since *scheme* isn't ../bin/~a/scheme~a"
-          (machine-type) (machine-type) (if (windows?) ".exe" "")))
+    (let ([would-be-scheme (find-source (format "..~abin~a~a~ascheme~a" 
+                                                (directory-separator)
+                                                (directory-separator) (machine-type) (directory-separator)
+                                                (if (windows?) ".exe" "")))])
+      (unless (or (embedded?) (path-equal? *scheme* would-be-scheme))
+        (errorf #f "not testing boot file based on ../boot/~a/petite.boot, since *scheme* ~a isn't ~a"
+          (machine-type) *scheme* would-be-scheme))
       (parameterize ([optimize-level 2])
         (make-boot-file "testfile.boot" '()
-          (format "~a/boot/~a/petite.boot" (path-parent *mats-dir*) (machine-type))
+          (find-source (format "../boot/~a/petite.boot" (machine-type)))
           "testfile-1.so"
           "testfile-2.so"
           "testfile-3.ss"
@@ -1149,12 +1152,15 @@
   ; which scheme-start is set, which was failing because its relocation information was discarded
   ; by the static-generation collection.
   (or
-   (case (machine-type) [(pb) #t] [else #f]) ; no callables in pb
+   (case (machine-type) [(pb tpb pb32 tpb32) #t] [else #f]) ; callables not always in pb
    (equal?
-    (begin
-      (unless (or (embedded?) (equal? *scheme* (format "~a/bin/~a/scheme~a" (path-parent *mats-dir*) (machine-type) (if (windows?) ".exe" ""))))
-        (errorf #f "not testing boot file based on ../boot/~a/petite.boot, since *scheme* isn't ../bin/~a/scheme~a"
-          (machine-type) (machine-type) (if (windows?) ".exe" "")))
+    (let ([would-be-scheme (find-source (format "..~abin~a~a~ascheme~a" 
+                                                (directory-separator)
+                                                (directory-separator) (machine-type) (directory-separator)
+                                                (if (windows?) ".exe" "")))])
+      (unless (or (embedded?) (path-equal? *scheme* would-be-scheme))
+        (errorf #f "not testing boot file based on ../boot/~a/petite.boot, since *scheme* ~a isn't ~a"
+          (machine-type) *scheme* would-be-scheme))
       (mkfile "testfile.ss"
         '(scheme-start
            (lambda ()
@@ -4805,8 +4811,16 @@ evaluating module init
     "yes\n#<void>\n#<void>\n(#f #f #f #f)\nhello from B1, hello from C1\n(#t #f #t #f)\n")
   (error? ; mismatched compilation instance
     (separate-eval
-      '(parameterize ([library-directories '(("testdir-dist1" . "testdir-dist1"))])
-         (verify-loadability 'load "testdir-dist2/testfile-clA.so"))))
+     '(guard [x [#t (let* ([ps (condition-irritants x)]
+                           ;; rewrite error message to hide Window separator difference
+                           [new-ps (map (lambda (p)
+                                          (if (string? p)
+                                              (list->string (subst #\/ #\\ (string->list p)))
+                                              p))
+                                        ps)])
+                      (raise (condition (make-irritants-condition new-ps) x)))]]
+             (parameterize ([library-directories '(("testdir-dist1" . "testdir-dist1"))])
+               (verify-loadability 'load "testdir-dist2/testfile-clA.so")))))
   (error? ; mismatched compilation instance
     (separate-eval
       '(parameterize ([library-directories '(("testdir-dist1" . "testdir-dist1"))])
@@ -6146,13 +6160,14 @@ evaluating module init
       (let ([x (make-list 10 'a)])
         (pretty-print x))
       (collect))
-     (and (> (collections) c) (> (bytes-deallocated) b)))
+     (and (> (collections) c) (or (eq? (current-eval) interpret)
+                                  (> (bytes-deallocated) b))))
    (>= (bytes-allocated #f #f) 0)
    (andmap (lambda (space)
           (>= (bytes-allocated #f space) 0))
      (#%$spaces))
    (let ()
-     (define fudge (if (positive? (heap-check-interval)) 4000 2000))
+     (define fudge (if (or (positive? (heap-check-interval)) (> (collect-maximum-generation) 4)) 4000 2000))
      (define ~=
        (lambda (x y)
          (<= (abs (- x y)) fudge)))

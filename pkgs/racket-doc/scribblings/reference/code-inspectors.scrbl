@@ -22,11 +22,13 @@ of @racket[current-code-inspector] never changes, then no control is
 lost for any module invocation, since the module's invocation is
 associated with a sub-inspector of @racket[current-code-inspector].
 
-When an inspector that controls a module invocation is installed
-@racket[current-code-inspector], it enables the following
+When an inspector that controls a module invocation is installed with
+@racket[current-code-inspector], it enables using
 @racket[module->namespace] on the module, and it enables access to the
-module's protected exports (i.e., those identifiers exported from the
-module with @racket[protect-out]) via @racket[dynamic-require].
+module's @deftech{protected} exports (i.e., those identifiers exported from the
+module with @racket[protect-out]) via @racket[dynamic-require]. A
+module cannot @racket[require] a module that has a weaker
+declaration-time code inspector.
 
 When a @racket[module] form is expanded or a @tech{namespace} is
 created, the value of @racket[current-code-inspector] is associated
@@ -55,6 +57,10 @@ invocation can be registry-specific. The invocation inspector in a
 particular module registry can be changed via
 @racket[namespace-unprotect-module] (but changing the inspector
 requires control over the old one).
+
+@history[#:changed "8.1.0.8" @elem{Added constraint against
+                                    @racket[require] of a module with
+                                    a weaker code inspector.}]
 
 @defparam[current-code-inspector insp inspector?]{
 

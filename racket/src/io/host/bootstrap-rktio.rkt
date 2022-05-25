@@ -104,6 +104,27 @@
 (define (rktio_recv_address_ref p)
   (Rrktio_length_and_addrinfo_t-address (cast p _pointer rktio_length_and_addrinfo_t)))
 
+(define (rktio_stat_to_vector p)
+  (let ([p (cast p _pointer _Rrktio_stat_t-pointer)])
+    (vector
+     (Rrktio_stat_t-device_id p)
+     (Rrktio_stat_t-inode p)
+     (Rrktio_stat_t-mode p)
+     (Rrktio_stat_t-hardlink_count p)
+     (Rrktio_stat_t-user_id p)
+     (Rrktio_stat_t-group_id p)
+     (Rrktio_stat_t-device_id_for_special_file p)
+     (Rrktio_stat_t-size p)
+     (Rrktio_stat_t-block_size p)
+     (Rrktio_stat_t-block_count p)
+     (Rrktio_stat_t-access_time_seconds p)
+     (Rrktio_stat_t-access_time_nanoseconds p)
+     (Rrktio_stat_t-modify_time_seconds p)
+     (Rrktio_stat_t-modify_time_nanoseconds p)
+     (Rrktio_stat_t-ctime_seconds p)
+     (Rrktio_stat_t-ctime_nanoseconds p)
+     (Rrktio_stat_t-ctime_is_change_time p))))
+
 (define (rktio_identity_to_vector p)
   (let ([p (cast p _pointer _Rrktio_identity_t-pointer)])
     (vector
@@ -263,6 +284,7 @@
                                           'rktio_is_timestamp rktio_is_timestamp
                                           'rktio_recv_length_ref rktio_recv_length_ref
                                           'rktio_recv_address_ref rktio_recv_address_ref
+                                          'rktio_stat_to_vector rktio_stat_to_vector
                                           'rktio_identity_to_vector rktio_identity_to_vector
                                           'rktio_seconds_to_date* rktio_seconds_to_date*
                                           'rktio_convert_result_to_vector rktio_convert_result_to_vector

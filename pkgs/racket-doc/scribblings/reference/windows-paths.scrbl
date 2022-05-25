@@ -107,7 +107,8 @@ include @litchar{\}.
         range @racket[#\x00] to @racket[#\x1F] nor any of the following
         characters:
 
-        @centerline{@litchar{<} @litchar{>} @litchar{:} @litchar{"} @litchar{/} @litchar{\} @litchar{|}}
+        @centerline{@litchar{<} @litchar{>} @litchar{:} @litchar{"}
+                    @litchar{/} @litchar{\} @litchar{|} @litchar{?} @litchar{*}}
 
         Except for @litchar{\}, path elements containing these
         characters can be accessed using a @litchar{\\?\} path

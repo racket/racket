@@ -628,6 +628,18 @@
       #t)
  )
 
+(mat char-
+  (error? (char-))
+  (error? (char- #\a #\b #\c))
+  (error? (char- #\a 4))
+  (eqv? (char- #\b #\a) 1)
+  (eqv? (char- #\a #\b) -1)
+  ;; lambda - eta
+  (eqv? (char- #\x03BB #\x03B7) 4)
+  ;; eta - lambda
+  (eqv? (char- #\x03B7 #\x03BB) -4)
+)
+
 (mat string-for-each
   (error? ; invalid number of arguments
     (string-for-each))
@@ -992,7 +1004,7 @@
   (error? (string-normalize-nfkc "hello" "goodbye"))
   (error? (string-normalize-nfkc 'ouch))
   (begin
-    (load (format "~a/../unicode/unicode-data.ss" *mats-dir*))
+    (load (find-source "../unicode/unicode-data.ss"))
     #t)
   (let ()
     (import (unicode-data))
@@ -1014,7 +1026,7 @@
     (let ([data (map (lambda (x) (map conv (list-head x 5)))
                      (filter (lambda (x) (>= (length x) 5))
                        (get-unicode-data
-                         (format "~a/../unicode/UNIDATA/NormalizationTest.txt" *mats-dir*))))])
+                         (find-source "../unicode/UNIDATA/NormalizationTest.txt"))))])
       (define NFD string-normalize-nfd)
       (define NFKD string-normalize-nfkd)
       (define NFC string-normalize-nfc)

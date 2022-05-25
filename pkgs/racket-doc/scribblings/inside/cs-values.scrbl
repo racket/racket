@@ -305,3 +305,17 @@ The result of @cpp{racket_cpointer_address} is the same as
 @cpp{racket_cpointer_base_address} plus @cpp{racket_cpointer_offset},
 where @cpp{racket_cpointer_offset} is non-zero for C-pointer values
 created by @racket[ptr-add].}
+
+
+@together[(
+@function[(void Slock_object [ptr cptr])]
+@function[(void Sunlock_object [ptr cptr])]
+)]{
+
+``Locks'' or ``unlocks'' n object, which prevents it from being
+garbage collected or moved to a different address.
+
+Lock objects sparingly, because the garbage collector is not designed
+to deal with a large number of locked objects. To retain multiple
+values from use from C, a good approach may be to allocate and lock a
+vector that has a slot for each other (unlocked) object to retain.}

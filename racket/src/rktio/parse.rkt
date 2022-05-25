@@ -52,7 +52,7 @@
        OPEN CLOSE BOPEN BCLOSE COPEN CCLOSE SEMI COMMA STAR LSHIFT EQUAL
        __RKTIO_H__ EXTERN EXTERN/NOERR EXTERN/STEP EXTERN/ERR
        DEFINE TYPEDEF ENUM STRUCT VOID UNSIGNED SHORT INT CHAR
-       CONST NULLABLE BLOCKING))
+       CONST NULLABLE BLOCKING MSG_QUEUE))
 
 (define lex
   (lexer-src-pos
@@ -85,6 +85,7 @@
    ["RKTIO_EXTERN_ERR" 'EXTERN/ERR]
    ["RKTIO_NULLABLE" 'NULLABLE]
    ["RKTIO_BLOCKING" 'BLOCKING]
+   ["RKTIO_MSG_QUEUE" 'MSG_QUEUE]
    [(:seq (:or #\_ (:/ #\A #\Z #\a #\z))
           (:* (:or #\_ (:/ #\A #\Z #\a #\z #\0 #\9))))
     (token-ID (string->symbol lexeme))]
@@ -122,6 +123,7 @@
             [(DEFINE EXTERN/ERR OPEN ID CLOSE EXTERN) #f]
             [(DEFINE NULLABLE) #f]
             [(DEFINE BLOCKING) #f]
+            [(DEFINE MSG_QUEUE) #f]
             [(STRUCT ID SEMI) #f]
             [(TYPEDEF <type> <id> SEMI)
              (if (eq? $2 $3)
@@ -135,7 +137,7 @@
              `(define-type ,$6 function-pointer)]
             [(TYPEDEF <type> OPEN STAR <id> CLOSE OPEN <params> SEMI)
              `(define-type ,$5 function-pointer)]
-            [(<extern> <blocking> <return-type> <id> OPEN <params> SEMI)
+            [(<extern> <flags> <return-type> <id> OPEN <params> SEMI)
              (let ([r-type (shift-stars $4 $3)]
                    [id (unstar $4)])
                `(,@(adjust-errno $1 r-type id) ,$2 ,r-type ,id ,$6))]
@@ -144,8 +146,9 @@
               [(EXTERN/STEP) 'define-function/errno+step]
               [(EXTERN/NOERR) 'define-function]
               [(EXTERN/ERR OPEN ID CLOSE) `(define-function/errno ,$3)])
-    (<blocking> [(BLOCKING) '(blocking)]
-                [() '()])
+    (<flags> [(BLOCKING) '(blocking)]
+             [(MSG_QUEUE) '(msg-queue)]
+             [() '()])
     (<params> [(VOID CLOSE) null]
               [(<paramlist>) $1])
     (<paramlist> [(<type> <id> CLOSE) `((,(shift-stars $2 $1) ,(unstar $2)))]

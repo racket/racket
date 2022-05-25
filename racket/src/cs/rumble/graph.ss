@@ -8,11 +8,16 @@
 (define-record-type (hasheqv-placeholder create-hasheqv-placeholder hasheqv-placeholder?)
   (parent hash-placeholder)
   (fields))
+(define-record-type (hashalw-placeholder create-hashalw-placeholder hashalw-placeholder?)
+  (parent hash-placeholder)
+  (fields))
 
-(define (placeholder-set! ph datum)
+(define/who (placeholder-set! ph datum)
+  (check who placeholder? ph)
   (set-placeholder-val! ph datum))
 
-(define (placeholder-get ph)
+(define/who (placeholder-get ph)
+  (check who placeholder? ph)
   (placeholder-val ph))
 
 (define/who (make-hash-placeholder alst)
@@ -38,6 +43,14 @@
          :contract "(listof pair?)"
          alst)
   (create-hasheqv-placeholder alst))
+
+(define/who (make-hashalw-placeholder alst)
+  (check who
+         :test (and (list? alst)
+                    (andmap pair? alst))
+         :contract "(listof pair?)"
+         alst)
+  (create-hashalw-placeholder alst))
 
 (define/who (make-reader-graph orig-v)
   (let ([ht (make-eq-hashtable)])
@@ -104,23 +117,27 @@
                                (cond
                                 [(hash-eq? v) (make-weak-hasheq)]
                                 [(hash-eqv? v) (make-weak-hasheqv)]
-                                [else (make-weak-hasheq)])
+                                [(hash-equal-always? v) (make-weak-hashalw)]
+                                [else (make-weak-hash)])
                                (cond
                                 [(hash-eq? v) (make-hasheq)]
                                 [(hash-eqv? v) (make-hasheqv)]
-                                [else (make-hasheq)]))
+                                [(hash-equal-always? v) (make-hashalw)]
+                                [else (make-hash)]))
                            (cond
                             [(zero? (hash-count v)) v]
                             [else
                              (cond
                               [(hash-eq? v) (make-intmap-shell 'eq)]
                               [(hash-eqv? v) (make-intmap-shell 'eqv)]
+                              [(hash-equal-always? v) (make-intmap-shell 'equal-always)]
                               [else (make-intmap-shell 'equal)])]))]
                [p (if mutable?
                       orig-p
                       (cond
                        [(hash-eq? v) empty-hasheq]
                        [(hash-eqv? v) empty-hasheqv]
+                       [(hash-equal-always? v) empty-hashalw]
                        [else empty-hash]))])
           (hashtable-set! ht v orig-p)
           (let hloop ([p p] [i (hash-iterate-first v)] [diff? #f])
@@ -153,12 +170,14 @@
             (cond
              [(hasheq-placeholder? v) empty-hasheq]
              [(hasheqv-placeholder? v) empty-hasheqv]
+             [(hashalw-placeholder? v) empty-hashalw]
              [else empty-hash])]
            [else
             (let-values ([(orig-p p)
                           (cond
                            [(hasheq-placeholder? v) (values (make-intmap-shell 'eq) empty-hasheq)]
                            [(hasheqv-placeholder? v) (values (make-intmap-shell 'eqv) empty-hasheqv)]
+                           [(hashalw-placeholder? v) (values (make-intmap-shell 'equal-always) empty-hashalw)]
                            [else (values (make-intmap-shell 'equal) empty-hash)])])
               (hashtable-set! ht v orig-p)
               (let hloop ([p p] [alst alst])

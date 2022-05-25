@@ -268,6 +268,7 @@
   (define buffer (make-bytes BUFFER-SIZE))
   (define buf-max 0) ; number of bytes in buffer
   (define buf-pos 0) ; index into buffer = number of used peeked bytes
+  (define hit-eof? #f)
 
   (define bb 0) ; /* bit buffer */
   (define bk 0) ; /* bits in bit buffer */
@@ -290,6 +291,7 @@
           (let ([got (peek-bytes-avail! buffer buf-pos #f input-port buf-pos BUFFER-SIZE)])
             (cond
               [(eof-object? got)
+               (set! hit-eof? #t)
                ;; Treat an EOF as a -1 "byte":
                (bytes-set! buffer buf-pos 255)
                (set! buf-max (add1 buf-pos))]
@@ -663,7 +665,8 @@
 		(check-flush)
 		(unless (zero? n)
 		  (loop)))))
-	(loop))))
+        (unless hit-eof?
+          (loop)))))
   
   (define (inflate_stored)
     ; /* "decompress" an inflated type 0 (stored) block. */

@@ -15,9 +15,14 @@
 (define (parse p #:px? [px? #f])
   (define config (make-parse-config #:px? px?))
   (define-values (rx pos) (parse-regexp p 0 config))
-  (values rx
-          (config-group-number config)
-          (unbox (parse-config-references?-box config))))
+  (chyte-case/eos
+   p pos
+   [(#\))
+    (parse-error p pos config "unmatched `)` in pattern")]
+   [else
+    (values rx
+            (config-group-number config)
+            (unbox (parse-config-references?-box config)))]))
 
 ;; Returns (values rx position)
 (define (parse-regexp s pos config #:parse-regexp [parse-regexp (lambda (s pos config)

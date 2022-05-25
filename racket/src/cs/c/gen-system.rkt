@@ -1,10 +1,12 @@
 (module gen-system '#%kernel
   
-  ;; Command-line argument: <dest-file> <target-machine> <cross-target-machine> <srcdir> <slsp-suffix>
+  ;; Command-line argument: <dest-file> <target-machine> <kernel-target-machine> <cross-target-machine> <srcdir> <slsp-suffix>
 
-  (define-values (machine) (string->symbol (vector-ref (current-command-line-arguments) 1)))
-  (define-values (srcdir) (vector-ref (current-command-line-arguments) 3))
-  (define-values (slsp-suffix) (vector-ref (current-command-line-arguments) 4))
+  (define-values (target-machine) (string->symbol (vector-ref (current-command-line-arguments) 1)))
+  (define-values (machine) (string->symbol (vector-ref (current-command-line-arguments) 2)))
+  (define-values (cross-target-machine) (vector-ref (current-command-line-arguments) 3))
+  (define-values (srcdir) (vector-ref (current-command-line-arguments) 4))
+  (define-values (slsp-suffix) (vector-ref (current-command-line-arguments) 5))
 
   (define-values (definitions)
     (call-with-input-file
@@ -34,7 +36,9 @@
 
   (define-values (parse-cond)
     (lambda (e)
-      (if (matches? e '(case (machine-type) . _))
+      (if (if (matches? e '(case (machine-type) . _))
+              #t
+              (matches? e '(case (reflect-machine-type) . _)))
           (letrec-values ([(loop)
                            (lambda (l)
                              (if (null? l)
@@ -100,11 +104,15 @@
          "win32\\x86_64"
          (if (eq? machine 'a6nt)
              "win32\\x86_64"
-             (if (eq? machine 'ti3nt)
-                 "win32\\i386"
+             (if (eq? machine 'arm64nt)
+                 "win32\\arm64"
                  (if (eq? machine 'ti3nt)
                      "win32\\i386"
-                     (format "~a-~a" arch os*)))))
+                     (if (eq? machine 'ti3nt)
+                         "win32\\i386"
+                         (if (eq? machine 'tarm64nt)
+                             "win32\\arm64"
+                             (format "~a-~a" arch os*)))))))
      slsp-suffix))
 
   (define-values (ht)
@@ -130,9 +138,9 @@
                          '#(supported scalable low-latency #f)
                          ;; Warning: not necessarily right for cross compilation:
                          (system-type 'fs-change))
-          'target-machine (if (equal? "any" (vector-ref (current-command-line-arguments) 2))
+          'target-machine (if (equal? "any" cross-target-machine)
                               #f
-                              machine)))
+                              target-machine)))
 
   (call-with-output-file
    (vector-ref (current-command-line-arguments) 0)

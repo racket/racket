@@ -1,0 +1,106 @@
+#lang zuo
+
+(provide targets-at)
+
+(define (targets-at at-dir config)
+  (define msvc? (eq? 'windows (hash-ref (runtime-env) 'toolchain-type)))
+
+  (define srcs
+    '("src/closures.c"
+      "src/x86/ffi.c"
+      "src/x86/ffiw64.c"
+      "src/aarch64/ffi.c"
+      "src/prep_cif.c"
+      "src/raw_api.c"
+      "src/types.c"))
+
+  (define objs
+    (map (lambda (src)
+           (at-dir (.c->.o src)))
+         srcs))
+
+  (define win32_plain.asm
+    (if msvc?
+        (at-dir "win32_plain.asm")
+        (let ([mach (hash-ref config 'MACH)])
+          (cond
+            [(equal? mach "ta6nt")
+             (at-source "../bc/foreign/libffi/src/x86/win64.S")]
+            [(equal? mach "ti3nt")
+             (at-source "../bc/foreign/libffi/src/x86/sysv.S")]
+            [else
+             (at-source "../bc/foreign/libffi/src/aarch64/win64_armasm.S")]))))
+
+  (define win32.obj
+    (at-dir "win32.obj"))
+
+  (define target-dir
+    (if (equal? (hash-ref config 'MACH) "tarm64nt")
+        (at-source "../bc/foreign/libffi/src/aarch64")
+        (at-source "../bc/foreign/libffi/src/x86")))
+  
+  (make-targets
+   `([:target ,(at-dir (.a "ffi")) (,win32.obj ,@objs)
+              ,(lambda (path token)
+                 (c-ar path
+                       `(,win32.obj ,@objs)
+                       config))]
+
+     ,@(map
+        (lambda (obj src-name)
+          (define src (at-source "../bc/foreign/libffi" src-name))
+          `[:target ,obj (,src)
+                    ,(lambda (path token)
+                       (mkdir-p (path-only path))
+                       (c-compile path
+                                  src
+                                  (config-include config
+                                                  (at-source "../worksp/libffi")
+                                                  (at-source "../bc/foreign/libffi/include")
+                                                  target-dir)))])
+        objs
+        srcs)
+
+     ,@(if msvc?
+           `([:target ,win32_plain.asm (,(at-source "../worksp/libffi/win32.asm")
+                                        ,(at-source "../bc/foreign/libffi/src/x86/win64_intel.S")
+                                        ,(at-source "../bc/foreign/libffi/src/x86/sysv_intel.S")
+                                        ,(at-source "../bc/foreign/libffi/src/aarch64/win64_armasm.S"))
+                      ,(lambda (path token)
+                         (mkdir-p (path-only path))
+                         (shell/wait (build-shell
+                                      "cl.exe"
+                                      "/EP"
+                                      (string->shell (~a "/I" (at-source "../worksp/libffi")))
+                                      (string->shell (~a "/I" target-dir))
+                                      (string->shell (at-source "../worksp/libffi/win32.asm"))
+                                      ">"
+                                      (string->shell path))))])
+           '())
+     [:target ,win32.obj (,win32_plain.asm)
+              ,(lambda (path token)
+                 (define mach (hash-ref config 'MACH))
+                 (cond
+                   [(not msvc?)
+                    (c-compile path
+                               win32_plain.asm
+                               (config-include config
+                                               (at-source "../worksp/libffi")
+                                               target-dir))]
+                   [(equal? mach "ta6nt")
+                    (shell/wait (build-shell
+                                 "ml64.exe"
+                                 "/c" "/Cx"
+                                 "/Fo" (string->shell path)
+                                 (string->shell win32_plain.asm)))]
+                   [(equal? mach "tarm64nt")
+                    (shell/wait (build-shell
+                                 "armasm64.exe"
+                                 "-o" (string->shell path)
+                                 (string->shell win32_plain.asm)))]
+                   [else
+                    (shell/wait (build-shell
+                                 "ml.exe"
+                                 "/c" "/Cx" "/coff" "/safeseh"
+                                 "/Fo" (string->shell path)
+                                 (string->shell win32_plain.asm)))]))])))

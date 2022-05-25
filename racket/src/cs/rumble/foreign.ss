@@ -1295,6 +1295,9 @@
                               (car args))]))))
 
 (define (normalized-malloc size mode)
+  (unless (and (fixnum? size)
+               (fx<? size 4096))
+    (guard-large-allocation 'malloc "allocation" size 1))
   (cond
    [(eqv? size 0) #f]
    [(eq? mode 'raw)
@@ -1642,7 +1645,8 @@
                         (when lock (mutex-release lock))
                         (c->s out-type r))))])
                arity-mask
-               name))))]
+               name
+               default-realm))))]
        [else
         (lambda (to-wrap)
           (let* ([proc-p (unwrap-cpointer 'ffi-call to-wrap)]
@@ -1706,7 +1710,8 @@
                                  (go))))])
                  (c->s out-type r)))
              (fxsll 1 (length in-types))
-             name)))])]
+             name
+             default-realm)))])]
      [else ; callable
       (lambda (to-wrap)
         (gen-proc (lambda args ; if ret-id, includes an extra initial argument to receive the result
@@ -1768,7 +1773,7 @@
             (loop (cdr types) (cons (ctype-host-rep type) reps) decls)))])))
 
 ;; Rely on the fact that a virtual register defaults to 0 to detect a
-;; thread that we didn't start. For a thread that we did start, a
+;; thread that we didn't start.
 (define PLACE-UNKNOWN-THREAD 0)
 (define PLACE-KNOWN-THREAD 1)
 (define PLACE-MAIN-THREAD 2)
@@ -1826,6 +1831,12 @@
                                  known-thread?
                                  ;; Wait for result:
                                  #t))]))
+
+(define (call-enabling-ffi-callbacks proc)
+  (disable-interrupts)
+  (let ([v (proc)])
+    (enable-interrupts)
+    v))
 
 (define scheduler-start-atomic void)
 (define scheduler-end-atomic void)
@@ -1968,10 +1979,14 @@
 (define/who (lookup-errno sym)
   (check who symbol? sym)
   (let ([errno-alist
-         (case (machine-type)
-           [(a6le ta6le i3le ti3le) (linux-errno-alist)]
-           [(a6osx ta6osx i3osx ti3osx) (macosx-errno-alist)]
-           [(a6nt ta6nt i3nt ti3nt) (windows-errno-alist)]
+         (case (system-type 'os*)
+           [(linux) (linux-errno-alist)]
+           [(macosx darwin) (macosx-errno-alist)]
+           [(windows) (windows-errno-alist)]
+           [(freebsd) (freebsd-errno-alist)]
+           [(openbsd) (openbsd-errno-alist)]
+           [(netbsd) (netbsd-errno-alist)]
+           [(solaris) (solaris-errno-alist)]
            [else (raise-unsupported-error who)])])
     (cond
      [(assq sym errno-alist) => cdr]

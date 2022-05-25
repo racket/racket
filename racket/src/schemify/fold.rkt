@@ -6,10 +6,10 @@
 (provide try-fold-primitive)
 
 (define (try-fold-primitive orig-prim-sym orig-k exps prim-knowns primitives)
-  (define prim-sym (if (known-procedure/pure/folding-unsafe? orig-k)
-                       (known-procedure/pure/folding-unsafe-safe orig-k)
+  (define prim-sym (if (known-procedure/then-pure/folding-unsafe? orig-k)
+                       (known-procedure/then-pure/folding-unsafe-safe orig-k)
                        orig-prim-sym))
-  (define k (if (known-procedure/pure/folding-unsafe? orig-k)
+  (define k (if (known-procedure/then-pure/folding-unsafe? orig-k)
                 (hash-ref prim-knowns prim-sym #f)
                 orig-k))
   (define vals (for/list ([exp (in-list exps)])

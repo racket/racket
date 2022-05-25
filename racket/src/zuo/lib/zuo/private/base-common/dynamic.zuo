@@ -1,0 +1,16 @@
+#lang zuo/datum
+
+(define (dynamic-require mod-path sym)
+  (unless (module-path? mod-path) (arg-error 'dynamic-require "module-path" mod-path))
+  (unless (symbol? sym) (arg-error 'dynamic-require "symbol" sym))
+  (let* ([ht (module->hash mod-path)]
+         [provides (hash-ref ht 'macromod-provides #f)])
+    (unless provides
+      (error "dynamic-require: not a compatible module" mod-path))
+    (let* ([bind (hash-ref provides sym #f)])
+      (unless bind (error "dynamic-require: no such provide" sym))
+      (let ([bind (unwrap-specific bind)])
+        (cond
+          [(variable? bind) (variable-ref (variable-var bind))]
+          [(literal? bind) (literal-val bind)]
+          [else bind])))))

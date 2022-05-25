@@ -102,7 +102,9 @@
    (define encoded-root-expand-ctx-box (box (parsed-module-encoded-root-ctx p))) ; for `module->namespace`
    (define body-context-simple? (parsed-module-root-ctx-simple? p))
    (define language-info (filter-language-info (syntax-property (parsed-s p) 'module-language)))
+   (define realm (parsed-module-realm p))
    (define bodys (parsed-module-body p))
+   (define portal-syntaxes (parsed-module-portal-syntaxes p))
    
    (define empty-result-for-module->namespace? #f)
 
@@ -138,8 +140,8 @@
    
    ;; Compile the sequence of body forms:
    (define-values (body-linklets
-                   min-phase
-                   max-phase
+                   body-min-phase
+                   body-max-phase
                    phase-to-link-module-uses
                    phase-to-link-module-uses-expr
                    phase-to-link-extra-inspectorsss
@@ -176,7 +178,13 @@
                     #:serializable? serializable?
                     #:module-prompt? #t
                     #:to-correlated-linklet? to-correlated-linklet?
-                    #:unsafe?-box unsafe?-box))
+                    #:unsafe?-box unsafe?-box
+                    #:realm realm))
+
+   ;; register any portal syntax objects:
+   (define-values (portal-stxes max-phase min-phase)
+     (add-portal-syntaxes syntax-literals portal-syntaxes
+                          body-max-phase body-min-phase))
 
    (when modules-being-compiled
      ;; Record this module's linklets for cross-module inlining among (sub)modules
@@ -205,7 +213,8 @@
                   ['compile 'module 'linklet]
                   (compile-linklet s 'decl))))
            (generate-module-declaration-linklet mpis self requires provides
-                                                phase-to-link-module-uses-expr))))
+                                                phase-to-link-module-uses-expr
+                                                portal-stxes))))
    
    ;; Assemble a linklet that shifts syntax objects on demand.
    ;; Include an encoding of the root expand context, if any, so that
@@ -323,6 +332,9 @@
             [bundle (if language-info
                         (hash-set bundle 'language-info language-info)
                         bundle)]
+            [bundle (if (not (eq? realm 'racket))
+                        (hash-set bundle 'realm realm)
+                        bundle)]
             [bundle (if (zero? min-phase)
                         bundle
                         (hash-set bundle 'min-phase min-phase))]
@@ -365,6 +377,7 @@
                       phase-to-link-module-uses
                       (current-code-inspector)
                       phase-to-link-extra-inspectorsss
+                      portal-stxes
                       (mpis-as-vector mpis)
                       (syntax-literals-as-vector syntax-literals)
                       (map cdr pre-submodules)
@@ -404,6 +417,21 @@
                                               (compiled-in-memory-compile-time-inspector cim)
                                               (and phase-to-extra-inspectorsss
                                                    (hash-ref phase-to-extra-inspectorsss phase #f))))))))
+
+;; ----------------------------------------
+
+(define (add-portal-syntaxes syntax-literals portal-syntaxes
+                             body-max-phase body-min-phase)
+  (for/fold ([portal-stxes #hasheq()] [max-phase body-max-phase] [min-phase body-min-phase])
+            ([(phase ht) (in-hash portal-syntaxes)])
+    (define new-portal-stxes
+      (hash-set portal-stxes
+                phase
+                (for/hasheq ([(sym stx) (in-hash ht)])
+                  (values sym (add-syntax-literal! syntax-literals stx)))))
+    (if (integer? phase)
+        (values new-portal-stxes (max (add1 phase) max-phase) (min (add1 phase) min-phase))
+        (values new-portal-stxes max-phase min-phase))))
 
 ;; ----------------------------------------
 

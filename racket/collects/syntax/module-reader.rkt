@@ -43,6 +43,7 @@
         [#:module-wrapper      ~module-wrapper      #'#f]
         [#:whole-body-readers? ~whole-body-readers? #'#f]
         [#:info                ~info                #'#f]
+        [#:interation-info     ~interaction-info    #'#f]
         [#:language-info       ~module-get-info     #'#f]
         [(when (equal? (and lang #t) (and ~lang #t))
            (err (string-append
@@ -52,6 +53,10 @@
            (err "must specify either both #:read and #:read-syntax, or none"))
          (when (and ~whole-body-readers? (not (and ~read ~read-syntax)))
            (err "got a #:whole-body-readers? without #:read and #:read-syntax"))])
+      (define (literal-language? lang)
+        (syntax-case lang (quote)
+          [(quote _) #t]
+          [else #f]))
       ;; FIXME: some generated code is constant and should be lifted out of the
       ;; template:
       (quasisyntax/loc stx
@@ -59,7 +64,11 @@
          #,@body
          (#%provide (rename lang:read read)
                     (rename lang:read-syntax read-syntax)
-                    get-info)
+                    get-info
+                    #,@(if (or (syntax-e ~interaction-info)
+                               (literal-language? ~lang))
+                           #'(get-interaction-info)
+                           #'()))
          (define (lang:read in modpath line col pos)
            (wrap-internal/wrapper #f #f in modpath line col pos))
          (define (lang:read-syntax src in modpath line col pos)
@@ -103,22 +112,41 @@
          (define read-properties (lang->read-properties #,~lang))
          (define (get-info in modpath line col pos)
            (get-info-getter (read-properties in modpath line col pos)))
+         (define (make-info #,<lang-id> #,<data-id>) ; args are visible in user code
+           #,~info)
+         #,@(cond
+              [(syntax-e ~interaction-info)
+               #`((define get-interaction-info
+                    (lambda (#,<lang-id>)
+                      (let ([interaction-info #,~interaction-info])
+                        (if (or (not interaction-info)
+                                (and (procedure? interaction-info)
+                                     (procedure-arity-includes? get-interaction-info 2)))
+                            (raise-type-error 'syntax/module-reader
+                                              "interaction-info procedure of 2 arguments"
+                                              interaction-info)
+                            (or interaction-info
+                                (lambda (key def-val) def-val)))))))]
+              [(literal-language? ~lang)
+               #`((define (get-interaction-info data)
+                    (make-language-info #,~lang (make-info #,~lang data))))]
+              [else #'()])
          (define (get-info-getter props)
            (define lang (car  props))
            (define data (cadr props))
+           (define info
+             (let ([info (make-info lang data)])
+               (if (or (not info) (and (procedure? info) (ar? info 3)))
+                 info
+                 (raise-type-error 'syntax/module-reader
+                                   "info procedure of 3 arguments" info))))
+           (make-language-info lang info))
+         (define (make-language-info lang info)
            (define (default-info what defval)
              (case what
                [(module-language) lang]
                ;; ... more?
                [else defval]))
-           (define info
-             (let* ([#,<lang-id> lang] ;\ visible in
-                    [#,<data-id> data] ;/ user-code
-                    [info #,~info])
-               (if (or (not info) (and (procedure? info) (ar? info 3)))
-                 info
-                 (raise-type-error 'syntax/module-reader
-                                   "info procedure of 3 arguments" info))))
            (define (language-info what defval)
              (if info
                (let ([r (info what defval default-info)])
@@ -231,6 +259,9 @@
               (let ([spec (regexp-try-match #px"^[ \t]+(.*?)(?=\\s|$)" in)]) ;; if this changes, the regexp in planet's lang/reader.rkt must also change
                 (and spec (let ([s (cadr spec)])
                             (if (equal? s "") #f s)))))])
+    (define (peek-leading-spaces in)
+      (let ([m (regexp-match-peek #px"^[ \t]+" in)])
+        (if m (bytes-length (car m)) 0)))
     (define (get in export-sym src line col pos spec-as-stx? mk-fail-thunk)
       (define (bad str eof?)
         ((if eof? raise-read-eof-error raise-read-error)
@@ -240,8 +271,11 @@
          (let-values ([(line col pos2) (port-next-location in)])
            (and pos pos2 (- pos2 pos)))))
       (let*-values ([(spec-line spec-col spec-pos) (port-next-location in)]
+                    [(leading-spaces) (peek-leading-spaces in)]
+                    [(spec-col) (and spec-col (+ spec-col leading-spaces))]
+                    [(spec-pos) (and spec-pos (+ spec-pos leading-spaces))]
                     [(spec) (read-spec in)]
-                    [(spec-end-line spec-end-col spec-end-pos) (port-next-location in)])
+                    [(_line _col spec-end-pos) (port-next-location in)])
         (if (not spec)
             (bad #f (eof-object? (peek-byte in)))
             (let ([parsed-spec (spec->module-path spec)])

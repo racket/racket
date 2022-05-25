@@ -1,0 +1,5 @@
+#lang zuo/private/base-hygienic
+
+(provide (all-from-out zuo/private/base-hygienic))
+
+(include "../base-common/main.zuo")

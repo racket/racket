@@ -88,6 +88,9 @@ static Scheme_Object *angle (int argc, Scheme_Object *argv[]);
 static Scheme_Object *int_sqrt (int argc, Scheme_Object *argv[]);
 static Scheme_Object *int_sqrt_rem (int argc, Scheme_Object *argv[]);
 
+static Scheme_Object *most_positive_fixnum(int argc, Scheme_Object *argv[]);
+static Scheme_Object *most_negative_fixnum(int argc, Scheme_Object *argv[]);
+
 static Scheme_Object *flvector (int argc, Scheme_Object *argv[]);
 static Scheme_Object *flvector_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *flvector_length (int argc, Scheme_Object *argv[]);
@@ -762,6 +765,16 @@ void scheme_init_flfxnum_number(Scheme_Startup_Env *env)
 {
   Scheme_Object *p;
   int flags;
+  
+  p = scheme_make_prim_w_arity(most_positive_fixnum, "most-positive-fixnum", 0, 0);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED
+                                                            | SCHEME_PRIM_PRODUCES_FIXNUM);
+  scheme_addto_prim_instance("most-positive-fixnum", p, env);
+
+  p = scheme_make_prim_w_arity(most_negative_fixnum, "most-negative-fixnum", 0, 0);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED
+                                                            | SCHEME_PRIM_PRODUCES_FIXNUM);
+  scheme_addto_prim_instance("most-negative-fixnum", p, env);
 
   scheme_addto_prim_instance("flvector",
                              scheme_make_prim_w_arity(flvector,
@@ -4219,7 +4232,7 @@ extfl_to_exact (int argc, Scheme_Object *argv[])
   CHECK_MZ_LONG_DOUBLE_UNSUPPORTED("extfl->exact");
 
   if (!SCHEME_LONG_DBLP(o))
-    scheme_wrong_type("extfl->exact", "extflonum", 0, argc, argv);
+    scheme_wrong_contract("extfl->exact", "extflonum?", 0, argc, argv);
 
   d = SCHEME_LONG_DBL_VAL(o);
 
@@ -4249,7 +4262,7 @@ extfl_to_inexact (int argc, Scheme_Object *argv[])
   CHECK_MZ_LONG_DOUBLE_UNSUPPORTED("extfl->inexact");
 
   if (!SCHEME_LONG_DBLP(o))
-    scheme_wrong_type("extfl->inexact", "extflonum", 0, argc, argv);
+    scheme_wrong_contract("extfl->inexact", "extflonum?", 0, argc, argv);
 
   return scheme_make_double(double_from_long_double(SCHEME_LONG_DBL_VAL(o)));
 #else
@@ -5279,6 +5292,20 @@ Scheme_Object *scheme_checked_fxvector_set (int argc, Scheme_Object *argv[])
   SCHEME_FXVEC_ELS(vec)[pos] = argv[2];
 
   return scheme_void;
+}
+
+/************************************************************************/
+/*                              Fixnums                                 */
+/************************************************************************/
+
+static Scheme_Object *most_positive_fixnum(int argc, Scheme_Object *argv[])
+{
+  return scheme_make_integer(MOST_POSITIVE_FIXNUM);
+}
+
+static Scheme_Object *most_negative_fixnum(int argc, Scheme_Object *argv[])
+{
+  return scheme_make_integer(MOST_NEGATIVE_FIXNUM);
 }
 
 /************************************************************************/

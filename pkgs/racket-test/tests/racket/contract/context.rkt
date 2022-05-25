@@ -493,7 +493,7 @@
                             'pos 'neg)
                   1))
   
-  (context-test '("the domain of" "the 2nd case of")
+  (context-test '("the 1st argument of" "the 2nd case of")
                 '((contract (case-> (-> real? real? real?)
                                     (-> real? (values real? real?)))
                             (case-lambda
@@ -501,6 +501,31 @@
                               [(x) 1])
                             'pos 'neg)
                   #f))
+
+  (context-test '("the 2nd argument of" "the 1st case of")
+                '((contract (case-> (-> real? real? real? real?)
+                                    (-> real? (values real? real?)))
+                            (case-lambda
+                              [(x y z) 1]
+                              [(x) 1])
+                            'pos 'neg)
+                  1 #f 2))
+
+  (context-test '("the 3rd argument of" "the 1st case of")
+                '((contract (case-> (-> real? real? real? real?)
+                                    (-> real? (values real? real?)))
+                            (case-lambda
+                              [(x y z) 1]
+                              [(x) 1])
+                            'pos 'neg)
+                  1 2 #f))
+
+(context-test '("an element of" "the rest argument of" "the 1st case of")
+              '((contract (case-> (-> #:rest (listof integer?) any)
+                                  (-> integer? integer?))
+                          (λ x 1)
+                          'pos 'neg)
+                1 2 3 #f 4 5 6))
   
   (context-test '("the 1st argument of" "the save-file method in")
                 '(send (contract (object/c

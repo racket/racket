@@ -1,0 +1,22 @@
+
+(define-primitive-table terminal-table
+  [terminal-init (known-procedure 4)]
+  [terminal-read-char (known-procedure 2)]
+  [terminal-write-char (known-procedure 2)]
+  [terminal-char-width (known-procedure 2)]
+  [terminal-set-color (known-procedure 4)]
+  [terminal-flush (known-procedure 1)]
+  [terminal-get-screen-size (known-procedure 1)]
+  [terminal-raw-mode (known-procedure 2)]
+  [terminal-postoutput-mode (known-procedure 2)]
+  [terminal-signal-mode (known-procedure 2)]
+  [terminal-automargin-mode (known-procedure 2)]
+  [terminal-nanosleep (known-procedure 4)]
+  [terminal-pause (known-procedure 1)]
+  [terminal-get-clipboard (known-procedure 1)]
+  [terminal-move-cursor (known-procedure 3)]
+  [terminal-clear (known-procedure 2)]
+  [terminal-scroll-reverse (known-procedure 2)]
+  [terminal-bell (known-procedure 1)]
+  [terminal-carriage-return (known-procedure 1)]
+  [terminal-line-feed (known-procedure 1)])

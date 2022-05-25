@@ -12,6 +12,7 @@
          current-read-interaction
          current-prompt-read
          current-get-interaction-input-port
+         current-get-interaction-evt
          cache-configuration)
 
 (define/who executable-yield-handler
@@ -26,7 +27,7 @@
                                         (vector->list v)))
                          (unless (and (vector? v)
                                       (andmap string? l))
-                           (raise-argument-error who "(vectorof string?)" l))
+                           (raise-argument-error who "(vectorof string?)" v))
                          (list->vector (map string->immutable-string l)))
                   'current-command-line-arguments))
 
@@ -42,9 +43,7 @@
 
 (define/who current-read-interaction
   (make-parameter (lambda (src in)
-                    (parameterize ([installed-read-accept-reader #t]
-                                   [installed-read-accept-lang #f])
-                      (installed-read-syntax src in)))
+                    (error 'default-read-interaction "should have been replaced"))
                   (lambda (p)
                     (check who (procedure-arity-includes/c 2) p)
                     p)
@@ -66,6 +65,13 @@
                     (check who (procedure-arity-includes/c 0) p)
                     p)
                   'current-get-interaction-input-port))
+
+(define/who current-get-interaction-evt
+  (make-parameter (lambda () never-evt)
+                  (lambda (p)
+                    (check who (procedure-arity-includes/c 0) p)
+                    p)
+                  'current-get-interaction-evt))
 
 ;; ----------------------------------------
 

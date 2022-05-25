@@ -80,6 +80,9 @@
                   (known-copy rhs)]
                  [else known]))]
          [defn a-known-constant]
+         [(hash-ref imports u-rhs #f)
+          ;; imported, but nothing known about it => could be mutable
+          a-known-constant]
          [else (known-copy rhs)])]
       [(parameter-result? rhs prim-knowns knowns mutated)
        (known-procedure 3)]
@@ -94,7 +97,7 @@
          [`,_
           (cond
             [(and defn
-                  (simple? rhs prim-knowns knowns imports mutated simples unsafe-mode?))
+                  (simple? #:ordered? #t rhs prim-knowns knowns imports mutated simples unsafe-mode?))
              a-known-constant]
             [else #f])])])))
 

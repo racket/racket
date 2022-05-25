@@ -17,16 +17,16 @@
 #include "system.h"
 
 /* locally defined functions */
-static void oblist_insert PROTO((ptr sym, iptr idx, IGEN g));
-static iptr hash PROTO((const unsigned char *s, iptr n));
-static iptr hash_sc PROTO((const string_char *s, iptr n));
-static iptr hash_uname PROTO((const string_char *s, iptr n));
-static ptr mkstring PROTO((const string_char *s, iptr n));
+static void oblist_insert(ptr sym, iptr idx, IGEN g);
+static iptr hash(const unsigned char *s, iptr n);
+static iptr hash_sc(const string_char *s, iptr n);
+static iptr hash_uname(const string_char *s, iptr n);
+static ptr mkstring(const string_char *s, iptr n);
 
 #define OBINDEX(hc, len) ((hc) & ((len) - 1))
 #define MIN_OBLIST_LENGTH 4096
 
-void S_intern_init() {
+void S_intern_init(void) {
     IGEN g;
 
     if (!S_boot_time) return;
@@ -97,7 +97,7 @@ void S_resize_oblist(void) {
     }
   }
 
-  S_freemem(S_G.oblist, S_G.oblist_length * sizeof(bucket *));
+  S_freemem(S_G.oblist, S_G.oblist_length * sizeof(bucket *), 0);
   S_G.bytesof[static_generation][countof_oblist] += (new_oblist_length - S_G.oblist_length) * sizeof(bucket *);
 
   S_G.oblist_length = new_oblist_length;
@@ -268,7 +268,7 @@ ptr S_intern3(const string_char *pname, iptr plen, const string_char *uname, ipt
   return sym;
 }
 
-void S_intern_gensym(sym) ptr sym; {
+void S_intern_gensym(ptr sym) {
   ptr uname_str = Scar(SYMNAME(sym));
   const string_char *uname = &STRIT(uname_str, 0);
   iptr ulen = Sstring_length(uname_str);
@@ -338,7 +338,7 @@ ptr S_intern4(sym) ptr sym; {
 }
 
 /* retrofit existing symbols once nonprocedure_code is available */
-void S_retrofit_nonprocedure_code() {
+void S_retrofit_nonprocedure_code(void) {
   ptr npc, sym, val; bucket_list *bl;
 
   npc = S_G.nonprocedure_code;

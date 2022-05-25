@@ -389,11 +389,7 @@ ftype operators:
       [(r ftype) (expand-ftype-name r ftype #t)]
       [(r ftype error?)
        (cond
-         [(r ftype) =>
-          (lambda (ftd)
-            (if (ftd? ftd)
-                ftd
-                (and error? (syntax-error ftype "unrecognized ftype name"))))]
+         [(let ([maybe-ftd (r ftype)]) (and maybe-ftd (ftd? maybe-ftd) maybe-ftd)) => (lambda (ftd) ftd)]
          [(find (let ([x (syntax->datum ftype)])
                   (lambda (ftd) (eq? (ftd-base-type ftd) x)))
             native-base-ftds)]
@@ -411,33 +407,41 @@ ftype operators:
        (check-size
          (let f/flags ([ftype ftype] [defid defid] [stype (syntax->datum ftype)] [packed? #f] [eness 'native] [funok? #t])
            (define (pad n k) (if packed? n (logand (+ n (- k 1)) (- k))))
+           (define (native-ftds)
+             (case eness
+               [(native) native-base-ftds]
+               [(swapped) swap-base-ftds]
+               [(big) big-base-ftds]
+               [(little) little-base-ftds]
+               [else (error 'eness "unexpected ~s" eness)]))
            (let f ([ftype ftype] [defid defid] [stype stype] [funok? funok?])
              (if (identifier? ftype)
                  (cond
                    [(assp (lambda (x) (bound-identifier=? ftype x)) def-alist) =>
                     (lambda (a)
-                      (let ([ftd (cdr a)])
+                      (let ([ftd (let ([ftd (cdr a)])
+                                   (if (ftd? ftd)
+                                       ftd
+                                       (or (find (let ([x (syntax->datum ftype)])
+                                                   (lambda (ftd)
+                                                     (eq? (ftd-base-type ftd) x)))
+                                             (native-ftds))
+                                           ftd)))])
                         (unless (ftd? ftd)
                           (syntax-error ftype "recursive or forward reference outside pointer field"))
                         (unless funok?
                           (when (ftd-function? ftd)
                             (syntax-error ftype "unexpected function ftype name outside pointer field")))
                         ftd))]
-                   [(r ftype) =>
+                   [(let ([maybe-ftd (r ftype)]) (and maybe-ftd (ftd? maybe-ftd) maybe-ftd)) =>
                     (lambda (ftd)
-                      (unless (ftd? ftd) (syntax-error ftype "unrecognized ftype name"))
                       (unless funok?
                         (when (ftd-function? ftd)
                           (syntax-error ftype "unexpected function ftype name outside pointer field")))
                       ftd)]
                    [(find (let ([x (syntax->datum ftype)])
                             (lambda (ftd) (eq? (ftd-base-type ftd) x)))
-                          (case eness
-                            [(native) native-base-ftds]
-                            [(swapped) swap-base-ftds]
-                            [(big) big-base-ftds]
-                            [(little) little-base-ftds]
-                            [else (error 'eness "unexpected ~s" eness)]))]
+                          (native-ftds))]
                    [else (syntax-error ftype "unrecognized ftype name")])
                  (syntax-case ftype ()
                    [(struct-kwd (field-name ftype) ...)
@@ -454,7 +458,7 @@ ftype operators:
                           (let ([ftd (car ftd*)])
                             (let ([offset (pad offset (ftd-alignment ftd))])
                               (loop (cdr id*) (cdr ftd*)
-                                (+ offset (ftd-size ftd))
+                                (+ offset ($ftd-size ftd))
                                 (max alignment (ftd-alignment ftd))
                                 (cons (list (car id*) offset ftd) field*))))))]
                    [(union-kwd (field-name ftype) ...)
@@ -466,7 +470,7 @@ ftype operators:
                         (make-ftd-union rtd/fptr
                           (and defid (symbol->string (syntax->datum defid)))
                           stype
-                          (pad (apply max 0 (map ftd-size ftd*)) alignment)
+                          (pad (apply max 0 (map $ftd-size ftd*)) alignment)
                           alignment
                           (map cons id* ftd*))))]
                    [(array-kwd ?n ftype)
@@ -1109,6 +1113,44 @@ ftype operators:
 	   'unsigned]
 	  [else 'integer])]
        [else 'integer])))
+  (set! $ftd-ffi-encode ;; for pb libffi binding
+    (lambda (x)
+      (cond
+        [(ftd-base? x)
+	 (case (ftd-base-type x)
+	   [(double double-float) (constant ffi-typerep-double)]
+	   [(float single-float) (constant ffi-typerep-float)]
+           [(integer-8) (constant ffi-typerep-sint8)]
+           [(unsigned-8) (constant ffi-typerep-uint8)]
+           [(integer-16 short) (constant ffi-typerep-sint16)]
+           [(unsigned-16 unsigned-short) (constant ffi-typerep-uint16)]
+           [(integer-32 int) (constant ffi-typerep-sint32)]
+           [(unsigned-32 unsigned-int) (constant ffi-typerep-uint32)]
+           [(integer-64) (constant ffi-typerep-sint64)]
+           [(unsigned-64) (constant ffi-typerep-uint64)]
+           [else (constant ffi-typerep-pointer)])]
+        [(ftd-struct? x)
+         (list->vector
+          (let struct-loop ([field* (ftd-struct-field* x)])
+            (cond
+              [(null? field*) '()]
+              [else (let* ([fld (car field*)]
+                           [sub-ftd (caddr fld)])
+                      (cons ($ftd-ffi-encode sub-ftd)
+                            (struct-loop (cdr field*))))])))]
+        [(ftd-union? x)
+         (let union-loop ([field* (ftd-union-field* x)])
+           (cond
+             [(null? field*) '()]
+             [else (let* ([fld (car field*)]
+                          [sub-ftd (cdr fld)])
+                     (cons ($ftd-ffi-encode sub-ftd)
+                           (union-loop (cdr field*))))]))]
+        [(ftd-array? x)
+         (let ([elem-ftd (ftd-array-ftd x)])
+           (cons ($ftd-ffi-encode elem-ftd)
+                 (ftd-array-length x)))]
+        [else (constant ffi-typerep-pointer)])))
   (set! $expand-fp-ftype ; for foreign-procedure, foreign-callable
     (lambda (who what r ftype)
       (indirect-ftd-pointer

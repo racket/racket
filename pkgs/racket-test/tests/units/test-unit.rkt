@@ -72,13 +72,13 @@
 
 ;; define-signature-forms syntax errors
 (test-syntax-error 
- "bad syntax (not a list)"
+ "bad syntax"
  (define-signature-form))
 (test-syntax-error 
  "bad syntax"
  (define-signature-form (a b)))
 (test-syntax-error 
- "expected syntax matching (define-signature-form (id id) expr ...)"
+ "bad syntax"
  (define-signature-form (a b c d) 1 2))
 (test-syntax-error 
  "bad syntax"
@@ -90,18 +90,18 @@
    (set! a 1)))
 
 (test-syntax-error 
- "bad syntax (not a list)"
+ "bad syntax"
  (define-signature-form 1 2))
 (test-syntax-error 
- "bad syntax (not a list)"
- (define-signature-form a 2))
+ "bad syntax"
+ (define-signature-form a 2 3))
 (test-syntax-error "define-signature-form: not an identifier"
                    (define-signature-form (1 a) 1))
 (test-syntax-error 
  "not an identifier"
  (define-signature-form (a 1) 1))
 (test-syntax-error 
- "bad syntax (not a list)"
+ "bad syntax"
  (define-signature-form (a . b) 1))
 
 
@@ -168,7 +168,7 @@
 (test-syntax-error 
  "define-signature: unknown signature form"
  (let ()
-   (define-signature-form (a b) (list #'(c d)))
+   (define-signature-form a (lambda (b) (list #'(c d))))
    (define-signature x ((a 1)))
    1))
 (test-syntax-error 
@@ -1335,6 +1335,7 @@
                         (link (((S : sig)) (unit (import) (export sig) (define-struct s (x y))))
                               (() (unit (import sig) (export)
                                     s) S)))))))
+
 (let ()
   (local-require scheme/unit)
   (define-signature sig ((struct s (x y))))
@@ -1830,6 +1831,25 @@
         (invoke-unit
          (compound-unit/infer (import) (export)
                               (link x2 u b)))))
+
+;; make sure `define-values/invoke-unit/infer` works with tagged imports:
+(let ()
+  (define-signature s^ [])
+  (define-unit u@
+    (import (tag t s^))
+    (export))
+  (define-values/invoke-unit/infer u@)
+  (void))
+(let ()
+  (define-signature s^ [x])
+  (define-signature o^ [y])
+  (define-unit u@
+    (import (tag t s^))
+    (export (tag m o^))
+    (define y x))
+  (define x 'ex)
+  (define-values/invoke-unit/infer u@)
+  (test 'ex y))
 
 #;
 (let ()

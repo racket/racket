@@ -71,6 +71,7 @@
     local-label-trap-check local-label-trap-check-set!
     direct-call-label? make-direct-call-label
     direct-call-label-referenced direct-call-label-referenced-set!
+    aligned-label? make-aligned-label
     return-point-label? make-return-point-label
     return-point-label-compact? return-point-label-compact?-set!
     Lsrc Lsrc? Ltype Ltype? unparse-Ltype unparse-Lsrc
@@ -326,12 +327,12 @@
         (fprintf p "#<info>"))))
 
   (define-record-type label
-    (nongenerative #{var n93q6qho9id46fha8itaytldd-6})
+    (nongenerative #{label n93q6qho9id46fha8itaytldd-6})
     (fields name))
 
   (define-record-type libspec-label
     (parent label)
-    (nongenerative #{var n93q6qho9id46fha8itaytldd-7})
+    (nongenerative #{label n93q6qho9id46fha8itaytldd-7})
     (sealed #t)
     (fields libspec live-reg*)
     (protocol
@@ -343,7 +344,7 @@
   ; different purposes in different passes.
   (define-record-type local-label
     (parent label)
-    (nongenerative #{var n93q6qho9id46fha8itaytldd-8})
+    (nongenerative #{label n93q6qho9id46fha8itaytldd-8})
     (fields (mutable func) (mutable offset) (mutable iteration) (mutable block)
       ; following used by place-overflow-and-trap-check pass
       (mutable overflow-check) (mutable trap-check))
@@ -354,7 +355,7 @@
 
   (define-record-type direct-call-label
     (parent local-label)
-    (nongenerative #{var n93q6qho9id46fha8itaytldd-9})
+    (nongenerative #{label n93q6qho9id46fha8itaytldd-9})
     (sealed #t)
     (fields (mutable referenced))
     (protocol
@@ -362,9 +363,17 @@
         (lambda (name)
           ((pargs->new name) #f)))))
 
-  (define-record-type return-point-label
+  (define-record-type aligned-label
     (parent local-label)
-    (nongenerative #{var n93q6qho9id46fha8itaytldd-10})
+    (nongenerative #{label n93q6qho9id46fha8itaytlxx-12})
+    (protocol
+      (lambda (pargs->new)
+        (lambda (name)
+          ((pargs->new name))))))
+
+  (define-record-type return-point-label
+    (parent aligned-label)
+    (nongenerative #{label n93q6qho9id46fha8itaytlxx-10})
     (sealed #t)
     (fields (mutable compact?))
     (protocol
@@ -464,9 +473,7 @@
   (define-language L4.5 (extends L4)
     (nongenerative-id #{L4.5 jczowy6yjfz400ntojb6av7y0-4.5})
     (terminals
-      (+ (label (l))
-         (maybe-label (mdcl))
-         (immediate (imm))))
+      (+ (maybe-label (mdcl))))
     (entry CaseLambdaExpr)
     (Expr (e body)
       (- (call info e0 e1 ...))
@@ -478,6 +485,8 @@
   (define-language L4.75 (extends L4.5)
     (nongenerative-id #{L4.75 jczowy6yjfz400ntojb6av7y0-4.75})
     (entry CaseLambdaExpr)
+    (terminals
+      (+ (label (l))))
     (Expr (e body)
       (- (foreign info e)
          (fcallable info e))
@@ -550,7 +559,8 @@
       (+ (var (x))
          (primitive (prim)) ; moved up one language to support closure instrumentation
          (fixnum (interface offset))
-         (mref-type (type))))
+         (mref-type (type))
+         (immediate (imm))))
     (entry Program)
     (Program (prog)
       (+ (labels ([l* le*] ...) l)                     => (labels ([l* le*] ...) (l))))
@@ -645,6 +655,9 @@
   (declare-primitive push effect #f)
   (declare-primitive pop-multiple effect #f) ; arm
   (declare-primitive push-multiple effect #f) ; arm
+  (declare-primitive call-arena-in effect #f) ;pb
+  (declare-primitive fp-call-arena-in effect #f) ;pb
+  (declare-primitive c-stack-call effect #f) ;pb
   (declare-primitive remember effect #f)
   (declare-primitive restore-flrv effect #f)
   (declare-primitive restore-lr effect #f) ; ppc
@@ -663,6 +676,7 @@
   (declare-primitive store-store-fence effect #f)
   (declare-primitive acquire-fence effect #f)
   (declare-primitive release-fence effect #f)
+  (declare-primitive set-cr-bit effect #f) ; ppc32
   
   (declare-primitive < pred #t)
   (declare-primitive <= pred #t)
@@ -733,6 +747,9 @@
 
   (declare-primitive load-single value #t) ; not required by cpnanopass
   (declare-primitive load-single->double value #t)
+
+  (declare-primitive call-arena-out value #f) ;pb
+  (declare-primitive fp-call-arena-out value #f) ;pb
 
   (declare-primitive fpcastto value #t) ; 64-bit only
   (declare-primitive fpcastto/hi value #t) ; 32-bit only

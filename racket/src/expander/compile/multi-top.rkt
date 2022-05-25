@@ -53,6 +53,7 @@
                         #hasheqv()
                         #f
                         #hasheqv()
+                        #hasheqv()
                         #() ; mpis
                         #() ; syntax-literals
                         cims

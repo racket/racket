@@ -151,6 +151,7 @@ If the second argument to the load handler is a symbol, then:
        (read-accept-compiled #t)
        (read-accept-bar-quote #t)
        (read-accept-graph #t)
+       (read-syntax-accept-graph #f)
        (read-decimal-as-inexact #t)
        (read-accept-dot #t)
        (read-accept-infix-dot #t)
@@ -501,6 +502,29 @@ port so that GUI events can be handled when reading from the port
 blocks.}
 
 
+@defparam[current-get-interaction-evt proc (-> evt?)]{
+
+A @tech{parameter} that determines the @deftech{interaction event
+handler}, which returns an @tech{synchronizable event} that should be
+used in combination with blocking that is similar to
+@racket[read-eval-print-loop] waiting for input---but where an input
+port is not read directly, so
+@racket[current-get-interaction-input-port] does not apply.
+
+When the interaction event handler returns an event that becomes
+ready, and when the event's ready value is a procedure, then the
+procedure is meant to be called with zero arguments blocking resumes.
+The default interaction event handler returns @racket[never-evt].
+
+The @racketmodname[racket/gui/base] library adjusts this parameter's
+value by extending the current value. The extension combines the
+current value's result with @racket[choice-evt] and an event that
+becomes ready when a GUI event is available, and the event's value is
+a procedure that yields to one or more available GUI events.
+
+@history[#:added "8.3.0.3"]}
+
+
 @defparam[current-read-interaction proc (any/c input-port? -> any)]{
 
 A @tech{parameter} that determines the current @deftech{read interaction
@@ -553,7 +577,12 @@ For internal testing purposes, when the
 @as-index{@envvar{PLT_VALIDATE_COMPILE}} environment variable is set,
 the default compilation handler runs a bytecode validator immediately
 on its own compilation results (instead of relying only on validation
-when compiled bytecode is loaded).}
+when compiled bytecode is loaded).
+
+The @racket[current-compile] binding is provided as @tech{protected}
+in the sense of @racket[protect-out].
+
+@history[#:changed "8.2.0.4" @elem{Changed binding to protected.}]}
 
 
 @defproc[(compile [top-level-form any/c]) compiled-expression?]{
@@ -659,6 +688,14 @@ supported. The @racket['target-machine] mode of @racket[system-type]
 reports the running Racket's native target machine.
 
 @history[#:added "7.1.0.6"]}
+
+
+@defparam[current-compile-realm realm symbol?]{
+
+Determines the @tech{realm} that is assigned to modules and procedures
+when they are compiled.
+
+@history[#:added "8.4.0.2"]}
 
 
 @defboolparam[eval-jit-enabled on?]{

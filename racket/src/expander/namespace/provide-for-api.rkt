@@ -1,6 +1,7 @@
 #lang racket/base
 (require "provided.rkt"
          "../common/phase.rkt"
+         "../common/phase+space.rkt"
          "../common/module-path.rkt"
          "../syntax/module-binding.rkt")
 
@@ -29,7 +30,7 @@
                                  [else
                                   (for/list ([b (in-list (cons b (module-binding-extra-nominal-bindings b)))])
                                     (cond
-                                      [(and (eqv? (module-binding-nominal-phase b)
+                                      [(and (eqv? (module-binding-nominal-phase+space b)
                                                   phase)
                                             (eq? (module-binding-nominal-sym b) sym))
                                        (module-binding-nominal-module b)]
@@ -37,13 +38,13 @@
                                        (list (module-binding-nominal-module b)
                                              (module-binding-phase b)
                                              (module-binding-nominal-sym b)
-                                             (module-binding-nominal-phase b))]))])
+                                             (module-binding-nominal-phase+space b))]))])
                                (if defined-names?
                                    (list (module-binding-sym b))
                                    null))))]
                   #:unless (null? l))
         (cons phase (sort l symbol<? #:key car))))
-    (sort result-l phase<? #:key car))
+    (sort result-l phase+space<? #:key car))
   (values (extract (lambda (b/p) (not (provided-as-transformer? b/p))))
           (extract provided-as-transformer?)))
 
@@ -60,4 +61,4 @@
                        var-sym)))]
                #:unless (null? l))
       (cons phase (sort l symbol<?))))
-  (sort result-l phase<? #:key car))
+  (sort result-l phase+space<? #:key car))

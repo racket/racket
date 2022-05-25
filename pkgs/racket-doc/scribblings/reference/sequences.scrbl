@@ -138,13 +138,47 @@ side-effect on the original sequence value; for example, extracting
 the sequence of elements from a list does not change the list.  For
 other sequence types, each extraction implies a side effect; for
 example, extracting the sequence of bytes from a port causes the bytes
-to be read from the port. A sequence's state may either span all uses
+to be read from the port. @elemtag["sequence-state"]{A} sequence's state may either span all uses
 of the sequence, as for a port, or it may be confined to each distinct
 time that a sequence is @deftech{initiate}d by a @racket[for] form,
 @racket[sequence->stream], @racket[sequence-generate], or
 @racket[sequence-generate*]. Concretely, the thunk passed to
 @racket[make-do-sequence] is called to @tech{initiate} the sequence
-each time the sequence is used.
+each time the sequence is used. Accordingly, different sequences behave
+differently when they are @tech{initiate}d multiple times.
+
+@examples[#:eval sequence-evaluator
+          #:label #f
+          (define (double-initiate s1)
+            (code:comment "initiate the sequence twice")
+            (define-values (more?.1 next.1) (sequence-generate s1))
+            (define-values (more?.2 next.2) (sequence-generate s1))
+            (code:comment "alternate fetching from sequence via the two initiations")
+            (list (next.1) (next.2) (next.1) (next.2)))
+
+          (double-initiate (open-input-string "abcdef"))
+          (double-initiate (list 97 98 99 100))
+          (double-initiate (in-naturals 97))]
+
+Also, subsequent elements in a sequence may be ``consumed'' just by calling the
+first result of @racket[sequence-generate], even if the second
+result is never called.
+
+@examples[#:eval sequence-evaluator
+          #:label #f
+          (define (double-initiate-and-use-more? s1)
+            (code:comment "initiate the sequence twice")
+            (define-values (more?.1 next.1) (sequence-generate s1))
+            (define-values (more?.2 next.2) (sequence-generate s1))
+            (code:comment "alternate fetching from sequence via the two initiations")
+            (code:comment "but this time call `more?` in between")
+            (list (next.1) (more?.1) (next.2) (more?.2)
+                  (next.1) (more?.1) (next.2) (more?.2)))
+
+          (double-initiate-and-use-more? (open-input-string "abcdef"))]
+
+In this example, the state embedded in the first call to @racket[sequence-generate]
+``takes'' the @racket[98] just by virtue of the invocation of @racket[_more?.1].
 
 Individual elements of a sequence typically correspond to single
 values, but an element may also correspond to multiple values.  For
@@ -231,7 +265,10 @@ each element in the sequence.
 
 
 @defproc[(in-mlist [mlst mlist?]) sequence?]{
-  Returns a sequence equivalent to @racket[mlst].
+  Returns a sequence equivalent to @racket[mlst]. Although the
+  expectation is that @racket[mlst] is @tech{mutable list}, @racket[in-mlist]
+  initially checks only whether @racket[mlst] is a @tech{mutable pair} or @racket[null],
+  since it could change during iteration.
   @info-on-seq["mpairs" "mutable lists"]
   @speed[in-mlist "mutable list"]
 
@@ -433,32 +470,32 @@ each element in the sequence.
 
 @deftogether[(
 @defproc[(in-mutable-hash
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))])
+          [hash (and/c hash? (not/c immutable?) hash-strong?)])
 	  sequence?]
 @defproc[#:link-target? #f
          (in-mutable-hash
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))] [bad-index-v any/c])
+          [hash (and/c hash? (not/c immutable?) hash-strong?)] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-mutable-hash-keys
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))])
+          [hash (and/c hash? (not/c immutable?) hash-strong?)])
 	  sequence?]
 @defproc[#:link-target? #f
          (in-mutable-hash-keys
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))] [bad-index-v any/c])
+          [hash (and/c hash? (not/c immutable?) hash-strong?)] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-mutable-hash-values
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))])
+          [hash (and/c hash? (not/c immutable?) hash-strong?)])
 	  sequence?]
 @defproc[#:link-target? #f
          (in-mutable-hash-values
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))] [bad-index-v any/c])
+          [hash (and/c hash? (not/c immutable?) hash-strong?)] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-mutable-hash-pairs
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))])
+          [hash (and/c hash? (not/c immutable?) hash-strong?)])
 	  sequence?]
 @defproc[#:link-target? #f
          (in-mutable-hash-pairs
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))] [bad-index-v any/c])
+          [hash (and/c hash? (not/c immutable?) hash-strong?)] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-immutable-hash
           [hash (and/c hash? immutable?)])
@@ -612,7 +649,7 @@ each element in the sequence.
   @racket[producer], which would usually use some state to do its work.
 
   If a @racket[stop] value is not given, the sequence goes on
-  infinitely, and therefore it common to use it with a finite sequence
+  infinitely, and therefore it is common to use it with a finite sequence
   or using @racket[#:break] etc.  If a @racket[stop] value is given, it
   is used to identify a value that marks the end of the sequence (and
   the @racket[stop] value is not included in the sequence);
@@ -637,9 +674,11 @@ each element in the sequence.
 }
 
 @defproc[(in-value [v any/c]) sequence?]{
-  Returns a sequence that produces a single value: @racket[v].  This
-  form is mostly useful for @racket[let]-like bindings in forms such
-  as @racket[for*/list].
+  Returns a sequence that produces a single value: @racket[v].
+
+  This form is mostly useful for @racket[let]-like bindings in forms
+  such as @racket[for*/list]---but a @racket[#:do] clause form, added
+  more recently, covers many of the same uses.
 }
 
 @defproc[(in-indexed [seq sequence?]) sequence?]{
@@ -749,7 +788,7 @@ each element in the sequence.
       value(s). This function is checked on each position before
       @racket[_pos->element] is used.}
     @item{The sixth (or fifth) result is a @racket[_continue-with-val?] function
-      that is like the fourth result, but it takes the current element
+      that is like the fifth (or fourth) result, but it takes the current element
       value(s) instead of the current position.  Alternatively, the
       sixth (or fifth) result can be @racket[#f] to indicate that the sequence
       should always include the value(s) at the current position.}
@@ -837,7 +876,23 @@ each element in the sequence.
   then the effect is performed each time that either
   @racket[stream-first] or @racket[stream-rest] is first used to
   access or skip an element.
-}
+
+  Note that a @elemref["sequence-state"]{sequence itself can have
+  state}, so multiple calls to @racket[sequence->stream] on the same
+  @racket[seq] are not necessarily independent.
+
+  @examples[
+  #:eval sequence-evaluator
+  (define inport (open-input-bytes (bytes 1 2 3 4 5)))
+  (define strm (sequence->stream inport))
+  (stream-first strm)
+  (stream-first (stream-rest strm))
+  (stream-first strm)
+
+  (define strm2 (sequence->stream inport))
+  (stream-first strm2)
+  (stream-first (stream-rest strm2))
+ ]}
 
 @defproc[(sequence-generate [seq sequence?])
          (values (-> boolean?) (-> any))]{
@@ -846,7 +901,23 @@ each element in the sequence.
   values are available for the sequence.  The second returns the next
   element (which may be multiple values) from the sequence; if no more
   elements are available, the @exnraise[exn:fail:contract].
-}
+
+  Note that a @elemref["sequence-state"]{sequence itself can have
+  state}, so multiple calls to @racket[sequence-generate] on the same
+  @racket[seq] are not necessarily independent.
+
+  @examples[
+  #:eval sequence-evaluator
+  (define inport (open-input-bytes (bytes 1 2 3 4 5)))
+  (define-values (more? get) (sequence-generate inport))
+  (more?)
+  (get)
+  (get)
+
+  (define-values (more2? get2) (sequence-generate inport))
+  (list (get2) (get2) (get2))
+  (more2?)
+ ]}
 
 @defproc[(sequence-generate* [seq sequence?])
          (values (or/c list? #f)
@@ -1328,7 +1399,7 @@ stream, but plain lists can be used as streams, and functions such as
   ]
 
   @examples[#:eval sequence-evaluator
-    (define-struct list-stream (v)
+    (struct list-stream (v)
       #:methods gen:stream
       [(define (stream-empty? stream)
          (empty? (list-stream-v stream)))

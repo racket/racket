@@ -7,6 +7,7 @@
          "adjust-compress.rkt")
 
 (define alt-dests '())
+(define rewrites '())
 (define target #f)
 
 (command-line
@@ -18,6 +19,8 @@
  #:multi
  [("++exe") src dest "Select an alternative executable"
   (set! alt-dests (cons (cons src dest) alt-dests))]
+ [("++rewrite") from to "Add an arbitrary string replacement"
+  (set! rewrites (cons (cons from to) rewrites))]
  #:args (src-file dest-file petite.boot scheme.boot racket.boot)
 
  ;; If `src-file` is "", then `dest-file` is used as the src, too
@@ -29,7 +32,7 @@
  (define use-src-file
    (if (equal? src-file "")
        (let ([src-file (path-add-suffix dest-file #"_tmp")])
-         (rename-file-or-directory dest-file src-file)
+         (rename-file-or-directory dest-file src-file #t)
          src-file)
        src-file))
  (define (clean-src)
@@ -100,11 +103,25 @@
               (write-bytes data o)))
            pos])]))
 
+   (for ([rewrite (in-list rewrites)])
+     (define from (car rewrite))
+     (define to (cdr rewrite))
+     (let loop ()
+       (define i (open-input-file dest-file))
+       (define m (regexp-match-positions from i))
+       (close-input-port i)
+       (when m
+         (define o (open-output-file dest-file #:exists 'update))
+         (file-position o (caar m))
+         (display to o)
+         (close-output-port o)
+         (loop))))
+
    (define (write-offsets dest-file)
      (define-values (i o) (open-input-output-file dest-file #:exists 'update))
      (define m (regexp-match-positions #rx"BooT FilE OffsetS:" i))
      (unless m
-       (error 'embed-boot "cannot file boot-file offset tag"))
+       (error 'embed-boot "cannot find boot-file offset tag"))
 
      (define terminator-len (bytes-length terminator))
 
@@ -129,7 +146,7 @@
      (write-offsets dest-file)]
     [else
      (for ([alt (in-list alt-dests)])
-	  (copy-file (car alt) (cdr alt) #t)
-	  (write-offsets (cdr alt)))])
+       (copy-file (car alt) (cdr alt) #t)
+       (write-offsets (cdr alt)))])
 
    (clean-src)))

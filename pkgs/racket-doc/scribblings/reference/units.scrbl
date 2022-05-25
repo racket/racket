@@ -77,7 +77,10 @@ to initialize the variable may be visible as a mutation.
 
 Each import or export @racket[sig-spec] ultimately refers to a
 @racket[sig-id], which is an identifier that is bound to a signature
-by @racket[define-signature].
+by @racket[define-signature]. The @tech{lexical information} of each
+identifier imported through a @racket[sig-id] starts with the lexical
+information of the @racket[sig-id]; see @racket[define-signature] form
+more information.
 
 In a specific import or export position, the set of identifiers bound
 or required by a particular @racket[sig-id] can be adjusted in a few
@@ -153,7 +156,7 @@ the corresponding import. Each @racket[tagged-sig-id] in an
 @defform/subs[
 #:literals (define-syntaxes define-values define-values-for-export
             open extends contracted struct)
-(define-signature id extension-decl
+(define-signature sig-id extension-decl
   (sig-elem ...))
 
 ([extension-decl
@@ -179,7 +182,7 @@ the corresponding import. Each @racket[tagged-sig-id] in an
                 #:omit-define-syntaxes
                 #:omit-define-values])]{
 
-Binds an identifier to a signature that specifies a group
+Binds an identifier @racket[sig-id] to a signature that specifies a group
 of bindings for import or export:
 
 @itemize[
@@ -236,7 +239,16 @@ of bindings for import or export:
 When a @racket[define-signature] form includes an @racket[extends]
 clause, then the define signature automatically includes everything in
 the extended signature. Furthermore, any implementation of the new
-signature can be used as an implementation of the extended signature.}
+signature can be used as an implementation of the extended signature.
+
+The @tech{lexical information} of each @racket[id] within a signature is
+compared to the lexical information of @racket[sig-id]. The extra scopes
+of @racket[id] relative to @racket[sig-id] are recorded for the
+@racket[id]. When the @racket[sig-id] is used as a reference (e.g., in
+the @racket[import] clause of @racket[unit]), a variant of @racket[id]
+is created for the referencing context by starting with the lexical
+information of the referencing @racket[sig-id], and then adding the extra
+scopes for @racket[id].}
 
 @defkeywords[[(open sig-spec) _sig-elem define-signature]
              [(define-values-for-export (id ...) expr) _sig-elem define-signature]
@@ -431,7 +443,7 @@ See @racket[unit] for information on @racket[tagged-sig-spec],
 
 Like @racket[compound-unit]. Syntactically, the difference between
 @racket[compound-unit] and @racket[compound-unit/infer] is that the
-@racket[unit-expr] for a linked unit is replaced with a
+@racket[_unit-expr] for a linked unit is replaced with a
 @racket[unit-id], where a @racket[unit-id] is bound by
 @racket[define-unit] (or one of the other unit-binding forms that we
 introduce later in this section). Furthermore, an import can name just
@@ -527,7 +539,13 @@ Like @racket[invoke-unit], but uses static information associated with
 @racket[unit-id] to infer which imports must be assembled from the
 current context.  If given a link form containing multiple
 @racket[link-unit-id]s, then the units are first linked via
-@racket[define-compound-unit/infer].}
+@racket[define-compound-unit/infer].
+
+When assembling imports from the current context, the @tech{lexical
+information} of a @racket[unit-id] is used for constructing the lexical
+information of the signatures for the unit's imports (i.e., the lexical
+information that would normally be derived from the signature reference).
+See @racket[define-signature] for more information.}
 
 @defform/subs[
 #:literals (export link)
@@ -537,10 +555,17 @@ current context.  If given a link form containing multiple
 
 Like @racket[define-values/invoke-unit], but uses static information
 associated with @racket[unit-id] to infer which imports must be
-assembled from the current context and which exports should be bound
-by the definition.  If given a link form containing multiple
-@racket[link-unit-id]s, then the units are first linked via
-@racket[define-compound-unit/infer].}
+assembled from the current context and, if no @racket[export] clause
+is present, which exports should be bound by the definition. If given
+a link form containing multiple @racket[link-unit-id]s, then the units
+are first linked via @racket[define-compound-unit/infer].
+
+Similar to @racket[invoke-unit/infer], the @tech{lexical information}
+of a @racket[unit-id] is used for constructing the lexical information
+of the signatures for the unit's inferred imports and inferred exports
+(i.e., the lexical information that would normally be derived from a
+signature reference). See @racket[define-signature] for more
+information.}
 
 @; ------------------------------------------------------------------------
 
@@ -651,21 +676,29 @@ like @racket[define-unit].}
 
 @defform*[
 [(define-signature-form sig-form-id expr)
- (define-signature-form (sig-form-id id) body ...+)]
+ (define-signature-form (sig-form-id id) body ...+)
+ (define-signature-form (sig-form-id id intro-id) body ...+)]
 ]{
 
 Binds @racket[sig-form-id] for use within a @racket[define-signature]
 form.
 
 In the first form, the result of @racket[expr] must be a transformer
-procedure.  In the second form, @racket[sig-form-id] is bound to a
+procedure that accepts one argument.  In the second form, @racket[sig-form-id] is bound to a
 transformer procedure whose argument is @racket[id] and whose body is
-the @racket[body]s. The result of the transformer must be a list of
+the @racket[body]s. The third form is like the second one, but
+@racket[intro-id] is bound to a procedure that is analogous to @racket[syntax-local-introduce]
+for the signature-form expansion.
+
+The result of the transformer procedure must be a list of
 syntax objects, which are substituted for a use of
 @racket[sig-form-id] in a @racket[define-signature] expansion. (The
 result is a list so that the transformer can produce multiple
 declarations; @racket[define-signature] has no splicing @racket[begin]
-form.)}
+form.)
+
+@history[#:changed "8.1.0.7" @elem{Added support for the form with a transformer
+                                   @racket[expr].}]}
 
 @defform/subs[
 (struct/ctc id ([field contract-expr] ...) struct-option ...) 
@@ -876,9 +909,10 @@ values:
 
 ]
 
-Each of the result identifiers is given a lexical context that is
+Each of the result identifiers is given lexical information that is
 based on @racket[sig-identifier], so the names are suitable for
-reference or binding in the context of @racket[sign-identifier].
+reference or binding in the context of @racket[sig-identifier].
+See @racket[define-signature] for more information.
 
 If @racket[sig-identifier] is not bound to a signature, then the
 @exnraise[exn:fail:syntax]. In that case, the given

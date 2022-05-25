@@ -1,6 +1,50 @@
+Version 8.5, April 2022
+Add a `-y`/`--make` flag to automatically crete/update ".zo"s
+Add error-message realms
+Add `read-syntax-accept-graph`
+Change `make-temporary-file` to have keyword arguments
+Change `for` to support `#:splice` clauses
+Enable user-specific adjustment of an installation name
+Racket CS: support pb backend
+Other bug repairs and other changes noted in the documentation
+
+Version 8.4, January 2022
+Add `file-or-directory-stat`
+Expander: add "portal" syntax
+Add `#%terminal` primitive module for editor support; using this,
+ "xrepl" and "expeditor" provide an improved REPL by default
+Change `set/c` to support random generation
+CS: faster multiplication and division for some numbers
+Other bug repairs and other changes noted in the documentation
+
+Version 8.3, October 2021
+Expander: remove syntax arming and disarming in favor of a simpler
+ system of protected syntax operations
+Expander: change internal-definition contexts to have an
+ outside-edge scope and track their own use-site scopes
+Expander: add `require` and `provide` support for binding spaces
+Expander: don't propagate "original" from macro input to output,
+ which restores the intended behavior as it worked before v7.0
+Windows: repair single-instance executable mode
+Windows: fix path handling to treat `*` and `?` as special
+Change `unzip` to report errors for ill-formed archives, instead
+ of silently ignoring certain errors
+Add `error-syntax->string-handler`
+Places: use `current-directory` value in created place
+Other bug repairs and other changes noted in the documentation
+
+Version 8.2, July 2021
+CS: faster exact-rational arithmetic
+Improve support for layered and tethered installations
+Fix CS cross compilation and add documentation reference to
+ the "raco-cross" package
+Add `most-positive-fixnum` and `most-negative-fixnum`
+CS: support for nonatomic allocation via ffi/unsafe
+Other bug repairs and other changes noted in the documentation
+
 Version 8.1, April 2021
 Add ephemeron hash tables
-Added support for "git+https://" packages sources
+Add support for "git+https://" packages sources
 Changed Git package references to default to repo-indicated
  default branch (HEAD, roughly) instead of "master"
 CS: compiler improvements, especially related to structures

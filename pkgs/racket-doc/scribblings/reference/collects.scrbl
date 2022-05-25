@@ -184,7 +184,9 @@ raco-doc "link"] in @other-manual[raco-doc] for more information.
 @section[#:tag "collects-api"]{Collection Paths and Parameters}
 
 @defproc[(find-library-collection-paths [pre-extras (listof path-string?) null]
-                                        [post-extras (listof path-string?) null]) 
+                                        [post-extras (listof path-string?) null]
+                                        [config hash? (read-installation-configuration-table)]
+                                        [name (get-installation-name config)])
          (listof path?)]{
 
 Produces a list of paths, which is normally used to initialize
@@ -193,7 +195,7 @@ Produces a list of paths, which is normally used to initialize
 @itemize[
 
 @item{The path produced by @racket[(build-path (find-system-path
-    'addon-dir) (get-installation-name) "collects")] is the first element of the
+    'addon-dir) name "collects")] is the first element of the
   default collection path list, unless the value of the
   @racket[use-user-specific-search-paths] parameter is @racket[#f].}
 
@@ -210,13 +212,21 @@ Produces a list of paths, which is normally used to initialize
   last in the default collection path list, converted to complete
   paths relative to the executable.}
 
+ @item{If @racket[config] has a value for
+  @racket['collects-search-dirs], then it is used in place of the
+  default collection path list (as constructed by the preceding three
+  bullets), and the default is spliced in place of any @racket[#f]
+  within the @racket['collects-search-dirs] list. If @racket[config]
+  does not have a @racket['collects-search-dirs] value, then the
+  default collection path list is used.}
+
  @item{If the @indexed-envvar{PLTCOLLECTS} environment variable is
   defined, it is combined with the default list using
   @racket[path-list-string->path-list], as long as the value of
   @racket[use-user-specific-search-paths] is true. If it is not
   defined or if the value @racket[use-user-specific-search-paths] is
-  @racket[#f], the default collection path list (as constructed by the
-  first three bullets above) is used directly.
+  @racket[#f], the collection path list as constructed by the
+  preceding four bullets is used directly.
 
   Note that on @|AllUnix|, paths are separated by @litchar{:}, and
   on Windows by @litchar{;}.  Also,
@@ -226,9 +236,13 @@ Produces a list of paths, which is normally used to initialize
   @tt{"`pwd`"} to specify search the current directory after, before,
   or instead of the default paths, respectively.}
 
-]}
+]
 
-@defproc[(find-library-collection-links) 
+@history[#:changed "8.4.0.3" @elem{Added the @racket[config] and
+                                   @racket[name] arguments.}]}
+
+@defproc[(find-library-collection-links [config hash? (read-installation-configuration-table)]
+                                        [name (get-installation-name config)])
          (listof (or/c #f (and/c path? complete-path?)))]{
 
 Produces a list of paths and @racket[#f], which is normally used to
@@ -247,16 +261,22 @@ initialize @racket[current-library-collection-links], as follows:
        @racket[use-collection-link-paths] are true, the second element
        in the result list is the path of the user--specific
        @tech{collection links file}, which is @racket[(build-path
-       (find-system-path 'addon-dir) (get-installation-name)
-       "links.rktd")].}
+       (find-system-path 'addon-dir) name "links.rktd")] by default,
+       but it can be replaced by a @racket['links-file] value in
+       @racket[config].}
 
  @item{As long as the value of @racket[use-collection-link-paths] is
-       true, the rest of the list contains the result of
-       @racket[get-links-search-files]. Typically, that function
-       produces a list with a single path, @racket[(build-path
-       (find-config-dir) "links.rktd")].}
+       true, the rest of the list contains a result like that of
+       @racket[get-links-search-files], but using @racket[config] if
+       supplied instead of reading the installation's
+       @filepath{config.rktd} file. Typically, that result is a list
+       with a single path, @racket[(build-path (find-config-dir)
+       "links.rktd")].}
 
-]}
+]
+
+@history[#:changed "8.4.0.3" @elem{Added the @racket[config] and
+                                   @racket[name] arguments.}]}
 
 
 @defproc*[([(collection-file-path [file path-string?] [collection path-string?] ...+
@@ -388,3 +408,11 @@ only is @racket[current-library-collection-paths] initialized to the
 empty list, but @racket[use-collection-link-paths] is initialized to
 @racket[#f].}
 
+
+@defproc[(read-installation-configuration-table) (and/c hash? immutable?)]{
+
+Returns the content of the installation's @filepath{config.rktd} file
+(see @secref["config-file" #:doc raco-doc]) as long as that content is
+a @tech{hash table}, and otherwise returns an empty hash table.
+
+@history[#:added "8.4.0.3"]}

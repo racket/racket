@@ -42,6 +42,8 @@
 (define-constant RKTIO_PROCESS_STDOUT_AS_STDERR (<< 1 1))
 (define-constant RKTIO_PROCESS_WINDOWS_EXACT_CMDLINE (<< 1 2))
 (define-constant RKTIO_PROCESS_WINDOWS_CHAIN_TERMINATION (<< 1 3))
+(define-constant RKTIO_PROCESS_NO_CLOSE_FDS (<< 1 4))
+(define-constant RKTIO_PROCESS_NO_INHERIT_FDS (<< 1 5))
 (define-constant RKTIO_PROCESS_ERROR -2)
 (define-constant RKTIO_PROCESS_DONE 1)
 (define-constant RKTIO_PROCESS_RUNNING 0)
@@ -69,6 +71,7 @@
 (define-constant RKTIO_FILE_TYPE_LINK 3)
 (define-constant RKTIO_FILE_TYPE_DIRECTORY_LINK 4)
 (define-constant RKTIO_FILE_TYPE_ERROR -1)
+(define-constant RKTIO_DEFAULT_DIRECTORY_PERM_BITS 511)
 (define-constant RKTIO_PERMISSION_READ 4)
 (define-constant RKTIO_PERMISSION_WRITE 2)
 (define-constant RKTIO_PERMISSION_EXEC 1)
@@ -173,6 +176,25 @@
   ((ref rktio_fd_t) stderr_fd)))
 (define-struct-type rktio_status_t ((rktio_bool_t running) (int result)))
 (define-type rktio_timestamp_t intptr_t)
+(define-struct-type
+ rktio_stat_t
+ ((uintptr_t device_id)
+  (uintptr_t inode)
+  (uintptr_t mode)
+  (uintptr_t hardlink_count)
+  (uintptr_t user_id)
+  (uintptr_t group_id)
+  (uintptr_t device_id_for_special_file)
+  (uintptr_t size)
+  (uintptr_t block_size)
+  (uintptr_t block_count)
+  (uintptr_t access_time_seconds)
+  (uintptr_t access_time_nanoseconds)
+  (uintptr_t modify_time_seconds)
+  (uintptr_t modify_time_nanoseconds)
+  (uintptr_t ctime_seconds)
+  (uintptr_t ctime_nanoseconds)
+  (rktio_bool_t ctime_is_change_time)))
 (define-struct-type
  rktio_identity_t
  ((uintptr_t a)
@@ -1061,6 +1083,12 @@
  #f
  ()
  rktio_ok_t
+ rktio_make_directory_with_permissions
+ (((ref rktio_t) rktio) (rktio_const_string_t filename) (int perm_bits)))
+(define-function/errno
+ #f
+ ()
+ rktio_ok_t
  rktio_delete_directory
  (((ref rktio_t) rktio)
   (rktio_const_string_t filename)
@@ -1099,6 +1127,14 @@
  rktio_ok_t
  rktio_set_file_modify_seconds
  (((ref rktio_t) rktio) (rktio_const_string_t file) (rktio_timestamp_t secs)))
+(define-function/errno
+ NULL
+ ()
+ (ref rktio_stat_t)
+ rktio_file_or_directory_stat
+ (((ref rktio_t) rktio)
+  (rktio_const_string_t path)
+  (rktio_bool_t follow_links)))
 (define-function/errno
  NULL
  ()
@@ -1251,7 +1287,7 @@
   (int get_gmt)))
 (define-function/errno
  #f
- ()
+ (msg-queue)
  rktio_ok_t
  rktio_shell_execute
  (((ref rktio_t) rktio)

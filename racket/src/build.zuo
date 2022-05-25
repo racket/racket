@@ -1,0 +1,75 @@
+#lang zuo
+
+(provide-targets targets-at)
+
+(define (targets-at at-dir [vars (hash)])
+  (define config (config-file->hash (at-dir "Makefile") vars))
+
+  (define default-vm (hash-ref config 'default_vm "cs"))
+
+  (define (get-cs-targets)
+    (and (equal? (hash-ref config 'use_cs "yes") "yes")
+         ((dynamic-require (at-source "cs/c/build.zuo")
+                           'targets-at)
+          (make-at-dir (at-dir "cs/c"))
+          vars)))
+        
+  (define (get-bc-targets)
+    (and (equal? (hash-ref config 'use_bc "no") "yes")
+         ((dynamic-require (at-source "bc/build.zuo")
+                           'targets-at)
+          (make-at-dir (at-dir "bc"))
+          vars)))
+
+  (define (get-targets)
+    ((if (equal? default-vm "cs") get-cs-targets get-bc-targets)))
+
+  (define (build-cs token)
+    (define cs-targets (get-cs-targets))
+    (unless cs-targets
+      (error "not configured for a CS build"))
+    (build (find-target "build" cs-targets) token))
+
+  (define (build-bc target-name token)
+    (define bc-targets (get-bc-targets))
+    (unless bc-targets
+      (error "not configured for a BC build"))
+    (build (find-target target-name bc-targets) token))
+
+  (make-targets
+   `([:target all ()
+              ,(lambda (token)
+                 (build (find-target "build" (get-targets)) token))]
+
+     [:target bc () ,(lambda (token) (build-bc "build" token))]
+     [:target 3m () ,(lambda (token) (build-bc "3m" token))]
+     [:target cgc () ,(lambda (token) (build-bc "cgc" token))]
+
+     [:target cs () ,(lambda (token) (build-cs token))]
+
+     [:target install ()
+              ,(lambda (token)
+                 (build (find-target "install" (get-targets)) token))]
+
+     [:target plain-install ()
+              ,(lambda (token)
+                 (build (find-target "plain-install" (get-targets)) token))]
+                 
+     [:target cs-install ()
+              ,(lambda (token)
+                 (build (find-target "install" (get-cs-targets)) token))]
+
+     [:target plain-cs-install ()
+              ,(lambda (token)
+                 (build (find-target "plain-install" (get-cs-targets)) token))]
+                 
+     [:target bc-install ()
+              ,(lambda (token)
+                 (build (find-target "install" (get-bc-targets)) token))]
+
+     [:target plain-bc-install ()
+              ,(lambda (token)
+                 (build (find-target "plain-install" (get-bc-targets)) token))]
+
+
+     #;(end-of-targets))))

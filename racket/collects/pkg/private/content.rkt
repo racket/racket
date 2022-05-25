@@ -51,6 +51,7 @@
   (begin0
    (values cksum
            (set->list module-paths)
-           (extract-info get-info))
+           (parameterize ([current-dependencies-pkg-dir dir])
+             (extract-info get-info)))
    (when clean?
      (delete-directory/files dir))))

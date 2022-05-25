@@ -18,7 +18,8 @@
          pkg/path
          setup/collects
          setup/getinfo
-         compiler/module-suffix)
+         compiler/module-suffix
+         compiler/private/cm-minimal)
 
 (define rx:default-suffixes (get-module-suffix-regexp))
 ;; For any other file suffix, a `test-command-line-arguments`
@@ -34,6 +35,7 @@
 (define table? #f)
 (define fresh-user? #f)
 (define empty-input? #f)
+(define make? #f)
 (define heartbeat-secs #f)
 (define ignore-stderr-patterns null)
 (define extra-command-line-args null)
@@ -59,7 +61,8 @@
 ;; Stub for running a test in a process:
 (module process racket/base
   (require rackunit/log
-           racket/file)
+           racket/file
+           compiler/private/cm-minimal)
   ;; Arguments are a temp file to hold test results, the module
   ;; path to run, and the `dynamic-require` second argument:
   (define argv (current-command-line-arguments))
@@ -67,7 +70,8 @@
   (define test-module (read (open-input-string (vector-ref argv 1))))
   (define rt-module (read (open-input-string (vector-ref argv 2))))
   (define d (read (open-input-string (vector-ref argv 3))))
-  (define args (list-tail (vector->list argv) 4))
+  (define make? (read (open-input-string (vector-ref argv 4))))
+  (define args (list-tail (vector->list argv) 5))
 
   ;; In case PLTUSERHOME is set, make sure relevant
   ;; directories exist:
@@ -75,6 +79,9 @@
     (make-directory* d))
   (ready-dir (find-system-path 'doc-dir))
 
+  (when make?
+    (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler)))
+  
   (parameterize ([current-command-line-arguments (list->vector args)])
     (when rt-module (dynamic-require rt-module d))
     (dynamic-require test-module d)
@@ -90,14 +97,18 @@
 ;; Driver for running a test in a place:
 (module place racket/base
   (require racket/place
-           rackunit/log)
+           rackunit/log
+           compiler/private/cm-minimal)
   (provide go)
   (define (go pch)
     (define l (place-channel-get pch))
-    (define args (cadddr (cdr l)))
+    (define make? (list-ref l 3))
+    (define args (list-ref l 5))
+    (when make?
+      (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler)))
     ;; Run the test:
     (parameterize ([current-command-line-arguments (list->vector args)]
-                   [current-directory (cadddr l)])
+                   [current-directory (list-ref l 4)])
       (when (cadr l) (dynamic-require (cadr l) (caddr l)))
       (dynamic-require (car l) (caddr l))
       ((executable-yield-handler) 0))
@@ -202,7 +213,7 @@
                                #:err stderr)))
            
            ;; Send the module path to test:
-           (place-channel-put pl (list p rt-p d (current-directory) args))
+           (place-channel-put pl (list p rt-p d make? (current-directory) args))
 
            ;; Wait for the place to finish:
            (unless (sync/timeout timeout (place-dead-evt pl))
@@ -246,6 +257,7 @@
                       (format "~s" (normalize-module-path p))
                       (format "~s" (normalize-module-path rt-p))
                       (format "~s" d)
+                      (format "~s" make?)
                       args)))
            (define proc (list-ref ps 4))
            
@@ -1090,6 +1102,9 @@
  [("--deps")
   "If treating arguments as packages, also test dependencies"
   (set! check-pkg-deps? #t)]
+ [("--make" "-y")
+  "Enable automatic update of compiled files"
+  (set! make? #t)]
  #:multi
  [("++ignore-stderr") pattern
   "Ignore stderr output that matches #px\"<pattern>\""
@@ -1120,6 +1135,9 @@
                        (not (memq default-mode '(process place))))
                   (not (null? submodules))))
      (set! configure-runtime #f))
+   (when (and make?
+              (eq? 'direct (or default-mode (and single-file? 'direct))))
+     (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler)))
    (define sum
      ;; The #:sema argument everywhre makes tests start
      ;; in a deterministic order:

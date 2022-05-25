@@ -405,7 +405,7 @@
          (define top-pos (if (fx= start 0)
                              (fx- len 1)
                              len))
-         (define (maybe-grow)
+         (define (maybe-grow suggested-amt)
            (cond
              [(or (not limit)
                   ((+ limit peeked-amt) . > . (fx- len 1)))
@@ -413,7 +413,13 @@
               (define in (ref-value input-ref))
               (when in
                 (send pipe-input-port in on-resize))
-              (define new-bstr (make-bytes (min+1 (and limit (+ limit peeked-amt)) (* len 2))))
+              (define new-bstr (make-bytes (min+1 (and limit (+ limit peeked-amt))
+                                                  (fxmax (fx* len 2)
+                                                         (fxlshift 1
+                                                                   ;; adapt to attempted immediate write,
+                                                                   ;; up to point
+                                                                   (fxmin (integer-length suggested-amt)
+                                                                          12))))))
               (cond
                 [(fx= 0 start)
                  (bytes-copy! new-bstr 0 bstr 0 (fx- len 1))]
@@ -454,7 +460,7 @@
            [(fx= end top-pos)
             (cond
               [(fx= start 0)
-               (maybe-grow)]
+               (maybe-grow (fx- src-end src-start))]
               [else
                (define amt (fxmin (fx- start 1)
                                   (fx- src-end src-start)))
@@ -478,7 +484,7 @@
                (fast-mode! amt)
                amt])]
            [else
-            (maybe-grow)]))))]
+            (maybe-grow (fx- src-end src-start))]))))]
 
   [get-write-evt
    (get-write-evt-via-write-out (lambda (out v bstr start)
@@ -497,7 +503,7 @@
 ;; ----------------------------------------
 
 (define (make-pipe-ends [limit #f] [input-name 'pipe] [output-name 'pipe])
-  (define len (min+1 limit 16))
+  (define len (min+1 limit 63))
 
   (define d (new pipe-data
                  #:field

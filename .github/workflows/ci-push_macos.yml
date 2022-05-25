@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cify: [cify, nocify]
+        cify: [nocify]
           
     runs-on: macos-latest
     env:
@@ -64,7 +64,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cify: [cify, nocify]
+        cify: [nocify]
             
     runs-on: macos-latest
     
@@ -187,7 +187,7 @@ jobs:
           tar -xvjf racketcs-macos-x64_git${{ github.sha }}.tar.bz2 -C host-racket --strip-components 1
       - name: Build iOS Racket
         run: |
-          set -euo pipefail
+          set -euxo pipefail
           mkdir -p racket/src/build-ios
           pushd racket/src/build-ios
           ../configure \
@@ -207,7 +207,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cify: [cify, nocify]
+        cify: [nocify]
 
     runs-on: macos-latest
 
@@ -274,7 +274,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cify: [cify, nocify]
+        cify: [nocify]
 
     runs-on: macos-latest
 

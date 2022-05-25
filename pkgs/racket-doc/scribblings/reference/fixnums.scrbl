@@ -15,7 +15,7 @@
 @defmodule[racket/fixnum]
 
 The @racketmodname[racket/fixnum] library provides operations like
-@racket[fx+] that consume and produce only fixnums. The operations in
+@racket[fx+] that consume and produce only @tech{fixnums}. The operations in
 this library are meant to be safe versions of unsafe operations like
 @racket[unsafe-fx+]. These safe operations are generally no faster
 than using generic primitives like @racket[+].
@@ -261,6 +261,24 @@ For communication among @tech{places}, the new @tech{fxvector} is
 allocated in the @tech{shared memory space}.
 
 @mz-examples[#:eval flfx-eval (make-shared-fxvector 4 3)]}
+
+@; ------------------------------------------------------------
+
+@section[#:tag "fxrange"]{Fixnum Range}
+
+@deftogether[(
+@defproc[(most-positive-fixnum) fixnum?]
+@defproc[(most-negative-fixnum) fixnum?]
+)]{
+
+Returns the largest-magnitude positive and negative @tech{fixnums}.
+The values of @racket[(most-positive-fixnum)] and
+@racket[(most-negative-fixnum)] depend on the platform and virtual
+machine, but all fixnums are in the range
+@racket[(most-negative-fixnum)] to @racket[(most-positive-fixnum)]
+inclusive, and all exact integers in that range are fixnums.
+
+@history[#:added "8.1.0.7"]}
 
 
 @close-eval[flfx-eval]

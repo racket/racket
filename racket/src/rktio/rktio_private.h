@@ -379,6 +379,9 @@ void rktio_pending_open_retain(rktio_t *rktio, struct open_in_thread_t *oit);
 int rktio_pending_open_release(rktio_t *rktio, struct open_in_thread_t *oit);
 #endif
 
+int rktio_environ_init(rktio_t *rktio);
+void rktio_getenv_lock();
+void rktio_getenv_unlock();
 void *rktio_envvars_to_block(rktio_t *rktio, rktio_envvars_t *envvars);
 
 void rktio_stop_fs_change(rktio_t *rktio);

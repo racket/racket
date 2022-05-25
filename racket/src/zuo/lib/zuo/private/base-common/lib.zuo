@@ -1,0 +1,43 @@
+#lang zuo/datum
+
+(define (caar p) (car (car p)))
+(define (cadr p) (car (cdr p)))
+(define (cdar p) (cdr (car p)))
+(define (cddr p) (cdr (cdr p)))
+
+(define map
+  (letrec ([map (lambda (f vs)
+                  (if (null? vs)
+                      '()
+                      (cons (f (car vs)) (map f (cdr vs)))))])
+    map))
+
+(define map2
+  (letrec ([map2 (lambda (f vs v2s)
+                   (if (null? vs)
+                       '()
+                       (cons (f (car vs) (car v2s))
+                             (map2 f (cdr vs) (cdr v2s)))))])
+    map2))
+
+(define (foldl f init vs)
+  (letrec ([fold (lambda (vs accum)
+                   (if (null? vs)
+                       accum
+                       (fold (cdr vs) (f (car vs) accum))))])
+    (fold vs init)))
+
+(define (ormap f vs)
+  (letrec ([ormap (lambda (vs)
+                    (if (null? vs)
+                        #f
+                        (or (f (car vs)) (ormap (cdr vs)))))])
+    (ormap vs)))
+
+(define (mod-path=? a b)
+  (if (or (symbol? a) (symbol? b))
+      (eq? a b)
+      (string=? a b)))
+
+(define (gensym sym)
+  (string->uninterned-symbol (symbol->string sym)))

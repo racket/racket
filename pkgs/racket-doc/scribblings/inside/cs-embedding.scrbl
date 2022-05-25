@@ -21,7 +21,8 @@ To embed Racket CS in a program, follow these steps:
   @filepath{libracketcs@italic{x}.dll} must be moved to a location in
   the standard DLL search path, or your embedding application must
   ``delayload'' link the DLLs and explicitly load them before use.
-  (@filepath{Racket.exe} uses the latter strategy.)
+  (@filepath{Racket.exe} uses the latter strategy.) See also
+  @secref["link-dll"].
 
   On Mac OS, besides @as-index{@filepath{libracketcs.a}} for static
   linking, a dynamic library is provided by the @filepath{Racket}
@@ -68,7 +69,7 @@ To embed Racket CS in a program, follow these steps:
      a separator).}
      
      @item{@cpp{boot3_path} --- a path to @filepath{racket.boot}
-     (which a separator).}
+     (with a separator).}
 
   ]
 

@@ -606,6 +606,9 @@
        (#"^(a|)\\1?b" #"acb" #f)
        #"^(a|)\\1{2}b"
        #"^(a|)\\1{2,3}b"
+       (#"(^.|\\1){2}" #"aa" (#"aa" #"a")) ; self backreferences are allowed
+       (#"(^.|\\1){2}" #"baa" #f)
+       (#"(.\\1)" #"aa" #f)
        (#"ab{1,3}bc" #"abbbbc" (#"abbbbc"))
        (#"ab{1,3}bc" #"abbbc" (#"abbbc"))
        (#"ab{1,3}bc" #"abbc" (#"abbc"))
@@ -1965,6 +1968,134 @@
                  (regexp-match-positions/end (pregexp "(?=b)")
                                              (string-append (make-string N #\a) "!b")
                                              0 #f #f #"prefix" N))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Match groups spans prefix:
+(test '((1 . 1) (-1 . 1))
+      regexp-match-positions (regexp "(?<=(..))") "aaa" 0 #f #f #"x")
+(test '((2 . 2) (0 . 2))
+      regexp-match-positions (regexp "(?<=(..))") "aaa" 1 #f #f #"x")
+(test '((0 . 0) (-1 . 0))
+      regexp-match-positions (regexp "(?<=(.))") "aaa" 0 #f #f #"x")
+(test '((0 . 0) (-1 . 0))
+      regexp-match-positions (byte-regexp #"(?<=(.))") #"aaa" 0 #f #f #"x")
+(test '((0 . 0) (-1 . 0))
+      regexp-match-peek-positions (byte-regexp #"(?<=(.))") (open-input-bytes #"aaa") 0 #f #f #"x")
+(test '((2 . 2) (0 . 2))
+      regexp-match-positions (byte-regexp #"(?<=(..))") #"aaa" 1 #f #f #"x")
+(test '((0 . 0) (-1 . 0))
+      regexp-match-positions (regexp "(?<=(.))") "aaa" 0 #f #f (string->bytes/utf-8 "\u3BB"))
+(test '((0 . 1) (-1 . 0))
+      regexp-match-positions (regexp "(?<=(.)).") "\u03BBaa" 0 #f #f (string->bytes/utf-8 "\u3BC"))
+(test '((1 . 2) (-1 . 1))
+      regexp-match-positions (regexp "(?<=(..)).") "\u03BBaa" 0 #f #f (string->bytes/utf-8 "\u3BC"))
+(test '("" "\u3BB")
+      regexp-match (regexp "(?<=(.))") "aaa" 0 #f #f (string->bytes/utf-8 "\u3BB"))
+(test '("a" "\u3BB")
+      regexp-match (regexp "(?<=(.)).") "aaa" 0 #f #f (string->bytes/utf-8 "\u3BB"))
+(test '("a" "\u03BBa")
+      regexp-match (regexp "(?<=(..)).") "aaa" 0 #f #f (string->bytes/utf-8 "\u3BB"))
+(test '("\u3BB" "\u3BC")
+      regexp-match (regexp "(?<=(.)).") "\u03BBaa" 0 #f #f (string->bytes/utf-8 "\u3BC"))
+(test '(#"" #"x")
+      regexp-match (byte-regexp #"(?<=(.))") #"aaa" 0 #f #f #"x")
+(test '(#"ab" #"x")
+      regexp-match (byte-regexp #"(?<=(.))..") (open-input-bytes #"abc") 0 #f #f #"x")
+(test '(#"ab" #"x")
+      regexp-match-peek (byte-regexp #"(?<=(.))..") (open-input-bytes #"abc") 0 #f #f #"x")
+
+;; Replacement where match groups spans prefix:
+(test #"[x]aaa"
+      regexp-replace (byte-regexp #"(?<=(.))") #"aaa" #"[\\1]" #"x")
+(test #"a[xa]aa"
+      regexp-replace (byte-regexp #"(?<=(..))") #"aaa" #"[\\1]" #"x")
+(test #"[x]aa"
+      regexp-replace (byte-regexp #"(?<=(.)).") #"aaa" #"[\\1]" #"x")
+(test "[x]aaa"
+      regexp-replace (regexp "(?<=(.))") "aaa" "[\\1]" #"x")
+(test "a[xa]aa"
+      regexp-replace (regexp "(?<=(..))") "aaa" "[\\1]" #"x")
+(test "[x]aa"
+      regexp-replace (regexp "(?<=(.)).") "aaa" "[\\1]" #"x")
+(test "[x]aa"
+      regexp-replace (regexp "(?<=(.)).") "aaa" "[\\1]" #"\xFFx")
+(test "a[a]c"
+      regexp-replace (regexp "(?<=(.)).") "abc" "[\\1]" #"\xFF")
+(test "[\u03BBx]aa"
+      regexp-replace (regexp "(?<=(..)).") "aaa" "[\\1]"
+      (bytes-append #"\xFF"
+                    (string->bytes/utf-8 "\u03BBx")))
+(test #"{bx}aa"
+      regexp-replace (byte-regexp #"(?<=(..)).") #"aaa" (lambda (m m1) (bytes-append #"{" m1 #"}"))
+      #"\xFFbx")
+(test "{\u03BBx}aa"
+      regexp-replace (regexp "(?<=(..)).") "aaa" (lambda (m m1) (string-append "{" m1 "}"))
+      (bytes-append #"\xFF"
+                    (string->bytes/utf-8 "\u03BBx")))
+(test #"a{xa}c"
+      regexp-replace (byte-regexp #"(?<=(..)).") #"abc" (lambda (m m1) (bytes-append #"{" m1 #"}"))
+      #"x")
+(test "a{\u03BBa}c"
+      regexp-replace (regexp "(?<=(..)).") "abc" (lambda (m m1) (string-append "{" m1 "}"))
+      (bytes-append #"\xFF"
+                    (string->bytes/utf-8 "\u03BB")))
+(test "\u03BC{\u03BB\u03BC}c"
+      regexp-replace (regexp "(?<=(..)).") "\u03BCbc" (lambda (m m1) (string-append "{" m1 "}"))
+      (bytes-append #"\xFF"
+                    (string->bytes/utf-8 "\u03BB")))
+
+
+(test #"[x]a[a]a[a]a[a]"
+      regexp-replace* (byte-regexp #"(?<=(.))") #"aaa" #"[\\1]" 0 #f #"x")
+(test #"a[xa]b[ab]c[bc]"
+      regexp-replace* (byte-regexp #"(?<=(..))") #"abc" #"[\\1]" 0 #f #"x")
+(test #"[x][a][b]"
+      regexp-replace* (byte-regexp #"(?<=(.)).") #"abc" #"[\\1]" 0 #f #"x")
+(test "[x]a[a]a[a]a[a]"
+      regexp-replace* (regexp "(?<=(.))") "aaa" "[\\1]" 0 #f #"x")
+(test "a[xa]b[ab]c[bc]"
+      regexp-replace* (regexp "(?<=(..))") "abc" "[\\1]" 0 #f #"x")
+(test "[x][a][b]"
+      regexp-replace* (regexp "(?<=(.)).") "abc" "[\\1]" 0 #f #"x")
+(test "[x][a][b]"
+      regexp-replace* (regexp "(?<=(.)).") "abc" "[\\1]" 0 #f #"\xFFx")
+(test "a[a][b]"
+      regexp-replace* (regexp "(?<=(.)).") "abc" "[\\1]" 0 #f #"\xFF")
+(test "[\u03BBx][xa][ab]"
+      regexp-replace* (regexp "(?<=(..)).") "abc" "[\\1]" 0 #f
+      (bytes-append #"\xFF"
+                    (string->bytes/utf-8 "\u03BBx")))
+(test #"{bx}{xa}{ay}"
+      regexp-replace* (byte-regexp #"(?<=(..)).") #"ayz" (lambda (m m1) (bytes-append #"{" m1 #"}")) 0 #f
+      #"\xFFbx")
+(test "{\u03BBx}{xa}{ab}"
+      regexp-replace* (regexp "(?<=(..)).") "abc" (lambda (m m1) (string-append "{" m1 "}")) 0 #f
+      (bytes-append #"\xFF"
+                    (string->bytes/utf-8 "\u03BBx")))
+(test #"a{xa}{ab}"
+      regexp-replace* (byte-regexp #"(?<=(..)).") #"abc" (lambda (m m1) (bytes-append #"{" m1 #"}")) 0 #f
+      #"x")
+(test "a{\u03BBa}{ab}"
+      regexp-replace* (regexp "(?<=(..)).") "abc" (lambda (m m1) (string-append "{" m1 "}")) 0 #f
+      (bytes-append #"\xFF"
+                    (string->bytes/utf-8 "\u03BB")))
+(test "\u03BC{\u03BB\u03BC}{\u03BCb}"
+      regexp-replace* (regexp "(?<=(..)).") "\u03BCbc" (lambda (m m1) (string-append "{" m1 "}")) 0 #f
+      (bytes-append #"\xFF"
+                    (string->bytes/utf-8 "\u03BB")))
+
+(test #"" regexp-replace* #"[a-z]" #"abc" #"")
+(test "" regexp-replace* "[a-z]" "abc" "")
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test "aaa" regexp-replace* "(x)" "aaa"
+      ;; no error, even though this is the wrong arity:
+      (lambda (x) x))
+
+(err/rt-test (regexp-replace* "(a)" "aaa" (lambda (x) x))
+             exn:fail:contract:arity?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

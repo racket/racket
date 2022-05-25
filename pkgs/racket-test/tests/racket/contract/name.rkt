@@ -36,6 +36,8 @@
   (test-name 'boolean? (or/c #f #t))
   (test-name 'boolean? (or/c #t #f))
   (test-name '(or/c #t #f 'x) (or/c #t #f 'x))
+  (test-name '(or/c any/c #f) (or/c any/c #f))
+  (test-name '(or/c #f any/c) (or/c #f any/c))
 
   (test-name '(if/c integer? odd? (-> integer? integer?))
              (if/c integer? odd? (-> integer? integer?)))
@@ -241,6 +243,7 @@
   (test-name '(and/c real? (not/c positive?)) (and/c real? (not/c positive?)))
   (test-name '(and/c real? negative?) (and/c real? negative?))
   (test-name '(and/c real? (not/c negative?)) (and/c real? (not/c negative?)))
+  (test-name 'and/c and/c) ;; technically, this tests the `object-name` of `and/c`
   (test-name '(>/c 0) (>/c 0))
   (test-name '(<=/c 0) (<=/c 0))
   (test-name '(</c 0) (</c 0))
@@ -438,6 +441,10 @@
   (test-name '(set/c char? #:cmp 'eq) (set/c char? #:cmp 'eq))
   (test-name '(set/c (set/c char?) #:cmp 'eqv) (set/c (set/c char? #:cmp 'dont-care) #:cmp 'eqv))
   (test-name '(set/c (-> char? char?) #:cmp 'equal) (set/c (-> char? char?) #:cmp 'equal))
+  (test-name '(set/c (set/c string?) #:cmp 'equal-always)
+             (set/c (set/c string? #:cmp 'dont-care) #:cmp 'equal-always))
+  (test-name '(set/c (-> string? string?) #:cmp 'equal-always)
+             (set/c (-> string? string?) #:cmp 'equal-always))
   (test-name '(set/c (-> integer? boolean?)) (set/c (-> integer? boolean?)))
   
   (test-name 'α (let ([α (new-∀/c)]) α))

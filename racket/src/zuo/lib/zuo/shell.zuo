@@ -1,0 +1,91 @@
+#lang zuo/base
+(require "thread.zuo")
+
+(provide shell
+         shell/wait
+         build-shell
+         shell-subst)
+
+(define (shell arg . args)
+  (call-with-command
+   'shell
+   (cons arg args)
+   (lambda (command options)
+     (cond
+       [(eq? (hash-ref (runtime-env) 'system-type) 'unix)
+        (process "/bin/sh" "-c" command options)]
+       [else
+        (let ([cmd (build-path (hash-ref (runtime-env) 'sys-dir) "cmd.exe")])
+          (process cmd (~a cmd " /c \"" command "\"") (hash-set options 'exact? #t)))]))))
+
+(define (shell/wait arg . args)
+  (call-with-command
+   'shell/wait
+   (cons arg args)
+   (lambda (command options)
+     (unless (hash-ref options 'quiet? #f)
+       (displayln (let ([dir (hash-ref options 'dir #f)])
+                    (if dir
+                        (~a "cd " (string->shell dir) " && " command)
+                        command))))
+     (define p (shell command (hash-remove (hash-remove
+                                            (hash-remove options 'quiet?)
+                                            'no-thread?)
+                                           'desc)))
+     (if (hash-ref options 'no-thread? #f)
+         (process-wait (hash-ref p 'process))
+         (thread-process-wait (hash-ref p 'process)))
+     (unless (= 0 (process-status (hash-ref p 'process)))
+       (error (~a (hash-ref options 'desc "shell command") " failed"))))))
+
+(define (call-with-command who args k)
+  (let loop ([args args] [accum '()])
+    (cond
+      [(null? args)
+       (k (do-build-shell who (reverse accum))
+          (hash))]
+      [(and (hash? (car args))
+            (null? (cdr args))
+            (pair? accum))
+       (k (do-build-shell who (reverse accum))
+          (car args))]
+      [else
+       (loop (cdr args) (cons (car args) accum))])))
+
+(define (build-shell . strs)
+  (do-build-shell 'build-sehll strs))
+
+(define (do-build-shell who . strs)
+  (let ([strs (let loop ([strs strs])
+                (cond
+                  [(null? strs) '()]
+                  [else
+                   (let ([a (car strs)])
+                     (cond
+                       [(string? a) (if (string=? a "")
+                                        (loop (cdr strs))
+                                        (cons a (loop (cdr strs))))]
+                       [(list? a) (loop (append a (cdr strs)))]
+                       [else (arg-error who "string or list" a)]))]))])
+    (string-join strs)))
+
+(define (shell-subst str config)
+  (unless (string? str) (arg-error 'shell-subst "string" str))
+  (unless (hash? config) (arg-error 'shell-subst "hash table" config))
+  (let loop ([i 0])
+    (cond
+      [(> (+ i 2) (string-length str)) str]
+      [(and (= (char "$") (string-ref str i))
+            (= (char "{") (string-ref str (+ i 1))))
+       (let ([end (let loop ([i (+ i 2)])
+                    (cond
+                      [(= i (string-length str)) (error "didn't find closer" str)]
+                      [(= (char "}") (string-ref str i)) i]
+                      [else (loop (+ i 1))]))])
+         (shell-subst (~a (substring str 0 i)
+                          (let ([key (string->symbol (substring str (+ i 2) end))])
+                            (or (hash-ref config key #f)
+                                (error "shell-subst: no substitution found for name" key)))
+                          (substring str (+ end 1)))
+                      config))]
+      [else (loop (+ i 1))])))

@@ -1,0 +1,16 @@
+#lang zuo/datum
+
+(define free-id=?
+  (lambda (binds id1 id2)
+    (let* ([bind1 (resolve* binds id1 #f)]
+           [bind2 (resolve* binds id2 #f)])
+      (or (specific=? bind1 bind2)
+          (and (not bind1)
+               (not bind2)
+               (eq? (syntax-e id1) (syntax-e id2)))))))
+
+(define (apply-macro* proc s name free-id=?)
+  (let ([c-proc (context-consumer-procedure proc)])
+    (if c-proc
+        (c-proc s free-id=? (and name (symbol->string (syntax-e name))))
+        (proc s))))
