@@ -252,7 +252,7 @@ doubt.
 Like @racket[make-hash], @racket[make-hasheq],
 @racket[make-hasheqv], and @racket[make-hashalw],
 but creates a mutable hash table that holds
-keys-value combinations in the same way as an @tech{ephemeron}.
+key-value combinations in the same way as an @tech{ephemeron}.
 
 Using an ephemeron hash table is like using a weak hash table and
 mapping each key to a @tech{ephemeron} that pairs the key and value.
