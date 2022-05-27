@@ -19,9 +19,10 @@
          rule?
          phony-rule?
 
-         sha1?
-         file-sha1
-         no-sha1
+         sha256?
+         file-sha256
+         no-sha256
+         sha256-length
 
          build
          build/command-line
@@ -43,7 +44,7 @@
 ;; Targets and rules
 
 ;; A token represents a build in progress, used by a target's `get-rule` or `build`
-;; function to make recursive call or get SHA-1s (possibly cached)
+;; function to make recursive call or get SHA-256s (possibly cached)
 (struct token (target      ; the target that received this token
                ch          ; a channel to access the build state
                seen        ; to detect dependency cycles
@@ -58,8 +59,8 @@
 
 ;; A rule is a result from `get-rule`:
 (struct rule (deps        ; list of targets
-              build       ; (-> any), called when deps SHA-1s different than recorded
-              sha1))      ; #f => computed via `file-sha1`
+              build       ; (-> any), called when deps SHA-256s different than recorded
+              sha256))      ; #f => computed via `file-sha256`
 
 ;; A phony target returns a phony-rule, instead:
 (struct phony-rule (deps
@@ -68,16 +69,16 @@
 ;; During a target's `get-rule` or `build`, calls to `build/dep`
 ;; trigger recording of additional dependencies
 
-(define no-sha1 "")
-(define phony-sha1 (string->uninterned-symbol "x")) ; internal use
-(define (sha1? s)
+(define no-sha256 "")
+(define phony-sha256 (string->uninterned-symbol "x")) ; internal use
+(define (sha256? s)
   (or (and (string? s)
-           (or (= (string-length s) 40)
-               (string=? s no-sha1)
-               ;; also allow a concatenation of SHA-1s for multi-file targets
-               (and (>= (string-length s) 40)
-                    (= 0 (modulo (string-length s) 40)))))
-      (eq? s phony-sha1)))
+           (or (= (string-length s) sha256-length)
+               (string=? s no-sha256)
+               ;; also allow a concatenation of SHA-256s for multi-file targets
+               (and (>= (string-length s) sha256-length)
+                    (= 0 (modulo (string-length s) sha256-length)))))
+      (eq? s phony-sha256)))
 
 ;; public constructor
 (define make-target
@@ -100,16 +101,16 @@
 ;; public constructor
 (define make-rule
   (let ([rule
-         (lambda (deps [build #f] [sha1 #f])
+         (lambda (deps [build #f] [sha256 #f])
            (let ([norm-deps (and (list? deps) (map coerce-to-target deps))])
              (unless (and norm-deps (andmap target? norm-deps))
                (arg-error 'rule "list of targets" deps))
              (unless (or (not build)
                          (procedure? build))
                (arg-error 'rule "procedure or #f" build))
-             (unless (or (not sha1) (sha1? sha1))
-               (arg-error 'rule "sha1 or #f" sha1))
-             (rule norm-deps build sha1)))])
+             (unless (or (not sha256) (sha256? sha256))
+               (arg-error 'rule "sha256 or #f" sha256))
+             (rule norm-deps build sha256)))])
     rule))
 
 ;; An input-file target has no dependencies
@@ -139,12 +140,12 @@
             t))
       (coerce-to-target t)))
 
-;; An input-data target supplies its SHA-1 up front
+;; An input-data target supplies its SHA-256 up front
 (define (input-data-target name v)
   (unless (symbol? name) (arg-error 'input-data-target "symbol" name))
   (target (symbol->key name)
           name
-          (lambda (path token) (make-rule '() #f (string-sha1 (~s v))))
+          (lambda (path token) (make-rule '() #f (string-sha256 (~s v))))
           'input
           (hash)))
 
@@ -167,8 +168,8 @@
     (rule (phony-rule-deps r)
           (lambda ()
             ((phony-rule-build r))
-            phony-sha1)
-          phony-sha1)))
+            phony-sha256)
+          phony-sha256)))
 
 (define (target-path t)
   (unless (target? t) (arg-error 'target-path "target" t))
@@ -192,23 +193,23 @@
 
 ;; When a target is built, the build result is recorded as
 ;;
-;;   (list sha1 (list dep-sym-or-path-rel-to-target sha1) ..)
+;;   (list sha256 (list dep-sym-or-path-rel-to-target sha256) ...)
 ;;
 ;; This result is in the `target-state` field of a build state, while
 ;; `db` holds the same-shaped information from the previous build.
 ;;
 ;; The `time-cache` field of a build state is a shortcut for getting
-;; input-file SHA-1s on the assumption that a SHA-1 recorded last time
+;; input-file SHA-256s on the assumption that a SHA-256 recorded last time
 ;; is still right if the file's timestamp hasn't changed.
 
-;; Where the contracts below say "dep-sha1s", that's a hash table
-;; mapping a dependency's key to a SHA-1.
+;; Where the contracts below say "dep-sha256s", that's a hash table
+;; mapping a dependency's key to a SHA-256.
 
 (struct build-state (ch            ; channel to hold the state while target is running
-                     target-state  ; key -> (cons sha1 dep-sha1s) | 'pending | channel
-                     target-accum  ; key -> dep-sha1s
-                     db            ; key -> (cons sha1 dep-sha1s) | #t [for db file itself]
-                     time-cache    ; key -> (cons timestamp sha1)
+                     target-state  ; key -> (cons sha256 dep-sha256s) | 'pending | channel
+                     target-accum  ; key -> dep-sha256s
+                     db            ; key -> (cons sha256 dep-sha256s) | #t [for db file itself]
+                     time-cache    ; key -> (cons timestamp sha256)
                      saw-targets   ; key -> target [to detect multiple for same output]
                      resource-ch   ; channel with available resources enqueued
                      log?          ; logging enabled?
@@ -314,9 +315,9 @@
     [(eq? (target-kind t) 'input)
      ;; no dependencies, not need for a thread to build, etc.
      (define r ((target-get-rule t) (target-name t) #f))
-     (define sha1 (or (rule-sha1 r) (file-sha1/state (target-path t) state)))
-     (when (equal? sha1 no-sha1) ((rule-build r)))
-     (update-target-state state t (list sha1))]
+     (define sha256 (or (rule-sha256 r) (file-sha256/state (target-path t) state)))
+     (when (equal? sha256 no-sha256) ((rule-build r)))
+     (update-target-state state t (list sha256))]
     [else (build-unbuilt t state seen top?)]))
 
 ;; Starts a build for a specific target
@@ -336,10 +337,10 @@
 
   ;; get previously recorded result, possibly loading from a file
   ;; that is cached in the build state
-  (define loaded-state (load-sha1s state t path))
+  (define loaded-state (load-sha256s state t path))
   (define prev-ts (previous-target-state loaded-state (target-key t)))
-  (define prev-sha1 (car prev-ts))
-  (define prev-dep-sha1s/raw-symbols (cdr prev-ts))
+  (define prev-sha256 (car prev-ts))
+  (define prev-dep-sha256s/raw-symbols (cdr prev-ts))
 
   ;; record a channel as the start's current build state
   (define result-ch (channel))
@@ -357,23 +358,23 @@
   (unless (rule? r)
     (error "build: target result is not a rule" r))
   (define deps (rule-deps r))
-  (define sha1 (or (rule-sha1 r) (if (pair? co-outputs)
-                                     (files-sha1 (cons path co-outputs) tok)
-                                     (file-sha1 path tok))))
+  (define sha256 (or (rule-sha256 r) (if (pair? co-outputs)
+                                         (files-sha256 (cons path co-outputs) tok)
+                                         (file-sha256 path tok))))
   (define to-build (rule-build r))
-  (define build-to-sha1? (and (rule-sha1 r) #t))
+  (define build-to-sha256? (and (rule-sha256 r) #t))
 
   ;; if we recorded any data targets, we need to fix up the keys
-  (define prev-dep-sha1s (foldl (lambda (dep-key dep-sha1s)
-                                  (cond
-                                    [(symbol-key? dep-key)
-                                     (let ([actual-key (translate-key dep-key deps t)])
-                                       (hash-set (hash-remove dep-sha1s dep-key)
-                                                 actual-key
-                                                 (hash-ref dep-sha1s dep-key)))]
-                                    [else dep-sha1s]))
-                                prev-dep-sha1s/raw-symbols
-                                (hash-keys prev-dep-sha1s/raw-symbols)))
+  (define prev-dep-sha256s (foldl (lambda (dep-key dep-sha256s)
+                                    (cond
+                                      [(symbol-key? dep-key)
+                                       (let ([actual-key (translate-key dep-key deps t)])
+                                         (hash-set (hash-remove dep-sha256s dep-key)
+                                                   actual-key
+                                                   (hash-ref dep-sha256s dep-key)))]
+                                      [else dep-sha256s]))
+                                  prev-dep-sha256s/raw-symbols
+                                  (hash-keys prev-dep-sha256s/raw-symbols)))
 
   (define rule-state (get-state (token-ch tok) "rule"))
 
@@ -386,14 +387,14 @@
            rule-state
            deps))
 
-  ;; extract results, assemble in a hash table: <rel-path> -> <sha1>
-  (define dep-reported-sha1s
-    (foldl (lambda (dep dep-sha1s)
-             (add-dependent-target-state dep dep-sha1s new-state))
+  ;; extract results, assemble in a hash table: <rel-path> -> <sha256>
+  (define dep-reported-sha256s
+    (foldl (lambda (dep dep-sha256s)
+             (add-dependent-target-state dep dep-sha256s new-state))
            (hash)
            deps))
-  (define dep-sha1s
-    (cdr (merge-target-accumulated new-state t (cons #f dep-reported-sha1s))))
+  (define dep-sha256s
+    (cdr (merge-target-accumulated new-state t (cons #f dep-reported-sha256s))))
 
   ;; calling the build step for `t` might generate more dependencies, but those
   ;; extra dependencies are supposed to be determined only by the ones declared
@@ -402,69 +403,69 @@
   ;; then we can assume that the extra dependencies generated previously are still
   ;; the extra dependencies this time
   (define same-so-far?
-    (and (log-changed (and (equal? sha1 prev-sha1) (not (equal? sha1 no-sha1))) path state)
+    (and (log-changed (and (equal? sha256 prev-sha256) (not (equal? sha256 no-sha256))) path state)
          (andmap (lambda (dep-key)
-                   (log-changed (equal? (hash-ref dep-sha1s dep-key)
-                                        (hash-ref prev-dep-sha1s dep-key #f))
+                   (log-changed (equal? (hash-ref dep-sha256s dep-key)
+                                        (hash-ref prev-dep-sha256s dep-key #f))
                                 dep-key
                                 state))
-                 (hash-keys dep-sha1s))))
+                 (hash-keys dep-sha256s))))
 
   (define more-deps
     (if same-so-far?
-        (foldl (lambda (dep-key more-sha1s)
+        (foldl (lambda (dep-key more-sha256s)
                  ;; currently, we assume that any additional dependencies
                  ;; added in the build phase were and would be inputs
-                 (if (or (hash-ref dep-sha1s dep-key #f)
+                 (if (or (hash-ref dep-sha256s dep-key #f)
                          (symbol-key? dep-key))
-                     more-sha1s
+                     more-sha256s
                      (cons (input-file-target (symbol->string dep-key))
-                           more-sha1s)))
+                           more-sha256s)))
                '()
-               (hash-keys prev-dep-sha1s))
+               (hash-keys prev-dep-sha256s))
         '()))
   (for-each (make-fetch-dep new-state new-seen dep-top?) more-deps)
   (define newer-state
     (foldl (lambda (dep state) (do-build dep state new-seen dep-top?))
            new-state
            more-deps))
-  (define all-dep-sha1s
-    (foldl (lambda (dep dep-sha1s)
-             (add-dependent-target-state dep dep-sha1s newer-state))
-           dep-sha1s
+  (define all-dep-sha256s
+    (foldl (lambda (dep dep-sha256s)
+             (add-dependent-target-state dep dep-sha256s newer-state))
+           dep-sha256s
            more-deps))
 
   ;; compare to recorded result, and rebuild if different
   (cond
     [(and same-so-far?
           (andmap (lambda (dep-key)
-                    (log-changed (equal? (hash-ref all-dep-sha1s dep-key #f)
-                                         (hash-ref prev-dep-sha1s dep-key #f))
+                    (log-changed (equal? (hash-ref all-dep-sha256s dep-key #f)
+                                         (hash-ref prev-dep-sha256s dep-key #f))
                                  dep-key
                                  state))
-                  (hash-keys all-dep-sha1s)))
+                  (hash-keys all-dep-sha256s)))
      ;; no need to rebuild
      (when path-handle (cleanable-cancel path-handle))
      (when (and (or alert-top? (hash-ref (target-options t) 'noisy? #f))
-                (equal? prev-sha1 sha1)
-                (not (equal? sha1 phony-sha1)))
+                (equal? prev-sha256 sha256)
+                (not (equal? sha256 phony-sha256)))
        (alert (~a (target-name t) " is up to date")))
-     (define done-state (update-target-state newer-state t (cons sha1 all-dep-sha1s)))
+     (define done-state (update-target-state newer-state t (cons sha256 all-dep-sha256s)))
      (channel-put result-ch 'done)
      done-state]
     [else
      (unless to-build
        (error "build: out-of-date target has no build procedure" (target-name t)))
      (define (build-one finish)
-       (let* ([maybe-sha1 (to-build)] ; build!
-              [sha1 (if build-to-sha1?
-                        maybe-sha1
-                        (if (pair? co-outputs)
-                            (files-sha1 (cons path co-outputs) tok)
-                            (file-sha1 path tok)))])
-         (unless (sha1? sha1)
-           (error "build: target-build result is not a sha1" sha1))
-         (when (equal? sha1 no-sha1)
+       (let* ([maybe-sha256 (to-build)] ; build!
+              [sha256 (if build-to-sha256?
+                          maybe-sha256
+                          (if (pair? co-outputs)
+                              (files-sha256 (cons path co-outputs) tok)
+                              (file-sha256 path tok)))])
+         (unless (sha256? sha256)
+           (error "build: target-build result is not a sha256" sha256))
+         (when (equal? sha256 no-sha256)
            (error "rule for target did not create it" (if (pair? co-outputs)
                                                           (cons path co-outputs)
                                                           path)))
@@ -472,11 +473,11 @@
          (finish
           (lambda (state)
             ;; record result:
-            (let* ([ts (if (eq? sha1 phony-sha1)
-                           (cons no-sha1 (hash))
-                           (cons sha1 dep-sha1s))]
+            (let* ([ts (if (eq? sha256 phony-sha256)
+                           (cons no-sha256 (hash))
+                           (cons sha256 dep-sha256s))]
                    [ts (merge-target-accumulated state t ts)]
-                   [state (update-target-state/record-sha1s state t ts co-outputs)])
+                   [state (update-target-state/record-sha256s state t ts co-outputs)])
               (channel-put result-ch 'done)
               state)))))
      (let ([state-ch (build-state-ch newer-state)])
@@ -681,25 +682,25 @@
 (define (target-state state t)
   (hash-ref (build-state-target-state state) (target-key t) #f))
 
-(define (add-dependent-target-state dep dep-sha1s state)
+(define (add-dependent-target-state dep dep-sha256s state)
   (define ts (target-state state dep))
-  (define sha1 (car ts))
-  (hash-set dep-sha1s (target-key dep) (if (eq? sha1 phony-sha1) no-sha1 sha1)))
+  (define sha256 (car ts))
+  (hash-set dep-sha256s (target-key dep) (if (eq? sha256 phony-sha256) no-sha256 sha256)))
 
 (define (record-target-accumulated state for-t t)
   (let* ([accum-key (target-key for-t)]
-         [dep-sha1s (hash-ref (build-state-target-accum state) accum-key (hash))]
-         [dep-sha1s (add-dependent-target-state t dep-sha1s state)])
-    (build-state-set-target-accum state (hash-set (build-state-target-accum state) accum-key dep-sha1s))))
+         [dep-sha256s (hash-ref (build-state-target-accum state) accum-key (hash))]
+         [dep-sha256s (add-dependent-target-state t dep-sha256s state)])
+    (build-state-set-target-accum state (hash-set (build-state-target-accum state) accum-key dep-sha256s))))
 
 (define (merge-target-accumulated state t ts)
-  (let ([more-dep-sha1s (hash-ref (build-state-target-accum state) (target-key t) #f)])
-    (if more-dep-sha1s
+  (let ([more-dep-sha256s (hash-ref (build-state-target-accum state) (target-key t) #f)])
+    (if more-dep-sha256s
         (cons (car ts)
-              (foldl (lambda (dep-key dep-sha1s)
-                       (hash-set dep-sha1s dep-key (hash-ref more-dep-sha1s dep-key)))
+              (foldl (lambda (dep-key dep-sha256s)
+                       (hash-set dep-sha256s dep-key (hash-ref more-dep-sha256s dep-key)))
                      (cdr ts)
-                     (hash-keys more-dep-sha1s)))
+                     (hash-keys more-dep-sha256s)))
         ts)))
 
 (define (update-target-state state t ts)
@@ -708,19 +709,19 @@
                                           (target-key t)
                                           ts)))
 
-(define (update-target-state/record-sha1s state t ts co-outputs)
+(define (update-target-state/record-sha256s state t ts co-outputs)
   (unless (eq? 'phony (target-kind t))
-    (db-record-target-sha1s (target-db-dir t) (target-name t) ts co-outputs))
+    (db-record-target-sha256s (target-db-dir t) (target-name t) ts co-outputs))
   (update-target-state state t ts))
 
-(define (load-sha1s state t path)
+(define (load-sha256s state t path)
   (cond
     [(symbol? path) state]
     [else
-     (define db+tc (db-load-sha1s (target-db-dir t)
-                                  path
-                                  (build-state-db state)
-                                  (build-state-time-cache state)))
+     (define db+tc (db-load-sha256s (target-db-dir t)
+                                    path
+                                    (build-state-db state)
+                                    (build-state-time-cache state)))
      (if db+tc
          (let ([state (build-state-set-db state (car db+tc))])
            (build-state-set-time-cache state (cdr db+tc)))
@@ -728,7 +729,7 @@
 
 (define (previous-target-state state key)
   (or (hash-ref (build-state-db state) key #f)
-      (cons no-sha1 (hash))))
+      (cons no-sha256 (hash))))
 
 (define (ensure-consistent state t)
   (let* ([saw (build-state-saw-targets state)]
@@ -743,22 +744,22 @@
       [else
        (build-state-set-saw-targets state (hash-set saw (target-key t) t))])))
 
-(define (file-sha1 path token)
-  (unless (path-string? path) (arg-error 'file-sha1 "path string" path))
-  (unless (or (not token) (token? token)) (error 'file-sha1 "build-token" token))
-  (let ([state (and token (get-state (token-ch token) "sha1"))])
-    (when state (put-state (token-ch token) state "sha1"))
-    (file-sha1/state path state)))
+(define (file-sha256 path token)
+  (unless (path-string? path) (arg-error 'file-sha256 "path string" path))
+  (unless (or (not token) (token? token)) (error 'file-sha256 "build-token" token))
+  (let ([state (and token (get-state (token-ch token) "sha256"))])
+    (when state (put-state (token-ch token) state "sha256"))
+    (file-sha256/state path state)))
 
-(define (files-sha1 paths token)
-  (let ([sha1s (map (lambda (path) (file-sha1 path token)) paths)])
-    (if (ormap (lambda (s) (string=? s no-sha1)) sha1s)
-        no-sha1
-        (apply ~a sha1s))))
+(define (files-sha256 paths token)
+  (let ([sha256s (map (lambda (path) (file-sha256 path token)) paths)])
+    (if (ormap (lambda (s) (string=? s no-sha256)) sha256s)
+        no-sha256
+        (apply ~a sha256s))))
 
-(define (file-sha1/state path state)
-  (or (file-sha1/cached path (and state (build-state-time-cache state)))
-      no-sha1))
+(define (file-sha256/state path state)
+  (or (file-sha256/cached path (and state (build-state-time-cache state)))
+      no-sha256))
 
 ;; translate a data key as loaded from a previous-run to a key as
 ;; instantiated for this run

@@ -8,3 +8,6 @@ See the files
 and
   https://github.com/racket/racket/blob/master/racket/src/LICENSE-MIT.txt
 for the full text of the licenses.
+
+The SHA-256 implementation is from mbed TLS. mbed TLS is licensed
+under the Apache v2.0 License.

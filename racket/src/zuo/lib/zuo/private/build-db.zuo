@@ -5,7 +5,7 @@
 ;; directory, the goal here is to be able to load information for all
 ;; the targets at once.
 
-;; A timestamp-based SHA-1 cache for input files is stored in
+;; A timestamp-based SHA-256 cache for input files is stored in
 ;; "_zuo_tc.db" alongside "_zuo.db" --- in the directory of a target
 ;; that depends on the input files, not in the input file's directory
 ;; (which is likely to be in the source tree). An input used by
@@ -19,14 +19,16 @@
 ;; format of each file is a top-level sequence of
 ;;   (<rel-path> . <info>)
 ;; For "_zuo.db", it's more specifically
-;;   (<rel-path> <sha1> (<dep-rel-path> <sha1>) ...)
+;;   (<rel-path> <sha256> (<dep-rel-path> <sha256>) ...)
 ;; For "_zuo_tc.db", it's
-;;   (<rel-path> (<time-secs> . <time-msec>) <sha1>)
+;;   (<rel-path> (<time-secs> . <time-msec>) <sha256>)
 
-(provide db-record-target-sha1s
-         db-load-sha1s
+(provide db-record-target-sha256s
+         db-load-sha256s
 
-         file-sha1/cached
+         sha256-length
+
+         file-sha256/cached
          path->absolute-path
          dir-part
 
@@ -34,7 +36,9 @@
          symbol-key?
          symbol-key->symbol)
 
-;; for serialization and deserialization of dep-sha1s tables
+(define sha256-length 64)
+
+;; for serialization and deserialization of dep-sha256s tables
 (define (hash->list ht db-dir)
   (map (lambda (k) (list (serialize-key k db-dir) (hash-ref ht k)))
        (hash-keys ht)))
@@ -79,12 +83,12 @@
   (k rel-target-path db-dir db-path tc-path))
 
 ;; Records the result of a build of `name`, mainly storing the
-;; SHA-1 and dep SHA-1s in "_zuo.db", but also recording a timestamp
-;; plus SHA-1 for dependencies in "_zuo_tc.db".
+;; SHA-256 and dep SHA-256s in "_zuo.db", but also recording a timestamp
+;; plus SHA-256 for dependencies in "_zuo_tc.db".
 ;; All relative file names are stored relative to `db-dir`, which
 ;; defaults to the directory of target-path. On entry, `target-path`
 ;; and keys in `ts` are relative to the current directory.
-(define (db-record-target-sha1s maybe-db-dir target-path ts co-outputs)
+(define (db-record-target-sha256s maybe-db-dir target-path ts co-outputs)
   (db-paths
    maybe-db-dir target-path
    (lambda (rel-target-path db-dir db-path tc-path)
@@ -92,8 +96,8 @@
        (if (file-exists? db-path)
            (string-read (file->string db-path) 0 db-path)
            '()))
-     (define dep-sha1s-l (hash->list (cdr ts) db-dir))
-     (define new-db-content (reassoc (list* rel-target-path (car ts) dep-sha1s-l) db-content))
+     (define dep-sha256s-l (hash->list (cdr ts) db-dir))
+     (define new-db-content (reassoc (list* rel-target-path (car ts) dep-sha256s-l) db-content))
      (update-file db-path new-db-content)
      (unless (ormap (lambda (p) (string=? (car p) "SOURCE_DATE_EPOCH")) (hash-ref (runtime-env) 'env))
        (define tc-content
@@ -110,19 +114,19 @@
                                                       (build-path db-dir dep-name)
                                                       dep-name)))
                      (cond
-                       [time (reassoc (list dep-name time (substring (cadr dep) 0 40)) tc-content)]
+                       [time (reassoc (list dep-name time (substring (cadr dep) 0 sha256-length)) tc-content)]
                        [else tc-content])]))
                 tc-content
                 (if (pair? co-outputs)
-                    (append (split-sha1s rel-target-path co-outputs (car ts) db-dir)
-                            dep-sha1s-l)
-                    (cons (list rel-target-path (car ts)) dep-sha1s-l))))
+                    (append (split-sha256s rel-target-path co-outputs (car ts) db-dir)
+                            dep-sha256s-l)
+                    (cons (list rel-target-path (car ts)) dep-sha256s-l))))
        (update-file tc-path new-tc-content)))))
 
 ;; Loads previous-build information for `abs-path`, as well as cached
-;; SHA-1s for things that might be dependencies; loading needs to
+;; SHA-256s for things that might be dependencies; loading needs to
 ;; happen only once per directory that has a (non-input) build target
-(define (db-load-sha1s maybe-db-dir target-path db tc)
+(define (db-load-sha256s maybe-db-dir target-path db tc)
   (db-paths
    maybe-db-dir target-path
    (lambda (name db-dir db-path tc-path)
@@ -159,8 +163,8 @@
         (define new-tc (read-in tc-path tc (lambda (v) v)))
         (cons new-db new-tc)]))))
 
-;; Helpers to get an input file's SHA-1, possibly cached
-(define (file-sha1/cached path time-cache)
+;; Helpers to get an input file's SHA-256, possibly cached
+(define (file-sha256/cached path time-cache)
   (let ([timestamp (file-timestamp path)])
     (and timestamp
          (let ([cached (and time-cache
@@ -168,15 +172,17 @@
                                       (string->symbol path)
                                       #f))])
            (if (and cached
-                    (equal? (car cached) timestamp))
+                    (equal? (car cached) timestamp)
+                    ;; might be a stale SHA-1 rather than an SHA-256
+                    (= sha256-length (string-length (cadr cached))))
                (cadr cached)
-               (string-sha1 (file->string path)))))))
+               (string-sha256 (file->string path)))))))
 
-;; Split "sha1", which should have a sha1 for each of `rel-target-path`
-;; and each element of `co-outputs`, into a list of sha1s
-(define (split-sha1s rel-target-path co-outputs sha1 db-dir)
-  (cons (list rel-target-path (substring sha1 0 40))
-        (let loop ([co-outputs co-outputs] [start 40])
+;; Split "sha256", which should have a sha256 for each of `rel-target-path`
+;; and each element of `co-outputs`, into a list of sha256s
+(define (split-sha256s rel-target-path co-outputs sha256 db-dir)
+  (cons (list rel-target-path (substring sha256 0 sha256-length))
+        (let loop ([co-outputs co-outputs] [start sha256-length])
           (cond
             [(null? co-outputs) '()]
             [else
@@ -184,8 +190,8 @@
                (cons (list (if (relative-path? co-output)
                                (find-relative-path db-dir co-output)
                                co-output)
-                           (substring sha1 start (+ start 40)))
-                     (loop (cdr co-outputs) (+ start 40))))]))))
+                           (substring sha256 start (+ start sha256-length)))
+                     (loop (cdr co-outputs) (+ start sha256-length))))]))))
 
 ;; Atomic write by write-to-temporary-and-move
 (define (update-file path new-content)

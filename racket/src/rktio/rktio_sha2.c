@@ -24,6 +24,7 @@
  *  http://csrc.nist.gov/publications/fips/fips180-2/fips180-2.pdf
  */
 /* Adjusted by Matthew Flatt for rktio */
+/* This code is also used in "zuo.c".  */
 
 #include "rktio.h"
 

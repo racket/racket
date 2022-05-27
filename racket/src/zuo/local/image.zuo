@@ -44,7 +44,7 @@
 
 (define (image-target cmd)
   (target
-   (hash-ref cmd 'output) ; the output file; `target` uses SHA-1 on this
+   (hash-ref cmd 'output) ; the output file; `target` uses SHA-256 on this
    (lambda (path token)
      ;; when a target is demanded, we report dependencies and more via `rule`
      (rule

@@ -89,7 +89,7 @@
       (unless (= j (string-length s)) (j-loop (+ j 1))))
     (unless (= i (string-length s)) (i-loop (+ i 1)))))
 
-(check (string-sha1 "hello\n") "f572d396fae9206628714fb2ce00f72e94f2258f")
+(check (string-sha256 "hello\n") "5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03")
 
 (check (string->integer "10") 10)
 (check (string->integer "-10") -10)
