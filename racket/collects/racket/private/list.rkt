@@ -367,14 +367,14 @@
           [(null? rfuns) f]
           [(id? f) (pipeline1 (car rfuns) (cdr rfuns))]
           [else
+           ;; (very) slightly slower alternative:
+           #;(pipeline1 (let* ([fst (car rfuns)]
+                               [composed (lambda (x) (fst (f x)))])
+                          composed)
+                        (cdr rfuns))
            (let ([rfuns (remove* (list values) rfuns)])
              (if (null? rfuns)
                  f
-                 ;; (very) slightly slower alternative:
-                 #;(pipeline1 (let* ([fst (car rfuns)]
-                                     [composed (lambda (x) (fst (f x)))])
-                                composed)
-                              (cdr rfuns))
                  (let ([composed
                         (lambda (x)
                           (let loop ([x x] [f f] [rfuns rfuns])
