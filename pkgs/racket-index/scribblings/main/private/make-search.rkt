@@ -61,8 +61,18 @@
       ;; Quote unicode chars:
       (regexp-replace* #px"[^[:ascii:]]" str hex4)))
 
+
+(define (transform-one x)
+  (match x
+    [(? string?) x]
+    [`(code ,x) (make-element symbol-color
+                              (list (make-element value-link-color
+                                                  (list x))))]))
+
 (define (attach-kind e xs)
-  `(,@e ,(make-element "smaller" `(" (" ,@xs ")"))))
+  (append e
+          (list (make-element "smaller"
+                              `(" (" ,@(map transform-one xs) ")")))))
 
 (define (make-script as-empty? user-dir? renderer sec ri)
   (define dest-dir (send renderer get-dest-directory #t))
@@ -127,64 +137,30 @@
       (define text (string-downcase (string-join texts)))
       (define-values (href html)
         (let* ([e (add-between elts ", ")]
-               ;; !!HACK!! The index entry for methods should have the extra
-               ;; text in it (when it does, this should go away)
                [e (cond
                     [(method-index-desc? desc)
                      (attach-kind
                       e
                       (list "method of "
-                            (make-element
-                             symbol-color
-                             (list
-                              (make-element
-                               value-link-color
-                               (list (symbol->string
-                                      (exported-index-desc-name desc))))))))]
-                    [(procedure-index-desc*? desc)
-                     (attach-kind
-                      e
-                      (list (procedure-index-desc*-kind desc)))]
-                    [(form-index-desc*? desc)
-                     (attach-kind
-                      e
-                      (list (form-index-desc*-kind desc)))]
-                    [(thing-index-desc*? desc)
-                     (attach-kind
-                      e
-                      (list (thing-index-desc*-kind desc)))]
+                            `(code ,(symbol->string (exported-index-desc-name desc)))))]
+                    [(exported-index-desc*? desc)
+                     (attach-kind e (exported-index-desc*-kind desc))]
                     [(procedure-index-desc? desc)
-                     (attach-kind
-                      e
-                      (list "procedure"))]
+                     (attach-kind e (list "procedure"))]
                     [(form-index-desc? desc)
-                     (attach-kind
-                      e
-                      (list "syntax"))]
+                     (attach-kind e (list "syntax"))]
                     [(thing-index-desc? desc)
-                     (attach-kind
-                      e
-                      (list "value"))]
+                     (attach-kind e (list "value"))]
                     [(struct-index-desc? desc)
-                     (attach-kind
-                      e
-                      (list "struct"))]
+                     (attach-kind e (list "struct"))]
                     [(constructor-index-desc? desc)
-                     (attach-kind
-                      e
-                      (list "constructor"))]
+                     (attach-kind e (list "constructor"))]
                     [(class-index-desc? desc)
-                     (attach-kind
-                      e
-                      (list "class"))]
+                     (attach-kind e (list "class"))]
                     [(interface-index-desc? desc)
-                     (attach-kind
-                      e
-                      (list "interface"))]
+                     (attach-kind e (list "interface"))]
                     [(mixin-index-desc? desc)
-                     (attach-kind
-                      e
-                      (list "mixin"))]
+                     (attach-kind e (list "mixin"))]
                     [else e])]
                [e (make-link-element "indexlink" e tag)]
                [e (send renderer render-content e sec ri)])
