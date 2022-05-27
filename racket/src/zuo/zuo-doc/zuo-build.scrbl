@@ -6,7 +6,7 @@
 
 @(define shake-url "https://shakebuild.com/")
 
-@title[#:tag "zuo-build"]{Zuo as a @tt{make} Replacement}
+@title[#:tag "zuo-build"]{Zuo as a @exec{make} Replacement}
 
 @defzuomodule[zuo/build]
 
@@ -26,13 +26,15 @@ and build steps. The library has two layers:
 
 A @tech{target} represents either an input to a build (such as a
 source file) or a generated output, and a target can depend on any
-number of other targets. A target's output is represented by 40-character
-string that is normally a SHA-1 hash; the @racket[build] procedure
+number of other targets. A target's output is represented by a
+string that is normally an SHA-256 hash: more precisely, it is
+represented by a value satisfying the predicate @racket[sha256?].
+The @racket[build] procedure
 records hashes and dependencies in a database located alongside
 non-input targets, so it can avoid rebuilding targets when nothing has
-changed since the last build. Unlike @tt{make}, timestamps are used
-only as a shortcut to avoiding computing the SHA-1 of a file (i.e., if
-the timestamp has not changes, the SHA-1 result is assumed to be
+changed since the last build. Unlike @exec{make}, timestamps are used
+only as a shortcut to avoiding computing the SHA-256 of a file (i.e., if
+the timestamp has not changed, the SHA-256 result is assumed to be
 unchanged).
 
 ``Recursive make'' is encouraged in the sense that a target's build
@@ -55,14 +57,14 @@ skipped if the target isn't needed. Instead, @racket[target] takes a
 are needed. The @racket[_get-rule] procedure returns up to three
 results in a @racket[rule] record: a list of dependencies; the hash of
 an already-built version of the target, if one exists, where
-@racket[file-sha1] is used by default; and a @racket[_rebuild]
+@racket[file-sha256] is used by default; and a @racket[_rebuild]
 procedure that is called if the returned hash, the hash of
 dependencies (rebuilt if needed), and recorded results from a previous
 build together determine that a rebuild is needed.
 
 When a target's @racket[_rebuild] function is called, it optionally
 returns a hash for the result of the build if the target's
-@racket[rule] had one, otherwise @racket[file-sha1] is used to get a
+@racket[rule] had one, otherwise @racket[file-sha256] is used to get a
 result hash. Either way, it's possible that the result hash is the
 same the one returned by @racket[_get-rule]; that is, maybe a
 dependency of the target changed, but the change turned out not to
@@ -105,7 +107,7 @@ about other targets a @racket[_get-dep] procedures return them and as
 filename, then it reports an error.
 
 The @racket[build/command-line] function is a convenience to implement
-get @tt{make}-like command-line handling for building targets. The
+get @exec{make}-like command-line handling for building targets. The
 @racket[build/command-line] procedure takes a list of targets, and it
 calls @racket[build] on one or more of them based on command-line
 arguments (with help from @racket[find-target]).
@@ -121,7 +123,7 @@ where @racketidfont{targets-at} takes an @racket[_at-dir] procedure
 (supplied as just @racket[build-path] by default) to apply to each
 target path when building a list of targets, and a hash table of
 variables (analogous to variables that a makefile might provide to
-another makefile via @tt{make} arguments).
+another makefile via @exec{make} arguments).
 
 As a further convenience following the @racketidfont{targets-at}
 model, the @racket[provide-targets] form takes an identifier for such a
@@ -173,7 +175,7 @@ reads @filepath{Mf-config} to find and dispatch to
 @section{Recording Results}
 
 Build results are stored in a @filepath{_zuo.db} file in the same
-directory as a target (by default). Cached SHA-1 results with associated
+directory as a target (by default). Cached SHA-256 results with associated
 file timestamps are stored in a @filepath{_zuo_tc.db} in the same
 directory (i.e., the cached value for dependency is kept with the
 target, which is in a writable build space, while an input-file target
@@ -244,7 +246,7 @@ when getting a target name to include in a shell command.}
 
 Creates a @tech{target} that represents an input file. An input-file
 target has no build procedure, and it's state is summarized as a hash
-via @racket[file-sha1].}
+via @racket[file-sha256].}
 
 
 @defproc[(input-data-target [name symbol?] [content any/c]) target?]{
@@ -276,7 +278,7 @@ back, because that's often more convenient for constructing a target
 when applying an @racket[_at-dir] function to create @racket[name].
 
 The @deftech{build token} argument to @racket[get-deps] represents the
-target build in progress. It's useful with @racket[file-sha1] to take
+target build in progress. It's useful with @racket[file-sha256] to take
 advantage of caching, with @racket[build/dep] to report
 discovered targets, and with @racket[build/no-dep] or @racket[build].
 
@@ -328,8 +330,8 @@ The following keys are recognized in @racket[options]:
 
 @deftogether[(
 @defproc[(rule [dependencies (listof (or/c target? path-string?))]
-               [rebuild (or/c (-> (or/c sha1? any/c)) #f) #f]
-               [sha1 (or/c sha1? #f) #f])
+               [rebuild (or/c (-> (or/c sha256? any/c)) #f) #f]
+               [sha256 (or/c sha256? #f) #f])
          rule?]
 @defproc[(rule? [v any/c]) boolean?]
 )]{
@@ -339,9 +341,9 @@ procedure passed to @racket[target]. See @secref["make-target"].
 
 A path string can be reported as a dependency in
 @racket[dependencies], in which case it is coerced to a target using
-@racket[input-file-target]. If @racket[sha1] is @racket[#f],
-@racket[file-sha1] is used to compute the target's current hash, and
-@racket[rebuild] is not expected to return a hash. If @racket[sha1] is
+@racket[input-file-target]. If @racket[sha256] is @racket[#f],
+@racket[file-sha256] is used to compute the target's current hash, and
+@racket[rebuild] is not expected to return a hash. If @racket[sha256] is
 not @racket[#f], then if @racket[rebuild] is called, it must return a
 new hash.}
 
@@ -355,7 +357,7 @@ new hash.}
 
 The @racket[phony-rule] procedure combines the two results expected
 from a procedure passed to @racket[target] to create a @tech{phony}
-target. Compared to the non-phonu protocol, the result SHA-1 is
+target. Compared to the non-phony protocol, the result SHA-256 is
 omitted.}
 
 @defproc[(token? [v any/c]) boolean?]{
@@ -376,7 +378,7 @@ depends on the given list.
 
 If @racket[target] is a path, then it is coerced to target via
 @racket[input-file-target], but the only effect will be to compute the
-file's SHA-1 or error if the file does not exist.
+file's SHA-256 or error if the file does not exist.
 
 The @racket[options] argument supplies build options, and the
 following keys are recognized:
@@ -494,18 +496,25 @@ such a target to one where @racket[args] are the argument when the
 target is built.}
 
 @deftogether[(
-@defproc[(file-sha1 [file path-string?] [token (or/c token? #f)]) sha1?]
-@defproc[(sha1? [v any/c]) booelan?]
+@defproc[(file-sha256 [file path-string?] [token (or/c token? #f)]) sha256?]
+@defproc[(sha256? [v any/c]) booelan?]
+@defthing[sha256-length integer? #:value 64]
 )]{
 
-The @racket[file-sha1] procedure returns the SHA-1 hash of the content
-of @racket[file], or it returns @racket[no-sha1] if @racket[file] does
-not exist.
+The @racket[file-sha256] procedure returns the SHA-256 hash of the
+content of @racket[file] as a 64-character hexadecimal string (thus,
+@racket[sha256-length]), or it returns @racket[no-sha256] if
+@racket[file] does not exist.
 
-The @racket[sha1?] predicate recognizes values that are either a
-40-character string or @racket[no-sha1].}
+The @racket[sha256?] predicate recognizes @racket[no-sha256] and
+strings for which @racket[string-length] returns either
+@racket[sha256-length] or a multiple of @racket[sha256-length]. The
+later case is used for multi-file targets, which concatenate the
+constituent SHA-256 strings.
 
-@defthing[no-sha1 sha1? ""]{
+See also @racket[string-sha256].}
+
+@defthing[no-sha256 sha256? ""]{
 
 The empty string represents a non-existent target or one that needs to
 be rebuilt.}
@@ -546,13 +555,13 @@ See @secref["build-targets"] for an explanation of how
 
 @defproc[(make-targets [specs list?]) list?]{
 
-Converts a @tt{make}-like specification into a list of targets for use
-with @racket[build]. In this @tt{make}-like specification, extra
+Converts a @exec{make}-like specification into a list of targets for use
+with @racket[build]. In this @exec{make}-like specification, extra
 dependencies can be listed separately from a build rule, and
 dependencies can be written in terms of paths instead of @tech{target}
 objects.
 
-Although it might seem natural for this @tt{make}-like specification
+Although it might seem natural for this @exec{make}-like specification
 to be provided as a syntactic form, typical makefiles use patterns and
 variables to generate sets of rules. In Zuo, @racket[map] and similar
 are available for generating sets of rules. So, @racket[make-targets]

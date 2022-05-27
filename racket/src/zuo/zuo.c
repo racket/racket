@@ -55,6 +55,7 @@ typedef int32_t zuo_int32_t;
 typedef uint32_t zuo_uint32_t;
 
 typedef intptr_t zuo_intptr_t;
+typedef uintptr_t zuo_uintptr_t;
 
 typedef int zuo_raw_handle_t;
 #endif
@@ -68,8 +69,10 @@ typedef unsigned int zuo_uint32_t;
 
 # ifdef _WIN64
 typedef long long zuo_intptr_t;
+typedef unsigned long long zuo_uintptr_t;
 # else
 typedef long zuo_intptr_t;
+typedef unsigned long zuo_uintptr_t;
 # endif
 
 typedef HANDLE zuo_raw_handle_t;
@@ -6116,163 +6119,489 @@ zuo_t *zuo_process_wait(zuo_t *pids_i) {
 }
 
 /*======================================================================*/
-/* SHA-1                                                                */
+/* SHA-256                                                              */
 /*======================================================================*/
+/*
+ *  FIPS-180-2 compliant SHA-256 implementation
+ *
+ *  Copyright (C) 2006-2015, ARM Limited, All Rights Reserved
+ *  SPDX-License-Identifier: Apache-2.0
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may
+ *  not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *  This file is part of mbed TLS (https://tls.mbed.org)
+ */
+/*
+ *  The SHA-256 Secure Hash Standard was published by NIST in 2002.
+ *
+ *  http://csrc.nist.gov/publications/fips/fips180-2/fips180-2.pdf
+ */
+/* Adjusted by Matthew Flatt for rktio */
+/* This code is also used in "rktio_sha2.c".  */
 
-/* Based on
-    SHA-1 in C
-    By Steve Reid <sreid@sea-to-sky.net>
-  including changes by Saul Kravitz <Saul.Kravitz@celera.com>
-  and Ralph Giles <giles@ghostscript.com> */
+typedef struct zuo_sha2_ctx_t {
+    unsigned total[2];
+    unsigned state[8];
+    unsigned char buffer[64];
+    int is224;
+} zuo_sha2_ctx_t;
 
-static int zuo_little_endian;
+#define ZUO_SHA256_DIGEST_SIZE 32
 
-static void zuo_init_sha1() {
-  zuo_little_endian = ((zuo_magic() & 0xF) == 0);
+typedef zuo_uint32_t uint32_sha2_t;
+typedef zuo_uintptr_t size_sha2_t;
+
+typedef zuo_sha2_ctx_t mbedtls_sha256_context;
+
+/*
+ * 32-bit integer manipulation macros (big endian)
+ */
+#define GET_UINT32_BE(n,b,i)                            \
+do {                                                    \
+    (n) = ( (uint32_sha2_t) (b)[(i)    ] << 24 )             \
+        | ( (uint32_sha2_t) (b)[(i) + 1] << 16 )             \
+        | ( (uint32_sha2_t) (b)[(i) + 2] <<  8 )             \
+        | ( (uint32_sha2_t) (b)[(i) + 3]       );            \
+} while( 0 )
+
+#define PUT_UINT32_BE(n,b,i)                            \
+do {                                                    \
+    (b)[(i)    ] = (unsigned char) ( (n) >> 24 );       \
+    (b)[(i) + 1] = (unsigned char) ( (n) >> 16 );       \
+    (b)[(i) + 2] = (unsigned char) ( (n) >>  8 );       \
+    (b)[(i) + 3] = (unsigned char) ( (n)       );       \
+} while( 0 )
+
+static void mbedtls_sha256_init( mbedtls_sha256_context *ctx )
+{
+    memset( ctx, 0, sizeof( mbedtls_sha256_context ) );
 }
+
+/*
+ * SHA-256 context setup
+ */
+static int mbedtls_sha256_starts_ret( mbedtls_sha256_context *ctx, int is224 )
+{
+    ctx->total[0] = 0;
+    ctx->total[1] = 0;
+
+    if( is224 == 0 )
+    {
+        /* SHA-256 */
+        ctx->state[0] = 0x6A09E667;
+        ctx->state[1] = 0xBB67AE85;
+        ctx->state[2] = 0x3C6EF372;
+        ctx->state[3] = 0xA54FF53A;
+        ctx->state[4] = 0x510E527F;
+        ctx->state[5] = 0x9B05688C;
+        ctx->state[6] = 0x1F83D9AB;
+        ctx->state[7] = 0x5BE0CD19;
+    }
+    else
+    {
+        /* SHA-224 */
+        ctx->state[0] = 0xC1059ED8;
+        ctx->state[1] = 0x367CD507;
+        ctx->state[2] = 0x3070DD17;
+        ctx->state[3] = 0xF70E5939;
+        ctx->state[4] = 0xFFC00B31;
+        ctx->state[5] = 0x68581511;
+        ctx->state[6] = 0x64F98FA7;
+        ctx->state[7] = 0xBEFA4FA4;
+    }
+
+    ctx->is224 = is224;
+
+    return( 0 );
+}
+
+static const uint32_sha2_t K[] =
+{
+    0x428A2F98, 0x71374491, 0xB5C0FBCF, 0xE9B5DBA5,
+    0x3956C25B, 0x59F111F1, 0x923F82A4, 0xAB1C5ED5,
+    0xD807AA98, 0x12835B01, 0x243185BE, 0x550C7DC3,
+    0x72BE5D74, 0x80DEB1FE, 0x9BDC06A7, 0xC19BF174,
+    0xE49B69C1, 0xEFBE4786, 0x0FC19DC6, 0x240CA1CC,
+    0x2DE92C6F, 0x4A7484AA, 0x5CB0A9DC, 0x76F988DA,
+    0x983E5152, 0xA831C66D, 0xB00327C8, 0xBF597FC7,
+    0xC6E00BF3, 0xD5A79147, 0x06CA6351, 0x14292967,
+    0x27B70A85, 0x2E1B2138, 0x4D2C6DFC, 0x53380D13,
+    0x650A7354, 0x766A0ABB, 0x81C2C92E, 0x92722C85,
+    0xA2BFE8A1, 0xA81A664B, 0xC24B8B70, 0xC76C51A3,
+    0xD192E819, 0xD6990624, 0xF40E3585, 0x106AA070,
+    0x19A4C116, 0x1E376C08, 0x2748774C, 0x34B0BCB5,
+    0x391C0CB3, 0x4ED8AA4A, 0x5B9CCA4F, 0x682E6FF3,
+    0x748F82EE, 0x78A5636F, 0x84C87814, 0x8CC70208,
+    0x90BEFFFA, 0xA4506CEB, 0xBEF9A3F7, 0xC67178F2,
+};
+
+#define  SHR(x,n) ((x & 0xFFFFFFFF) >> n)
+#define ROTR(x,n) (SHR(x,n) | (x << (32 - n)))
+
+#define S0(x) (ROTR(x, 7) ^ ROTR(x,18) ^  SHR(x, 3))
+#define S1(x) (ROTR(x,17) ^ ROTR(x,19) ^  SHR(x,10))
+
+#define S2(x) (ROTR(x, 2) ^ ROTR(x,13) ^ ROTR(x,22))
+#define S3(x) (ROTR(x, 6) ^ ROTR(x,11) ^ ROTR(x,25))
+
+#define F0(x,y,z) ((x & y) | (z & (x | y)))
+#define F1(x,y,z) (z ^ (x & (y ^ z)))
+
+#define R(t)                                    \
+(                                               \
+    W[t] = S1(W[t -  2]) + W[t -  7] +          \
+           S0(W[t - 15]) + W[t - 16]            \
+)
+
+#define P(a,b,c,d,e,f,g,h,x,K)                  \
+{                                               \
+    temp1 = h + S3(e) + F1(e,f,g) + K + x;      \
+    temp2 = S2(a) + F0(a,b,c);                  \
+    d += temp1; h = temp1 + temp2;              \
+}
+
+static int mbedtls_internal_sha256_process( mbedtls_sha256_context *ctx,
+                                            const unsigned char data[64] )
+{
+    uint32_sha2_t temp1, temp2, W[64];
+    uint32_sha2_t A[8];
+    unsigned int i;
+
+    for( i = 0; i < 8; i++ )
+        A[i] = ctx->state[i];
+
+#if defined(MBEDTLS_SHA256_SMALLER)
+    for( i = 0; i < 64; i++ )
+    {
+        if( i < 16 )
+            GET_UINT32_BE( W[i], data, 4 * i );
+        else
+            R( i );
+
+        P( A[0], A[1], A[2], A[3], A[4], A[5], A[6], A[7], W[i], K[i] );
+
+        temp1 = A[7]; A[7] = A[6]; A[6] = A[5]; A[5] = A[4]; A[4] = A[3];
+        A[3] = A[2]; A[2] = A[1]; A[1] = A[0]; A[0] = temp1;
+    }
+#else /* MBEDTLS_SHA256_SMALLER */
+    for( i = 0; i < 16; i++ )
+        GET_UINT32_BE( W[i], data, 4 * i );
+
+    for( i = 0; i < 16; i += 8 )
+    {
+        P( A[0], A[1], A[2], A[3], A[4], A[5], A[6], A[7], W[i+0], K[i+0] );
+        P( A[7], A[0], A[1], A[2], A[3], A[4], A[5], A[6], W[i+1], K[i+1] );
+        P( A[6], A[7], A[0], A[1], A[2], A[3], A[4], A[5], W[i+2], K[i+2] );
+        P( A[5], A[6], A[7], A[0], A[1], A[2], A[3], A[4], W[i+3], K[i+3] );
+        P( A[4], A[5], A[6], A[7], A[0], A[1], A[2], A[3], W[i+4], K[i+4] );
+        P( A[3], A[4], A[5], A[6], A[7], A[0], A[1], A[2], W[i+5], K[i+5] );
+        P( A[2], A[3], A[4], A[5], A[6], A[7], A[0], A[1], W[i+6], K[i+6] );
+        P( A[1], A[2], A[3], A[4], A[5], A[6], A[7], A[0], W[i+7], K[i+7] );
+    }
+
+    for( i = 16; i < 64; i += 8 )
+    {
+        P( A[0], A[1], A[2], A[3], A[4], A[5], A[6], A[7], R(i+0), K[i+0] );
+        P( A[7], A[0], A[1], A[2], A[3], A[4], A[5], A[6], R(i+1), K[i+1] );
+        P( A[6], A[7], A[0], A[1], A[2], A[3], A[4], A[5], R(i+2), K[i+2] );
+        P( A[5], A[6], A[7], A[0], A[1], A[2], A[3], A[4], R(i+3), K[i+3] );
+        P( A[4], A[5], A[6], A[7], A[0], A[1], A[2], A[3], R(i+4), K[i+4] );
+        P( A[3], A[4], A[5], A[6], A[7], A[0], A[1], A[2], R(i+5), K[i+5] );
+        P( A[2], A[3], A[4], A[5], A[6], A[7], A[0], A[1], R(i+6), K[i+6] );
+        P( A[1], A[2], A[3], A[4], A[5], A[6], A[7], A[0], R(i+7), K[i+7] );
+    }
+#endif /* MBEDTLS_SHA256_SMALLER */
+
+    for( i = 0; i < 8; i++ )
+        ctx->state[i] += A[i];
+
+    return( 0 );
+}
+
+/*
+ * SHA-256 process buffer
+ */
+static int mbedtls_sha256_update_ret( mbedtls_sha256_context *ctx,
+                                      const unsigned char *input,
+                                      size_sha2_t ilen )
+{
+    int ret;
+    size_sha2_t fill;
+    uint32_sha2_t left;
+
+    if( ilen == 0 )
+        return( 0 );
+
+    left = ctx->total[0] & 0x3F;
+    fill = 64 - left;
+
+    ctx->total[0] += (uint32_sha2_t) ilen;
+    ctx->total[0] &= 0xFFFFFFFF;
+
+    if( ctx->total[0] < (uint32_sha2_t) ilen )
+        ctx->total[1]++;
+
+    if( left && ilen >= fill )
+    {
+        memcpy( (void *) (ctx->buffer + left), input, fill );
+
+        if( ( ret = mbedtls_internal_sha256_process( ctx, ctx->buffer ) ) != 0 )
+            return( ret );
+
+        input += fill;
+        ilen  -= fill;
+        left = 0;
+    }
+
+    while( ilen >= 64 )
+    {
+        if( ( ret = mbedtls_internal_sha256_process( ctx, input ) ) != 0 )
+            return( ret );
+
+        input += 64;
+        ilen  -= 64;
+    }
+
+    if( ilen > 0 )
+        memcpy( (void *) (ctx->buffer + left), input, ilen );
+
+    return( 0 );
+}
+
+static const unsigned char sha256_padding[64] =
+{
+ 0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+
+/*
+ * SHA-256 final digest
+ */
+static int mbedtls_sha256_finish_ret( mbedtls_sha256_context *ctx,
+                                      unsigned char output[32] )
+{
+    int ret;
+    uint32_sha2_t last, padn;
+    uint32_sha2_t high, low;
+    unsigned char msglen[8];
+
+    high = ( ctx->total[0] >> 29 )
+         | ( ctx->total[1] <<  3 );
+    low  = ( ctx->total[0] <<  3 );
+
+    PUT_UINT32_BE( high, msglen, 0 );
+    PUT_UINT32_BE( low,  msglen, 4 );
+
+    last = ctx->total[0] & 0x3F;
+    padn = ( last < 56 ) ? ( 56 - last ) : ( 120 - last );
+
+    if( ( ret = mbedtls_sha256_update_ret( ctx, sha256_padding, padn ) ) != 0 )
+        return( ret );
+
+    if( ( ret = mbedtls_sha256_update_ret( ctx, msglen, 8 ) ) != 0 )
+        return( ret );
+
+    PUT_UINT32_BE( ctx->state[0], output,  0 );
+    PUT_UINT32_BE( ctx->state[1], output,  4 );
+    PUT_UINT32_BE( ctx->state[2], output,  8 );
+    PUT_UINT32_BE( ctx->state[3], output, 12 );
+    PUT_UINT32_BE( ctx->state[4], output, 16 );
+    PUT_UINT32_BE( ctx->state[5], output, 20 );
+    PUT_UINT32_BE( ctx->state[6], output, 24 );
+
+    if( ctx->is224 == 0 )
+        PUT_UINT32_BE( ctx->state[7], output, 28 );
+
+    return( 0 );
+}
+
+#if defined(MBEDTLS_SELF_TEST)
+/*
+ * FIPS-180-2 test vectors
+ */
+static const unsigned char sha256_test_buf[3][57] =
+{
+    { "abc" },
+    { "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq" },
+    { "" }
+};
+
+static const size_sha2_t sha256_test_buflen[3] =
+{
+    3, 56, 1000
+};
+
+static const unsigned char sha256_test_sum[6][32] =
+{
+    /*
+     * SHA-224 test vectors
+     */
+    { 0x23, 0x09, 0x7D, 0x22, 0x34, 0x05, 0xD8, 0x22,
+      0x86, 0x42, 0xA4, 0x77, 0xBD, 0xA2, 0x55, 0xB3,
+      0x2A, 0xAD, 0xBC, 0xE4, 0xBD, 0xA0, 0xB3, 0xF7,
+      0xE3, 0x6C, 0x9D, 0xA7 },
+    { 0x75, 0x38, 0x8B, 0x16, 0x51, 0x27, 0x76, 0xCC,
+      0x5D, 0xBA, 0x5D, 0xA1, 0xFD, 0x89, 0x01, 0x50,
+      0xB0, 0xC6, 0x45, 0x5C, 0xB4, 0xF5, 0x8B, 0x19,
+      0x52, 0x52, 0x25, 0x25 },
+    { 0x20, 0x79, 0x46, 0x55, 0x98, 0x0C, 0x91, 0xD8,
+      0xBB, 0xB4, 0xC1, 0xEA, 0x97, 0x61, 0x8A, 0x4B,
+      0xF0, 0x3F, 0x42, 0x58, 0x19, 0x48, 0xB2, 0xEE,
+      0x4E, 0xE7, 0xAD, 0x67 },
+
+    /*
+     * SHA-256 test vectors
+     */
+    { 0xBA, 0x78, 0x16, 0xBF, 0x8F, 0x01, 0xCF, 0xEA,
+      0x41, 0x41, 0x40, 0xDE, 0x5D, 0xAE, 0x22, 0x23,
+      0xB0, 0x03, 0x61, 0xA3, 0x96, 0x17, 0x7A, 0x9C,
+      0xB4, 0x10, 0xFF, 0x61, 0xF2, 0x00, 0x15, 0xAD },
+    { 0x24, 0x8D, 0x6A, 0x61, 0xD2, 0x06, 0x38, 0xB8,
+      0xE5, 0xC0, 0x26, 0x93, 0x0C, 0x3E, 0x60, 0x39,
+      0xA3, 0x3C, 0xE4, 0x59, 0x64, 0xFF, 0x21, 0x67,
+      0xF6, 0xEC, 0xED, 0xD4, 0x19, 0xDB, 0x06, 0xC1 },
+    { 0xCD, 0xC7, 0x6E, 0x5C, 0x99, 0x14, 0xFB, 0x92,
+      0x81, 0xA1, 0xC7, 0xE2, 0x84, 0xD7, 0x3E, 0x67,
+      0xF1, 0x80, 0x9A, 0x48, 0xA4, 0x97, 0x20, 0x0E,
+      0x04, 0x6D, 0x39, 0xCC, 0xC7, 0x11, 0x2C, 0xD0 }
+};
+
+/*
+ * Checkup routine
+ */
+int mbedtls_sha256_self_test( int verbose )
+{
+    int i, j, k, buflen, ret = 0;
+    unsigned char *buf;
+    unsigned char sha256sum[32];
+    mbedtls_sha256_context ctx;
+
+    buf = mbedtls_calloc( 1024, sizeof(unsigned char) );
+    if( NULL == buf )
+    {
+        if( verbose != 0 )
+            mbedtls_printf( "Buffer allocation failed\n" );
+
+        return( 1 );
+    }
+
+    mbedtls_sha256_init( &ctx );
+
+    for( i = 0; i < 6; i++ )
+    {
+        j = i % 3;
+        k = i < 3;
+
+        if( verbose != 0 )
+            mbedtls_printf( "  SHA-%d test #%d: ", 256 - k * 32, j + 1 );
+
+        if( ( ret = mbedtls_sha256_starts_ret( &ctx, k ) ) != 0 )
+            goto fail;
+
+        if( j == 2 )
+        {
+            memset( buf, 'a', buflen = 1000 );
+
+            for( j = 0; j < 1000; j++ )
+            {
+                ret = mbedtls_sha256_update_ret( &ctx, buf, buflen );
+                if( ret != 0 )
+                    goto fail;
+            }
+
+        }
+        else
+        {
+            ret = mbedtls_sha256_update_ret( &ctx, sha256_test_buf[j],
+                                             sha256_test_buflen[j] );
+            if( ret != 0 )
+                 goto fail;
+        }
+
+        if( ( ret = mbedtls_sha256_finish_ret( &ctx, sha256sum ) ) != 0 )
+            goto fail;
+
+
+        if( memcmp( sha256sum, sha256_test_sum[i], 32 - k * 4 ) != 0 )
+        {
+            ret = 1;
+            goto fail;
+        }
+
+        if( verbose != 0 )
+            mbedtls_printf( "passed\n" );
+    }
+
+    if( verbose != 0 )
+        mbedtls_printf( "\n" );
+
+    goto exit;
+
+fail:
+    if( verbose != 0 )
+        mbedtls_printf( "failed\n" );
+
+exit:
+    mbedtls_sha256_free( &ctx );
+    mbedtls_free( buf );
+
+    return( ret );
+}
+
+#endif /* MBEDTLS_SELF_TEST */
 
 typedef unsigned char zuo_uint8_t;
 
-typedef struct zuo_sha1_ctx_t {
-  unsigned int state[5];
-  unsigned int count[2];
-  unsigned char buffer[64];
-} zuo_sha1_ctx_t;
-
-#define ZUO_SHA1_DIGEST_SIZE 20
-
-#define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
-
-/* blk0() and blk() perform the initial expand; assumes input has been converted to bigendian */
-#define blk0(i) block->l[i]
-#define blk(i) (block->l[i&15] = rol(block->l[(i+13)&15]^block->l[(i+8)&15] \
-    ^block->l[(i+2)&15]^block->l[i&15],1))
-
-/* (R0+R1), R2, R3, R4 are the different operations used in SHA1 */
-#define R0(v,w,x,y,z,i) z+=((w&(x^y))^y)+blk0(i)+0x5A827999+rol(v,5);w=rol(w,30);
-#define R1(v,w,x,y,z,i) z+=((w&(x^y))^y)+blk(i)+0x5A827999+rol(v,5);w=rol(w,30);
-#define R2(v,w,x,y,z,i) z+=(w^x^y)+blk(i)+0x6ED9EBA1+rol(v,5);w=rol(w,30);
-#define R3(v,w,x,y,z,i) z+=(((w|x)&y)|(w&x))+blk(i)+0x8F1BBCDC+rol(v,5);w=rol(w,30);
-#define R4(v,w,x,y,z,i) z+=(w^x^y)+blk(i)+0xCA62C1D6+rol(v,5);w=rol(w,30);
-
-/* Hash a single 512-bit block. This is the core of the algorithm. */
-static void zuo_sha1_transform(zuo_uint32_t state[5], const zuo_uint8_t buffer[64]) {
-  zuo_uint32_t a, b, c, d, e;
-  typedef union {
-    zuo_uint8_t c[64];
-    zuo_uint32_t l[16];
-  } CHAR64LONG16;
-  CHAR64LONG16 *block;
-
-  block = (CHAR64LONG16 *) buffer;
-
-  if (zuo_little_endian) {
-    int i;
-    for (i = 0; i < 16; i++)
-      block->l[i] = (rol(block->l[i], 24) & 0xFF00FF00) | (rol(block->l[i], 8) & 0x00FF00FF);
-  }
-
-  /* Copy context->state[] to working vars */
-  a = state[0];
-  b = state[1];
-  c = state[2];
-  d = state[3];
-  e = state[4];
-
-  /* 4 rounds of 20 operations each. Loop unrolled. */
-  R0(a,b,c,d,e, 0); R0(e,a,b,c,d, 1); R0(d,e,a,b,c, 2); R0(c,d,e,a,b, 3);
-  R0(b,c,d,e,a, 4); R0(a,b,c,d,e, 5); R0(e,a,b,c,d, 6); R0(d,e,a,b,c, 7);
-  R0(c,d,e,a,b, 8); R0(b,c,d,e,a, 9); R0(a,b,c,d,e,10); R0(e,a,b,c,d,11);
-  R0(d,e,a,b,c,12); R0(c,d,e,a,b,13); R0(b,c,d,e,a,14); R0(a,b,c,d,e,15);
-  R1(e,a,b,c,d,16); R1(d,e,a,b,c,17); R1(c,d,e,a,b,18); R1(b,c,d,e,a,19);
-  R2(a,b,c,d,e,20); R2(e,a,b,c,d,21); R2(d,e,a,b,c,22); R2(c,d,e,a,b,23);
-  R2(b,c,d,e,a,24); R2(a,b,c,d,e,25); R2(e,a,b,c,d,26); R2(d,e,a,b,c,27);
-  R2(c,d,e,a,b,28); R2(b,c,d,e,a,29); R2(a,b,c,d,e,30); R2(e,a,b,c,d,31);
-  R2(d,e,a,b,c,32); R2(c,d,e,a,b,33); R2(b,c,d,e,a,34); R2(a,b,c,d,e,35);
-  R2(e,a,b,c,d,36); R2(d,e,a,b,c,37); R2(c,d,e,a,b,38); R2(b,c,d,e,a,39);
-  R3(a,b,c,d,e,40); R3(e,a,b,c,d,41); R3(d,e,a,b,c,42); R3(c,d,e,a,b,43);
-  R3(b,c,d,e,a,44); R3(a,b,c,d,e,45); R3(e,a,b,c,d,46); R3(d,e,a,b,c,47);
-  R3(c,d,e,a,b,48); R3(b,c,d,e,a,49); R3(a,b,c,d,e,50); R3(e,a,b,c,d,51);
-  R3(d,e,a,b,c,52); R3(c,d,e,a,b,53); R3(b,c,d,e,a,54); R3(a,b,c,d,e,55);
-  R3(e,a,b,c,d,56); R3(d,e,a,b,c,57); R3(c,d,e,a,b,58); R3(b,c,d,e,a,59);
-  R4(a,b,c,d,e,60); R4(e,a,b,c,d,61); R4(d,e,a,b,c,62); R4(c,d,e,a,b,63);
-  R4(b,c,d,e,a,64); R4(a,b,c,d,e,65); R4(e,a,b,c,d,66); R4(d,e,a,b,c,67);
-  R4(c,d,e,a,b,68); R4(b,c,d,e,a,69); R4(a,b,c,d,e,70); R4(e,a,b,c,d,71);
-  R4(d,e,a,b,c,72); R4(c,d,e,a,b,73); R4(b,c,d,e,a,74); R4(a,b,c,d,e,75);
-  R4(e,a,b,c,d,76); R4(d,e,a,b,c,77); R4(c,d,e,a,b,78); R4(b,c,d,e,a,79);
-
-  /* Add the working vars back into context.state[] */
-  state[0] += a;
-  state[1] += b;
-  state[2] += c;
-  state[3] += d;
-  state[4] += e;
-}
-
-static void zuo_sha1_init(zuo_sha1_ctx_t *context) {
-  /* SHA1 initialization constants */
-  context->state[0] = 0x67452301;
-  context->state[1] = 0xEFCDAB89;
-  context->state[2] = 0x98BADCFE;
-  context->state[3] = 0x10325476;
-  context->state[4] = 0xC3D2E1F0;
-  context->count[0] = context->count[1] = 0;
+static void zuo_sha256_init(zuo_sha2_ctx_t *context) {
+  int is224 = 0;
+  (void)mbedtls_sha256_init(context);
+  (void)mbedtls_sha256_starts_ret(context, is224);
 }
 
 /* Run your data through this. */
-static void zuo_sha1_update(zuo_sha1_ctx_t *context, const zuo_uint8_t *data, const zuo_intptr_t len) {
-  zuo_intptr_t i, j;
-
-  j = (context->count[0] >> 3) & 63;
-  if ((context->count[0] += len << 3) < (len << 3))
-    context->count[1]++;
-  context->count[1] += (len >> 29);
-  if ((j + len) > 63) {
-    memcpy(&context->buffer[j], data, (i = 64 - j));
-    zuo_sha1_transform(context->state, context->buffer);
-    for (; i + 63 < len; i += 64)
-      zuo_sha1_transform(context->state, data + i);
-    j = 0;
-  } else
-    i = 0;
-  memcpy(&context->buffer[j], &data[i], len - i);
+static void zuo_sha256_update(zuo_sha2_ctx_t *context, const zuo_uint8_t *data, const zuo_intptr_t len) {
+  (void)mbedtls_sha256_update_ret(context, data, len);
 }
+
+/* Get the final hash value after all bytes have been added */
+static void zuo_sha256_final(zuo_sha2_ctx_t *context, zuo_uint8_t digest[ZUO_SHA256_DIGEST_SIZE]) {
+  (void)mbedtls_sha256_finish_ret(context, digest);
+}
+
+/* ************************************************************ */
 
 static int hex_char(int c) {
   return (c < 10) ? (c + '0') : (c + 'a'-10);
 }
 
-/* Add padding and return the message digest. */
-static void zuo_sha1_final(zuo_sha1_ctx_t *context, zuo_uint8_t digest[ZUO_SHA1_DIGEST_SIZE]) {
-  zuo_uint32_t i;
-  zuo_uint8_t finalcount[8];
-
-  for (i = 0; i < 8; i++)
-    finalcount[i] = (unsigned char)((context->count[(i >= 4 ? 0 : 1)] >> ((3 - (i & 3)) * 8)) & 255);
-  zuo_sha1_update(context, (zuo_uint8_t *)"\200", 1);
-  while ((context->count[0] & 504) != 448)
-    zuo_sha1_update(context, (zuo_uint8_t *)"\0", 1);
-  zuo_sha1_update(context, finalcount, 8);
-  for (i = 0; i < ZUO_SHA1_DIGEST_SIZE; i++)
-    digest[i] = (zuo_uint8_t)((context->state[i >> 2] >> ((3 - (i & 3)) * 8)) & 255);
-}
-
-static zuo_t *zuo_string_sha1(zuo_t *str) {
-  zuo_sha1_ctx_t context;
-  zuo_uint8_t digest[ZUO_SHA1_DIGEST_SIZE];
-  char digest_hex[2 * ZUO_SHA1_DIGEST_SIZE];
+static zuo_t *zuo_string_sha256(zuo_t *str) {
+  zuo_sha2_ctx_t context;
+  zuo_uint8_t digest[ZUO_SHA256_DIGEST_SIZE];
+  char digest_hex[2 * ZUO_SHA256_DIGEST_SIZE];
   int i;
 
-  zuo_sha1_init(&context);
-  zuo_sha1_update(&context, (zuo_uint8_t *)ZUO_STRING_PTR(str), ZUO_STRING_LEN(str));
-  zuo_sha1_final(&context, digest);
+  zuo_sha256_init(&context);
+  zuo_sha256_update(&context, (zuo_uint8_t *)ZUO_STRING_PTR(str), ZUO_STRING_LEN(str));
+  zuo_sha256_final(&context, digest);
 
-  for (i = 0; i < ZUO_SHA1_DIGEST_SIZE; i++) {
+  for (i = 0; i < ZUO_SHA256_DIGEST_SIZE; i++) {
     digest_hex[2*i] = hex_char(digest[i] >> 4);
     digest_hex[2*i+1] = hex_char(digest[i] & 0xF);
   }
 
-  return zuo_sized_string(digest_hex, 2 * ZUO_SHA1_DIGEST_SIZE);
+  return zuo_sized_string(digest_hex, 2 * ZUO_SHA256_DIGEST_SIZE);
 }
 
 /*======================================================================*/
@@ -6495,7 +6824,6 @@ static void zuo_primitive_init(int will_load_image) {
   zuo_configure();
   zuo_init_terminal();
   zuo_init_signal_handler();
-  zuo_init_sha1();
 
   /* these initial constants and tables might get replaced by loading
      an image, but we need them to register primitives: */
@@ -6615,7 +6943,7 @@ static void zuo_primitive_init(int will_load_image) {
   ZUO_TOP_ENV_SET_PRIMITIVE0("resume-signal", zuo_resume_signal);
   ZUO_TOP_ENV_SET_PRIMITIVE1("string->shell", zuo_string_to_shell);
   ZUO_TOP_ENV_SET_PRIMITIVEb("shell->strings", zuo_shell_to_strings);
-  ZUO_TOP_ENV_SET_PRIMITIVE1("string-sha1", zuo_string_sha1);
+  ZUO_TOP_ENV_SET_PRIMITIVE1("string-sha256", zuo_string_sha256);
 
   ZUO_TOP_ENV_SET_PRIMITIVE1("cleanable-file", zuo_cleanable_file);
   ZUO_TOP_ENV_SET_PRIMITIVE1("cleanable-cancel", zuo_cleanable_cancel);

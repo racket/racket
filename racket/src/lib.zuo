@@ -156,7 +156,7 @@
                        ;; writing the hash of every file to "stamp-file" means that
                        ;; we expect any change to effect the way that the compiled
                        ;; file runs:
-                       (fd-write out (file-sha1 path token)))
+                       (fd-write out (file-sha256 path token)))
                      paths)
                     (fd-close out))))))
 

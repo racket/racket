@@ -440,9 +440,11 @@ endianness.}
 Tries to parse @racket[str] as an integer returning @racket[#f] if
 that fails.}
 
-@defproc[(string-sha1 [str string?]) string?]{
+@defproc[(string-sha256 [str string?]) string?]{
 
-Returns the SHA-1 hash of @racket[str] as a 40-digit hexadecimal string.}
+Returns the SHA-256 hash of @racket[str] as a 64-digit hexadecimal string.
+
+See also @racket[file-sha256] and @racket[sha256-length].}
 
 @defform[(char str)]{
 

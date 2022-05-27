@@ -13,7 +13,7 @@ While @racket[@#,hash-lang[] @#,racketmodname[zuo/base]] accesses a
 base language, the primary intended use of Zuo is with
 @racket[@#,hash-lang[] @#,racketmodname[zuo]], which includes the
 @racketmodname[zuo/build] library for using @seclink["zuo-build"]{Zuo
-as a @tt{make} replacement}.
+as a @exec{make} replacement}.
 
 The name ``Zuo'' is derived from the Chinese word for ``make.''
 

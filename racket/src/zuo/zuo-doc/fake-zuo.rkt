@@ -104,7 +104,7 @@
     string->uninterned-symbol
     symbol->string
     string
-    string-sha1
+    string-sha256
     char
     string-split string-join string-trim
     string-tree?
@@ -210,9 +210,10 @@
     token?
     rule?
     phony-rule?
-    sha1?
-    file-sha1
-    no-sha1
+    sha256?
+    file-sha256
+    no-sha256
+    sha256-length
     build
     build/command-line
     build/command-line*

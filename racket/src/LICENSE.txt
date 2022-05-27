@@ -35,8 +35,8 @@ which you must comply. Some of them are listed below.
 The following are used in all Racket executables:
 
 * mbed TLS. Code from mbed TLS can be found in
-  rktio/rktio_sha2.c. mbed TLS is licensed under the Apache
-  v2.0 License.
+  rktio/rktio_sha2.c and zuo/zuo.c. mbed TLS is licensed under the
+  Apache v2.0 License.
 
 The following are used only in the Racket BC executable:
 
