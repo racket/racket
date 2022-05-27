@@ -133,7 +133,7 @@
 #define SCHEME_PRIM_WANTS_EXTFLONUM_BOTH (SCHEME_PRIM_WANTS_EXTFLONUM_FIRST | SCHEME_PRIM_WANTS_EXTFLONUM_SECOND)
 
 extern int scheme_prim_opt_flags[]; /* uses an index from SCHEME_PRIM_OPT_INDEX_MASK */
-extern XFORM_NONGCING int scheme_intern_prim_opt_flags(int);
+XFORM_NONGCING int scheme_intern_prim_opt_flags(int);
 
 #define SCHEME_PRIM_PROC_OPT_FLAGS(proc) \
   scheme_prim_opt_flags[(SCHEME_PRIM_PROC_FLAGS(proc) >> SCHEME_PRIM_OPT_INDEX_SHIFT) \
@@ -3974,6 +3974,9 @@ typedef struct Scheme_Performance_State {
 
 void scheme_performance_record_start(Scheme_Performance_State *perf_state);
 void scheme_performance_record_end(const char *who, Scheme_Performance_State *perf_state);
+
+XFORM_NONGCING int scheme_hamt_popcount(hash_tree_bitmap_t x);
+XFORM_NONGCING int scheme_stencil_vector_popcount(intptr_t x);
 
 /*========================================================================*/
 /*                           places                                       */

@@ -173,6 +173,17 @@
                                              (let-values ([(hc0 burn0) (equal-hash-loop x burn 0 mode)])
                                                hc0)))))])
          (values hc burn)))]
+    [(and (stencil-vector? x) (eq? mode 'equal?))
+     (let ([len (stencil-vector-length x)]
+           [hc (fx+/wraparound hc (stencil-vector-mask x))])
+       (let vec-loop ([i 0] [burn burn] [hc (mix-hash-code hc)])
+         (cond
+           [(fx= i len) (values hc burn)]
+           [else
+            (let-values ([(hc0 burn) (equal-secondary-hash-loop (stencil-vector-ref x i) (fx+ burn 2) 0 mode)])
+              (vec-loop (fx+ i 1)
+                        burn
+                        (fx+/wraparound (mix-hash-code hc) hc0)))])))]
     [(and (mpair? x) (eq? mode 'equal?))
      (let-values ([(hc0 burn) (equal-hash-loop (mcar x) (fx+ burn 2) 0 mode)])
        (let ([hc (fx+/wraparound hc (fx+/wraparound hc0 5))])
@@ -245,6 +256,17 @@
                                              (let-values ([(hc0 burn0) (equal-secondary-hash-loop x burn 0 mode)])
                                                hc0)))))])
          (values hc burn)))]
+    [(and (stencil-vector? x) (eq? mode 'equal?))
+     (let ([len (stencil-vector-length x)]
+           [hc (fx+/wraparound hc (stencil-vector-mask x))])
+       (let vec-loop ([i 0] [burn burn] [hc (mix-hash-code hc)])
+         (cond
+           [(fx= i len) (values hc burn)]
+           [else
+            (let-values ([(hc0 burn) (equal-secondary-hash-loop (stencil-vector-ref x i) (fx+ burn 2) 0 mode)])
+              (vec-loop (fx+ i 1)
+                        burn
+                        (fx+/wraparound (mix-hash-code hc) hc0)))])))]
     [(and (mpair? x) (eq? mode 'equal?))
      (let-values ([(hc0 burn) (equal-secondary-hash-loop (mcar x) (fx+ burn 2) 0 mode)])
        (let ([hc (fx+/wraparound hc hc0)])

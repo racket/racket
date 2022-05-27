@@ -637,6 +637,20 @@ extflvector_obj {
 }
 #endif
 
+stencil_vector_obj {
+  Scheme_Stencil_Vector *vec = (Scheme_Stencil_Vector *)p;
+  intptr_t size = scheme_stencil_vector_popcount(vec->mask);
+
+ mark:
+  int i;
+  for (i = size; i--; )
+    gcMARK2(vec->els[i], gc);
+
+ size:
+  gcBYTES_TO_WORDS((sizeof(Scheme_Stencil_Vector) 
+		    + ((size - mzFLEX_DELTA) * sizeof(Scheme_Object *))));
+}
+
 input_port {
  mark:
   Scheme_Input_Port *ip = (Scheme_Input_Port *)p;

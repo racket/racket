@@ -76,6 +76,17 @@ For @tech{fixnums}: Unchecked versions of @racket[fxand], @racket[fxior], @racke
                                     @racket[unsafe-fxand], @racket[unsafe-fxior],
                                     and @racket[unsafe-fxxor].}]}
 
+@deftogether[(
+@defproc[(unsafe-fxpopcount [a (and/c fixnum? (not/c negative?))]) fixnum?]
+@defproc[(unsafe-fxpopcount32 [a (and/c fixnum? (integer-in 0 @#,racketvalfont{#xFFFFFFFF}))]) fixnum?]
+@defproc[(unsafe-fxpopcount16 [a (and/c fixnum? (integer-in 0 @#,racketvalfont{#xFFFF})) ]) fixnum?]
+)]{
+
+For @tech{fixnums}: Unchecked versions of @racket[fxpopcount],
+@racket[fxpopcount32], and @racket[fxpopcount16].
+
+@history[#:added "8.5.0.6"]}
+
 
 @deftogether[(
 @defproc[(unsafe-fx+/wraparound [a fixnum?] [b fixnum?]) fixnum?]
@@ -451,6 +462,37 @@ Unsafe versions of @racket[s16vector-ref] and
 
 Unsafe versions of @racket[u16vector-ref] and
 @racket[u16vector-set!].}
+
+
+@deftogether[(
+@defproc[(unsafe-stencil-vector [mask (integer-in 0 (sub1 (expt 2 (stencil-vector-mask-width))))]
+                                [v any/c]
+                                ...)
+         stencil-vector?]
+@defproc[(unsafe-stencil-vector-mask [vec stencil-vector?])
+         (integer-in 0 (sub1 (expt 2 (stencil-vector-mask-width))))]
+@defproc[(unsafe-stencil-vector-length [vec stencil-vector?])
+         (integer-in 0 (sub1 (stencil-vector-mask-width)))]
+@defproc[(unsafe-stencil-vector-ref [vec stencil-vector?]
+                                    [pos exact-nonnegative-integer?])
+         any/c]
+@defproc[(unsafe-stencil-vector-set! [vec stencil-vector?]
+                                     [pos exact-nonnegative-integer?]
+                                     [v any/c])
+         avoid?]
+@defproc[(unsafe-stencil-vector-update [vec stencil-vector?]
+                                       [remove-mask (integer-in 0 (sub1 (expt 2 (stencil-vector-mask-width))))]
+                                       [add-mask (integer-in 0 (sub1 (expt 2 (stencil-vector-mask-width))))]
+                                       [v any/c]
+                                       ...)
+         stencil-vector?]
+)]{
+
+Unsafe variants of @racket[stencil-vector], @racket[stencil-vector-mask], @racket[stencil-vector-length],
+@racket[stencil-vector-ref], @racket[stencil-vector-set!],
+and @racket[stencil-vector-update].
+
+@history[#:added "8.5.0.7"]}
 
 
 @deftogether[(

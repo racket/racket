@@ -727,6 +727,25 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
           return 1;
         return vector_equal(obj1, orig_obj1, obj2, orig_obj2, eql);
       }
+    case scheme_stencil_vector_type:
+      {
+        Scheme_Stencil_Vector *sv1 = (Scheme_Stencil_Vector *)obj1;
+        Scheme_Stencil_Vector *sv2 = (Scheme_Stencil_Vector *)obj2;
+        intptr_t i, len;
+#   include "mzeqchk.inc"
+        if ((eql->mode == EQUAL_MODE_CHAPERONE_OF) || (eql->mode == EQUAL_MODE_EQUAL_ALWAYS))
+          return 0;
+        if (sv1->mask != sv2->mask)
+          return 0;
+        if (union_check(obj1, obj2, eql))
+          return 1;
+        len = scheme_stencil_vector_popcount(sv1->mask);
+        for (i = 0; i < len; i++) {
+          if (!is_equal(sv1->els[i], sv2->els[i], eql))
+            return 0;
+        }
+        return 1;
+      }
     case scheme_byte_string_type:
     case scheme_unix_path_type:
     case scheme_windows_path_type:

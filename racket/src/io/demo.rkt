@@ -741,6 +741,10 @@
 (print-test '#:1.0 "'#:1.0")
 (print-test 1.0 "1.0")
 
+(print-test (stencil-vector 3 "a" 'b) "#<stencil-vector 3: \"a\" b>")
+(print-test (stencil-vector 3 "a" 'b) "#<stencil-vector 3: a b>" #:print display)
+(print-test (stencil-vector 3 "a" 'b) "#<stencil-vector 3: \"a\" b>" #:print write)
+
 ;; ----------------------------------------
 
 (define l (tcp-listen 59078 5 #t))

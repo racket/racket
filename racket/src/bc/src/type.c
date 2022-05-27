@@ -168,6 +168,7 @@ scheme_init_type ()
   set_name(scheme_hash_tree_subtree_type, "<hash-node>");
   set_name(scheme_hash_tree_collision_type, "<hash-node>");
   set_name(scheme_bucket_table_type, "<hash>");
+  set_name(scheme_stencil_vector_type, "<stencil-vector>");
   set_name(scheme_case_closure_type, "<procedure>");
   set_name(scheme_placeholder_type, "<placeholder>");
   set_name(scheme_table_placeholder_type, "<hash-table-placeholder>");
@@ -593,6 +594,7 @@ void scheme_register_traversers(void)
 #endif
   GC_REG_TRAV(scheme_fxvector_type, fxvector_obj);
   GC_REG_TRAV(scheme_cpointer_type, cpointer_obj);
+  GC_REG_TRAV(scheme_stencil_vector_type, stencil_vector_obj);
 
   GC_REG_TRAV(scheme_bucket_type, bucket_obj);
 

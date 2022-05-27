@@ -1416,6 +1416,15 @@
                        (install #t #f token)
                        (install #f #t token))
                    (fd-close (fd-open-output path :truncate)))]
+       
+       [:target mark ()
+                ,(lambda (token)
+                   (define in (fd-open-input (at-source "src/mzmarksrc.c")))
+                   (shell/wait (build-shell "racket"
+                                            (at-source "src/mkmark.rkt")
+                                            (at-source "src"))
+                               (hash 'stdin in))
+                   (fd-close in))]
 
         [:db-dir ,(at-dir "compiled")]))
      starter-targets))

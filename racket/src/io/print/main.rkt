@@ -268,6 +268,21 @@
      (print-vector p who v mode o max-length graph config "fl" flvector-length flvector-ref equal?)]
     [(fxvector? v)
      (print-vector p who v mode o max-length graph config "fx" fxvector-length fxvector-ref eq?)]
+    [(stencil-vector? v)
+     (define lst (let loop ([i 0])
+                   (if (= i (stencil-vector-length v))
+                       '()
+                       (cons (stencil-vector-ref v i) (loop (add1 i))))))
+     (print-list p who lst
+                 (if (eq? mode DISPLAY-MODE) DISPLAY-MODE WRITE-MODE)
+                 o max-length graph config
+                 (string-append "#<stencil "
+                                (number->string (stencil-vector-mask v))
+                                (if (eqv? 0 (stencil-vector-mask v))
+                                    ""
+                                    ": "))
+                 #f
+                 ">")]
     [(box? v)
      (cond
        [(config-get config print-box)

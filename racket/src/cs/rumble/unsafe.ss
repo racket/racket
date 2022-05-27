@@ -35,6 +35,9 @@
 (define unsafe-fxrshift (unsafe-primitive fxarithmetic-shift-right))
 (define unsafe-fxlshift (unsafe-primitive fxarithmetic-shift-left))
 (define unsafe-fxlshift/wraparound (unsafe-primitive fxsll/wraparound))
+(define unsafe-fxpopcount (unsafe-primitive fxpopcount))
+(define unsafe-fxpopcount32 (unsafe-primitive fxpopcount32))
+(define unsafe-fxpopcount16 (unsafe-primitive fxpopcount16))
 
 (define unsafe-fx= (unsafe-primitive fx=))
 (define unsafe-fx< (unsafe-primitive fx<))
@@ -175,6 +178,13 @@
     (if (bytes? mem)
         (bytevector-ieee-double-native-set! mem k v)
         (foreign-set! 'double mem k v))))
+
+(define unsafe-stencil-vector (unsafe-primitive stencil-vector))
+(define unsafe-stencil-vector-length (unsafe-primitive stencil-vector-length))
+(define unsafe-stencil-vector-mask (unsafe-primitive stencil-vector-mask))
+(define unsafe-stencil-vector-ref (unsafe-primitive stencil-vector-ref))
+(define unsafe-stencil-vector-set! (unsafe-primitive stencil-vector-set!))
+(define unsafe-stencil-vector-update (unsafe-primitive stencil-vector-update))
 
 (define (unsafe-make-flrectangular r i)
   (#3%make-rectangular r i))

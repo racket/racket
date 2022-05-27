@@ -86,6 +86,19 @@ result would not be a fixnum.
 
 
 @deftogether[(
+@defproc[(fxpopcount [a (and/c fixnum? (not/c negative?))]) fixnum?]
+@defproc[(fxpopcount32 [a (and/c fixnum? (integer-in 0 @#,racketvalfont{#xFFFFFFFF}))]) fixnum?]
+@defproc[(fxpopcount16 [a (and/c fixnum? (integer-in 0 @#,racketvalfont{#xFFFF})) ]) fixnum?]
+)]{
+
+Counts the number of bits in the two's complement representation of
+@racket[a]. Depending on the platform, the @racket[fxpopcount32] and
+@racket[fxpopcount16] operations can be faster when the result is
+known to be no more than 32 or 16, respectively.
+
+@history[#:added "8.5.0.7"]}
+
+@deftogether[(
 @defproc[(fx+/wraparound [a fixnum?] [b fixnum?]) fixnum?]
 @defproc[(fx-/wraparound [a fixnum?] [b fixnum?]) fixnum?]
 @defproc[(fx*/wraparound [a fixnum?] [b fixnum?]) fixnum?]

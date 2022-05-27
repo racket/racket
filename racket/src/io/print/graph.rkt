@@ -49,6 +49,13 @@
                                             #:break (not fuel))
               (define val (hash-ref v k #f))
               (quick-no-graph? val (quick-no-graph? k fuel))))]
+      [(stencil-vector? v)
+       (and (not print-graph?)
+            (let loop ([fuel (sub1 fuel)] [i 0])
+              (cond
+                [(not fuel) #f]
+                [(= i (stencil-vector-length v)) fuel]
+                [else (loop (quick-no-graph? (stencil-vector-ref v i) fuel) (add1 i))])))]
       [(mpair? v)
        (and (not print-graph?)
             (not (eq? mode PRINT-MODE/UNQUOTED))
@@ -159,6 +166,15 @@
                k-unquoted?
                unquoted?)))
        (done! v unquoted?)]
+      [(stencil-vector? v)
+       (checking! v)
+       (let loop ([i 0])
+         (unless (= i (stencil-vector-length v))
+           (build-graph (stencil-vector-ref v i) (if (eq? mode DISPLAY-MODE)
+                                                     DISPLAY-MODE
+                                                     WRITE-MODE))
+           (loop (add1 i))))
+       (done! v #f)]
       [(mpair? v)
        (checking! v)
        (build-graph (mcar v) mode)

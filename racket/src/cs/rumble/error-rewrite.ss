@@ -64,11 +64,12 @@
         (set! rewrites-added? #t)))
     (getprop n 'error-rename n)))
 
-(define is-not-a-str "~s is not a")
-(define result-arity-msg-head "returned ")
-(define result-arity-msg-tail " values to single value return context")
-
 (define (rewrite-format who str irritants)
+  (define is-not-a-str "~s is not a")
+  (define result-arity-msg-head "returned ")
+  (define result-arity-msg-tail " values to single value return context")
+  (define invalid-removal-mask "invalid removal mask ~s")
+  (define invalid-addition-mask "invalid addition mask ~s")
   (cond
    [(equal? str "attempt to reference undefined variable ~s")
     (values (string-append
@@ -128,6 +129,7 @@
                        [(string? v) (values "string" (string-length v))]
                        [(fxvector? v) (values "fxvector" (fxvector-length v))]
                        [(flvector? v) (values "flvector" (flvector-length v))]
+                       [(stencil-vector? v) (values "stencil vector" (stencil-vector-length v))]
                        [else (values "value" #f)]))])
         (if (eqv? len 0)
             (format-error-values (string-append "index is out of range for empty " what "\n"
@@ -162,6 +164,37 @@
                          (reverse irritants))]
    [(eq? who 'time-utc->date)
     (values "integer is out-of-range" null)]
+   [(or (and (eq? who 'stencil-vector)
+             (equal? str "invalid mask ~s"))
+        (and (eq? who 'stencil-vector-update)
+             (or (equal? str invalid-removal-mask)
+                 (equal? str invalid-addition-mask))))
+    (format-error-values (string-append "contract violation\n"
+                                        "  expected: (integer-in 0 (sub1 (expt 2 (stencil-vector-mask-width))))\n"
+                                        (cond
+                                          [(equal? str invalid-removal-mask) "  argument position: 2nd\n"]
+                                          [(equal? str invalid-addition-mask) "  argument position: 3rd\n"]
+                                          [else ""])
+                                        "  given: ~s\n")
+                         irritants)]
+   [(or (equal? str "mask ~s does not match given number of items ~s")
+        (equal? str "addition mask ~s does not match given number of items ~s"))
+    (values (format (string-append "mask does not match given number of items\n"
+                                   "  mask: ~s\n"
+                                   "  given items: ~s")
+                    (car irritants)
+                    (cadr irritants))
+            null)]
+   [(equal? str "mask of stencil vector ~s does not have all bits in ~s")
+    (values (string-append "mask of stencil vector does not have all bits in removal mask\n"
+                           "  stencil vector: ~s\n"
+                           "  removal mask: ~s")
+            irritants)]
+   [(equal? str "mask of stencil vector ~s already has bits in ~s")
+    (values (string-append "mask of stencil vector already has bits in addition mask\n"
+                           "  stencil vector: ~s\n"
+                           "  addition mask: ~s")
+            irritants)]
    [else
     (format-error-values str irritants)]))
 

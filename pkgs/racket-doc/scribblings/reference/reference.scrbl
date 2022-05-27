@@ -261,6 +261,13 @@ The @racketmodname[racket] library combines
              #:location "Object-Oriented Programming, Systems, and Languages (OOPSLA)"
              #:url "http://www.eecs.northwestern.edu/~robby/pubs/papers/oopsla2012-stff.pdf"
              #:date "2012")
+
+  (bib-entry #:key "Torosyan21"
+             #:title "Runtime and Compiler Support for HAMTs"
+             #:author "Son Torosyan, Jon Zeppieri, and Matthew Flatt"
+             #:location "Dynamic Languages Symposium (DLS)"
+             #:url "https://www.cs.utah.edu/plt/publications/dls21-tzf.pdf"
+             #:date "2021")
   )
 
 @;------------------------------------------------------------------------

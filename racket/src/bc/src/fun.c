@@ -1023,8 +1023,10 @@ int scheme_intern_prim_opt_flags(int flags)
     }
   }
 
+  START_XFORM_SKIP;
   scheme_log_abort("too many flag combinations");
   abort();
+  END_XFORM_SKIP;
 
   return 0;
 }

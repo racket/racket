@@ -1736,6 +1736,30 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       }
     }
 #endif
+  case scheme_stencil_vector_type:
+    {
+#     include "mzhashchk.inc"
+
+      if (hi->mode == EQUAL_MODE_EQUAL) {
+        Scheme_Stencil_Vector *sv = (Scheme_Stencil_Vector *)o;
+        intptr_t len, i;
+        uintptr_t val;
+
+        hi->depth += 2;
+        len = scheme_stencil_vector_popcount(sv->mask);
+
+        for (i = 0; i < len; i++) {
+          SCHEME_USE_FUEL(1);
+          val = equal_hash_key(sv->els[i], 0, hi);
+          k = (k << 5) + k + val;
+        }
+
+        return k;
+      } else {
+        return k + PTR_TO_LONG(o);
+      }
+    }
+
   case scheme_structure_type:
   case scheme_proc_struct_type:
     {
@@ -1791,7 +1815,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
         } else {
           scheme_contract_error("equal-hash-code",
                                 "hash procedure returned a value other than an exact integer",
-                                "resul1", 1, v,
+                                "result", 1, v,
                                 NULL);
           return 0;
         }
@@ -2236,7 +2260,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
   case scheme_vector_type:
   case scheme_fxvector_type:
     {
-      int len = SCHEME_VEC_SIZE(o), i;
+      intptr_t len = SCHEME_VEC_SIZE(o), i;
       uintptr_t k = 0;
       Scheme_Object *elem;
 
@@ -2306,6 +2330,29 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       }
     }
 #endif
+  case scheme_stencil_vector_type:
+    {
+#     include "mzhashchk.inc"
+
+      if (hi->mode == EQUAL_MODE_EQUAL) {
+        Scheme_Stencil_Vector *sv = (Scheme_Stencil_Vector *)o;
+        intptr_t len, i;
+        uintptr_t k = 0;
+
+        len = scheme_stencil_vector_popcount(sv->mask);
+
+        hi->depth += 2;
+
+        for (i = 0; i < len; i++) {
+          SCHEME_USE_FUEL(1);
+          k += equal_hash_key2(sv->els[i], hi);
+        }
+
+        return k;
+      } else {
+        return PTR_TO_LONG(o) >> 1;
+      }
+    }
   case scheme_byte_string_type:
   case scheme_unix_path_type:
   case scheme_windows_path_type:
@@ -2689,6 +2736,11 @@ XFORM_NONGCING static int hamt_popcount(hash_tree_bitmap_t x)
   /* add all four 8-bit chunks */
   return (x * 0x01010101) >> 24;
 #endif
+}
+
+int scheme_hamt_popcount(hash_tree_bitmap_t x)
+{
+  return hamt_popcount(x);
 }
 
 XFORM_NONGCING static int hamt_popcount_below(hash_tree_bitmap_t bitmap, int index)

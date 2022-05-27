@@ -23,6 +23,31 @@
 (test #f fixnum-for-every-system? (sub1 (- (expt 2 29))))
 (test #f fixnum-for-every-system? (expt 2 29))
 
+(test 3 fxpopcount 7)
+(test 4 fxpopcount 29)
+(test 2 fxpopcount (fxlshift #b101 20))
+
+(when (<= #xFFFFFFFF (most-positive-fixnum))
+  (test 32 fxpopcount #xFFFFFFFF)
+  (test 31 fxpopcount #xFFFFFFFE)
+  (test 31 fxpopcount #x7FFFFFFF))
+
+(test 16 fxpopcount16 #xFFFF)
+(test 15 fxpopcount16 #x7FFF)
+
+(err/rt-test (fxpopcount -1))
+(err/rt-test (fxpopcount (most-negative-fixnum)))
+(err/rt-test (fxpopcount32 -1))
+(err/rt-test (fxpopcount32 #x100000000))
+(err/rt-test (fxpopcount32 #x1FFFFFFFF))
+(err/rt-test (fxpopcount16 -1))
+(err/rt-test (fxpopcount16 #x10000))
+(err/rt-test (fxpopcount16 #x1FFFF))
+
+(err/rt-test (fxpopcount (add1 (most-negative-fixnum))))
+(err/rt-test (fxpopcount32 (add1 (most-negative-fixnum))))
+(err/rt-test (fxpopcount16 (add1 (most-negative-fixnum))))
+
 (define (wraparound op)
   (lambda (x y)
     (unless (fixnum? x) (raise-argument-error 'wraparound "fixnum?" x))
@@ -52,6 +77,9 @@
 
 (define unary-table 
   (list (list fxnot unsafe-fxnot)
+        (list fxpopcount unsafe-fxpopcount)
+        (list fxpopcount32 unsafe-fxpopcount32)
+        (list fxpopcount16 unsafe-fxpopcount16)
         (list fxabs unsafe-fxabs)
         (list fx->fl unsafe-fx->fl)
         (list (lambda (v) (fl->fx (exact->inexact x)))

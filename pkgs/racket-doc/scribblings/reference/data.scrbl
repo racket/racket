@@ -46,6 +46,9 @@ manipulating instances of the datatype.
 @; ----------------------------------------------------------------------
 @include-section["vectors.scrbl"]
 
+@; ----------------------------------------------------------------------
+@include-section["stencil-vectors.scrbl"]
+
 @; ------------------------------------------------------------
 @section[#:tag "boxes"]{Boxes}
 

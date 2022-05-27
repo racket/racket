@@ -13,6 +13,7 @@
          fxquotient fxremainder fxmodulo 
          fxand fxior fxxor
          fxnot fxrshift fxlshift fxlshift/wraparound
+         fxpopcount fxpopcount32 fxpopcount16
          fx>= fx> fx= fx< fx<=
          fxmin fxmax
          fixnum-for-every-system?

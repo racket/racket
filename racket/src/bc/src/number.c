@@ -119,6 +119,9 @@ static Scheme_Object *fx_and (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_or (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_xor (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_not (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fx_popcount (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fx_popcount32 (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fx_popcount16 (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_lshift (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_rshift (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_lshift_wrap (int argc, Scheme_Object *argv[]);
@@ -914,6 +917,18 @@ void scheme_init_flfxnum_number(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_addto_prim_instance("fxlshift/wraparound", p, env);
 
+  p = scheme_make_folding_prim(fx_popcount, "fxpopcount", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_PRODUCES_FIXNUM);
+  scheme_addto_prim_instance("fxpopcount", p, env);
+
+  p = scheme_make_folding_prim(fx_popcount16, "fxpopcount16", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_PRODUCES_FIXNUM);
+  scheme_addto_prim_instance("fxpopcount16", p, env);
+
+  p = scheme_make_folding_prim(fx_popcount32, "fxpopcount32", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_PRODUCES_FIXNUM);
+  scheme_addto_prim_instance("fxpopcount32", p, env);
+
   p = scheme_make_folding_prim(fx_to_fl, "fx->fl", 1, 1, 1);
   if (scheme_can_inline_fp_op())
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
@@ -1406,6 +1421,21 @@ void scheme_init_unsafe_number(Scheme_Startup_Env *env)
   scheme_addto_prim_instance("unsafe-fxrshift", p, env);
   REGISTER_SO(scheme_unsafe_fxrshift_proc);
   scheme_unsafe_fxrshift_proc = p;
+
+  p = scheme_make_folding_prim(fx_popcount, "unsafe-fxpopcount", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
+                                                            | SCHEME_PRIM_PRODUCES_FIXNUM);
+  scheme_addto_prim_instance("unsafe-fxpopcount", p, env);
+
+  p = scheme_make_folding_prim(fx_popcount16, "unsafe-fxpopcount16", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
+                                                            | SCHEME_PRIM_PRODUCES_FIXNUM);
+  scheme_addto_prim_instance("unsafe-fxpopcount16", p, env);
+
+  p = scheme_make_folding_prim(fx_popcount32, "unsafe-fxpopcount32", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
+                                                            | SCHEME_PRIM_PRODUCES_FIXNUM);
+  scheme_addto_prim_instance("unsafe-fxpopcount32", p, env);
 
   p = scheme_make_folding_prim(unsafe_fx_to_fl, "unsafe-fx->fl", 1, 1, 1);
   if (scheme_can_inline_fp_op())
@@ -5365,6 +5395,65 @@ static Scheme_Object *fx_not (int argc, Scheme_Object *argv[])
   if (!SCHEME_INTP(argv[0])) scheme_wrong_contract("fxnot", "fixnum?", 0, argc, argv);
   v = SCHEME_INT_VAL(argv[0]);
   v = ~v;
+  return scheme_make_integer(v);
+}
+
+static Scheme_Object *fx_popcount (int argc, Scheme_Object *argv[]) {
+  intptr_t v;
+
+  if (!SCHEME_INTP(argv[0]))
+    v = -1;
+  else
+    v = SCHEME_INT_VAL(argv[0]);
+  if (v < 0)
+    scheme_wrong_contract("fxpopcount", "(and/c fixnum? (not/c negative?))", 0, argc, argv);
+
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+  v = (scheme_hamt_popcount((hash_tree_bitmap_t)(v & 0xFFFFFFFF))
+       + scheme_hamt_popcount((hash_tree_bitmap_t)(v >> 32)));
+#else
+  v = scheme_hamt_popcount(v);
+#endif
+
+  return scheme_make_integer(v);
+}
+
+static Scheme_Object *fx_popcount32 (int argc, Scheme_Object *argv[]) {
+  intptr_t v;
+
+  if (!SCHEME_INTP(argv[0]))
+    v = -1;
+  else
+    v = SCHEME_INT_VAL(argv[0]);
+  if (v < 0
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+      || (v > 0xFFFFFFFF)
+#endif
+      )
+    scheme_wrong_contract("fxpopcount32", "(and/c fixnum? (integer-in 0 #xFFFFFFFF))", 0, argc, argv);
+
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+  v = scheme_hamt_popcount((hash_tree_bitmap_t)(v & 0xFFFFFFFF));
+#else
+  v = scheme_hamt_popcount(v);
+#endif
+
+  return scheme_make_integer(v);
+}
+
+static Scheme_Object *fx_popcount16 (int argc, Scheme_Object *argv[]) {
+  intptr_t v;
+
+  if (!SCHEME_INTP(argv[0]))
+    v = -1;
+  else
+    v = SCHEME_INT_VAL(argv[0]);
+
+  if (v < 0 || (v > 0xFFFF))
+    scheme_wrong_contract("fxpopcount16", "(and/c fixnum? (integer-in 0 #xFFFF))", 0, argc, argv);
+
+  v = scheme_hamt_popcount(v & 0xFFFF);
+
   return scheme_make_integer(v);
 }
 

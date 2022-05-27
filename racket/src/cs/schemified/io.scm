@@ -20615,30 +20615,49 @@
                            (let ((app_0 (sub1 fuel_1)))
                              (for-loop_0 app_0 (hash-iterate-first v_1)))))
                         #f)
-                      (if (mpair? v_1)
+                      (if (stencil-vector? v_1)
                         (if (not print-graph?_0)
-                          (if (not (eq? mode_0 0))
-                            (let ((app_0 (unsafe-mcdr v_1)))
-                              (quick-no-graph?_0
-                               app_0
-                               (let ((app_1 (unsafe-mcar v_1)))
-                                 (quick-no-graph?_0 app_1 (sub1 fuel_1)))))
-                            #f)
+                          (letrec*
+                           ((loop_0
+                             (|#%name|
+                              loop
+                              (lambda (fuel_2 i_0)
+                                (begin
+                                  (if (not fuel_2)
+                                    #f
+                                    (if (= i_0 (stencil-vector-length v_1))
+                                      fuel_2
+                                      (let ((app_0
+                                             (quick-no-graph?_0
+                                              (stencil-vector-ref v_1 i_0)
+                                              fuel_2)))
+                                        (loop_0 app_0 (add1 i_0))))))))))
+                           (loop_0 (sub1 fuel_1) 0))
                           #f)
-                        (if (if (1/custom-write? v_1)
-                              (not (struct-type? v_1))
+                        (if (mpair? v_1)
+                          (if (not print-graph?_0)
+                            (if (not (eq? mode_0 0))
+                              (let ((app_0 (unsafe-mcdr v_1)))
+                                (quick-no-graph?_0
+                                 app_0
+                                 (let ((app_1 (unsafe-mcar v_1)))
+                                   (quick-no-graph?_0 app_1 (sub1 fuel_1)))))
                               #f)
-                          #f
-                          (if (if (struct? v_1)
-                                (config-get config_0 1/print-struct)
+                            #f)
+                          (if (if (1/custom-write? v_1)
+                                (not (struct-type? v_1))
                                 #f)
-                            (if (not print-graph?_0)
-                              (if (prefab-struct-key v_1)
-                                (let ((app_0 (struct->vector v_1)))
-                                  (quick-no-graph?_0 app_0 (sub1 fuel_1)))
+                            #f
+                            (if (if (struct? v_1)
+                                  (config-get config_0 1/print-struct)
+                                  #f)
+                              (if (not print-graph?_0)
+                                (if (prefab-struct-key v_1)
+                                  (let ((app_0 (struct->vector v_1)))
+                                    (quick-no-graph?_0 app_0 (sub1 fuel_1)))
+                                  #f)
                                 #f)
-                              #f)
-                            fuel_1)))))))))))))
+                              fuel_1))))))))))))))
      (quick-no-graph?_0 v_0 fuel_0))))
 (define finish_2175
   (make-struct-type-install-properties
@@ -20892,158 +20911,191 @@
                                                      (hash-iterate-first
                                                       v_1))))))
                                             (done!_0 v_1 unquoted?_0)))
-                                        (if (mpair? v_1)
+                                        (if (stencil-vector? v_1)
                                           (begin
                                             (checking!_0 v_1)
-                                            (build-graph_0
-                                             (unsafe-mcar v_1)
-                                             mode_1)
-                                            (build-graph_0
-                                             (unsafe-mcdr v_1)
-                                             mode_1)
-                                            (done!_0 v_1 (eq? mode_1 0)))
-                                          (if (if (1/custom-write? v_1)
-                                                (not (struct-type? v_1))
-                                                #f)
-                                            (let ((print-quotable_0
-                                                   (if (eq? mode_1 0)
-                                                     (1/custom-print-quotable-accessor
-                                                      v_1
-                                                      'self)
-                                                     'self)))
-                                              (let ((unquoted?_0
-                                                     (eq?
-                                                      print-quotable_0
-                                                      'never)))
-                                                (begin
-                                                  (if checking-port_0
-                                                    (void)
-                                                    (begin
-                                                      (set! checking-port_0
-                                                        (open-output-nowhere))
-                                                      (set-port-handlers-to-recur!
-                                                       checking-port_0
-                                                       (lambda (e_0 p_0 mode_2)
-                                                         (if (let ((or-part_0
-                                                                    (eq?
-                                                                     mode_2
-                                                                     1)))
-                                                               (if or-part_0
-                                                                 or-part_0
-                                                                 (eq?
-                                                                  mode_2
-                                                                  0)))
-                                                           (let ((e-unquoted?_0
-                                                                  (build-graph_0
-                                                                   e_0
-                                                                   mode_2)))
-                                                             (if (let ((or-part_0
-                                                                        (eq?
-                                                                         print-quotable_0
-                                                                         'always)))
-                                                                   (if or-part_0
-                                                                     or-part_0
-                                                                     (eq?
-                                                                      print-quotable_0
-                                                                      'self)))
-                                                               (void)
-                                                               (set! unquoted?_0
-                                                                 (if e-unquoted?_0
-                                                                   e-unquoted?_0
-                                                                   unquoted?_0))))
-                                                           (build-graph_0
-                                                            e_0
-                                                            mode_2))))))
-                                                  (checking!_0 v_1)
-                                                  (let ((app_0
-                                                         (1/custom-write-accessor
-                                                          v_1)))
-                                                    (let ((app_1
-                                                           checking-port_0))
-                                                      (|#%app|
-                                                       app_0
-                                                       v_1
-                                                       app_1
-                                                       (if (if (eq? mode_1 0)
-                                                             (eq?
-                                                              print-quotable_0
-                                                              'always)
-                                                             #f)
-                                                         1
-                                                         mode_1))))
-                                                  (done!_0 v_1 unquoted?_0))))
-                                            (if (if (struct? v_1)
-                                                  (config-get
-                                                   config_0
-                                                   1/print-struct)
+                                            (letrec*
+                                             ((loop_0
+                                               (|#%name|
+                                                loop
+                                                (lambda (i_0)
+                                                  (begin
+                                                    (if (=
+                                                         i_0
+                                                         (stencil-vector-length
+                                                          v_1))
+                                                      (void)
+                                                      (begin
+                                                        (let ((app_0
+                                                               (stencil-vector-ref
+                                                                v_1
+                                                                i_0)))
+                                                          (build-graph_0
+                                                           app_0
+                                                           (if (eq? mode_1 #f)
+                                                             #f
+                                                             #t)))
+                                                        (loop_0
+                                                         (add1 i_0)))))))))
+                                             (loop_0 0))
+                                            (done!_0 v_1 #f))
+                                          (if (mpair? v_1)
+                                            (begin
+                                              (checking!_0 v_1)
+                                              (build-graph_0
+                                               (unsafe-mcar v_1)
+                                               mode_1)
+                                              (build-graph_0
+                                               (unsafe-mcdr v_1)
+                                               mode_1)
+                                              (done!_0 v_1 (eq? mode_1 0)))
+                                            (if (if (1/custom-write? v_1)
+                                                  (not (struct-type? v_1))
                                                   #f)
-                                              (begin
-                                                (checking!_0 v_1)
+                                              (let ((print-quotable_0
+                                                     (if (eq? mode_1 0)
+                                                       (1/custom-print-quotable-accessor
+                                                        v_1
+                                                        'self)
+                                                       'self)))
                                                 (let ((unquoted?_0
-                                                       (let ((or-part_0
-                                                              (call-with-values
-                                                               (lambda ()
-                                                                 (let ((vec_0
-                                                                        (struct->vector
-                                                                         v_1)))
+                                                       (eq?
+                                                        print-quotable_0
+                                                        'never)))
+                                                  (begin
+                                                    (if checking-port_0
+                                                      (void)
+                                                      (begin
+                                                        (set! checking-port_0
+                                                          (open-output-nowhere))
+                                                        (set-port-handlers-to-recur!
+                                                         checking-port_0
+                                                         (lambda (e_0
+                                                                  p_0
+                                                                  mode_2)
+                                                           (if (let ((or-part_0
+                                                                      (eq?
+                                                                       mode_2
+                                                                       1)))
+                                                                 (if or-part_0
+                                                                   or-part_0
+                                                                   (eq?
+                                                                    mode_2
+                                                                    0)))
+                                                             (let ((e-unquoted?_0
+                                                                    (build-graph_0
+                                                                     e_0
+                                                                     mode_2)))
+                                                               (if (let ((or-part_0
+                                                                          (eq?
+                                                                           print-quotable_0
+                                                                           'always)))
+                                                                     (if or-part_0
+                                                                       or-part_0
+                                                                       (eq?
+                                                                        print-quotable_0
+                                                                        'self)))
+                                                                 (void)
+                                                                 (set! unquoted?_0
+                                                                   (if e-unquoted?_0
+                                                                     e-unquoted?_0
+                                                                     unquoted?_0))))
+                                                             (build-graph_0
+                                                              e_0
+                                                              mode_2))))))
+                                                    (checking!_0 v_1)
+                                                    (let ((app_0
+                                                           (1/custom-write-accessor
+                                                            v_1)))
+                                                      (let ((app_1
+                                                             checking-port_0))
+                                                        (|#%app|
+                                                         app_0
+                                                         v_1
+                                                         app_1
+                                                         (if (if (eq? mode_1 0)
+                                                               (eq?
+                                                                print-quotable_0
+                                                                'always)
+                                                               #f)
+                                                           1
+                                                           mode_1))))
+                                                    (done!_0
+                                                     v_1
+                                                     unquoted?_0))))
+                                              (if (if (struct? v_1)
+                                                    (config-get
+                                                     config_0
+                                                     1/print-struct)
+                                                    #f)
+                                                (begin
+                                                  (checking!_0 v_1)
+                                                  (let ((unquoted?_0
+                                                         (let ((or-part_0
+                                                                (call-with-values
+                                                                 (lambda ()
+                                                                   (let ((vec_0
+                                                                          (struct->vector
+                                                                           v_1)))
+                                                                     (begin
+                                                                       (check-vector
+                                                                        vec_0)
+                                                                       (values
+                                                                        vec_0
+                                                                        (unsafe-vector-length
+                                                                         vec_0)))))
+                                                                 (case-lambda
+                                                                  ((vec_0
+                                                                    len_0)
                                                                    (begin
-                                                                     (check-vector
-                                                                      vec_0)
-                                                                     (values
-                                                                      vec_0
-                                                                      (unsafe-vector-length
-                                                                       vec_0)))))
-                                                               (case-lambda
-                                                                ((vec_0 len_0)
-                                                                 (begin
-                                                                   #f
-                                                                   (letrec*
-                                                                    ((for-loop_0
-                                                                      (|#%name|
-                                                                       for-loop
-                                                                       (lambda (unquoted?_0
-                                                                                pos_0)
-                                                                         (begin
-                                                                           (if (unsafe-fx<
-                                                                                pos_0
-                                                                                len_0)
-                                                                             (let ((e_0
-                                                                                    (unsafe-vector-ref
-                                                                                     vec_0
-                                                                                     pos_0)))
-                                                                               (let ((unquoted?_1
-                                                                                      (let ((unquoted?_1
-                                                                                             (let ((or-part_0
-                                                                                                    (build-graph_0
-                                                                                                     e_0
-                                                                                                     mode_1)))
-                                                                                               (if or-part_0
-                                                                                                 or-part_0
-                                                                                                 unquoted?_0))))
-                                                                                        (values
-                                                                                         unquoted?_1))))
-                                                                                 (for-loop_0
-                                                                                  unquoted?_1
-                                                                                  (unsafe-fx+
-                                                                                   1
-                                                                                   pos_0))))
-                                                                             unquoted?_0))))))
-                                                                    (for-loop_0
                                                                      #f
-                                                                     0))))
-                                                                (args
-                                                                 (raise-binding-result-arity-error
-                                                                  2
-                                                                  args))))))
-                                                         (if or-part_0
-                                                           or-part_0
-                                                           (if (eq? mode_1 0)
-                                                             (not
-                                                              (prefab-struct-key
-                                                               v_1))
-                                                             #f)))))
-                                                  (done!_0 v_1 unquoted?_0)))
-                                              #f)))))))))))))))
+                                                                     (letrec*
+                                                                      ((for-loop_0
+                                                                        (|#%name|
+                                                                         for-loop
+                                                                         (lambda (unquoted?_0
+                                                                                  pos_0)
+                                                                           (begin
+                                                                             (if (unsafe-fx<
+                                                                                  pos_0
+                                                                                  len_0)
+                                                                               (let ((e_0
+                                                                                      (unsafe-vector-ref
+                                                                                       vec_0
+                                                                                       pos_0)))
+                                                                                 (let ((unquoted?_1
+                                                                                        (let ((unquoted?_1
+                                                                                               (let ((or-part_0
+                                                                                                      (build-graph_0
+                                                                                                       e_0
+                                                                                                       mode_1)))
+                                                                                                 (if or-part_0
+                                                                                                   or-part_0
+                                                                                                   unquoted?_0))))
+                                                                                          (values
+                                                                                           unquoted?_1))))
+                                                                                   (for-loop_0
+                                                                                    unquoted?_1
+                                                                                    (unsafe-fx+
+                                                                                     1
+                                                                                     pos_0))))
+                                                                               unquoted?_0))))))
+                                                                      (for-loop_0
+                                                                       #f
+                                                                       0))))
+                                                                  (args
+                                                                   (raise-binding-result-arity-error
+                                                                    2
+                                                                    args))))))
+                                                           (if or-part_0
+                                                             or-part_0
+                                                             (if (eq? mode_1 0)
+                                                               (not
+                                                                (prefab-struct-key
+                                                                 v_1))
+                                                               #f)))))
+                                                    (done!_0 v_1 unquoted?_0)))
+                                                #f))))))))))))))))
                    (build-graph_0 v_0 mode_0))
                   (if (if (not cycle?_0)
                         (if (not constructor?_0) (not print-graph?_0) #f)
@@ -21101,225 +21153,308 @@
                         (void)
                         ht_0))))))))))))
 (define print-list
-  (lambda (p_0
-           who_0
-           v_0
-           mode_0
-           o_0
-           max-length_0
-           graph_0
-           config_0
-           alt-list-prefix_0
-           alt-list-constructor_0)
-    (let ((unquoted-pairs?_0
-           (if (eq? mode_0 0)
-             (if (not alt-list-constructor_0)
-               (not (uninterrupted-list? v_0 graph_0))
-               #f)
-             #f)))
-      (let ((curly?_0
-             (if (not (eq? mode_0 0))
-               (if (not alt-list-prefix_0)
-                 (config-get config_0 1/print-pair-curly-braces)
-                 #f)
-               #f)))
-        (let ((abbreviation_0
-               (|#%name|
-                abbreviation
-                (lambda (v_1)
-                  (begin
-                    (if (not (eq? mode_0 #f))
-                      (if (pair? v_1)
-                        (if (pair? (cdr v_1))
-                          (if (null? (cddr v_1))
-                            (if (not alt-list-constructor_0)
-                              (if (let ((or-part_0 (not (eq? mode_0 #t))))
-                                    (if or-part_0
-                                      or-part_0
-                                      (config-get
-                                       config_0
-                                       1/print-reader-abbreviations)))
-                                (let ((starts-@?_0
-                                       (|#%name|
-                                        starts-@?
-                                        (lambda (v_2)
-                                          (begin
-                                            (if (symbol? v_2)
-                                              (let ((s_0
-                                                     (symbol->print-string.1
-                                                      unsafe-undefined
-                                                      config_0
-                                                      #f
-                                                      #f
-                                                      v_2)))
-                                                (char=?
-                                                 '#\x40
-                                                 (string-ref s_0 0)))
-                                              #f))))))
-                                  (let ((tmp_0 (car v_1)))
-                                    (if (eq? tmp_0 'quote)
-                                      "'"
-                                      (if (eq? tmp_0 'quasiquote)
-                                        "`"
-                                        (if (eq? tmp_0 'unquote)
-                                          (if (starts-@?_0 (cadr v_1))
-                                            ", "
-                                            ",")
-                                          (if (eq? tmp_0 'unquote-splicing)
-                                            ",@"
-                                            (if (eq? tmp_0 'syntax)
-                                              "#'"
-                                              (if (eq? tmp_0 'quasisyntax)
-                                                "#`"
-                                                (if (eq? tmp_0 'unsyntax)
-                                                  (if (starts-@?_0 (cadr v_1))
-                                                    "#, "
-                                                    "#,")
-                                                  (if (eq?
-                                                       tmp_0
-                                                       'unsyntax-splicing)
-                                                    "#,@"
-                                                    #f))))))))))
-                                #f)
-                              #f)
-                            #f)
-                          #f)
-                        #f)
-                      #f))))))
-          (let ((c1_0 (abbreviation_0 v_0)))
-            (if c1_0
-              (let ((app_0 (cadr v_0)))
-                (|#%app|
-                 p_0
-                 who_0
-                 app_0
-                 mode_0
-                 o_0
-                 (write-string/max c1_0 o_0 max-length_0)
-                 graph_0
-                 config_0))
-              (let ((max-length_1
-                     (if (eq? mode_0 0)
-                       (let ((max-length_1
-                              (if unquoted-pairs?_0
-                                (if (multiple-pairs? v_0 graph_0)
-                                  (write-string/max "(list*" o_0 max-length_0)
-                                  (write-string/max "(cons" o_0 max-length_0))
-                                (write-string/max
-                                 (if alt-list-constructor_0
-                                   alt-list-constructor_0
-                                   "(list")
-                                 o_0
-                                 max-length_0))))
-                         (if (null? v_0)
-                           max-length_1
-                           (write-string/max " " o_0 max-length_1)))
-                       (write-string/max
-                        (if alt-list-prefix_0
-                          alt-list-prefix_0
-                          (if curly?_0 "{" "("))
-                        o_0
-                        max-length_0))))
-                (letrec*
-                 ((loop_0
-                   (|#%name|
-                    loop
-                    (lambda (v_1 max-length_2)
-                      (begin
-                        (if (eq? max-length_2 'full)
-                          'full
-                          (if (null? v_1)
-                            (write-string/max
-                             (if curly?_0 "}" ")")
-                             o_0
-                             max-length_2)
-                            (if (if (null? (cdr v_1))
-                                  (not unquoted-pairs?_0)
-                                  #f)
-                              (let ((max-length_3
-                                     (|#%app|
-                                      p_0
-                                      who_0
-                                      (car v_1)
-                                      mode_0
-                                      o_0
-                                      max-length_2
-                                      graph_0
-                                      config_0)))
-                                (write-string/max
-                                 (if curly?_0 "}" ")")
-                                 o_0
-                                 max-length_3))
-                              (if (if (pair? (cdr v_1))
-                                    (if (let ((or-part_0 (not graph_0)))
-                                          (if or-part_0
-                                            or-part_0
-                                            (non-graph?
-                                             (hash-ref graph_0 (cdr v_1) #f))))
-                                      (not (abbreviation_0 (cdr v_1)))
+  (let ((print-list_0
+         (|#%name|
+          print-list
+          (lambda (p2_0
+                   who3_0
+                   v4_0
+                   mode5_0
+                   o6_0
+                   max-length7_0
+                   graph8_0
+                   config9_0
+                   alt-list-prefix10_0
+                   alt-list-constructor11_0
+                   alt-closer1_0)
+            (begin
+              (let ((unquoted-pairs?_0
+                     (if (eq? mode5_0 0)
+                       (if (not alt-list-constructor11_0)
+                         (not (uninterrupted-list? v4_0 graph8_0))
+                         #f)
+                       #f)))
+                (let ((curly?_0
+                       (if (not (eq? mode5_0 0))
+                         (if (not alt-list-prefix10_0)
+                           (config-get config9_0 1/print-pair-curly-braces)
+                           #f)
+                         #f)))
+                  (let ((abbreviation_0
+                         (|#%name|
+                          abbreviation
+                          (lambda (v_0)
+                            (begin
+                              (if (not (eq? mode5_0 #f))
+                                (if (pair? v_0)
+                                  (if (pair? (cdr v_0))
+                                    (if (null? (cddr v_0))
+                                      (if (not alt-list-constructor11_0)
+                                        (if (let ((or-part_0
+                                                   (not (eq? mode5_0 #t))))
+                                              (if or-part_0
+                                                or-part_0
+                                                (config-get
+                                                 config9_0
+                                                 1/print-reader-abbreviations)))
+                                          (let ((starts-@?_0
+                                                 (|#%name|
+                                                  starts-@?
+                                                  (lambda (v_1)
+                                                    (begin
+                                                      (if (symbol? v_1)
+                                                        (let ((s_0
+                                                               (symbol->print-string.1
+                                                                unsafe-undefined
+                                                                config9_0
+                                                                #f
+                                                                #f
+                                                                v_1)))
+                                                          (char=?
+                                                           '#\x40
+                                                           (string-ref s_0 0)))
+                                                        #f))))))
+                                            (let ((tmp_0 (car v_0)))
+                                              (if (eq? tmp_0 'quote)
+                                                "'"
+                                                (if (eq? tmp_0 'quasiquote)
+                                                  "`"
+                                                  (if (eq? tmp_0 'unquote)
+                                                    (if (starts-@?_0
+                                                         (cadr v_0))
+                                                      ", "
+                                                      ",")
+                                                    (if (eq?
+                                                         tmp_0
+                                                         'unquote-splicing)
+                                                      ",@"
+                                                      (if (eq? tmp_0 'syntax)
+                                                        "#'"
+                                                        (if (eq?
+                                                             tmp_0
+                                                             'quasisyntax)
+                                                          "#`"
+                                                          (if (eq?
+                                                               tmp_0
+                                                               'unsyntax)
+                                                            (if (starts-@?_0
+                                                                 (cadr v_0))
+                                                              "#, "
+                                                              "#,")
+                                                            (if (eq?
+                                                                 tmp_0
+                                                                 'unsyntax-splicing)
+                                                              "#,@"
+                                                              #f))))))))))
+                                          #f)
+                                        #f)
                                       #f)
                                     #f)
-                                (let ((max-length_3
-                                       (|#%app|
-                                        p_0
-                                        who_0
-                                        (car v_1)
-                                        mode_0
-                                        o_0
-                                        max-length_2
-                                        graph_0
-                                        config_0)))
-                                  (let ((app_0 (cdr v_1)))
-                                    (loop_0
-                                     app_0
-                                     (write-string/max " " o_0 max-length_3))))
-                                (let ((c2_0 (abbreviation_0 v_1)))
-                                  (if c2_0
-                                    (let ((app_0 (cadr v_1)))
-                                      (|#%app|
-                                       p_0
-                                       who_0
-                                       app_0
-                                       mode_0
-                                       o_0
-                                       (write-string/max c2_0 o_0 max-length_2)
-                                       graph_0
-                                       config_0))
-                                    (let ((max-length_3
-                                           (|#%app|
-                                            p_0
-                                            who_0
-                                            (car v_1)
-                                            mode_0
-                                            o_0
-                                            max-length_2
-                                            graph_0
-                                            config_0)))
-                                      (let ((max-length_4
-                                             (if unquoted-pairs?_0
+                                  #f)
+                                #f))))))
+                    (let ((c1_0 (abbreviation_0 v4_0)))
+                      (if c1_0
+                        (let ((app_0 (cadr v4_0)))
+                          (|#%app|
+                           p2_0
+                           who3_0
+                           app_0
+                           mode5_0
+                           o6_0
+                           (write-string/max c1_0 o6_0 max-length7_0)
+                           graph8_0
+                           config9_0))
+                        (let ((max-length_0
+                               (if (eq? mode5_0 0)
+                                 (let ((max-length_0
+                                        (if unquoted-pairs?_0
+                                          (if (multiple-pairs? v4_0 graph8_0)
+                                            (write-string/max
+                                             "(list*"
+                                             o6_0
+                                             max-length7_0)
+                                            (write-string/max
+                                             "(cons"
+                                             o6_0
+                                             max-length7_0))
+                                          (write-string/max
+                                           (if alt-list-constructor11_0
+                                             alt-list-constructor11_0
+                                             "(list")
+                                           o6_0
+                                           max-length7_0))))
+                                   (if (null? v4_0)
+                                     max-length_0
+                                     (write-string/max " " o6_0 max-length_0)))
+                                 (write-string/max
+                                  (if alt-list-prefix10_0
+                                    alt-list-prefix10_0
+                                    (if curly?_0 "{" "("))
+                                  o6_0
+                                  max-length7_0))))
+                          (letrec*
+                           ((loop_0
+                             (|#%name|
+                              loop
+                              (lambda (v_0 max-length_1)
+                                (begin
+                                  (if (eq? max-length_1 'full)
+                                    'full
+                                    (if (null? v_0)
+                                      (write-string/max
+                                       (if alt-closer1_0
+                                         alt-closer1_0
+                                         (if curly?_0 "}" ")"))
+                                       o6_0
+                                       max-length_1)
+                                      (if (if (null? (cdr v_0))
+                                            (not unquoted-pairs?_0)
+                                            #f)
+                                        (let ((max-length_2
+                                               (|#%app|
+                                                p2_0
+                                                who3_0
+                                                (car v_0)
+                                                mode5_0
+                                                o6_0
+                                                max-length_1
+                                                graph8_0
+                                                config9_0)))
+                                          (write-string/max
+                                           (if alt-closer1_0
+                                             alt-closer1_0
+                                             (if curly?_0 "}" ")"))
+                                           o6_0
+                                           max-length_2))
+                                        (if (if (pair? (cdr v_0))
+                                              (if (let ((or-part_0
+                                                         (not graph8_0)))
+                                                    (if or-part_0
+                                                      or-part_0
+                                                      (non-graph?
+                                                       (hash-ref
+                                                        graph8_0
+                                                        (cdr v_0)
+                                                        #f))))
+                                                (not
+                                                 (abbreviation_0 (cdr v_0)))
+                                                #f)
+                                              #f)
+                                          (let ((max-length_2
+                                                 (|#%app|
+                                                  p2_0
+                                                  who3_0
+                                                  (car v_0)
+                                                  mode5_0
+                                                  o6_0
+                                                  max-length_1
+                                                  graph8_0
+                                                  config9_0)))
+                                            (let ((app_0 (cdr v_0)))
+                                              (loop_0
+                                               app_0
                                                (write-string/max
                                                 " "
-                                                o_0
-                                                max-length_3)
-                                               (write-string/max
-                                                " . "
-                                                o_0
-                                                max-length_3))))
-                                        (let ((max-length_5
-                                               (|#%app|
-                                                p_0
-                                                who_0
-                                                (cdr v_1)
-                                                mode_0
-                                                o_0
-                                                max-length_4
-                                                graph_0
-                                                config_0)))
-                                          (write-string/max
-                                           (if curly?_0 "}" ")")
-                                           o_0
-                                           max-length_5)))))))))))))))
-                 (loop_0 v_0 max-length_1))))))))))
+                                                o6_0
+                                                max-length_2))))
+                                          (let ((c2_0 (abbreviation_0 v_0)))
+                                            (if c2_0
+                                              (let ((app_0 (cadr v_0)))
+                                                (|#%app|
+                                                 p2_0
+                                                 who3_0
+                                                 app_0
+                                                 mode5_0
+                                                 o6_0
+                                                 (write-string/max
+                                                  c2_0
+                                                  o6_0
+                                                  max-length_1)
+                                                 graph8_0
+                                                 config9_0))
+                                              (let ((max-length_2
+                                                     (|#%app|
+                                                      p2_0
+                                                      who3_0
+                                                      (car v_0)
+                                                      mode5_0
+                                                      o6_0
+                                                      max-length_1
+                                                      graph8_0
+                                                      config9_0)))
+                                                (let ((max-length_3
+                                                       (if unquoted-pairs?_0
+                                                         (write-string/max
+                                                          " "
+                                                          o6_0
+                                                          max-length_2)
+                                                         (write-string/max
+                                                          " . "
+                                                          o6_0
+                                                          max-length_2))))
+                                                  (let ((max-length_4
+                                                         (|#%app|
+                                                          p2_0
+                                                          who3_0
+                                                          (cdr v_0)
+                                                          mode5_0
+                                                          o6_0
+                                                          max-length_3
+                                                          graph8_0
+                                                          config9_0)))
+                                                    (write-string/max
+                                                     (if alt-closer1_0
+                                                       alt-closer1_0
+                                                       (if curly?_0 "}" ")"))
+                                                     o6_0
+                                                     max-length_4)))))))))))))))
+                           (loop_0 v4_0 max-length_0)))))))))))))
+    (case-lambda
+     ((p_0
+       who_0
+       v_0
+       mode_0
+       o_0
+       max-length_0
+       graph_0
+       config_0
+       alt-list-prefix_0
+       alt-list-constructor_0)
+      (print-list_0
+       p_0
+       who_0
+       v_0
+       mode_0
+       o_0
+       max-length_0
+       graph_0
+       config_0
+       alt-list-prefix_0
+       alt-list-constructor_0
+       #f))
+     ((p_0
+       who_0
+       v_0
+       mode_0
+       o_0
+       max-length_0
+       graph_0
+       config_0
+       alt-list-prefix_0
+       alt-list-constructor_0
+       alt-closer1_0)
+      (print-list_0
+       p_0
+       who_0
+       v_0
+       mode_0
+       o_0
+       max-length_0
+       graph_0
+       config_0
+       alt-list-prefix_0
+       alt-list-constructor_0
+       alt-closer1_0)))))
 (define uninterrupted-list?
   (lambda (v_0 graph_0)
     (if (list? v_0)
@@ -22160,89 +22295,84 @@
                                  fxvector-length
                                  fxvector-ref
                                  eq?)
-                                (if (box? v_0)
-                                  (if (config-get config_0 1/print-box)
-                                    (if (eq? mode_0 0)
-                                      (let ((max-length_1
-                                             (write-string/max
-                                              "(box "
-                                              o_0
-                                              max-length_0)))
-                                        (let ((max-length_2
-                                               (p
-                                                who_0
-                                                (unbox v_0)
-                                                mode_0
-                                                o_0
-                                                max-length_1
-                                                graph_0
-                                                config_0)))
-                                          (write-string/max
-                                           ")"
-                                           o_0
-                                           max-length_2)))
-                                      (let ((app_0 (unbox v_0)))
-                                        (p
-                                         who_0
-                                         app_0
-                                         mode_0
-                                         o_0
-                                         (write-string/max
-                                          "#&"
-                                          o_0
-                                          max-length_0)
-                                         graph_0
-                                         config_0)))
-                                    (begin
-                                      (check-unreadable
+                                (if (stencil-vector? v_0)
+                                  (let ((lst_0
+                                         (letrec*
+                                          ((loop_0
+                                            (|#%name|
+                                             loop
+                                             (lambda (i_0)
+                                               (begin
+                                                 (if (=
+                                                      i_0
+                                                      (stencil-vector-length
+                                                       v_0))
+                                                   '()
+                                                   (let ((app_0
+                                                          (stencil-vector-ref
+                                                           v_0
+                                                           i_0)))
+                                                     (cons
+                                                      app_0
+                                                      (loop_0
+                                                       (add1 i_0))))))))))
+                                          (loop_0 0))))
+                                    (let ((app_0 (if (eq? mode_0 #f) #f #t)))
+                                      (print-list
+                                       p
                                        who_0
-                                       config_0
-                                       mode_0
-                                       v_0)
-                                      (write-string/max
-                                       "#<box>"
+                                       lst_0
+                                       app_0
                                        o_0
-                                       max-length_0)))
-                                  (if (hash? v_0)
-                                    (if (if (config-get
-                                             config_0
-                                             1/print-hash-table)
-                                          (not (hash-weak? v_0))
-                                          #f)
+                                       max-length_0
+                                       graph_0
+                                       config_0
+                                       (let ((app_1
+                                              (number->string
+                                               (stencil-vector-mask v_0))))
+                                         (string-append
+                                          "#<stencil "
+                                          app_1
+                                          (if (eqv?
+                                               0
+                                               (stencil-vector-mask v_0))
+                                            ""
+                                            ": ")))
+                                       #f
+                                       ">")))
+                                  (if (box? v_0)
+                                    (if (config-get config_0 1/print-box)
                                       (if (eq? mode_0 0)
-                                        (let ((l_0
-                                               (apply
-                                                append
-                                                (hash-map v_0 list #t))))
-                                          (let ((prefix_0
-                                                 (if (hash-eq? v_0)
-                                                   "(hasheq"
-                                                   (if (hash-eqv? v_0)
-                                                     "(hasheqv"
-                                                     (if (hash-equal-always?
-                                                          v_0)
-                                                       "(hashalw"
-                                                       "(hash")))))
-                                            (print-list
-                                             p
-                                             who_0
-                                             l_0
-                                             mode_0
+                                        (let ((max-length_1
+                                               (write-string/max
+                                                "(box "
+                                                o_0
+                                                max-length_0)))
+                                          (let ((max-length_2
+                                                 (p
+                                                  who_0
+                                                  (unbox v_0)
+                                                  mode_0
+                                                  o_0
+                                                  max-length_1
+                                                  graph_0
+                                                  config_0)))
+                                            (write-string/max
+                                             ")"
                                              o_0
-                                             max-length_0
-                                             graph_0
-                                             config_0
-                                             #f
-                                             prefix_0)))
-                                        (print-hash
-                                         v_0
-                                         o_0
-                                         max-length_0
-                                         p
-                                         who_0
-                                         mode_0
-                                         graph_0
-                                         config_0))
+                                             max-length_2)))
+                                        (let ((app_0 (unbox v_0)))
+                                          (p
+                                           who_0
+                                           app_0
+                                           mode_0
+                                           o_0
+                                           (write-string/max
+                                            "#&"
+                                            o_0
+                                            max-length_0)
+                                           graph_0
+                                           config_0)))
                                       (begin
                                         (check-unreadable
                                          who_0
@@ -22250,200 +22380,254 @@
                                          mode_0
                                          v_0)
                                         (write-string/max
-                                         "#<hash>"
+                                         "#<box>"
                                          o_0
                                          max-length_0)))
-                                    (if (if (eq? mode_0 #t)
-                                          (if (not
-                                               (config-get
-                                                config_0
-                                                1/print-unreadable))
-                                            (if (not (prefab-struct-key v_0))
-                                              (not
-                                               (|#%app| printable-regexp? v_0))
+                                    (if (hash? v_0)
+                                      (if (if (config-get
+                                               config_0
+                                               1/print-hash-table)
+                                            (not (hash-weak? v_0))
+                                            #f)
+                                        (if (eq? mode_0 0)
+                                          (let ((l_0
+                                                 (apply
+                                                  append
+                                                  (hash-map v_0 list #t))))
+                                            (let ((prefix_0
+                                                   (if (hash-eq? v_0)
+                                                     "(hasheq"
+                                                     (if (hash-eqv? v_0)
+                                                       "(hasheqv"
+                                                       (if (hash-equal-always?
+                                                            v_0)
+                                                         "(hashalw"
+                                                         "(hash")))))
+                                              (print-list
+                                               p
+                                               who_0
+                                               l_0
+                                               mode_0
+                                               o_0
+                                               max-length_0
+                                               graph_0
+                                               config_0
+                                               #f
+                                               prefix_0)))
+                                          (print-hash
+                                           v_0
+                                           o_0
+                                           max-length_0
+                                           p
+                                           who_0
+                                           mode_0
+                                           graph_0
+                                           config_0))
+                                        (begin
+                                          (check-unreadable
+                                           who_0
+                                           config_0
+                                           mode_0
+                                           v_0)
+                                          (write-string/max
+                                           "#<hash>"
+                                           o_0
+                                           max-length_0)))
+                                      (if (if (eq? mode_0 #t)
+                                            (if (not
+                                                 (config-get
+                                                  config_0
+                                                  1/print-unreadable))
+                                              (if (not (prefab-struct-key v_0))
+                                                (not
+                                                 (|#%app|
+                                                  printable-regexp?
+                                                  v_0))
+                                                #f)
                                               #f)
                                             #f)
-                                          #f)
-                                      (fail-unreadable who_0 v_0)
-                                      (if (mpair? v_0)
-                                        (print-mlist
-                                         p
-                                         who_0
-                                         v_0
-                                         mode_0
-                                         o_0
-                                         max-length_0
-                                         graph_0
-                                         config_0)
-                                        (if (if (not (struct-type? v_0))
-                                              (1/custom-write? v_0)
-                                              #f)
-                                          (let ((o/m_0
-                                                 (begin-unsafe
-                                                  (make-max-output-port
-                                                   o_0
-                                                   max-length_0))))
-                                            (begin
-                                              (set-port-handlers-to-recur!
-                                               o/m_0
-                                               (lambda (v_1 o_1 mode_1)
-                                                 (p
-                                                  who_0
-                                                  v_1
-                                                  mode_1
-                                                  o_1
-                                                  (begin-unsafe
-                                                   (if max-length_0
-                                                     (max-output-port-max-length
-                                                      o/m_0)
-                                                     #f))
-                                                  graph_0
-                                                  config_0)))
-                                              (|#%app|
-                                               (1/custom-write-accessor v_0)
-                                               v_0
-                                               o/m_0
-                                               mode_0)
-                                              (begin-unsafe
-                                               (if max-length_0
-                                                 (max-output-port-max-length
-                                                  o/m_0)
-                                                 #f))))
-                                          (if (if (struct? v_0)
-                                                (config-get
-                                                 config_0
-                                                 1/print-struct)
+                                        (fail-unreadable who_0 v_0)
+                                        (if (mpair? v_0)
+                                          (print-mlist
+                                           p
+                                           who_0
+                                           v_0
+                                           mode_0
+                                           o_0
+                                           max-length_0
+                                           graph_0
+                                           config_0)
+                                          (if (if (not (struct-type? v_0))
+                                                (1/custom-write? v_0)
                                                 #f)
-                                            (if (eq? mode_0 0)
-                                              (let ((l_0
-                                                     (vector->list
-                                                      (struct->vector
-                                                       v_0
-                                                       struct-dots))))
-                                                (let ((alt-list-constructor_0
-                                                       (string-append
-                                                        "("
-                                                        (substring
-                                                         (symbol->immutable-string
-                                                          (car l_0))
-                                                         7))))
-                                                  (print-list
-                                                   p
-                                                   who_0
-                                                   (cdr l_0)
-                                                   mode_0
-                                                   o_0
-                                                   max-length_0
-                                                   graph_0
+                                            (let ((o/m_0
+                                                   (begin-unsafe
+                                                    (make-max-output-port
+                                                     o_0
+                                                     max-length_0))))
+                                              (begin
+                                                (set-port-handlers-to-recur!
+                                                 o/m_0
+                                                 (lambda (v_1 o_1 mode_1)
+                                                   (p
+                                                    who_0
+                                                    v_1
+                                                    mode_1
+                                                    o_1
+                                                    (begin-unsafe
+                                                     (if max-length_0
+                                                       (max-output-port-max-length
+                                                        o/m_0)
+                                                       #f))
+                                                    graph_0
+                                                    config_0)))
+                                                (|#%app|
+                                                 (1/custom-write-accessor v_0)
+                                                 v_0
+                                                 o/m_0
+                                                 mode_0)
+                                                (begin-unsafe
+                                                 (if max-length_0
+                                                   (max-output-port-max-length
+                                                    o/m_0)
+                                                   #f))))
+                                            (if (if (struct? v_0)
+                                                  (config-get
                                                    config_0
-                                                   #f
-                                                   alt-list-constructor_0)))
-                                              (let ((c2_0
-                                                     (prefab-struct-key v_0)))
-                                                (if c2_0
-                                                  (let ((l_0
-                                                         (cons
-                                                          c2_0
-                                                          (cdr
-                                                           (vector->list
-                                                            (struct->vector
-                                                             v_0))))))
+                                                   1/print-struct)
+                                                  #f)
+                                              (if (eq? mode_0 0)
+                                                (let ((l_0
+                                                       (vector->list
+                                                        (struct->vector
+                                                         v_0
+                                                         struct-dots))))
+                                                  (let ((alt-list-constructor_0
+                                                         (string-append
+                                                          "("
+                                                          (substring
+                                                           (symbol->immutable-string
+                                                            (car l_0))
+                                                           7))))
                                                     (print-list
                                                      p
                                                      who_0
-                                                     l_0
+                                                     (cdr l_0)
                                                      mode_0
                                                      o_0
                                                      max-length_0
                                                      graph_0
                                                      config_0
-                                                     "#s("
-                                                     #f))
-                                                  (p
-                                                   who_0
-                                                   (struct->vector v_0)
-                                                   mode_0
-                                                   o_0
-                                                   max-length_0
-                                                   graph_0
-                                                   config_0))))
-                                            (if (procedure? v_0)
-                                              (print-named
-                                               "procedure"
-                                               v_0
-                                               mode_0
-                                               o_0
-                                               max-length_0)
-                                              (if (struct-type? v_0)
+                                                     #f
+                                                     alt-list-constructor_0)))
+                                                (let ((c2_0
+                                                       (prefab-struct-key
+                                                        v_0)))
+                                                  (if c2_0
+                                                    (let ((l_0
+                                                           (cons
+                                                            c2_0
+                                                            (cdr
+                                                             (vector->list
+                                                              (struct->vector
+                                                               v_0))))))
+                                                      (print-list
+                                                       p
+                                                       who_0
+                                                       l_0
+                                                       mode_0
+                                                       o_0
+                                                       max-length_0
+                                                       graph_0
+                                                       config_0
+                                                       "#s("
+                                                       #f))
+                                                    (p
+                                                     who_0
+                                                     (struct->vector v_0)
+                                                     mode_0
+                                                     o_0
+                                                     max-length_0
+                                                     graph_0
+                                                     config_0))))
+                                              (if (procedure? v_0)
                                                 (print-named
-                                                 "struct-type"
+                                                 "procedure"
                                                  v_0
                                                  mode_0
                                                  o_0
                                                  max-length_0)
-                                                (if (struct-type-property? v_0)
+                                                (if (struct-type? v_0)
                                                   (print-named
-                                                   "struct-type-property"
+                                                   "struct-type"
                                                    v_0
                                                    mode_0
                                                    o_0
                                                    max-length_0)
-                                                  (if (thread? v_0)
+                                                  (if (struct-type-property?
+                                                       v_0)
                                                     (print-named
-                                                     "thread"
+                                                     "struct-type-property"
                                                      v_0
                                                      mode_0
                                                      o_0
                                                      max-length_0)
-                                                    (if (eof-object? v_0)
-                                                      (write-string/max
-                                                       "#<eof>"
+                                                    (if (thread? v_0)
+                                                      (print-named
+                                                       "thread"
+                                                       v_0
+                                                       mode_0
                                                        o_0
                                                        max-length_0)
-                                                      (if (core-input-port?
-                                                           v_0)
-                                                        (print-named
-                                                         "input-port"
-                                                         v_0
-                                                         mode_0
+                                                      (if (eof-object? v_0)
+                                                        (write-string/max
+                                                         "#<eof>"
                                                          o_0
                                                          max-length_0)
-                                                        (if (core-output-port?
+                                                        (if (core-input-port?
                                                              v_0)
                                                           (print-named
-                                                           "output-port"
+                                                           "input-port"
                                                            v_0
                                                            mode_0
                                                            o_0
                                                            max-length_0)
-                                                          (if (continuation-prompt-tag?
+                                                          (if (core-output-port?
                                                                v_0)
                                                             (print-named
-                                                             "continuation-prompt-tag"
+                                                             "output-port"
                                                              v_0
                                                              mode_0
                                                              o_0
                                                              max-length_0)
-                                                            (if (unquoted-printing-string?
+                                                            (if (continuation-prompt-tag?
                                                                  v_0)
-                                                              (write-string/max
-                                                               (unquoted-printing-string-value
-                                                                v_0)
+                                                              (print-named
+                                                               "continuation-prompt-tag"
+                                                               v_0
+                                                               mode_0
                                                                o_0
                                                                max-length_0)
-                                                              (if (eq?
-                                                                   v_0
-                                                                   unsafe-undefined)
+                                                              (if (unquoted-printing-string?
+                                                                   v_0)
                                                                 (write-string/max
-                                                                 "#<unsafe-undefined>"
-                                                                 o_0
-                                                                 max-length_0)
-                                                                (write-string/max
-                                                                 (format
-                                                                  "~s"
+                                                                 (unquoted-printing-string-value
                                                                   v_0)
                                                                  o_0
-                                                                 max-length_0)))))))))))))))))))))))))))))))))
+                                                                 max-length_0)
+                                                                (if (eq?
+                                                                     v_0
+                                                                     unsafe-undefined)
+                                                                  (write-string/max
+                                                                   "#<unsafe-undefined>"
+                                                                   o_0
+                                                                   max-length_0)
+                                                                  (write-string/max
+                                                                   (format
+                                                                    "~s"
+                                                                    v_0)
+                                                                   o_0
+                                                                   max-length_0))))))))))))))))))))))))))))))))))
 (define fail-unreadable
   (lambda (who_0 v_0)
     (raise
@@ -34795,11 +34979,11 @@
                 'subprocess
                 "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                 stderr_0))
-             (let ((lr1431 unsafe-undefined)
+             (let ((lr1436 unsafe-undefined)
                    (group_0 unsafe-undefined)
                    (command_0 unsafe-undefined)
                    (exact/args_0 unsafe-undefined))
-               (set! lr1431
+               (set! lr1436
                  (call-with-values
                   (lambda ()
                     (if (path-string? group/command_0)
@@ -34854,9 +35038,9 @@
                    ((group_1 command_1 exact/args_1)
                     (vector group_1 command_1 exact/args_1))
                    (args (raise-binding-result-arity-error 3 args)))))
-               (set! group_0 (unsafe-vector*-ref lr1431 0))
-               (set! command_0 (unsafe-vector*-ref lr1431 1))
-               (set! exact/args_0 (unsafe-vector*-ref lr1431 2))
+               (set! group_0 (unsafe-vector*-ref lr1436 0))
+               (set! command_0 (unsafe-vector*-ref lr1436 1))
+               (set! exact/args_0 (unsafe-vector*-ref lr1436 2))
                (call-with-values
                 (lambda ()
                   (if (if (pair? exact/args_0)

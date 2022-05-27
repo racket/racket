@@ -102,6 +102,15 @@
                                  (let ([ctx (deeper-context ctx)])
                                    (lambda (a b)
                                      (equal? a b ctx)))))))]
+           [(stencil-vector? a)
+            (and (stencil-vector? b)
+                 (fx= (stencil-vector-mask a) (stencil-vector-mask b))
+                 (let ([len (stencil-vector-length a)]
+                       [ctx (deeper-context ctx)])
+                   (let loop ([i 0])
+                     (or (fx= i len)
+                         (and (equal? (stencil-vector-ref a i) (stencil-vector-ref b i) ctx)
+                              (loop (fx+ i 1)))))))]
            [(mpair? a)
             (and (mpair? b)
                  (not (or (eq? mode 'chaperone-of?) (eq? mode 'equal-always?)))

@@ -571,6 +571,9 @@
           unsafe-fx-/wraparound
           unsafe-fx*/wraparound
           unsafe-fxlshift/wraparound
+          unsafe-fxpopcount
+          unsafe-fxpopcount32
+          unsafe-fxpopcount16
 
           unsafe-fx=
           unsafe-fx<
@@ -726,6 +729,13 @@
           unsafe-string-length
           unsafe-string-ref
           unsafe-string-set!
+
+          unsafe-stencil-vector
+          unsafe-stencil-vector-length
+          unsafe-stencil-vector-mask
+          unsafe-stencil-vector-ref
+          unsafe-stencil-vector-set!
+          unsafe-stencil-vector-update
 
           (rename [inline:unsafe-struct-ref unsafe-struct-ref]
                   [inline:unsafe-struct-set! unsafe-struct-set!])
