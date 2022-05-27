@@ -1,8 +1,5 @@
 #lang scribble/doc
-@(require scribble/base
-          scribble/core
-          scribble/html-properties
-          "../private/utils.rkt"
+@(require "../private/utils.rkt"
           "../private/make-search.rkt"
           "../private/notice.rkt")
 
