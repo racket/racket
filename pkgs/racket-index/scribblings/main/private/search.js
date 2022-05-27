@@ -212,11 +212,7 @@ function InitializeSearch() {
       +MakeChevrons(1,
         '<span id="search_status"'
             +' style="color: #601515; font-weight: bold;">&nbsp;</span>')
-      +'<div>'
-        +'<div id="search_result"'
-             +' style="display: none;'
-             +' margin: 0.1em 0em; padding: 0.25em 1em;"></div>'
-      +'</div>'
+      +'<div id="search_result_container"></div>'
       +'<br />'
       +MakeChevrons(2,
         '<span id="ctx_query_label" style="color: #444;">&nbsp;</span>')
@@ -231,10 +227,11 @@ function InitializeSearch() {
   next_page_link2 = document.getElementById("next_page_link2");
   // result_links is the array of result link <container,link> pairs
   result_links = new Array();
-  n = document.getElementById("search_result");
-  results_container = n.parentNode;
+  var proto_search_result = makeProtoSearchResult();
+  results_container = document.getElementById('search_result_container');
+  results_container.appendChild(proto_search_result);
   results_container.normalize();
-  result_links.push(n);
+  result_links.push(proto_search_result);
   AdjustResultsNum();
   // get search string
   var init_q = GetPageArg("q",false);
@@ -243,6 +240,14 @@ function InitializeSearch() {
   DoSearch();
   query.focus();
   query.select();
+}
+
+function makeProtoSearchResult() {
+  var proto_search_result = document.createElement('div');
+  proto_search_result.style.display = 'none';
+  proto_search_result.style.margin = '0.1em 0em';
+  proto_search_result.style.padding = '0.25em 1em';
+  return proto_search_result;
 }
 
 function AdjustResultsNum() {
