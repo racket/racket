@@ -3884,5 +3884,22 @@
   (test orig-key hash-ref-key ht new-key))
 
 ;; ----------------------------------------
+;; Check chaperones with mode-supporting `prop:equal+hash`
+
+(let ()
+  (struct posn (x)
+    #:property prop:equal+hash
+    (list (lambda (a b eql? mode)
+            (eql? (posn-x a) (posn-x b)))
+          (lambda (a hc mode)
+            (hc (posn-x a)))))
+
+  (define a (chaperone-struct (posn 1) posn-x (lambda (p x) x)))
+  (define b (posn 1))
+
+  (test #t equal? a b)
+  (test (equal-hash-code a) equal-hash-code b))
+
+;; ----------------------------------------
 
 (report-errs)

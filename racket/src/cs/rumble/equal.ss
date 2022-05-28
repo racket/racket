@@ -145,10 +145,10 @@
                     [else
                      ;; No `prop:impersonator-of`, so check for
                      ;; `prop:equal+hash` or transparency
-                     (let ([rec-equal? (#%$record-equal-procedure a b)])
-                       (and rec-equal?
+                     (let ([eq+hash (struct-common-equal+hash a b)])
+                       (and eq+hash
                             (or (check-union-find ctx a b)
-                                (let ([new-api? (unsafe-procedure-and-arity-includes? rec-equal? 4)])
+                                (let ([new-api? (equal+hash-supports-mode? eq+hash)])
                                   (cond
                                     [(and (or (eq? mode 'chaperone-of?) (eq? mode 'equal-always?))
                                           (struct-type-mutable? (record-rtd a))
@@ -163,11 +163,12 @@
                                                        (and (eql? a b) #t))
                                                      (let ([ctx (deeper-context ctx)])
                                                        (lambda (a b)
-                                                         (equal? a b ctx))))])
+                                                         (equal? a b ctx))))]
+                                           [rec-equal? (equal+hash-equal-proc eq+hash)])
                                        (if new-api?
-                                           (rec-equal? orig-a orig-b eql? (or (eq? mode 'equal?)
-                                                                              (eq? mode 'impersonator-of?)))
-                                           (rec-equal? orig-a orig-b eql?)))])))))])))]
+                                           (|#%app| rec-equal? orig-a orig-b eql? (or (eq? mode 'equal?)
+                                                                                      (eq? mode 'impersonator-of?)))
+                                           (|#%app| rec-equal? orig-a orig-b eql?)))])))))])))]
            [(and (or (eq? mode 'chaperone-of?) (eq? mode 'equal-always?))
                  ;; Mutable strings and bytevectors must be `eq?` for `chaperone-of?` and `equal-always?`
                  (or (mutable-string? a)
@@ -190,6 +191,13 @@
 (define/who (equal-always?/recur a b eql?)
   (check who (procedure-arity-includes/c 2) eql?)
   (do-equal? a b 'equal-always? eql?))
+
+(define (struct-common-equal+hash a b)
+  (let ([av (struct-property-ref prop:equal+hash (#%$record-type-descriptor a) #f)])
+    (and av
+         (let ([bv (struct-property-ref prop:equal+hash (#%$record-type-descriptor b) #f)])
+           (and (eq? av bv)
+                av)))))
 
 ;; ----------------------------------------
 

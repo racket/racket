@@ -140,12 +140,14 @@
            [else (loop next val)]))]))]))
 
 (define (set-box-impersonator-hash!)
-  (record-type-hash-procedure (record-type-descriptor box-chaperone)
-                              (lambda (c hash-code)
-                                (hash-code (box (unbox c)))))
-  (record-type-hash-procedure (record-type-descriptor box-impersonator)
-                              (lambda (i hash-code)
-                                (hash-code (box (unbox i))))))
+  (struct-set-equal+hash! (record-type-descriptor box-chaperone)
+                          #f
+                          (lambda (i hash-code)
+                            (hash-code (box (unbox i)))))
+  (struct-set-equal+hash! (record-type-descriptor box-impersonator)
+                          #f
+                          (lambda (i hash-code)
+                            (hash-code (box (unbox i))))))
 
 ;; ----------------------------------------
 

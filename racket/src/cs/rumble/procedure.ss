@@ -891,12 +891,14 @@
                        args)]))]))])))
 
 (define (set-procedure-impersonator-hash!)
-  (record-type-hash-procedure (record-type-descriptor procedure-chaperone)
-                              (lambda (c hash-code)
-                                (hash-code (impersonator-next c))))
-  (record-type-hash-procedure (record-type-descriptor procedure-impersonator)
-                              (lambda (i hash-code)
-                                (hash-code (impersonator-next i)))))
+  (struct-set-equal+hash! (record-type-descriptor procedure-chaperone)
+                          #f
+                          (lambda (c hash-code)
+                            (hash-code (impersonator-next c))))
+  (struct-set-equal+hash! (record-type-descriptor procedure-impersonator)
+                          #f
+                          (lambda (i hash-code)
+                            (hash-code (impersonator-next i)))))
 
 (define (raise-result-wrapper-result-arity-error)
   (raise

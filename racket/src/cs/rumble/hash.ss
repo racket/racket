@@ -981,15 +981,15 @@
 ;; ----------------------------------------
 
 (define (set-hash-hash!)
-  (record-type-equal-procedure (record-type-descriptor mutable-hash)
-                               hash=?)
-  (record-type-hash-procedure (record-type-descriptor mutable-hash)
-                              hash-hash-code)
-
-  (record-type-hash-procedure (record-type-descriptor hash-impersonator)
-                              hash-hash-code)
-  (record-type-hash-procedure (record-type-descriptor hash-chaperone)
-                              hash-hash-code))
+  (struct-set-equal+hash! (record-type-descriptor mutable-hash)
+                          hash=?
+                          hash-hash-code)
+  (struct-set-equal+hash! (record-type-descriptor hash-impersonator)
+                          #f
+                          hash-hash-code)
+  (struct-set-equal+hash! (record-type-descriptor hash-chaperone)
+                          #f
+                          hash-hash-code))
 
 ;; ----------------------------------------
 

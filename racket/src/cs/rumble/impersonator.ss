@@ -669,7 +669,7 @@
                           (eq? (car tag+ref)
                                (car (impersonator-of-ref a2))))
                (different 'prop:impersonator-of))
-             (unless (record-equal-procedure a (strip-impersonator a2))
+             (unless (struct-common-equal+hash a (strip-impersonator a2))
                (different 'prop:equal+hash))
              a2)]))))
 
@@ -693,24 +693,29 @@
 
 (define (set-impersonator-hash!)
   (let ([struct-impersonator-hash-code
-         (lambda (c hash-code)
-           ((record-hash-procedure (impersonator-val c))
-            c
-            hash-code))])
+         (lambda (c hash-code mode)
+           (let ([eq+hash (struct-property-ref prop:equal+hash (#%$record-type-descriptor (impersonator-val c)) #f)])
+             (let ([rec-hash (equal+hash-hash-code-proc eq+hash)])
+               (if (equal+hash-supports-mode? eq+hash)
+                   (rec-hash c hash-code mode)
+                   (rec-hash c hash-code)))))])
     (let ([add (lambda (rtd)
-                 (record-type-hash-procedure rtd struct-impersonator-hash-code))])
+                 (struct-set-equal-mode+hash! rtd
+                                              #f
+                                              struct-impersonator-hash-code))])
       (add (record-type-descriptor struct-impersonator))
       (add (record-type-descriptor struct-chaperone))
       (add (record-type-descriptor procedure-struct-impersonator))
       (add (record-type-descriptor procedure-struct-chaperone)))
     (let ([add (lambda (rtd)
-                 (record-type-hash-procedure rtd
-                                             (lambda (c hash-code)
-                                               (cond
-                                                [(record? (impersonator-val c))
-                                                 (struct-impersonator-hash-code c hash-code)]
-                                                [else
-                                                 (hash-code (impersonator-next c))]))))])
+                 (struct-set-equal-mode+hash! rtd
+                                              #f
+                                              (lambda (c hash-code mode)
+                                                (cond
+                                                  [(record? (impersonator-val c))
+                                                   (struct-impersonator-hash-code c hash-code mode)]
+                                                  [else
+                                                   (hash-code (impersonator-next c))]))))])
       (add (record-type-descriptor props-impersonator))
       (add (record-type-descriptor props-chaperone))
       (add (record-type-descriptor props-procedure-impersonator))

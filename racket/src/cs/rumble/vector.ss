@@ -61,12 +61,14 @@
         (make-props-impersonator val vec props))))
 
 (define (set-vector-impersonator-hash!)
-  (record-type-hash-procedure (record-type-descriptor vector-chaperone)
-                              (lambda (c hash-code)
-                                (hash-code (vector-copy c))))
-  (record-type-hash-procedure (record-type-descriptor vector-impersonator)
-                              (lambda (i hash-code)
-                                (hash-code (vector-copy i)))))
+  (struct-set-equal+hash! (record-type-descriptor vector-chaperone)
+                          #f
+                          (lambda (c hash-code)
+                            (hash-code (vector-copy c))))
+  (struct-set-equal+hash! (record-type-descriptor vector-impersonator)
+                          #f
+                          (lambda (i hash-code)
+                            (hash-code (vector-copy i)))))
 
 (define (check-vector-wrapper-consistent who ref set)
   (unless (eq? (not ref) (not set))

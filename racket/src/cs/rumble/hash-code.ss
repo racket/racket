@@ -113,7 +113,7 @@
       (char? x)
       (symbol? x)
       (and (#%$record? x)
-           (not (#%$record-hash-procedure x)))))
+           (not (struct-property-ref prop:equal+hash (#%$record-type-descriptor x) #f)))))
 
 (define (equal-secondary-hash-code x)
   (let-values ([(hc burn) (equal-secondary-hash-loop x 0 0 'equal?)])
@@ -189,24 +189,25 @@
        (let ([hc (fx+/wraparound hc (fx+/wraparound hc0 5))])
          (equal-hash-loop (mcdr x) burn (mix-hash-code hc) mode)))]
     [(and (#%$record? x)
-          (let ([rec-hash (#%$record-hash-procedure x)])
-            (and rec-hash
+          (let ([eq+hash (struct-property-ref prop:equal+hash (#%$record-type-descriptor x) #f)])
+            (and eq+hash
                  (or (eq? mode 'equal?)
                      (not (struct-type-mutable? (#%$record-type-descriptor x)))
                      ;; 'equal-always? and a mutable field: must use new protocol:
-                     (unsafe-procedure-and-arity-includes? rec-hash 3))
-                 rec-hash)))
-     => (lambda (rec-hash)
-          (let ([burn (fx+ burn 2)])
+                     (equal+hash-supports-mode? eq+hash))
+                 eq+hash)))
+     => (lambda (eq+hash)
+          (let ([burn (fx+ burn 2)]
+                [rec-hash (equal+hash-hash-code-proc eq+hash)])
             (let ([hc (fx+/wraparound hc (->fx/checked
                                           'equal-hash-code
                                           (let ([hash (lambda (x)
                                                         (let-values ([(hc0 burn0) (equal-hash-loop x burn 0 mode)])
                                                           (set! burn burn0)
                                                           hc0))])
-                                            (if (unsafe-procedure-and-arity-includes? rec-hash 3)
-                                                (rec-hash x hash (eq? mode 'equal?))
-                                                (rec-hash x hash)))))])
+                                            (if (equal+hash-supports-mode? eq+hash)
+                                                (|#%app| rec-hash x hash (eq? mode 'equal?))
+                                                (|#%app| rec-hash x hash)))))])
               (values hc burn))))]
     [(impersonator? x)
      ;; If an impersonator wraps a value where `equal?` hashing is
@@ -272,26 +273,25 @@
        (let ([hc (fx+/wraparound hc hc0)])
          (equal-secondary-hash-loop (mcdr x) burn (mix-hash-code hc) mode)))]
     [(and (#%$record? x)
-          (let ([rec-hash (or (struct-property-ref 'secondary-hash (#%$record-type-descriptor x) #f)
-                              ;; to use default hash proc as default secondary hash proc:
-                              (#%$record-hash-procedure x))])
-            (and rec-hash
+          (let ([eq+hash (struct-property-ref prop:equal+hash (#%$record-type-descriptor x) #f)])
+            (and eq+hash
                  (or (eq? mode 'equal?)
                      (not (struct-type-mutable? (#%$record-type-descriptor x)))
                      ;; 'equal-always? and a mutable field: must use new protocol:
-                     (unsafe-procedure-and-arity-includes? rec-hash 3))
-                 rec-hash)))
-     => (lambda (rec-hash)
-          (let ([burn (fx+ burn 2)])
+                     (equal+hash-supports-mode? eq+hash))
+                 eq+hash)))
+     => (lambda (eq+hash)
+          (let ([burn (fx+ burn 2)]
+                [rec-hash (equal+hash-hash2-code-proc eq+hash)])
             (let ([hc (fx+/wraparound hc (->fx/checked
                                           'equal-secondary-hash-code
                                           (let ([hash (lambda (x)
                                                         (let-values ([(hc0 burn0) (equal-secondary-hash-loop x burn 0 mode)])
                                                           (set! burn burn0)
                                                           hc0))])
-                                            (if (unsafe-procedure-and-arity-includes? rec-hash 3)
-                                                (rec-hash x hash (eq? mode 'equal?))
-                                                (rec-hash x hash)))))])
+                                            (if (equal+hash-supports-mode? eq+hash)
+                                                (|#%app| rec-hash x hash (eq? mode 'equal?))
+                                                (|#%app| rec-hash x hash)))))])
               (values hc burn))))]
     [(impersonator? x)
      (equal-secondary-hash-loop (impersonator-val x) burn hc mode)]
