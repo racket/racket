@@ -438,15 +438,14 @@
                  (unless (procedure? f)
                    (apply raise-argument-error 'name "procedure?" i f0 fs0))
                  (if (pair? fs)
-                     (if (id? f)
-                         (loop (car fs) (cdr fs) (add1 i) rfuns)
-                         (begin
-                           (can-compose name i f f0 fs0)
-                           (loop (car fs) (cdr fs) (add1 i) (cons f rfuns))))
+                     (begin (can-compose name i f f0 fs0)
+                            (loop (car fs) (cdr fs) (add1 i) (cons f rfuns)))
                      (cond
                        [(andmap id? rfuns) f]
                        [(id? f) (pipeline (car rfuns) (cdr rfuns))]
-                       [else (simple-compose (pipeline (car rfuns) (cdr rfuns)) f)])))]))))
+                       [else
+                        (let ([rfuns (remove* (list values) rfuns)])
+                          (simple-compose (pipeline (car rfuns) (cdr rfuns)) f))])))]))))
       (mk compose1 app1 can-compose1 pipeline1
           (lambda (f g) (mk-simple-compose app1 f g)))
       (mk compose  app* can-compose* pipeline*
