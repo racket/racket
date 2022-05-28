@@ -443,9 +443,10 @@
                          (begin
                            (can-compose name i f f0 fs0)
                            (loop (car fs) (cdr fs) (add1 i) (cons f rfuns))))
-                     (if (null? rfuns)
-                         f
-                         (simple-compose (pipeline (car rfuns) (cdr rfuns)) f))))]))))
+                     (cond
+                       [(andmap id? rfuns) f]
+                       [(id? f) (pipeline (car rfuns) (cdr rfuns))]
+                       [else (simple-compose (pipeline (car rfuns) (cdr rfuns)) f)])))]))))
       (mk compose1 app1 can-compose1 pipeline1
           (lambda (f g) (mk-simple-compose app1 f g)))
       (mk compose  app* can-compose* pipeline*
