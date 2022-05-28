@@ -194,7 +194,7 @@
                  (or (eq? mode 'equal?)
                      (not (struct-type-mutable? (#%$record-type-descriptor x)))
                      ;; 'equal-always? and a mutable field: must use new protocol:
-                     (procedure-arity-includes? rec-hash 3))
+                     (unsafe-procedure-and-arity-includes? rec-hash 3))
                  rec-hash)))
      => (lambda (rec-hash)
           (let ([burn (fx+ burn 2)])
@@ -204,7 +204,7 @@
                                                         (let-values ([(hc0 burn0) (equal-hash-loop x burn 0 mode)])
                                                           (set! burn burn0)
                                                           hc0))])
-                                            (if (procedure-arity-includes? rec-hash 3)
+                                            (if (unsafe-procedure-and-arity-includes? rec-hash 3)
                                                 (rec-hash x hash (eq? mode 'equal?))
                                                 (rec-hash x hash)))))])
               (values hc burn))))]
@@ -279,7 +279,7 @@
                  (or (eq? mode 'equal?)
                      (not (struct-type-mutable? (#%$record-type-descriptor x)))
                      ;; 'equal-always? and a mutable field: must use new protocol:
-                     (procedure-arity-includes? rec-hash 3))
+                     (unsafe-procedure-and-arity-includes? rec-hash 3))
                  rec-hash)))
      => (lambda (rec-hash)
           (let ([burn (fx+ burn 2)])
@@ -289,7 +289,7 @@
                                                         (let-values ([(hc0 burn0) (equal-secondary-hash-loop x burn 0 mode)])
                                                           (set! burn burn0)
                                                           hc0))])
-                                            (if (procedure-arity-includes? rec-hash 3)
+                                            (if (unsafe-procedure-and-arity-includes? rec-hash 3)
                                                 (rec-hash x hash (eq? mode 'equal?))
                                                 (rec-hash x hash)))))])
               (values hc burn))))]

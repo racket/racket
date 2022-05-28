@@ -145,10 +145,10 @@
                     [else
                      ;; No `prop:impersonator-of`, so check for
                      ;; `prop:equal+hash` or transparency
-                     (let ([rec-equal? (record-equal-procedure a b)])
+                     (let ([rec-equal? (#%$record-equal-procedure a b)])
                        (and rec-equal?
-                            (let ([new-api? (procedure-arity-includes? rec-equal? 4)])
-                              (or (check-union-find ctx a b)
+                            (or (check-union-find ctx a b)
+                                (let ([new-api? (unsafe-procedure-and-arity-includes? rec-equal? 4)])
                                   (cond
                                     [(and (or (eq? mode 'chaperone-of?) (eq? mode 'equal-always?))
                                           (struct-type-mutable? (record-rtd a))
