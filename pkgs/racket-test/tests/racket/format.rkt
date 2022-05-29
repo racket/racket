@@ -321,6 +321,15 @@
 (tc (~r #:notation 'exponential 0 #:precision '(= 4))
     "0.0000e+00")
 
+(tc (~r 123456789.123)
+    "123456789.123")
+(tc (~r 1023456789.123 #:groups '(3) #:group-sep "," #:decimal-sep ".")
+    "1,023,456,789.123")
+(tc (~r 21231234567890 #:groups '(4 2 3) #:group-sep "_")
+    "2_1231_2345_67_890")
+(tc (~r 1234567890.123 #:groups '(3 2) #:group-sep "**" #:decimal-sep "::")
+    "12**345**678**90::123")
+
 ;; some random testing for exponential notation
 ;;  - only positive numbers
 ;;  - limited number of digits, exponent range
