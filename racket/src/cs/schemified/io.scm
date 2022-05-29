@@ -39724,6 +39724,9 @@
             'unsafe-socket->port
             "exact-integer?"
             system-fd_0))
+         (if (bytes? name_0)
+           (void)
+           (raise-argument-error 'unsafe-socket->port "bytes?" name_0))
          (if (list? mode_0)
            (void)
            (raise-argument-error

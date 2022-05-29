@@ -154,7 +154,7 @@
                  (racket config parse.rkt "-c" "-o" rktio.inc rktio.h))]
      [:target ,rktio.def (,rktio.h ,parse.rkt)
               ,(lambda (path token)
-                 (racket config parse.rkt "-d" "-o" rktio.inc rktio.h))]
+                 (racket config parse.rkt "-d" "-o" rktio.def rktio.h))]
     
      [:target install-shared-object (,librktio.a)
               ,(lambda (token)
