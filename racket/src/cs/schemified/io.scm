@@ -39661,52 +39661,79 @@
    unsafe-file-descriptor->port
    (lambda (system-fd_0 name_0 mode_0)
      (begin
-       (let ((read?_0 (memq 'read mode_0)))
-         (let ((write?_0 (memq 'write mode_0)))
-           (let ((refcount_0 (box (if (if read?_0 write?_0 #f) 2 1))))
-             (let ((fd_0
-                    (|#%app|
-                     rktio_system_fd
-                     (unsafe-place-local-ref cell.1)
-                     system-fd_0
-                     (let ((app_0 (if read?_0 1 0)))
-                       (let ((app_1 (if write?_0 2 0)))
-                         (let ((app_2 (if (memq 'text mode_0) 4 0)))
-                           (bitwise-ior
-                            app_0
-                            app_1
-                            app_2
-                            (if (memq 'regular-file mode_0) 512 0))))))))
-               (let ((i_0
-                      (if read?_0
-                        (open-input-fd.1
-                         unsafe-undefined
-                         refcount_0
-                         fd_0
-                         name_0)
-                        #f)))
-                 (let ((o_0
-                        (if write?_0
-                          (open-output-fd.1
-                           'infer
-                           unsafe-undefined
-                           refcount_0
-                           unsafe-undefined
-                           fd_0
-                           name_0)
-                          #f)))
-                   (if (if i_0 o_0 #f)
-                     (values i_0 o_0)
-                     (if i_0 i_0 o_0))))))))))))
+       (begin
+         (if (exact-integer? system-fd_0)
+           (void)
+           (raise-argument-error
+            'unsafe-file-descriptor->port
+            "exact-integer?"
+            system-fd_0))
+         (begin
+           (if (list? mode_0)
+             (void)
+             (raise-argument-error
+              'unsafe-file-descriptor->port
+              "(listof (or/c 'read 'write 'text 'regular-file))"
+              mode_0))
+           (let ((read?_0 (memq 'read mode_0)))
+             (let ((write?_0 (memq 'write mode_0)))
+               (let ((refcount_0 (box (if (if read?_0 write?_0 #f) 2 1))))
+                 (let ((fd_0
+                        (|#%app|
+                         rktio_system_fd
+                         (unsafe-place-local-ref cell.1)
+                         system-fd_0
+                         (let ((app_0 (if read?_0 1 0)))
+                           (let ((app_1 (if write?_0 2 0)))
+                             (let ((app_2 (if (memq 'text mode_0) 4 0)))
+                               (bitwise-ior
+                                app_0
+                                app_1
+                                app_2
+                                (if (memq 'regular-file mode_0) 512 0))))))))
+                   (let ((i_0
+                          (if read?_0
+                            (open-input-fd.1
+                             unsafe-undefined
+                             refcount_0
+                             fd_0
+                             name_0)
+                            #f)))
+                     (let ((o_0
+                            (if write?_0
+                              (open-output-fd.1
+                               'infer
+                               unsafe-undefined
+                               refcount_0
+                               unsafe-undefined
+                               fd_0
+                               name_0)
+                              #f)))
+                       (if (if i_0 o_0 #f)
+                         (values i_0 o_0)
+                         (if i_0 i_0 o_0))))))))))))))
 (define 1/unsafe-socket->port
   (|#%name|
    unsafe-socket->port
    (lambda (system-fd_0 name_0 mode_0)
      (begin
-       (let ((temp11_0 (string->symbol (1/bytes->string/utf-8 name_0))))
-         (let ((temp12_0 (not (memq 'no-close mode_0))))
-           (let ((temp11_1 temp11_0))
-             (open-input-output-tcp.1 temp12_0 system-fd_0 temp11_1))))))))
+       (begin
+         (if (exact-integer? system-fd_0)
+           (void)
+           (raise-argument-error
+            'unsafe-socket->port
+            "exact-integer?"
+            system-fd_0))
+         (if (list? mode_0)
+           (void)
+           (raise-argument-error
+            'unsafe-socket->port
+            "(listof (or/c 'no-close))"
+            mode_0))
+         (let ((temp13_0 (string->symbol (1/bytes->string/utf-8 name_0))))
+           (let ((temp14_0 (not (memq 'no-close mode_0))))
+             (let ((temp13_1 temp13_0))
+               (open-input-output-tcp.1 temp14_0 system-fd_0 temp13_1)))))))))
 (define 1/unsafe-port->file-descriptor
   (|#%name|
    unsafe-port->file-descriptor
@@ -39730,18 +39757,32 @@
 (define unsafe-fd->semaphore
   (lambda (system-fd_0 mode_0 socket?_0)
     (begin
-      (unsafe-start-atomic)
-      (let ((fd_0
-             (|#%app|
-              rktio_system_fd
-              (unsafe-place-local-ref cell.1)
-              system-fd_0
-              (bitwise-ior 1 2 (if socket?_0 128 0)))))
-        (let ((sema_0 (fd-semaphore-update! fd_0 mode_0)))
-          (begin
-            (|#%app| rktio_forget (unsafe-place-local-ref cell.1) fd_0)
-            (unsafe-end-atomic)
-            sema_0))))))
+      (if (exact-integer? system-fd_0)
+        (void)
+        (raise-argument-error
+         'unsafe-fd->semaphore
+         "exact-integer?"
+         system-fd_0))
+      (begin
+        (if (symbol? mode_0)
+          (void)
+          (raise-argument-error
+           'unsafe-fd->semaphore
+           "(or/c 'read 'write 'check-read 'check-write 'remove)"
+           mode_0))
+        (begin
+          (unsafe-start-atomic)
+          (let ((fd_0
+                 (|#%app|
+                  rktio_system_fd
+                  (unsafe-place-local-ref cell.1)
+                  system-fd_0
+                  (bitwise-ior 1 2 (if socket?_0 128 0)))))
+            (let ((sema_0 (fd-semaphore-update! fd_0 mode_0)))
+              (begin
+                (|#%app| rktio_forget (unsafe-place-local-ref cell.1) fd_0)
+                (unsafe-end-atomic)
+                sema_0))))))))
 (define 1/unsafe-file-descriptor->semaphore
   (|#%name|
    unsafe-file-descriptor->semaphore

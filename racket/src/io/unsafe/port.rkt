@@ -1,5 +1,6 @@
 #lang racket/base
-(require "../host/rktio.rkt"
+(require "../common/check.rkt"
+         "../host/rktio.rkt"
          "../host/thread.rkt"
          "../string/convert.rkt"
          "../port/fd-port.rkt"
@@ -16,7 +17,9 @@
 
          unsafe-poll-fd)
 
-(define (unsafe-file-descriptor->port system-fd name mode)
+(define/who (unsafe-file-descriptor->port system-fd name mode)
+  (check who exact-integer? system-fd)
+  (check who list? #:contract "(listof (or/c 'read 'write 'text 'regular-file))" mode)
   (define read? (memq 'read mode))
   (define write? (memq 'write mode))
   (define refcount (box (if (and read? write?) 2 1)))
@@ -34,10 +37,12 @@
       (values i o)
       (or i o)))
 
-(define (unsafe-socket->port system-fd name mode)
+(define/who (unsafe-socket->port system-fd name mode)
+  (check who exact-integer? system-fd)
+  (check who bytes? name)
+  (check who list? #:contract "(listof (or/c 'no-close))" mode)
   (open-input-output-tcp system-fd (string->symbol (bytes->string/utf-8 name))
                          #:close? (not (memq 'no-close mode))))
-
 
 (define (unsafe-port->file-descriptor p)
   (define fd (fd-port-fd p))
@@ -49,7 +54,9 @@
   (and (tcp-port? p)
        (unsafe-port->file-descriptor p)))
 
-(define (unsafe-fd->semaphore system-fd mode socket?)
+(define/who (unsafe-fd->semaphore system-fd mode socket?)
+  (check who exact-integer? system-fd)
+  (check who symbol? #:contract "(or/c 'read 'write 'check-read 'check-write 'remove)" mode)
   (start-atomic)
   (define fd (rktio_system_fd rktio system-fd
                               (bitwise-ior RKTIO_OPEN_READ
