@@ -360,10 +360,12 @@
                (can-compose* name n g f fs)))
       (define (pipeline1 f rfuns)
         ;; (very) slightly slower alternative:
-        #;(pipeline1 (let* ([fst (car rfuns)]
-                            [composed (lambda (x) (fst (f x)))])
-                       composed)
-                     (cdr rfuns))
+        #;(if (null? rfuns)
+              f
+              (pipeline1 (let* ([fst (car rfuns)]
+                                [composed (lambda (x) (fst (f x)))])
+                           composed)
+                         (cdr rfuns)))
         (define composed
           (lambda (x)
             (let loop ([x x] [f f] [rfuns rfuns])
