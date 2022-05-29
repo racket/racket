@@ -432,7 +432,7 @@
                      (let ([rfuns (remove* (list values) rfuns)])
                        (cond
                          [(null? rfuns) f]
-                         [(id? f) (pipeline (car rfuns) (cdr rfuns)) f]
+                         [(id? f) (pipeline (car rfuns) (cdr rfuns))]
                          [else (simple-compose (pipeline (car rfuns) (cdr rfuns)) f)]))))]))))
       (mk compose1 app1 can-compose1 pipeline1
           (lambda (f g) (mk-simple-compose app1 f g)))
