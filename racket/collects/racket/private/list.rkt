@@ -359,9 +359,9 @@
                ;; need to check this too (see PR 11978)
                (can-compose* name n g f fs)))
       (define (pipeline1 f rfuns)
-        ;; (very) slightly slower alternative:
         (if (null? rfuns)
             f
+            ;; (very) slightly slower alternative:
             #;(pipeline1 (let* ([fst (car rfuns)]
                                 [composed (lambda (x) (fst (f x)))])
                            composed)
