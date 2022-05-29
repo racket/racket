@@ -1918,6 +1918,8 @@
        (lambda (evt? localhost [serve-localhost #f])
 	 (let* ([l (tcp-listen 0 5 #t serve-localhost)]
                 [pn (listen-port l)])
+           (test #f tcp-accept-ready? l)
+           (test #f sync/timeout 0 l)
 	   (let-values ([(r1 w1) (tcp-connect localhost pn)]
 			[(r2 w2) (if evt?
 				     (apply values (sync (tcp-accept-evt l)))

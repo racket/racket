@@ -37076,7 +37076,9 @@
          (unsafe-start-atomic)
          (if (begin-unsafe (unbox (tcp-listener-closed listener_0)))
            (|#%app| closed-error 'tcp-accept-ready? listener_0)
-           (|#%app| accept-ready? listener_0)))))))
+           (begin0
+             (|#%app| accept-ready? listener_0)
+             (unsafe-end-atomic))))))))
 (define 1/tcp-accept-evt
   (|#%name|
    tcp-accept-evt

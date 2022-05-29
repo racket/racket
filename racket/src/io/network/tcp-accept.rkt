@@ -57,7 +57,10 @@
   (cond
     [(tcp-listener-closed? listener)
      (closed-error who listener)]
-    [else (accept-ready? listener)]))
+    [else
+     (begin0
+       (accept-ready? listener)
+       (end-atomic))]))
 
 ;; ----------------------------------------
 
