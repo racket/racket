@@ -297,7 +297,7 @@ decimal point are used, and the decimal point is never dropped.
    are separated into groups.
    Rightmost numbers of @racket[groups] are used to group rightmost digits of the integral part.
    The leftmost number of @racket[groups] is used repeatedly to group leftmost digits.
-   @racket[group-sep] specifies which separator to use between digit groups.
+   The @racket[group-sep] argument specifies which separator to use between digit groups.
        
 
    @examples[#:eval the-eval
@@ -425,7 +425,7 @@ the resulting string is appended to the significand:
 ]}
 
 ]
-@history[#:changed "8.5.0.3"
+@history[#:changed "8.5.0.5"
          @elem{Added @racket[#:groups], @racket[#:group-sep] and @racket[#:decimal-sep].}]
 }
 

@@ -464,7 +464,7 @@
 
 (define (number->string*/whole-positional N base upper? groups group-sep)
   (if (zero? N)
-    "0"
+    (string #\0)
     (let ([Nstr (number->string* N base upper?)])
       (if (string=? group-sep "")
         Nstr
@@ -477,14 +477,12 @@
   (let ([s (number->string* N base upper?)])
     (string-append (make-string (max 0 (- precision (string-length s))) #\0) s)))
 
-(define A-10 (- (char->integer #\A) 10))
-(define a-10 (- (char->integer #\a) 10))
-(define char0 (char->integer #\0))
-
 ;; Allow base up to 36!
 (define (get-digit d upper?)
-  (cond [(< d 10) (integer->char (+ d char0))]
-        [else (integer->char (+ d (if upper? A-10 a-10)))]))
+  (cond [(< d 10) (integer->char (+ d (char->integer #\0)))]
+        [else (integer->char (+ d (if upper?
+                                    (- (char->integer #\A) 10)
+                                    (- (char->integer #\a) 10))))]))
 
 ;; round* : nonnegative-real -> nonnegative-integer (preserving exactness)
 ;; Implements "round half up" rounding (thus this library formats using
