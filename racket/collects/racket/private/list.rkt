@@ -360,49 +360,51 @@
                (can-compose* name n g f fs)))
       (define (pipeline1 f rfuns)
         ;; (very) slightly slower alternative:
-        #;(if (null? rfuns)
-              f
-              (pipeline1 (let* ([fst (car rfuns)]
+        (if (null? rfuns)
+            f
+            #;(pipeline1 (let* ([fst (car rfuns)]
                                 [composed (lambda (x) (fst (f x)))])
                            composed)
-                         (cdr rfuns)))
-        (define composed
-          (lambda (x)
-            (let loop ([x x] [f f] [rfuns rfuns])
-              (if (null? rfuns)
-                  (f x)
-                  (loop (f x) (car rfuns) (cdr rfuns))))))
-        composed)
+                         (cdr rfuns))
+            (let ([composed
+                   (lambda (x)
+                     (let loop ([x x] [f f] [rfuns rfuns])
+                       (if (null? rfuns)
+                           (f x)
+                           (loop (f x) (car rfuns) (cdr rfuns)))))])
+              composed)))
       (define (pipeline* f rfuns)
-        ;; use the other composition style in this case, to optimize an
-        ;; occasional arity-1 procedure in the pipeline
-        (if (eqv? 1 (procedure-arity f))
-          ;; if `f' is single arity, then going in reverse they will *all* be
-          ;; single arities
-          (let loop ([f f] [rfuns rfuns])
-            (if (null? rfuns)
-              (procedure-rename f 'composed)
-              (loop (let ([fst (car rfuns)])
-                      (if (eqv? 1 (procedure-arity fst))
-                        (lambda (x) (fst (f x)))
-                        (lambda (x) (app* fst (f x)))))
-                    (cdr rfuns))))
-          ;; otherwise, going in reverse means that they're all n-ary, which
-          ;; means that the list of arguments will be built for each stage, so
-          ;; to avoid that go forward in this case
-          (let ([funs (reverse (cons f rfuns))])
-            (let loop ([f (car funs)] [funs (cdr funs)])
-              (if (null? funs)
-                (procedure-rename f 'composed)
-                (loop (let ([fst (car funs)])
-                        (if (eqv? 1 (procedure-arity f))
+        (if (null? rfuns)
+            f
+            ;; use the other composition style in this case, to optimize an
+            ;; occasional arity-1 procedure in the pipeline
+            (if (eqv? 1 (procedure-arity f))
+              ;; if `f' is single arity, then going in reverse they will *all* be
+              ;; single arities
+              (let loop ([f f] [rfuns rfuns])
+                (if (null? rfuns)
+                  (procedure-rename f 'composed)
+                  (loop (let ([fst (car rfuns)])
                           (if (eqv? 1 (procedure-arity fst))
-                            (lambda (x) (f (fst x)))
-                            (lambda xs (f (apply fst xs))))
-                          (if (eqv? 1 (procedure-arity fst))
-                            (lambda (x) (app* f (fst x)))
-                            (lambda xs (app* f (apply fst xs))))))
-                      (cdr funs)))))))
+                            (lambda (x) (fst (f x)))
+                            (lambda (x) (app* fst (f x)))))
+                        (cdr rfuns))))
+              ;; otherwise, going in reverse means that they're all n-ary, which
+              ;; means that the list of arguments will be built for each stage, so
+              ;; to avoid that go forward in this case
+              (let ([funs (reverse (cons f rfuns))])
+                (let loop ([f (car funs)] [funs (cdr funs)])
+                  (if (null? funs)
+                    (procedure-rename f 'composed)
+                    (loop (let ([fst (car funs)])
+                            (if (eqv? 1 (procedure-arity f))
+                              (if (eqv? 1 (procedure-arity fst))
+                                (lambda (x) (f (fst x)))
+                                (lambda xs (f (apply fst xs))))
+                              (if (eqv? 1 (procedure-arity fst))
+                                (lambda (x) (app* f (fst x)))
+                                (lambda xs (app* f (apply fst xs))))))
+                          (cdr funs))))))))
       (define-syntax-rule (mk name app can-compose pipeline mk-simple-compose)
         (define name
           (let ([simple-compose mk-simple-compose])
@@ -430,11 +432,7 @@
                      (let ([rfuns (remove* (list values) rfuns)])
                        (cond
                          [(null? rfuns) f]
-                         [(id? f)
-                          (let ([f (car rfuns)] [rfuns (cdr rfuns)])
-                            (if (null? rfuns)
-                                f
-                                (pipeline f rfuns)))]
+                         [(id? f) (pipeline (car rfuns) (cdr rfuns)) f]
                          [else (simple-compose (pipeline (car rfuns) (cdr rfuns)) f)]))))]))))
       (mk compose1 app1 can-compose1 pipeline1
           (lambda (f g) (mk-simple-compose app1 f g)))
