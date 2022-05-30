@@ -8,6 +8,8 @@
 
 @title[#:tag "match"]{Pattern Matching}
 
+@margin-note{@racket[(require racket/match)] is needed for the @racketmodname[racket/base] form.}
+
 The @racket[match] form supports pattern matching on arbitrary Racket
 values, as opposed to functions like @racket[regexp-match] that
 compare regular expressions to byte and character sequences (see
