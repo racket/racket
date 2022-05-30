@@ -325,7 +325,7 @@
 
   (define-values (compose1 compose)
     (let ()
-      (define (id? f) (equal? values f))
+      (define (id? f) (eq? values f))
       (define-syntax-rule (app1 E1 E2) (E1 E2))
       (define-syntax-rule (app* E1 E2) (call-with-values (lambda () E2) E1))
       (define-syntax-rule (mk-simple-compose app f g)
@@ -427,13 +427,13 @@
                  (unless (procedure? f)
                    (apply raise-argument-error 'name "procedure?" i f0 fs0))
                  (if (pair? fs)
-                     (begin (can-compose name i f f0 fs0)
-                            (loop (car fs) (cdr fs) (add1 i) (cons f rfuns)))
-                     (let ([rfuns (remove* (list values) rfuns)])
-                       (cond
-                         [(null? rfuns) f]
-                         [(id? f) (pipeline (car rfuns) (cdr rfuns))]
-                         [else (simple-compose (pipeline (car rfuns) (cdr rfuns)) f)]))))]))))
+                   (begin (can-compose name i f f0 fs0)
+                          (loop (car fs) (cdr fs) (add1 i) (cons f rfuns)))
+                   (let ([rfuns (remove* (list values) rfuns)])
+                     (cond
+                       [(null? rfuns) f]
+                       [(id? f) (pipeline (car rfuns) (cdr rfuns))]
+                       [else (simple-compose (pipeline (car rfuns) (cdr rfuns)) f)]))))]))))
       (mk compose1 app1 can-compose1 pipeline1
           (lambda (f g) (mk-simple-compose app1 f g)))
       (mk compose  app* can-compose* pipeline*
