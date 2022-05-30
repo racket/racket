@@ -10,6 +10,16 @@ files declared via @racket[define-runtime-path].  The resulting
 package can be moved to other machines that run the same operating
 system.
 
+@margin-note{On Windows and Mac OS, native libraries tend to be
+included with the output of @exec{raco distribute}. On Unix platforms,
+native libraries tend not to be included, so system libraries will be
+used on the host machine. The difference is whether a Racket
+installation itself includes bundled native libraries or relies on
+system-installed libraries. Adding a symbolic link in Racket's
+@filepath{lib} directory to a system-installed library causes that
+library to be included with a distribution directory created by
+@exec{raco distribute}; see also @racket[define-runtime-path].}
+
 After the @exec{raco distribute} command, supply a directory to
 contain the combined files for a distribution. Each command-line
 argument is an executable to include in the distribution, so multiple
