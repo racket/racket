@@ -14,6 +14,8 @@
 
 @margin-note{This chapter is based on a paper @cite["Flatt06"].}
 
+@margin-note{@racket[(require racket/class)] is needed for the @racketmodname[racket/base] form.}
+
 A @racket[class] expression denotes a first-class value,
 just like a @racket[lambda] expression:
 
