@@ -429,7 +429,7 @@
                  (if (pair? fs)
                    (begin (can-compose name i f f0 fs0)
                           (loop (car fs) (cdr fs) (add1 i) (cons f rfuns)))
-                   (let ([rfuns (remove* (list values) rfuns)])
+                   (let ([rfuns (remq* (list values) rfuns)])
                      (cond
                        [(null? rfuns) f]
                        [(id? f) (pipeline (car rfuns) (cdr rfuns))]
