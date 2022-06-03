@@ -18899,7 +18899,8 @@
                                                                                          (lambda (field/proc-name_0
                                                                                                   proc-name_0
                                                                                                   contract_0
-                                                                                                  realm_0)
+                                                                                                  realm_0
+                                                                                                  need-type-name?_0)
                                                                                            (begin
                                                                                              (if (if (not
                                                                                                       contract_0)
@@ -18907,10 +18908,21 @@
                                                                                                     realm_0
                                                                                                     'racket)
                                                                                                    #f)
-                                                                                               (list
-                                                                                                (list
-                                                                                                 'quote
-                                                                                                 field/proc-name_0))
+                                                                                               (if need-type-name?_0
+                                                                                                 (let ((app_6
+                                                                                                        (list
+                                                                                                         'quote
+                                                                                                         (struct-type-info-name
+                                                                                                          sti_0))))
+                                                                                                   (list
+                                                                                                    app_6
+                                                                                                    (list
+                                                                                                     'quote
+                                                                                                     field/proc-name_0)))
+                                                                                                 (list
+                                                                                                  (list
+                                                                                                   'quote
+                                                                                                   field/proc-name_0)))
                                                                                                (let ((contract_1
                                                                                                       (if contract_0
                                                                                                         contract_0
@@ -18995,13 +19007,14 @@
                                                                                                    (let ((err-args_0
                                                                                                           (|#%name|
                                                                                                            err-args
-                                                                                                           (lambda ()
+                                                                                                           (lambda (need-type-name?_0)
                                                                                                              (begin
                                                                                                                (make-err-args_0
                                                                                                                 field/proc-name_0
                                                                                                                 proc-name_0
                                                                                                                 contract_0
-                                                                                                                realm_0))))))
+                                                                                                                realm_0
+                                                                                                                need-type-name?_0))))))
                                                                                                      (if generate-check?_0
                                                                                                        (list
                                                                                                         'begin
@@ -19035,11 +19048,13 @@
                                                                                                                                  struct:s_0
                                                                                                                                  pos_0
                                                                                                                                  's
-                                                                                                                                 (err-args_0)))
+                                                                                                                                 (err-args_0
+                                                                                                                                  #f)))
                                                                                                                                (list*
                                                                                                                                 '|#%struct-ref-error|
                                                                                                                                 's
-                                                                                                                                (err-args_0)))))))))
+                                                                                                                                (err-args_0
+                                                                                                                                 #t)))))))))
                                                                                                                   (begin-unsafe
                                                                                                                    (wrap-property-set
                                                                                                                     proc-expr_0
@@ -19128,13 +19143,14 @@
                                                                                                        (let ((err-args_0
                                                                                                               (|#%name|
                                                                                                                err-args
-                                                                                                               (lambda ()
+                                                                                                               (lambda (need-type-name?_0)
                                                                                                                  (begin
                                                                                                                    (make-err-args_0
                                                                                                                     field/proc-name_0
                                                                                                                     proc-name_0
                                                                                                                     contract_0
-                                                                                                                    realm_0))))))
+                                                                                                                    realm_0
+                                                                                                                    need-type-name?_0))))))
                                                                                                          (if generate-check?_0
                                                                                                            (list
                                                                                                             'begin
@@ -19172,11 +19188,13 @@
                                                                                                                                      abs-pos_0
                                                                                                                                      's
                                                                                                                                      'v
-                                                                                                                                     (err-args_0)))
+                                                                                                                                     (err-args_0
+                                                                                                                                      #f)))
                                                                                                                                    (list*
                                                                                                                                     '|#%struct-set!-error|
                                                                                                                                     's
-                                                                                                                                    (err-args_0)))))))))
+                                                                                                                                    (err-args_0
+                                                                                                                                     #t)))))))))
                                                                                                                       (begin-unsafe
                                                                                                                        (wrap-property-set
                                                                                                                         proc-expr_0

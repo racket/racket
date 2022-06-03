@@ -181,10 +181,12 @@
            ,@(for/list ([acc/mut (in-list acc/muts)]
                         [make-acc/mut (in-list make-acc/muts)])
                (define raw-acc/mut (if generate-check? (deterministic-gensym (unwrap acc/mut)) acc/mut))
-               (define (make-err-args field/proc-name proc-name contract realm)
+               (define (make-err-args field/proc-name proc-name contract realm need-type-name?)
                  (cond
                    [(and (not contract) (eq? realm 'racket))
-                    `(',field/proc-name)]
+                    (if need-type-name?
+                        `(',(struct-type-info-name sti) ',field/proc-name)
+                        `(',field/proc-name))]
                    [else
                     (let ([contract (or contract
                                         `',(string->symbol
@@ -204,7 +206,7 @@
                                                system-opaque?)
                                            p
                                            `(#%struct-field-accessor ,p ,struct:s ,pos)))))
-                 (define (err-args) (make-err-args field/proc-name proc-name contract realm))
+                 (define (err-args need-type-name?) (make-err-args field/proc-name proc-name contract realm need-type-name?))
                  (if generate-check?
                       `(begin
                          ,raw-def
@@ -214,8 +216,8 @@
                                       `(lambda (s) (if (,raw-s? s)
                                                        (,raw-acc/mut s)
                                                        ,(if can-impersonate?
-                                                            `($value (impersonate-ref ,raw-acc/mut ,struct:s ,pos s ,@(err-args)))
-                                                            `(#%struct-ref-error s ,@(err-args))))))])
+                                                            `($value (impersonate-ref ,raw-acc/mut ,struct:s ,pos s ,@(err-args #f)))
+                                                            `(#%struct-ref-error s ,@(err-args #t))))))])
                               (if system-opaque?
                                   p
                                   `(#%struct-field-accessor ,p ,struct:s ,pos)))))
@@ -234,7 +236,7 @@
                                              `(#%struct-field-mutator ,p ,struct:s ,pos)))))
                  (define abs-pos (+ pos (- (struct-type-info-field-count sti)
                                            (struct-type-info-immediate-field-count sti))))
-                 (define (err-args) (make-err-args field/proc-name proc-name contract realm))
+                 (define (err-args need-type-name?) (make-err-args field/proc-name proc-name contract realm need-type-name?))
                  (if generate-check?
                      `(begin
                         ,raw-def
@@ -244,8 +246,8 @@
                                      `(lambda (s v) (if (,raw-s? s)
                                                         (,raw-acc/mut s v)
                                                         ,(if can-impersonate?
-                                                             `($value (impersonate-set! ,raw-acc/mut ,struct:s ,pos ,abs-pos s v ,@(err-args)))
-                                                             `(#%struct-set!-error s ,@(err-args))))))])
+                                                             `($value (impersonate-set! ,raw-acc/mut ,struct:s ,pos ,abs-pos s v ,@(err-args #f)))
+                                                             `(#%struct-set!-error s ,@(err-args #t))))))])
                              (if system-opaque?
                                  p
                                  `(#%struct-field-mutator ,p ,struct:s ,pos)))))

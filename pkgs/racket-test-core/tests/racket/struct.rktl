@@ -1838,6 +1838,11 @@
   (err/rt-test (animal-ref 10) exn:fail:contract?
                #rx"animal-get: .*is-animal[?]"))
 
+(let ()
+  (struct a (b) #:authentic #:mutable)
+  (err/rt-test (a-b 1) exn:fail:contract? #rx"^a-b:")
+  (err/rt-test (set-a-b! 1 #f) exn:fail:contract? #rx"^set-a-b!:"))
+
 ;; ----------------------------------------
 ;; make sure `prop:object-name` works with applicables
 
