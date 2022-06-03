@@ -7,28 +7,28 @@ all: $(ZUO)
 	$(ZUO) . all
 
 install: $(ZUO)
-	$(ZUO) . install
+	$(ZUO) . install DESTDIR="$(DESTDIR)"
 
 plain-install: $(ZUO)
-	$(ZUO) . plain-install
+	$(ZUO) . plain-install DESTDIR="$(DESTDIR)"
 
 cs: $(ZUO)
 	$(ZUO) . cs
 
 cs-install: $(ZUO)
-	$(ZUO) . cs-install
+	$(ZUO) . cs-install DESTDIR="$(DESTDIR)"
 
 plain-cs-install: $(ZUO)
-	$(ZUO) . plain-cs-install
+	$(ZUO) . plain-cs-install DESTDIR="$(DESTDIR)"
 
 bc: $(ZUO)
 	$(ZUO) . bc
 
 bc-install: $(ZUO)
-	$(ZUO) . bc-install
+	$(ZUO) . bc-install DESTDIR="$(DESTDIR)"
 
 plain-bc-install: $(ZUO)
-	$(ZUO) . plain-bc-install
+	$(ZUO) . plain-bc-install DESTDIR="$(DESTDIR)"
 
 3m: $(ZUO)
 	$(ZUO) . 3m
