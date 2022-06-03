@@ -800,6 +800,7 @@
        [:db-dir ,(at-dir "compiled")])))
 
   (define (install token) ; if token is not #f, registers dependencies
+    (check-destdir config)
     (call-with-dest-racket
      (lambda (bindir dest-racket)
        (define libdir (if on-windows?

@@ -33,6 +33,7 @@
          setup-rktio
          setup-boot
          racket-version
+         check-destdir
          at-destdir
          icp
          icp-r
@@ -360,6 +361,11 @@
               (~a X "." Y)
               (~a X "." Y "." Z))
           (~a X "." Y "." Z "." W)))))
+
+(define (check-destdir config)
+  (unless (equal? "" (hash-ref config 'DESTDIR ""))
+    (unless (equal? (hash-ref config 'MAKE_COPYTREE #f) "copytree")
+      (error "`DESTDIR` cannot be set when `--prefix=...` wasn't supplied to `configure`"))))
 
 ;; Adds `DESTDIR` on the front, and also ensures that the path
 ;; is absolute

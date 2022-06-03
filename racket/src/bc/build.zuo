@@ -1430,6 +1430,7 @@
      starter-targets))
 
   (define (install 3m? cgc? [token #f]) ; if token is not #f, registers dependencies
+    (check-destdir config)
     (call-with-bindir
      (lambda (bindir)
        (define libdir (if on-windows?
