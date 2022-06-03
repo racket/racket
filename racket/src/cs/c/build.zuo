@@ -22,6 +22,7 @@
   (define host-m (lookup 'MACH))
   (define m (hash-ref config 'TARGET_MACH host-m))
 
+  (define macx? (glob-match? "*osx" m)) ; maybe xonx
   (define mac? (equal? (lookup 'OSX) "t"))
   (define mac-fw? (and mac?
                        (equal? (lookup 'MACLIBRKT_LINK_MODE) "fw")))
@@ -281,10 +282,10 @@
     (apply bootstrap-racket args))
 
   (define (strip-signature dest)
-    (when mac?
+    (when macx?
       (strip-signature* cross? bootstrap-racket dest)))
   (define (restore-signature dest)
-    (when mac?
+    (when macx?
       (restore-signature* cross? bootstrap-racket dest)))
 
   (define (install_name_tool . args)
@@ -421,14 +422,14 @@
                       ,(lambda (path token)
                          (cond
                            [mac?
-                            (mac-embed-boot raw_racketcs racketcs)
-                            (restore-signature racketcs)]
+                            (mac-embed-boot raw_racketcs racketcs)]
                            [else
                             (bootstrap-racket (at-source "embed-boot.rkt")
                                               "--target" m
                                               boot-compress-flags
                                               raw_racketcs racketcs petite-v.boot scheme-v.boot racket-v.boot)
                             (post-linker racketcs)])
+                         (restore-signature racketcs)
 
                          (unless cross?
                            ;; Take this opportunity to perform a sanity check on

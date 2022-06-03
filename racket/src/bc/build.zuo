@@ -30,6 +30,7 @@
   (define gracket? (not (equal? (lookup 'MAKE_GRACKET) "no")))
 
   (define mac? (equal? (lookup 'OSX) "t"))
+  (define macx? (or mac? (glob-match? "*-DXONX*" (lookup 'CPPFLAGS))))
   (define mac-fw? (and mac?
                        (equal? (lookup 'MACLIBRKT_LINK_MODE) "fw")))
 
@@ -470,10 +471,10 @@
     (apply bootstrap-racket (cons racketcgc1 args)))
     
   (define (strip-signature dest)
-    (when mac?
+    (when macx?
       (strip-signature* provided-racket? bootstrap-racket/cgc1 dest)))
   (define (restore-signature dest)
-    (when mac?
+    (when macx?
       (restore-signature* provided-racket? bootstrap-racket/cgc1 dest)))
 
   (define (install_name_tool . args)
