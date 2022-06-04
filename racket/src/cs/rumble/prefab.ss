@@ -4,6 +4,10 @@
          (let ([p (getprop (record-type-uid (record-rtd v)) 'prefab-key+count #f)])
            (and p (car p))))))
 
+(define/who (prefab-struct-type-key+field-count rtd)
+  (check who struct-type? rtd)
+  (getprop (record-type-uid rtd) 'prefab-key+count #f))
+
 (define/who (prefab-key->struct-type key field-count)
   (prefab-key+count->rtd
    (cons (normalized-prefab-key/check who key field-count)

@@ -38,11 +38,12 @@
       44+100i
       45.0+100.0i
       ;; 46f0 <- test separately, because RacketCS doesn't support single-precision
-      ,(srcloc "x" 1 2 3 4)))
+      ,(srcloc "x" 1 2 3 4)
+      ,(prefab-key->struct-type 'record 5)))
 
 ;; The fasl format is meant to be forward-compatible:
 (define immutables-regression-bstr
-  #"racket/fasl:\0\2007\1\34&n\4\3\6\ao\r2\16\5three\23\4four\25\4five\21\3six\"u \3vwx\36yz\35\2{|\16\afifteen%\1\2\16\bnineteen\200\16\asixteen\177%\0\2\202\23\ntwenty-one\204\23\ftwenty-three%\2\2\206\207\210\211#\16\ftwenty-eight\3\213\214\23\00231\b\340\b\200\355\376\b\200\344\f\b\201\320\204\0\0\b\2010W\5\0\b\201\200\3566\0\b\201\200\300\r\26\b\201\177?\362\351\b\202\0\374\371\330\b\0\0\0\b\202\0`v\363\263b\1\0\b\202\0\0\220\235\316\332\2027\b\203\25cd4a0619fb0907bc00000\b\203\26-cd4a0619fb0907bc00000\t\0\0\0\0\0\200D@\t\315\314\314\314\314\314\20@\v\231\322\f\232\322\f\t\0\0\0\0\0\200F@\t\0\0\0\0\0\0Y@&\23\1xopqr")
+  #"racket/fasl:\0\200A\1\34'n\4\3\6\ao\r2\16\5three\23\4four\25\4five\21\3six\"u \3vwx\36yz\35\2{|\16\afifteen%\1\2\16\bnineteen\200\16\asixteen\177%\0\2\202\23\ntwenty-one\204\23\ftwenty-three%\2\2\206\207\210\211#\16\ftwenty-eight\3\213\214\23\00231\b\340\b\200\355\376\b\200\344\f\b\201\320\204\0\0\b\2010W\5\0\b\201\200\3566\0\b\201\200\300\r\26\b\201\177?\362\351\b\202\0\374\371\330\b\0\0\0\b\202\0`v\363\263b\1\0\b\202\0\0\220\235\316\332\2027\b\203\25cd4a0619fb0907bc00000\b\203\26-cd4a0619fb0907bc00000\t\0\0\0\0\0\200D@\t\315\314\314\314\314\314\20@\v\231\322\f\232\322\f\t\0\0\0\0\0\200F@\t\0\0\0\0\0\0Y@&\23\1xopqr*\16\6records")
 
 (for ([i (in-list immutables)])
   (test i fasl->s-exp (s-exp->fasl i)))

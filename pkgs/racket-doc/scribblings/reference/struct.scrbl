@@ -678,6 +678,16 @@ supplied @racket[v]s, the @exnraise[exn:fail:contract].
 ]}
 
 
+@defproc[(prefab-struct-type-key+field-count [type struct-type?])
+         (or/c #f (cons/c prefab-key? (integer-in 0 32768)))]{
+
+Returns a pair containing the @tech{prefab} key and field count for
+the @tech{structure type descriptor} @racket[type] if it represents a
+prefab structure type, @racket[#f] otherwise.
+
+@history[#:added "8.5.0.8"]}
+
+
 @defproc[(prefab-key->struct-type [key prefab-key?]
                                   [field-count (integer-in 0 32768)])
          struct-type?]{

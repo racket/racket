@@ -111,6 +111,9 @@
        (register! q)
        (check-cycle
         seen
-        (check-register (struct->vector q) seen))]
+        (check-register (struct->vector q) seen))
+       ;; optimization might expose the structure type by itself:
+       (let-values ([(st skipped?) (struct-info q)])
+         (check-register st seen))]
       [else
        (register! q)])))

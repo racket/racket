@@ -3372,6 +3372,14 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
         }
         break;
       }
+    case CPT_PREFAB_TYPE:
+      {
+        intptr_t len;
+        v = read_compact(port, 0);
+        len = read_compact_number(port);
+        v = (Scheme_Object *)scheme_lookup_prefab_type(v, len);
+        break;
+      }
     case CPT_SMALL_LOCAL_START:
     case CPT_SMALL_LOCAL_UNBOX_START:
       {

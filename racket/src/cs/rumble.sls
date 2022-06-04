@@ -265,6 +265,7 @@
           struct->vector
           prefab-key?
           prefab-struct-key
+          prefab-struct-type-key+field-count
           prefab-key->struct-type
           make-prefab-struct
           prop:authentic

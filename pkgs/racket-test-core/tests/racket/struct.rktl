@@ -863,6 +863,19 @@
 
 (err/rt-test (make-struct-type 'bad struct:date 2 0 #f null 'prefab))
 
+(test 'v prefab-struct-key #s(v one))
+(test '(v w 2) prefab-struct-key #s((v w 2) one two three))
+(test #f prefab-struct-key "apple")
+(test #f prefab-struct-key 10)
+
+(let ()
+  (define-struct t (a b) #:prefab)
+  (define-struct t2 (a b))
+  (define-struct (t3 t) (c) #:prefab)
+  (test '(t . 2) prefab-struct-type-key+field-count struct:t)
+  (test #f prefab-struct-type-key+field-count struct:t2)
+  (test '((t3 t 2) . 3) prefab-struct-type-key+field-count struct:t3))
+
 ;; ------------------------------------------------------------
 ;; Sealed
 
@@ -1889,6 +1902,24 @@
   (struct a (x) #:property prop 1)
   (struct b a (y) #:property prop 2)
   (void))
+
+;; ----------------------------------------
+;; Regression test related to constant-folding optimization
+
+(let ([c (compile '(module m racket/base
+                     (struct? #s(a 1))))])
+  (define o (open-output-bytes))
+  (write c o)
+  (test #t 'compiled (compiled-module-expression? (parameterize ([read-accept-compiled #t])
+                                                    (read (open-input-bytes (get-output-bytes o)))))))
+
+(let ([c (compile (prefab-key->struct-type 'something 10))])
+  (define o (open-output-bytes))
+  (write c o)
+  (test (prefab-key->struct-type 'something 10)
+        values
+        (eval (parameterize ([read-accept-compiled #t])
+                (read (open-input-bytes (get-output-bytes o)))))))
 
 ;; ----------------------------------------
 

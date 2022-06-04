@@ -121,6 +121,7 @@ static Scheme_Object *struct_type_authentic_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *struct_to_vector(int argc, Scheme_Object *argv[]);
 static Scheme_Object *prefab_struct_key(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_prefab_struct(int argc, Scheme_Object *argv[]);
+static Scheme_Object *prefab_struct_type_key(int argc, Scheme_Object *argv[]);
 static Scheme_Object *prefab_key_struct_type(int argc, Scheme_Object *argv[]);
 static Scheme_Object *is_prefab_key(int argc, Scheme_Object *argv[]);
 
@@ -611,7 +612,13 @@ scheme_init_struct (Scheme_Startup_Env *env)
                              1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
   scheme_addto_prim_instance("prefab-struct-key", p, env);
-  
+
+  scheme_addto_prim_instance("prefab-struct-type-key+field-count",
+                             scheme_make_immed_prim(prefab_struct_type_key,
+                                                    "prefab-struct-type-key+field-count",
+                                                    1, 1),
+                             env);
+
   scheme_addto_prim_instance("make-prefab-struct",
 			     scheme_make_prim_w_arity(make_prefab_struct,
 						      "make-prefab-struct",
@@ -3289,6 +3296,25 @@ Scheme_Object *scheme_prefab_struct_key(Scheme_Object *so)
   }
   
   return scheme_false;
+}
+
+static Scheme_Object *prefab_struct_type_key(int argc, Scheme_Object *argv[]) {
+  Scheme_Object *o;
+  Scheme_Struct_Type *stype;
+
+  o = argv[0];
+  if (SCHEME_NP_CHAPERONEP(o))
+    o = SCHEME_CHAPERONE_VAL(o);
+  
+  if (!SCHEME_STRUCT_TYPEP(o))
+    scheme_wrong_contract("prefab-struct-type-key+field-count", "struct-type?", 0, argc, argv);
+
+  stype = (Scheme_Struct_Type *)o;
+  if (stype->prefab_key)
+    return scheme_make_pair(SCHEME_CDR(stype->prefab_key),
+                            scheme_make_integer(stype->num_slots));
+  else
+    return scheme_false;
 }
 
 static Scheme_Object *make_prefab_struct(int argc, Scheme_Object *argv[])

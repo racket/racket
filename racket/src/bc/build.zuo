@@ -364,7 +364,8 @@
     (list
      (at-source "../version/racket_version.h")
      (at-source "sconfig.h")
-     mzconfig.h))
+     mzconfig.h
+     (at-source "src/schcpt.h")))
 
   (define rktio-headers
     (list (at-source "src/schrktio.h")

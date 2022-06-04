@@ -100,6 +100,7 @@
   (fasl-extflonum-type 39)
   (fasl-correlated-type 40)
   (fasl-undefined-type 41)
+  (fasl-prefab-type-type 42)
 
   ;; Unallocated numbers here are for future extensions
 
@@ -174,7 +175,7 @@
        => (lambda (k)
             (loop k)
             (for ([e (in-vector (struct->vector v) 1)])
-              (loop e)))]
+              (loop e)))]      
       [(srcloc? v)
        (loop (srcloc-source v))]
       [(correlated? v)
@@ -183,6 +184,11 @@
        (for ([k (in-list (correlated-property-symbol-keys v))])
          (loop k)
          (loop (correlated-property v k)))]
+      [(and (struct-type? v)
+            (prefab-struct-type-key+field-count v))
+       => (lambda (k+c)
+            (loop (car k+c))
+            (loop (cdr k+c)))]
       [else (void)]))
   (define (treat-immutable? v) (or (not keep-mutable?) (immutable? v)))
   (define path->relative-path-elements (make-path->relative-path-elements))
@@ -374,6 +380,12 @@
                    (cons k (correlated-property v k))))]
           [(eq? v unsafe-undefined)
            (write-byte fasl-undefined-type o)]
+          [(and (struct-type? v)
+                (prefab-struct-type-key+field-count v))
+           => (lambda (k+c)
+                (write-byte fasl-prefab-type-type o)
+                (loop (car k+c))
+                (loop (cdr k+c)))]
           [else
            (if handle-fail
                (loop (handle-fail v))
@@ -542,6 +554,8 @@
         (correlated-property c (car p) (cdr p)))]
      [(fasl-undefined-type)
       unsafe-undefined]
+     [(fasl-prefab-type-type)
+      (prefab-key->struct-type (loop) (loop))]
      [else
       (cond
         [(type . >= . fasl-small-integer-start)

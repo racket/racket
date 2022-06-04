@@ -2613,7 +2613,12 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
   else if (SAME_TYPE(SCHEME_TYPE(obj), scheme_struct_type_type))
     {
       if (compact || !pp->print_unreadable) {
-	cannot_print(pp, notdisplay, obj, ht, compact);
+        if (compact && ((Scheme_Struct_Type *)obj)->prefab_key) {
+          print_compact(pp, CPT_PREFAB_TYPE);
+          print(SCHEME_CDR(((Scheme_Struct_Type *)obj)->prefab_key), notdisplay, compact, ht, mt, pp);
+          print_compact_number(pp, ((Scheme_Struct_Type *)obj)->num_slots);
+        } else
+          cannot_print(pp, notdisplay, obj, ht, compact);
       } else {
 	print_utf8_string(pp, "#<", 0, 2);
         if (((Scheme_Struct_Type *)obj)->name) {

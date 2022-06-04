@@ -665,6 +665,7 @@
   [prefab-key->struct-type (known-procedure/no-prompt 4)]
   [prefab-key? (known-procedure/no-prompt 2)] ; not pure, the argument may have a mutable vector
   [prefab-struct-key (known-procedure/no-prompt 2)]
+  [prefab-struct-type-key+field-count (known-procedure/no-prompt 2)]
   [pregexp (known-procedure/no-prompt 6)]
   [pregexp? (known-procedure/pure/folding 2)]
   [primitive-closure? (known-procedure/pure/folding 2)]
