@@ -556,6 +556,110 @@
   (ctest #t trust/not-stronger? (evt/c integer?) (evt/c integer?))
   (ctest #f trust/not-stronger? (evt/c integer?) (evt/c boolean?))
 
+  (ctest #t trust/not-stronger?
+         (case-> (-> (integer-in 0 10) (integer-in 0 10) (integer-in 0 10)))
+         (case-> (-> (integer-in 0 10) (integer-in 0 10) (integer-in 0 10))))
+  (ctest #f trust/not-stronger?
+         (case-> (-> (integer-in 0 10) boolean? (integer-in 0 10)))
+         (case-> (-> (integer-in 0 10) (integer-in 0 10) (integer-in 0 10))))
+  (ctest #f trust/not-stronger?
+         (case-> (-> (integer-in 0 10) (integer-in 1 5) (integer-in 0 10)))
+         (case-> (-> (integer-in 0 10) (integer-in 0 10) (integer-in 0 10))))
+  (ctest #t trust/not-stronger?
+         (case-> (-> (integer-in 0 10) (integer-in 0 10) (integer-in 0 10)))
+         (case-> (-> (integer-in 0 10) (integer-in 1 5) (integer-in 0 10))))
+  (ctest #t trust/not-stronger?
+         (case-> (-> (integer-in 0 10) (integer-in 0 10) (integer-in 1 5)))
+         (case-> (-> (integer-in 0 10) (integer-in 0 10) (integer-in 0 10))))
+  (ctest #f trust/not-stronger?
+         (case-> (-> (integer-in 0 10) (integer-in 0 10) (integer-in 0 10)))
+         (case-> (-> (integer-in 0 10) (integer-in 0 10) (integer-in 1 5))))
+  (ctest #t trust/not-stronger?
+         (case-> (-> (integer-in 0 10) (integer-in 0 10) (integer-in 0 10))
+                 (-> (integer-in 0 10) (integer-in 0 10)))
+         (case-> (-> (integer-in 0 10) (integer-in 0 10) (integer-in 0 10))
+                 (-> (integer-in 0 10) (integer-in 0 10))))
+  (ctest #t trust/not-stronger?
+         (case-> (-> (integer-in 0 10) (integer-in 0 10) (integer-in 0 10))
+                 (-> (integer-in 0 10) (integer-in 1 5)))
+         (case-> (-> (integer-in 0 10) (integer-in 1 5) (integer-in 0 10))
+                 (-> (integer-in 0 10) (integer-in 0 10))))
+  (ctest #f trust/not-stronger?
+         (case-> (-> (integer-in 0 10) (integer-in 1 5) (integer-in 0 10))
+                 (-> (integer-in 0 10) (integer-in 0 10)))
+         (case-> (-> (integer-in 0 10) (integer-in 0 10) (integer-in 0 10))
+                 (-> (integer-in 0 10) (integer-in 1 5))))
+  (ctest #f trust/not-stronger?
+         (case->m (-> (integer-in 0 10) (integer-in 1 5) (integer-in 0 10))
+                  (-> (integer-in 0 10) (integer-in 0 10)))
+         (case-> (-> (integer-in 0 10) (integer-in 0 10) (integer-in 0 10))
+                 (-> (integer-in 0 10) (integer-in 1 5))))
+  (ctest #t trust/not-stronger?
+         (case-> (-> (integer-in 0 10) (integer-in 0 10) any)
+                 (-> (integer-in 0 10) (integer-in 0 10)))
+         (case-> (-> (integer-in 0 10) (integer-in 0 10) any)
+                 (-> (integer-in 0 10) (integer-in 0 10))))
+  (ctest #f trust/not-stronger?
+         (case-> (-> (integer-in 0 10) (integer-in 0 10) any)
+                 (-> (integer-in 0 10) (integer-in 0 10)))
+         (case-> (-> (integer-in 0 10) (integer-in 0 10) (integer-in 0 10))
+                 (-> (integer-in 0 10) (integer-in 0 10))))
+  (ctest #t trust/not-stronger?
+         (case-> (-> (integer-in 0 10) (integer-in 0 10) (integer-in 0 10))
+                 (-> (integer-in 0 10) (integer-in 0 10)))
+         (case-> (-> (integer-in 0 10) (integer-in 0 10) any)
+                 (-> (integer-in 0 10) (integer-in 0 10))))
+  (ctest #t trust/not-stronger?
+         (case-> (-> (integer-in 0 10) (integer-in 0 10) (values (integer-in 0 10) (integer-in 1 11)))
+                 (-> (integer-in 0 10) (integer-in 0 10)))
+         (case-> (-> (integer-in 0 10) (integer-in 0 10) any)
+                 (-> (integer-in 0 10) (integer-in 0 10))))
+  (ctest #f trust/not-stronger?
+         (case-> (-> (integer-in 0 10) (integer-in 0 10) any)
+                 (-> (integer-in 0 10) (integer-in 0 10)))
+         (case-> (-> (integer-in 0 10) (integer-in 0 10) (values (integer-in 0 10) (integer-in 1 11)))
+                 (-> (integer-in 0 10) (integer-in 0 10))))
+  (ctest #f trust/not-stronger?
+         (case-> (-> any/c (integer-in 0 10) (integer-in 0 10) (values (integer-in 0 10) (integer-in 1 11)))
+                 (-> (integer-in 0 10) (integer-in 0 10)))
+         (case-> (-> (integer-in 0 10) (integer-in 1 5) (integer-in 1 10))
+                 (-> (integer-in 0 10) (integer-in 0 10))))
+  (ctest #f trust/not-stronger?
+         (case-> (-> (integer-in 0 10) (integer-in 1 5) (integer-in 1 10))
+                 (-> (integer-in 0 10) (integer-in 0 10)))
+         (case-> (-> any/c (integer-in 0 10) (integer-in 0 10) (values (integer-in 0 10) (integer-in 1 11)))
+                 (-> (integer-in 0 10) (integer-in 0 10))))
+  (ctest #t trust/not-stronger?
+         (case->m (->       (integer-in 0 10) (integer-in 0 10) (integer-in 0 10))
+                  (->       (integer-in 0 10) (integer-in 1 5)))
+         (case->  (-> any/c (integer-in 0 10) (integer-in 0 10) (integer-in 0 10))
+                  (-> any/c (integer-in 0 10) (integer-in 1 5))))
+  (ctest #t trust/not-stronger?
+         (case-> (-> any/c (integer-in 0 10) (integer-in 0 10) (integer-in 0 10))
+                 (-> any/c (integer-in 0 10) (integer-in 1 5)))
+         (case->m (-> (integer-in 0 10) (integer-in 0 10) (integer-in 0 10))
+                  (-> (integer-in 0 10) (integer-in 0 10))))
+  (ctest #t trust/not-stronger?
+         (case->m (->       (integer-in 0 10) (integer-in 0 10) (integer-in 1 5))
+                  (->       (integer-in 0 10) (integer-in 0 10)))
+         (case->  (-> any/c (integer-in 0 10) (integer-in 0 10) (integer-in 0 10))
+                  (-> any/c (integer-in 0 10) (integer-in 0 10))))
+  (ctest #f trust/not-stronger?
+         (case-> (-> any/c (integer-in 0 10) (integer-in 0 10) (integer-in 0 10))
+                 (-> any/c (integer-in 0 10) (integer-in 1 5)))
+         (case->m (-> (integer-in 0 10) (integer-in 0 10) (integer-in 1 5))
+                  (-> (integer-in 0 10) (integer-in 0 10))))
+  (ctest #f trust/not-stronger?
+         (case->m (-> (integer-in 0 10) (integer-in 0 10) (integer-in 0 10))
+                  (-> (integer-in 0 10) (integer-in 0 10)))
+         (case-> (-> any/c (integer-in 0 10) (integer-in 0 10) (integer-in 1 5))
+                 (-> any/c (integer-in 0 10) (integer-in 1 5))))
+  (ctest #t trust/not-stronger?
+         (case-> (-> any/c (integer-in 0 10) (integer-in 0 10) (integer-in 1 5))
+                 (-> any/c (integer-in 0 10) (integer-in 1 5)))
+         (case->m (-> (integer-in 0 10) (integer-in 0 10) (integer-in 0 10))
+                  (-> (integer-in 0 10) (integer-in 0 10))))
+
   ;; chances are, this predicate will accept "x", but
   ;; we don't want to consider it stronger, since it
   ;; will not always accept "x".
