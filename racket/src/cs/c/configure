@@ -4796,7 +4796,7 @@ if test "${enable_racket}" != "" ; then
   # Racket used only for generating Chez Scheme boot files
   if test "${CROSS_MODE}" = "cross" ; then
     RACKET="${enable_racket}"
-  else
+  elif test "${enable_racket}" != "auto" ; then
     BOOTFILE_RACKET="${enable_racket}"
   fi
 fi
