@@ -11,3 +11,6 @@
 (define pkg-authors '(eli))
 
 (define version "1.2")
+
+(define license
+  '(Apache-2.0 OR MIT))
