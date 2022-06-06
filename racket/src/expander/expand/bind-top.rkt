@@ -7,16 +7,19 @@
          "dup-check.rkt"
          "use-site.rkt")
 
-;; When compiling `(define-values (x) ...)` at the top level, we'd
-;; like to bind `x` so that a reference in the "..." will point back
-;; to the definition, as opposed to being whatever `x` was before.
-;; (The top level is hopeless, but this bit of early binding helps.)
+;; When compiling `(define-values (x) ...)` at the top level, we need
+;; `x` to have a binding to give the definition an expand-time meaning.
 ;; We don't want that binding to take effect outside of evaluation,
 ;; however; the permanent binding should happen when the
 ;; `define-values` for is evaluated. So, we use a distinct scope that
 ;; effectively hides the binding from tasks other than expansion.
 ;;
-;; See also "expand-def-id.rkt".
+;; Note that the `x` binding for `(define-values (x) ...)` is not
+;; meant to bind in `...`, even at expansion time. An earlier version
+;; of the expander tried to do that on the grounds that it seemed
+;; useful, but it didn't work out. (See "the top level is hopeless".)
+;;
+;; See also "def-id.rkt".
 
 (provide as-expand-time-top-level-bindings)
 

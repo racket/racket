@@ -26,9 +26,8 @@
 ;; reference can still work in normal cases.
 
 ;; One further twist is that top-level expansion uses a "top level
-;; bind scope", which is used to create bindings while expanding so
-;; that definitions and uses expanded to together work in the expected
-;; way, but no binding is actually created until a definition is
+;; bind scope", which is used to create bindings while expanding,
+;; but no binding is actually created until a definition is
 ;; evaluated. For the purposes of selecting a symbol, we need to treat
 ;; as equivalent identifiers with and without the top level bind
 ;; scope.
