@@ -4,9 +4,9 @@ setlocal
 set SRCDIR=%~dp0
 
 copy /y "%SRCDIR%\buildmain.zuo" main.zuo > NUL
-echo srcdir=%SRCDIR% > Mf-config
-echo CPPFLAGS=/DWIN32 >> Mf-config
-echo CFLAGS=/Ox /GS- >> Mf-config
+echo srcdir=%SRCDIR% > Makefile
+echo CPPFLAGS=/DWIN32 >> Makefile
+echo CFLAGS=/Ox /GS- >> Makefile
 
 cl.exe /nologo /Fe: winfig.exe "%SRCDIR%\..\worksp\winfig.c"
-winfig.exe >> Mf-config
+winfig.exe >> Makefile

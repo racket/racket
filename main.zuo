@@ -25,7 +25,7 @@
   (define config (config-file->hash (at-source "Makefile") vars))
   (define (lookup key [default ""]) (hash-ref config key default))
   (define (lookup! key) (or (hash-ref config key #f)
-                            (error "required configuraiton entry is missing" key)))
+                            (error "required configuration entry is missing" key)))
 
   (define build-config.rktd (at-source "build/config/config.rktd"))
   (define build/site.rkt (at-source "build/site.rkt"))
@@ -159,8 +159,8 @@
                               'configure (if (eq? 'windows (system-type))
                                              (at-source "racket/src" subdir "winfig.bat")
                                              (at-source "racket/src" subdir "configure"))
-                              'inputs (list (at-source "racket/src" subdir "Mf-config.in"))
-                              'outputs (list (at-source "racket/src/build" subdir "Mf-config"))
+                              'inputs (list (at-source "racket/src" subdir "Makefile.in"))
+                              'outputs (list (at-source "racket/src/build" subdir "Makefile"))
                               'configure-args (append
                                                (shell->strings (shell-subst-pwd (lookup 'CONFIGURE_ARGS_qq)
                                                                                 (at-source "racket/src/build" subdir)))
@@ -248,8 +248,8 @@
                               'configure-args (if (equal? subdir "cs/c")
                                                   (list "--enable-csdefault")
                                                   (list "--enable-bcdefault"))
-                              'inputs (list (at-source "racket/src" subdir "Mf-config.in"))
-                              'outputs (list (at-source "racket/src/build/cross" subdir "Mf-config"))
+                              'inputs (list (at-source "racket/src" subdir "Makefile.in"))
+                              'outputs (list (at-source "racket/src/build/cross" subdir "Makefile"))
                               'vars (hash))))
     (build (find-target "build" targets)
            #f
@@ -337,7 +337,7 @@
                   (shell->strings (lookup 'PKGS)))
     ;; destdir fixups
     (define at-vm-dir (make-at-dir (at-source "racket/src/build" (if (eq? vm 'cs) "cs/c" "bc"))))
-    (define config (config-file->hash (at-vm-dir "Mf-config") vars))
+    (define config (config-file->hash (at-vm-dir "Makefile") vars))
     (maybe-libzo-move config racket #f at-vm-dir)
     (maybe-destdir-fix config racket #f at-vm-dir))
 

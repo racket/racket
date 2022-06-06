@@ -1,9 +1,9 @@
-# This makefile-form configuration template is instantiated in a build
-# directory to communicate configuration decisions from "configure" to
-# "build.zuo". Most variables here are optional, so a "Mf-config"
-# could be created directly (such as by "winfig.bat"). The main
-# required ones are `srcdir` and `MACH`. For non-Windows, `bindir`,
-# `libdir`, etc., are also required. `OSX` is required for Mac OS.
+# This makefile template is instantiated in a build directory to
+# communicate configuration decisions from "configure" to "build.zuo".
+# Most variables here are optional, so a "Makefile" could be created
+# directly (such as by "winfig.bat"). The main required ones are
+# `srcdir` and `MACH`. For non-Windows, `bindir`, `libdir`, etc., are
+# also required. `OSX` is required for Mac OS (and not `--enable-xonx`).
 
 # How to reach the source directory from the build directory (can be
 # relative):
@@ -199,3 +199,24 @@ INSTALL_PKGSCOPE = @INSTALL_PKGSCOPE@
 # Whether ".zo" files should be moved to "lib" instead of "share"
 # for a Unix-style installation ("yes" or "no")
 INSTALL_LIBZO = @INSTALL_LIBZO@
+
+
+# ------------------------------------------------------------
+
+HOSTCC=@HOSTCC@
+upsrcdir=@upsrcdir@
+
+ZUO=bin/zuo
+
+cs: $(ZUO)
+	$(ZUO) . build
+
+install: $(ZUO)
+	$(ZUO) . install
+
+plain-install: $(ZUO)
+	$(ZUO) . plain-install
+
+$(ZUO):
+	mkdir -p bin
+	$(HOSTCC) -DZUO_LIB_PATH='"'"$(upsrcdir)/../../zuo/lib"'"' -o $(ZUO) $(srcdir)/../../zuo/zuo.c

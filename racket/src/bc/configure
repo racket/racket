@@ -622,6 +622,8 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+upsrcdir
+HOSTCC
 RKTIO_CONFIGURE_ARGS
 LIBFFI_CONFIGURE_ARGS
 INSTALL_NAME_TOOL
@@ -3586,6 +3588,11 @@ else
     ENABLE_CIFY=auto
   fi
 fi
+
+# For a cross compile, `HOSTCC` will need to be supplied to `make`,
+# but that only matters if `make` is used at this level instead of
+# `zuo`:
+HOSTCC='$(CC) -O2'
 
 ###### OSKit stuff #######
 
@@ -7395,6 +7402,15 @@ RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
 
 ############## final output ################
 
+case "$srcdir" in
+    /*)
+        upsrcdir="$srcdir"
+        ;;
+    *)
+        upsrcdir="../$srcdir"
+        ;;
+esac
+
 LIBS="$LIBS $EXTRALIBS"
 
 
@@ -7499,7 +7515,10 @@ LIBS="$LIBS $EXTRALIBS"
 
 
 
-makefiles="Mf-config"
+
+
+
+makefiles="Makefile"
 
 ac_config_files="$ac_config_files $makefiles"
 

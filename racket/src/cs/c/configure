@@ -622,6 +622,8 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+upsrcdir
+HOSTCC
 RKTIO_CONFIGURE_ARGS
 PLT_CS_SLSP_SUFFIX
 INSTALL_LIBS_ENABLE
@@ -3316,6 +3318,8 @@ COPY_NEW_CFLAGS_TO_CPPFLAGS=no
 SCHEME_LIBFFI=no
 PBCHUNK_MODE=plain
 
+HOSTCC='$(CC) -O2'
+
 ###### Autoconfigure #######
 
 if test "${enable_ios}" != "" ; then
@@ -4768,6 +4772,12 @@ if test "${enable_target}" != "" ; then
   CROSS_MODE="cross"
 fi
 
+if test "${CROSS_MODE}" = "cross" ; then
+  # Only matters if `make` is used at this level instead of
+  # `zuo`:
+  HOSTCC='cc -O2'
+fi
+
 # From this point on, `MACH` means the build machine, and
 # `TARGET_MACH` is the target that we're building for (which
 # is different in cross-build mode).
@@ -6046,6 +6056,15 @@ fi
 
 ############## final output ################
 
+case "$srcdir" in
+    /*)
+        upsrcdir="$srcdir"
+        ;;
+    *)
+        upsrcdir="../$srcdir"
+        ;;
+esac
+
 # Pass certain configure args on to rktio
 keep_configure_args=
 fixup_prev=
@@ -6122,7 +6141,9 @@ RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
 
 
 
-makefiles="Mf-config"
+
+
+makefiles="Makefile"
 
 ac_config_files="$ac_config_files $makefiles"
 

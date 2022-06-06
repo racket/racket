@@ -8,7 +8,7 @@
 (provide-targets targets-at)
 
 (define (targets-at at-dir [vars (hash)])
-  (define config (config-file->hash (at-dir "Mf-config") vars))
+  (define config (config-file->hash (at-dir "Makefile") vars))
   (define (lookup k) (hash-ref config k #f))
 
   (define 3m-default? (not (equal? (lookup 'CGC_INSTALLED) "")))

@@ -313,6 +313,11 @@ else
   fi
 fi
 
+# For a cross compile, `HOSTCC` will need to be supplied to `make`,
+# but that only matters if `make` is used at this level instead of
+# `zuo`:
+HOSTCC='$(CC) -O2'
+
 ###### OSKit stuff #######
 
 if test "${enable_oskit}" = "yes" ; then
@@ -1356,6 +1361,15 @@ RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
 
 ############## final output ################
 
+case "$srcdir" in
+    /*)
+        upsrcdir="$srcdir"
+        ;;
+    *)
+        upsrcdir="../$srcdir"
+        ;;
+esac
+
 LIBS="$LIBS $EXTRALIBS"
 
 AC_SUBST(CC)
@@ -1460,7 +1474,10 @@ AC_SUBST(INSTALL_NAME_TOOL)
 AC_SUBST(LIBFFI_CONFIGURE_ARGS)
 AC_SUBST(RKTIO_CONFIGURE_ARGS)
 
-makefiles="Mf-config"
+AC_SUBST(HOSTCC)
+AC_SUBST(upsrcdir)
+
+makefiles="Makefile"
 
 AC_OUTPUT($makefiles)
 

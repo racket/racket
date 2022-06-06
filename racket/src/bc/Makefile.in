@@ -1,7 +1,7 @@
-# This makefile-form configuration template is instantiated in a build
-# directory to communicate configuration decisions from "configure" to
-# "build.zuo". See "../cs/c/Mf-config" for more information; here we
-# describe only the parts that are specific to a BC build
+# This makefile template is instantiated in a build directory to
+# communicate configuration decisions from "configure" to "build.zuo".
+# See "../cs/c/Makefile.in" for more information; here we describe
+# only the parts that are specific to a BC build
 
 srcdir = @srcdir@
 
@@ -124,3 +124,56 @@ INSTALL_LIBZO = @INSTALL_LIBZO@
 ICP=@ICP@
 ICP_LIB=@ICP_LIB@
 ICP_STATIC_LIB=@ICP_STATIC_LIB@
+
+# ------------------------------------------------------------
+
+HOSTCC=@HOSTCC@
+upsrcdir=@upsrcdir@
+
+ZUO=bin/zuo
+
+build: $(ZUO)
+	$(ZUO) . build
+
+3m: $(ZUO)
+	$(ZUO) . 3m
+
+just-racket3m: $(ZUO)
+	$(ZUO) . racket3m
+
+cgc: $(ZUO)
+	$(ZUO) . cgc
+
+cgc-core: $(ZUO)
+	$(ZUO) . cgc
+
+just-racketcgc: $(ZUO)
+	$(ZUO) . racketcgc
+
+both: $(ZUO)
+	$(ZUO) . both
+
+install: $(ZUO)
+	$(ZUO) . install
+
+plain-install: $(ZUO)
+	$(ZUO) . plain-install
+
+install-3m: $(ZUO)
+	$(ZUO) . install-3m
+
+plain-install-3m: $(ZUO)
+	$(ZUO) . plain-install-3m
+
+install-cgc: $(ZUO)
+	$(ZUO) . install-cgc
+
+plain-install-cgc: $(ZUO)
+	$(ZUO) . plain-install-cgc
+
+install-both: $(ZUO)
+	$(ZUO) . install-both
+
+$(ZUO):
+	mkdir -p bin
+	$(HOSTCC) -DZUO_LIB_PATH='"'"$(upsrcdir)/../zuo/lib"'"' -o $(ZUO) $(srcdir)/../zuo/zuo.c

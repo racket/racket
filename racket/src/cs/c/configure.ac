@@ -184,6 +184,8 @@ COPY_NEW_CFLAGS_TO_CPPFLAGS=no
 SCHEME_LIBFFI=no
 PBCHUNK_MODE=plain
 
+HOSTCC='$(CC) -O2'
+
 ###### Autoconfigure #######
 
 m4_include(../ac/sdk_ios.m4)
@@ -513,6 +515,12 @@ if test "${enable_target}" != "" ; then
   CROSS_MODE="cross"
 fi
 
+if test "${CROSS_MODE}" = "cross" ; then
+  # Only matters if `make` is used at this level instead of
+  # `zuo`:
+  HOSTCC='cc -O2'
+fi
+
 # From this point on, `MACH` means the build machine, and
 # `TARGET_MACH` is the target that we're building for (which
 # is different in cross-build mode).
@@ -811,6 +819,15 @@ fi
 
 ############## final output ################
 
+case "$srcdir" in
+    /*)
+        upsrcdir="$srcdir"
+        ;;
+    *)
+        upsrcdir="../$srcdir"
+        ;;
+esac
+
 m4_include(../ac/rktio_keep.m4)
 
 RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
@@ -866,8 +883,10 @@ AC_SUBST(INSTALL_SETUP_RACKET_FLAGS)
 AC_SUBST(INSTALL_LIBS_ENABLE)
 AC_SUBST(PLT_CS_SLSP_SUFFIX)
 AC_SUBST(RKTIO_CONFIGURE_ARGS)
+AC_SUBST(HOSTCC)
+AC_SUBST(upsrcdir)
 
-makefiles="Mf-config"
+makefiles="Makefile"
 
 AC_OUTPUT($makefiles)
 

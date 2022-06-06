@@ -15,10 +15,7 @@
 (provide-targets targets-at)
 
 (define (targets-at at-dir [vars (hash)] [extra-compile-file-deps '()])
-  (define config (let ([p (at-dir "../Mf-config")])
-                   (if (file-exists? p)
-                       (config-file->hash p vars)
-                       vars)))
+  (define config vars)
   (define lookup (lambda (k) (hash-ref config k #f)))
 
   (define scheme (or (lookup 'SCHEME)

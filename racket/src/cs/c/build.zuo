@@ -16,7 +16,7 @@
         "regexp" "schemify" "linklet" "expander"))
 
 (define (targets-at at-dir [vars (hash)])
-  (define config (config-file->hash (at-dir "Mf-config") vars))
+  (define config (config-file->hash (at-dir "Makefile") vars))
   (define (lookup k [default ""]) (hash-ref config k default))
 
   (define host-m (lookup 'MACH))
@@ -369,8 +369,8 @@
                         (define host-targets-at
                           (configured-targets-at (hash
                                                   'configure (at-source "configure")
-                                                  'inputs (list (at-source "Mf-config.in"))
-                                                  'outputs (list (at-dir "local/cs/c/Mf-config"))
+                                                  'inputs (list (at-source "Makefile.in"))
+                                                  'outputs (list (at-dir "local/cs/c/Makefile"))
                                                   'vars (hash))))
                         (build (find-target "build-racketcs" host-targets-at) token)]
                        [(and (equal? "" (lookup 'SCHEME))
@@ -379,8 +379,8 @@
                         (define host-targets-at
                           (configured-targets-at (hash
                                                   'configure (at-source "configure")
-                                                  'inputs (list (at-source "Mf-config.in"))
-                                                  'outputs (list (at-dir "local/cs/c/Mf-config"))
+                                                  'inputs (list (at-source "Makefile.in"))
+                                                  'outputs (list (at-dir "local/cs/c/Makefile"))
                                                   'vars (hash 'BOOTFILE_RACKET (lookup 'RACKET)))))
                         (build (find-target "scheme" host-targets-at) token)]))
                    (build/dep (find-target "bootfiles" the-targets) token)
