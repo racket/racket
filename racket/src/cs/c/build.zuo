@@ -108,7 +108,8 @@
                'disablex11 "yes"
                'enablelibffi (lookup 'SCHEME_LIBFFI "no")
                'disablecurses (lookup 'DISABLE_CURSES "no")
-               'disableiconv (lookup 'DISABLE_ICONV "no")))
+               'disableiconv (lookup 'DISABLE_ICONV "no")
+               'exePostStep (lookup 'POST_LINKER)))
 
   (define starter-targets (starter-targets-at at-dir config windows?))
   (define MzStart.exe (at-dir "MzStart.exe"))

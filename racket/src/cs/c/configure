@@ -798,6 +798,7 @@ enable_userfw
 enable_embedfw
 enable_mac64
 enable_libs
+enable_postlink
 enable_noopt
 enable_ubsan
 enable_asan
@@ -1463,6 +1464,7 @@ Optional Features:
   --enable-embedfw        embed Mac OS framework content in executables
   --enable-mac64          allow 64-bit Mac OS build (enabled by default)
   --enable-libs           install static libraries (enabled by default for Unix)
+  --enable-postlink=<cmd> apply <cmd> to executable after linking
   --enable-strip          strip debug on install (usually enabled by default)
   --enable-ubsan          compile with -fsanitize=undefined
   --enable-asan           compile with -fsanitize=address
@@ -2733,6 +2735,12 @@ if test "${enable_libs+set}" = set; then :
 fi
 
 
+# Check whether --enable-postlink was given.
+if test "${enable_postlink+set}" = set; then :
+  enableval=$enable_postlink;
+fi
+
+
 # Check whether --enable-noopt was given.
 if test "${enable_noopt+set}" = set; then :
   enableval=$enable_noopt;
@@ -3285,7 +3293,6 @@ MINGW="f"
 CONFIGURE_RACKET_SO_COMPILE=""
 COMPRESS_COMP=""
 BOOT_COMPRESS_COMP=""
-POST_LINKER=""
 
 FRAMEWORK_INSTALL_DIR='$(libpltdir)'
 FRAMEWORK_PREFIX='@executable_path/../lib/'
@@ -4436,7 +4443,7 @@ case "$host_os" in
     add_iconv_lib="/usr/lib/i18n/libiconv_std.a"
     skip_curses_check=yes
     add_curses_lib="/usr/pkg/lib/libncurses.a"
-    POST_LINKER="paxctl +m"
+    default_post_linker="paxctl +m"
     ;;
   irix*)
     ;;
@@ -4971,6 +4978,19 @@ $as_echo "$set_strip_lib" >&6; }
     fi
   fi
   ICP_STRIP_FLAG=" -s"
+fi
+
+
+############## post-linker ################
+
+if test "${enable_postlink}" != "" ; then
+  POST_LINKER="${enable_postlink}"
+else
+  POST_LINKER="${default_post_linker}"
+fi
+
+if test "${POST_LINKER}" != "" ; then
+  echo "post-linker command: ${POST_LINKER}"
 fi
 
 

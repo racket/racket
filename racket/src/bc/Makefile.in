@@ -38,6 +38,8 @@ MACH = @MACH@
 STRIP_DEBUG = @STRIP_DEBUG@
 STRIP_LIB_DEBUG = @STRIP_LIB_DEBUG@
 
+POST_LINKER = @POST_LINKER@
+
 # To cooperate with libtool, parameterize over ".o" versus ".lo"
 # and ".a" versus ".la"
 LTO = @LTO@
@@ -149,6 +151,9 @@ cgc-core: $(ZUO)
 
 just-racketcgc: $(ZUO)
 	$(ZUO) . racketcgc
+
+just-racketcgc1: $(ZUO)
+	$(ZUO) . racketcgc1
 
 both: $(ZUO)
 	$(ZUO) . both

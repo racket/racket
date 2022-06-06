@@ -72,6 +72,8 @@ AC_ARG_ENABLE(ffipoll, [  --enable-ffipoll        FFI calls only when embedding 
 AC_ARG_ENABLE(gprof,   [  --enable-gprof          compile for profiling with gprof (gcc only)])
 AC_ARG_ENABLE(gcov,    [  --enable-gcov           compile to gather gcov statistics (gcc3 only)])
 
+m4_include(../ac/postlink_arg.m4)
+
 m4_include(../ac/strip_arg.m4)
 AC_ARG_ENABLE(noopt,   [  --enable-noopt          drop -O C flags (useful for low-level debugging)])
 m4_include(../ac/ubsan_arg.m4)
@@ -277,8 +279,6 @@ LIBRACKET_DEP=""
 
 EXE_SUFFIX=
 SO_SUFFIX=.so
-
-POST_LINKER="echo"
 
 MMM=3m
 MMM_INSTALLED=
@@ -548,7 +548,7 @@ case "$host_os" in
     LIBS="$LIBS -rdynamic"
     skip_curses_check=yes
     add_curses_lib="/usr/pkg/lib/libncurses.a"
-    POST_LINKER="paxctl +m"
+    default_post_linker="paxctl +m"
     ;;
   irix*)
     enable_cgcdefault="yes"
@@ -787,6 +787,10 @@ fi
 ############## Strip tool ################
 
 m4_include(../ac/strip.m4)
+
+############## post-linker ################
+
+m4_include(../ac/postlink.m4)
 
 ############## C flags ################
 

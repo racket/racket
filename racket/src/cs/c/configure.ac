@@ -32,6 +32,7 @@ m4_include(../ac/portable_arg.m4)
 m4_include(../ac/natipkg_arg.m4)
 m4_include(../ac/sdk_arg.m4)
 m4_include(../ac/instlib_arg.m4)
+m4_include(../ac/postlink_arg.m4)
 m4_include(../ac/strip_arg.m4)
 m4_include(../ac/ubsan_arg.m4)
 m4_include(../ac/asan_arg.m4)
@@ -151,7 +152,6 @@ MINGW="f"
 CONFIGURE_RACKET_SO_COMPILE=""
 COMPRESS_COMP=""
 BOOT_COMPRESS_COMP=""
-POST_LINKER=""
 
 FRAMEWORK_INSTALL_DIR='$(libpltdir)'
 FRAMEWORK_PREFIX='@executable_path/../lib/'
@@ -266,7 +266,7 @@ case "$host_os" in
     add_iconv_lib="/usr/lib/i18n/libiconv_std.a"
     skip_curses_check=yes
     add_curses_lib="/usr/pkg/lib/libncurses.a"
-    POST_LINKER="paxctl +m"
+    default_post_linker="paxctl +m"
     ;;
   irix*)
     ;;
@@ -572,6 +572,10 @@ fi
 ############## Strip tool ################
 
 m4_include(../ac/strip.m4)
+
+############## post-linker ################
+
+m4_include(../ac/postlink.m4)
 
 ############## natipkg ################
 

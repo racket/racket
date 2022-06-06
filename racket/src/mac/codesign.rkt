@@ -17,6 +17,7 @@
    #:args (file)
    file))
 
-(if remove?
-    (remove-signature file)
-    (add-ad-hoc-signature file))
+(void
+ (if remove?
+     (remove-signature file)
+     (add-ad-hoc-signature file)))

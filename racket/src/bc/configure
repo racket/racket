@@ -846,6 +846,7 @@ enable_bigendian
 enable_ffipoll
 enable_gprof
 enable_gcov
+enable_postlink
 enable_noopt
 enable_ubsan
 enable_jitframe
@@ -1520,6 +1521,7 @@ Optional Features:
   --enable-ffipoll        FFI calls only when embedding program explicitly polls
   --enable-gprof          compile for profiling with gprof (gcc only)
   --enable-gcov           compile to gather gcov statistics (gcc3 only)
+  --enable-postlink=<cmd> apply <cmd> to executable after linking
   --enable-strip          strip debug on install (usually enabled by default)
   --enable-noopt          drop -O C flags (useful for low-level debugging)
   --enable-ubsan          compile with -fsanitize=undefined
@@ -2953,6 +2955,13 @@ if test "${enable_gcov+set}" = set; then :
 fi
 
 
+# Check whether --enable-postlink was given.
+if test "${enable_postlink+set}" = set; then :
+  enableval=$enable_postlink;
+fi
+
+
+
 # Check whether --enable-noopt was given.
 if test "${enable_noopt+set}" = set; then :
   enableval=$enable_noopt;
@@ -3553,8 +3562,6 @@ LIBRACKET_DEP=""
 
 EXE_SUFFIX=
 SO_SUFFIX=.so
-
-POST_LINKER="echo"
 
 MMM=3m
 MMM_INSTALLED=
@@ -5002,7 +5009,7 @@ case "$host_os" in
     LIBS="$LIBS -rdynamic"
     skip_curses_check=yes
     add_curses_lib="/usr/pkg/lib/libncurses.a"
-    POST_LINKER="paxctl +m"
+    default_post_linker="paxctl +m"
     ;;
   irix*)
     enable_cgcdefault="yes"
@@ -5478,6 +5485,19 @@ $as_echo "$set_strip_lib" >&6; }
     fi
   fi
   ICP_STRIP_FLAG=" -s"
+fi
+
+
+############## post-linker ################
+
+if test "${enable_postlink}" != "" ; then
+  POST_LINKER="${enable_postlink}"
+else
+  POST_LINKER="${default_post_linker}"
+fi
+
+if test "${POST_LINKER}" != "" ; then
+  echo "post-linker command: ${POST_LINKER}"
 fi
 
 
