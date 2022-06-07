@@ -12,6 +12,7 @@ default_vm=cs
 supplied_racket=no
 supplied_scheme=no
 enable_boothelp=
+CC_FOR_BUILD='$(CC) -O2'
 
 # We don't have to detect conflicts like `--enable-csdefault --enable-bcdefault`,
 # since the `configure` scripts will do that, but  we have to figure out which
@@ -62,6 +63,9 @@ for arg in $*; do
             ;;
         --help-cs)
             exec "$dir/cs/c/configure" --help
+            ;;
+        CC_FOR_BUILD=*)
+            CC_FOR_BUILD=`echo $1 | sed -e 's/^CC_FOR_BUILD=//'`
             ;;
     esac
 done
@@ -133,7 +137,7 @@ echo "upsrcdir=$upsrcdir" >> Makefile
 echo "default_vm=${default_vm}" >> Makefile
 echo "use_cs=${use_cs}" >> Makefile
 echo "use_bc=${use_bc}" >> Makefile
-echo "HOSTCC="'$(CC) $(CFLAGS) -O2' >> Makefile
+echo "CC_FOR_BUILD=${CC_FOR_BUILD}" >> Makefile
 cat "$dir/Makefile.in" >> Makefile
 
 cp "$dir/buildmain.zuo" main.zuo

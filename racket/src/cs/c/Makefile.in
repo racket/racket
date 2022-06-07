@@ -203,7 +203,7 @@ INSTALL_LIBZO = @INSTALL_LIBZO@
 
 # ------------------------------------------------------------
 
-HOSTCC=@HOSTCC@
+CC_FOR_BUILD=@CC_FOR_BUILD@
 upsrcdir=@upsrcdir@
 
 ZUO=bin/zuo
@@ -219,4 +219,4 @@ plain-install: $(ZUO)
 
 $(ZUO):
 	mkdir -p bin
-	$(HOSTCC) -DZUO_LIB_PATH='"'"$(upsrcdir)/../../zuo/lib"'"' -o $(ZUO) $(srcdir)/../../zuo/zuo.c
+	$(CC_FOR_BUILD) -DZUO_LIB_PATH='"'"$(upsrcdir)/../../zuo/lib"'"' -o $(ZUO) $(srcdir)/../../zuo/zuo.c

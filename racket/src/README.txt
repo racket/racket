@@ -541,6 +541,12 @@ the target request to `zuo`. When working on Racket's sources, it's
 often worthwhile to build and install `zuo` to make running it easier;
 see "zuo/README.md".
 
+To build `bin/zuo` via `make`, the makefile uses the default C
+compiler via `$(CC) -O2`. If a different compiler is needed, supply
+`CC_FOR_BUILD=<executable>` as an argument to either `make` or
+`configure` to select a compiler that builds executables for the
+current machine.
+
 A file named "build.zuo" is analogous to "Makefile.in": it's in a
 source directory but meant to be used from a build directory. A file
 named "main.zuo" is analogous to "Makefile", where the directory

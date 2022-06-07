@@ -623,7 +623,7 @@ ac_includes_default="\
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 upsrcdir
-HOSTCC
+CC_FOR_BUILD
 RKTIO_CONFIGURE_ARGS
 LIBFFI_CONFIGURE_ARGS
 INSTALL_NAME_TOOL
@@ -3596,10 +3596,9 @@ else
   fi
 fi
 
-# For a cross compile, `HOSTCC` will need to be supplied to `make`,
-# but that only matters if `make` is used at this level instead of
-# `zuo`:
-HOSTCC='$(CC) -O2'
+if test "${CC_FOR_BUILD}" = ""; then
+  CC_FOR_BUILD='$(PLAIN_CC) -O2'
+fi
 
 ###### OSKit stuff #######
 

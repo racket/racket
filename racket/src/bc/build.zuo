@@ -935,7 +935,7 @@
         ;; Racket implementation in library form
         ,@(map
            (lambda (libracket.a objs)
-             `[:target ,libracket.a (,@objs)
+             `[:target ,libracket.a (,@objs ,@(if shared-libraries? (list librktio.a) '()))
                        ,(lambda (path token)
                           (rm* path)
                           (c-ar path

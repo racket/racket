@@ -623,7 +623,7 @@ ac_includes_default="\
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 upsrcdir
-HOSTCC
+CC_FOR_BUILD
 RKTIO_CONFIGURE_ARGS
 PLT_CS_SLSP_SUFFIX
 INSTALL_LIBS_ENABLE
@@ -3325,7 +3325,9 @@ COPY_NEW_CFLAGS_TO_CPPFLAGS=no
 SCHEME_LIBFFI=no
 PBCHUNK_MODE=plain
 
-HOSTCC='$(CC) -O2'
+if test "${CC_FOR_BUILD}" = ""; then
+  CC_FOR_BUILD='$(CC) -O2'
+fi
 
 ###### Autoconfigure #######
 
@@ -4782,7 +4784,7 @@ fi
 if test "${CROSS_MODE}" = "cross" ; then
   # Only matters if `make` is used at this level instead of
   # `zuo`:
-  HOSTCC='cc -O2'
+  CC_FOR_BUILD='cc -O2'
 fi
 
 # From this point on, `MACH` means the build machine, and

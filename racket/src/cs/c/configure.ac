@@ -184,7 +184,9 @@ COPY_NEW_CFLAGS_TO_CPPFLAGS=no
 SCHEME_LIBFFI=no
 PBCHUNK_MODE=plain
 
-HOSTCC='$(CC) -O2'
+if test "${CC_FOR_BUILD}" = ""; then
+  CC_FOR_BUILD='$(CC) -O2'
+fi
 
 ###### Autoconfigure #######
 
@@ -518,7 +520,7 @@ fi
 if test "${CROSS_MODE}" = "cross" ; then
   # Only matters if `make` is used at this level instead of
   # `zuo`:
-  HOSTCC='cc -O2'
+  CC_FOR_BUILD='cc -O2'
 fi
 
 # From this point on, `MACH` means the build machine, and
@@ -887,7 +889,7 @@ AC_SUBST(INSTALL_SETUP_RACKET_FLAGS)
 AC_SUBST(INSTALL_LIBS_ENABLE)
 AC_SUBST(PLT_CS_SLSP_SUFFIX)
 AC_SUBST(RKTIO_CONFIGURE_ARGS)
-AC_SUBST(HOSTCC)
+AC_SUBST(CC_FOR_BUILD)
 AC_SUBST(upsrcdir)
 
 makefiles="Makefile"

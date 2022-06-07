@@ -313,10 +313,9 @@ else
   fi
 fi
 
-# For a cross compile, `HOSTCC` will need to be supplied to `make`,
-# but that only matters if `make` is used at this level instead of
-# `zuo`:
-HOSTCC='$(CC) -O2'
+if test "${CC_FOR_BUILD}" = ""; then
+  CC_FOR_BUILD='$(PLAIN_CC) -O2'
+fi
 
 ###### OSKit stuff #######
 
@@ -1478,7 +1477,7 @@ AC_SUBST(INSTALL_NAME_TOOL)
 AC_SUBST(LIBFFI_CONFIGURE_ARGS)
 AC_SUBST(RKTIO_CONFIGURE_ARGS)
 
-AC_SUBST(HOSTCC)
+AC_SUBST(CC_FOR_BUILD)
 AC_SUBST(upsrcdir)
 
 makefiles="Makefile"
