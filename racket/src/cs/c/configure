@@ -4781,12 +4781,6 @@ if test "${enable_target}" != "" ; then
   CROSS_MODE="cross"
 fi
 
-if test "${CROSS_MODE}" = "cross" ; then
-  # Only matters if `make` is used at this level instead of
-  # `zuo`:
-  CC_FOR_BUILD='cc -O2'
-fi
-
 # From this point on, `MACH` means the build machine, and
 # `TARGET_MACH` is the target that we're building for (which
 # is different in cross-build mode).
