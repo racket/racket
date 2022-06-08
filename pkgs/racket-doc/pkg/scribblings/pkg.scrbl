@@ -1356,14 +1356,14 @@ The following @filepath{info.rkt} fields are used by the package manager:
   @margin-note{See @elemref["spdx-plus-operator"]{further details below}
    about @racket[_license-id] and the @litchar{+} operator.}
 
-  where a:
+  where:
 
   @itemize[
- @item{@racket[_license-id] is a short-form identifier from the
+ @item{a @racket[_license-id] is a short-form identifier from the
     @hyperlink["https://spdx.org/licenses/index.html"]{SPDX License List},
     e.g@._ @racketvalfont{LGPL-3.0-or-later}, @racketvalfont{Apache-2.0},
-    or @racket[BSD-3-Clause]; and an}
- @item{@racket[_exception-id] is an identifier from the
+    or @racketvalfont{BSD-3-Clause}; and}
+ @item{an @racket[_exception-id] is an identifier from the
     @hyperlink["https://spdx.org/licenses/exceptions-index.html"]{
      SPDX License Exceptions} list, e.g@._ @racketvalfont{Classpath-exception-2.0}.}]
 
