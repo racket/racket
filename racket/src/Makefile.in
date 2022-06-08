@@ -12,29 +12,43 @@ install: $(ZUO)
 plain-install: $(ZUO)
 	$(ZUO) . plain-install DESTDIR="$(DESTDIR)"
 
+.PHONY: cs
 cs: $(ZUO)
 	$(ZUO) . cs
 
-cs-install: $(ZUO)
-	$(ZUO) . cs-install DESTDIR="$(DESTDIR)"
+install-cs: $(ZUO)
+	$(ZUO) . install-cs DESTDIR="$(DESTDIR)"
 
-plain-cs-install: $(ZUO)
-	$(ZUO) . plain-cs-install DESTDIR="$(DESTDIR)"
+plain-install-cs: $(ZUO)
+	$(ZUO) . plain-install-cs DESTDIR="$(DESTDIR)"
 
+.PHONY: bc
 bc: $(ZUO)
 	$(ZUO) . bc
 
-bc-install: $(ZUO)
-	$(ZUO) . bc-install DESTDIR="$(DESTDIR)"
+install-bc: $(ZUO)
+	$(ZUO) . install-bc DESTDIR="$(DESTDIR)"
 
-plain-bc-install: $(ZUO)
-	$(ZUO) . plain-bc-install DESTDIR="$(DESTDIR)"
+plain-install-bc: $(ZUO)
+	$(ZUO) . plain-install-bc DESTDIR="$(DESTDIR)"
 
 3m: $(ZUO)
 	$(ZUO) . 3m
 
+install-3m: $(ZUO)
+	$(ZUO) . install-3m DESTDIR="$(DESTDIR)"
+
+plain-install-3m: $(ZUO)
+	$(ZUO) . plain-install-3m DESTDIR="$(DESTDIR)"
+
 cgc: $(ZUO)
 	$(ZUO) . cgc
+
+install-cgc: $(ZUO)
+	$(ZUO) . install-cgc DESTDIR="$(DESTDIR)"
+
+plain-install-cgc: $(ZUO)
+	$(ZUO) . plain-install-cgc DESTDIR="$(DESTDIR)"
 
 $(ZUO):
 	mkdir -p bin

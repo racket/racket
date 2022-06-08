@@ -55,21 +55,36 @@
               ,(lambda (token)
                  (build (find-target "plain-install" (get-targets)) token))]
                  
-     [:target cs-install ()
+     [:target install-cs ()
               ,(lambda (token)
                  (build (find-target "install" (get-cs-targets)) token))]
 
-     [:target plain-cs-install ()
+     [:target plain-install-cs ()
               ,(lambda (token)
                  (build (find-target "plain-install" (get-cs-targets)) token))]
                  
-     [:target bc-install ()
+     [:target install-bc ()
               ,(lambda (token)
                  (build (find-target "install" (get-bc-targets)) token))]
 
-     [:target plain-bc-install ()
+     [:target plain-install-bc ()
               ,(lambda (token)
                  (build (find-target "plain-install" (get-bc-targets)) token))]
 
+     [:target install-3m ()
+              ,(lambda (token)
+                 (build (find-target "install-3m" (get-bc-targets)) token))]
+
+     [:target plain-install-3m ()
+              ,(lambda (token)
+                 (build (find-target "plain-install-3m" (get-bc-targets)) token))]
+
+     [:target install-cgc ()
+              ,(lambda (token)
+                 (build (find-target "install-cgc" (get-bc-targets)) token))]
+
+     [:target plain-install-cgc ()
+              ,(lambda (token)
+                 (build (find-target "plain-install-cgc" (get-bc-targets)) token))]
 
      #;(end-of-targets))))
