@@ -10,7 +10,7 @@ diff -r -u old/openssl-1.1.0h/Configurations/10-main.conf new/openssl-1.1.0h/Con
 +        cflags           => add("-arch arm64 -DL_ENDIAN -Wall"),
 +        bn_ops           => "SIXTY_FOUR_BIT_LONG",
 +        perlasm_scheme   => "macosx",
-+        shared_ldflag    => "-arch arm64 -dynamiclib",
++        shared_ldflag    => "-arch arm64",
 +    },
  
  #### iPhoneOS/iOS

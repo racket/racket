@@ -239,7 +239,7 @@
 (define need-sed? win?)
 
 (define (sdk n)
-  (~a " -isysroot /Developer/SDKs/MacOSX10."n".sdk -mmacosx-version-min=10."n))
+  (~a " -isysroot /usr/local/Developer/SDKs/MacOSX10."n".sdk -mmacosx-version-min=10."n))
 (define mac32-sdk 6)
 (define mac64-sdk 9)
 
@@ -250,7 +250,7 @@
       [("pkg-config" "sed")
        ;; pkgconfig and sed run on build platform:
        null]
-      [("openssl")
+      [("openssl-1" "openssl-3")
        ;; Not libtool, and prefix added automatically
        (list
         (list "CC" "gcc -static-libgcc"))]
@@ -302,7 +302,7 @@
        [("pkg-config" "sed")
         ;; pkgconfig and sed run on build platform:
         null]
-       [("openssl")
+       [("openssl-1" "openssl-3")
         ;; not the usual "configure"
         null]
        [("zlib")
@@ -319,7 +319,7 @@
           (list "--host=x86_64-w64-mingw32")])])]
     [else null])
    (case package-name
-     [("openssl")
+     [("openssl-1" "openssl-3")
       ;; Especially for the natipkg build, but it makes sense
       ;; to suppress the path (which records the build location)
       ;; on all platforms:
@@ -404,7 +404,7 @@
      (config #:fixup (and win?
                           (~a "cd " (build-path dest "bin")
                               " && mv libsqlite3-0.dll sqlite3.dll")))]
-    [("openssl")
+    [("openssl-1" "openssl-3")
      (define make
        (if linux?
            (~a "make SHARED_LDFLAGS=" "-Wl,-rpath," dest "/lib")

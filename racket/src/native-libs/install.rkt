@@ -51,13 +51,16 @@
     "libpoppler-glib.8"))
 
 (define win-libs
-  '("libiconv-2"
-    "libeay32"
-    "ssleay32"
-    "sqlite3"
-    "longdouble"
-    "zlib1"
-    "libpangowin32-1.0.0"))
+  (append
+   '("libiconv-2"
+     "libeay32"
+     "ssleay32"
+     "sqlite3"
+     "zlib1"
+     "libpangowin32-1.0.0")
+   (if aarch64?
+       null
+       '("longdouble"))))
 
 (define mac-libs
   '("libedit.0"))

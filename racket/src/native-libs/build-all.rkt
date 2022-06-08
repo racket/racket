@@ -10,9 +10,12 @@
    '("pkg-config")
    (cond
     [win?
-     '("sed"
-       "longdouble"
-       "libiconv")]
+     (append
+      '("sed"
+        "libiconv")
+      (if aarch64?
+          null
+          '("longdouble")))]
     [else
      null])
    (cond
@@ -21,8 +24,13 @@
        "zlib")]
     [else
      null])
-   '("openssl"
-     "expat"
+   (cond
+     [(and win?
+           aarch64?)
+      '("openssl-3")]
+     [else
+      '("openssl-1")])
+   '("expat"
      "gettext")
    (cond
     [linux?
