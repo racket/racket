@@ -1288,7 +1288,9 @@
 
         ;; mzdyn.o
         ,@(map (lambda (mzdyn.o mzdyn.exp 3m?)
-                 `[:target (,mzdyn.o ,@(if windows? (list mzdyn.exp) '())) (,(at-source "dynsrc/mzdyn.c") ,@common-headers)
+                 `[:target (,mzdyn.o ,@(if windows? (list mzdyn.exp) '())) (,(at-source "dynsrc/mzdyn.c")
+                                                                            ,(at-source "../version/racket_version.h")
+                                                                            ,@common-headers)
                            ,(lambda (path token)
                               (c-compile path
                                          (at-source "dynsrc/mzdyn.c")
