@@ -3,7 +3,7 @@
           scribble/core
           "common.rkt"
           (for-label pkg
-                     (except-in racket/base remove)
+                     (except-in racket/base remove version)
                      setup/dirs
                      setup/matching-platform))
 
@@ -1215,7 +1215,7 @@ For example, a basic @filepath{info.rkt} file might be
 @codeblock{
 #lang info
 (define version "1.0")
-(define deps (list _package-source-string ...))
+(define deps (list "base"))
 }
 
 The following @filepath{info.rkt} fields are used by the package manager:
