@@ -1717,7 +1717,17 @@
   (define (setup 3m? cgc?)
     (call-with-bindir
      (lambda (bindir)
-       (define dest-exe (dest-racket-exe 3m?))
+       (define dest-exe (cond
+                          [(and shared-libraries?
+                                (not (equal? "" (or (lookup 'DESTDIR) ""))))
+                           ;; We can't run an executable that uses a shared library
+                           ;; at `DESTDIR`, so keep using local executabke:
+                           (if 3m?
+                               racket3m
+                               racketcgc)]
+                          [else
+                           ;; Otherwise, prefer to use the installed executable:
+                           (dest-racket-exe 3m?)]))
        (define copytree-racket (and provided-racket? (get-host-racket)))
        (maybe-copytree config dest-exe copytree-racket at-dir)
        (run-raco-setup config dest-exe copytree-racket '())
