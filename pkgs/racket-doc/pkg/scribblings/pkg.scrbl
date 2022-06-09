@@ -1313,8 +1313,8 @@ The following @filepath{info.rkt} fields are used by the package manager:
        @racketidfont{build-deps} when converting a package for
        @DFlag{binary} mode.}
 
- @item{@definfofield{implies} --- a list of strings and
-       @racket['core]. Each string refers to a package listed in
+ @item{@definfofield{implies} --- a list where each element is either
+       a string or @racket['core]. Each string refers to a package listed in
        @racketidfont{deps} and indicates that a dependency on the
        current package counts as a dependency on the named package;
        for example, the @pkgname{gui} package is defined to ensure
