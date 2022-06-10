@@ -163,6 +163,6 @@ that converts one identifier to another.
  
  @racketblock[
  (define-ffi-definer define-calib camel-lib
-   #:make-c-id conventon:hyphen->camelcase)
+   #:make-c-id convention:hyphen->camelcase)
  (define-calib camel-case-variable (_fun -> _void))]
 }
