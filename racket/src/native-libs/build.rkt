@@ -1,4 +1,4 @@
-#lang racket/base
+#lang at-exp racket/base
 (require racket/system
          racket/format
          racket/string
@@ -161,26 +161,14 @@
 ;; For `getline` on 32-bit Mac OS 10.6:
 (define-runtime-path libedit-getline-patch "patches/libedit-getline.patch")
 
-;; Upstream patch to fix Win32 build:
-(define-runtime-path glib-win32-weekday-patch "patches/glib-win32-weekday.patch")
-
 ;; strerror_s is not available in XP
 (define-runtime-path glib-strerror-patch "patches/glib-strerror.patch")
 
-;; avoid a print before NULL check
-(define-runtime-path glib-debugprint-patch "patches/glib-debugprint.patch")
-
-;; Pull in a repair for building for Arm64 Windows with MinGW
-(define-runtime-path glib-arm64nt-patch "patches/glib-arm64nt.patch")
-
-;; Avoid duplicate symbol definitions
-(define-runtime-path glib-extern-patch "patches/glib-extern.patch")
-
-;; For now, disable glib functionality that depends on Mac OS 10.8:
-(define-runtime-path gcocoanotify-patch "patches/gcocoanotify.patch")
-
 ;; Remove "-fno-check-new", which Clang does not recognize:
 (define-runtime-path nonochecknew-patch "patches/nonochecknew.patch")
+
+;; Remove `volatile` declaration
+(define-runtime-path poppler-no-volatile-patch "patches/poppler-no-volatile.patch")
 
 ;; 64-bit MinGW doesn't like this use of `__always_inline__`:
 (define-runtime-path noforceinline-patch "patches/noforceinline.patch")
@@ -190,6 +178,9 @@
 
 ;; No need for pixman demos and tests
 (define-runtime-path pixman-notest-patch "patches/pixman-notest.patch")
+
+;; Disable pthread use for pixman on Windows
+(define-runtime-path pixman-nopthread-patch "patches/pixman-nopthread.patch")
 
 ;; Disable libtool's management of standard libs so that
 ;; MinGW's -static-libstdc++ works:
@@ -293,7 +284,34 @@
        (list "CXX" (~a win-prefix "-g++ -static-libgcc -static-libstdc++")))
       null))
 
-(define all-args
+(define (make-windows-cross_file.txt cpu)
+  (define content
+    @~a{[host_machine]
+        system = 'windows'
+        cpu_family = '@|cpu|'
+        cpu = '@|cpu|'
+        endian = 'little'
+        
+        [properties]
+        c_args = ['-I@|dest|/include']
+        c_link_args = ['-static-libgcc', '-L@|dest|/lib']
+        
+        [binaries]
+        c = '@|cpu|-w64-mingw32-gcc'
+        cpp = '@|cpu|-w64-mingw32-g++'
+        ar = '@|cpu|-w64-mingw32-ar'
+        ld = '@|cpu|-w64-mingw32-ld'
+        objcopy = '@|cpu|-w64-mingw32-objcopy'
+        strip = '@|cpu|-w64-mingw32-strip'
+        pkgconfig = 'pkg-config'
+        windres = '@|cpu|-w64-mingw32-windres'})
+  (call-with-output-file*
+   "cross_file.txt"
+   #:exists 'truncate
+   (lambda (out)
+     (displayln content out))))
+
+(define (make-all-args use-cross-file)
   (append
    (list (~a "--prefix=" dest))
    (cond
@@ -311,12 +329,14 @@
        [else
         ;; Everything else cross-compiles normally:
         (cond
-         [m32?
-          (list "--host=i686-w64-mingw32")]
-         [aarch64?
-          (list "--host=aarch64-w64-mingw32")]
-         [else
-          (list "--host=x86_64-w64-mingw32")])])]
+          [use-cross-file
+           (list "--cross-file" "cross_file.txt")]
+          [m32?
+           (list "--host=i686-w64-mingw32")]
+          [aarch64?
+           (list "--host=aarch64-w64-mingw32")]
+          [else
+           (list "--host=x86_64-w64-mingw32")])])]
     [else null])
    (case package-name
      [("openssl-1" "openssl-3")
@@ -358,7 +378,8 @@
                 #:post-patches [post-patches null]
                 #:install-patches [install-patches null]
                 #:fixup [fixup #f]
-                #:fixup-proc [fixup-proc #f])
+                #:fixup-proc [fixup-proc #f]
+                #:use-cross-file [use-cross-file #f])
   (for ([d (in-list (append (if (or (equal? package-name "pkg-config")
                                     (equal? package-name "sed"))
                                 '()
@@ -368,7 +389,8 @@
                             deps))])
     (unless (file-exists? (build-path dest "stamps" d))
       (error 'build "prerequisite needed: ~a" d)))
-  (values env exe args make make-install setup patches post-patches install-patches fixup fixup-proc))
+  (values env exe args make make-install setup patches post-patches install-patches fixup fixup-proc
+          use-cross-file))
 
 (define path-flags
   (list (list "CPPFLAGS" (~a "-I" dest "/include"))
@@ -377,6 +399,20 @@
 (define ld-library-path-flags
   (list (list "LD_LIBRARY_PATH"
 	      (path->string (build-path dest "lib")))))
+
+(define (add-flag env var val)
+  (cond
+    [(equal? val "") env]
+    [else
+     (let loop ([env env])
+       (cond
+         [(null? env) (list (list var val))]
+         [(equal? (caar env) var)
+          (cons (list var (string-append (cadar env)
+                                         " "
+                                         val))
+                (cdr env))]
+         [else (cons (car env) (loop (cdr env)))]))]))
 
 (define (nonmac-only)
   (unless (or win? linux?)
@@ -387,7 +423,8 @@
     (error (format "build ~a only for Linux" package-name))))
 
 (define-values (extra-env configure-exe extra-args make-command make-install-command 
-                          setup patches post-patches install-patches fixup fixup-proc)
+                          setup patches post-patches install-patches fixup fixup-proc
+                          use-cross-file)
   (case package-name
     [("pkg-config") (config #:configure (list "--with-internal-glib"))]
     [("sed") (config)]
@@ -460,7 +497,7 @@
     [("gettext") (config #:depends (if win? '("libiconv") '())
                          #:configure (append
                                       '("--enable-languages=c")
-                                      (if (and win? aarch64?)
+                                      (if win?
                                           '("--enable-threads=windows")
                                           null))
                          #:make (if win?
@@ -533,32 +570,31 @@
 			  (~a "cp zlib1.dll " dest "/bin && cp libz.dll.a " dest "/lib")))]
     [("glib") (config #:depends (append '("libffi" "gettext")
                                         (if win? '("libiconv") '()))
-                      #:configure (append '("--with-pcre=internal")
-                                          (if linux? '("--enable-libmount=no") '())
-                                          (if mac?
-                                              '("CFLAGS=-include Kernel/uuid/uuid.h")
-                                              '())
-                                          (if (and win? (not aarch64?))
-                                              ;; abuse of `LIBS`, but avoids conflict with `path-flags`
-                                              '("LIBS=-Wl,--allow-multiple-definition"
-                                                "--disable-compile-warnings")
-                                              '()))
-                      #:env (append path-flags
-                                    ;; Disable Valgrind support, which particularly
-                                    ;; goes wrong for 64-bit Windows builds.
-                                    (list (list "CPPFLAGS" "-DNVALGRIND=1")))
-                      #:patches (append
-                                 (cond
-                                   [win? (append
-                                          (list glib-win32-weekday-patch
-                                                glib-strerror-patch
-                                                glib-arm64nt-patch)
-                                          (if aarch64?
-                                              (list glib-extern-patch)
-                                              null))]
-                                   [mac? (list gcocoanotify-patch)]
-                                   [else null])
-                                 (list glib-debugprint-patch)))]
+                      #:configure-exe (find-executable-path "meson")
+                      #:use-cross-file (and win? (cond
+                                                   [aarch64? "aarch64"]
+                                                   [m32? "i686"]
+                                                   [else "x86_64"]))
+                      #:make "meson compile -C _build"
+                      #:make-install "meson install -C _build"
+                      #:configure (append '("setup")
+                                          ;; '("-Dinternal_pcre=true")
+                                          (if linux? '("-Dlibmount=disabled") '())
+                                          '(#f "_build"))
+                      #:env (add-flag (add-flag path-flags
+                                                ;; Disable Valgrind support, which particularly
+                                                ;; goes wrong for 64-bit Windows builds.
+                                                "CPPFLAGS" (string-append
+                                                            "-DNVALGRIND=1"
+                                                            (if mac?
+                                                                " -include Kernel/uuid/uuid.h"
+                                                                "")))
+                                      "LDFLAGS" (if (and win? (not aarch64?))
+                                                    "-Wl,--allow-multiple-definition"
+                                                    ""))
+                      #:patches (cond
+                                  [win? (list glib-strerror-patch)]
+                                  [else null]))]
     [("libpng") (config #:depends (if (or win? linux?) '("zlib") '())
                         #:env (if (or linux? win?)
                                   (append
@@ -585,6 +621,9 @@
                                      [(and win? (not m32?)) (list noforceinline-patch)]
                                      [ppc? (list pixman-altivec-patch)]
                                      [else null])
+                                   (cond
+                                     [win? (list pixman-nopthread-patch)]
+                                     [else (list)])
                                    (list pixman-notest-patch)))]
     [("cairo")
      (when mac?
@@ -681,7 +720,8 @@
     [("jpeg") (config)]
     [("poppler") (config #:env (append path-flags
                                        cxx-env)
-                         #:patches (list nonochecknew-patch)
+                         #:patches (list nonochecknew-patch
+                                         poppler-no-volatile-patch)
                          #:post-patches (if win?
                                             (list libtool-link-patch)
                                             null)
@@ -699,6 +739,20 @@
    (build-path dest "stamps" package-name)
    #:exists 'truncate
    void))
+
+(define (remove-libtool-flat-namespace)
+  ;; old versions of libtool fail to detect latest Mac OS and
+  ;; add ancient `-flat_namespace` flag
+  (when (file-exists? "libtool")
+    (define s (file->string "libtool"))
+    (define s2 (regexp-replace #rx"\\\\[$]wl-flat_namespace \\\\[$]wl-undefined \\\\[$][{]wl[}]suppress"
+                               s
+                               "\\\\$wl-undefined \\\\${wl}dynamic_lookup"))
+    (unless (equal? s s2)
+      (call-with-output-file*
+       "libtool"
+       #:exists 'truncate
+       (lambda (o) (display s2 o))))))
 
 (parameterize ([current-directory package-dir]
                [current-environment-variables
@@ -720,16 +774,19 @@
       (system/show s))
     (for ([p (in-list patches)])
       (system/show (~a "patch -p2 < " p))))
+  (when use-cross-file
+    (make-windows-cross_file.txt use-cross-file))
   (unless skip-config?
     (apply system*/show
            (or configure-exe "./configure")
            (let loop ([extra-args extra-args])
              (cond
-              [(null? extra-args) all-args]
-              [(not (car extra-args)) (append all-args (cdr extra-args))]
+              [(null? extra-args) (make-all-args use-cross-file)]
+              [(not (car extra-args)) (append (make-all-args use-cross-file) (cdr extra-args))]
               [else (cons (car extra-args) (loop (cdr extra-args)))])))
     (for ([p (in-list post-patches)])
       (system/show (~a "patch -p2 < " p))))
+  (remove-libtool-flat-namespace)
   (system/show make-command)
   (for ([p (in-list install-patches)])
     (system/show (~a "patch -p2 < " p)))

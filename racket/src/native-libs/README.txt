@@ -25,21 +25,21 @@ older versions):
  libiconv-1.15 (Windows only)
  zlib-1.2.12 (Windows and Linux only)
  libffi-3.2.1 (AArch64 Mac OS and Windows: libffi-3.3)
- expat-2.2.5
+ expat-2.4.8
  gettext-0.19.8
- glib-2.56.0
+ glib-2.72.2
  libpng-1.6.37
- pixman-0.34.0
- cairo-1.14.12
- jpegsrc.v9c
+ pixman-0.38.4
+ cairo-1.16.0
+ jpegsrc.v9e
  harfbuzz-1.7.6
  fribidi-1.0.2
  fontconfig-2.13.0
- freetype-2.9
+ freetype-2.12.1
  pango-1.42.0
  poppler-0.24.5
  mpfr-3.1.6
- gmp-6.1.2 (AArch64 Mac OS and Windows: gmp-6.2.1)
+ gmp-6.2.1
  atk-2.28.1
 
 (Linux only:)

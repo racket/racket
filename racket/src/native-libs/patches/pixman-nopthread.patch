@@ -1,0 +1,14 @@
+Only in new/pixman-0.38.4: configure~
+diff -r -u old/pixman-0.38.4/pixman/pixman-compiler.h new/pixman-0.38.4/pixman/pixman-compiler.h
+--- old/pixman-0.38.4/pixman/pixman-compiler.h	2022-06-11 08:11:39.000000000 -0600
++++ new/pixman-0.38.4/pixman/pixman-compiler.h	2022-06-11 08:31:27.000000000 -0600
+@@ -111,7 +111,7 @@
+ #   define PIXMAN_GET_THREAD_LOCAL(name)				\
+     (&name)
+ 
+-#elif defined(TLS)
++#elif defined(TLS) && !defined(__MINGW32__)
+ 
+ #   define PIXMAN_DEFINE_THREAD_LOCAL(type, name)			\
+     static TLS type name
+Only in new/pixman-0.38.4/pixman: pixman-compiler.h~

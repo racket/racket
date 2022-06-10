@@ -20,6 +20,9 @@
    #:args (dest-dir)
    dest-dir))
 
+(when (and mac? aarch64? (not sign-as))
+  (error "supply `--sign-as` for AArch64 Mac OS"))
+
 ;; Hack to make AArch64 Mac OS and Windows libraries look like other Macs:
 (define aarch64-renames
   `(("libffi.7" "libffi.6")))
