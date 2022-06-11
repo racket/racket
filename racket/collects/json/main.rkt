@@ -144,7 +144,7 @@
     (when format? (write-bytes #"\n" o)))
   (define (format/write-indent layer)
     (when format?
-      (for ([i (in-range 0 layer)])
+      (for ([i (in-range layer)])
         (write-string indent o))))
   (let loop ([x x] [layer 0])
     (cond [(integer? x) (write (inexact->exact x) o)]
