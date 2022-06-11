@@ -1559,7 +1559,8 @@
                 (strip-signature dest-exe)
                 (strip-debug config dest-exe)
                 (cond
-                  [windows? (void)]
+                  [windows?
+                   (set-collects-path racket dest-exe "../collects" "../etc")]
                   [mac?
                    (set-collects-path racket dest-exe "../../../../collects" "../../../../etc")
                    (install_name_tool "-change"
