@@ -117,7 +117,7 @@
      (if unix-style-macos?
          'static
          'framework)]
-    [(a6nt ta6nt i3nt ti3nt arm64nt tarm64nt) 'windows]
+    [(a6nt ta6nt i3nt ti3nt arm64nt tarm64nt) 'dll]
     [else (if unix-link-shared?
               'shared
               'static)]))
