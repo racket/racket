@@ -67,7 +67,9 @@ the @rfc for more information about JSON.
 
 @defproc[(write-json [x jsexpr?] [out output-port? (current-output-port)]
                      [#:null jsnull any/c (json-null)]
-                     [#:encode encode (or/c 'control 'all) 'control])
+                     [#:encode encode (or/c 'control 'all) 'control]
+                     [#:format? format? boolean? #f]
+                     [#:indent indent string? "\t"])
          any]{
   Writes the @racket[x] @tech{jsexpr}, encoded as JSON, to the
   @racket[out] output port.
@@ -80,18 +82,38 @@ the @rfc for more information about JSON.
   the range of @tt{U+10000} and above are encoded as two @tt{\uHHHH}
   escapes, see Section 2.5 of the @|rfc|.
 
+  If @racket[format?] is given as @racket[#f], then @racket[indent] is
+  used to format JSON.
+
 @examples[#:eval ev
   (with-output-to-string
     (λ () (write-json #hasheq((waffle . (1 2 3))))))
   (with-output-to-string
     (λ () (write-json #hasheq((와플 . (1 2 3)))
                       #:encode 'all)))
+  (write-string
+   (with-output-to-string
+     (λ () (write-json #hasheq((waffle . (1 2 3))
+                               (와플 . (1 2 3)))))))
+  (write-string
+   (with-output-to-string
+     (λ () (write-json #hasheq((waffle . (1 2 3))
+                               (와플 . (1 2 3)))
+                       #:format? #t))))
+  (write-string
+   (with-output-to-string
+     (λ () (write-json #hasheq((waffle . (1 2 3))
+                               (와플 . (1 2 3)))
+                       #:format? #t
+                       #:indent "  "))))
 ]
 }
 
 @defproc[(jsexpr->string [x jsexpr?]
                          [#:null jsnull any/c (json-null)]
-                         [#:encode encode (or/c 'control 'all) 'control])
+                         [#:encode encode (or/c 'control 'all) 'control]
+                         [#:format? format? boolean? #f]
+                         [#:indent indent string? "\t"])
          string?]{
   Generates a JSON source string for the @tech{jsexpr} @racket[x].
 
@@ -102,7 +124,9 @@ the @rfc for more information about JSON.
 
 @defproc[(jsexpr->bytes [x jsexpr?]
                         [#:null jsnull any/c (json-null)]
-                        [#:encode encode (or/c 'control 'all) 'control])
+                        [#:encode encode (or/c 'control 'all) 'control]
+                        [#:format? format? boolean? #f]
+                        [#:indent indent string? "\t"])
          bytes?]{
   Generates a JSON source byte string for the @tech{jsexpr} @racket[x].
   (The byte string is encoded in UTF-8.)
@@ -124,8 +148,8 @@ the @rfc for more information about JSON.
   characters in the port so that a second call can retrieve the
   remaining JSON input(s). If the JSON inputs aren't delimited per se
   (true, false, null), they  must be separated by whitespace from the
-  following JSON input. 
-  
+  following JSON input.
+
 
 @examples[#:eval ev
   (with-input-from-string
