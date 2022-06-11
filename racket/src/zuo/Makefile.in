@@ -32,4 +32,4 @@ check: zuo
 
 .PHONY: install
 install: zuo
-	./zuo . install
+	./zuo . install DESTDIR="$(DESTDIR)"

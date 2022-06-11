@@ -99,20 +99,28 @@
             (lambda (token)
               (phony-rule (list zuo-to-install)
                           (lambda ()
+                            (define (at-destdir p)
+                              (define destdir (hash-ref config 'DESTDIR ""))
+                              (if (equal? destdir "")
+                                  p
+                                  (apply build-path
+                                         (cons destdir
+                                               (cdr (explode-path (path->complete-path p)))))))
                             (define (say-copy cp a b)
                               (displayln (~a "copying " a " to " b))
                               (cp a b))
-                            (define bindir (shell-subst (hash-ref config 'bindir (build-path install-prefix "bin"))
-                                                        config))
-                            (mkdir-p install-prefix)
+                            (define bindir (at-destdir
+                                            (shell-subst (hash-ref config 'bindir (build-path install-prefix "bin"))
+                                                         config)))
+                            (mkdir-p (at-destdir install-prefix))
                             (mkdir-p bindir)
                             (define dest-exe (build-path bindir "zuo"))
                             (when (file-exists? dest-exe) (rm dest-exe)) ; needed for macOS
                             (say-copy cp (target-name zuo-to-install) dest-exe)
-                            (mkdir-p pkgdatadir)
+                            (mkdir-p (at-destdir pkgdatadir))
                             (say-copy cp*
                                       (at-source "lib" "zuo")
-                                      (build-path pkgdatadir)))))))
+                                      (at-destdir (build-path pkgdatadir))))))))
 
   ;; Return all the targets
   (list zuos-to-run-and-install
