@@ -965,7 +965,12 @@
                                      (build-path libpltdir name)))
                  (list "petite.boot" "scheme.boot" "racket.boot")))]
          [windows?
-          (void)]
+          ;; always install ".boot" files for Windows
+          (map (lambda (v.boot .boot)
+                 (bootstrap-racket (at-source "add-terminator.rkt") v.boot
+                                   (build-path libpltdir .boot)))
+               (list petite-v.boot scheme-v.boot racket-v.boot)
+               (list "petite.boot" "scheme.boot" "racket.boot"))]
          [else
           (define dest-gracket (build-path libpltdir (cs-suffix "gracket")))
           (icp* gracketcs dest-gracket)
