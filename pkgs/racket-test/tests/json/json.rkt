@@ -55,8 +55,8 @@
           )))
 
 (define (print-tests)
-  (for ([x (list 0 1 -1 12345 0.0 1.0 #t #f (λ(n) n) "" "abc" "abc\n\\"
-                 '() '(1 2 3) (λ(n) `(1 "2" (3) #t #f ,n)) '((((()))))
+  (for ([x (list 0 1 -1 12345 0.0 1.0 #t #f (λ (n) n) "" "abc" "abc\n\\"
+                 '() '(1 2 3) (λ (n) `(1 "2" (3) #t #f ,n)) '((((()))))
                  '#hasheq()
                  '#hasheq([x . 1])
                  '#hasheq([x . 1] [y . 2])
@@ -67,17 +67,18 @@
                  "\b" "\n" "\r" "\f" "\t"         ; same escapes in both
                  "\a" "\v" "\e"                   ; does not use racket escapes
                  )])
-    (define (N x null) (if (procedure? x) (x null) x))
+    (define (N0 x null) (if (procedure? x) (x null) x))
+    (define (N1 x null) (N0 (if (integer? x) (inexact->exact x) x) null))
     (test
      ;; default
-     (string->jsexpr (jsexpr->string (N x 'null)))
-     => (N x 'null)
+     (string->jsexpr (jsexpr->string (N0 x 'null)))
+     => (N1 x 'null)
      ;; different null
-     (string->jsexpr (jsexpr->string (N x #\null) #:null #\null) #:null #\null)
-     => (N x #\null)
+     (string->jsexpr (jsexpr->string (N0 x #\null) #:null #\null) #:null #\null)
+     => (N1 x #\null)
      ;; encode all non-ascii
-     (string->jsexpr (jsexpr->string (N x 'null) #:encode 'all))
-     => (N x 'null)))
+     (string->jsexpr (jsexpr->string (N0 x 'null) #:encode 'all))
+     => (N1 x 'null)))
   ;; also test some specific expected encodings
   (test (jsexpr->string "\0\1\2\3") => "\"\\u0000\\u0001\\u0002\\u0003\""
         (jsexpr->string "\b\n\r\f\t\\\"") => "\"\\b\\n\\r\\f\\t\\\\\\\"\""
@@ -88,7 +89,7 @@
         ;; and that the same holds for keys
         (jsexpr->string (string->jsexpr "{\"\U0010FFFF\":\"\U0010FFFF\"}"))
           => "{\"\U0010FFFF\":\"\U0010FFFF\"}"
-	(jsexpr->string #hash[(a . 1) (b . 2)]) => "{\"a\":1,\"b\":2}"
+        (jsexpr->string #hash[(a . 1) (b . 2)]) => "{\"a\":1,\"b\":2}"
         (jsexpr->string (string->jsexpr "{\"\U0010FFFF\":\"\U0010FFFF\"}")
                         #:encode 'all)
           => "{\"\\udbff\\udfff\":\"\\udbff\\udfff\"}"

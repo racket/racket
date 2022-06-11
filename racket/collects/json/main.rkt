@@ -130,7 +130,8 @@
     (write-string (regexp-replace* rx-to-encode str escape) o)
     (write-bytes #"\"" o))
   (let loop ([x x])
-    (cond [(or (exact-integer? x) (inexact-rational? x)) (write x o)]
+    (cond [(integer? x) (write (inexact->exact x) o)]
+          [(inexact-rational? x) (write x o)]
           [(eq? x #f)     (write-bytes #"false" o)]
           [(eq? x #t)     (write-bytes #"true" o)]
           [(eq? x jsnull) (write-bytes #"null" o)]
