@@ -130,7 +130,6 @@
 
 (define so-mode
   (case (reflect-machine-type)
-    [(arm64osx tarm64osx) 'global]
     [else 'local]))
 
 ;; Force inline of some common cases, so optimization can use

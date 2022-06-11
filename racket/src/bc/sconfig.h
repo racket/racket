@@ -661,7 +661,6 @@
 #  if !defined(TARGET_OS_IPHONE)
 #   define MZ_USE_MAP_JIT
 #  endif
-#  define USE_DLOPEN_GLOBAL_BY_DEFAULT
 # elif defined(__x86_64__)
 #   define SCHEME_ARCH "x86_64"
 # else
