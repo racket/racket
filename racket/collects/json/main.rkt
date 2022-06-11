@@ -166,6 +166,8 @@
            (define first? #t)
            (define (write-hash-kv layer)
              (λ (k v)
+               (unless (symbol? k)
+                 (raise-type-error who "legal JSON key value" k))
                (if first? (set! first? #f) (write-bytes #"," o))
                (format/write-newline)
                (format/write-indent layer)
