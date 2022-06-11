@@ -82,7 +82,7 @@ the @rfc for more information about JSON.
   the range of @tt{U+10000} and above are encoded as two @tt{\uHHHH}
   escapes, see Section 2.5 of the @|rfc|.
 
-  If @racket[format?] is given as @racket[#f], then @racket[indent] is
+  If @racket[format?] is given as @racket[#t], then @racket[indent] is
   used to format JSON.
 
 @examples[#:eval ev
