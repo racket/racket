@@ -175,7 +175,7 @@
                (write-bytes #":" o)
                (format/write-whitespace)
                (loop v layer)))
-           (format/write-newline)
+           (when (> layer 0) (format/write-newline))
            (format/write-indent layer)
            (write-bytes #"{" o)
            (hash-for-each x (write-hash-kv (add1 layer))
