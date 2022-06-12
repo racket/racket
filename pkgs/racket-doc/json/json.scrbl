@@ -34,11 +34,11 @@ the @rfc for more information about JSON.
 
   @itemize[
     @item{the value of @racket[jsnull], @racket['null] by default,
-  which is recognized using @racket[eq?]}
+          which is recognized using @racket[eq?]}
     @item{the value of @racket[jsinf+], @racket[+inf.0] by default,
-              which is recognized using @racket[eqv?]}
+          which is recognized using @racket[eqv?]}
     @item{the value of @racket[jsinf-], @racket[-inf.0] by default,
-              which is recognized using @racket[eqv?]}
+          which is recognized using @racket[eqv?]}
     @item{@racket[boolean?]}
     @item{@racket[string?]}
     @item{@racket[(or/c exact-integer? (and/c inexact-real? rational?))]}
