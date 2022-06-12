@@ -169,6 +169,7 @@ the @rfc for more information about JSON.
 @section{Parsing JSON Text into JS-Expressions}
 
 @defproc[(read-json [in input-port? (current-input-port)]
+                    [#:mhash? jsmhash? boolean? (json-mhash?)]
                     [#:null jsnull any/c (json-null)]
                     [#:inf+ jsinf+ any/c (json-inf+)]
                     [#:inf- jsinf- any/c (json-inf-)])
@@ -223,6 +224,7 @@ the @rfc for more information about JSON.
 }
 
 @defproc[(string->jsexpr [str string?]
+                         [#:mhash? jsmhash? boolean? (json-mhash?)]
                          [#:null jsnull any/c (json-null)]
                          [#:inf+ jsinf+ any/c (json-inf+)]
                          [#:inf- jsinf- any/c (json-inf-)])
@@ -238,6 +240,7 @@ the @rfc for more information about JSON.
 }
 
 @defproc[(bytes->jsexpr [str bytes?]
+                        [#:mhash? jsmhash? boolean? (json-mhash?)]
                         [#:null jsnull any/c (json-null)]
                         [#:inf+ jsinf+ any/c (json-inf+)]
                         [#:inf- jsinf- any/c (json-inf-)])

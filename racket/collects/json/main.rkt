@@ -48,6 +48,7 @@
   [read-json
    (->* ()
         (input-port?
+         #:mhash? boolean? ;; (json-mhash?)
          #:null any/c  ;; (json-null)
          #:inf+ any/c  ;; (json-inf+)
          #:inf- any/c) ;; (json-inf-)
@@ -72,13 +73,15 @@
         any)] ;; bytes?
   [string->jsexpr
    (->* (string?)
-        (#:null any/c  ;; (json-null)
+        (#:mhash? boolean? ;; (json-mhash?)
+         #:null any/c  ;; (json-null)
          #:inf+ any/c  ;; (json-inf+)
          #:inf- any/c) ;; (json-inf-)
         any)] ;; jsexpr?
   [bytes->jsexpr
    (->* (bytes?)
-        (#:null any/c  ;; (json-null)
+        (#:mhash? boolean? ;; (json-mhash?)
+         #:null any/c  ;; (json-null)
          #:inf+ any/c  ;; (json-inf+)
          #:inf- any/c) ;; (json-inf-)
         any)] ;; jsexpr?
@@ -260,12 +263,13 @@
 ;; PARSING (from JSON to Racket)
 
 (define (read-json [i (current-input-port)]
+                   #:mhash? [jsmhash? (json-mhash?)]
                    #:null [jsnull (json-null)]
                    #:inf+ [jsinf+ (json-inf+)]
                    #:inf- [jsinf- (json-inf-)])
-  (read-json* 'read-json i jsnull jsinf+ jsinf-))
+  (read-json* 'read-json i jsmhash? jsnull jsinf+ jsinf-))
 
-(define (read-json* who i jsnull jsinf+ jsinf-)
+(define (read-json* who i jsmhash? jsnull jsinf+ jsinf-)
   ;; Follows the specification (eg, at json.org) -- no extensions.
   ;;
   (define (err fmt . args)
@@ -421,7 +425,7 @@
         (err "error while parsing a json object pair"))
       (read-byte i)
       (cons (string->symbol k) (read-json)))
-    (if (json-mhash?)
+    (if jsmhash?
         (let ([result (make-hasheq)])
           (for ([p (in-list (read-list 'object #\} read-pair))])
             (hash-set! result (car p) (cdr p)))
@@ -634,15 +638,17 @@
   (get-output-bytes o))
 
 (define (string->jsexpr str
+                        #:mhash? [jsmhash? (json-mhash?)]
                         #:null [jsnull (json-null)]
                         #:inf+ [jsinf+ (json-inf+)]
                         #:inf- [jsinf- (json-inf-)])
   ;; str is protected by contract
-  (read-json* 'string->jsexpr (open-input-string str) jsnull jsinf+ jsinf-))
+  (read-json* 'string->jsexpr (open-input-string str) jsmhash? jsnull jsinf+ jsinf-))
 
 (define (bytes->jsexpr bs
+                       #:mhash? [jsmhash? (json-mhash?)]
                        #:null [jsnull (json-null)]
                        #:inf+ [jsinf+ (json-inf+)]
                        #:inf- [jsinf- (json-inf-)])
   ;; bs is protected by contract
-  (read-json* 'bytes->jsexpr (open-input-bytes bs) jsnull jsinf+ jsinf-))
+  (read-json* 'bytes->jsexpr (open-input-bytes bs) jsmhash? jsnull jsinf+ jsinf-))
