@@ -38,25 +38,38 @@
         (not (jsexpr? '#hasheq([1 . 1])))
         (not (jsexpr? '#hasheq(["x" . 1])))
         (not (jsexpr? '#hasheq(['() . 1])))
-        (not (jsexpr? (/ 1.0 0.0)))
-        (not (jsexpr? (/ -1.0 0.0)))
+        (jsexpr? (string->jsexpr  "1e400"))
+        (jsexpr? (string->jsexpr "-1e400"))
+        (jsexpr? (/  1.0 0.0))
+        (jsexpr? (/ -1.0 0.0))
         (not (jsexpr? (/ 0.0 0.0)))
-        (not (jsexpr? +inf.0))
-        (not (jsexpr? -inf.0))
+        (jsexpr? +inf.0)
+        (jsexpr? -inf.0)
         (not (jsexpr? +nan.0))
-        (not (jsexpr? +inf.f))
-        (not (jsexpr? -inf.f))
+        (jsexpr? +inf.f)
+        (jsexpr? -inf.f)
         (not (jsexpr? +nan.f))
         )
   ;; other `null' values
   (parameterize ([json-null #\null])
     (test (not (jsexpr? '(1 "2" (3) #t #f null)))
           (jsexpr? '(1 "2" (3) #t #f #\null))
-          )))
+          ))
+  ;; other `inf' values
+  (parameterize ([json-inf+ "+inf"]
+                 [json-inf- "-inf"])
+    (test (not (jsexpr? '(1 "2" (3) #t #f +inf.0 -inf.0 +inf.f -inf.f)))
+          (jsexpr? '(1 "2" (3) #t #f null "+inf" "-inf"))
+          ))
+  )
 
 (define (print-tests)
-  (for ([x (list 0 1 -1 12345 0.0 1.0 #t #f (λ (n) n) "" "abc" "abc\n\\"
-                 '() '(1 2 3) (λ (n) `(1 "2" (3) #t #f ,n)) '((((()))))
+  (for ([x (list 0 1 -1 12345 0.0 1.0 #t #f
+                 (λ (null inf+ inf-) null)
+                 (λ (null inf+ inf-) inf+)
+                 (λ (null inf+ inf-) inf-)
+                 "" "abc" "abc\n\\"
+                 '() '(1 2 3) (λ (null inf+ inf-) `(1 "2" (3) #t #f ,null ,inf+ ,inf-)) '((((()))))
                  '#hasheq()
                  '#hasheq([x . 1])
                  '#hasheq([x . 1] [y . 2])
@@ -67,17 +80,26 @@
                  "\b" "\n" "\r" "\f" "\t"         ; same escapes in both
                  "\a" "\v" "\e"                   ; does not use racket escapes
                  )])
-    (define (N x null) (if (procedure? x) (x null) x))
+    (define (N x
+               #:null [null 'null]
+               #:inf+ [inf+ "+inf.0"]
+               #:inf- [inf- "-inf.0"])
+      (if (procedure? x) (x null inf+ inf-) x))
     (test
      ;; default
-     (string->jsexpr (jsexpr->string (N x 'null)))
-     => (N x 'null)
+     (string->jsexpr (jsexpr->string (N x)))
+     => (N x)
      ;; different null
-     (string->jsexpr (jsexpr->string (N x #\null) #:null #\null) #:null #\null)
-     => (N x #\null)
+     (string->jsexpr (jsexpr->string (N x #:null #\null) #:null #\null) #:null #\null)
+     => (N x #:null #\null)
+     ;; different inf
+     (string->jsexpr (jsexpr->string (N x #:inf+ "+inf") #:inf+ "+inf") #:inf+ "+inf")
+     => (N x #:inf+ "+inf")
+     (string->jsexpr (jsexpr->string (N x #:inf- "-inf") #:inf- "-inf") #:inf- "-inf")
+     => (N x #:inf- "-inf")
      ;; encode all non-ascii
-     (string->jsexpr (jsexpr->string (N x 'null) #:encode 'all))
-     => (N x 'null)))
+     (string->jsexpr (jsexpr->string (N x) #:encode 'all))
+     => (N x)))
   ;; also test some specific expected encodings
   (test (jsexpr->string "\0\1\2\3") => "\"\\u0000\\u0001\\u0002\\u0003\""
         (jsexpr->string "\b\n\r\f\t\\\"") => "\"\\b\\n\\r\\f\\t\\\\\\\"\""
@@ -146,7 +168,7 @@
         (string->jsexpr @T{ "\ud834\udd1e" }) => "\U1d11e"
 	;; INPUT PORT is optional
 	(with-input-from-string "[]" read-json)
-	=> (parameterize ((json-null '())) (json-null))
+	=> (parameterize ([json-null '()]) (json-null))
         ;; EOF detection
         (for/list ([je (in-port read-json
                                 (open-input-string

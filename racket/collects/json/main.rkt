@@ -26,45 +26,60 @@
 
 (provide
  ;; Parameter
- json-null ;; Parameter
+ json-null
+ json-inf+
+ json-inf-
 
  ;; Any -> Boolean
  jsexpr?
 
  (contract-out
   [write-json
-   (->* (any/c) ;; jsexpr? but dependent on #:null arg
+   (->* (any/c) ;; jsexpr? but dependent on #:null, #:inf+ and #:inf- args
         (output-port? ;; (current-output-port)
          #:null any/c ;; (json-null)
+         #:inf+ any/c ;; (json-inf+)
+         #:inf- any/c ;; (json-inf-)
          #:encode (or/c 'control 'all) ;; 'control
          #:format? boolean?
          #:indent string?)
         any)]
   [read-json
    (->* ()
-        (input-port? #:null any/c) ;; (json-null)
+        (input-port?
+         #:null any/c  ;; (json-null)
+         #:inf+ any/c  ;; (json-inf+)
+         #:inf- any/c) ;; (json-inf-)
         any)] ;; jsexpr?
   [jsexpr->string
-   (->* (any/c) ;; jsexpr? but dependent on #:null arg
+   (->* (any/c) ;; jsexpr? but dependent on #:null, #:inf+ and #:inf- args
         (#:null any/c ;; (json-null)
+         #:inf+ any/c ;; (json-inf+)
+         #:inf- any/c ;; (json-inf-)
          #:encode (or/c 'control 'all) ;; 'control
          #:format? boolean?
          #:indent string?)
         any)] ;; string?
   [jsexpr->bytes
-   (->* (any/c) ;; jsexpr? but dependent on #:null arg
+   (->* (any/c) ;; jsexpr? but dependent on #:null, #:inf+ and #:inf- args
         (#:null any/c ;; (json-null)
+         #:inf+ any/c ;; (json-inf+)
+         #:inf- any/c ;; (json-inf-)
          #:encode (or/c 'control 'all) ;; 'control
          #:format? boolean?
          #:indent string?)
         any)] ;; bytes?
   [string->jsexpr
    (->* (string?)
-        (#:null any/c) ;; (json-null)
+        (#:null any/c  ;; (json-null)
+         #:inf+ any/c  ;; (json-inf+)
+         #:inf- any/c) ;; (json-inf-)
         any)] ;; jsexpr?
   [bytes->jsexpr
    (->* (bytes?)
-        (#:null any/c) ;; (json-null)
+        (#:null any/c  ;; (json-null)
+         #:inf+ any/c  ;; (json-inf+)
+         #:inf- any/c) ;; (json-inf-)
         any)] ;; jsexpr?
   ))
 
@@ -74,33 +89,52 @@
 ;; The default translation for a JSON `null' value
 (define json-null (make-parameter 'null))
 
+;; The default translation for a Racket `+inf.0' value
+(define json-inf+ (make-parameter +inf.0))
+
+;; The default translation for a Racket `-inf.0' value
+(define json-inf- (make-parameter -inf.0))
+
 ;; -----------------------------------------------------------------------------
 ;; PREDICATE
 
-(define (jsexpr? x #:null [jsnull (json-null)])
+(define (jsexpr? x
+                 #:null [jsnull (json-null)]
+                 #:inf+ [jsinf+ (json-inf+)]
+                 #:inf- [jsinf- (json-inf-)])
   (let loop ([x x])
-    (or (json-number? x)
-        (boolean? x)
+    (or (boolean? x)
         (string? x)
-        (eq? x jsnull)
         (and (list? x) (andmap loop x))
         (and (hash? x) (for/and ([(k v) (in-hash x)])
-                         (and (symbol? k) (loop v)))))))
+                         (and (symbol? k) (loop v))))
+        (json-null?   x #:null jsnull)
+        (json-number? x #:inf+ jsinf+ #:inf- jsinf-))))
 
-(define json-number? ; not nan or inf
-  (or/c exact-integer? (and/c inexact-real? rational?)))
+(define (json-number? x ; not nan
+                      #:inf+ [jsinf+ (json-inf+)]
+                      #:inf- [jsinf- (json-inf-)])
+  (or (exact-integer? x)
+      (and (inexact-real? x)
+           (rational? x))
+      (eqv? x jsinf+)
+      (eqv? x jsinf-)))
+
+(define (json-null? x #:null [jsnull (json-null)]) (eq? x jsnull))
 
 ;; -----------------------------------------------------------------------------
 ;; GENERATION  (from Racket to JSON)
 
 (define (write-json x [o (current-output-port)]
                     #:null [jsnull (json-null)]
+                    #:inf+ [jsinf+ (json-inf+)]
+                    #:inf- [jsinf- (json-inf-)]
                     #:encode [enc 'control]
                     #:format? [format? #f]
                     #:indent [indent "\t"])
-  (write-json* 'write-json x o jsnull enc format? indent))
+  (write-json* 'write-json x o jsnull jsinf+ jsinf- enc format? indent))
 
-(define (write-json* who x o jsnull enc format? indent)
+(define (write-json* who x o jsnull jsinf+ jsinf- enc format? indent)
   (define (escape m)
     (define ch (string-ref m 0))
     (case ch
@@ -147,10 +181,10 @@
       (for ([i (in-range layer)])
         (write-string indent o))))
   (let loop ([x x] [layer 0])
-    (cond [(json-number? x) (write x o)]
-          [(eq? x #f)     (write-bytes #"false" o)]
-          [(eq? x #t)     (write-bytes #"true" o)]
-          [(eq? x jsnull) (write-bytes #"null" o)]
+    (cond [(json-null?   x #:null jsnull) (write-bytes #"null" o)]
+          [(json-number? x #:inf+ jsinf+ #:inf- jsinf-) (write x o)]
+          [(eq? x #f) (write-bytes #"false" o)]
+          [(eq? x #t) (write-bytes #"true"  o)]
           [(string? x) (write-json-string x)]
           [(list? x)
            (write-bytes #"[" o)
@@ -222,10 +256,13 @@
 ;; -----------------------------------------------------------------------------
 ;; PARSING (from JSON to Racket)
 
-(define (read-json [i (current-input-port)] #:null [jsnull (json-null)])
-  (read-json* 'read-json i jsnull))
+(define (read-json [i (current-input-port)]
+                   #:null [jsnull (json-null)]
+                   #:inf+ [jsinf+ (json-inf+)]
+                   #:inf- [jsinf- (json-inf-)])
+  (read-json* 'read-json i jsnull jsinf+ jsinf-))
 
-(define (read-json* who i jsnull)
+(define (read-json* who i jsnull jsinf+ jsinf-)
   ;; Follows the specification (eg, at json.org) -- no extensions.
   ;;
   (define (err fmt . args)
@@ -431,8 +468,8 @@
         [(> result-exp 400)
          (cond
            [(= n 0) 0.0]
-           [(> n 0) +inf.0]
-           [(< n 0) -inf.0])]
+           [(> n 0) jsinf+]
+           [(< n 0) jsinf-])]
         [else
          (exact->inexact (* n (expt 10 exp)))]))
     ;; used to reconstruct input for error reporting:
@@ -568,26 +605,36 @@
 
 (define (jsexpr->string x
                         #:null [jsnull (json-null)]
+                        #:inf+ [jsinf+ (json-inf+)]
+                        #:inf- [jsinf- (json-inf-)]
                         #:encode [enc 'control]
                         #:format? [format? #f]
                         #:indent [indent "\t"])
   (define o (open-output-string))
-  (write-json* 'jsexpr->string x o jsnull enc format? indent)
+  (write-json* 'jsexpr->string x o jsnull jsinf+ jsinf- enc format? indent)
   (get-output-string o))
 
 (define (jsexpr->bytes x
                        #:null [jsnull (json-null)]
+                       #:inf+ [jsinf+ (json-inf+)]
+                       #:inf- [jsinf- (json-inf-)]
                        #:encode [enc 'control]
                        #:format? [format? #f]
                        #:indent [indent "\t"])
   (define o (open-output-bytes))
-  (write-json* 'jsexpr->bytes x o jsnull enc format? indent)
+  (write-json* 'jsexpr->bytes x o jsnull jsinf+ jsinf- enc format? indent)
   (get-output-bytes o))
 
-(define (string->jsexpr str #:null [jsnull (json-null)])
+(define (string->jsexpr str
+                        #:null [jsnull (json-null)]
+                        #:inf+ [jsinf+ (json-inf+)]
+                        #:inf- [jsinf- (json-inf-)])
   ;; str is protected by contract
-  (read-json* 'string->jsexpr (open-input-string str) jsnull))
+  (read-json* 'string->jsexpr (open-input-string str) jsnull jsinf+ jsinf-))
 
-(define (bytes->jsexpr bs #:null [jsnull (json-null)])
+(define (bytes->jsexpr bs
+                       #:null [jsnull (json-null)]
+                       #:inf+ [jsinf+ (json-inf+)]
+                       #:inf- [jsinf- (json-inf-)])
   ;; bs is protected by contract
-  (read-json* 'bytes->jsexpr (open-input-bytes bs) jsnull))
+  (read-json* 'bytes->jsexpr (open-input-bytes bs) jsnull jsinf+ jsinf-))
