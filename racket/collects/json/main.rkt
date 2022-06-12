@@ -26,6 +26,7 @@
 
 (provide
  ;; Parameter
+ json-mhash?
  json-null
  json-inf+
  json-inf-
@@ -85,6 +86,8 @@
 
 ;; -----------------------------------------------------------------------------
 ;; CUSTOMIZATION
+
+(define json-mhash? (make-parameter #f))
 
 ;; The default translation for a JSON `null' value
 (define json-null (make-parameter 'null))
@@ -418,8 +421,13 @@
         (err "error while parsing a json object pair"))
       (read-byte i)
       (cons (string->symbol k) (read-json)))
-    (for/hasheq ([p (in-list (read-list 'object #\} read-pair))])
-      (values (car p) (cdr p))))
+    (if (json-mhash?)
+        (let ([result (make-hasheq)])
+          (for ([p (in-list (read-list 'object #\} read-pair))])
+            (hash-set! result (car p) (cdr p)))
+          result)
+        (for/hasheq ([p (in-list (read-list 'object #\} read-pair))])
+          (values (car p) (cdr p)))))
   ;;
   (define (read-literal bstr)
     (define len (bytes-length bstr))
