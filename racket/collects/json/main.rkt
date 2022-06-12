@@ -10,8 +10,9 @@
 ;; -----------------------------------------------------------------------------
 ;; DEPENDENCIES
 
-;; racket/contract must come before provide
 (require syntax/readerr
+         racket/list
+         ;; racket/contract must come before provide
          racket/contract)
 
 ;; tests in:
@@ -158,24 +159,33 @@
            (when (pair? x)
              (cond
                [(<= (length x) 10)
-                (loop (car x) layer)
-                (for ([x (in-list (cdr x))])
-                  (write-bytes #"," o)
-                  (unless (hash? x)
-                    (format/write-whitespace))
-                  (loop x layer))]
-               [else
                 (let ([layer (add1 layer)])
                   (let ([x (car x)])
-                    (unless (hash? x)
+                    (when (hash? x)
                       (format/write-newline)
                       (format/write-indent layer))
                     (loop x layer))
                   (for ([x (in-list (cdr x))])
                     (write-bytes #"," o)
-                    (unless (hash? x)
-                      (format/write-newline)
-                      (format/write-indent layer))
+                    (if (hash? x)
+                        (begin
+                          (format/write-newline)
+                          (format/write-indent layer))
+                        (format/write-whitespace))
+                    (loop x layer)))
+                (when (hash? (car (last-pair x)))
+                  (format/write-newline)
+                  (format/write-indent layer))]
+               [else
+                (let ([layer (add1 layer)])
+                  (let ([x (car x)])
+                    (format/write-newline)
+                    (format/write-indent layer)
+                    (loop x layer))
+                  (for ([x (in-list (cdr x))])
+                    (write-bytes #"," o)
+                    (format/write-newline)
+                    (format/write-indent layer)
                     (loop x layer)))
                 (format/write-newline)
                 (format/write-indent layer)]))
@@ -193,15 +203,18 @@
                ;; `rx-to-encode'
                (write-json-string (symbol->string k))
                (write-bytes #":" o)
-               (unless (hash? v)
-                 (format/write-whitespace))
+               (if (hash? v)
+                   (begin
+                     (format/write-newline)
+                     (format/write-indent layer))
+                   (format/write-whitespace))
                (loop v layer)))
-           (when (> layer 0) (format/write-newline))
-           (format/write-indent layer)
+
            (write-bytes #"{" o)
-           (hash-for-each x (write-hash-kv (add1 layer))
-            ;; order output
-            #t)
+           (let ([layer (add1 layer)])
+             (hash-for-each x (write-hash-kv layer)
+                            ;; order output
+                            #t))
            (format/write-newline)
            (format/write-indent layer)
            (write-bytes #"}" o)]
