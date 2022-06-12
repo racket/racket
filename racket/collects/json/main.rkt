@@ -98,24 +98,22 @@
                  #:inf+ [jsinf+ +inf.0]
                  #:inf- [jsinf- -inf.0])
   (let loop ([x x])
-    (or (boolean? x)
+    (or (json-null? x #:null jsnull)
+        (json-inf?  x #:inf+ jsinf+ #:inf- jsinf-)
+        (json-number? x)
+        (boolean? x)
         (string? x)
         (and (list? x) (andmap loop x))
         (and (hash? x) (for/and ([(k v) (in-hash x)])
-                         (and (symbol? k) (loop v))))
-        (json-null?   x #:null jsnull)
-        (json-number? x #:inf+ jsinf+ #:inf- jsinf-))))
-
-(define (json-number? x ; not nan
-                      #:inf+ [jsinf+ +inf.0]
-                      #:inf- [jsinf- -inf.0])
-  (or (exact-integer? x)
-      (and (inexact-real? x)
-           (rational? x))
-      (eqv? x jsinf+)
-      (eqv? x jsinf-)))
+                         (and (symbol? k) (loop v)))))))
 
 (define (json-null? x #:null [jsnull (json-null)]) (eq? x jsnull))
+
+(define (json-inf? x #:inf+ [jsinf+ +inf.0] #:inf- [jsinf- -inf.0])
+  (or (eqv? x jsinf+) (eqv? x jsinf-)))
+
+(define json-number? ; not nan or inf
+  (or/c exact-integer? (and/c inexact-real? rational?)))
 
 ;; -----------------------------------------------------------------------------
 ;; GENERATION  (from Racket to JSON)
@@ -176,10 +174,10 @@
       (for ([i (in-range layer)])
         (write-string indent o))))
   (let loop ([x x] [layer 0])
-    (cond [(json-null?   x #:null jsnull) (write-bytes #"null" o)]
-          [(json-number? x #:inf+ jsinf+ #:inf- jsinf-) (write x o)]
+    (cond [(json-number? x) (write x o)]
           [(eq? x #f) (write-bytes #"false" o)]
           [(eq? x #t) (write-bytes #"true"  o)]
+          [(json-null? x #:null jsnull) (write-bytes #"null" o)]
           [(string? x) (write-json-string x)]
           [(list? x)
            (write-bytes #"[" o)
@@ -245,6 +243,7 @@
            (format/write-newline)
            (format/write-indent layer)
            (write-bytes #"}" o)]
+          [(json-inf? x #:inf+ jsinf+ #:inf- jsinf-) (write x o)]
           [else (raise-type-error who "legal JSON value" x)]))
   (void))
 

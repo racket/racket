@@ -98,6 +98,11 @@
      ;; encode all non-ascii
      (string->jsexpr (jsexpr->string (N x) #:encode 'all))
      => (N x)))
+  ;; test null and inf
+  (test (string->jsexpr "[]" #:null '() #:inf- '() #:inf+ '()) => '())
+  (test (jsexpr->string '() #:null '()) => "null")
+  (test (jsexpr->string '() #:inf+ '()) => "[]")
+  (test (jsexpr->string '() #:inf- '()) => "[]")
   ;; also test some specific expected encodings
   (test (jsexpr->string "\0\1\2\3") => "\"\\u0000\\u0001\\u0002\\u0003\""
         (jsexpr->string "\b\n\r\f\t\\\"") => "\"\\b\\n\\r\\f\\t\\\\\\\"\""
