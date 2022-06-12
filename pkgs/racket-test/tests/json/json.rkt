@@ -56,11 +56,9 @@
           (jsexpr? '(1 "2" (3) #t #f #\null))
           ))
   ;; other `inf' values
-  (parameterize ([json-inf+ "+inf"]
-                 [json-inf- "-inf"])
-    (test (not (jsexpr? '(1 "2" (3) #t #f +inf.0 -inf.0 +inf.f -inf.f)))
-          (jsexpr? '(1 "2" (3) #t #f null "+inf" "-inf"))
-          ))
+  (test (not (jsexpr? '(1 "2" (3) #t #f +inf.0 -inf.0 +inf.f -inf.f) #:inf+ "+inf" #:inf- "-inf"))
+        (jsexpr? '(1 "2" (3) #t #f null "+inf" "-inf") #:inf+ "+inf" #:inf- "-inf")
+        )
   )
 
 (define (print-tests)

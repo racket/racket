@@ -26,10 +26,7 @@
 
 (provide
  ;; Parameter
- json-mhash?
  json-null
- json-inf+
- json-inf-
 
  ;; Any -> Boolean
  jsexpr?
@@ -39,8 +36,8 @@
    (->* (any/c) ;; jsexpr? but dependent on #:null, #:inf+ and #:inf- args
         (output-port? ;; (current-output-port)
          #:null any/c ;; (json-null)
-         #:inf+ any/c ;; (json-inf+)
-         #:inf- any/c ;; (json-inf-)
+         #:inf+ any/c ;; +inf.0
+         #:inf- any/c ;; -inf.0
          #:encode (or/c 'control 'all) ;; 'control
          #:format? boolean?
          #:indent string?)
@@ -48,16 +45,16 @@
   [read-json
    (->* ()
         (input-port?
-         #:mhash? boolean? ;; (json-mhash?)
+         #:mhash? boolean? ;; #f
          #:null any/c  ;; (json-null)
-         #:inf+ any/c  ;; (json-inf+)
-         #:inf- any/c) ;; (json-inf-)
+         #:inf+ any/c  ;; +inf.0
+         #:inf- any/c) ;; -inf.0
         any)] ;; jsexpr?
   [jsexpr->string
    (->* (any/c) ;; jsexpr? but dependent on #:null, #:inf+ and #:inf- args
         (#:null any/c ;; (json-null)
-         #:inf+ any/c ;; (json-inf+)
-         #:inf- any/c ;; (json-inf-)
+         #:inf+ any/c ;; +inf.0
+         #:inf- any/c ;; -inf.0
          #:encode (or/c 'control 'all) ;; 'control
          #:format? boolean?
          #:indent string?)
@@ -65,49 +62,41 @@
   [jsexpr->bytes
    (->* (any/c) ;; jsexpr? but dependent on #:null, #:inf+ and #:inf- args
         (#:null any/c ;; (json-null)
-         #:inf+ any/c ;; (json-inf+)
-         #:inf- any/c ;; (json-inf-)
+         #:inf+ any/c ;; +inf.0
+         #:inf- any/c ;; -inf.0
          #:encode (or/c 'control 'all) ;; 'control
          #:format? boolean?
          #:indent string?)
         any)] ;; bytes?
   [string->jsexpr
    (->* (string?)
-        (#:mhash? boolean? ;; (json-mhash?)
+        (#:mhash? boolean? ;; #f
          #:null any/c  ;; (json-null)
-         #:inf+ any/c  ;; (json-inf+)
-         #:inf- any/c) ;; (json-inf-)
+         #:inf+ any/c  ;; +inf.0
+         #:inf- any/c) ;; -inf.0
         any)] ;; jsexpr?
   [bytes->jsexpr
    (->* (bytes?)
-        (#:mhash? boolean? ;; (json-mhash?)
+        (#:mhash? boolean? ;; #f
          #:null any/c  ;; (json-null)
-         #:inf+ any/c  ;; (json-inf+)
-         #:inf- any/c) ;; (json-inf-)
+         #:inf+ any/c  ;; +inf.0
+         #:inf- any/c) ;; -inf.0
         any)] ;; jsexpr?
   ))
 
 ;; -----------------------------------------------------------------------------
 ;; CUSTOMIZATION
 
-(define json-mhash? (make-parameter #f))
-
 ;; The default translation for a JSON `null' value
 (define json-null (make-parameter 'null))
-
-;; The default translation for a Racket `+inf.0' value
-(define json-inf+ (make-parameter +inf.0))
-
-;; The default translation for a Racket `-inf.0' value
-(define json-inf- (make-parameter -inf.0))
 
 ;; -----------------------------------------------------------------------------
 ;; PREDICATE
 
 (define (jsexpr? x
                  #:null [jsnull (json-null)]
-                 #:inf+ [jsinf+ (json-inf+)]
-                 #:inf- [jsinf- (json-inf-)])
+                 #:inf+ [jsinf+ +inf.0]
+                 #:inf- [jsinf- -inf.0])
   (let loop ([x x])
     (or (boolean? x)
         (string? x)
@@ -118,8 +107,8 @@
         (json-number? x #:inf+ jsinf+ #:inf- jsinf-))))
 
 (define (json-number? x ; not nan
-                      #:inf+ [jsinf+ (json-inf+)]
-                      #:inf- [jsinf- (json-inf-)])
+                      #:inf+ [jsinf+ +inf.0]
+                      #:inf- [jsinf- -inf.0])
   (or (exact-integer? x)
       (and (inexact-real? x)
            (rational? x))
@@ -133,8 +122,8 @@
 
 (define (write-json x [o (current-output-port)]
                     #:null [jsnull (json-null)]
-                    #:inf+ [jsinf+ (json-inf+)]
-                    #:inf- [jsinf- (json-inf-)]
+                    #:inf+ [jsinf+ +inf.0]
+                    #:inf- [jsinf- -inf.0]
                     #:encode [enc 'control]
                     #:format? [format? #f]
                     #:indent [indent "\t"])
@@ -263,10 +252,10 @@
 ;; PARSING (from JSON to Racket)
 
 (define (read-json [i (current-input-port)]
-                   #:mhash? [jsmhash? (json-mhash?)]
+                   #:mhash? [jsmhash? #f]
                    #:null [jsnull (json-null)]
-                   #:inf+ [jsinf+ (json-inf+)]
-                   #:inf- [jsinf- (json-inf-)])
+                   #:inf+ [jsinf+ +inf.0]
+                   #:inf- [jsinf- -inf.0])
   (read-json* 'read-json i jsmhash? jsnull jsinf+ jsinf-))
 
 (define (read-json* who i jsmhash? jsnull jsinf+ jsinf-)
@@ -617,8 +606,8 @@
 
 (define (jsexpr->string x
                         #:null [jsnull (json-null)]
-                        #:inf+ [jsinf+ (json-inf+)]
-                        #:inf- [jsinf- (json-inf-)]
+                        #:inf+ [jsinf+ +inf.0]
+                        #:inf- [jsinf- -inf.0]
                         #:encode [enc 'control]
                         #:format? [format? #f]
                         #:indent [indent "\t"])
@@ -628,8 +617,8 @@
 
 (define (jsexpr->bytes x
                        #:null [jsnull (json-null)]
-                       #:inf+ [jsinf+ (json-inf+)]
-                       #:inf- [jsinf- (json-inf-)]
+                       #:inf+ [jsinf+ +inf.0]
+                       #:inf- [jsinf- -inf.0]
                        #:encode [enc 'control]
                        #:format? [format? #f]
                        #:indent [indent "\t"])
@@ -638,17 +627,17 @@
   (get-output-bytes o))
 
 (define (string->jsexpr str
-                        #:mhash? [jsmhash? (json-mhash?)]
+                        #:mhash? [jsmhash? #f]
                         #:null [jsnull (json-null)]
-                        #:inf+ [jsinf+ (json-inf+)]
-                        #:inf- [jsinf- (json-inf-)])
+                        #:inf+ [jsinf+ +inf.0]
+                        #:inf- [jsinf- -inf.0])
   ;; str is protected by contract
   (read-json* 'string->jsexpr (open-input-string str) jsmhash? jsnull jsinf+ jsinf-))
 
 (define (bytes->jsexpr bs
-                       #:mhash? [jsmhash? (json-mhash?)]
+                       #:mhash? [jsmhash? #f]
                        #:null [jsnull (json-null)]
-                       #:inf+ [jsinf+ (json-inf+)]
-                       #:inf- [jsinf- (json-inf-)])
+                       #:inf+ [jsinf+ +inf.0]
+                       #:inf- [jsinf- -inf.0])
   ;; bs is protected by contract
   (read-json* 'bytes->jsexpr (open-input-bytes bs) jsmhash? jsnull jsinf+ jsinf-))
