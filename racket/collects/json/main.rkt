@@ -79,8 +79,7 @@
 
 (define (jsexpr? x #:null [jsnull (json-null)])
   (let loop ([x x])
-    (or (exact-integer? x)
-        (inexact-rational? x)
+    (or (json-number? x)
         (boolean? x)
         (string? x)
         (eq? x jsnull)
@@ -88,8 +87,8 @@
         (and (hash? x) (for/and ([(k v) (in-hash x)])
                          (and (symbol? k) (loop v)))))))
 
-(define (inexact-rational? x) ; not nan or inf
-  (and (inexact-real? x) (rational? x)))
+(define json-number? ; not nan or inf
+  (or/c exact-integer? (and/c inexact-real? rational?)))
 
 ;; -----------------------------------------------------------------------------
 ;; GENERATION  (from Racket to JSON)
@@ -148,8 +147,7 @@
       (for ([i (in-range layer)])
         (write-string indent o))))
   (let loop ([x x] [layer 0])
-    (cond [(integer? x) (write (inexact->exact x) o)]
-          [(inexact-rational? x) (write x o)]
+    (cond [(json-number? x) (write x o)]
           [(eq? x #f)     (write-bytes #"false" o)]
           [(eq? x #t)     (write-bytes #"true" o)]
           [(eq? x jsnull) (write-bytes #"null" o)]
