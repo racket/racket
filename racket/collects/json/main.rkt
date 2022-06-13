@@ -462,11 +462,11 @@
             (+ (log (abs n) 10) exp)))
       (define result
         (cond
-          [(< result-exp -400)
+          [(< result-exp -323)
            (cond
              [(>= n 0) 0.0]
              [else -0.0])]
-          [(> result-exp 400)
+          [(> result-exp 308)
            (cond
              [(= n 0) 0.0]
              [(> n 0) +inf.0]
