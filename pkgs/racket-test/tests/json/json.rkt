@@ -56,7 +56,9 @@
           (jsexpr? '(1 "2" (3) #t #f #\null))
           ))
   ;; other `inf' values
-  (test (not (jsexpr? '(1 "2" (3) #t #f +inf.0 -inf.0 +inf.f -inf.f) #:inf+ "+inf" #:inf- "-inf"))
+  (test (string->jsexpr "1e400" #:inf+ "+inf") => "+inf"
+        (string->jsexpr "1e500" #:inf+ "+inf") => "+inf"
+        (not (jsexpr? '(1 "2" (3) #t #f +inf.0 -inf.0 +inf.f -inf.f) #:inf+ "+inf" #:inf- "-inf"))
         (jsexpr? '(1 "2" (3) #t #f null "+inf" "-inf") #:inf+ "+inf" #:inf- "-inf")
         )
   )

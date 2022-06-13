@@ -460,18 +460,22 @@
         (if (= n 0)
             exp
             (+ (log (abs n) 10) exp)))
+      (define result
+        (cond
+          [(< result-exp -400)
+           (cond
+             [(>= n 0) 0.0]
+             [else -0.0])]
+          [(> result-exp 400)
+           (cond
+             [(= n 0) 0.0]
+             [(> n 0) +inf.0]
+             [(< n 0) -inf.0])]
+          [else (exact->inexact (* n (expt 10 exp)))]))
       (cond
-        [(< result-exp -400)
-         (cond
-           [(>= n 0) 0.0]
-           [else -0.0])]
-        [(> result-exp 400)
-         (cond
-           [(= n 0) 0.0]
-           [(> n 0) jsinf+]
-           [(< n 0) jsinf-])]
-        [else
-         (exact->inexact (* n (expt 10 exp)))]))
+        [(eqv? +inf.0 result) jsinf+]
+        [(eqv? -inf.0 result) jsinf-]
+        [else result]))
     ;; used to reconstruct input for error reporting:
     (define (n->string n exp)
       (define s (number->string n))
@@ -570,9 +574,9 @@
        (if top?
            eof
            (bad-input))]
-      [(eqv? ch #\t) (read-literal #"true") #t]
+      [(eqv? ch #\t) (read-literal #"true")  #t]
       [(eqv? ch #\f) (read-literal #"false") #f]
-      [(eqv? ch #\n) (read-literal #"null") jsnull]
+      [(eqv? ch #\n) (read-literal #"null")  jsnull]
       [(or (and ((char->integer ch) . <= . (char->integer #\9))
                 ((char->integer ch) . >= . (char->integer #\0)))
            (eqv? ch #\-))
