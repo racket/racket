@@ -473,8 +473,8 @@
              [(< n 0) -inf.0])]
           [else (exact->inexact (* n (expt 10 exp)))]))
       (cond
-        [(eqv? +inf.0 result) jsinf+]
-        [(eqv? -inf.0 result) jsinf-]
+        [(or (eqv? +inf.0 result) (eqv? +inf.f result)) jsinf+]
+        [(or (eqv? -inf.0 result) (eqv? -inf.f result)) jsinf-]
         [else result]))
     ;; used to reconstruct input for error reporting:
     (define (n->string n exp)
