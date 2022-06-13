@@ -456,26 +456,26 @@
     ;; evaluate n * 10^exp to inexact? without passing large arguments to expt
     ;; assumes n is an integer
     (define (safe-exponential->inexact n exp)
-      (define result-exp
-        (if (= n 0)
-            exp
-            (+ (log (abs n) 10) exp)))
-      (define result
-        (cond
-          [(< result-exp -323)
-           (cond
-             [(>= n 0) 0.0]
-             [else -0.0])]
-          [(> result-exp 308)
-           (cond
-             [(= n 0) 0.0]
-             [(> n 0) +inf.0]
-             [(< n 0) -inf.0])]
-          [else (exact->inexact (* n (expt 10 exp)))]))
       (cond
-        [(or (eqv? +inf.0 result) (eqv? +inf.f result)) jsinf+]
-        [(or (eqv? -inf.0 result) (eqv? -inf.f result)) jsinf-]
-        [else result]))
+        [(zero? n) 0.0]
+        [else
+         (define result-exp
+           (if (= n 0)
+               exp
+               (+ (log (abs n) 10) exp)))
+         (define result
+           (cond
+             [(< result-exp -324)
+              (if (> n 0) 0.0 -0.0)]
+             [(> result-exp 308)
+              (cond
+                [(> n 0) +inf.0]
+                [(< n 0) -inf.0])]
+             [else (exact->inexact (* n (expt 10 exp)))]))
+         (cond
+           [(or (eqv? +inf.0 result) (eqv? +inf.f result)) jsinf+]
+           [(or (eqv? -inf.0 result) (eqv? -inf.f result)) jsinf-]
+           [else result])]))
     ;; used to reconstruct input for error reporting:
     (define (n->string n exp)
       (define s (number->string n))

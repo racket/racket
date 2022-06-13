@@ -38,6 +38,8 @@
         (not (jsexpr? '#hasheq([1 . 1])))
         (not (jsexpr? '#hasheq(["x" . 1])))
         (not (jsexpr? '#hasheq(['() . 1])))
+        (string->jsexpr "2e-324") => 0.0
+        (string->jsexpr "1e-500") => 0.0
         (jsexpr? (string->jsexpr  "1e400"))
         (jsexpr? (string->jsexpr "-1e400"))
         (jsexpr? (/  1.0 0.0))
@@ -56,8 +58,8 @@
           (jsexpr? '(1 "2" (3) #t #f #\null))
           ))
   ;; other `inf' values
-  (test (string->jsexpr "1e400" #:inf+ "+inf") => "+inf"
-        (string->jsexpr "1e500" #:inf+ "+inf") => "+inf"
+  (test (string->jsexpr "1.8e308" #:inf+ "+inf") => "+inf"
+        (string->jsexpr "1e500"   #:inf+ "+inf") => "+inf"
         (not (jsexpr? '(1 "2" (3) #t #f +inf.0 -inf.0 +inf.f -inf.f) #:inf+ "+inf" #:inf- "-inf"))
         (jsexpr? '(1 "2" (3) #t #f null "+inf" "-inf") #:inf+ "+inf" #:inf- "-inf")
         )
