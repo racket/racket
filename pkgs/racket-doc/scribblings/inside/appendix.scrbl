@@ -105,21 +105,17 @@ Some Windows linking tools, such as MinGW-w64, accept a
 the @filepath{.dll}. Other tools, such as Microsoft Visual Studio,
 need a @filepath{.lib} stub library to describe the @filepath{.dll}
 that will be used. The Racket distribution does not include
-@filepath{.lib} stub libraries, but various tools exist to generate
-one from a @filepath{.dll}.
+@filepath{.lib} stub libraries, but various tools exist to generate a
+@filepath{.lib} file from a @filepath{.dll} and @filepath{.def} file
+that is included in a racket distribution.
 
 To create a @filepath{@italic{x}.lib} using Microsoft Visual Studio
 tools (to link with @filepath{@italic{x}.dll}):
 
 @itemlist[
 
- @item{Create a file @filepath{@italic{x}.def} using the same
+ @item{Locate the file @filepath{@italic{x}.def} using the same
        base name @italic{x} as in @filepath{@italic{x}.dll}.}
-
- @item{In @filepath{@italic{x}.def}, make the first line
-       @litchar{EXPORTS}, and then write the name of each function
-       that you need to reference from @filepath{@italic{x}.dll} on
-       its own line in @filepath{@italic{x}.def}.}
 
   @item{Generate @filepath{@italic{x}.lib} with this command:
 
