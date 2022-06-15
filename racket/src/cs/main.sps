@@ -21,6 +21,7 @@
                executable-yield-handler
                load-on-demand-enabled
                use-user-specific-search-paths
+               use-compiled-file-check
                eval
                read
                load
@@ -83,12 +84,15 @@
    (define (getenv-bytes str)
      (environment-variables-ref (current-environment-variables) (string->utf8 str)))
 
-   (define (startup-error fmt . args)
+   (define (startup-warning fmt . args)
      (#%fprintf (#%current-error-port) "~a: " (path->string (find-system-path 'exec-file)))
      (if (null? args)
          (#%display fmt (#%current-error-port))
          (#%apply #%fprintf (#%current-error-port) fmt args))
-     (#%newline (#%current-error-port))
+     (#%newline (#%current-error-port)))
+
+   (define (startup-error fmt . args)
+     (apply startup-warning fmt args)
      (exit 1))
 
    (define builtin-argc 11)
@@ -164,6 +168,19 @@
                                       (machine-type)))
    (define compiled-roots-path-list-string (getenv "PLTCOMPILEDROOTS"))
    (define embedded-load-in-places '())
+
+   (define init-compiled-file-check (let ([s (getenv "PLT_COMPILED_FILE_CHECK")])
+                                      (cond
+                                        [(not s) (use-compiled-file-check)]
+                                        [(string=? s "modify-seconds") 'modify-seconds]
+                                        [(string=? s "exists") 'exists]
+                                        [else
+                                         (startup-warning
+                                          (string-append "unrecognized value for PLT_COMPILED_FILE_CHECK;\n"
+                                                         " recognized values are \"modify-seconds\" and \"exists\"\n"
+                                                         "  unrecognized value: ~s")
+                                          s)
+                                         (use-compiled-file-check)])))
 
    (define (see saw . args)
      (let loop ([saw saw] [args args])
@@ -764,6 +781,7 @@
      (load-on-demand-enabled load-on-demand?)
      (unless (eq? compile-target-machine (machine-type))
        (current-compile-target-machine compile-target-machine))
+     (use-compiled-file-check init-compiled-file-check)
      (boot)
      (when (and stderr-logging
                 (not (null? stderr-logging)))
