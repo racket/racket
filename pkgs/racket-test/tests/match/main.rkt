@@ -256,7 +256,10 @@
                     [_ #f]))
      (check-equal? (match '((1 1 2 3) (2 1 2 3) (3 1 2 3))
                      [(list (cons a (list pre ... a post ...)) ...) (list a pre post)])
-                   '((1 2 3) (() (1) (1 2)) ((2 3) (3) ()))))))
+                   '((1 2 3) (() (1) (1 2)) ((2 3) (3) ())))
+     (check-equal? (match '((1 1 2 3) (2 1 2 3) (3 1 2 3))
+                     [(list (cons a (list-no-order a rst ...)) ...) (list a rst)])
+                   '((1 2 3) ((2 3) (1 3) (1 2)))))))
 
 
 (define doc-tests

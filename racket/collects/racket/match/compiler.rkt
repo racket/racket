@@ -198,7 +198,6 @@
      (let ([transform
             (lambda (row)
               (define-values (p ps) (Row-split-pats row))
-              (define v (Var-v p))
               (define seen (Row-vars-seen row))
               ;; a new row with the rest of the patterns
               (cond
@@ -207,25 +206,29 @@
                                       (Row-rhs row)
                                       (Row-unmatch row)
                                       (Row-vars-seen row))]
-                ;; if we've seen this variable before, check that it's equal to
-                ;; the one we saw
-                [(find-seen v seen)
-                 =>
-                 (lambda (id)
-                   (make-Row ps
-                             #`(if ((match-equality-test) #,x #,id)
-                                   #,(Row-rhs row)
-                                   (fail))
-                             (Row-unmatch row)
-                             seen))]
-                ;; otherwise, bind the matched variable to x, and add it to the
-                ;; list of vars we've seen
-                [else (let ([v* (free-identifier-mapping-get
-                                 (current-renaming) v (lambda () v))])
-                        (make-Row ps
-                                  #`(let ([#,v* #,x]) #,(Row-rhs row))
-                                  (Row-unmatch row)
-                                  (cons (cons v x) (Row-vars-seen row))))]))])
+                [else
+                 (define v (Var-v p))
+                 (define v*
+                   (free-identifier-mapping-get
+                    (current-renaming) v (lambda () v)))
+                 (cond
+                   ;; if we've seen this variable before, check that it's equal to
+                   ;; the one we saw
+                   [(find-seen v* seen)
+                    =>
+                    (lambda (id)
+                      (make-Row ps
+                                #`(if ((match-equality-test) #,x #,id)
+                                      #,(Row-rhs row)
+                                      (fail))
+                                (Row-unmatch row)
+                                seen))]
+                   ;; otherwise, bind the matched variable to x, and add it to the
+                   ;; list of vars we've seen
+                   [else (make-Row ps
+                                   #`(let ([#,v* #,x]) #,(Row-rhs row))
+                                   (Row-unmatch row)
+                                   (cons (cons v* x) (Row-vars-seen row)))])]))])
        ;; compile the transformed block
        (compile* xs (map transform block) esc))]
     ;; the Constructor rule
@@ -437,7 +440,8 @@
                            (for/fold ([ht (copy-mapping (current-renaming))])
                                ([id (apply append head-idss)]
                                 [id* (apply append head-idss*)]
-                                #:unless (member id (map car prev-seen)))
+                                #:unless
+                                (member id (map car prev-seen) free-identifier=?))
                              (free-identifier-mapping-put! ht id id*)
                              (free-identifier-mapping-for-each
                               ht
