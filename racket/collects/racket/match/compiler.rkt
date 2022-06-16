@@ -209,27 +209,15 @@
                                       (Row-vars-seen row))]
                 ;; if we've seen this variable before, check that it's equal to
                 ;; the one we saw
-                [(for/or ([e (in-list seen)])
-                   (let ([v* (car e)] [id (cdr e)])
-                     (and (bound-identifier=? v v*) (or id (list v v*)))))
+                [(find-seen v seen)
                  =>
                  (lambda (id)
-                   (if (identifier? id)
-                       (make-Row ps
-                                 #`(if ((match-equality-test) #,x #,id)
-                                       #,(Row-rhs row)
-                                       (fail))
-                                 (Row-unmatch row)
-                                 seen)
-                       (begin
-                         (log-error "non-linear pattern used in `match` with ... at ~a and ~a"
-                                    (car id) (cadr id)) 
-                         (let ([v* (free-identifier-mapping-get
-                                    (current-renaming) v (lambda () v))])
-                           (make-Row ps
-                                     #`(let ([#,v* #,x]) #,(Row-rhs row))
-                                     (Row-unmatch row)
-                                     (cons (cons v x) (Row-vars-seen row)))))))]
+                   (make-Row ps
+                             #`(if ((match-equality-test) #,x #,id)
+                                   #,(Row-rhs row)
+                                   (fail))
+                             (Row-unmatch row)
+                             seen))]
                 ;; otherwise, bind the matched variable to x, and add it to the
                 ;; list of vars we've seen
                 [else (let ([v* (free-identifier-mapping-get
@@ -378,6 +366,7 @@
             [mutable? (GSeq-mutable? first)]
             [make-Pair (if mutable? make-MPair make-Pair)]
             [k (Row-rhs (car block))]
+            [prev-seen (Row-vars-seen (car block))]
             [xvar (car (generate-temporaries (list #'x)))]
             [complete-heads-pattern
              (lambda (ps)
@@ -399,7 +388,7 @@
              (map (lambda (x) (cons x x))
                   (bound-vars tail))]
             [hid-argss (map generate-temporaries head-idss)]
-            [head-idss* (map generate-temporaries head-idss)]
+            [head-idss* (map (generate-temporaries/seen prev-seen) head-idss)]
             [hid-args (apply append hid-argss)]
             [reps (generate-temporaries (for/list ([head heads]) 'rep))])
        (with-syntax ([x xvar]
@@ -442,13 +431,13 @@
                                                       (append
                                                        heads-seen
                                                        tail-seen
-                                                       (Row-vars-seen
-                                                        (car block)))))
+                                                       prev-seen)))
                                       #'fail-tail))])])
            (parameterize ([current-renaming
                            (for/fold ([ht (copy-mapping (current-renaming))])
                                ([id (apply append head-idss)]
-                                [id* (apply append head-idss*)])
+                                [id* (apply append head-idss*)]
+                                #:unless (member id (map car prev-seen)))
                              (free-identifier-mapping-put! ht id id*)
                              (free-identifier-mapping-for-each
                               ht
@@ -475,8 +464,7 @@
                                               (Row-unmatch (car block))
                                               (append
                                                heads-seen
-                                               (Row-vars-seen
-                                                (car block))))))
+                                               prev-seen))))
                              #'failkv))))))]
     [else (error 'compile "unsupported pattern: ~a\n" first)]))
 
@@ -550,6 +538,28 @@
                               acc)))))])
       (with-syntax ([(fns ... [_ (lambda () body)]) fns])
         (let/wrap #'(fns ...) #'body)))]))
+
+;; find-seen : Id (Listof (Pairof Id (U #f Id))) -> (U #f Id)
+(define (find-seen v seen)
+  (cond
+    [(for/or ([e (in-list seen)])
+       (let ([v* (car e)] [id (cdr e)])
+         (and (bound-identifier=? v v*) (or id (list v v*)))))
+     =>
+     (lambda (id)
+       (if (identifier? id)
+           id
+           (begin
+             (log-error "non-linear pattern used in `match` with ... at ~a and ~a"
+                        (car id) (cadr id))
+             #f)))]
+    [else #f]))
+
+;; generate-temporaries/seen :
+;; (Listof (Pairof Id (U #f Id))) -> (Listof Id) -> (Listof Id)
+(define ((generate-temporaries/seen seen) vs)
+  (for/list ([v (in-list vs)])
+    (or (find-seen v seen) (generate-temporary v))))
 
 ;; (require mzlib/trace)
 ;; (trace compile* compile-one)

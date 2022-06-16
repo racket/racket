@@ -242,6 +242,10 @@
                 (check = 5 (match '((3) (3)) [(list a a) a] [_ 5]))))
    (test-case "Nonlinear patterns use equal?"
               (check equal? '(3) (match '((3) (3)) [(list a a) a] [_ 5])))
+   (test-case "Nonlinear patterns and list-no-order"
+     (check-equal? (match '(2 1 2 3)
+                     [(cons a (list-no-order a rst ...)) (list a rst)])
+                   '(2 (1 3))))
    (test-case "Nonlinear patterns under ellipses"
      (check-equal? (match '((1 1) (2 2) (3 3))
                      [(list (list a a) ...) a]
