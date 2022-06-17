@@ -1896,9 +1896,9 @@
                                           (if (and (not wrap?) combine*)
                                               (combine* e)
                                               (list (combine e))))))))))]
-        ;; Let `derived-id' complain about the missing bindings and body expression:
+        ;; Let `derived-id-stx' complain about the missing bindings and body expression:
         [(_ . rest)
-         #`(derived-id #,stx fold-bind . rest)])))
+         #`(#,derived-id-stx #,stx fold-bind . rest)])))
   
   (define-syntax define-syntax-via-derived
     (syntax-rules ()
