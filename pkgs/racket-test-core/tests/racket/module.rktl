@@ -4021,5 +4021,20 @@ case of module-leve bindings; it doesn't cover local bindings.
         (bounce 'p2)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; check that write and reading a module preserves flonum `eq?`
+
+(let ([m '(module defines-a-and-b-infinity racket/base
+            (provide a b)
+            (define a +inf.0)
+            (define b +inf.0))])
+  (define o (open-output-bytes))
+  (write (compile m) o)
+  (parameterize ([read-accept-compiled #t])
+    (eval (read (open-input-bytes (get-output-bytes o)))))
+  (test #t eq?
+        (dynamic-require ''defines-a-and-b-infinity 'a)
+        (dynamic-require ''defines-a-and-b-infinity 'b)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
