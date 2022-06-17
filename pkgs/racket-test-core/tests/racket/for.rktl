@@ -909,6 +909,7 @@
 (syntax-test #'(for*/fold ([x 42] [x 42] #:wrong-keyword 42) ([z '()]) 1)
              #rx".*for\\*/fold:.*invalid accumulator binding clause.*")
 
+(syntax-test #'(for ()) #rx".*missing body.*")
 (syntax-test #'(for/vector ()) #rx".*missing body.*")
 
 ;; specific hash set iterators
