@@ -73,15 +73,20 @@
   (bit-vector-ref bv key))
 
 (define (bit-vector-set! bv n b)
-  (define wi (word-index n))
-  (define bi (bit-index n))
   (match bv
     [(struct bit-vector (words size))
-     (define word (bytes-ref words wi))
-     (define bit  (bitwise-bit-set? word bi))
-     (unless (eq? bit b)
-       (define new-word (bitwise-xor word (arithmetic-shift 1 bi)))
-       (bytes-set! words wi new-word))]))
+     (cond
+       [(< n size)
+        (define wi (word-index n))
+        (define bi (bit-index n))
+        (define word (bytes-ref words wi))
+        (define bit  (bitwise-bit-set? word bi))
+        (unless (eq? bit b)
+          (define new-word (bitwise-xor word (arithmetic-shift 1 bi)))
+          (bytes-set! words wi new-word))]
+       [else (raise-range-error 'bit-vector-set!
+                                "bit-vector"
+                                "" n bv 0 (sub1 size))])]))
 
 (define (bit-vector-length bv)
   (bit-vector-size bv))
