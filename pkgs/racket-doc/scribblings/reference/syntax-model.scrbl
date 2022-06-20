@@ -173,6 +173,8 @@ mismatches due to local bindings that shadow only in some spaces.
 @;------------------------------------------------------------------------
 @section[#:tag "stxobj-model"]{Syntax Objects}
 
+@guideintro["stx-obj"]{the use of syntax objects}
+
 A @deftech{syntax object} combines a simpler Racket value, such as a symbol or pair, with
 @tech{lexical information}, @tech{source-location} information, @tech{syntax properties}, and
 whether the syntax object is
