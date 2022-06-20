@@ -14,7 +14,7 @@ case "${host}" in
     ;;
 esac
 
-AX_ENABLE_BUILDDIR
+# AX_ENABLE_BUILDDIR
 
 AM_INIT_AUTOMAKE
 
