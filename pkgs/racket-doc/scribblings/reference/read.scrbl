@@ -28,6 +28,8 @@ See @secref["reader"] for information on the default reader in
 @racket[read-syntax] mode and @secref["parse-reader"] for
 the protocol of @racket[read-syntax].}
 
+@guidealso["stx-obj"]
+
 @defproc[(read/recursive [in input-port? (current-input-port)]
                          [start (or/c char? #f) #f]
                          [readtable (or/c readtable? #f) (current-readtable)]
