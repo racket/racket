@@ -101,12 +101,12 @@
                     (simple? (car l) prim-knowns knowns imports mutated simples unsafe-mode? #:ordered? #t #:no-alloc? #t))
                (define modes (loop (cdr l) #f))
                (if (symbol? modes)
-                   modes
+                   'ordered
                    (cons (if saw-ordered? 'bind 'pure) modes))]
               [(simple? (car l) prim-knowns knowns imports mutated simples unsafe-mode?) ; allocates
                (define modes (loop (cdr l) #f))
                (if (symbol? modes)
-                   'alloc
+                   'ordered
                    (cons 'bind modes))]
               [else
                (define modes (loop (cdr l) #t))

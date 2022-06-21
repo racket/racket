@@ -254,7 +254,9 @@
                                  (eq? rator 'make-struct-type-property))
                              (bitwise-bit-set? (known-procedure-arity-mask v) (length exps))))
                       (for/and ([exp (in-list exps)])
-                        (simple? exp prim-knowns knowns imports mutated simples unsafe-mode?)))))
+                        (simple? exp prim-knowns knowns imports mutated simples unsafe-mode?
+                                 #:ordered? #t
+                                 #:succeeds? #t)))))
           ;; Can delay construction
           (delay! ids (lambda () (find-mutated!* exps #f)))]
          [else

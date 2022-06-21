@@ -7845,8 +7845,10 @@
                    'break-thread
                    "(or/c #f 'hang-up 'terminate)"
                    kind21_0))
-                (let ((app_0 (if kind21_0 kind21_0 'break)))
-                  (do-break-thread t22_0 app_0 (1/current-thread)))))))))
+                (do-break-thread
+                 t22_0
+                 (if kind21_0 kind21_0 'break)
+                 (1/current-thread))))))))
     (|#%name|
      break-thread
      (case-lambda
@@ -9455,17 +9457,16 @@
                                                          (if thunk-result?38_0
                                                            (lambda () #f)
                                                            #f))))))
-                                              (let ((temp44_1 temp44_0))
-                                                (|#%app|
-                                                 sync-poll.1
-                                                 #f
-                                                 #t
-                                                 temp45_0
-                                                 #f
-                                                 #t
-                                                 unsafe-undefined
-                                                 temp44_1
-                                                 s_0)))))))))
+                                              (|#%app|
+                                               sync-poll.1
+                                               #f
+                                               #t
+                                               temp45_0
+                                               #f
+                                               #t
+                                               unsafe-undefined
+                                               temp44_0
+                                               s_0))))))))
                                    (poll-loop_0))
                                   (let ((timeout-at_0
                                          (if timeout10_0
@@ -9546,17 +9547,16 @@
                                                               (if polled-all?_0
                                                                 polled-all?_0
                                                                 now-polled-all?_0))))))
-                                                    (let ((temp48_1 temp48_0))
-                                                      (|#%app|
-                                                       sync-poll.1
-                                                       did-work?_0
-                                                       #t
-                                                       temp50_0
-                                                       #f
-                                                       #f
-                                                       unsafe-undefined
-                                                       temp48_1
-                                                       s_0)))))))))))
+                                                    (|#%app|
+                                                     sync-poll.1
+                                                     did-work?_0
+                                                     #t
+                                                     temp50_0
+                                                     #f
+                                                     #f
+                                                     unsafe-undefined
+                                                     temp48_0
+                                                     s_0))))))))))
                                      (loop_0 #t #f))))))
                             (lambda ()
                               (begin
@@ -9733,11 +9733,10 @@
                                      (if last_0
                                        (set-syncer-next! last_0 sr_0)
                                        (void))
-                                     (let ((app_0 (cdr evts_0)))
-                                       (loop_0
-                                        app_0
-                                        (if first_0 first_0 sr_0)
-                                        sr_0)))))))))))))
+                                     (loop_0
+                                      (cdr evts_0)
+                                      (if first_0 first_0 sr_0)
+                                      sr_0))))))))))))
                   (loop_0 evts17_0 #f #f)))
                 (args (raise-binding-result-arity-error 2 args)))))))))
     (case-lambda
@@ -11095,16 +11094,14 @@
        (let ((c1_0 (current-future$1)))
          (if c1_0
            (let ((e_0
-                  (let ((app_0
-                         (if future-id6_0 future-id6_0 (future*-id c1_0))))
-                    (let ((app_1 (|#%app| get-pthread-id)))
-                      (future-event1.1
-                       app_0
-                       app_1
-                       action7_0
-                       (current-inexact-milliseconds)
-                       prim-name2_0
-                       data3_0)))))
+                  (let ((app_0 (|#%app| get-pthread-id)))
+                    (future-event1.1
+                     (if future-id6_0 future-id6_0 (future*-id c1_0))
+                     app_0
+                     action7_0
+                     (current-inexact-milliseconds)
+                     prim-name2_0
+                     data3_0))))
              (letrec*
               ((loop_0
                 (|#%name|
@@ -11186,15 +11183,13 @@
                                     or-part_0
                                     (eq? action_0 'sync)))
                                 #f)
-                            (let ((app_2
-                                   (if (eq? action_0 'block)
-                                     "HANDLING: "
-                                     "synchronizing: ")))
-                              (string-append
-                               app_2
-                               (symbol->string
-                                (let ((or-part_0 (future-event-prim-name e_0)))
-                                  (if or-part_0 or-part_0 '|[unknown]|)))))
+                            (string-append
+                             (if (eq? action_0 'block)
+                               "HANDLING: "
+                               "synchronizing: ")
+                             (symbol->string
+                              (let ((or-part_0 (future-event-prim-name e_0)))
+                                (if or-part_0 or-part_0 '|[unknown]|))))
                             (action->string action_0))))
                      (string-append
                       "id "
@@ -12473,27 +12468,26 @@
             loop
             (lambda (e_1 callbacks_1)
               (begin
-                (let ((app_0 TICKS))
-                  (|#%app|
-                   e_1
-                   app_0
-                   (if (pair? callbacks_1)
-                     (lambda ()
-                       (begin
-                         (current-thread-now-running!)
-                         (run-callbacks callbacks_1)
-                         (set! done?_0 #t)
-                         (engine-block)))
-                     void)
-                   (lambda (e_2 result_0 remaining_0)
+                (|#%app|
+                 e_1
+                 TICKS
+                 (if (pair? callbacks_1)
+                   (lambda ()
                      (begin
-                       (if e_2
-                         (void)
-                         (internal-error
-                          "thread ended while it should run callbacks atomically"))
-                       (if done?_0
-                         (swap-in-engine e_2 t_0 leftover-ticks_0)
-                         (loop_0 e_2 null)))))))))))
+                       (current-thread-now-running!)
+                       (run-callbacks callbacks_1)
+                       (set! done?_0 #t)
+                       (engine-block)))
+                   void)
+                 (lambda (e_2 result_0 remaining_0)
+                   (begin
+                     (if e_2
+                       (void)
+                       (internal-error
+                        "thread ended while it should run callbacks atomically"))
+                     (if done?_0
+                       (swap-in-engine e_2 t_0 leftover-ticks_0)
+                       (loop_0 e_2 null))))))))))
          (loop_0 e_0 callbacks_0))))))
 (define run-callbacks
   (lambda (callbacks_0)
@@ -12845,14 +12839,11 @@
                                          (make-thread-cell #f)
                                          (begin
                                            (if pending-break_0
-                                             (let ((app_0 (1/current-thread)))
-                                               (1/break-thread
-                                                app_0
-                                                (if (eq?
-                                                     pending-break_0
-                                                     'break)
-                                                  #f
-                                                  pending-break_0)))
+                                             (1/break-thread
+                                              (1/current-thread)
+                                              (if (eq? pending-break_0 'break)
+                                                #f
+                                                pending-break_0))
                                              (void))
                                            (if (eq? result-kind_0 'exn)
                                              (raise result_0)

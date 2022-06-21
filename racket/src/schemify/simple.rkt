@@ -14,11 +14,18 @@
 ;; try to capture a continuation (`pure?` = #f). In `pure?` mode, if
 ;; `no-alloc?` is true, then allocation counts as detectable (for
 ;; ordering with respect to functions that might capture a continuation).
+;; If `ordered?` is true with `pure?` as true, then things that always
+;; succeed with the same value are allowed, even if they may depend
+;; on an earlier action not raising an exception.
+;; If `succeeds?` is true with `pure?` and `ordered?` as true, then
+;; things that always succeed are allowed, even if they aren't pure
+;; (i.e., a later call might produce a different result).
 ;; This function receives both schemified and non-schemified expressions.
 (define (simple? e prim-knowns knowns imports mutated simples unsafe-mode?
                  #:pure? [pure? #t]
                  #:no-alloc? [no-alloc? #f]
-                 #:ordered? [ordered? #f] ; weakens `pure?` to allow reordering
+                 #:ordered? [ordered? #f] ; weakens `pure?` to allow some reordering
+                 #:succeeds? [succeeds? #f] ; weakens `ordered?` to allow more reordering
                  #:result-arity [result-arity 1])
   (let simple? ([e e] [result-arity result-arity])
     (define-syntax-rule (cached expr)
@@ -26,9 +33,9 @@
              [bit (let ([AT (lambda (x) (fxlshift 1 x))])
                     (if pure?
                         (if no-alloc?
-                            (if ordered? (AT 0) (AT 1))
-                            (if ordered? (AT 2) (AT 3)))
-                        (AT 4)))]
+                            (if ordered? (if succeeds? (AT 0) (AT 1)) (AT 2))
+                            (if ordered? (if succeeds? (AT 3) (AT 4)) (AT 5)))
+                        (AT 6)))]
              [r (cond
                   [(fx= bit (fxand (vector-ref c 0) bit)) #t]
                   [(fx= bit (fxand (vector-ref c 1) bit)) #f]
@@ -99,6 +106,10 @@
        #:guard (not pure?)
        (simple? e 1)
        (returns 1)]
+      [`(if ,tst ,thn ,els)
+       (and (simple? tst 1)
+            (simple? thn result-arity)
+            (simple? els result-arity))]
       [`(values ,es ...)
        (cached
         (and (returns (length es))
@@ -116,6 +127,9 @@
                                        (known-procedure/allocates? v))
                                    (and ordered?
                                         (or (known-procedure/then-pure? v)
+                                            (and succeeds?
+                                                 (null? args)
+                                                 (known-procedure/parameter? v))
                                             ;; in unsafe mode, we can assume no contract error:
                                             (and unsafe-mode?
                                                  (known-field-accessor? v)
@@ -123,6 +137,10 @@
                                                  (known-field-accessor-known-immutable? v)))))
                                (returns 1))
                           (or (and (known-procedure/no-prompt? v)
+                                   (returns 1))
+                              (and succeeds?
+                                   (null? args)
+                                   (known-procedure/parameter? v)
                                    (returns 1))
                               (and (known-procedure/no-prompt/multi? v)
                                    (eqv? result-arity #f))

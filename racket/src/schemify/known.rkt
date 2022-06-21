@@ -13,6 +13,7 @@
          known-procedure/no-prompt known-procedure/no-prompt?
          known-procedure/no-prompt/multi known-procedure/no-prompt/multi?
          known-procedure/no-return known-procedure/no-return?
+         known-procedure/parameter known-procedure/parameter?
          known-procedure/folding known-procedure/folding?
          known-procedure/folding/limited known-procedure/folding/limited? known-procedure/folding/limited-kind
          known-procedure/can-inline known-procedure/can-inline? known-procedure/can-inline-expr
@@ -85,6 +86,10 @@
 
 ;; procedure that does not return, because it always escapes
 (struct known-procedure/no-return () #:prefab #:omit-define-syntaxes #:super struct:known-procedure/single-valued)
+
+;; procedure that succeeds on 0 arguments and doesn't call arbitrary other code,
+;; but might consult state and/or the continuation
+(struct known-procedure/parameter () #:prefab #:omit-define-syntaxes #:super struct:known-procedure/single-valued)
 
 ;; procedure that can be inlined, where the `expr` is in pre-schemify form
 (struct known-procedure/can-inline (expr) #:prefab #:omit-define-syntaxes #:super struct:known-procedure)

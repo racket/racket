@@ -704,6 +704,62 @@
         (if (impersonator? v)
           (known-procedure/no-return?_1763 (impersonator-val v))
           #f))))))
+(define finish_2190
+  (make-struct-type-install-properties
+   '(known-procedure/parameter)
+   0
+   0
+   (if (struct-type? struct:known-procedure/single-valued)
+     struct:known-procedure/single-valued
+     (check-struct-type 'struct struct:known-procedure/single-valued))
+   null
+   'prefab
+   #f
+   '()
+   #f
+   'known-procedure/parameter))
+(define struct:known-procedure/parameter
+  (make-record-type-descriptor*
+   'known-procedure/parameter
+   (if (struct-type? struct:known-procedure/single-valued)
+     struct:known-procedure/single-valued
+     (check-struct-type 'struct struct:known-procedure/single-valued))
+   (structure-type-lookup-prefab-uid
+    'known-procedure/parameter
+    (if (struct-type? struct:known-procedure/single-valued)
+      struct:known-procedure/single-valued
+      (check-struct-type 'struct struct:known-procedure/single-valued))
+    0
+    0
+    #f
+    '())
+   #f
+   #f
+   0
+   0))
+(define effect_2451 (finish_2190 struct:known-procedure/parameter))
+(define known-procedure/parameter
+  (|#%name|
+   known-procedure/parameter
+   (record-constructor
+    (make-record-constructor-descriptor
+     struct:known-procedure/parameter
+     #f
+     #f))))
+(define known-procedure/parameter?_2642
+  (|#%name|
+   known-procedure/parameter?
+   (record-predicate struct:known-procedure/parameter)))
+(define known-procedure/parameter?
+  (|#%name|
+   known-procedure/parameter?
+   (lambda (v)
+     (if (known-procedure/parameter?_2642 v)
+       #t
+       ($value
+        (if (impersonator? v)
+          (known-procedure/parameter?_2642 (impersonator-val v))
+          #f))))))
 (define finish_2550
   (make-struct-type-install-properties
    '(known-procedure/can-inline)

@@ -1109,6 +1109,11 @@
            '(lambda (w z x)
               (list (car x) (if z 1 2) (unsafe-car x))))
 
+(test-comp '(lambda (w z x)
+              (list (car x) z (car x)))
+           '(lambda (w z x)
+              (list (car x) z (unsafe-car x))))
+
 (test-comp #:except 'chez-scheme
            '(lambda (w)
               (list
@@ -6612,6 +6617,52 @@
            '(lambda (x)
               (list (eq? x 7) (box 5))))
 
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Try to check that struct optimizations are ok
+;; with various forms of `struct` declaration
+
+(when (run-unreliable-tests? 'timing)
+  (let ([pies (list
+               '(struct pie (type))
+               '(begin
+                  (require racket/serialize)
+                  (serializable-struct pie (type)))
+               '(struct pie (type)
+                  #:property prop:equal+hash (list (lambda (a b eql?) pie-type #t)
+                                                   (lambda (a hc) 0)
+                                                   (lambda (a hc) 0)))
+               '(struct pie (type)
+                  #:methods gen:equal+hash
+                  [(define (equal-proc x y recursive-equal?) pie-type #t)
+                   (define (hash-code x hc) 1)
+                   (define hash-proc  hash-code)
+                   (define hash2-proc hash-code)]))])
+    (test #t
+          list?
+          (let loop ([tries 3])
+            (define msecs
+              (for/list ([pie (in-list pies)])
+                (define go
+                  (parameterize ([current-namespace (make-base-namespace)])
+                    (eval `(module pie racket/base
+                             (provide go)
+                             ,pie
+                             (define p (pie 'a))
+                             (define (go)
+                               (for ([i 10000000])
+                                 (pie-type p)))))
+                    (dynamic-require ''pie 'go)))
+                (define-values (r cpu-msec real-msec gc-msec) (time-apply go '()))
+                cpu-msec))
+            (or
+             (and (for*/and ([msec (in-list msecs)]
+                             [other-msec (in-list msecs)])
+                    (<= (/ other-msec 1.2) msec (* other-msec 1.2)))
+                  (cons 'pie-timing-test msecs))
+             (if (> tries 0)
+                 (loop (sub1 tries))
+                 (vector 'pie-timing-test-failed msecs)))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Regression test to check that the optimizer doesn't

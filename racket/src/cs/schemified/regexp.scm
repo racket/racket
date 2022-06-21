@@ -2421,7 +2421,11 @@
                                (begin-unsafe
                                 (range-union null (list (cons 0 127))))))))))))
               (if range_0
-                (values #t range_0 (+ pos_0 3 (unsafe-bytes-length class_0)))
+                (values
+                 #t
+                 range_0
+                 (let ((app_0 pos_0))
+                   (+ app_0 3 (unsafe-bytes-length class_0))))
                 (values #f #f #f))))
           (values #f #f #f))))))
 (define xor (lambda (a_0 b_0) (if a_0 (if b_0 #f a_0) b_0)))
@@ -8678,20 +8682,16 @@
                                                  #f
                                                  start-offset_0))
                                               #t)))
-                                       (let ((lb-in_0
-                                              (let ((skip-amt_0
-                                                     (if peek?5_0
-                                                       start-offset_0
-                                                       0)))
+                                       (let ((skip-amt_0
+                                              (if peek?5_0 start-offset_0 0)))
+                                         (let ((lb-in_0
                                                 (let ((max-lookbehind_0
-                                                       (let ((app_0
-                                                              (rx:regexp-max-lookbehind
-                                                               rx_0)))
-                                                         (max
-                                                          app_0
-                                                          (if end-bytes-count9_0
-                                                            end-bytes-count9_0
-                                                            0)))))
+                                                       (max
+                                                        (rx:regexp-max-lookbehind
+                                                         rx_0)
+                                                        (if end-bytes-count9_0
+                                                          end-bytes-count9_0
+                                                          0))))
                                                   (let ((max-peek_0
                                                          (if (input-port? in_0)
                                                            (if (not
@@ -8724,74 +8724,46 @@
                                                           max-lookbehind_1
                                                           #f
                                                           0
-                                                          max-peek_0)))))))))
-                                         (let ((end-pos_0
-                                                (if (let ((or-part_0
-                                                           (eq?
-                                                            'eof
-                                                            end-offset_0)))
-                                                      (if or-part_0
-                                                        or-part_0
-                                                        (string? in_0)))
-                                                  'eof
-                                                  (+
-                                                   prefix-len_0
-                                                   (-
-                                                    end-offset_0
-                                                    start-offset_0)))))
-                                           (call-with-values
-                                            (lambda ()
-                                              (if any-bytes-left?_0
-                                                (search-match
-                                                 rx_0
-                                                 lb-in_0
-                                                 search-pos_0
-                                                 0
-                                                 end-pos_0
-                                                 state_0)
-                                                (values #f #f)))
-                                            (case-lambda
-                                             ((ms-pos_0 me-pos_0)
-                                              (let ((write/consume-skipped_0
-                                                     (|#%name|
-                                                      write/consume-skipped
-                                                      (lambda ()
-                                                        (begin
-                                                          (if (not peek?5_0)
-                                                            (if ms-pos_0
-                                                              (begin
-                                                                (if out24_0
-                                                                  (lazy-bytes-advance!
-                                                                   lb-in_0
-                                                                   ms-pos_0
-                                                                   #t)
-                                                                  (void))
-                                                                (if (input-port?
-                                                                     in_0)
-                                                                  (copy-port-bytes
-                                                                   port-in_0
-                                                                   #f
-                                                                   (-
-                                                                    me-pos_0
-                                                                    prefix-len_0))
-                                                                  (void)))
-                                                              (if (eq?
-                                                                   end-pos_0
-                                                                   'eof)
-                                                                (if (if out24_0
-                                                                      out24_0
-                                                                      (input-port?
-                                                                       in_0))
-                                                                  (copy-port-bytes
-                                                                   port-in_0
-                                                                   out24_0
-                                                                   #f)
-                                                                  (void))
+                                                          max-peek_0))))))))
+                                           (let ((end-pos_0
+                                                  (if (let ((or-part_0
+                                                             (eq?
+                                                              'eof
+                                                              end-offset_0)))
+                                                        (if or-part_0
+                                                          or-part_0
+                                                          (string? in_0)))
+                                                    'eof
+                                                    (+
+                                                     prefix-len_0
+                                                     (-
+                                                      end-offset_0
+                                                      start-offset_0)))))
+                                             (call-with-values
+                                              (lambda ()
+                                                (if any-bytes-left?_0
+                                                  (search-match
+                                                   rx_0
+                                                   lb-in_0
+                                                   search-pos_0
+                                                   0
+                                                   end-pos_0
+                                                   state_0)
+                                                  (values #f #f)))
+                                              (case-lambda
+                                               ((ms-pos_0 me-pos_0)
+                                                (let ((write/consume-skipped_0
+                                                       (|#%name|
+                                                        write/consume-skipped
+                                                        (lambda ()
+                                                          (begin
+                                                            (if (not peek?5_0)
+                                                              (if ms-pos_0
                                                                 (begin
                                                                   (if out24_0
                                                                     (lazy-bytes-advance!
                                                                      lb-in_0
-                                                                     end-pos_0
+                                                                     ms-pos_0
                                                                      #t)
                                                                     (void))
                                                                   (if (input-port?
@@ -8800,130 +8772,158 @@
                                                                      port-in_0
                                                                      #f
                                                                      (-
-                                                                      end-pos_0
+                                                                      me-pos_0
                                                                       prefix-len_0))
-                                                                    (void)))))
-                                                            (void)))))))
-                                                (begin0
-                                                  (let ((tmp_0
-                                                         (if ms-pos_0
-                                                           (if (not
-                                                                (lazy-bytes-failed?
-                                                                 lb-in_0))
-                                                             mode2_0
-                                                             #f)
-                                                           #f)))
-                                                    (if (eq? tmp_0 #f)
-                                                      (add-end-bytes
-                                                       #f
-                                                       end-bytes-count9_0
-                                                       #f
-                                                       #f)
-                                                      (if (eq? tmp_0 '?)
-                                                        #t
-                                                        (if (eq?
-                                                             tmp_0
-                                                             'positions)
-                                                          (let ((bstr_0
-                                                                 (lazy-bytes-bstr
-                                                                  lb-in_0)))
-                                                            (let ((positions_0
-                                                                   (if (let ((or-part_0
-                                                                              (not
-                                                                               (string?
-                                                                                in_0))))
-                                                                         (if or-part_0
-                                                                           or-part_0
-                                                                           (rx:regexp-bytes?
-                                                                            rx_0)))
-                                                                     (let ((delta_0
-                                                                            (-
-                                                                             start-offset_0
-                                                                             prefix-len_0)))
-                                                                       (byte-positions->byte-positions.1
-                                                                        delta_0
-                                                                        ms-pos_0
-                                                                        me-pos_0
-                                                                        state_0))
-                                                                     (let ((ms-str-pos_0
-                                                                            (byte-index->string-index
-                                                                             in_0
-                                                                             start-offset_0
-                                                                             (-
-                                                                              ms-pos_0
-                                                                              prefix-len_0))))
-                                                                       (let ((delta_0
-                                                                              (lazy-bytes-discarded-count
-                                                                               lb-in_0)))
-                                                                         (let ((temp59_0
-                                                                                (-
-                                                                                 ms-pos_0
-                                                                                 delta_0)))
-                                                                           (let ((temp61_0
-                                                                                  (+
-                                                                                   ms-str-pos_0
-                                                                                   start-offset_0)))
-                                                                             (let ((temp59_1
-                                                                                    temp59_0))
-                                                                               (byte-positions->string-positions.1
-                                                                                delta_0
-                                                                                temp61_0
-                                                                                temp59_1
-                                                                                bstr_0
-                                                                                ms-pos_0
-                                                                                me-pos_0
-                                                                                state_0)))))))))
-                                                              (add-end-bytes
-                                                               positions_0
-                                                               end-bytes-count9_0
-                                                               bstr_0
-                                                               (-
-                                                                me-pos_0
-                                                                (lazy-bytes-discarded-count
-                                                                 lb-in_0)))))
+                                                                    (void)))
+                                                                (if (eq?
+                                                                     end-pos_0
+                                                                     'eof)
+                                                                  (if (if out24_0
+                                                                        out24_0
+                                                                        (input-port?
+                                                                         in_0))
+                                                                    (copy-port-bytes
+                                                                     port-in_0
+                                                                     out24_0
+                                                                     #f)
+                                                                    (void))
+                                                                  (begin
+                                                                    (if out24_0
+                                                                      (lazy-bytes-advance!
+                                                                       lb-in_0
+                                                                       end-pos_0
+                                                                       #t)
+                                                                      (void))
+                                                                    (if (input-port?
+                                                                         in_0)
+                                                                      (copy-port-bytes
+                                                                       port-in_0
+                                                                       #f
+                                                                       (-
+                                                                        end-pos_0
+                                                                        prefix-len_0))
+                                                                      (void)))))
+                                                              (void)))))))
+                                                  (begin0
+                                                    (let ((tmp_0
+                                                           (if ms-pos_0
+                                                             (if (not
+                                                                  (lazy-bytes-failed?
+                                                                   lb-in_0))
+                                                               mode2_0
+                                                               #f)
+                                                             #f)))
+                                                      (if (eq? tmp_0 #f)
+                                                        (add-end-bytes
+                                                         #f
+                                                         end-bytes-count9_0
+                                                         #f
+                                                         #f)
+                                                        (if (eq? tmp_0 '?)
+                                                          #t
                                                           (if (eq?
                                                                tmp_0
-                                                               'strings)
+                                                               'positions)
                                                             (let ((bstr_0
                                                                    (lazy-bytes-bstr
                                                                     lb-in_0)))
-                                                              (let ((delta_0
-                                                                     (lazy-bytes-discarded-count
+                                                              (let ((positions_0
+                                                                     (if (let ((or-part_0
+                                                                                (not
+                                                                                 (string?
+                                                                                  in_0))))
+                                                                           (if or-part_0
+                                                                             or-part_0
+                                                                             (rx:regexp-bytes?
+                                                                              rx_0)))
+                                                                       (let ((delta_0
+                                                                              (-
+                                                                               start-offset_0
+                                                                               prefix-len_0)))
+                                                                         (byte-positions->byte-positions.1
+                                                                          delta_0
+                                                                          ms-pos_0
+                                                                          me-pos_0
+                                                                          state_0))
+                                                                       (let ((ms-str-pos_0
+                                                                              (byte-index->string-index
+                                                                               in_0
+                                                                               start-offset_0
+                                                                               (-
+                                                                                ms-pos_0
+                                                                                prefix-len_0))))
+                                                                         (let ((delta_0
+                                                                                (lazy-bytes-discarded-count
+                                                                                 lb-in_0)))
+                                                                           (let ((temp59_0
+                                                                                  (-
+                                                                                   ms-pos_0
+                                                                                   delta_0)))
+                                                                             (let ((temp61_0
+                                                                                    (+
+                                                                                     ms-str-pos_0
+                                                                                     start-offset_0)))
+                                                                               (let ((temp59_1
+                                                                                      temp59_0))
+                                                                                 (byte-positions->string-positions.1
+                                                                                  delta_0
+                                                                                  temp61_0
+                                                                                  temp59_1
+                                                                                  bstr_0
+                                                                                  ms-pos_0
+                                                                                  me-pos_0
+                                                                                  state_0)))))))))
+                                                                (add-end-bytes
+                                                                 positions_0
+                                                                 end-bytes-count9_0
+                                                                 bstr_0
+                                                                 (-
+                                                                  me-pos_0
+                                                                  (lazy-bytes-discarded-count
+                                                                   lb-in_0)))))
+                                                            (if (eq?
+                                                                 tmp_0
+                                                                 'strings)
+                                                              (let ((bstr_0
+                                                                     (lazy-bytes-bstr
                                                                       lb-in_0)))
-                                                                (let ((bytes/strings_0
-                                                                       (if (let ((or-part_0
-                                                                                  (not
-                                                                                   (string?
-                                                                                    in_0))))
-                                                                             (if or-part_0
-                                                                               or-part_0
-                                                                               (rx:regexp-bytes?
-                                                                                rx_0)))
-                                                                         (byte-positions->bytess.1
-                                                                          delta_0
-                                                                          bstr_0
-                                                                          ms-pos_0
-                                                                          me-pos_0
-                                                                          state_0)
-                                                                         (byte-positions->strings.1
-                                                                          delta_0
-                                                                          bstr_0
-                                                                          ms-pos_0
-                                                                          me-pos_0
-                                                                          state_0))))
-                                                                  (add-end-bytes
-                                                                   bytes/strings_0
-                                                                   end-bytes-count9_0
-                                                                   bstr_0
-                                                                   (-
-                                                                    me-pos_0
-                                                                    delta_0)))))
-                                                            (void))))))
-                                                  (write/consume-skipped_0))))
-                                             (args
-                                              (raise-binding-result-arity-error
-                                               2
-                                               args))))))))))))))))))))))))))
+                                                                (let ((delta_0
+                                                                       (lazy-bytes-discarded-count
+                                                                        lb-in_0)))
+                                                                  (let ((bytes/strings_0
+                                                                         (if (let ((or-part_0
+                                                                                    (not
+                                                                                     (string?
+                                                                                      in_0))))
+                                                                               (if or-part_0
+                                                                                 or-part_0
+                                                                                 (rx:regexp-bytes?
+                                                                                  rx_0)))
+                                                                           (byte-positions->bytess.1
+                                                                            delta_0
+                                                                            bstr_0
+                                                                            ms-pos_0
+                                                                            me-pos_0
+                                                                            state_0)
+                                                                           (byte-positions->strings.1
+                                                                            delta_0
+                                                                            bstr_0
+                                                                            ms-pos_0
+                                                                            me-pos_0
+                                                                            state_0))))
+                                                                    (add-end-bytes
+                                                                     bytes/strings_0
+                                                                     end-bytes-count9_0
+                                                                     bstr_0
+                                                                     (-
+                                                                      me-pos_0
+                                                                      delta_0)))))
+                                                              (void))))))
+                                                    (write/consume-skipped_0))))
+                                               (args
+                                                (raise-binding-result-arity-error
+                                                 2
+                                                 args)))))))))))))))))))))))))))
 (define check-range
   (lambda (who_0 what_0 in_0 pos_0 start-pos_0)
     (let ((len_0
@@ -9225,75 +9225,72 @@
                         l_0
                         (cons (subchytes insert_0 since_0 pos_0) l_0)))))))
             (let ((len_0 (chytes-length insert_0)))
-              (let ((app_0 (if (bytes? insert_0) bytes-append string-append)))
-                (apply
-                 app_0
-                 (letrec*
-                  ((loop_0
-                    (|#%name|
-                     loop
-                     (lambda (pos_0 since_0)
-                       (begin
-                         (if (= pos_0 len_0)
-                           (cons-chytes_0 since_0 pos_0 null)
-                           (if (= 38 (chytes-ref insert_0 pos_0))
+              (apply
+               (if (bytes? insert_0) bytes-append string-append)
+               (letrec*
+                ((loop_0
+                  (|#%name|
+                   loop
+                   (lambda (pos_0 since_0)
+                     (begin
+                       (if (= pos_0 len_0)
+                         (cons-chytes_0 since_0 pos_0 null)
+                         (if (= 38 (chytes-ref insert_0 pos_0))
+                           (cons-chytes_0
+                            since_0
+                            pos_0
+                            (let ((app_0 (get-chytes_0 0)))
+                              (cons
+                               app_0
+                               (let ((app_1 (add1 pos_0)))
+                                 (loop_0 app_1 (add1 pos_0))))))
+                           (if (= 92 (chytes-ref insert_0 pos_0))
                              (cons-chytes_0
                               since_0
                               pos_0
-                              (let ((app_1 (get-chytes_0 0)))
-                                (cons
-                                 app_1
-                                 (let ((app_2 (add1 pos_0)))
-                                   (loop_0 app_2 (add1 pos_0))))))
-                             (if (= 92 (chytes-ref insert_0 pos_0))
-                               (cons-chytes_0
-                                since_0
-                                pos_0
-                                (let ((c_0
-                                       (if (< (add1 pos_0) len_0)
-                                         (chytes-ref insert_0 (add1 pos_0))
-                                         #f)))
-                                  (if (let ((or-part_0 (eq? c_0 38)))
-                                        (if or-part_0 or-part_0 (eq? c_0 92)))
-                                    (let ((app_1 (+ pos_0 2)))
-                                      (loop_0 app_1 (add1 pos_0)))
-                                    (if (eq? c_0 36)
-                                      (let ((app_1 (+ pos_0 2)))
-                                        (loop_0 app_1 (+ pos_0 2)))
-                                      (letrec*
-                                       ((d-loop_0
-                                         (|#%name|
-                                          d-loop
-                                          (lambda (pos_1 accum_0)
-                                            (begin
-                                              (if (= pos_1 len_0)
-                                                (list (get-chytes_0 accum_0))
-                                                (let ((c_1
-                                                       (chytes-ref
-                                                        insert_0
-                                                        pos_1)))
-                                                  (if (if (>= c_1 48)
-                                                        (<= c_1 57)
-                                                        #f)
-                                                    (let ((app_1 (add1 pos_1)))
-                                                      (d-loop_0
-                                                       app_1
-                                                       (let ((app_2
-                                                              (* accum_0 10)))
-                                                         (+
-                                                          app_2
-                                                          (- c_1 48)))))
-                                                    (let ((app_1
-                                                           (get-chytes_0
-                                                            accum_0)))
-                                                      (cons
-                                                       app_1
-                                                       (loop_0
-                                                        pos_1
-                                                        pos_1)))))))))))
-                                       (d-loop_0 (add1 pos_0) 0))))))
-                               (loop_0 (add1 pos_0) since_0)))))))))
-                  (loop_0 0 0)))))))))))
+                              (let ((c_0
+                                     (if (< (add1 pos_0) len_0)
+                                       (chytes-ref insert_0 (add1 pos_0))
+                                       #f)))
+                                (if (let ((or-part_0 (eq? c_0 38)))
+                                      (if or-part_0 or-part_0 (eq? c_0 92)))
+                                  (let ((app_0 (+ pos_0 2)))
+                                    (loop_0 app_0 (add1 pos_0)))
+                                  (if (eq? c_0 36)
+                                    (let ((app_0 (+ pos_0 2)))
+                                      (loop_0 app_0 (+ pos_0 2)))
+                                    (letrec*
+                                     ((d-loop_0
+                                       (|#%name|
+                                        d-loop
+                                        (lambda (pos_1 accum_0)
+                                          (begin
+                                            (if (= pos_1 len_0)
+                                              (list (get-chytes_0 accum_0))
+                                              (let ((c_1
+                                                     (chytes-ref
+                                                      insert_0
+                                                      pos_1)))
+                                                (if (if (>= c_1 48)
+                                                      (<= c_1 57)
+                                                      #f)
+                                                  (let ((app_0 (add1 pos_1)))
+                                                    (d-loop_0
+                                                     app_0
+                                                     (let ((app_1
+                                                            (* accum_0 10)))
+                                                       (+ app_1 (- c_1 48)))))
+                                                  (let ((app_0
+                                                         (get-chytes_0
+                                                          accum_0)))
+                                                    (cons
+                                                     app_0
+                                                     (loop_0
+                                                      pos_1
+                                                      pos_1)))))))))))
+                                     (d-loop_0 (add1 pos_0) 0))))))
+                             (loop_0 (add1 pos_0) since_0)))))))))
+                (loop_0 0 0))))))))))
 (define subchytes*
   (lambda (in_0 start_0 end_0 prefix_0)
     (if (< start_0 0)
