@@ -774,16 +774,8 @@
                      (loop_0 n_0 '())))))))))
        ((lst_0 less-than?_0 getkey_0)
         (if (if getkey_0 (not (eq? values getkey_0)) #f)
-          (|#%app|
-           (check-not-unsafe-undefined sort 'sort)
-           lst_0
-           less-than?_0
-           getkey_0
-           #f)
-          (|#%app|
-           (check-not-unsafe-undefined sort 'sort)
-           lst_0
-           less-than?_0)))
+          (|#%app| sort lst_0 less-than?_0 getkey_0 #f)
+          (|#%app| sort lst_0 less-than?_0)))
        ((lst_0 less-than?_0 getkey_0 cache-keys?_0)
         (if (if getkey_0 (not (eq? values getkey_0)) #f)
           (let ((n_0 (length lst_0)))
@@ -924,10 +916,7 @@
                                      i_1
                                      (cons (vector-ref vec_0 i_1) r_0)))))))))
                          (loop_0 n_0 '())))))))))
-          (|#%app|
-           (check-not-unsafe-undefined sort 'sort)
-           lst_0
-           less-than?_0))))
+          (|#%app| sort lst_0 less-than?_0))))
       (case-lambda
        ((vec_0 less-than?_0 start_0 end_0)
         (let ((n_0 (- end_0 start_0)))
@@ -1208,12 +1197,7 @@
                              getkey_0)
                             (vector-copy! dst-vec_0 0 work-vec_0 0 n_0)))))))
                 dst-vec_0)))
-          (|#%app|
-           (check-not-unsafe-undefined vector-sort 'vector-sort)
-           vec_0
-           less-than?_0
-           start_0
-           end_0))))
+          (|#%app| vector-sort vec_0 less-than?_0 start_0 end_0))))
       (case-lambda
        ((vec_0 less-than?_0 start_0 end_0)
         (let ((n_0 (- end_0 start_0)))
@@ -1551,12 +1535,7 @@
                            getkey_0)
                           (vector-copy! vec_0 start_0 work-vec_0 0 n_0)))))))
               (void)))
-          (|#%app|
-           (check-not-unsafe-undefined vector-sort! 'vector-sort!)
-           vec_0
-           less-than?_0
-           start_0
-           end_0))))))))
+          (|#%app| vector-sort! vec_0 less-than?_0 start_0 end_0))))))))
 (define-values
  (prop:stream stream-via-prop? stream-ref)
  (make-struct-type-property
@@ -2046,16 +2025,8 @@
            (raise-argument-error 'sort "(any/c . -> . any/c)" key1_0)
            (void))
          (if key1_0
-           (|#%app|
-            (check-not-unsafe-undefined sort 'sort)
-            lst5_0
-            less?6_0
-            key1_0
-            cache-keys?2_0)
-           (|#%app|
-            (check-not-unsafe-undefined sort 'sort)
-            lst5_0
-            less?6_0)))))))
+           (|#%app| sort lst5_0 less?6_0 key1_0 cache-keys?2_0)
+           (|#%app| sort lst5_0 less?6_0)))))))
 (define print-value-columns
   (make-parameter
    +inf.0
@@ -23551,10 +23522,12 @@
                                                        (eq?
                                                         state_0
                                                         'not-ready))
-                                                    (hash-set!
-                                                     mutated_0
-                                                     v_1
-                                                     'too-early)
+                                                    (if unsafe-mode?_0
+                                                      (void)
+                                                      (hash-set!
+                                                       mutated_0
+                                                       v_1
+                                                       'too-early))
                                                     (if (begin-unsafe
                                                          (procedure? state_0))
                                                       (if ids_1
@@ -41917,8 +41890,7 @@
                                                   type_0))
                                                (if (unsafe-fx< index_0 2)
                                                  (let ((pos_0
-                                                        (|#%app|
-                                                         read-fasl-integer
+                                                        (read-fasl-integer
                                                          i_0)))
                                                    (let ((v_0 (loop_0)))
                                                      (begin
@@ -41935,8 +41907,7 @@
                                                        v_0)))
                                                  (if (unsafe-fx< index_0 3)
                                                    (let ((pos_0
-                                                          (|#%app|
-                                                           read-fasl-integer
+                                                          (read-fasl-integer
                                                            i_0)))
                                                      (begin
                                                        (if (<
@@ -41958,8 +41929,7 @@
                                                  (if (unsafe-fx< index_0 8)
                                                    eof
                                                    (intern_0
-                                                    (|#%app|
-                                                     read-fasl-integer
+                                                    (read-fasl-integer
                                                      i_0))))))
                                            (if (unsafe-fx< index_0 14)
                                              (if (unsafe-fx< index_0 11)
@@ -41974,8 +41944,7 @@
                                                (if (unsafe-fx< index_0 12)
                                                  (let ((bstr_0
                                                         (read-bytes/exactly
-                                                         (|#%app|
-                                                          read-fasl-integer
+                                                         (read-fasl-integer
                                                           i_0)
                                                          i_0)))
                                                    (string->number
@@ -41996,39 +41965,26 @@
                                                (if (unsafe-fx< index_0 15)
                                                  (intern_0
                                                   (integer->char
-                                                   (|#%app|
-                                                    read-fasl-integer
-                                                    i_0)))
+                                                   (read-fasl-integer i_0)))
                                                  (string->symbol
-                                                  (|#%app|
-                                                   read-fasl-string
-                                                   i_0)))
+                                                  (read-fasl-string i_0)))
                                                (if (unsafe-fx< index_0 17)
                                                  (string->unreadable-symbol
-                                                  (|#%app|
-                                                   read-fasl-string
-                                                   i_0))
+                                                  (read-fasl-string i_0))
                                                  (if (unsafe-fx< index_0 18)
                                                    (string->uninterned-symbol
-                                                    (|#%app|
-                                                     read-fasl-string
-                                                     i_0))
+                                                    (read-fasl-string i_0))
                                                    (if (unsafe-fx< index_0 19)
                                                      (string->keyword
-                                                      (|#%app|
-                                                       read-fasl-string
-                                                       i_0))
-                                                     (|#%app|
-                                                      read-fasl-string
+                                                      (read-fasl-string i_0))
+                                                     (read-fasl-string
                                                       i_0)))))))
                                          (if (unsafe-fx< index_0 30)
                                            (if (unsafe-fx< index_0 24)
                                              (if (unsafe-fx< index_0 21)
                                                (intern_0
                                                 (string->immutable-string
-                                                 (|#%app|
-                                                  read-fasl-string
-                                                  i_0)))
+                                                 (read-fasl-string i_0)))
                                                (if (unsafe-fx< index_0 22)
                                                  (read-fasl-bytes i_0)
                                                  (if (unsafe-fx< index_0 23)
@@ -42099,15 +42055,11 @@
                                                           rel-elems_0)))))
                                                  (intern_0
                                                   (pregexp
-                                                   (|#%app|
-                                                    read-fasl-string
-                                                    i_0))))
+                                                   (read-fasl-string i_0))))
                                                (if (unsafe-fx< index_0 27)
                                                  (intern_0
                                                   (regexp
-                                                   (|#%app|
-                                                    read-fasl-string
-                                                    i_0)))
+                                                   (read-fasl-string i_0)))
                                                  (if (unsafe-fx< index_0 28)
                                                    (intern_0
                                                     (byte-pregexp
@@ -42117,8 +42069,7 @@
                                                       (byte-regexp
                                                        (read-fasl-bytes i_0)))
                                                      (let ((len_1
-                                                            (|#%app|
-                                                             read-fasl-integer
+                                                            (read-fasl-integer
                                                              i_0)))
                                                        (reverse$1
                                                         (begin
@@ -42154,8 +42105,7 @@
                                                  (let ((app_0 (loop_0)))
                                                    (cons app_0 (loop_0)))
                                                  (let ((len_1
-                                                        (|#%app|
-                                                         read-fasl-integer
+                                                        (read-fasl-integer
                                                          i_0)))
                                                    (letrec*
                                                     ((ploop_0
@@ -42175,8 +42125,7 @@
                                                     (ploop_0 len_1))))
                                                (if (unsafe-fx< index_0 33)
                                                  (let ((len_1
-                                                        (|#%app|
-                                                         read-fasl-integer
+                                                        (read-fasl-integer
                                                          i_0)))
                                                    (let ((vec_0
                                                           (begin
@@ -42249,8 +42198,7 @@
                                                (if (unsafe-fx< index_0 36)
                                                  (let ((key_0 (loop_0)))
                                                    (let ((len_1
-                                                          (|#%app|
-                                                           read-fasl-integer
+                                                          (read-fasl-integer
                                                            i_0)))
                                                      (apply
                                                       make-prefab-struct
@@ -42298,8 +42246,7 @@
                                                                   (make-hashalw)
                                                                   (make-hash)))))))
                                                      (let ((len_1
-                                                            (|#%app|
-                                                             read-fasl-integer
+                                                            (read-fasl-integer
                                                              i_0)))
                                                        (begin
                                                          (begin
@@ -42341,8 +42288,7 @@
                                                                   (hashalw)
                                                                   hash2725))))))
                                                      (let ((len_1
-                                                            (|#%app|
-                                                             read-fasl-integer
+                                                            (read-fasl-integer
                                                              i_0)))
                                                        (begin
                                                          (letrec*
@@ -42572,8 +42518,8 @@
               (if (eqv? b_0 130)
                 (integer-bytes->integer (read-bytes/exactly 8 i_0) #t #f)
                 (if (eqv? b_0 131)
-                  (let ((len_0 (|#%app| read-fasl-integer i_0)))
-                    (let ((str_0 (|#%app| read-fasl-string i_0 len_0)))
+                  (let ((len_0 (read-fasl-integer i_0)))
+                    (let ((str_0 (read-fasl-string i_0 len_0)))
                       (begin
                         (if (if (string? str_0)
                               (= len_0 (string-length str_0))
@@ -42614,8 +42560,8 @@
               (if (eqv? b_0 130)
                 (integer-bytes->integer (read-bytes/exactly* 8 i_0) #t #f)
                 (if (eqv? b_0 131)
-                  (let ((len_0 (|#%app| read-fasl-integer i_0)))
-                    (let ((str_0 (|#%app| read-fasl-string i_0 len_0)))
+                  (let ((len_0 (read-fasl-integer i_0)))
+                    (let ((str_0 (read-fasl-string i_0 len_0)))
                       (begin
                         (if (if (string? str_0)
                               (= len_0 (string-length str_0))
@@ -42632,7 +42578,7 @@
             (begin
               (let ((len_0
                      (if (eq? len24_0 unsafe-undefined)
-                       (|#%app| read-fasl-integer i25_0)
+                       (read-fasl-integer i25_0)
                        len24_0)))
                 (let ((pos_0 (unsafe-mcdr i25_0)))
                   (let ((bstr_0 (unsafe-mcar i25_0)))
@@ -42673,8 +42619,7 @@
      ((i_0 len24_0) (read-fasl-string_0 i_0 len24_0)))))
 (define read-fasl-bytes
   (lambda (i_0)
-    (let ((len_0 (|#%app| read-fasl-integer i_0)))
-      (read-bytes/exactly len_0 i_0))))
+    (let ((len_0 (read-fasl-integer i_0))) (read-bytes/exactly len_0 i_0))))
 (define fasl-literal?
   (lambda (q_0 need-exposed?_0)
     (if (impersonator? q_0)

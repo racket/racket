@@ -1846,7 +1846,7 @@
       (max
        0.0
        (/
-        (let ((app_0 (if timeout-at_0 timeout-at_0 (|#%app| distant-future))))
+        (let ((app_0 (if timeout-at_0 timeout-at_0 (distant-future))))
           (- app_0 (current-inexact-monotonic-milliseconds)))
         1000.0))))
    (lambda (wakeup_0)
@@ -2746,7 +2746,7 @@
 (define waiter-suspend!
   (lambda (w_0 interrupt-cb_0)
     (|#%app| (waiter-methods-suspend (waiter-ref w_0)) w_0 interrupt-cb_0)))
-(define finish_2595
+(define finish_2537
   (make-struct-type-install-properties
    '(select-waiter)
    1
@@ -2758,8 +2758,7 @@
      (let ((temp10_0
             (lambda args_0
               (internal-error "should not suspend a select-waiter"))))
-       (let ((temp11_0
-              (lambda (w_0 s_0) (|#%app| (|#%app| select-waiter-proc w_0)))))
+       (let ((temp11_0 (lambda (w_0 s_0) (|#%app| (select-waiter-proc w_0)))))
          (make-waiter-methods.1 temp11_0 temp10_0)))))
    (current-inspector)
    #f
@@ -2775,7 +2774,7 @@
    #f
    1
    0))
-(define effect_2826 (finish_2595 struct:select-waiter))
+(define effect_2826 (finish_2537 struct:select-waiter))
 (define select-waiter7.1
   (|#%name|
    select-waiter
@@ -4916,7 +4915,7 @@
   (make-parameter
    (let ((root-plumber_0 (1/current-plumber)))
      (lambda (v_0)
-       (begin (1/plumber-flush-all root-plumber_0) (|#%app| force-exit v_0))))
+       (begin (1/plumber-flush-all root-plumber_0) (force-exit v_0))))
    (lambda (p_0)
      (begin
        (if (if (procedure? p_0) (procedure-arity-includes? p_0 1) #f)
@@ -6482,7 +6481,7 @@
                   (void)))
               (void)))))))
      (loop_0 mref_0))))
-(define finish_2220
+(define finish_2610
   (make-struct-type-install-properties
    '(thread)
    24
@@ -6496,17 +6495,17 @@
                  1/prop:evt
                  (lambda (t_0)
                    (wrap-evt7.1
-                    (|#%app| get-thread-dead-evt t_0)
+                    (get-thread-dead-evt t_0)
                     (lambda (v_0) t_0))))))
            (let ((app_4
                   (cons
                    prop:waiter
                    (let ((temp28_0
                           (lambda (t_0 i-cb_0)
-                            (|#%app| thread-deschedule! t_0 #f i-cb_0))))
+                            (thread-deschedule! t_0 #f i-cb_0))))
                      (let ((temp29_0
                             (lambda (t_0 v_0)
-                              (begin (|#%app| thread-reschedule! t_0) v_0))))
+                              (begin (thread-reschedule! t_0) v_0))))
                        (make-waiter-methods.1 temp29_0 temp28_0))))))
              (list
               app_0
@@ -6529,7 +6528,7 @@
    #f
    24
    16777082))
-(define effect_2668 (finish_2220 struct:thread))
+(define effect_2668 (finish_2610 struct:thread))
 (define thread1.1
   (|#%name|
    thread
@@ -6808,7 +6807,7 @@
         (void)
         (begin
           (thread-group-remove! (thread-parent t_0) t_0)
-          (|#%app| thread-unscheduled-for-work-tracking! t_0)))
+          (thread-unscheduled-for-work-tracking! t_0)))
       (remove-from-sleeping-threads! t_0)
       (run-kill-callbacks! t_0)
       (set-thread-suspend+resume-callbacks! t_0 null)
@@ -6871,7 +6870,7 @@
                    (void))
                  (engine-block))
                (void))
-             (begin-unsafe (|#%app| 1/check-for-break)))))))))
+             (begin-unsafe (1/check-for-break)))))))))
 (define do-kill-thread
   (lambda (t_0) (if (1/thread-dead? t_0) (void) (thread-dead! t_0))))
 (define remove-thread-custodian
@@ -6969,8 +6968,8 @@
            (for-loop_0 lst_0))))
       (void)
       (set-thread-kill-callbacks! t_0 null))))
-(define check-for-break-after-kill (lambda () (|#%app| 1/check-for-break)))
-(define effect_2294
+(define check-for-break-after-kill (lambda () (1/check-for-break)))
+(define effect_2749
   (begin
     (void
      (let ((proc_0
@@ -6984,7 +6983,7 @@
                             (null? (thread-custodian-references t_0))))
                       (engine-block)
                       (void))
-                    (begin-unsafe (|#%app| 1/check-for-break)))
+                    (begin-unsafe (1/check-for-break)))
                   (void))))))
        (begin-unsafe (set! post-shutdown-action proc_0))))
     (void)))
@@ -6997,7 +6996,7 @@
          (if (1/thread? t_0)
            (void)
            (raise-argument-error 'thread-wait "thread?" t_0))
-         (1/semaphore-wait (|#%app| get-thread-dead-sema t_0)))))))
+         (1/semaphore-wait (get-thread-dead-sema t_0)))))))
 (define finish_3191
   (make-struct-type-install-properties
    '(thread-dead-evt)
@@ -7112,7 +7111,7 @@
         (begin
           (set-thread-descheduled?! t_0 #t)
           (thread-group-remove! (thread-parent t_0) t_0)
-          (|#%app| thread-unscheduled-for-work-tracking! t_0)
+          (thread-unscheduled-for-work-tracking! t_0)
           (if timeout-at_0
             (add-to-sleeping-threads!
              t_0
@@ -7122,9 +7121,7 @@
                #f
                timeout-at_0)))
             (void))
-          (if (eq? t_0 (current-thread/in-atomic))
-            (|#%app| thread-did-work!)
-            (void))))
+          (if (eq? t_0 (current-thread/in-atomic)) (thread-did-work!) (void))))
       (lambda ()
         (if (eq? t_0 (1/current-thread))
           (begin
@@ -7693,7 +7690,7 @@
                 (if or-part_0
                   or-part_0
                   (schedule-info-did-work? sched-info_0)))
-            (|#%app| thread-did-work!)
+            (thread-did-work!)
             (thread-poll-done! (current-thread/in-atomic)))
           (set-thread-sched-info! (current-thread/in-atomic) sched-info_0))
         (end-atomic))
@@ -7784,11 +7781,9 @@
                               (>= app_0 (current-atomic)))
                           (if (1/break-enabled)
                             (not
-                             (let ((app_0 thread-ignore-break-cell?))
-                               (|#%app|
-                                app_0
-                                t_0
-                                (current-break-enabled-cell))))
+                             (thread-ignore-break-cell?
+                              t_0
+                              (current-break-enabled-cell)))
                             #f)
                           #f)
                         #f)
@@ -9375,10 +9370,7 @@
                 (if enable-break?7_0 (make-thread-cell #t) #f)))
            (let ((s_0
                   (let ((temp41_0
-                         (let ((app_0 random-rotate))
-                           (|#%app|
-                            app_0
-                            (|#%app| evts->syncers who9_0 args11_0)))))
+                         (random-rotate (evts->syncers who9_0 args11_0))))
                     (let ((temp42_0
                            (if local-break-cell_0
                              (let ((t_0 (1/current-thread)))
@@ -9411,11 +9403,12 @@
                               (begin
                                 (start-atomic)
                                 (thread-push-kill-callback!
-                                 (lambda () (|#%app| syncing-abandon! s_0)))
+                                 (lambda () (syncing-abandon! s_0)))
                                 (thread-push-suspend+resume-callbacks!
-                                 (lambda () (|#%app| syncing-interrupt! s_0))
+                                 (lambda () (syncing-interrupt! s_0))
                                  (lambda ()
-                                   (|#%app| syncing-queue-retry! s_0)))
+                                   (begin-unsafe
+                                    (set-syncing-need-retry?! s_0 #t))))
                                 (end-atomic)))
                             (lambda ()
                               (begin
@@ -9457,8 +9450,7 @@
                                                          (if thunk-result?38_0
                                                            (lambda () #f)
                                                            #f))))))
-                                              (|#%app|
-                                               sync-poll.1
+                                              (sync-poll.1
                                                #f
                                                #t
                                                temp45_0
@@ -9495,17 +9487,14 @@
                                                     (end-atomic)
                                                     (loop_0 #f #f))
                                                   (begin
-                                                    (|#%app|
-                                                     syncing-done!
+                                                    (syncing-done!
                                                      s_0
                                                      none-syncer)
                                                     (end-atomic)
                                                     (if thunk-result?38_0
                                                       (lambda () #f)
                                                       #f))))
-                                              (if (if (|#%app|
-                                                       all-asynchronous?
-                                                       s_0)
+                                              (if (if (all-asynchronous? s_0)
                                                     (if (not
                                                          (syncing-selected
                                                           s_0))
@@ -9515,8 +9504,7 @@
                                                       #f)
                                                     #f)
                                                 (begin
-                                                  (|#%app|
-                                                   suspend-syncing-thread
+                                                  (suspend-syncing-thread
                                                    s_0
                                                    timeout-at_0)
                                                   (set-syncing-wakeup!
@@ -9547,8 +9535,7 @@
                                                               (if polled-all?_0
                                                                 polled-all?_0
                                                                 now-polled-all?_0))))))
-                                                    (|#%app|
-                                                     sync-poll.1
+                                                    (sync-poll.1
                                                      did-work?_0
                                                      #t
                                                      temp50_0
@@ -9563,7 +9550,7 @@
                                 (start-atomic)
                                 (thread-pop-suspend+resume-callbacks!)
                                 (thread-pop-kill-callback!)
-                                (|#%app| syncing-abandon! s_0)
+                                (syncing-abandon! s_0)
                                 (end-atomic)))))))))
                  (if enable-break?7_0
                    (let ((thunk_0
@@ -9591,8 +9578,7 @@
                                     (go_0 #f)
                                     (|#%app| (go_0 #t)))))
                               (|#%app| (go_0 #t))))))
-                     (|#%app|
-                      sync-poll.1
+                     (sync-poll.1
                       #f
                       #t
                       temp52_0
@@ -9682,7 +9668,7 @@
             (begin
               (call-with-values
                (lambda ()
-                 (|#%app| cross-commits-and-abandons commits14_0 abandons15_0))
+                 (cross-commits-and-abandons commits14_0 abandons15_0))
                (case-lambda
                 ((extended-commits_0 guarded-abandons_0)
                  (letrec*
@@ -9892,19 +9878,16 @@
                               (set-schedule-info-did-work?! sched-info_0 #t))
                              (end-atomic)
                              (loop_0 (syncer-next sr_0) 0 #f #f))
-                           (if (let ((app_0 nested-sync-evt?))
-                                 (|#%app| app_0 (syncer-evt sr_0)))
+                           (if (nested-sync-evt? (syncer-evt sr_0))
                              (begin
                                (end-atomic)
                                (call-with-values
                                 (lambda ()
-                                  (let ((app_0 poll-nested-sync))
-                                    (|#%app|
-                                     app_0
-                                     (syncer-evt sr_0)
-                                     just-poll?20_0
-                                     fast-only?21_0
-                                     sched-info_0)))
+                                  (poll-nested-sync
+                                   (syncer-evt sr_0)
+                                   just-poll?20_0
+                                   fast-only?21_0
+                                   sched-info_0))
                                 (case-lambda
                                  ((same?_0 new-evt_0)
                                   (if same?_0
@@ -9984,28 +9967,23 @@
                                                "choice event discovered after interrupt/retry callback"))
                                             (void))
                                           (let ((new-syncers_0
-                                                 (let ((app_0 random-rotate))
-                                                   (|#%app|
-                                                    app_0
+                                                 (random-rotate
+                                                  (let ((app_0
+                                                         (choice-evt-evts
+                                                          new-evt_0)))
                                                     (let ((app_1
-                                                           evts->syncers))
+                                                           (syncer-wraps
+                                                            sr_0)))
                                                       (let ((app_2
-                                                             (choice-evt-evts
-                                                              new-evt_0)))
-                                                        (let ((app_3
-                                                               (syncer-wraps
-                                                                sr_0)))
-                                                          (let ((app_4
-                                                                 (syncer-commits
-                                                                  sr_0)))
-                                                            (|#%app|
-                                                             app_1
-                                                             #f
-                                                             app_2
-                                                             app_3
-                                                             app_4
-                                                             (syncer-abandons
-                                                              sr_0))))))))))
+                                                             (syncer-commits
+                                                              sr_0)))
+                                                        (evts->syncers
+                                                         #f
+                                                         app_0
+                                                         app_1
+                                                         app_2
+                                                         (syncer-abandons
+                                                          sr_0))))))))
                                             (if (not new-syncers_0)
                                               (begin
                                                 (syncer-remove! sr_0 s32_0)
@@ -10417,8 +10395,8 @@
                             (let ((or-part_1 (never-evt? e_0)))
                               (if or-part_1
                                 or-part_1
-                                (if (|#%app| nested-sync-evt? e_0)
-                                  (let ((s_1 (|#%app| nested-sync-evt-s e_0)))
+                                (if (nested-sync-evt? e_0)
+                                  (let ((s_1 (nested-sync-evt-s e_0)))
                                     (if (not (syncing-selected s_1))
                                       (all-asynchronous? s_1)
                                       #f))
@@ -10440,8 +10418,8 @@
             (if (not sr_0)
               null
               (let ((e_0 (syncer-evt sr_0)))
-                (if (|#%app| nested-sync-evt? e_0)
-                  (let ((s_1 (|#%app| nested-sync-evt-s e_0)))
+                (if (nested-sync-evt? e_0)
+                  (let ((s_1 (nested-sync-evt-s e_0)))
                     (begin
                       (set-syncing-wakeup!
                        s_1
@@ -10675,8 +10653,7 @@
                (lambda ()
                  (let ((s_0
                         (let ((temp89_0
-                               (let ((app_0 evts->syncers))
-                                 (|#%app| app_0 'replace-evt (list evt_0)))))
+                               (evts->syncers 'replace-evt (list evt_0))))
                           (make-syncing.1 #f temp89_0))))
                    (values
                     #f
@@ -10689,7 +10666,7 @@
             orig-evt_0)))))))
 (define poll-nested-sync
   (lambda (ns_0 just-poll?_0 fast-only?_0 sched-info_0)
-    (let ((temp90_0 (|#%app| nested-sync-evt-s ns_0)))
+    (let ((temp90_0 (nested-sync-evt-s ns_0)))
       (let ((temp91_0
              (lambda (sched-info_1 polled-all?_0 no-wrappers?_0)
                (values polled-all?_0 ns_0))))
@@ -12782,9 +12759,7 @@
                                                               (set! result-kind_0
                                                                 'value)
                                                               (thread-dead!
-                                                               (check-not-unsafe-undefined
-                                                                t_0
-                                                                't_80)))
+                                                               t_0))
                                                             (end-atomic)))
                                                         (engine-block))))))))))))
                                    (do-make-thread.1

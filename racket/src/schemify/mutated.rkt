@@ -268,7 +268,8 @@
            (define state (hash-ref mutated v #f))
            (cond
              [(not-ready-mutated-state? state)
-              (hash-set! mutated v 'too-early)]
+              (unless unsafe-mode? ; unsafe => assume too-early won't happen
+                (hash-set! mutated v 'too-early))]
              [(delayed-mutated-state? state)
               (cond
                 [ids
