@@ -1,6 +1,12 @@
+# Due to low availability of the machine, we can't afford
+# to run this workflow on every push.
+# Instead, run it on schedule (every day)
+
 name: CI Linux ARM
 
-on: [push]
+on:
+  schedule:
+    - cron: '0 0 * * *'
 
 jobs:
 
