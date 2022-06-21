@@ -200,13 +200,13 @@
            (define default-pred-name default-pred) ...
            (define default-disp-name default-disp-expr) ...
            (define-values (fast-by-type ...)
-             (generic-methods generic-name fast-defn ...))
+             (generic-methods generic-name values fast-defn ...))
            ...
            (define-values (default-by-type ...)
-             (generic-methods generic-name default-defn ...))
+             (generic-methods generic-name values default-defn ...))
            ...
            (define-values (fallback ...)
-             (generic-methods generic-name fallback-defn ...))))]))
+             (generic-methods generic-name values fallback-defn ...))))]))
 
 (define-syntax (define-primitive-generics stx)
   (syntax-case stx ()
