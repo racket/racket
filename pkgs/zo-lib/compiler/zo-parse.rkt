@@ -283,7 +283,7 @@
     [29 closure]
     [30 delayed]
     [31 prefab]
-    [32 prefab-typ2]
+    [32 prefab-type]
     [33 let-one-unused]
     [34 shared]
     [35 toplevel]

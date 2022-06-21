@@ -17,9 +17,13 @@
       (list fs))))
 
 (define ex-mod2
-  '(module m racket
+  `(module m racket
      (define t 8)
      (define s 10)
+     (define v #s(prefab 1 2))
+     (define ty ,(let ()
+                   (struct prefab (x y) #:prefab)
+                   struct:prefab))
      (provide t (protect-out s))))
 
 (define ex-mod3

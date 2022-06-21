@@ -778,8 +778,8 @@
                             (prefab-struct-type-key+field-count v))))
         (define key+field-count (prefab-struct-type-key+field-count v))
         (out-byte CPT_PREFAB_TYPE out)
-        (out-anything (car key+field-count out))
-        (out-number (cdr key+field-count out))]
+        (out-anything (car key+field-count) out)
+        (out-number (cdr key+field-count) out)]
        [(quoted qv)
         (out-byte CPT_QUOTE out)
         (parameterize ([quoting? #t])
