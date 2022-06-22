@@ -696,6 +696,9 @@
                                  [else null])
                      #:configure (append
                                   '("--enable-shared" "--disable-static")
+                                  (if (and linux? (not (or m32? aarch64?)))
+                                      '("--host=core2-linux-gnu") ; core2 for portability
+                                      null)
                                   (if (and win? aarch64?)
                                       '("--disable-assembly")
                                       '())
