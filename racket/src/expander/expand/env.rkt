@@ -162,7 +162,7 @@
                  (lookup (unbox lift-env) (local-binding-key b) #f))
                (if out-of-context-as-variable?
                    variable
-                   (error "identifier used out of context:" id)))
+                   (raise-syntax-error #f "identifier used out of context" id)))
               #f
               #f
               #f)]

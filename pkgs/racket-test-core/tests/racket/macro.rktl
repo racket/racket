@@ -3167,8 +3167,8 @@
        (define-values (y-id) (internal-definition-context-add-scopes ctx (quote-syntax deadbeef-y)))
        (syntax-local-bind-syntaxes (list (syntax-shift-phase-level x-id -1)) (quote-syntax (lambda (s) (quote-syntax 1000))) ctx)
        (syntax-local-bind-syntaxes (list y-id) (datum->syntax x-id '(+ 1 (deadbeef-x))) ctx))))
- exn:fail?
- #rx"identifier used out of context.*deadbeef-x")
+ exn:fail:syntax?
+ #rx"deadbeef-x: identifier used out of context")
 
 ;; ----------------------------------------
 
