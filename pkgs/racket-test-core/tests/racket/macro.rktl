@@ -3153,6 +3153,23 @@
              exn:fail:contract:arity?
              #rx"received: 2")
 
+
+;; ----------------------------------------
+;; regression test
+
+(err/rt-test
+ (eval
+  '(module m '#%kernel
+     (#%require (for-syntax '#%kernel))
+     (begin-for-syntax
+       (define-values (ctx) (syntax-local-make-definition-context))
+       (define-values (x-id) (internal-definition-context-add-scopes ctx (quote-syntax deadbeef-x)))
+       (define-values (y-id) (internal-definition-context-add-scopes ctx (quote-syntax deadbeef-y)))
+       (syntax-local-bind-syntaxes (list (syntax-shift-phase-level x-id -1)) (quote-syntax (lambda (s) (quote-syntax 1000))) ctx)
+       (syntax-local-bind-syntaxes (list y-id) (datum->syntax x-id '(+ 1 (deadbeef-x))) ctx))))
+ exn:fail?
+ #rx"identifier used out of context.*deadbeef-x")
+
 ;; ----------------------------------------
 
 (report-errs)
