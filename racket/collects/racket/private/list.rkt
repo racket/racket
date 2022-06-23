@@ -440,9 +440,10 @@
                         (if (and (eq? 'name 'compose1)
                                  (not (eqv? 1 (procedure-arity g))))
                             (pipeline (procedure-reduce-arity g 1) rfuns)
-                            (if (id? g)
-                                (pipeline (car rfuns) (cdr rfuns))
-                                (pipeline g rfuns)))]
+                            (cond
+                              [(null? rfuns) g]
+                              [(id? g) (pipeline (car rfuns) (cdr rfuns))]
+                              [else (pipeline g rfuns)]))]
                        [(id? g) (pipeline f rfuns)]
                        [else (simple-compose (pipeline g rfuns) f)]))))]))))
       (mk compose1 app1 can-compose1 pipeline1
