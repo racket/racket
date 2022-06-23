@@ -411,16 +411,20 @@
             (case-lambda
               [(f)
                (if (procedure? f) f (raise-argument-error 'name "procedure?" 0 f))]
-              [(f g)
-               (unless (procedure? f)
-                 (raise-argument-error 'name "procedure?" 0 f g))
+              [(g f)
                (unless (procedure? g)
-                 (raise-argument-error 'name "procedure?" 1 f g))
-               (can-compose name 0 f f '())
+                 (raise-argument-error 'name "procedure?" 0 g f))
+               (unless (procedure? f)
+                 (raise-argument-error 'name "procedure?" 1 g f))
+               (can-compose name 0 g g '())
                (cond
-                 [(id? f) g]
+                 [(id? f)
+                  (if (and (eq? 'name 'compose1)
+                           (not (eqv? 1 (procedure-arity g))))
+                      (procedure-reduce-arity g 1)
+                      g)]
                  [(id? g) f]
-                 [else (simple-compose f g)])]
+                 [else (simple-compose g f)])]
               [() values]
               [(f0 . fs0)
                (let loop ([f f0] [fs fs0] [i 0] [rfuns '()])
@@ -429,11 +433,18 @@
                  (if (pair? fs)
                    (begin (can-compose name i f f0 fs0)
                           (loop (car fs) (cdr fs) (add1 i) (cons f rfuns)))
-                   (let ([rfuns (remq* (list values) rfuns)])
+                   (let ([g     (car rfuns)]
+                         [rfuns (remq* (list values) (cdr rfuns))])
                      (cond
-                       [(null? rfuns) f]
-                       [(id? f) (pipeline (car rfuns) (cdr rfuns))]
-                       [else (simple-compose (pipeline (car rfuns) (cdr rfuns)) f)]))))]))))
+                       [(id? f)
+                        (if (and (eq? 'name 'compose1)
+                                 (not (eqv? 1 (procedure-arity g))))
+                            (pipeline (procedure-reduce-arity g 1) rfuns)
+                            (if (id? g)
+                                (pipeline (car rfuns) (cdr rfuns))
+                                (pipeline g rfuns)))]
+                       [(id? g) (pipeline f rfuns)]
+                       [else (simple-compose (pipeline g rfuns) f)]))))]))))
       (mk compose1 app1 can-compose1 pipeline1
           (lambda (f g) (mk-simple-compose app1 f g)))
       (mk compose  app* can-compose* pipeline*
