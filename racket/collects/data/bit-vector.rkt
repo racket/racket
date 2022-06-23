@@ -36,8 +36,9 @@
 (define not-given (gensym))
 
 (define (bit-vector-ref bv n [default not-given])
+  ;; use "natural?" here to be compatible with the previously used contract
   (unless (exact-nonnegative-integer? n)
-    (raise-argument-error 'bit-vector-ref "exact-nonnegative-integer?" n))
+    (raise-argument-error 'bit-vector-ref "natural?" n))
   (match bv
     [(struct bit-vector (words size))
      (cond
@@ -95,8 +96,9 @@
     (unsafe-bytes-set! words wi new-word)))
 
 (define (bit-vector-set! bv n b)
+  ;; use "natural?" here to be compatible with the previously used contract
   (unless (exact-nonnegative-integer? n)
-    (raise-argument-error 'bit-vector-set! "exact-nonnegative-integer?" n))
+    (raise-argument-error 'bit-vector-set! "natural?" n))
   (unless (boolean? b)
     (raise-argument-error 'bit-vector-set! "boolean?" b))
   (match bv
