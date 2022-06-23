@@ -253,6 +253,7 @@
 
         (define char-complex (trans "'([^\\']|\\\\.)+'"))
         (define string-complex (trans "\"([^\\\"]|\\\\.)*\""))
+        (define line-continue (trans "[\\]\n"))
 
         (define simple-table (make-vector 256 #f))
 
@@ -401,6 +402,8 @@
                                     (loop (cdar m)
                                           (cons (mk-string (subbytes s (caar m) (cdar m)))
                                                 result)))]
+                              [(regexp-match? line-continue s p)
+                               (loop (add1 p) result)]
                               [else
                                (error 'c-tokenize "strange: ~e ~e" p (subbytes s p (min len (+ p 100))))])]
                            [(not (car simple))
