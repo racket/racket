@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require racket/stxparam
+(require racket/function
+         racket/stxparam
          (for-syntax racket/base))
 
 (provide match-equality-test
@@ -10,7 +11,9 @@
          matchable?
          match-prompt-tag
          mlist? mlist->list
-         syntax-srclocs)
+         syntax-srclocs
+         curry
+         curryr)
 
 (define match-prompt-tag (make-continuation-prompt-tag 'match)) 
 

@@ -61,8 +61,8 @@
               (or (Var? pat) (Dummy? pat)))
          (make-OrderedAnd (list (make-Pred pred?)
                                 (if to-list
-                                    (make-App to-list (list pat))
-                                    pat)))]
+                                    (make-App to-list (list (VarDummy-depth+1 pat)))
+                                    (VarDummy-depth+1 pat))))]
         [else (make-GSeq (list (list pat))
                          (list min)
                          ;; no upper bound

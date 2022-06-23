@@ -156,7 +156,10 @@
     [(Pred? p) null]
     [(Var? p)
      (let ([v (Var-v p)])
-       (list (depth0 (free-identifier-mapping-get (current-renaming) v (lambda () v)))))]
+       (list
+        (set-depth
+         (free-identifier-mapping-get (current-renaming) v (lambda () v))
+         (get-depth v))))]
     [(Or? p)
      (bound-vars (car (Or-ps p)))]
     [(Box? p)
@@ -207,17 +210,22 @@
   (define v (ca*r (syntax-property x 'match-ellipsis-depth)))
   (if (exact-nonnegative-integer? v) v 0))
 
-;; depth0 : Identifier -> Identifier
-;; Sets 'match-ellipsis-depth property to 0
-;; (get-depth (depth0 x)) = 0
-(define (depth0 x)
-  (syntax-property x 'match-ellipsis-depth 0))
+;; set-depth : Identifier Natural -> Identifier
+(define (set-depth x d)
+  (syntax-property x 'match-ellipsis-depth d))
 
 ;; depth+1 : Identifier -> Identifier
 ;; Increments the 'match-ellipsis-depth property
 ;; (get-depth (depth+1 x)) = (add1 (get-depth x))
-(define (depth+1 x)
-  (syntax-property x 'match-ellipsis-depth (add1 (get-depth x))))
+(define (depth+1 x) (set-depth x (add1 (get-depth x))))
+
+;; VarDummy-depth+1 : Var -> Var, Dummy -> Dummy
+(define (VarDummy-depth+1 p)
+  (cond
+    [(Dummy? p) (Dummy (depth+1 (Var-v p)))]
+    [(Var? p) (Var (depth+1 (Var-v p)))]
+    [else (error 'match "bad pattern: ~a" p)]))
+
 
 #|
 ;; EXAMPLES

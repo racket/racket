@@ -218,7 +218,7 @@
                     =>
                     (lambda (id)
                       (make-Row ps
-                                #`(if ((match-equality-test) #,x #,id)
+                                #`(if #,(nonlinear-reference id x (get-depth v))
                                       #,(Row-rhs row)
                                       (fail))
                                 (Row-unmatch row)
@@ -571,6 +571,17 @@
 (define ((generate-temporaries/seen seen) vs)
   (for/list ([v (in-list vs)])
     (or (find-seen v seen) (generate-temporary v))))
+
+;; nonlinear-reference : Identifier Identifier Natural -> Syntax
+(define (nonlinear-reference decl ref ref-depth)
+  (cond
+    [(zero? ref-depth) #`((match-equality-test) #,ref #,decl)]
+    [else 
+     (define good? #`(curryr (match-equality-test) #,decl))
+     (let loop ([depth ref-depth] [good? good?])
+       (cond
+         [(= 1 depth) #`(andmap #,good? #,ref)]
+         [else (loop (sub1 depth) #`(curry andmap #,good?))]))]))
 
 ;; (require mzlib/trace)
 ;; (trace compile* compile-one)
