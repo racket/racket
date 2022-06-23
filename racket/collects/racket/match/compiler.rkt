@@ -384,9 +384,15 @@
             [head-idss
              (for/list ([heads headss])
                (apply append (map bound-vars heads)))]
+            [head-idss/depth
+             (for/list ([head-ids head-idss] [once? onces?])
+               (if once? head-ids (map depth+1 head-ids)))]
             [heads-seen
-             (map (lambda (x) (cons x #f))
-                  (apply append (map bound-vars heads)))]
+             (for/list ([head heads] [once? onces?]
+                        #:when #t
+                        [v (bound-vars head)])
+               (define v* (if once? v (depth+1 v)))
+               (if (zero? (get-depth v*)) (cons v* v*) (cons v* #f)))]
             [tail-seen
              (map (lambda (x) (cons x x))
                   (bound-vars tail))]
@@ -398,6 +404,7 @@
                      [var0 (car vars)]
                      [((hid ...) ...) head-idss]
                      [((hid* ...) ...) head-idss*]
+                     [((hid/depth ...) ...) head-idss/depth]
                      [((hid-arg ...) ...) hid-argss]
                      [(rep ...) reps]
                      [(maxrepconstraint ...)
@@ -425,7 +432,7 @@
                        [tail-rhs
                         #`(cond minrepclause ...
                                 [else
-                                 (let ([hid hid-rhs] ... ...
+                                 (let ([hid/depth hid-rhs] ... ...
                                        [fail-tail fail])
                                    #,(compile*
                                       (cdr vars)
