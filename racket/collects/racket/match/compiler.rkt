@@ -228,7 +228,7 @@
                    [else (make-Row ps
                                    #`(let ([#,v* #,x]) #,(Row-rhs row))
                                    (Row-unmatch row)
-                                   (cons (cons v* x) (Row-vars-seen row)))])]))])
+                                   (append (Row-vars-seen row) (list (cons v* x))))])]))])
        ;; compile the transformed block
        (compile* xs (map transform block) esc))]
     ;; the Constructor rule
@@ -277,7 +277,7 @@
                                (list (make-Row (cdr pats)
                                                (Row-rhs row)
                                                (Row-unmatch row)
-                                               (append (map cons vars vars) seen)))
+                                               (append seen (map cons vars vars))))
                                esc
                                #f)
                    (#,esc))))))]
@@ -439,9 +439,9 @@
                                       (list (make-Row rest-pats k
                                                       (Row-unmatch (car block))
                                                       (append
+                                                       prev-seen
                                                        heads-seen
-                                                       tail-seen
-                                                       prev-seen)))
+                                                       tail-seen)))
                                       #'fail-tail))])])
            (parameterize ([current-renaming
                            (for/fold ([ht (copy-mapping (current-renaming))])
@@ -474,8 +474,8 @@
                                               #`tail-rhs
                                               (Row-unmatch (car block))
                                               (append
-                                               heads-seen
-                                               prev-seen))))
+                                               prev-seen
+                                               heads-seen))))
                              #'failkv))))))]
     [else (error 'compile "unsupported pattern: ~a\n" first)]))
 
