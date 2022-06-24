@@ -257,6 +257,12 @@ clean:
 	@exit 1
 
 # ------------------------------------------------------------
+# Linking all packages (development mode; not an installer build)
+
+pkgs-catalog: $(ZUO)
+	$(RUN_ZUO) pkgs-catalog $(BUILD_VARS)
+
+# ------------------------------------------------------------
 # Configuration options for building installers
 
 # On variable definitions: Spaces are allowed where noted and

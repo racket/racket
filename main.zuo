@@ -355,22 +355,7 @@
     (define jobs (get-jobs))
 
     (unless also?
-      (racket vars
-              (list "-U" "-G" (path-only build-config.rktd)
-                    "-l-" "pkg/dirs-catalog"
-                    "--link" "--check-metadata" "--immediate"
-                    (at-source "racket/share/pkgs-catalog")
-                    (at-source "pkgs")
-                    (at-source "racket/src/expander")
-                    (at-source "racket/src/zuo/zuo-doc")))
-      (racket vars
-              (list "-U" "-G" (path-only build-config.rktd)
-                    (at-source "racket/src/pkgs-config.rkt")
-                    default-src-catalog
-                    (lookup 'SRC_CATALOG)))
-      (racket vars
-              (at-source "racket/src/pkgs-check.rkt")
-              (at-source "racket/share/pkgs-catalog"))
+      (pkgs-catalog token)
 
       (raco vars "pkg" "update"
             "--all" "--auto" "--no-setup" "--scope" "installation"
@@ -385,6 +370,24 @@
 
     (setup vm (shell->strings setup-extra-args)
            (if also? "-D" '())))
+
+  (define (pkgs-catalog token)
+    (racket vars
+            (list "-U" "-G" (path-only build-config.rktd)
+                  "-l-" "pkg/dirs-catalog"
+                  "--link" "--check-metadata" "--immediate"
+                  (at-source "racket/share/pkgs-catalog")
+                  (at-source "pkgs")
+                  (at-source "racket/src/expander")
+                  (at-source "racket/src/zuo/zuo-doc")))
+    (racket vars
+            (list "-U" "-G" (path-only build-config.rktd)
+                  (at-source "racket/src/pkgs-config.rkt")
+                  default-src-catalog
+                  (lookup 'SRC_CATALOG)))
+    (racket vars
+            (at-source "racket/src/pkgs-check.rkt")
+            (at-source "racket/share/pkgs-catalog")))
 
   ;; ------------------------------------------------------------
   ;; Distribution builds: server
@@ -728,6 +731,8 @@
        [:target pb-build () ,(lambda (token) (pb-manage 'build))]
        [:target pb-stage () ,(lambda (token) (pb-manage 'stage))]
        [:target pb-push () ,(lambda (token) (pb-manage 'push))]
+
+       [:target pkgs-catalog () ,(lambda (token) (pkgs-catalog token))]
 
        [:target native-cs-for-cross () ,(lambda (token) (maybe-fetch 'cs) (native-for-cross "cs/c" token))]
        [:target native-bc-for-cross () ,(lambda (token) (native-for-cross "bc" token))]
