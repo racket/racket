@@ -5,7 +5,9 @@
           "module-hier.rkt"
           (for-label setup/dirs
                      setup/link
-                     racket/date))
+                     racket/date
+                     (only-in scribble/manual
+                              defmodule)))
 
 @title[#:tag "module-basics"]{Module Basics}
 
@@ -307,3 +309,97 @@ build documentation for the collection and add it to the documentation
 index, as specified by a @filepath{info.rkt} module in the collection.
 See @secref[#:doc '(lib "scribblings/raco/raco.scrbl") "setup"] for
 more information on @exec{raco setup}.
+
+@; ----------------------------------------
+@section[#:tag "intracollection"]{Module References Within a Collection}
+
+When a module within a collection references another module within the
+same collection, either a relative path or a collection path could
+work. For example, a @filepath{sort.rkt} module that references
+@filepath{db/lookup.rkt} and @filepath{machine/control.rkt} modules within
+the same collection could be written with relative paths as in
+@secref["module-org"]:
+
+@racketmod[
+#:file "sort.rkt"
+racket
+(require "db/lookup.rkt" "machine/control.rkt")
+....]
+
+Alternatively, if the collection is named @filepath{candy}, then
+@filepath{sort.rkt} could use collection paths to import the two
+modules:
+
+@racketmod[
+#:file "sort.rkt"
+racket
+(require candy/db/lookup candy/machine/control)
+....]
+
+For most purposes, these choices will work the same, but there are
+exceptions. When writing documentation with @seclink[#:doc '(lib
+"scribblings/scribble/scribble.scrbl") "top"]{Scribble}, you must use
+a collection path with @racket[defmodule] and similar forms; that's
+partly because documentation is meant to be read by client
+programmers, and so the collection-based name should appear.
+Meanwhile, for @racket[require], using relative paths for references
+within a collection tends to be the most flexible approach, but with
+caveats.
+
+Relative-path references work much like relative URL references: the
+reference is expanded based on the way the enclosing module is
+accessed. If the enclosing module is accessed through a filesystem
+path, then a relative path in @racket[require] is combined with that
+filesystem path to form a new filesystem path. If the enclosing module
+is accessed through a collection path, then a relative path in
+@racket[require] is combined with that collection path to form a new
+collection path. A collection path is, in turn, converted to a
+filesystem path, and so the difference between starting with a
+filesystem or collection path does not usually matter. Unfortunately,
+inherent complexities of path resolution can create differences in
+some situations:
+
+@itemlist[
+
+ @item{Through soft links, multiple mount points, or case-insensitive
+       filesystems (on an operating system that does not implicitly
+       case-normalize paths), there may be multiple filesystem paths
+       that refer to the same module file.
+
+       For example, when the current directory is the @filepath{candy}
+       collection's directory, the current-directory path that
+       @exec{racket} receives on startup may cause @exec{racket
+       sort.rkt} to use a different filesystem path than @exec{racket
+       -l candy/sort} finds through the library-collection search
+       path. In that case, if @filepath{sort.rkt} leads to some
+       modules through both relative-path references and
+       collection-based references, it's possible that those resolve
+       to difference instances of the same source module, creating
+       confusion through multiple instantiations.}
+
+ @item{When @seclink["exe" #:doc '(lib
+       "scribblings/raco/raco.scrbl")]{@exec{raco exec}} plus
+       @seclink["exe-dist" #:doc '(lib
+       "scribblings/raco/raco.scrbl")]{@exec{raco distribute}} are
+       used to create an executable to run on a different machine, the
+       paths of the current machine are likely unrelated to paths on
+       the target machine. The @exec{raco exe} tool treats modules
+       that are referenced via filesystem paths differently than
+       modules reference via collection paths, because only the latter
+       make sense to access through reflective operations at run
+       time.
+
+       For example, if @exec{raco exe sort.rkt} creates an executable
+       that uses @racket[(dynamic-require 'candy/db/lookup #f)] at run
+       time, then that @racket[dynamic-require] will fail in the case
+       that @filepath{db/lookup.rkt} is resolved relative to the
+       filesystem path @racket{sort.rkt} at executable-creation time.}
+
+]
+
+Using only collection-based paths (including using shell commands like
+@exec{racket -l candy/sort} and not like @exec{racket sort.rkt}) can
+avoid all problems, but then you must only develop modules within an
+installed collection, which is often inconvenient. Using relative-path
+references consistently tends to be the most convenient while still
+working in most circumstances.
