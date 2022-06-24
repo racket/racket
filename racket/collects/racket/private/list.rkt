@@ -433,19 +433,12 @@
                  (if (pair? fs)
                    (begin (can-compose name i f f0 fs0)
                           (loop (car fs) (cdr fs) (add1 i) (cons f rfuns)))
-                   (let ([g     (car rfuns)]
+                   (let ([f (name (car rfuns) f)]
                          [rfuns (remq* (list values) (cdr rfuns))])
                      (cond
-                       [(id? f)
-                        (if (and (eq? 'name 'compose1)
-                                 (not (eqv? 1 (procedure-arity g))))
-                            (pipeline (procedure-reduce-arity g 1) rfuns)
-                            (cond
-                              [(null? rfuns) g]
-                              [(id? g) (pipeline (car rfuns) (cdr rfuns))]
-                              [else (pipeline g rfuns)]))]
-                       [(id? g) (pipeline f rfuns)]
-                       [else (simple-compose (pipeline g rfuns) f)]))))]))))
+                       [(null? rfuns) f]
+                       [(id? f) (pipeline (car rfuns) (cdr rfuns))]
+                       [else (simple-compose (pipeline (car rfuns) (cdr rfuns)) f)]))))]))))
       (mk compose1 app1 can-compose1 pipeline1
           (lambda (f g) (mk-simple-compose app1 f g)))
       (mk compose  app* can-compose* pipeline*
