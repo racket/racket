@@ -411,20 +411,20 @@
             (case-lambda
               [(f)
                (if (procedure? f) f (raise-argument-error 'name "procedure?" 0 f))]
-              [(g f)
-               (unless (procedure? g)
-                 (raise-argument-error 'name "procedure?" 0 g f))
+              [(f g)
                (unless (procedure? f)
-                 (raise-argument-error 'name "procedure?" 1 g f))
-               (can-compose name 0 g g '())
+                 (raise-argument-error 'name "procedure?" 0 f g))
+               (unless (procedure? g)
+                 (raise-argument-error 'name "procedure?" 1 f g))
+               (can-compose name 0 f f '())
                (cond
-                 [(id? f)
+                 [(id? g)
                   (if (and (eq? 'name 'compose1)
-                           (not (eqv? 1 (procedure-arity g))))
-                      (procedure-reduce-arity g 1)
-                      g)]
-                 [(id? g) f]
-                 [else (simple-compose g f)])]
+                           (not (eqv? 1 (procedure-arity f))))
+                      (procedure-reduce-arity f 1)
+                      f)]
+                 [(id? f) g]
+                 [else (simple-compose f g)])]
               [() values]
               [(f0 . fs0)
                (let loop ([f f0] [fs fs0] [i 0] [rfuns '()])
