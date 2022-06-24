@@ -162,7 +162,7 @@ RACKETCS_SUFFIX =
 # ------------------------------------------------------------
 # Build targets
 
-BUILD_VARS = MAKE=$(MAKE) \
+BUILD_VARS = MAKE="$(MAKE)" \
              VM="$(VM)" \
              JOBS="$(JOBS)" \
              CPUS="$(CPUS)" \
