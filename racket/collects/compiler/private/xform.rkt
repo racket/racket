@@ -253,7 +253,7 @@
 
         (define char-complex (trans "'([^\\']|\\\\.)+'"))
         (define string-complex (trans "\"([^\\\"]|\\\\.)*\""))
-        (define line-continue (trans "[\\]\n"))
+        (define line-continue (trans "[\\]\r?\n"))
 
         (define simple-table (make-vector 256 #f))
 
