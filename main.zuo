@@ -355,7 +355,7 @@
     (define jobs (get-jobs))
 
     (unless also?
-      (pkgs-catalog token)
+      (pkgs-catalog token vars)
 
       (raco vars "pkg" "update"
             "--all" "--auto" "--no-setup" "--scope" "installation"
@@ -371,7 +371,7 @@
     (setup vm (shell->strings setup-extra-args)
            (if also? "-D" '())))
 
-  (define (pkgs-catalog token)
+  (define (pkgs-catalog token vars)
     (racket vars
             (list "-U" "-G" (path-only build-config.rktd)
                   "-l-" "pkg/dirs-catalog"
@@ -732,7 +732,7 @@
        [:target pb-stage () ,(lambda (token) (pb-manage 'stage))]
        [:target pb-push () ,(lambda (token) (pb-manage 'push))]
 
-       [:target pkgs-catalog () ,(lambda (token) (pkgs-catalog token))]
+       [:target pkgs-catalog () ,(lambda (token) (pkgs-catalog token (find-racket vars vm)))]
 
        [:target native-cs-for-cross () ,(lambda (token) (maybe-fetch 'cs) (native-for-cross "cs/c" token))]
        [:target native-bc-for-cross () ,(lambda (token) (native-for-cross "bc" token))]
