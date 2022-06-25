@@ -558,14 +558,20 @@ platforms raises an exception. See also @racketmodname[ffi/winapi].
 
 The optional @racket[varargs-after] argument indicates whether some
 function-type arguments should be considered ``varargs,'' which are
-argument represented by an ellipsis @litchar{...} in the C
-declaration. A @racket[#f] value indicates that the C function type
-does not have varargs. If @racket[varargs-after] is a number, then
-arguments after the first @racket[varargs-after] arguments are
-varargs. Note that @racket[#f] is different from @racket[(length
-input-types)] on some platforms; the possibility of varargs for a
-function may imply a different calling convention even for non-vararg
-arguments.
+argument represented by an ellipsis @litchar{...} in the C declaration
+(but by explicit arguments in @racket[input-types]). A @racket[#f]
+value indicates that the C function type does not have varargs. If
+@racket[varargs-after] is a number, then arguments after the first
+@racket[varargs-after] arguments in @racket[input-types] are varargs.
+Note that @racket[#f] is different from @racket[(length input-types)]
+on some platforms; the possibility of varargs for a function may imply
+a different calling convention even for non-vararg arguments. Note
+also that a non-@racket[#f] @racket[varargs-after] does @emph{not}
+mean that you can supply any number of arguments to a @tech{callout}
+or receive any number of arguments to a @tech{callback} using the
+procedure type; to work with different argument counts and argument
+types, use @racket[_cprocedure] (or @racket[_fun]) separately for each
+combination.
 
 For @tech{callouts} to foreign functions with the generated type:
 
