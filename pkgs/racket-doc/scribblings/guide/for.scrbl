@@ -503,13 +503,16 @@ fast-clause [id fast-seq]
 ]
 
 @racketgrammar[
-#:literals [in-range in-naturals in-list in-vector in-string in-bytes in-value stop-before stop-after]
+#:literals [in-range in-inclusive-range in-naturals in-list in-mlist in-vector in-string in-bytes in-value stop-before stop-after]
 fast-seq (in-range expr)
          (in-range expr expr)
          (in-range expr expr expr)
+         (in-inclusive-range expr expr)
+         (in-inclusive-range expr expr expr)
          (in-naturals)
          (in-naturals expr)
          (in-list expr)
+         (in-mlist expr)
          (in-vector expr)
          (in-string expr)
          (in-bytes expr)
