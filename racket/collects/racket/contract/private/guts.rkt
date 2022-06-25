@@ -393,7 +393,13 @@
         (unless listof-any
           (error 'coerce-contract/f::listof-any "too soon!"))
         listof-any]
+       [(chaperone-of? x void?) void?/c]
+       [(chaperone-of? x byte?) byte?/c]
+       [(chaperone-of? x char?) char?/c]
+       [(chaperone-of? x symbol?) symbol?/c]
+       [(chaperone-of? x string?) string?/c]
        [(chaperone-of? x boolean?) boolean?/c]
+       [(chaperone-of? x identifier?) identifier?/c]
        [(or (chaperone-of? x pair?)
             (chaperone-of? x cons?))
         (unless consc-anyany
@@ -751,6 +757,23 @@
        (procedure-closure-contents-eq? (predicate-contract-pred this)
                                        (predicate-contract-pred that))))
 
+
+(define (predicate-contract-list-contract? ctc)
+  (or (equal? (predicate-contract-pred ctc) null?)
+      (equal? (predicate-contract-pred ctc) empty?)))
+
+(define (predicate-contract-do-generate ctc)
+  (define generate (predicate-contract-generate ctc))
+  (cond
+    [generate generate]
+    [else
+     (define built-in-generator
+       (find-generate (predicate-contract-pred ctc)
+                      (predicate-contract-name ctc)))
+     (λ (fuel)
+       (and built-in-generator
+            (λ () (built-in-generator fuel))))]))
+
 ;; sane? : boolean -- indicates if we know that the predicate is well behaved
 ;; (for now, basically amounts to trusting primitive procedures)
 (define-struct predicate-contract (name pred generate sane?)
@@ -772,19 +795,51 @@
           (if (p? v)
               v
               (raise-predicate-blame-error-failure blame v neg-party name))))))
-   #:generate (λ (ctc)
-                 (let ([generate (predicate-contract-generate ctc)])
-                   (cond
-                     [generate generate]
-                     [else
-                      (define built-in-generator
-                        (find-generate (predicate-contract-pred ctc)
-                                       (predicate-contract-name ctc)))
-                      (λ (fuel)
-                        (and built-in-generator
-                             (λ () (built-in-generator fuel))))])))
-   #:list-contract? (λ (ctc) (or (equal? (predicate-contract-pred ctc) null?)
-                                 (equal? (predicate-contract-pred ctc) empty?)))))
+   #:generate predicate-contract-do-generate
+   #:list-contract? predicate-contract-list-contract?))
+
+;; each specialized-predicate-contract exists only to avoid the
+;; indirect call to the predicate function (the call to `p?` above,
+;; in the definition of the projection for predicate-contract)
+(define-syntax-rule
+  (make-specialized-predicate-contract p?)
+  (make-specialized-predicate-contract/proc
+   (λ (ctc)
+     (define name (predicate-contract-name ctc))
+     (λ (blame)
+       (λ (v neg-party)
+         (if (p? v)
+             v
+             (raise-predicate-blame-error-failure blame v neg-party name)))))
+   p? 'p?))
+(define (make-specialized-predicate-contract/proc lnp predicate name)
+  (define flat-contract-prop
+    (build-flat-contract-property
+     #:trusted trust-me
+     #:stronger predicate-contract-equivalent
+     #:equivalent predicate-contract-equivalent
+     #:name (λ (ctc) (predicate-contract-name ctc))
+     #:first-order (λ (ctc) (predicate-contract-pred ctc))
+     #:late-neg-projection lnp
+     #:generate predicate-contract-do-generate
+     #:list-contract? predicate-contract-list-contract?))
+  (define-values (struct:specialized-predicate-contract
+                  make-specialized-predicate-contract
+                  specialized-predicate-contract?
+                  specialized-predicate-contract-get
+                  specialized-predicate-contract-set!)
+    (make-struct-type 'specialized-predicate-contract
+                      struct:predicate-contract 0 0 #f
+                      (list (cons prop:flat-contract flat-contract-prop))))
+  (make-specialized-predicate-contract name predicate #f #t))
+
+(define void?/c (make-specialized-predicate-contract void?))
+(define byte?/c (make-specialized-predicate-contract byte?))
+(define char?/c (make-specialized-predicate-contract char?))
+(define symbol?/c (make-specialized-predicate-contract symbol?))
+(define string?/c (make-specialized-predicate-contract string?))
+(define boolean?/c (make-specialized-predicate-contract boolean?))
+(define identifier?/c (make-specialized-predicate-contract identifier?))
 
 (define (raise-predicate-blame-error-failure blame v neg-party predicate-name)
   (raise-blame-error blame v #:missing-party neg-party
@@ -796,8 +851,6 @@
 (define (check-flat-contract predicate) (coerce-flat-contract 'flat-contract predicate))
 (define (build-flat-contract name pred [generate #f])
   (make-predicate-contract name pred generate #f))
-
-(define boolean?/c (make-predicate-contract 'boolean? boolean? #f #t))
 
 (define (contract-name ctc)
   (contract-struct-name
