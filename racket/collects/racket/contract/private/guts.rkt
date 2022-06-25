@@ -387,37 +387,37 @@
     [(contract-struct? x) #f] ;; this has to come first, since some of these are procedure?.
     [(and (procedure? x) (procedure-arity-includes? x 1))
      (cond
-       [(chaperone-of? x null?) list/c-empty]
-       [(chaperone-of? x empty?) list/c-empty]
-       [(chaperone-of? x list?)
+       [(eq? x null?) list/c-empty]
+       [(eq? x empty?) list/c-empty]
+       [(eq? x list?)
         (unless listof-any
           (error 'coerce-contract/f::listof-any "too soon!"))
         listof-any]
-       [(chaperone-of? x void?) void?/c]
-       [(chaperone-of? x byte?) byte?/c]
-       [(chaperone-of? x char?) char?/c]
-       [(chaperone-of? x symbol?) symbol?/c]
-       [(chaperone-of? x string?) string?/c]
-       [(chaperone-of? x boolean?) boolean?/c]
-       [(chaperone-of? x identifier?) identifier?/c]
-       [(or (chaperone-of? x pair?)
-            (chaperone-of? x cons?))
+       [(eq? x void?) void?/c]
+       [(eq? x byte?) byte?/c]
+       [(eq? x char?) char?/c]
+       [(eq? x symbol?) symbol?/c]
+       [(eq? x string?) string?/c]
+       [(eq? x boolean?) boolean?/c]
+       [(eq? x identifier?) identifier?/c]
+       [(or (eq? x pair?)
+            (eq? x cons?))
         (unless consc-anyany
           (error 'coerce-contract/f::consc-anyany "too soon!"))
         consc-anyany]
-       [(chaperone-of? x real?)
+       [(eq? x real?)
         (unless between/c-inf+inf-as-real?
           (error 'coerce-contract/f::between/c-inf+inf "too soon!"))
         (if (name-default? name)
             between/c-inf+inf-as-real?
             (renamed-between/c -inf.0 +inf.0 name))]
-       [(chaperone-of? x exact-positive-integer?)
+       [(eq? x exact-positive-integer?)
         (if (name-default? name) integer-in-1f (renamed-integer-in 1 #f name))]
-       [(chaperone-of? x exact-nonnegative-integer?)
+       [(eq? x exact-nonnegative-integer?)
         (if (name-default? name) integer-in-0f (renamed-integer-in 0 #f name))]
-       [(chaperone-of? x natural?)
+       [(eq? x natural?)
         (if (name-default? name) integer-in-0f (renamed-integer-in 0 #f name))]
-       [(chaperone-of? x exact-integer?)
+       [(eq? x exact-integer?)
         (if (name-default? name) integer-in-ff (renamed-integer-in #f #f name))]
        [else
         (make-predicate-contract (if (name-default? name)
