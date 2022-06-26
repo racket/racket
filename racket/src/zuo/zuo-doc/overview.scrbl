@@ -172,7 +172,7 @@ The @racketmodname[zuo] language is built on top of
 @racket[cond], and @racket[let*], because working without those is
 especially tedious. Then there's an internal ``stitcher'' language
 that is the only use of the ``looper'' language; it adds its own
-@racket[lambda] (which implicit @racket[begin]) @racket[let] (with
+@racket[lambda] (with implicit @racket[begin]) @racket[let] (with
 multiple clauses), @racket[let*], @racket[letrec] (with multiple
 binding clauses), @racket[and], @racket[or], @racket[when],
 @racket[unless], and a kind of @racket[define] and @racket[include].
