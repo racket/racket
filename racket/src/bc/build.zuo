@@ -601,6 +601,15 @@
                                       cgc-cap-installed-suffix)
                                   ".exe"))))))
 
+  ;; clean up some leftover state from old build system
+  ;; (could delete this fixup after a while):
+  (let ([old-cstartup (at-dir "cstartup.inc")])
+    (when (file-exists? old-cstartup)
+      (rm old-cstartup)
+      ;; make sure these are rebuilt:
+      (rm* (at-dir "src/startup.o"))
+      (rm* (at-dir "xsrc/startup.c"))))
+
   (define the-targets
     (append
      (make-targets
