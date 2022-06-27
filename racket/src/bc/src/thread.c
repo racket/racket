@@ -148,7 +148,7 @@ ROSYM Scheme_Object *scheme_exn_handler_key;
 ROSYM Scheme_Object *scheme_break_enabled_key;
 ROSYM Scheme_Object *scheme_error_message_adjuster_key;
 
-THREAD_LOCAL_DECL(static Scheme_Object *configuration_callback_cache[2]);
+THREAD_LOCAL_DECL(static Scheme_Object *configuration_callback_cache[CONFIG_CALLBACK_CACHE_LEN]);
 
 static int gcs_on_exit;
 THREAD_LOCAL_DECL(uintptr_t scheme_total_gc_time);
@@ -845,8 +845,8 @@ static Scheme_Object *cache_configuration(int argc, Scheme_Object **argv)
     return scheme_false;
 
   pos = SCHEME_INT_VAL(argv[0]);
-  
-  if ((pos < 0) || (pos >= 2))
+
+  if ((pos < 0) || (pos >= CONFIG_CALLBACK_CACHE_LEN))
     return scheme_false;
 
   if (!configuration_callback_cache[pos]) {
