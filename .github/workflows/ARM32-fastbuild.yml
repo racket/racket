@@ -2,6 +2,9 @@ name: ARM32 Linux Fast Build
 
 on: [push]
 
+permissions:
+  contents: read
+
 jobs:
   build-racket3m:
     if: github.repository == 'racket/racket'

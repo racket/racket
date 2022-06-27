@@ -2,6 +2,9 @@ name: Test with UBSan on X86
 
 on: [push]
 
+permissions:
+  contents: read
+
 jobs:
 
 # Build jobs
