@@ -560,10 +560,9 @@
      (lambda (id)
        (if (identifier? id)
            id
-           (begin
-             (log-error "non-linear pattern used in `match` with ... at ~a and ~a"
-                        (car id) (cadr id))
-             #f)))]
+           (raise-syntax-error #f
+             "non-linear pattern used in `match` with ..."
+             (car id) (cadr id))))]
     [else #f]))
 
 ;; generate-temporaries/seen :
