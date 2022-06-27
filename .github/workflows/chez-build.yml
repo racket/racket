@@ -14,6 +14,9 @@ on:
       - ".github/workflows/chez-build.yml"
       - "Makefile"
       
+permissions:
+  contents: read
+
 jobs:
   build-linux:
     runs-on: ubuntu-20.04
