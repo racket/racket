@@ -1046,10 +1046,11 @@
            outp]
           [else (error who "bad sandox-~a spec: ~e" what out)]))
   ;; Call path functions to make sure the underying path computations
-  ;; have been foced, so that the sandbox filesystem guards will not
+  ;; have been forced, so that the sandbox filesystem guards will not
   ;; be relevant:
   (find-config-dir)
   (find-collects-dir)
+  (get-lib-search-dirs)
   ;; set global memory limit
   (when (and memory-accounting? (sandbox-memory-limit))
     (custodian-limit-memory

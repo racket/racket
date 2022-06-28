@@ -6,6 +6,8 @@
 
   (#%provide find-main-collects
              find-main-config
+             find-host-main-collects
+             find-host-main-config
              
              exe-relative-path->complete-path)
 
@@ -25,6 +27,22 @@
        1
        (lambda ()
          (exe-relative-path->complete-path (find-system-path 'config-dir))))))
+
+  (define-values (find-host-main-collects)
+    (lambda ()
+      ;; Also recorded...
+      (cache-configuration
+       3
+       (lambda ()
+         (exe-relative-path->complete-path (find-system-path 'host-collects-dir))))))
+
+  (define-values (find-host-main-config)
+    (lambda ()
+      ;; Also recorded...
+      (cache-configuration
+       4
+       (lambda ()
+         (exe-relative-path->complete-path (find-system-path 'host-config-dir))))))
 
   (define-values (exe-relative-path->complete-path)
     (lambda (collects-path)
