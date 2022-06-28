@@ -307,7 +307,7 @@ specific choices about how to work with paths:
        /home/racket/scripts/go.zuo}, then @racket[quote-module-path]
        reports an absolute path. Similarly, with
        @racketmodname[zuo/build], when you use a relative path to
-       refer to a dependency, then information about the dependency
+       refer to a dependency, information about the dependency
        can be recorded in relative form, but referring to a dependency
        with an absolute path means that information is recorded with
        an absolute path (even if that could be made relative to the
