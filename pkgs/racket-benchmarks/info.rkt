@@ -1,4 +1,5 @@
 #lang info
+;; SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 (define collection 'multi)
 
@@ -17,4 +18,8 @@
 (define pkg-authors '(eli jay mflatt robby samth stamourv))
 
 (define license
-  '(Apache-2.0 OR MIT))
+  '((Apache-2.0 OR MIT)
+    AND
+    (Apache-2.0 ; psyntax : tests/racket/benchmarks/common/psyntax.sch (see file for original license)
+     AND
+     LGPL-3.0-or-later))) ; SCM : tests/racket/benchmarks/shootout/pidigits1.rkt

@@ -1,3 +1,20 @@
+;;; Portable implementation of syntax-case
+;;; Extracted from Chez Scheme Version 7.3 (Feb 26, 2007)
+;;; Authors: R. Kent Dybvig, Oscar Waddell, Bob Hieb, Carl Bruggeman
+
+;;; Copyright (c) 1992-2002 Cadence Research Systems
+;;; Permission to copy this software, in whole or in part, to use this
+;;; software for any lawful purpose, and to redistribute this software
+;;; is granted subject to the restriction that all copies made of this
+;;; software must include this copyright notice in full.  This software
+;;; is provided AS IS, with NO WARRANTY, EITHER EXPRESS OR IMPLIED,
+;;; INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY
+;;; OR FITNESS FOR ANY PARTICULAR PURPOSE.  IN NO EVENT SHALL THE
+;;; AUTHORS BE LIABLE FOR CONSEQUENTIAL OR INCIDENTAL DAMAGES OF ANY
+;;; NATURE WHATSOEVER.
+
+;; Later, Chez Scheme was released under the Apache-2.0 license.
+
 ;; smashed into benchmark form by Matthew
 
 ;;; psyntax.pp
