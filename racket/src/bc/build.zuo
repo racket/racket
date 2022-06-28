@@ -1496,6 +1496,8 @@
            (bootstrap-racket racketx
                              (at-source "mksystem.rkt")
                              (at-dir "system.rktd")
+                             (if 3m? "3m" "cgc")
+                             (lookup 'CROSS_COMPILE_TARGET_KIND)
                              (build-shell (or (hash-ref config 'CPP #f)
                                               (default-cpp))
                                           (hash-ref config 'CPPFLAGS "")
@@ -1508,13 +1510,14 @@
                                           (if windows?
                                               (string->shell (~a "-I" (at-source "../worksp")))
                                               ""))
-                             3m-installed-suffix (lookup 'CROSS_COMPILE_TARGET_KIND)
                              ;; although this is not necessarily a cross compilation, we
                              ;; pessimistically assume that it is:
                              "cross")
            (bootstrap-racket racketx
                              (at-source "mksystem.rkt")
-                             (at-dir "system.rktd")))
+                             (at-dir "system.rktd")
+                             (if 3m? "3m" "cgc")
+                             (lookup 'CROSS_COMPILE_TARGET_KIND)))
        (cp (at-dir "system.rktd") (build-path libpltdir "system.rktd"))
 
        (bootstrap-racket racketx
