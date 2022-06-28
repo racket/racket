@@ -1,3 +1,6 @@
+Version 8.7
+Use Unicode 14.0 for character and string operations
+
 Version 8.6, July 2022
 Change build to use Zuo
 Add `equal-always?`

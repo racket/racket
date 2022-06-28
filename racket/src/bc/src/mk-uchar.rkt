@@ -874,4 +874,4 @@
       (print-compose-data "short" "kompat_decomp_indices" cadr
 			  k-decomp-vector (vector-length k-decomp-vector) #f 16)
       (let ([l (list->vector (reverse k-decomp-strs))])
-	(print-compose-data "unsigned short" "kompat_decomp_strs" values l (vector-length l) #t 8)))))
+	(print-compose-data "unsigned int" "kompat_decomp_strs" values l (vector-length l) #t 8)))))
