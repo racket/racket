@@ -3783,7 +3783,7 @@ XFORM_NONGCING mzchar get_canon_decomposition(mzchar key, mzchar *b)
   }
 }
 
-XFORM_NONGCING int get_kompat_decomposition(mzchar key, unsigned short **chars)
+XFORM_NONGCING int get_kompat_decomposition(mzchar key, unsigned int **chars)
 {
   int pos = (KOMPAT_DECOMPOSE_TABLE_SIZE >> 1), new_pos;
   int below_len = pos;
@@ -3910,7 +3910,7 @@ static Scheme_Object *normalize_d(Scheme_Object *o, int kompat)
     if (scheme_needs_decompose(s[i])) {
       int klen;
       mzchar snd;
-      GC_CAN_IGNORE unsigned short *start;
+      GC_CAN_IGNORE unsigned int *start;
 
       tmp = s[i];
       while (scheme_needs_decompose(tmp)) {
@@ -3954,7 +3954,7 @@ static Scheme_Object *normalize_d(Scheme_Object *o, int kompat)
     if (scheme_needs_decompose(s[i])) {
       mzchar snd, tmp2;
       int snds = 0, klen = 0, k;
-      GC_CAN_IGNORE unsigned short*start;
+      GC_CAN_IGNORE unsigned int *start;
 
       tmp = s[i];
       while (scheme_needs_decompose(tmp)) {
