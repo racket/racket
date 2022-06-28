@@ -200,10 +200,11 @@
                        null
                        (resolve-get-keys #f ri
                                          (lambda (v)
-                                           ;; Support key-based indirect only on sections
-                                           ;; and module names:
+                                           ;; Support key-based indirect only on sections,
+                                           ;; module names, and @deftech{} terms:
                                            (define t (car v))
                                            (or (eq? t 'part)
+                                               (eq? t 'tech)
                                                (eq? t 'mod-path))))))
       (define (target? v) (and (vector? v) (= 5 (vector-length v))))
       (define dest-dir (send renderer get-dest-directory #t))
