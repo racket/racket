@@ -1517,7 +1517,7 @@
                              (at-source "mksystem.rkt")
                              (at-dir "system.rktd")
                              (if 3m? "3m" "cgc")
-                             (lookup 'CROSS_COMPILE_TARGET_KIND)))
+                             (or (lookup 'CROSS_COMPILE_TARGET_KIND) "")))
        (cp (at-dir "system.rktd") (build-path libpltdir "system.rktd"))
 
        (bootstrap-racket racketx
