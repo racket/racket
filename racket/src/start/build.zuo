@@ -34,9 +34,14 @@
                                                                              "-mwindows"))
                                                            config)
                                                        'CFLAGS
-                                                       (if gui?
-                                                           "-DMRSTART"
-                                                           "-DMZSTART"))))])
+                                                       (build-shell
+                                                        (if gui?
+                                                            "-DMRSTART"
+                                                            "-DMZSTART")
+                                                        (if msvc?
+                                                            (build-shell "/Fo:"
+                                                                         (string->shell (at-dir "start.obj")))
+                                                            "")))))])
                (list MzStart.exe MrStart.exe)
                (list start_rc.o gstart_rc.o)
                (list #f #t))
