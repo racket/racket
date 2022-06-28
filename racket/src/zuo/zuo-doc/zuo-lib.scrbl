@@ -111,7 +111,7 @@ Equivalent to @racket[((glob->matcher glob) str)].}
 @defzuomodule[zuo/thread]
 
 To use cooperative threads, create a @deftech{threading context} with
-@racket[call-in-main-thread], and perform a thread operations---such
+@racket[call-in-main-thread], and perform thread operations---such
 as creating a new thread with @racket[thread] or a channel with
 @racket[channel]---during the body of the thunk provided to
 @racket[call-in-main-thread]. Threads can block either on channels or
