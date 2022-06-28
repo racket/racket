@@ -3,7 +3,7 @@
 (define collection 'multi)
 
 (define deps '("base"
-               "scribble-lib"))
+               ["scribble-lib" #:version "1.46"]))
 (define build-deps '("scheme-lib"
                      "at-exp-lib"))
 
