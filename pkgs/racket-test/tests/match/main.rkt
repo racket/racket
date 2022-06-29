@@ -282,6 +282,11 @@
                    (convert-syntax-error
                     (match '((1 2 3) (1 2 3))
                       [(list (list a ...) a) a]))))
+      (check-exn #rx"^a: non-linear pattern used in `match` with ...$"
+                 (lambda ()
+                   (convert-syntax-error
+                    (match '((1 2 3 4) (1 2 3))
+                      [(list (list a ... _) a) a]))))
       (check-exn #rx"^x: non-linear pattern used in `match` with ...$"
                  (lambda ()
                    (convert-syntax-error
