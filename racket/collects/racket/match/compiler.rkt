@@ -555,18 +555,15 @@
 
 ;; find-seen : Id (Listof (Pairof Id (U #f Id))) -> (U #f Id)
 (define (find-seen v seen)
-  (cond
-    [(for/or ([e (in-list seen)])
-       (let ([v* (car e)] [id (cdr e)])
-         (and (bound-identifier=? v v*) (or id (list v v*)))))
-     =>
-     (lambda (id)
-       (if (identifier? id)
-           id
-           (raise-syntax-error #f
-             "non-linear pattern used in `match` with ..."
-             (car id) (cadr id))))]
-    [else #f]))
+  (define e (assoc v seen bound-identifier=?))
+  (and
+   e
+   (let ([v* (car e)] [id (cdr e)])
+     (if (and (identifier? id) (zero? (get-depth v*)))
+         id
+         (raise-syntax-error #f
+           "non-linear pattern used in `match` with ..."
+           v v* (list v))))))
 
 ;; generate-temporaries/seen :
 ;; (Listof (Pairof Id (U #f Id))) -> (Listof Id) -> (Listof Id)
