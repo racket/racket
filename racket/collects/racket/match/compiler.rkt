@@ -214,7 +214,7 @@
                  (cond
                    ;; if we've seen this variable before, check that it's equal to
                    ;; the one we saw
-                   [(find-seen v* seen)
+                   [(find-seen v seen)
                     =>
                     (lambda (id)
                       (make-Row ps
@@ -228,7 +228,7 @@
                    [else (make-Row ps
                                    #`(let ([#,v* #,x]) #,(Row-rhs row))
                                    (Row-unmatch row)
-                                   (append (Row-vars-seen row) (list (cons v* x))))])]))])
+                                   (append (Row-vars-seen row) (list (cons v x))))])]))])
        ;; compile the transformed block
        (compile* xs (map transform block) esc))]
     ;; the Constructor rule
@@ -252,11 +252,13 @@
             [qs (Or-ps (car pats))]
             ;; the variables bound by this pattern - they're the same for the
             ;; whole list
-            [vars
-             (for/list ([bv (bound-vars (car qs))]
+            [vars/orig
+             (for/list ([bv (bound-vars/orig (car qs))]
                         #:when (for/and ([seen-var seen])
                                         (not (free-identifier=? bv (car seen-var)))))
-               bv)])
+               bv)]
+            [vars (rename-vars vars/orig)]
+            [pat-seen (map cons vars/orig vars/orig)])
        (with-syntax ([(esc* success? var ...) (append (generate-temporaries '(esc* success?)) vars)])
          ;; do the or matching, and bind the results to the appropriate
          ;; variables
@@ -277,7 +279,7 @@
                                (list (make-Row (cdr pats)
                                                (Row-rhs row)
                                                (Row-unmatch row)
-                                               (append seen (map cons vars vars))))
+                                               (append seen pat-seen)))
                                esc
                                #f)
                    (#,esc))))))]
@@ -381,28 +383,29 @@
             [heads
              (for/list ([ps headss])
                (complete-heads-pattern ps))]
-            [head-idss
+            [head-idss/orig
              (for/list ([heads headss])
-               (apply append (map bound-vars heads)))]
+               (apply append (map bound-vars/orig heads)))]
+            [head-idss
+             (map rename-vars head-idss/orig)]
             [head-idss/depth
              (for/list ([head-ids head-idss] [once? onces?])
                (if once? head-ids (map depth+1 head-ids)))]
             [heads-seen
              (for/list ([head heads] [once? onces?]
                         #:when #t
-                        [v (bound-vars head)])
+                        [v (bound-vars/orig head)])
                (define v* (if once? v (depth+1 v)))
                (if (zero? (get-depth v*)) (cons v* v*) (cons v* #f)))]
             [tail-seen
              (map (lambda (x) (cons x x))
-                  (bound-vars tail))]
+                  (bound-vars/orig tail))]
             [hid-argss (map generate-temporaries head-idss)]
-            [head-idss* (map (generate-temporaries/seen prev-seen) head-idss)]
+            [head-idss* (map (generate-temporaries/seen prev-seen) head-idss/orig)]
             [hid-args (apply append hid-argss)]
             [reps (generate-temporaries (for/list ([head heads]) 'rep))])
        (with-syntax ([x xvar]
                      [var0 (car vars)]
-                     [((hid ...) ...) head-idss]
                      [((hid* ...) ...) head-idss*]
                      [((hid/depth ...) ...) head-idss/depth]
                      [((hid-arg ...) ...) hid-argss]
@@ -445,7 +448,7 @@
                                       #'fail-tail))])])
            (parameterize ([current-renaming
                            (for/fold ([ht (copy-mapping (current-renaming))])
-                               ([id (apply append head-idss)]
+                               ([id (apply append head-idss/orig)]
                                 [id* (apply append head-idss*)]
                                 #:unless
                                 (member id (map car prev-seen) free-identifier=?))
