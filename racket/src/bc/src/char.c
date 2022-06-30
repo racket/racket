@@ -46,6 +46,8 @@ static Scheme_Object *char_punctuation (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_upper_case (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_lower_case (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_title_case (int argc, Scheme_Object *argv[]);
+static Scheme_Object *char_extend (int argc, Scheme_Object *argv[]);
+static Scheme_Object *char_ext_pict (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_upcase (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_downcase (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_titlecase (int argc, Scheme_Object *argv[]);
@@ -157,6 +159,8 @@ void scheme_init_char (Scheme_Startup_Env *env)
   ADD_FOLDING_PRIM("char-upper-case?",      char_upper_case,       1, 1, 1, env);
   ADD_FOLDING_PRIM("char-lower-case?",      char_lower_case,       1, 1, 1, env);
   ADD_FOLDING_PRIM("char-title-case?",      char_title_case,       1, 1, 1, env);
+  ADD_FOLDING_PRIM("char-extend?",          char_extend,           1, 1, 1, env);
+  ADD_FOLDING_PRIM("char-extended-pictographic?", char_ext_pict,   1, 1, 1, env);
 
   p = scheme_make_folding_prim(scheme_checked_char_to_integer, "char->integer", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
@@ -337,6 +341,8 @@ GEN_CHAR_TEST(char_graphic, "char-graphic?", scheme_isgraphic)
 GEN_CHAR_TEST(char_upper_case, "char-upper-case?", scheme_isupper)
 GEN_CHAR_TEST(char_lower_case, "char-lower-case?", scheme_islower)
 GEN_CHAR_TEST(char_title_case, "char-title-case?", scheme_istitle)
+GEN_CHAR_TEST(char_extend, "char-extend?", scheme_isextend)
+GEN_CHAR_TEST(char_ext_pict, "char-extended-pictographic?", scheme_isextpict)
 
 Scheme_Object *
 scheme_checked_char_to_integer (int argc, Scheme_Object *argv[])

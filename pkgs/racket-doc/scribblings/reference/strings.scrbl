@@ -418,6 +418,60 @@ allocated string).}
 }
 
 @; ----------------------------------------
+@section{String Grapheme Clusters}
+
+@defproc[(string-grapheme-cluster-length [str string?] 
+                                         [start exact-nonnegative-integer?]
+                                         [end exact-nonnegative-integer? (string-length str)])
+         exact-nonnegative-integer?]{
+
+Returns the number of characters (i.e., code points) in the string
+that form a Unicode grapheme cluster starting at @racket[start], assuming
+that @racket[start] is the start of a grapheme cluster and extending no
+further than the character before @racket[end]. The result is @racket[0]
+if @racket[start] equals @racket[end].
+
+The @racket[start] and @racket[end] arguments must be valid indices as
+for @racket[substring], otherwise the @exnraise[exn:fail:contract].
+
+See also @racket[char-grapheme-cluster-step].
+
+@mz-examples[
+(string-grapheme-cluster-length "" 0)
+(string-grapheme-cluster-length "a" 0)
+(string-grapheme-cluster-length "ab" 0)
+(string-grapheme-cluster-length "\r\n" 0)
+(string-grapheme-cluster-length "\r\nx" 0)
+(string-grapheme-cluster-length "\r\nx" 2)
+(string-grapheme-cluster-length "\r\nx" 0 1)
+]
+
+@history[#:added "8.6.0.1"]}
+
+@defproc[(string-grapheme-cluster-count [str string?] 
+                                        [start exact-nonnegative-integer?]
+                                        [end exact-nonnegative-integer? (string-length str)])
+         exact-nonnegative-integer?]{
+
+Returns the number of grapheme clusters in @racket[(substring start
+end)].
+
+The @racket[start] and @racket[end] arguments must be valid indices as
+for @racket[substring], otherwise the @exnraise[exn:fail:contract].
+
+@mz-examples[
+(string-grapheme-cluster-count "")
+(string-grapheme-cluster-count "a")
+(string-grapheme-cluster-count "ab")
+(string-grapheme-cluster-count "ab" 0 2)
+(string-grapheme-cluster-count "ab" 0 1)
+(string-grapheme-cluster-count "\r\n")
+(string-grapheme-cluster-count "a\r\nb")
+]
+
+@history[#:added "8.6.0.1"]}
+
+@; ----------------------------------------
 @section{Additional String Functions}
 
 @note-lib[racket/string]

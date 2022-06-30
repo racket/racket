@@ -731,7 +731,7 @@ typedef struct Scheme_Offset_Cptr
 #define scheme_ispunc(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x4)
 #define scheme_iscontrol(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x8)
 #define scheme_isspace(x) ((scheme_uchar_find(scheme_uchar_table, x)) & SCHEME_ISSPACE_BIT)
-/* #define scheme_isSOMETHING(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x20) - not yet used */
+#define scheme_isextpict(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x20)
 #define scheme_isdigit(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x40)
 #define scheme_isalpha(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x80)
 #define scheme_istitle(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x100)
@@ -753,6 +753,9 @@ typedef struct Scheme_Offset_Cptr
 
 #define scheme_general_category(x) ((scheme_uchar_find(scheme_uchar_cats_table, x)) & 0x1F)
 /* Note: 3 bits available in the cats table */
+
+#define scheme_grapheme_cluster_break(x) (scheme_uchar_find(scheme_uchar_graphbreaks_table, x))
+#define scheme_isextend(x) ((scheme_grapheme_cluster_break(x)) == MZ_GRAPHBREAK_EXTEND)
 
 /*========================================================================*/
 /*                          procedure values                              */
