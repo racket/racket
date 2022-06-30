@@ -340,6 +340,23 @@
   (define com_glue.o (at-dir (.c->.o "src/com_glue.c")))
   (define mzobj3m.cxx (at-dir "xsrc/mzobj.cxx"))
 
+  (define src-schemexm.h (at-source "src/schemexm.h"))
+  (define src-schemex.h (at-source "src/schemex.h"))
+  (define src-schemex.inc (at-source "src/schemex.inc"))
+  (define src-schexn.h (at-source "src/schexn.h"))
+  (define src-racket.exp (at-source "include/racket.exp"))
+  (define src-mzwin.def (at-source "include/mzwin.def"))
+  (define src-gmzwin.def (at-source "include/gmzwin.def"))
+  (define src-racket3m.exp (at-source "include/racket3m.exp"))
+  (define src-mzwin3m.def  (at-source "include/mzwin3m.def"))
+  (define src-schemef.h (at-source "src/schemef.h"))
+  (define src-makex (at-source "src/makex.rkt"))
+  (define makex-deps (list src-makex src-schemef.h))
+  (define (makex path flag)
+    (shell/wait "racket" (string->shell src-makex) flag
+                "<" (string->shell src-schemef.h)
+                ">" (string->shell path)))
+  
   (define mzconfig.h (if msvc?
                          (at-source "../worksp/mzconfig.h")
                          (at-dir "mzconfig.h")))
@@ -633,7 +650,8 @@
 
         ;; Phase2 "cstartup.inc" generation as a compiled form of "startup.inc"
         [:target ,phase2/cstartup.inc (,(at-source "src/startup.inc")
-                                       ,(input-data-target 'cify cify-mode))
+                                       ,(input-data-target 'cify cify-mode)
+                                       ,(input-data-target 'version (racket-version)))
                  ,(lambda (path token)
                     (unless provided-racket?
                       (build/no-dep (find-target racketcgc1 the-targets) token))
@@ -1408,6 +1426,27 @@
                     (c-compile path
                                (at-source "../mzcom/com_glue.c")
                                (mz-config config)))]
+
+        [:target exports (,src-schemex.h ,src-schemexm.h ,src-schemex.inc
+                                         ,src-racket.exp ,src-mzwin.def ,src-gmzwin.def
+                                         ,src-racket3m.exp ,src-mzwin3m.def)
+                 ,void]
+        [:target ,src-schemex.h ,makex-deps
+                 ,(lambda (path token) (makex path ""))]
+        [:target ,src-schemexm.h ,makex-deps
+                 ,(lambda (path token) (makex path "--list"))]
+        [:target ,src-schemex.inc ,makex-deps
+                 ,(lambda (path token) (makex path "--assign"))]
+        [:target ,src-racket.exp ,makex-deps
+                 ,(lambda (path token) (makex path "--exports"))]        
+        [:target ,src-racket3m.exp ,makex-deps
+                 ,(lambda (path token) (makex path "--exports --precisegc"))]
+        [:target ,src-mzwin.def ,makex-deps
+                 ,(lambda (path token) (makex path "--winex"))]
+        [:target ,src-mzwin3m.def ,makex-deps
+                 ,(lambda (path token) (makex path "--winex --precisegc"))]
+        [:target ,src-gmzwin.def ,makex-deps
+                 ,(lambda (path token) (makex path "--winex --gwinex"))]
 
         ;; Install targets, implemented by the `install` function below
         [:target install (,(if 3m-default? 'install-3m 'install-cgc)) ,void]

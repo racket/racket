@@ -273,6 +273,7 @@ MZ_EXTERN Scheme_Object *scheme_multiple_values;
 
 MZ_EXTERN unsigned short *scheme_uchar_table[];
 MZ_EXTERN unsigned char *scheme_uchar_cases_table[];
+MZ_EXTERN unsigned char *scheme_uchar_graphbreaks_table[];
 MZ_EXTERN unsigned char *scheme_uchar_cats_table[];
 MZ_EXTERN int scheme_uchar_ups[];
 MZ_EXTERN int scheme_uchar_downs[];

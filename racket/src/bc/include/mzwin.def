@@ -102,6 +102,7 @@ EXPORTS
  scheme_set_on_atomic_timeout
  scheme_signal_error
  scheme_raise_exn
+ scheme_raise_realm_exn
  scheme_warning
  scheme_raise
  scheme_log_level_p
@@ -121,6 +122,7 @@ EXPORTS
  scheme_case_lambda_wrong_count
  scheme_wrong_type
  scheme_wrong_contract
+ scheme_wrong_contract_for_realm
  scheme_wrong_field_type
  scheme_wrong_field_contract
  scheme_arg_mismatch
@@ -146,6 +148,7 @@ EXPORTS
  scheme_multiple_values
  scheme_uchar_table
  scheme_uchar_cases_table
+ scheme_uchar_graphbreaks_table
  scheme_uchar_cats_table
  scheme_uchar_ups
  scheme_uchar_downs
@@ -195,6 +198,7 @@ EXPORTS
  scheme_current_continuation_marks
  scheme_extract_one_cc_mark
  scheme_extract_one_cc_mark_to_tag
+ scheme_extract_cc_mark_list
  scheme_do_eval
  scheme_detach_multple_array
  scheme_malloc_code
@@ -586,6 +590,8 @@ EXPORTS
  scheme_equal_hash_key2
  scheme_recur_equal_hash_key
  scheme_recur_equal_hash_key2
+ scheme_equal_always_hash_key
+ scheme_equal_always_hash_key2
  scheme_eqv_hash_key
  scheme_eqv_hash_key2
  scheme_set_type_equality
