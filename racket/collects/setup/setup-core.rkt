@@ -107,13 +107,15 @@
 
   (define (setup-fprintf p task s . args)
     (let ([task (if task (string-append task ": ") "")])
-      (apply fprintf p
-             (string-append name-str ": " task s
-                            (if timestamp-output?
-                                (format " @ ~a" (current-process-milliseconds))
-                                "")
-                            "\n")
-             args)
+      (define st
+        (string-append name-str ": " task s
+                       (if timestamp-output?
+                           (format " @ ~a" (current-process-milliseconds))
+                           "")
+                       "\n"))
+      (if (null? args)
+          (write-string st p)
+          (apply fprintf p st args))
       (flush-output p)))
 
   (define (setup-printf task s . args)
