@@ -4059,8 +4059,8 @@
 (define location? (|#%name| location? (record-predicate struct:location)))
 (define location-state
   (|#%name| location-state (record-accessor struct:location 0)))
-(define location-cr-state
-  (|#%name| location-cr-state (record-accessor struct:location 1)))
+(define location-grcl-state
+  (|#%name| location-grcl-state (record-accessor struct:location 1)))
 (define location-line
   (|#%name| location-line (record-accessor struct:location 2)))
 (define location-column
@@ -4069,8 +4069,8 @@
   (|#%name| location-position (record-accessor struct:location 4)))
 (define set-location-state!
   (|#%name| set-location-state! (record-mutator struct:location 0)))
-(define set-location-cr-state!
-  (|#%name| set-location-cr-state! (record-mutator struct:location 1)))
+(define set-location-grcl-state!
+  (|#%name| set-location-grcl-state! (record-mutator struct:location 1)))
 (define set-location-line!
   (|#%name| set-location-line! (record-mutator struct:location 2)))
 (define set-location-column!
@@ -4851,7 +4851,8 @@
             in-end10_0
             out-str11_0
             out-start12_0
-            out-end13_0)
+            out-end13_0
+            grcl-state14_0)
      (begin
        (let ((base-i_0
               (if state4_0
@@ -4864,7 +4865,13 @@
               ((loop_0
                 (|#%name|
                  loop
-                 (lambda (i_0 j_0 base-i_1 accum_1 remaining_1)
+                 (lambda (i_0
+                          j_0
+                          base-i_1
+                          accum_1
+                          remaining_1
+                          grcl-done_0
+                          grcl-state_0)
                    (begin
                      (let ((complete_0
                             (|#%name|
@@ -4878,29 +4885,76 @@
                                       j_0
                                       (integer->char accum_2))
                                      (void))
-                                   (let ((next-j_0 (fx+ j_0 1)))
-                                     (let ((next-i_0 (fx+ i_0 1)))
-                                       (if (if out-end13_0
-                                             (fx= next-j_0 out-end13_0)
-                                             #f)
-                                         (let ((app_0
-                                                (fx- next-i_0 in-start9_0)))
-                                           (let ((app_1
-                                                  (fx-
-                                                   next-j_0
-                                                   out-start12_0)))
-                                             (values
+                                   (call-with-values
+                                    (lambda ()
+                                      (if grcl-state_0
+                                        (call-with-values
+                                         (lambda ()
+                                           (let ((app_0
+                                                  (integer->char accum_2)))
+                                             (char-grapheme-cluster-step
                                               app_0
-                                              app_1
-                                              (if (fx= next-i_0 in-end10_0)
-                                                'complete
-                                                'continues))))
-                                         (loop_0
-                                          next-i_0
-                                          next-j_0
-                                          next-i_0
-                                          0
-                                          0))))))))))
+                                              (if (pair? grcl-state_0)
+                                                (car grcl-state_0)
+                                                grcl-state_0))))
+                                         (case-lambda
+                                          ((consume?_0 new-grcl-state*_0)
+                                           (let ((new-grcl-state_0
+                                                  (if (if consume?_0
+                                                        consume?_0
+                                                        (eqv? grcl-state_0 0))
+                                                    new-grcl-state*_0
+                                                    (cons
+                                                     new-grcl-state*_0
+                                                     (if (pair? grcl-state_0)
+                                                       (add1
+                                                        (cdr grcl-state_0))
+                                                       2)))))
+                                             (let ((new-grcl-done_0
+                                                    (if consume?_0
+                                                      (fx+ grcl-done_0 1)
+                                                      grcl-done_0)))
+                                               (values
+                                                new-grcl-done_0
+                                                new-grcl-state_0))))
+                                          (args
+                                           (raise-binding-result-arity-error
+                                            2
+                                            args))))
+                                        (values 0 #f)))
+                                    (case-lambda
+                                     ((new-grcl-done_0 new-grcl-state_0)
+                                      (let ((next-j_0 (fx+ j_0 1)))
+                                        (let ((next-i_0 (fx+ i_0 1)))
+                                          (if (if out-end13_0
+                                                (fx= next-j_0 out-end13_0)
+                                                #f)
+                                            (let ((app_0
+                                                   (fx- next-i_0 in-start9_0)))
+                                              (let ((app_1
+                                                     (fx-
+                                                      next-j_0
+                                                      out-start12_0)))
+                                                (values
+                                                 app_0
+                                                 app_1
+                                                 (if (fx= next-i_0 in-end10_0)
+                                                   'complete
+                                                   'continues)
+                                                 new-grcl-done_0
+                                                 new-grcl-state_0)))
+                                            (loop_0
+                                             next-i_0
+                                             next-j_0
+                                             next-i_0
+                                             0
+                                             0
+                                             new-grcl-done_0
+                                             new-grcl-state_0)))))
+                                     (args
+                                      (raise-binding-result-arity-error
+                                       2
+                                       args))))))))))
                        (let ((encoding-failure_0
                               (|#%name|
                                encoding-failure
@@ -4926,25 +4980,33 @@
                                                (values
                                                 app_0
                                                 (fx- next-j_0 out-start12_0)
-                                                'continues))
+                                                'continues
+                                                grcl-done_0
+                                                grcl-state_0))
                                              (loop_0
                                               next-i_0
                                               next-j_0
                                               next-i_0
                                               0
-                                              0)))))
+                                              0
+                                              grcl-done_0
+                                              grcl-state_0)))))
                                      (let ((app_0 (fx- base-i_1 in-start9_0)))
                                        (values
                                         app_0
                                         (fx- j_0 out-start12_0)
-                                        'error))))))))
+                                        'error
+                                        grcl-done_0
+                                        grcl-state_0))))))))
                          (if (fx= i_0 in-end10_0)
                            (if (fx= remaining_1 0)
                              (let ((app_0 (fx- base-i_1 in-start9_0)))
                                (values
                                 app_0
                                 (fx- j_0 out-start12_0)
-                                'complete))
+                                'complete
+                                grcl-done_0
+                                grcl-state_0))
                              (if (eq? abort-mode3_0 'error)
                                (encoding-failure_0)
                                (if (eq? abort-mode3_0 'state)
@@ -4956,12 +5018,16 @@
                                       (utf-8-state1.1
                                        accum_1
                                        remaining_1
-                                       (fx- i_0 base-i_1)))))
+                                       (fx- i_0 base-i_1))
+                                      grcl-done_0
+                                      grcl-state_0)))
                                  (let ((app_0 (fx- base-i_1 in-start9_0)))
                                    (values
                                     app_0
                                     (fx- j_0 out-start12_0)
-                                    'aborts)))))
+                                    'aborts
+                                    grcl-done_0
+                                    grcl-state_0)))))
                            (if (fx< i_0 in-start9_0)
                              (encoding-failure_0)
                              (let ((b_0 (unsafe-bytes-ref in-bstr8_0 i_0)))
@@ -5007,7 +5073,9 @@
                                                   j_0
                                                   base-i_1
                                                   next-accum_0
-                                                  remaining_2))))))))
+                                                  remaining_2
+                                                  grcl-done_0
+                                                  grcl-state_0))))))))
                                    (if (not (fx= remaining_1 0))
                                      (encoding-failure_0)
                                      (if (fx= 192 (fxand b_0 224))
@@ -5019,7 +5087,9 @@
                                             j_0
                                             i_0
                                             accum_2
-                                            1)))
+                                            1
+                                            grcl-done_0
+                                            grcl-state_0)))
                                        (if (fx= 224 (fxand b_0 240))
                                          (let ((accum_2 (fxand b_0 15)))
                                            (loop_0
@@ -5027,7 +5097,9 @@
                                             j_0
                                             i_0
                                             accum_2
-                                            2))
+                                            2
+                                            grcl-done_0
+                                            grcl-state_0))
                                          (if (fx= 240 (fxand b_0 248))
                                            (let ((accum_2 (fxand b_0 7)))
                                              (loop_0
@@ -5035,14 +5107,18 @@
                                               j_0
                                               i_0
                                               accum_2
-                                              3))
+                                              3
+                                              grcl-done_0
+                                              grcl-state_0))
                                            (encoding-failure_0)))))))))))))))))
               (loop_0
                in-start9_0
                out-start12_0
                base-i_0
                accum_0
-               remaining_0)))))))))
+               remaining_0
+               0
+               grcl-state14_0)))))))))
 (define utf-8-decode-byte
   (lambda (b_0 accum_0 remaining_0)
     (if (fx< b_0 128)
@@ -5084,7 +5160,7 @@
 (define a-bytes->string/utf-8.1
   (|#%name|
    a-bytes->string/utf-8
-   (lambda (just-length?15_0 bstr18_0 start19_0 end20_0 err-char17_0)
+   (lambda (just-length?16_0 bstr19_0 start20_0 end21_0 err-char18_0)
      (begin
        (if (begin
              (letrec*
@@ -5093,11 +5169,11 @@
                  for-loop
                  (lambda (result_0 pos_0)
                    (begin
-                     (if (< pos_0 end20_0)
+                     (if (< pos_0 end21_0)
                        (let ((result_1
                               (let ((result_1
                                      (fx<
-                                      (unsafe-bytes-ref bstr18_0 pos_0)
+                                      (unsafe-bytes-ref bstr19_0 pos_0)
                                       128)))
                                 (values result_1))))
                          (if (if (not
@@ -5107,10 +5183,10 @@
                            (for-loop_0 result_1 (+ pos_0 1))
                            result_1))
                        result_0))))))
-              (for-loop_0 #t start19_0)))
-         (if just-length?15_0
-           (fx- end20_0 start19_0)
-           (let ((str_0 (make-string (fx- end20_0 start19_0))))
+              (for-loop_0 #t start20_0)))
+         (if just-length?16_0
+           (fx- end21_0 start20_0)
+           (let ((str_0 (make-string (fx- end21_0 start20_0))))
              (begin
                (begin
                  (letrec*
@@ -5119,51 +5195,53 @@
                      for-loop
                      (lambda (pos_0)
                        (begin
-                         (if (< pos_0 end20_0)
+                         (if (< pos_0 end21_0)
                            (begin
-                             (let ((app_0 (fx- pos_0 start19_0)))
+                             (let ((app_0 (fx- pos_0 start20_0)))
                                (string-set!
                                 str_0
                                 app_0
                                 (integer->char
-                                 (unsafe-bytes-ref bstr18_0 pos_0))))
+                                 (unsafe-bytes-ref bstr19_0 pos_0))))
                              (for-loop_0 (+ pos_0 1)))
                            (values)))))))
-                  (for-loop_0 start19_0)))
+                  (for-loop_0 start20_0)))
                (void)
                str_0)))
          (call-with-values
           (lambda ()
             (utf-8-decode!.1
              'error
-             err-char17_0
+             err-char18_0
              #f
-             bstr18_0
-             start19_0
-             end20_0
+             bstr19_0
+             start20_0
+             end21_0
              #f
              0
+             #f
              #f))
           (case-lambda
-           ((used-bytes_0 got-chars_0 state_0)
+           ((used-bytes_0 got-chars_0 state_0 get-grcl_0 grcl-state_0)
             (if (eq? state_0 'error)
               #f
-              (if just-length?15_0
+              (if just-length?16_0
                 got-chars_0
                 (let ((str_0 (make-string got-chars_0)))
                   (begin
                     (utf-8-decode!.1
                      'error
-                     err-char17_0
+                     err-char18_0
                      #f
-                     bstr18_0
-                     start19_0
-                     end20_0
+                     bstr19_0
+                     start20_0
+                     end21_0
                      str_0
                      0
+                     #f
                      #f)
                     str_0)))))
-           (args (raise-binding-result-arity-error 3 args)))))))))
+           (args (raise-binding-result-arity-error 5 args)))))))))
 (define utf-8-encode!
   (lambda (in-str_0 in-start_0 in-end_0 out-bstr_0 out-start_0 out-end_0)
     (letrec*
@@ -5504,7 +5582,9 @@
                         (values
                          0
                          0
-                         (if (= start27_0 end28_0) 'complete 'continues))
+                         (if (= start27_0 end28_0) 'complete 'continues)
+                         0
+                         #f)
                         (utf-8-decode!.1
                          'error
                          err-char26_0
@@ -5514,9 +5594,14 @@
                          end28_0
                          #f
                          0
-                         skip25_0)))
+                         skip25_0
+                         #f)))
                     (case-lambda
-                     ((initial-used-bytes_0 initial-got-chars_0 state_0)
+                     ((initial-used-bytes_0
+                       initial-got-chars_0
+                       state_0
+                       got-gcrl_0
+                       gcrl-state_0)
                       (if (eq? state_0 'error)
                         #f
                         (if (eq? state_0 'continues)
@@ -5530,20 +5615,25 @@
                                      #f)))
                               (call-with-values
                                (lambda ()
-                                 (let ((temp87_0
+                                 (let ((temp88_0
                                         (+ start27_0 initial-used-bytes_0)))
                                    (utf-8-decode!.1
                                     'error
                                     err-char26_0
                                     #f
                                     bstr24_0
-                                    temp87_0
+                                    temp88_0
                                     end28_0
                                     str_0
                                     0
-                                    1)))
+                                    1
+                                    #f)))
                                (case-lambda
-                                ((used-bytes_0 got-chars_0 new-state_0)
+                                ((used-bytes_0
+                                  got-chars_0
+                                  new-state_0
+                                  got-gcrl_1
+                                  gcrl-state_1)
                                  (if (eq? new-state_0 'error)
                                    #f
                                    (if (let ((or-part_0
@@ -5558,10 +5648,10 @@
                                        (string-ref str_0 0))
                                      #f)))
                                 (args
-                                 (raise-binding-result-arity-error 3 args))))))
+                                 (raise-binding-result-arity-error 5 args))))))
                           #f)))
                      (args
-                      (raise-binding-result-arity-error 3 args))))))))))))))
+                      (raise-binding-result-arity-error 5 args))))))))))))))
 (define 1/bytes-utf-8-ref
   (let ((bytes-utf-8-ref_0
          (|#%name|
@@ -6253,7 +6343,7 @@
                     p_1
                     (location3.1
                      #f
-                     #f
+                     0
                      1
                      0
                      (add1
@@ -6302,9 +6392,24 @@
                            (core-port-vtable p_1))))
                      (if get-location_0
                        (|#%app| get-location_0 p_1)
-                       (let ((app_0 (location-line loc_0)))
-                         (let ((app_1 (location-column loc_0)))
-                           (values app_0 app_1 (location-position loc_0)))))))
+                       (let ((grcl-state_0 (location-grcl-state loc_0)))
+                         (if (pair? grcl-state_0)
+                           (let ((delta_0 (sub1 (cdr grcl-state_0))))
+                             (let ((col_0 (location-column loc_0)))
+                               (let ((pos_0 (location-position loc_0)))
+                                 (let ((app_0 (location-line loc_0)))
+                                   (let ((app_1
+                                          (if col_0 (- col_0 delta_0) #f)))
+                                     (values
+                                      app_0
+                                      app_1
+                                      (if pos_0 (- pos_0 delta_0) #f)))))))
+                           (let ((app_0 (location-line loc_0)))
+                             (let ((app_1 (location-column loc_0)))
+                               (values
+                                app_0
+                                app_1
+                                (location-position loc_0)))))))))
                  (unsafe-end-atomic)))
              (if (core-port-methods-file-position.1 (core-port-vtable p_1))
                (let ((offset_0
@@ -6382,7 +6487,7 @@
                          column_0
                          position_0
                          state_0
-                         cr-state_0)
+                         grcl-state_0)
                   (begin
                     (let ((finish-utf-8_0
                            (|#%name|
@@ -6401,25 +6506,47 @@
                                       i_1
                                       #f
                                       0
-                                      #f)))
+                                      #f
+                                      grcl-state_0)))
                                  (case-lambda
-                                  ((used-bytes_0 got-chars_0 new-state_0)
-                                   (let ((delta-chars_0
-                                          (-
-                                           got-chars_0
-                                           (+
-                                            span_0
-                                            (let ((app_0
-                                                   (if (utf-8-state? state_0)
-                                                     (utf-8-state-pending-amt
-                                                      state_0)
-                                                     0)))
-                                              (-
-                                               app_0
-                                               (if (utf-8-state? new-state_0)
-                                                 (utf-8-state-pending-amt
-                                                  new-state_0)
-                                                 0)))))))
+                                  ((used-bytes_0
+                                    got-chars_0
+                                    new-state_0
+                                    got-grcl_0
+                                    new-grcl-state_0)
+                                   (let ((delta-grcl_0
+                                          (let ((app_0
+                                                 (+
+                                                  span_0
+                                                  (let ((app_0
+                                                         (if (utf-8-state?
+                                                              state_0)
+                                                           (utf-8-state-pending-amt
+                                                            state_0)
+                                                           0)))
+                                                    (-
+                                                     app_0
+                                                     (if (utf-8-state?
+                                                          new-state_0)
+                                                       (utf-8-state-pending-amt
+                                                        new-state_0)
+                                                       0))))))
+                                            (-
+                                             got-grcl_0
+                                             app_0
+                                             (let ((app_1
+                                                    (if (pair? grcl-state_0)
+                                                      (cdr grcl-state_0)
+                                                      (if (fx= 0 grcl-state_0)
+                                                        0
+                                                        1))))
+                                               (-
+                                                app_1
+                                                (if (pair? new-grcl-state_0)
+                                                  (cdr new-grcl-state_0)
+                                                  (if (fx= 0 new-grcl-state_0)
+                                                    0
+                                                    1))))))))
                                      (let ((keep-aborts_0
                                             (|#%name|
                                              keep-aborts
@@ -6430,11 +6557,11 @@
                                                    s_0))))))
                                        (let ((app_0
                                               (if column_0
-                                                (+ column_0 delta-chars_0)
+                                                (+ column_0 delta-grcl_0)
                                                 #f)))
                                          (let ((app_1
                                                 (if position_0
-                                                  (+ position_0 delta-chars_0)
+                                                  (+ position_0 delta-grcl_0)
                                                   #f)))
                                            (loop_0
                                             i_1
@@ -6443,19 +6570,19 @@
                                             app_0
                                             app_1
                                             (keep-aborts_0 new-state_0)
-                                            #f))))))
+                                            new-grcl-state_0))))))
                                   (args
                                    (raise-binding-result-arity-error
-                                    3
+                                    5
                                     args)))))))))
                       (if (= i_0 end_0)
-                        (if (zero? span_0)
+                        (if (fx= 0 span_0)
                           (begin
                             (set-location-line! loc_0 line_0)
                             (set-location-column! loc_0 column_0)
                             (set-location-position! loc_0 position_0)
                             (set-location-state! loc_0 state_0)
-                            (set-location-cr-state! loc_0 cr-state_0))
+                            (set-location-grcl-state! loc_0 grcl-state_0))
                           (finish-utf-8_0 end_0 'state))
                         (let ((b_0 (unsafe-bytes-ref bstr_0 i_0)))
                           (let ((end-utf-8_0
@@ -6463,72 +6590,140 @@
                                   end-utf-8
                                   (lambda ()
                                     (begin (finish-utf-8_0 i_0 'error))))))
-                            (if (eq? b_0 10)
-                              (if (if state_0 state_0 (not (zero? span_0)))
-                                (end-utf-8_0)
-                                (if cr-state_0
-                                  (loop_0
-                                   (add1 i_0)
-                                   0
-                                   line_0
-                                   column_0
-                                   position_0
-                                   #f
-                                   #f)
-                                  (let ((app_0 (add1 i_0)))
-                                    (let ((app_1 (if line_0 (add1 line_0) #f)))
-                                      (loop_0
-                                       app_0
-                                       0
-                                       app_1
-                                       (if column_0 0 #f)
-                                       (if position_0 (add1 position_0) #f)
-                                       #f
-                                       #f)))))
-                              (if (eq? b_0 13)
-                                (if (if (zero? span_0) (not state_0) #f)
-                                  (let ((app_0 (add1 i_0)))
-                                    (let ((app_1 (if line_0 (add1 line_0) #f)))
-                                      (loop_0
-                                       app_0
-                                       0
-                                       app_1
-                                       (if column_0 0 #f)
-                                       (if position_0 (add1 position_0) #f)
-                                       #f
-                                       #t)))
-                                  (end-utf-8_0))
-                                (if (eq? b_0 9)
-                                  (if (if (zero? span_0) (not state_0) #f)
-                                    (let ((app_0 (add1 i_0)))
-                                      (let ((app_1
-                                             (if column_0
-                                               (+ (bitwise-and column_0 -8) 8)
-                                               #f)))
-                                        (loop_0
-                                         app_0
-                                         0
-                                         line_0
-                                         app_1
-                                         (if position_0 (add1 position_0) #f)
-                                         #f
-                                         #f)))
-                                    (end-utf-8_0))
-                                  (if (< b_0 128)
-                                    (if (if (zero? span_0) (not state_0) #f)
+                            (let ((end-grcl_0
+                                   (|#%name|
+                                    end-grcl
+                                    (lambda ()
+                                      (begin
+                                        (if (pair? grcl-state_0)
+                                          (let ((n_0
+                                                 (sub1 (cdr grcl-state_0))))
+                                            (let ((app_0
+                                                   (if column_0
+                                                     (- column_0 n_0)
+                                                     #f)))
+                                              (loop_0
+                                               i_0
+                                               0
+                                               line_0
+                                               app_0
+                                               (if position_0
+                                                 (- position_0 n_0)
+                                                 #f)
+                                               #f
+                                               0)))
+                                          (loop_0
+                                           i_0
+                                           0
+                                           line_0
+                                           column_0
+                                           position_0
+                                           #f
+                                           0)))))))
+                              (if (eq? b_0 10)
+                                (if (if state_0 state_0 (not (fx= 0 span_0)))
+                                  (end-utf-8_0)
+                                  (if (pair? grcl-state_0)
+                                    (end-grcl_0)
+                                    (if (eqv? 0 grcl-state_0)
                                       (let ((app_0 (add1 i_0)))
                                         (let ((app_1
-                                               (if column_0
-                                                 (add1 column_0)
-                                                 #f)))
+                                               (if line_0 (add1 line_0) #f)))
                                           (loop_0
                                            app_0
                                            0
-                                           line_0
                                            app_1
+                                           (if column_0 0 #f)
                                            (if position_0 (add1 position_0) #f)
                                            #f
-                                           #f)))
+                                           0)))
+                                      (call-with-values
+                                       (lambda ()
+                                         (char-grapheme-cluster-step
+                                          '#\xa
+                                          grcl-state_0))
+                                       (case-lambda
+                                        ((consume?_0 new-grcl-state_0)
+                                         (if (fx= 0 new-grcl-state_0)
+                                           (loop_0
+                                            (add1 i_0)
+                                            0
+                                            line_0
+                                            column_0
+                                            position_0
+                                            #f
+                                            0)
+                                           (let ((app_0 (add1 i_0)))
+                                             (let ((app_1
+                                                    (if line_0
+                                                      (add1 line_0)
+                                                      #f)))
+                                               (loop_0
+                                                app_0
+                                                0
+                                                app_1
+                                                (if column_0 0 #f)
+                                                (if position_0
+                                                  (add1 position_0)
+                                                  #f)
+                                                #f
+                                                0)))))
+                                        (args
+                                         (raise-binding-result-arity-error
+                                          2
+                                          args)))))))
+                                (if (eq? b_0 13)
+                                  (if (if (fx= 0 span_0) (not state_0) #f)
+                                    (if (eqv? 0 grcl-state_0)
+                                      (call-with-values
+                                       (lambda ()
+                                         (char-grapheme-cluster-step '#\xd 0))
+                                       (case-lambda
+                                        ((consume?_0 new-grcl-state_0)
+                                         (let ((app_0 (add1 i_0)))
+                                           (let ((app_1
+                                                  (if line_0
+                                                    (add1 line_0)
+                                                    #f)))
+                                             (loop_0
+                                              app_0
+                                              0
+                                              app_1
+                                              (if column_0 0 #f)
+                                              (if position_0
+                                                (add1 position_0)
+                                                #f)
+                                              #f
+                                              new-grcl-state_0))))
+                                        (args
+                                         (raise-binding-result-arity-error
+                                          2
+                                          args))))
+                                      (end-grcl_0))
+                                    (end-utf-8_0))
+                                  (if (eq? b_0 9)
+                                    (if (if (fx= 0 span_0) (not state_0) #f)
+                                      (if (fx= 0 grcl-state_0)
+                                        (let ((app_0 (add1 i_0)))
+                                          (let ((app_1
+                                                 (if column_0
+                                                   (+
+                                                    (bitwise-and column_0 -8)
+                                                    8)
+                                                   #f)))
+                                            (loop_0
+                                             app_0
+                                             0
+                                             line_0
+                                             app_1
+                                             (if position_0
+                                               (add1 position_0)
+                                               #f)
+                                             #f
+                                             0)))
+                                        (end-grcl_0))
+                                      (end-utf-8_0))
+                                    (if (>= b_0 128)
                                       (let ((app_0 (add1 i_0)))
                                         (let ((app_1 (add1 span_0)))
                                           (let ((app_2
@@ -6544,21 +6739,145 @@
                                                (add1 position_0)
                                                #f)
                                              state_0
-                                             #f)))))
-                                    (let ((app_0 (add1 i_0)))
-                                      (let ((app_1 (add1 span_0)))
-                                        (let ((app_2
-                                               (if column_0
-                                                 (add1 column_0)
-                                                 #f)))
-                                          (loop_0
-                                           app_0
-                                           app_1
-                                           line_0
-                                           app_2
-                                           (if position_0 (add1 position_0) #f)
-                                           state_0
-                                           #f)))))))))))))))))
+                                             grcl-state_0))))
+                                      (if (if (fx= 0 span_0) (not state_0) #f)
+                                        (if (not (pair? grcl-state_0))
+                                          (call-with-values
+                                           (lambda ()
+                                             (char-grapheme-cluster-step
+                                              (integer->char b_0)
+                                              grcl-state_0))
+                                           (case-lambda
+                                            ((consumed?_0 new-grcl-state_0)
+                                             (if (let ((or-part_0
+                                                        (fx= 0 grcl-state_0)))
+                                                   (if or-part_0
+                                                     or-part_0
+                                                     consumed?_0))
+                                               (let ((app_0 (add1 i_0)))
+                                                 (let ((app_1
+                                                        (if column_0
+                                                          (add1 column_0)
+                                                          #f)))
+                                                   (loop_0
+                                                    app_0
+                                                    0
+                                                    line_0
+                                                    app_1
+                                                    (if position_0
+                                                      (add1 position_0)
+                                                      #f)
+                                                    #f
+                                                    new-grcl-state_0)))
+                                               (if (if consumed?_0
+                                                     (fx= 0 new-grcl-state_0)
+                                                     #f)
+                                                 (loop_0
+                                                  (add1 i_0)
+                                                  0
+                                                  line_0
+                                                  column_0
+                                                  position_0
+                                                  #f
+                                                  0)
+                                                 (let ((app_0 (add1 i_0)))
+                                                   (let ((app_1
+                                                          (if column_0
+                                                            (add1 column_0)
+                                                            #f)))
+                                                     (let ((app_2
+                                                            (if position_0
+                                                              (add1 position_0)
+                                                              #f)))
+                                                       (loop_0
+                                                        app_0
+                                                        0
+                                                        line_0
+                                                        app_1
+                                                        app_2
+                                                        #f
+                                                        (cons
+                                                         new-grcl-state_0
+                                                         2))))))))
+                                            (args
+                                             (raise-binding-result-arity-error
+                                              2
+                                              args))))
+                                          (call-with-values
+                                           (lambda ()
+                                             (let ((app_0 (integer->char b_0)))
+                                               (char-grapheme-cluster-step
+                                                app_0
+                                                (car grcl-state_0))))
+                                           (case-lambda
+                                            ((consumed?_0 new-grcl-state_0)
+                                             (if consumed?_0
+                                               (let ((n_0
+                                                      (let ((app_0
+                                                             (if (fx=
+                                                                  0
+                                                                  new-grcl-state_0)
+                                                               1
+                                                               2)))
+                                                        (-
+                                                         app_0
+                                                         (cdr grcl-state_0)))))
+                                                 (let ((app_0 (add1 i_0)))
+                                                   (let ((app_1
+                                                          (if column_0
+                                                            (+ column_0 n_0)
+                                                            #f)))
+                                                     (loop_0
+                                                      app_0
+                                                      0
+                                                      line_0
+                                                      app_1
+                                                      (if position_0
+                                                        (+ position_0 n_0)
+                                                        #f)
+                                                      #f
+                                                      new-grcl-state_0))))
+                                               (let ((app_0 (add1 i_0)))
+                                                 (let ((app_1
+                                                        (if column_0
+                                                          (add1 column_0)
+                                                          #f)))
+                                                   (let ((app_2
+                                                          (if position_0
+                                                            (add1 position_0)
+                                                            #f)))
+                                                     (loop_0
+                                                      app_0
+                                                      0
+                                                      line_0
+                                                      app_1
+                                                      app_2
+                                                      #f
+                                                      (cons
+                                                       new-grcl-state_0
+                                                       (add1
+                                                        (cdr
+                                                         grcl-state_0)))))))))
+                                            (args
+                                             (raise-binding-result-arity-error
+                                              2
+                                              args)))))
+                                        (let ((app_0 (add1 i_0)))
+                                          (let ((app_1 (add1 span_0)))
+                                            (let ((app_2
+                                                   (if column_0
+                                                     (add1 column_0)
+                                                     #f)))
+                                              (loop_0
+                                               app_0
+                                               app_1
+                                               line_0
+                                               app_2
+                                               (if position_0
+                                                 (add1 position_0)
+                                                 #f)
+                                               state_0
+                                               grcl-state_0)))))))))))))))))))
              (let ((app_0 (location-line loc_0)))
                (let ((app_1 (location-column loc_0)))
                  (let ((app_2 (location-position loc_0)))
@@ -6570,7 +6889,7 @@
                       app_1
                       app_2
                       app_3
-                      (location-cr-state loc_0))))))))
+                      (location-grcl-state loc_0))))))))
           (void))))))
 (define port-count-all!
   (lambda (in_0 extra-ins_0 amt_0 bstr_0 start_0)
@@ -6601,7 +6920,7 @@
           (if (let ((or-part_0 (location-state loc_0)))
                 (if or-part_0
                   or-part_0
-                  (let ((or-part_1 (location-cr-state loc_0)))
+                  (let ((or-part_1 (pair? (location-grcl-state loc_0))))
                     (if or-part_1
                       or-part_1
                       (let ((or-part_2 (if (fixnum? b_0) (> b_0 127) #f)))
@@ -6612,17 +6931,36 @@
                               or-part_3
                               (let ((or-part_4 (eq? b_0 10)))
                                 (if or-part_4 or-part_4 (eq? b_0 9)))))))))))
-            (port-count! in_0 1 (bytes b_0) 0)
-            (let ((column_0 (location-column loc_0)))
-              (let ((position_0 (location-position loc_0)))
-                (let ((column_1 column_0))
-                  (begin
-                    (if position_0
-                      (set-location-position! loc_0 (add1 position_0))
-                      (void))
-                    (if column_1
-                      (set-location-column! loc_0 (add1 column_1))
-                      (void)))))))
+            (port-count! in_0 1 (if (fixnum? b_0) (bytes b_0) #vu8(120)) 0)
+            (let ((grcl-state_0 (location-grcl-state loc_0)))
+              (call-with-values
+               (lambda ()
+                 (char-grapheme-cluster-step
+                  (if (fixnum? b_0) (integer->char b_0) '#\x78)
+                  grcl-state_0))
+               (case-lambda
+                ((consumed?_0 new-grcl-state_0)
+                 (if (if consumed?_0
+                       (if (not (fx= 0 grcl-state_0))
+                         (fx= 0 new-grcl-state_0)
+                         #f)
+                       #f)
+                   (set-location-grcl-state! loc_0 0)
+                   (let ((column_0 (location-column loc_0)))
+                     (let ((position_0 (location-position loc_0)))
+                       (begin
+                         (if position_0
+                           (set-location-position! loc_0 (add1 position_0))
+                           (void))
+                         (if column_0
+                           (set-location-column! loc_0 (add1 column_0))
+                           (void))
+                         (set-location-grcl-state!
+                          loc_0
+                          (if (if consumed?_0 consumed?_0 (fx= 0 grcl-state_0))
+                            new-grcl-state_0
+                            (cons new-grcl-state_0 2))))))))
+                (args (raise-binding-result-arity-error 2 args))))))
           (void))))))
 (define port-count-byte-all!
   (lambda (in_0 extra-ins_0 b_0)
@@ -12876,9 +13214,14 @@
                          v_0
                          str15_0
                          start16_0
-                         temp95_0)))
+                         temp95_0
+                         #f)))
                     (case-lambda
-                     ((used-bytes_0 got-chars_0 state_0)
+                     ((used-bytes_0
+                       got-chars_0
+                       state_0
+                       got-gcrl_0
+                       grcl-state_0)
                       (let ((actually-used-bytes_0
                              (-
                               used-bytes_0
@@ -12921,35 +13264,40 @@
                                       (call-with-values
                                        (lambda ()
                                          (if (eq? v_1 0)
-                                           (values 0 0 state_1)
-                                           (let ((temp108_0
+                                           (values 0 0 state_1 0 #f)
+                                           (let ((temp109_0
                                                   (if (integer? v_1) v_1 0)))
-                                             (let ((temp111_0
+                                             (let ((temp112_0
                                                     (+ start_0 amt_1)))
-                                               (let ((temp113_0
+                                               (let ((temp115_0
                                                       (if (utf-8-state?
                                                            state_1)
                                                         state_1
                                                         #f)))
-                                                 (let ((temp114_0
+                                                 (let ((temp116_0
                                                         (if (integer? v_1)
                                                           'state
                                                           'error)))
-                                                   (let ((temp113_1 temp113_0)
-                                                         (temp111_1 temp111_0)
-                                                         (temp108_1 temp108_0))
+                                                   (let ((temp115_1 temp115_0)
+                                                         (temp112_1 temp112_0)
+                                                         (temp109_1 temp109_0))
                                                      (utf-8-decode!.1
-                                                      temp114_0
+                                                      temp116_0
                                                       '#\xfffd
-                                                      temp113_1
+                                                      temp115_1
                                                       bstr_0
                                                       0
-                                                      temp108_1
+                                                      temp109_1
                                                       str15_0
                                                       start_0
-                                                      temp111_1))))))))
+                                                      temp112_1
+                                                      #f))))))))
                                        (case-lambda
-                                        ((used-bytes_1 got-chars_1 new-state_0)
+                                        ((used-bytes_1
+                                          got-chars_1
+                                          new-state_0
+                                          got-gcrl_1
+                                          gcrl-state_0)
                                          (if (zero? got-chars_1)
                                            (let ((app_0 (+ skip-k_0 v_1)))
                                              (loop_0
@@ -13024,7 +13372,7 @@
                                                   actually-used-bytes_1))))))
                                         (args
                                          (raise-binding-result-arity-error
-                                          3
+                                          5
                                           args)))))))))))
                            (let ((app_0 (+ skip5_0 (- v_0 consumed-v_0))))
                              (let ((app_1 (+ start16_0 got-chars_0)))
@@ -13048,7 +13396,7 @@
                                (- actually-used-bytes_0 consumed-v_0)))
                             (values got-chars_0 actually-used-bytes_0)))))
                      (args
-                      (raise-binding-result-arity-error 3 args))))))))))))))
+                      (raise-binding-result-arity-error 5 args))))))))))))))
 (define do-read-string!.1
   (|#%name|
    do-read-string!
@@ -13090,23 +13438,23 @@
                       (begin
                         (call-with-values
                          (lambda ()
-                           (let ((temp126_0 (+ start28_0 got_0)))
-                             (let ((temp130_0
+                           (let ((temp128_0 (+ start28_0 got_0)))
+                             (let ((temp132_0
                                     (if just-peek?19_0
                                       (+ skip20_0 total-used-bytes_0)
                                       0)))
-                               (let ((temp126_1 temp126_0))
+                               (let ((temp128_1 temp128_0))
                                  (read-some-chars!.1
                                   0
                                   just-peek?19_0
                                   #t
-                                  temp130_0
+                                  temp132_0
                                   #f
                                   #f
                                   who25_0
                                   in26_0
                                   str27_0
-                                  temp126_1
+                                  temp128_1
                                   end29_0)))))
                          (case-lambda
                           ((v_1 used-bytes_1)
@@ -29224,15 +29572,20 @@
                                           1
                                           #f
                                           0
+                                          #f
                                           #f))
                                        (case-lambda
-                                        ((used-bytes_0 got-chars_0 new-state_0)
+                                        ((used-bytes_0
+                                          got-chars_0
+                                          new-state_0
+                                          got-gcrl_0
+                                          gcrl-state_0)
                                          (if (utf-8-state? new-state_0)
                                            (loop_0 (add1 offset_0) new-state_0)
                                            #t))
                                         (args
                                          (raise-binding-result-arity-error
-                                          3
+                                          5
                                           args))))
                                       #f))))))
                              (loop_0 0 #f)))))
@@ -34851,11 +35204,11 @@
                 'subprocess
                 "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                 stderr_0))
-             (let ((lr1404 unsafe-undefined)
+             (let ((lr1422 unsafe-undefined)
                    (group_0 unsafe-undefined)
                    (command_0 unsafe-undefined)
                    (exact/args_0 unsafe-undefined))
-               (set! lr1404
+               (set! lr1422
                  (call-with-values
                   (lambda ()
                     (if (path-string? group/command_0)
@@ -34910,9 +35263,9 @@
                    ((group_1 command_1 exact/args_1)
                     (vector group_1 command_1 exact/args_1))
                    (args (raise-binding-result-arity-error 3 args)))))
-               (set! group_0 (unsafe-vector*-ref lr1404 0))
-               (set! command_0 (unsafe-vector*-ref lr1404 1))
-               (set! exact/args_0 (unsafe-vector*-ref lr1404 2))
+               (set! group_0 (unsafe-vector*-ref lr1422 0))
+               (set! command_0 (unsafe-vector*-ref lr1422 1))
+               (set! exact/args_0 (unsafe-vector*-ref lr1422 2))
                (call-with-values
                 (lambda ()
                   (if (if (pair? exact/args_0)

@@ -70,11 +70,12 @@
   (check who exact-nonnegative-integer? end)
   (check-range who start end (bytes-length bstr) bstr)
   ;; First, decode `skip` items:
-  (define-values (initial-used-bytes initial-got-chars state)
+  (define-values (initial-used-bytes initial-got-chars state got-gcrl gcrl-state)
     (if (eqv? skip 0)
-        (values 0 0 (if (= start end) 'complete 'continues))
+        (values 0 0 (if (= start end) 'complete 'continues) 0 #f)
         (utf-8-decode! bstr start end
-                       #f 0 skip 
+                       #f 0 skip
+                       #f
                        #:error-char err-char
                        #:abort-mode 'error)))
   (cond
@@ -87,9 +88,10 @@
        [else
         ;; Get one more byte
         (define str (and (not get-index?) (make-string 1)))
-        (define-values (used-bytes got-chars new-state)
+        (define-values (used-bytes got-chars new-state got-gcrl gcrl-state)
           (utf-8-decode! bstr (+ start initial-used-bytes) end
                          str 0 1
+                         #f
                          #:error-char err-char))
         (cond
           [(eq? new-state 'error)
