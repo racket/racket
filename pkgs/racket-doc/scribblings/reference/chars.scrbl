@@ -348,9 +348,13 @@ with @racket[char-grapheme-cluster-step] and the next character.
 
 A value of @racket[0] for @racket[state] represents the initial state
 or a state where no characters are pending toward a new boundary.
-Thus, if a sequence of characters is exhausted and @racket[state] is
-not @racket[0], then the end of the stream creates one last
-grapheme-cluster boundary.
+Thus, if a sequence of characters is exhausted and accumulated
+@racket[state] is not @racket[0], then the end of the stream creates
+one last grapheme-cluster boundary. When
+@racket[char-grapheme-cluster-step] produces a true value as its first
+result and a non-@racket[0] value as its second result, then the given
+@racket[char] must be the only character pending toward the next
+grapheme cluster (by the rules of Unicode grapheme clustering).
 
 The @racket[char-grapheme-cluster-step] procedure will produce a
 result for any fixnum @scheme[state], but the meaning of a

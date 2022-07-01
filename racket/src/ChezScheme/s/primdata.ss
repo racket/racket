@@ -1882,6 +1882,8 @@
   ($bytevector-uncompress [flags])
   ($capture-fasl-target [flags single-valued])
   ($c-error [flags])
+  ($char-grapheme-cluster-step [sig [(char fixnum) -> (boolean fixnum)]] [flags])
+  ($char-grapheme-cluster-other-state [flags true])
   ($check-heap-errors [flags single-valued])
   ($clear-dynamic-closure-counts [flags single-valued])  ; added for closure instrumentation
   ($clear-pass-stats [flags single-valued])

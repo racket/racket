@@ -46,9 +46,10 @@
           (let loop ([offset 0] [state #f])
             (cond
               [(eq? 1 (peek-bytes-avail!* bstr offset #f in))
-               (define-values (used-bytes got-chars new-state)
+               (define-values (used-bytes got-chars new-state got-gcrl gcrl-state)
                  (utf-8-decode! bstr 0 1
                                 #f 0 #f
+                                #f
                                 #:error-char #\?
                                 #:abort-mode 'state
                                 #:state state))

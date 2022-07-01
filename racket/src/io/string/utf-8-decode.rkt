@@ -20,7 +20,11 @@
                      remaining     ; number of bytes expected to finidh decoding
                      pending-amt)) ; number of bytes contributing to `accum`
 
-;; Returns (values bytes-used chars-written (or/c 'complete 'continues 'aborts 'error state-for-aborts)),
+;; Returns (values bytes-used
+;;                 chars-written
+;;                 (or/c 'complete 'continues 'aborts 'error state-for-aborts)
+;;                 graphemes-written  ; if `grcl-state` is not #f
+;;                 grapheme-state)    ; if `grcl-state` is not #f
 ;; where the number of bytes used can go negative if a previous abort state is provided
 ;; and further decoding reveals that earlier bytes were in error.
 ;;
@@ -42,6 +46,7 @@
 ;;
 (define (utf-8-decode! in-bstr in-start in-end
                        out-str out-start out-end  ; `out-str` and `out-end` can be #f no string result needed
+                       grcl-state                 ; #f or state-fixnum or `(cons state-fixnum pending)`
                        #:error-char [error-ch #f] ; replaces an encoding error if non-#f
                        #:abort-mode [abort-mode 'error] ; 'error, 'aborts, or 'state
                        #:state [state #f])        ; state that was returned in place of a previous 'aborts result
@@ -59,11 +64,26 @@
         0))
 
   ;; Iterate through the given byte string
-  (let loop ([i in-start] [j out-start] [base-i base-i] [accum accum] [remaining remaining])
+  (let loop ([i in-start] [j out-start] [base-i base-i] [accum accum] [remaining remaining]
+                          [grcl-done 0] [grcl-state grcl-state])
 
     ;; Shared handling for success:
     (define (complete accum)
       (when out-str (string-set! out-str j (integer->char accum)))
+      (define-values (new-grcl-done new-grcl-state)
+        (cond
+          [grcl-state
+           (define-values (consume? new-grcl-state*)
+             (char-grapheme-cluster-step (integer->char accum) (if (pair? grcl-state)
+                                                                   (car grcl-state)
+                                                                   grcl-state)))
+           (define new-grcl-state (if (or consume?
+                                          (eqv? grcl-state 0))
+                                      new-grcl-state*
+                                      (cons new-grcl-state* (if (pair? grcl-state) (add1 (cdr grcl-state)) 2))))
+           (define new-grcl-done (if consume? (fx+ grcl-done 1) grcl-done))
+           (values new-grcl-done new-grcl-state)]
+          [else (values 0 #f)]))
       (define next-j (fx+ j 1))
       (define next-i (fx+ i 1))
       (cond
@@ -72,9 +92,11 @@
                  (fx- next-j out-start)
                  (if (fx= next-i in-end)
                      'complete
-                     'continues))]
+                     'continues)
+                 new-grcl-done
+                 new-grcl-state)]
         [else
-         (loop next-i next-j next-i 0 0)]))
+         (loop next-i next-j next-i 0 0 new-grcl-done new-grcl-state)]))
 
     ;; Shared handling for encoding failures:
     (define (encoding-failure)
@@ -87,13 +109,17 @@
          [(and out-end (fx= next-j out-end))
           (values (fx- next-i in-start)
                   (fx- next-j out-start)
-                  'continues)]
+                  'continues
+                  grcl-done
+                  grcl-state)]
          [else
-          (loop next-i next-j next-i 0 0)])]
+          (loop next-i next-j next-i 0 0 grcl-done grcl-state)])]
        [else
         (values (fx- base-i in-start)
                 (fx- j out-start)
-                'error)]))
+                'error
+                grcl-done
+                grcl-state)]))
     
     ;; Dispatch on byte:
     (cond
@@ -103,17 +129,23 @@
        [(fx= remaining 0)
         (values (fx- base-i in-start)
                 (fx- j out-start)
-                'complete)]
+                'complete
+                grcl-done
+                grcl-state)]
        [(eq? abort-mode 'error)
         (encoding-failure)]
        [(eq? abort-mode 'state)
         (values (fx- i in-start) ; all bytes used
                 (fx- j out-start)
-                (utf-8-state accum remaining (fx- i base-i)))]
+                (utf-8-state accum remaining (fx- i base-i))
+                grcl-done
+                grcl-state)]
        [else
         (values (fx- base-i in-start) 
                 (fx- j out-start)
-                'aborts)])]
+                'aborts
+                grcl-done
+                grcl-state)])]
      [(i . fx< . in-start)
       ;; Happens only if we resume decoding with some state
       ;; and hit a decoding error; treat the byte as another
@@ -124,9 +156,9 @@
       (utf-8-decode-byte/inline b accum remaining
                                 complete
                                 (lambda (accum remaining)
-                                  (loop (fx+ i 1) j i accum remaining))
+                                  (loop (fx+ i 1) j i accum remaining grcl-done grcl-state))
                                 (lambda (accum remaining)
-                                  (loop (fx+ i 1) j base-i accum remaining))
+                                  (loop (fx+ i 1) j base-i accum remaining grcl-done grcl-state))
                                 encoding-failure)])))
 
 (define-syntax-rule (utf-8-decode-byte/inline b accum remaining
@@ -236,9 +268,10 @@
         str])]
     [else
      ;; Measure result string:
-     (define-values (used-bytes got-chars state)
+     (define-values (used-bytes got-chars state get-grcl grcl-state)
        (utf-8-decode! bstr start end
-                      #f 0 #f 
+                      #f 0 #f
+                      #f
                       #:error-char err-char
                       #:abort-mode 'error))
      (cond
@@ -249,6 +282,7 @@
         (define str (make-string got-chars))
         (utf-8-decode! bstr start end
                        str 0 #f
+                       #f
                        #:error-char err-char
                        #:abort-mode 'error)
         str])]))

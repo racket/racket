@@ -904,6 +904,12 @@
           ;; These are the rules from UAX 29.
           ;; GB1 and GB2 are implicit and external to this stepping function.
           (cond
+            ;; some of GB999 as common case;
+            ;; a variant of this is inlined in unsafe mode
+            [(and (fx= prev Other)
+                  (fx= prop Other)
+                  (not ($char-extended-pictographic? ch)))
+             (values #t (fx+ Other 1))]
             ;; some of GB3 and some of GB4
             [(fx= prev CR) 
              (if (fx= prop LF)
@@ -976,7 +982,7 @@
         (cond
           [(fx= start end) 0]
           [else
-           (let-values ([(consumed? state) (grapheme-cluster-step (string-ref s start) 0)])
+           (let-values ([(consumed? state) (char-grapheme-cluster-step (string-ref s start) 0)])
              (cond
                [consumed? 1]
                [else
@@ -984,7 +990,7 @@
                   (cond
                     [(fx= i end) (fx- i start)]
                     [else
-                     (let-values ([(consumed? state) (grapheme-cluster-step (string-ref s i) state)])
+                     (let-values ([(consumed? state) (char-grapheme-cluster-step (string-ref s i) state)])
                        (if consumed?
                            (if (fx= state 0)
                                (fx- (fx+ i 1) start) ; CRLF, consumed both
@@ -998,6 +1004,11 @@
           [else
            (let ([len (grapheme-cluster-length s start end)])
              (grapheme-cluster-count s (fx+ start len) end (fx+ count 1)))])))
+
+    (set! $char-grapheme-cluster-step grapheme-cluster-step)
+
+    (set! $char-grapheme-cluster-other-state
+          (lambda () (fx+ Other 1)))
 
     (set-who! char-grapheme-cluster-step
       (lambda (ch state)
