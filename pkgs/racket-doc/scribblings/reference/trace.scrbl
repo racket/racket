@@ -19,7 +19,8 @@ available in Chez Scheme.
 @defform[(trace id ...)]{
 
 Each @racket[id] must be bound to a procedure in the environment of
-the @racket[trace] expression.  Each @racket[id] is @racket[set!]ed to
+the @racket[trace] expression, and must not be imported from another module.
+Each @racket[id] is @racket[set!]ed to
 a new procedure that traces procedure calls and returns by printing
 the arguments and results of the call via
 @racket[current-trace-notify].  If multiple values are returned, each

@@ -140,4 +140,21 @@
             'trace-lambda-source
             (proc-file-name f3)))))
 
+(module sub racket/base
+  (provide some-id)
+  (define (some-id) 1))
+
+(define (some-id*) 1)
+
+(let ()
+  (syntax-test #'(trace add1))
+  (syntax-test #'(let ()
+                   (local-require 'sub)
+                   (trace some-id)))
+
+  (trace some-id*)
+
+  (define (some-id**) 1)
+  (trace some-id**))
+
 (report-errs)
