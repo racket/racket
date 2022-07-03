@@ -556,7 +556,7 @@
                       #f
                       opts))]))]))))
 
-(define (build/command-line* targets-at [at-dir build-path] [opts (hash)])
+(define (build/command-line* targets-at [at-dir (make-at-dir ".")] [opts (hash)])
   (let* ([args (or (hash-ref opts 'args #f) (hash-ref (runtime-env) 'args))])
     (define (var-split str)
       (let* ([alpha? (lambda (c) (or (and (>= c (char "a")) (<= c (char "z")))
@@ -815,7 +815,7 @@
 ;; `make`-like target and dependency declaration
 
 (define (make-targets specs)
-  (unless (list? specs) (arg-error 'make-targets "list") specs)
+  (unless (list? specs) (arg-error 'make-targets "list" specs) specs)
   (for-each (lambda (spec)
               (unless (and (list? spec)
                            (pair? spec)
