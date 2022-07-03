@@ -215,7 +215,7 @@ Detailed instructions:
     The first step of `make` is to build `bin/zuo` to run build
     scripts. If you need to select the C compiler to build `bin/zuo`
     (which is a single C file that needs only system headers), then
-    supply `HOSTCC=<compiler>` as an argument to `make`.
+    supply `CC_FOR_BUILD=<compiler>` as an argument to `make`.
 
  4. Run `make install`.
 
@@ -393,7 +393,7 @@ For Racket CS, an additional flag is required:
  
    Supplying `--enable-scheme=DIR` is also supported, where DIR is a
    path that has a "ChezScheme" directory where Chez Scheme is built
-   for the host system (but not necessarily installed).
+   for the build system (but not necessarily installed).
 
 The `--enable-racket=RACKET` and `--enable-scheme=SCHEME` flags are
 allowed for non-cross builds, too:
