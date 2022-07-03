@@ -879,12 +879,12 @@
 (err/rt-test (read-char (make-input-port #f void void void)))
 (err/rt-test (peek-char (make-input-port #f void void void)))
 (arity-test make-input-port 4 10)
-(err/rt-test (make-custom-input-port #f 8 void void))
-(err/rt-test (make-custom-input-port #f void 8 void))
-(err/rt-test (make-custom-input-port #f void void 8))
-(err/rt-test (make-custom-input-port #f cons void void))
-(err/rt-test (make-custom-input-port #f void add1 void))
-(err/rt-test (make-custom-input-port #f void void add1))
+(err/rt-test (make-input-port #f 8 void void))
+(err/rt-test (make-input-port #f void 8 void))
+(err/rt-test (make-input-port #f void void 8))
+(err/rt-test (make-input-port #f cons void void))
+(err/rt-test (make-input-port #f void add1 void))
+(err/rt-test (make-input-port #f void void add1))
 
 (test #t output-port? (make-output-port #f always-evt void void))
 (test #t output-port? (make-output-port #f always-evt void void))
@@ -895,7 +895,7 @@
 (err/rt-test (make-output-port #f always-evt void 8))
 (err/rt-test (make-output-port #f always-evt add1 void))
 (err/rt-test (make-output-port #f always-evt void add1))
-(err/rt-test (write-special 'foo (make-custom-output-port void always-evt void void)) exn:application:mismatch?)
+(err/rt-test (write-special 'foo (make-output-port void always-evt void void)) exn:application:mismatch?)
 
 (let ([p (make-input-port 
 	  'name
