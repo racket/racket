@@ -4788,11 +4788,12 @@ static zuo_t *zuo_filetime_pair(FILETIME *ft){
 # define TO_INT64(a, b) (((zuo_int_t)(a) << 32) | (((zuo_int_t)b) & (zuo_int_t)0xFFFFFFFF))
 #endif
 
-static zuo_t *zuo_stat(zuo_t *path, zuo_t *follow_links) {
+static zuo_t *zuo_stat(zuo_t *path, zuo_t *follow_links, zuo_t *false_on_error) {
   const char *who = "stat";
   zuo_t *result = z.o_empty_hash;
 
   if (follow_links == z.o_undefined) follow_links = z.o_true;
+  if (false_on_error == z.o_undefined) false_on_error = z.o_false;
 
   check_path_string(who, path);
 
@@ -4807,7 +4808,7 @@ static zuo_t *zuo_stat(zuo_t *path, zuo_t *follow_links) {
       stat_result = stat(ZUO_STRING_PTR(path), &stat_buf);
 
     if (stat_result != 0) {
-      if (errno != ENOENT)
+      if ((errno != ENOENT) && (false_on_error == z.o_false))
 	zuo_fail1w_errno(who, "failed", path);
       return z.o_false;
     }
@@ -4853,13 +4854,17 @@ static zuo_t *zuo_stat(zuo_t *path, zuo_t *follow_links) {
 
     if (fdh == INVALID_HANDLE_VALUE) {
       DWORD err = GetLastError();
-      if ((err != ERROR_FILE_NOT_FOUND) && (err != ERROR_PATH_NOT_FOUND))
+      if ((err != ERROR_FILE_NOT_FOUND) && (err != ERROR_PATH_NOT_FOUND)
+          && (false_on_error == z.o_false))
 	zuo_fail1w(who, "failed", path);
       return z.o_false;
     }
 
-    if (!GetFileInformationByHandle(fdh, &info))
+    if (!GetFileInformationByHandle(fdh, &info)) {
+      if (false_on_error != z.o_false)
+        return z.o_false;
       zuo_fail1w(who, "failed", path);
+    }
 
     CloseHandle(fdh);
 
@@ -6925,7 +6930,7 @@ static void zuo_primitive_init(int will_load_image) {
   ZUO_TOP_ENV_SET_PRIMITIVEb("fd-terminal?", zuo_fd_terminal_p);
   ZUO_TOP_ENV_SET_PRIMITIVE1("fd-valid?", zuo_fd_valid_p);
 
-  ZUO_TOP_ENV_SET_PRIMITIVEb("stat", zuo_stat);
+  ZUO_TOP_ENV_SET_PRIMITIVEC("stat", zuo_stat);
   ZUO_TOP_ENV_SET_PRIMITIVE1("rm", zuo_rm);
   ZUO_TOP_ENV_SET_PRIMITIVE2("mv", zuo_mv);
   ZUO_TOP_ENV_SET_PRIMITIVE1("mkdir", zuo_mkdir);
@@ -7152,7 +7157,7 @@ int zuo_main(int argc, char **argv) {
   if (load_file == NULL) {
     load_file = "main.zuo";
     load_path = zuo_string(load_file);
-    if (zuo_stat(load_path, z.o_true) == z.o_false) {
+    if (zuo_stat(load_path, z.o_true, z.o_true) == z.o_false) {
       zuo_error_color();
       fprintf(stderr, "%s: no file specified, and no \"main.zuo\" found", argv0);
       zuo_fail("");
@@ -7161,7 +7166,7 @@ int zuo_main(int argc, char **argv) {
     zuo_t *st;
     load_path = zuo_string(load_file);
     load_path = zuo_normalize_input_path(load_path);
-    st = zuo_stat(load_path, z.o_true);
+    st = zuo_stat(load_path, z.o_true, z.o_true);
     if ((st != z.o_false)
         && (zuo_trie_lookup(st, zuo_symbol("type")) == zuo_symbol("dir"))) {
       if (!strcmp(load_file, "."))

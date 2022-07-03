@@ -1149,14 +1149,20 @@ with an executable name.}
 
 @section{Filesystem}
 
-@defproc[(stat [name path-string?] [follow-links? any/c #t]) (or/c hash? #f)]{
+@defproc[(stat [name path-string?]
+               [follow-links? any/c #t]
+               [false-on-error? any/c #f])
+         (or/c hash? #f)]{
 
 Returns information about the file, directory, or link referenced by
 @racket[name]. If @racket[follow-links?] is @racket[#f], then when
 @racket[name] refers to a link, information is reported about the
 link; otherwise, information is reported about the target of a link.
 
-If no such file, directory, or link exists, the result is @racket[#f].
+If @racket[name] is a valid path but such file, directory, or link exists,
+the result is @racket[#f]. If accessing @racket[name] encounters an error
+(e.g., @racket[name] uses a file as a directory or permission is denied),
+then @racket[#f] is reported instead of an error if @racket[false-on-error?].
 Otherwise, the hash table has similar keys and values as
 @realracket[file-or-directory-stat] from @racketmodname[racket], but
 with only certain keys per platform:
@@ -1256,7 +1262,9 @@ a link to a directory),.}
 )]{
 
 Uses @racket[stat] to check for a file, directory, or link,
-respectively.}
+respectively. If @racket[stat] encounters an error (e.g., access
+permission), then the file, directory, or link is treated as
+non-existent.}
 
 
 @section{Run Time Configuration}

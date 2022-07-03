@@ -131,17 +131,17 @@
 
 (define (file-exists? p)
   (unless (path-string? p) (arg-error 'file-exists? "path string" p))
-  (let ([s (stat p)])
+  (let ([s (stat p #t #t)])
     (and s (eq? (hash-ref s 'type) 'file))))
 
 (define (directory-exists? p)
   (unless (path-string? p) (arg-error 'directory-exists?: "path string" p))
-  (let ([s (stat p)])
+  (let ([s (stat p #t #t)])
     (and s (eq? (hash-ref s 'type) 'dir))))
 
 (define (link-exists? p)
   (unless (path-string? p) (arg-error 'link-exists? "path string" p))
-  (let ([s (stat p #f)])
+  (let ([s (stat p #f #t)])
     (and s (eq? (hash-ref s 'type) 'link))))
 
 (define (explode-path p)
