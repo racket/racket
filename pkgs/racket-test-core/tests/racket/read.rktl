@@ -505,6 +505,62 @@
 (let ([t (readstr "#0=#hash((#0# . 17))")])
   ;; Don't look for t, because that's a hash on a circular object!
   (test-ht t 1 #f 'none #f))
+(test-ht (readstr "#hash(
+                        [
+                        1
+                        .
+                        2
+                        ]
+                        )")
+         1 #f 1 2)
+(test-ht (readstr "#hash(;abc
+                        [
+                        1
+                        .
+                        2
+                        ]
+                        )")
+         1 #f 1 2)
+(test-ht (readstr "#hash(
+                        [;abc
+                        1
+                        .
+                        2
+                        ]
+                        )")
+         1 #f 1 2)
+(test-ht (readstr "#hash(
+                        [
+                        1;abc
+                        .
+                        2
+                        ]
+                        )")
+         1 #f 1 2)
+(test-ht (readstr "#hash(
+                        [
+                        1
+                        .;abc
+                        2
+                        ]
+                        )")
+         1 #f 1 2)
+(test-ht (readstr "#hash(
+                        [
+                        1
+                        .
+                        2;abc
+                        ]
+                        )")
+         1 #f 1 2)
+(test-ht (readstr "#hash(
+                        [
+                        1
+                        .
+                        2
+                        ];abc
+                        )")
+         1 #f 1 2)
 
 (define (test-write-ht writer t . strings)
   (let ([o (open-output-string)])

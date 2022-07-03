@@ -168,29 +168,48 @@
                       "expected ~a to start a hash pair"
                       (all-openers-str config))])])]
    [else
-    (define k (read-one #f in (disable-wrapping elem-config)))
-    
-    (define dot-c (read-char/skip-whitespace-and-comments #f read-one in config))
-    (define-values (dot-line dot-col dot-pos) (port-next-location* in dot-c))
-    (define dot-ec (effective-char dot-c config))
-
-    (unless (and (eqv? dot-ec #\.)
-                 (char-delimiter? (peek-char/special in config) config))
-      (reader-error in (reading-at config dot-line dot-col dot-pos)
-                    #:due-to dot-c
-                    "expected ~a and value for hash"
-                    (dot-name config)))
-    
-    (define v (read-one #f in elem-config))
-    
-    (define closer-c (read-char/skip-whitespace-and-comments #f read-one in config))
-    (define-values (closer-line closer-col closer-pos) (port-next-location* in closer-c))
-    (define closer-ec (effective-char closer-c config))
-    
-    (unless (eqv? closer-ec closer)
-      (reader-error in (reading-at config closer-line closer-col closer-pos)
-                    #:due-to closer-c
-                    "expected ~a after value within a hash"
-                    (closer-name closer config)))
-    
-    (cons (coerce-key k elem-config) v)]))
+    (let step-read-key ()
+      (define k (read-one #f in (disable-wrapping elem-config)))
+      (cond
+        [(special-comment? k) (step-read-key)]
+        [else
+         (let step-read-dot ()
+           (define dot-c (read-char/skip-whitespace-and-comments #f read-one in config))
+           (define-values (dot-line dot-col dot-pos) (port-next-location* in dot-c))
+           (define dot-ec (effective-char dot-c config))
+           (cond
+             [(eqv? dot-ec #\.)
+              (unless (char-delimiter? (peek-char/special in config) config)
+                (reader-error in (reading-at config dot-line dot-col dot-pos)
+                              #:due-to dot-c
+                              "expected a delimiter between ~a and value for hash"
+                              (dot-name config)))
+              (let step-read-val ()
+                (define v (read-one #f in elem-config))
+                (cond
+                  [(special-comment? v) (step-read-val)]
+                  [else
+                   (let step-read-end ()
+                     (define closer-c (read-char/skip-whitespace-and-comments #f read-one in config))
+                     (define-values (closer-line closer-col closer-pos) (port-next-location* in closer-c))
+                     (define closer-ec (effective-char closer-c config))
+                     (cond
+                       [(eqv? closer-ec closer) (cons (coerce-key k elem-config) v)]
+                       [else
+                        (define v (read-one closer-c in (keep-comment elem-config)))
+                        (cond
+                          [(special-comment? v) (step-read-end)]
+                          [else
+                           (reader-error in (reading-at config closer-line closer-col closer-pos)
+                                         #:due-to closer-c
+                                         "expected ~a after value within a hash"
+                                         (closer-name closer config))])]))]))]
+             [else
+              (define v (read-one dot-c in (keep-comment elem-config)))
+              (cond
+                [(special-comment? v) (step-read-dot)]
+                [else
+                 (reader-error in (reading-at config dot-line dot-col dot-pos)
+                               #:due-to dot-c
+                               "expected ~a and value for hash"
+                               (dot-name config))])]))]))]))
