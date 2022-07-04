@@ -74,9 +74,9 @@ WAYS TO GET BOOT FILES
 
      racket rktboot/main.rkt --machine pb
 
-4. Along similar lines as the previous way, build building for
-   multiple specific <machine type>s: After you have a Chez Scheme
-   build on one machine, you can use use
+4. Along similar lines as the previous way, building for multiple
+   specific <machine type>s: After you have a Chez Scheme build on one
+   machine, you can use use
 
      make <machine type>.boot
 
