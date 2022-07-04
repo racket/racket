@@ -751,6 +751,100 @@
   (test eof read-char p)
   (test-values '(3 1 5) (lambda () (port-next-location p))))
 
+(let ([p (open-input-bytes #"\rx\ny")])
+  (port-count-lines! p)
+  (test-values '(1 0 1) (lambda () (port-next-location p)))
+  (test #"\rx" read-bytes 2 p)
+  (test-values '(2 1 3) (lambda () (port-next-location p)))
+  (test #\newline read-char p)
+  (test-values '(3 0 4) (lambda () (port-next-location p)))
+  (test #\y read-char p)
+  (test-values '(3 1 5) (lambda () (port-next-location p)))
+  (test eof read-char p)
+  (test-values '(3 1 5) (lambda () (port-next-location p))))
+
+;; more port location tessting
+(let ()
+  (define-values (i o) (make-pipe))
+  (port-count-lines! i)
+  (port-count-lines! o)
+  (define (next-location p)
+    (define-values (line col pos) (port-next-location p))
+    (list line col pos))
+  (test '(1 0 1) next-location i)
+  (test '(1 0 1) next-location o)
+
+  (write-bytes #"a" o)
+  (test '(1 1 2) next-location o)
+  (write-bytes #"\n b" o)
+  (test '(2 2 5) next-location o)
+
+  (test #"a" read-bytes 1 i)
+  (test '(1 1 2) next-location i)
+  (test #"\n" read-bytes 1 i)
+  (test '(2 0 3) next-location i)
+  (test #" b" read-bytes 2 i)
+  (test '(2 2 5) next-location i)
+
+  (write-bytes #"x\r" o)
+  (test '(3 0 7) next-location o)
+  (write-bytes #"\n" o)
+  (test '(3 0 7) next-location o)
+  (write-bytes #"!" o)
+  (test '(3 1 8) next-location o)
+
+  (test #"x\r" read-bytes 2 i)
+  (test '(3 0 7) next-location i)
+  (test #"\n!" read-bytes 2 i)
+  (test '(3 1 8) next-location i)
+
+  (write-string "e\u300" o)
+  (test '(3 2 9) next-location o)
+  (test #"e" read-bytes 1 i)
+  (test '(3 2 9) next-location i)
+  (test #"\314" read-bytes 1 i)
+  (test '(3 3 10) next-location i) ; tentatively incremented mid-UTF-8
+  (test #"\200" read-bytes 1 i)
+  (test '(3 2 9) next-location i)  ; UTF-8 concluded, grapheme cluster is still tentative, though
+
+  (write-string "!" o)
+  (test '(3 3 10) next-location o)
+  (test #"!" read-bytes 1 i)
+  (test '(3 3 10) next-location i)
+
+  (write-string "\r" o)
+  (test '(4 0 11) next-location o)
+  (test #"\r" read-bytes 1 i)
+  (test '(4 0 11) next-location i)
+
+  (write-string "\n" o)
+  (test '(4 0 11) next-location o)
+  (test #"\n" read-bytes 1 i)
+  (test '(4 0 11) next-location i)
+
+  (write-string "." o)
+  (test '(4 1 12) next-location o)
+  (test #"." read-bytes 1 i)
+  (test '(4 1 12) next-location i)
+
+  (write-string "app\u03BBe" o)
+  (test '(4 6 17) next-location o)
+  (test "app\u03BBe" read-string 5 i)
+  (test '(4 6 17) next-location i)
+
+  (void))
+
+(let ()
+  (define i (open-input-string "\u0019\u0000\u000E"))
+  (port-count-lines! i)
+  (define (next-location p)
+    (define-values (line col pos) (port-next-location p))
+    (list line col pos))
+
+  (test '(1 0 1) next-location i)
+  (test "\u0019\u0000\u000E" read-string 3 i)
+  (test '(1 3 4) next-location i))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  Check that if the initial commit thread is killed, then
 ;;  another commit thread is broken, that the second doesn't
