@@ -444,20 +444,27 @@ same number of patterns as the number of @racket[val-expr]s.
 
 @examples[#:eval match-eval
 (match* (1 2 3)
- [(_ (? number?) x) (add1 x)])
+  [(_ (? number?) x) (add1 x)])
+
 (match* (15 17)
- [((? number? a) (? number? b))
-  #:when (= (+ a 2) b)
-  'diff-by-two])
+  [((? number? a) (? number? b))
+   #:when (= (+ a 2) b)
+   'diff-by-two])
 ]
 }
 
-@defform[(match/values expr clause clause ...)]{
+@defform[(match/values expr clause* clause* ...)]{
 If @racket[expr] evaluates to @racket[n] values, then match all @racket[n]
-values against the patterns in @racket[clause ...]. Each clause must contain
+values against the patterns in @racket[clause* ...]. Each clause must contain
 exactly @racket[n] patterns. At least one clause is required to determine how
 many values to expect from @racket[expr].
+
+@examples[#:eval match-eval
+(match/values (values 1 2 3)
+  [(a (? number? b) (? odd? c)) (+ a b c)])
+]
 }
+
 
 @defform/subs[
   (define/match (head args)
