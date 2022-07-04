@@ -131,7 +131,7 @@ Otherwise:
    embedding into the Racket BC executable.
 
    After this step, a `make bc` in the top level of the Racket repo
-   will build Racket CS using the new expander.
+   will build Racket BC using the new expander.
 
 For either of these steps, "main.zuo" will assume that Racket is
 already built in the surrounding checkout, so Racket can be run as
@@ -250,7 +250,7 @@ procedures when built into Racket. For example,
    (struct-predicate-procedure? syntax?) ; => #f
 
 If a structure type's representation is exported, such as
-`exn:fail:syntax`, then operations do claim to be strcuture operations
+`exn:fail:syntax`, then operations do claim to be structure operations
 
    (struct-predicate-procedure? exn:fail:syntax?) ; => #t
 
