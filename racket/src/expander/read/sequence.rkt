@@ -16,6 +16,8 @@
 
 (provide read-unwrapped-sequence)
 
+;; Beware that the `read-one` function is called with a configuration keeping
+;; comments, so that special comment be be handled in the sequence
 (define (read-unwrapped-sequence read-one opener-c opener closer in seq-config
                                  #:elem-config [elem-config (next-readtable seq-config)]
                                  #:dot-mode [dot-mode 'all]

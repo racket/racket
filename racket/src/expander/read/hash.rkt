@@ -127,7 +127,8 @@
 
 ;; ----------------------------------------
 
-(define ((make-read-one-key+value read-one overall-opener-c overall-closer-ec prefix-end-pos) init-c in config)
+(define ((make-read-one-key+value read-one overall-opener-c overall-closer-ec prefix-end-pos) init-c in config/keep-comment)
+  (define config (discard-comment config/keep-comment)) ; because we handle comments here
   (define c (read-char/skip-whitespace-and-comments init-c read-one in config))
   (define-values (open-line open-col open-pos) (port-next-location* in c))
   (define ec (effective-char c config))
