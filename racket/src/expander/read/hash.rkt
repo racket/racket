@@ -156,18 +156,9 @@
                     "~a"
                     (indentation-unexpected-closer-message ec c config))]
      [else
-      ;; If it's a special or we have a readtable, we need to read ahead
-      ;; to make sure that it's not a comment. For consistency, always
-      ;; read ahead.
-      (define v (read-one c in (keep-comment elem-config)))
-      (cond
-       [(special-comment? v)
-        ;; Try again
-        ((make-read-one-key+value read-one overall-opener-c overall-closer-ec prefix-end-pos) #f in config)]
-       [else
-        (reader-error in (reading-at config open-line open-col open-pos)
-                      "expected ~a to start a hash pair"
-                      (all-openers-str config))])])]
+      (reader-error in (reading-at config open-line open-col open-pos)
+                    "expected ~a to start a hash pair"
+                    (all-openers-str config))])]
    [else
     (define k (read-one #f in (disable-wrapping elem-config)))
     
