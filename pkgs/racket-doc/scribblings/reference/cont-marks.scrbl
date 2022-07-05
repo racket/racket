@@ -228,7 +228,7 @@ Returns @racket[#t] if @racket[v] is a mark set created by
 
 Returns a list representing an approximate ``@index["stack
 dump"]{@as-index{stack trace}}'' for @racket[mark-set]'s continuation.
-The list contains pairs if @racket[realms?] is #racket[#f], where the
+The list contains pairs if @racket[realms?] is @racket[#f], where the
 @racket[car] of each pair contains either @racket[#f] or a symbol for
 a procedure name, and the @racket[cdr] of each pair contains either
 @racket[#f] or a @racket[srcloc] value for the procedure's source
