@@ -32,7 +32,9 @@ In addition to @litchar{;}, we have two other mechanisms for commenting code:
  be composed in interesting ways with other comments, for example, @litchar{#;#;}
  will comment two expressions, and a line with just @litchar{;#;} gives you a
  single-character ``toggle'' for the expression that starts on the next
- line.  But on the flip side, many tools don't process them
+ line.
+
+@;{But on the flip side, many tools don't process them
  properly---treating them instead as a @litchar{#} followed by a commented line.
  For example, in DrRacket S-expression comments are ignored when it comes
  to syntax coloring, which makes it easy to miss them. In Emacs, the
@@ -40,7 +42,21 @@ In addition to @litchar{;}, we have two other mechanisms for commenting code:
  it difficult to edit as code.  The bottom line here is that @litchar{#;}
  comments are useful for debugging, but try to avoid leaving them in
  committed code.  If you really want to use @litchar{#;}, clarify their use with
- a line comment (@litchar{;}).
+ a line comment (@litchar{;}).}
+
+
+The screenshots below illustrate the use of @litchar{#;} and how DrRacket and
+Emacs (Racket mode) color such comments by default. 
+
+@nested[#:style 'inset]{
+@tabular[ #:sep @hspace[5]
+@list[
+ @list[
+@image[#:scale .29]{dr-sexp-comment.png}
+@; -----------------------------------------------------------------------------
+@image[#:scale .25]{emacs-sexp-comment.png}
+]]]}
+
 
 @; -----------------------------------------------------------------------------
 @section{Definitions}
