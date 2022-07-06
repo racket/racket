@@ -967,8 +967,9 @@ static void post_progress(Scheme_Input_Port *ip)
   ip->progress_evt = NULL;
 }
 
-XFORM_NONGCING static void inc_pos(Scheme_Port *ip, int a)
+XFORM_NONGCING static void inc_pos_for_special(Scheme_Port *ip)
 {
+  int a = 1 + ip->grcl_state.pending_chars;
   if (ip->column >= 0)
     ip->column = (intptr_t)((uintptr_t)ip->column + a);
   if (ip->readpos >= 0)
@@ -1086,6 +1087,12 @@ XFORM_NONGCING static void do_count_lines(Scheme_Port *ip, const char *buffer, i
       if (buffer[offset + i] == '\t') {
 	n = scheme_utf8_grcl_decode_count((const unsigned char *)buffer, offset + prev_i, offset + i, &state, 0, 0xFFFD,
                                           &ip->grcl_state);
+        if (ip->grcl_state.state) {
+          /* tab will not combine */
+          ip->grcl_state.state = 0;
+          ip->grcl_state.pending_chars = 0;
+          n++;
+        }
 	degot += ((i - prev_i) - n);
 	col += n;
 	col = col - (col & 0x7) + 8;
@@ -1258,7 +1265,7 @@ intptr_t scheme_get_byte_string_unless(const char *who,
 	if (ip->p.position >= 0)
 	  ip->p.position++;
 	if (ip->p.count_lines)
-	  inc_pos((Scheme_Port *)ip, 1);
+	  inc_pos_for_special((Scheme_Port *)ip);
       }
 
       if (!peek && ip->progress_evt)
@@ -1418,7 +1425,7 @@ intptr_t scheme_get_byte_string_unless(const char *who,
 	    if (ip->p.position >= 0)
 	      ip->p.position++;
 	    if (ip->p.count_lines)
-	      inc_pos((Scheme_Port *)ip, 1);
+	      inc_pos_for_special((Scheme_Port *)ip);
 	  }
 	  
 	  return SCHEME_SPECIAL;
@@ -2156,7 +2163,7 @@ static intptr_t get_one_byte_slow(const char *who,
     if (ip->p.position >= 0)
       ip->p.position++;
     if (ip->p.count_lines)
-      inc_pos((Scheme_Port *)ip, 1);
+      inc_pos_for_special((Scheme_Port *)ip);
     return SCHEME_SPECIAL;
   } else {
     if (ip->pending_eof > 1) {
@@ -2180,7 +2187,7 @@ static intptr_t get_one_byte_slow(const char *who,
             if (ip->p.position >= 0)
               ip->p.position++;
             if (ip->p.count_lines)
-              inc_pos((Scheme_Port *)ip, 1);
+              inc_pos_for_special((Scheme_Port *)ip);
             return SCHEME_SPECIAL;
           } else {
             scheme_bad_time_for_special(who, port);

@@ -886,7 +886,7 @@
     ;;
     ;; So, if you get to the end of a string with a non-0 state, then
     ;; "flush" the state by consuming that last grapheme cluster.
-    (define grapheme-cluster-step
+    (define grapheme-step
       (lambda (ch state)
         (let ([prev (fx- (fxand state (fx- (fxsll 1 grapheme-cluster-break-bits) 1)) 1)]
               [ext-pict (fxsrl state grapheme-cluster-break-bits)]
@@ -977,12 +977,12 @@
             [else
              (values (fx> state 0) (next-state))]))))
 
-    (define grapheme-cluster-length
+    (define grapheme-span
       (lambda (s start end)
         (cond
           [(fx= start end) 0]
           [else
-           (let-values ([(consumed? state) (char-grapheme-cluster-step (string-ref s start) 0)])
+           (let-values ([(consumed? state) (char-grapheme-step (string-ref s start) 0)])
              (cond
                [consumed? 1]
                [else
@@ -990,63 +990,63 @@
                   (cond
                     [(fx= i end) (fx- i start)]
                     [else
-                     (let-values ([(consumed? state) (char-grapheme-cluster-step (string-ref s i) state)])
+                     (let-values ([(consumed? state) (char-grapheme-step (string-ref s i) state)])
                        (if consumed?
                            (if (fx= state 0)
                                (fx- (fx+ i 1) start) ; CRLF, consumed both
                                (fx- i start))
                            (loop (fx+ i 1) state)))]))]))])))
 
-    (define grapheme-cluster-count
+    (define grapheme-count
       (lambda (s start end count)
         (cond
           [(fx= start end) count]
           [else
-           (let ([len (grapheme-cluster-length s start end)])
-             (grapheme-cluster-count s (fx+ start len) end (fx+ count 1)))])))
+           (let ([len (grapheme-span s start end)])
+             (grapheme-count s (fx+ start len) end (fx+ count 1)))])))
 
-    (set! $char-grapheme-cluster-step grapheme-cluster-step)
+    (set! $char-grapheme-step grapheme-step)
 
-    (set! $char-grapheme-cluster-other-state
+    (set! $char-grapheme-other-state
           (lambda () (fx+ Other 1)))
 
-    (set-who! char-grapheme-cluster-step
+    (set-who! char-grapheme-step
       (lambda (ch state)
         (unless (char? ch) (char-error who ch))
         (unless (fixnum? state)
           ($oops who "~s is not a grapheme cluster state" state))
-        (grapheme-cluster-step ch state)))
+        (grapheme-step ch state)))
 
-    (set-who! string-grapheme-cluster-length
+    (set-who! string-grapheme-span
       (case-lambda
        [(s start)
         (unless (string? s) (string-error who s))
         (unless (and (fixnum? start) (fx<= 0 start (string-length s)))
           ($oops who "~s is not a valid start index for ~s" start s))
-        (grapheme-cluster-length s start (string-length s))]
+        (grapheme-span s start (string-length s))]
        [(s start end)
         (unless (string? s) (string-error who s))
         (let ([k (string-length s)])
           (unless (and (fixnum? start) (fixnum? end) (fx<= 0 start end k))
             ($oops who "~s and ~s are not valid start/end indices for ~s" start end s)))
-        (grapheme-cluster-length s start end)]))
+        (grapheme-span s start end)]))
 
-    (set-who! string-grapheme-cluster-count
+    (set-who! string-grapheme-count
       (case-lambda
        [(s)
         (unless (string? s) (string-error who s))
-        (grapheme-cluster-count s 0 (string-length s) 0)]
+        (grapheme-count s 0 (string-length s) 0)]
        [(s start)
         (unless (string? s) (string-error who s))
         (unless (and (fixnum? start) (fx<= 0 start (string-length s)))
           ($oops who "~s is not a valid start index for ~s" start s))
-        (grapheme-cluster-count s start (string-length s) 0)]
+        (grapheme-count s start (string-length s) 0)]
        [(s start end)
         (unless (string? s) (string-error who s))
         (let ([k (string-length s)])
           (unless (and (fixnum? start) (fixnum? end) (fx<= 0 start end k))
             ($oops who "~s and ~s are not valid start/end indices for ~s" start end s)))
-        (grapheme-cluster-count s start end 0)]))
+        (grapheme-count s start end 0)]))
     )
   )
 )

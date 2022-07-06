@@ -448,8 +448,8 @@ the Unicode Extended\_Pictographic property. \scheme{char-extend?}
 reports whether the grapheme-break property of \var{char} is Extend.
 These two functions could be useful for determining grapheme clusters
 in a string of characters, and they are used internally by functions
-like \scheme{char-grapheme-cluster-step}, \scheme{string-grapheme-cluster-length},
-and \scheme{string-grapheme-cluster-count}.
+like \scheme{char-grapheme-step}, \scheme{string-grapheme-span},
+and \scheme{string-grapheme-count}.
 
 \schemedisplay
 (char-extended-pictographic? #\a)   ;=> #f
@@ -461,7 +461,7 @@ and \scheme{string-grapheme-cluster-count}.
 
 %----------------------------------------------------------------------------
 \entryheader
-\formdef{char-grapheme-cluster-step}{\categoryprocedure}{(char-grapheme-cluster-step \var{char} \var{state})}
+\formdef{char-grapheme-step}{\categoryprocedure}{(char-grapheme-step \var{char} \var{state})}
 \returns two values: a boolean indicating whether a cluster terminated and a new state
 \listlibraries
 \endentryheader
@@ -469,26 +469,26 @@ and \scheme{string-grapheme-cluster-count}.
 \noindent
 \var{char} must be a character, and \var{state} must be a fixnum.
 
-\scheme{char-grapheme-cluster-step} encodes a state machine for
-Unicode's grapheme-cluster specification on a sequence of code points.
+\scheme{char-grapheme-step} encodes a state machine for
+Unicode's grapheme specification on a sequence of code points.
 It accepts a character for the next code point in a sequence, and it
 returns two values: whether a (single) grapheme cluster has terminated
 since the most recently reported termination (or the start of the
 stream), and a new state to be used with
-\scheme{char-grapheme-cluster-step} and the next character.
+\scheme{char-grapheme-step} and the next character.
 
 A \var{state} is represented by a fixnum. A value of \scheme{0} for
 \var{state} represents the initial state or a state where no
 characters are pending toward a new boundary. Thus, if a sequence of
 characters is exhausted and \var{state} is not \scheme{0}, then the
-end of the stream creates one last grapheme-cluster boundary.
+end of the stream creates one last grapheme boundary.
 
-\scheme{char-grapheme-cluster-step} will produce a result for any
+\scheme{char-grapheme-step} will produce a result for any
 fixnum \var{state}, but the meaning of a non-\scheme{0} \var{state} is
 specified only in that providing such a state produced by
-\scheme{char-grapheme-cluster-step} in another call to
-\scheme{char-grapheme-cluster-step} continues detecting
-grapheme-cluster boundaries in the sequence.
+\scheme{char-grapheme-step} in another call to
+\scheme{char-grapheme-step} continues detecting
+grapheme boundaries in the sequence.
 
 
 \section{Strings}
@@ -671,8 +671,8 @@ Like \scheme{string-append}, but produces an immutable string.
 
 %----------------------------------------------------------------------------
 \entryheader
-\formdef{string-grapheme-cluster-length}{\categoryprocedure}{(string-grapheme-cluster-length \var{string} \var{start})}
-\formdef{string-grapheme-cluster-length}{\categoryprocedure}{(string-grapheme-cluster-length \var{string} \var{start} \var{end})}
+\formdef{string-grapheme-span}{\categoryprocedure}{(string-grapheme-span \var{string} \var{start})}
+\formdef{string-grapheme-span}{\categoryprocedure}{(string-grapheme-span \var{string} \var{start} \var{end})}
 \returns the number of characters in a grapheme cluster at the given \var{start}
 \listlibraries
 \endentryheader
@@ -689,18 +689,18 @@ extending no further than the character before \var{end}. The result
 is \scheme{0} if \var{start} equals \var{end}.
 
 \schemedisplay
-(string-grapheme-cluster-length (string #\a) 0)              ;=> 1
-(string-grapheme-cluster-length (string #\a #\x300) 0)       ;=> 2
-(string-grapheme-cluster-length (string #\a #\x300 #\a) 0)   ;=> 2
-(string-grapheme-cluster-length (string #\a #\x300 #\a) 0 1) ;=> 1
+(string-grapheme-span (string #\a) 0)              ;=> 1
+(string-grapheme-span (string #\a #\x300) 0)       ;=> 2
+(string-grapheme-span (string #\a #\x300 #\a) 0)   ;=> 2
+(string-grapheme-span (string #\a #\x300 #\a) 0 1) ;=> 1
 \endschemedisplay
 
 
 %----------------------------------------------------------------------------
 \entryheader
-\formdef{string-grapheme-cluster-count}{\categoryprocedure}{(string-grapheme-cluster-count \var{string})}
-\formdef{string-grapheme-cluster-count}{\categoryprocedure}{(string-grapheme-cluster-count \var{string} \var{start})}
-\formdef{string-grapheme-cluster-count}{\categoryprocedure}{(string-grapheme-cluster-count \var{string} \var{start} \var{end})}
+\formdef{string-grapheme-count}{\categoryprocedure}{(string-grapheme-count \var{string})}
+\formdef{string-grapheme-count}{\categoryprocedure}{(string-grapheme-count \var{string} \var{start})}
+\formdef{string-grapheme-count}{\categoryprocedure}{(string-grapheme-count \var{string} \var{start} \var{end})}
 \returns a boolean indincating whether the character has a property
 \listlibraries
 \endentryheader
@@ -715,10 +715,10 @@ The result is the number of Unicode grapheme clusters in the substring
 of \var{string} selected by \var{start} and \var{end}.
 
 \schemedisplay
-(string-grapheme-cluster-count (string #\a) 0)              ;=> 1
-(string-grapheme-cluster-count (string #\a #\x300) 0)       ;=> 1
-(string-grapheme-cluster-count (string #\a #\x300 #\a) 0)   ;=> 2
-(string-grapheme-cluster-count (string #\a #\x300 #\a) 0 1) ;=> 1
+(string-grapheme-count (string #\a) 0)              ;=> 1
+(string-grapheme-count (string #\a #\x300) 0)       ;=> 1
+(string-grapheme-count (string #\a #\x300 #\a) 0)   ;=> 2
+(string-grapheme-count (string #\a #\x300 #\a) 0 1) ;=> 1
 \endschemedisplay
 
 

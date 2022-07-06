@@ -765,36 +765,38 @@
 		      (test #f regexp-match #rx"^.*$" s)))
 		;; Test byte reading and port positions
 		(let ([v (bytes-any->unicode-vector s #f)])
+                  (define v-grapheme-count
+                    (string-grapheme-count (bytes->string/utf-8 s #\?)))
 		  (define (check-full-read read-all-bytes)
 		    (let ([p (open-input-bytes s)])
 		      (port-count-lines! p)
 		      (read-all-bytes p)
 		      (let-values ([(l c p) (port-next-location p)])
-			(test (vector-length v) 'c c)
-			(test (add1 (vector-length v)) 'p p)))
+			(test v-grapheme-count 'c c)
+			(test (add1 v-grapheme-count) 'p p)))
 		    (let ([p (open-input-string (format "\t~a\t" s))])
 		      (port-count-lines! p)
 		      (read-all-bytes p)
 		      (let-values ([(l c p) (port-next-location p)])
-			(test p 'p (add1 (+ 2 (vector-length v))))
+			(test p 'p (add1 (+ 2 v-grapheme-count)))
 			(test c 'tab (+ 16
-					(- (vector-length v)
-					   (bitwise-and (vector-length v) 7))))))
+					(- v-grapheme-count
+					   (bitwise-and v-grapheme-count 7))))))
 		    (let ([p (open-input-string (format "~a\t~a" s s))])
 		      (port-count-lines! p)
 		      (read-all-bytes p)
 		      (let-values ([(l c p) (port-next-location p)])
 			(test p 'p (add1 (+ 1 (* 2 (vector-length v)))))
 			(test c 'tab (+ 8
-					(- (vector-length v)
-					   (bitwise-and (vector-length v) 7))
-					(vector-length v)))))
+					(- v-grapheme-count
+					   (bitwise-and v-grapheme-count 7))
+					v-grapheme-count))))
 		    (let ([p (open-input-string (format "~a\n~a" s s))])
 		      (port-count-lines! p)
 		      (read-all-bytes p)
 		      (let-values ([(l c p) (port-next-location p)])
-			(test p 'p (+ 2 (* 2 (vector-length v))))
-			(test c 'cr (vector-length v)))))
+			(test p 'p (+ 2 (* 2 v-grapheme-count)))
+			(test c 'cr v-grapheme-count))))
 		  (check-full-read (lambda (p) (read-bytes 500 p)))
 		  (check-full-read (lambda (p)
 				     (let loop ()
@@ -1748,39 +1750,39 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(err/rt-test (string-grapheme-cluster-count 'a))
-(err/rt-test (string-grapheme-cluster-count "a" -1))
-(err/rt-test (string-grapheme-cluster-count "a" 'a))
-(err/rt-test (string-grapheme-cluster-count "a" 2))
-(err/rt-test (string-grapheme-cluster-count "a" 1 0))
-(err/rt-test (string-grapheme-cluster-count "a" 0 'a))
-(err/rt-test (string-grapheme-cluster-count "a" 1 2))
+(err/rt-test (string-grapheme-count 'a))
+(err/rt-test (string-grapheme-count "a" -1))
+(err/rt-test (string-grapheme-count "a" 'a))
+(err/rt-test (string-grapheme-count "a" 2))
+(err/rt-test (string-grapheme-count "a" 1 0))
+(err/rt-test (string-grapheme-count "a" 0 'a))
+(err/rt-test (string-grapheme-count "a" 1 2))
 
-(test 0 string-grapheme-cluster-count "")
-(test 1 string-grapheme-cluster-count "a")
-(test 0 string-grapheme-cluster-count "a" 1)
-(test 0 string-grapheme-cluster-count "a" 1 1)
-(test 0 string-grapheme-cluster-count "a" 1 1)
+(test 0 string-grapheme-count "")
+(test 1 string-grapheme-count "a")
+(test 0 string-grapheme-count "a" 1)
+(test 0 string-grapheme-count "a" 1 1)
+(test 0 string-grapheme-count "a" 1 1)
 
-(err/rt-test (string-grapheme-cluster-length "a"))
-(err/rt-test (string-grapheme-cluster-length 'a 0))
-(err/rt-test (string-grapheme-cluster-length "a" -1))
-(err/rt-test (string-grapheme-cluster-length "a" 'a))
-(err/rt-test (string-grapheme-cluster-length "a" 2))
-(err/rt-test (string-grapheme-cluster-length "a" 1 0))
-(err/rt-test (string-grapheme-cluster-length "a" 0 'a))
-(err/rt-test (string-grapheme-cluster-length "a" 1 2))
+(err/rt-test (string-grapheme-span "a"))
+(err/rt-test (string-grapheme-span 'a 0))
+(err/rt-test (string-grapheme-span "a" -1))
+(err/rt-test (string-grapheme-span "a" 'a))
+(err/rt-test (string-grapheme-span "a" 2))
+(err/rt-test (string-grapheme-span "a" 1 0))
+(err/rt-test (string-grapheme-span "a" 0 'a))
+(err/rt-test (string-grapheme-span "a" 1 2))
 
-(test 0 string-grapheme-cluster-length "" 0)
-(test 1 string-grapheme-cluster-length "a" 0)
-(test 0 string-grapheme-cluster-length "a" 1)
-(test 0 string-grapheme-cluster-length "a" 1 1)
-(test 0 string-grapheme-cluster-length "a" 1 1)
+(test 0 string-grapheme-span "" 0)
+(test 1 string-grapheme-span "a" 0)
+(test 0 string-grapheme-span "a" 1)
+(test 0 string-grapheme-span "a" 1 1)
+(test 0 string-grapheme-span "a" 1 1)
 
-(err/rt-test (char-grapheme-cluster-step "a" 0))
-(err/rt-test (char-grapheme-cluster-step 'a 0))
-(err/rt-test (char-grapheme-cluster-step #\a #\a))
-(err/rt-test (char-grapheme-cluster-step #\a (expt 2 100)))
+(err/rt-test (char-grapheme-step "a" 0))
+(err/rt-test (char-grapheme-step 'a 0))
+(err/rt-test (char-grapheme-step #\a #\a))
+(err/rt-test (char-grapheme-step #\a (expt 2 100)))
 
 (let ()
   ;; These sequences are from https://www.unicode.org/Public/13.0.0/ucd/auxiliary/GraphemeBreakTest.txt
@@ -2407,7 +2409,7 @@
                          (cond
                            [(= i (string-length s)) '()]
                            [else
-                            (cons i (loop (+ i (string-grapheme-cluster-length s i))))]))])
+                            (cons i (loop (+ i (string-grapheme-span s i))))]))])
                   (test pieces 'pieces str-pieces))
                 (let ([stream-str-pieces
                        (let loop ([i 0] [start 0] [state 0])
@@ -2418,16 +2420,18 @@
                                 (list start))]
                            [else
                             (let-values ([(consume? state)
-                                          (char-grapheme-cluster-step (string-ref s i) state)])
+                                          (char-grapheme-step (string-ref s i) state)])
                               (if consume?
                                   (cons start (loop (+ i 1)
                                                     (if (= state 0) (+ i 1) i)
                                                     state))
                                   (loop (+ i 1) start state)))]))])
                   (test pieces 'stream-pieces stream-str-pieces))
-                (let ([n (string-grapheme-cluster-count s)])
+                (let ([n (string-grapheme-count s)])
                   (test n length pieces))))
             seqs))
+
+(test 1 string-grapheme-span (string #\U000D0000) 0)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

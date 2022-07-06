@@ -335,8 +335,8 @@ Like @racket[char-upcase], but for the Unicode case-folding mapping.
 @; ----------------------------------------
 @section{Character Grapheme-Cluster Streaming}
 
-@defproc[(char-grapheme-cluster-step [char char?]
-                                     [state fixnum?])
+@defproc[(char-grapheme-step [char char?]
+                             [state fixnum?])
          (values boolean? fixnum?)]{
 
 Encodes a state machine for Unicode's grapheme-cluster specification
@@ -344,44 +344,44 @@ on a sequence of code points. It accepts a character for the next code
 point in a sequence, and it returns two values: whether a (single)
 grapheme cluster has terminated since the most recently reported
 termination (or the start of the stream), and a new state to be used
-with @racket[char-grapheme-cluster-step] and the next character.
+with @racket[char-grapheme-step] and the next character.
 
 A value of @racket[0] for @racket[state] represents the initial state
 or a state where no characters are pending toward a new boundary.
 Thus, if a sequence of characters is exhausted and accumulated
 @racket[state] is not @racket[0], then the end of the stream creates
 one last grapheme-cluster boundary. When
-@racket[char-grapheme-cluster-step] produces a true value as its first
+@racket[char-grapheme-step] produces a true value as its first
 result and a non-@racket[0] value as its second result, then the given
 @racket[char] must be the only character pending toward the next
 grapheme cluster (by the rules of Unicode grapheme clustering).
 
-The @racket[char-grapheme-cluster-step] procedure will produce a
+The @racket[char-grapheme-step] procedure will produce a
 result for any fixnum @scheme[state], but the meaning of a
 non-@racket[0] @scheme[state] is specified only in that providing such
-a state produced by @racket[char-grapheme-cluster-step] in another
-call to @racket[char-grapheme-cluster-step] continues detecting
+a state produced by @racket[char-grapheme-step] in another
+call to @racket[char-grapheme-step] continues detecting
 grapheme-cluster boundaries in the sequence.
 
-See also @racket[string-grapheme-cluster-length] and
-@racket[string-grapheme-cluster-count].
+See also @racket[string-grapheme-length] and
+@racket[string-grapheme-count].
 
 @mz-examples[
-(char-grapheme-cluster-step #\a 0)
-(let*-values ([(consumed? state) (char-grapheme-cluster-step #\a 0)]
-              [(consumed? state) (char-grapheme-cluster-step #\b state)])
+(char-grapheme-step #\a 0)
+(let*-values ([(consumed? state) (char-grapheme-step #\a 0)]
+              [(consumed? state) (char-grapheme-step #\b state)])
   (values consumed? state))
-(let*-values ([(consumed? state) (char-grapheme-cluster-step #\return 0)]
-              [(consumed? state) (char-grapheme-cluster-step #\newline state)])
+(let*-values ([(consumed? state) (char-grapheme-step #\return 0)]
+              [(consumed? state) (char-grapheme-step #\newline state)])
   (values consumed? state))
 (eval:alts
- (let*-values ([(consumed? state) (char-grapheme-cluster-step #\a 0)]
-               [(consumed? state) (char-grapheme-cluster-step @#,racketvalfont{#\u300} state)])
+ (let*-values ([(consumed? state) (char-grapheme-step #\a 0)]
+               [(consumed? state) (char-grapheme-step @#,racketvalfont{#\u300} state)])
    (values consumed? state))
- (let*-values ([(consumed? state) (char-grapheme-cluster-step #\a 0)]
-               [(consumed? state) (char-grapheme-cluster-step #\u300 state)])
+ (let*-values ([(consumed? state) (char-grapheme-step #\a 0)]
+               [(consumed? state) (char-grapheme-step #\u300 state)])
    (values consumed? state)))
 ]
 
-@history[#:added "8.6.0.1"]}
+@history[#:added "8.6.0.2"]}
 

@@ -47,7 +47,7 @@ not subject to the rules above, except that the counting functions are
 invoked only when tracking is specifically enabled with
 @racket[port-count-lines!].
 
-@history[#:changed "8.6.0.1" @elem{Changed position and column
+@history[#:changed "8.6.0.2" @elem{Changed position and column
                                    counting to grapheme clusters
                                    instead of characters.}]
 

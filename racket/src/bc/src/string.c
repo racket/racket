@@ -78,7 +78,7 @@ static Scheme_Object *string_foldcase (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_locale_upcase (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_locale_downcase (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_grapheme_cluster_step (int argc, Scheme_Object *argv[]);
-static Scheme_Object *string_grapheme_cluster_length (int argc, Scheme_Object *argv[]);
+static Scheme_Object *string_grapheme_cluster_span (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_grapheme_cluster_count (int argc, Scheme_Object *argv[]);
 static Scheme_Object *substring (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_append (int argc, Scheme_Object *argv[]);
@@ -532,20 +532,20 @@ scheme_init_string (Scheme_Startup_Env *env)
 						    1, 1),
 			     env);
 
-  scheme_addto_prim_instance("char-grapheme-cluster-step",
+  scheme_addto_prim_instance("char-grapheme-step",
 			     scheme_make_prim_w_arity2(char_grapheme_cluster_step,
-                                                       "char-grapheme-cluster-step",
+                                                       "char-grapheme-step",
                                                        2, 2,
                                                        2, 2),
 			     env);
-  scheme_addto_prim_instance("string-grapheme-cluster-length",
-			     scheme_make_immed_prim(string_grapheme_cluster_length,
-						    "string-grapheme-cluster-length",
+  scheme_addto_prim_instance("string-grapheme-span",
+			     scheme_make_immed_prim(string_grapheme_cluster_span,
+						    "string-grapheme-span",
 						    2, 3),
 			     env);
-  scheme_addto_prim_instance("string-grapheme-cluster-count",
+  scheme_addto_prim_instance("string-grapheme-count",
 			     scheme_make_immed_prim(string_grapheme_cluster_count,
-						    "string-grapheme-cluster-count",
+						    "string-grapheme-count",
 						    1, 3),
 			     env);
 
@@ -3563,7 +3563,7 @@ int scheme_grapheme_cluster_step(mzchar c, int *_state) {
 
 static Scheme_Object *char_grapheme_cluster_step(int argc, Scheme_Object *argv[])
 {
-  const char *who = "char-grapheme-cluster-step";
+  const char *who = "char-grapheme-step";
   int state;
   int consumed;
   Scheme_Object *a[2];
@@ -3583,7 +3583,7 @@ static Scheme_Object *char_grapheme_cluster_step(int argc, Scheme_Object *argv[]
   return scheme_values(2, a);
 }
 
-intptr_t scheme_grapheme_cluster_length(mzchar *str, intptr_t start, intptr_t finish)
+intptr_t scheme_grapheme_cluster_span(mzchar *str, intptr_t start, intptr_t finish)
 {
   intptr_t i;
   int state;
@@ -3610,9 +3610,9 @@ intptr_t scheme_grapheme_cluster_length(mzchar *str, intptr_t start, intptr_t fi
   return i - start;
 }
 
-static Scheme_Object *string_grapheme_cluster_length(int argc, Scheme_Object *argv[])
+static Scheme_Object *string_grapheme_cluster_span(int argc, Scheme_Object *argv[])
 {
-  const char *who = "string-grapheme-cluster-length";
+  const char *who = "string-grapheme-span";
   intptr_t start, finish;
 
   if (!SCHEME_CHAR_STRINGP(argv[0]))
@@ -3621,12 +3621,12 @@ static Scheme_Object *string_grapheme_cluster_length(int argc, Scheme_Object *ar
   scheme_do_get_substring_indices(who, argv[0], argc, argv, 1, 2,
                                   &start, &finish, SCHEME_CHAR_STRTAG_VAL(argv[0]));
 
-  return scheme_make_integer(scheme_grapheme_cluster_length(SCHEME_CHAR_STR_VAL(argv[0]), start, finish));
+  return scheme_make_integer(scheme_grapheme_cluster_span(SCHEME_CHAR_STR_VAL(argv[0]), start, finish));
 }
 
 static Scheme_Object *string_grapheme_cluster_count(int argc, Scheme_Object *argv[])
 {
-  const char *who = "string-grapheme-cluster-count";
+  const char *who = "string-grapheme-count";
   intptr_t start, finish, len, count;
   mzchar *str;
 
@@ -3639,7 +3639,7 @@ static Scheme_Object *string_grapheme_cluster_count(int argc, Scheme_Object *arg
   str = SCHEME_CHAR_STR_VAL(argv[0]);
 
   for (count = 0; start < finish; start += len, count++) {
-    len = scheme_grapheme_cluster_length(str, start, finish);
+    len = scheme_grapheme_cluster_span(str, start, finish);
   }
 
   return scheme_make_integer(count);
@@ -5446,7 +5446,7 @@ intptr_t scheme_utf8_grcl_decode_count(const unsigned char *s, intptr_t start, i
                                        int *_state, int might_continue, int permissive,
                                        Scheme_GrCl_State *_grcl_state)
 {
-  intptr_t pos = 0;
+  intptr_t pos = 0, r;
 
   if ((!_state || !*_state)
       && (!_grcl_state
@@ -5494,12 +5494,17 @@ intptr_t scheme_utf8_grcl_decode_count(const unsigned char *s, intptr_t start, i
     }
   }
 
-  return utf8_decode_x(s, start, end,
-                       NULL, 0, -1,
-                       NULL, &pos,
-                       0, 0, _state,
-                       might_continue, permissive, 0,
-                       _grcl_state);
+  r = utf8_decode_x(s, start, end,
+                    NULL, 0, -1,
+                    NULL, &pos,
+                    0, 0, _state,
+                    might_continue, permissive, 0,
+                    _grcl_state);
+
+  if (_grcl_state)
+    return r;
+  else
+    return pos;
 }
 
 intptr_t scheme_utf8_decode_count(const unsigned char *s, intptr_t start, intptr_t end,

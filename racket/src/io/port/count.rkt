@@ -138,9 +138,9 @@
         (define delta-grcl (- got-grcl
                               ;; Correct for earlier increment of position
                               ;; and column based on not-yet-decoded bytes
-                              ;; and not-yet-consumed grapheme-cluster characters,
+                              ;; and not-yet-consumed grapheme characters,
                               ;; leaving counts for still-not-decoded bytes
-                              ;; and still-not-consumed grapheme-cluster characters
+                              ;; and still-not-consumed grapheme characters
                               ;; in place:
                               (+ span
                                   (- (if (utf-8-state? state)
@@ -194,25 +194,25 @@
              ;; A "\r" state will not be represented as a pair, so end previous cluster
              (end-grcl)]
             [(eqv? 0 grcl-state)
-             (loop (add1 i) 0 (and line (add1 line)) (and column 0) (and position (add1 position)) #f 0)]
+             (loop (fx+ i 1) 0 (and line (add1 line)) (and column 0) (and position (add1 position)) #f 0)]
             [else
-             ;; "\r\n" combination counts as a single position; it turns out that `char-grapheme-cluster-step`
+             ;; "\r\n" combination counts as a single position; it turns out that `char-grapheme-step`
              ;; will return `new-grcl-state` as 0 if a "\r\n" is consumed
-             (define-values (consume? new-grcl-state) (char-grapheme-cluster-step #\newline grcl-state))
+             (define-values (consume? new-grcl-state) (char-grapheme-step #\newline grcl-state))
              (cond
                [(fx= 0 new-grcl-state)
-                (loop (add1 i) 0 line column position #f 0)]
+                (loop (fx+ i 1) 0 line column position #f 0)]
                [else
                 ;; assert: `consumed?` is true, because "\r\n" is the only way that "\n" continues;
                 ;; also, "\n" won't continue to anything else
-                (loop (add1 i) 0 (and line (add1 line)) (and column 0) (and position (add1 position)) #f 0)])])]
+                (loop (fx+ i 1) 0 (and line (add1 line)) (and column 0) (and position (add1 position)) #f 0)])])]
          [(eq? b (char->integer #\return))
           (cond
             [(and (fx= 0 span) (not state))
              (cond
                [(eqv? 0 grcl-state)
-                (define-values (consume? new-grcl-state) (char-grapheme-cluster-step #\return 0))
-                (loop (add1 i) 0 (and line (add1 line)) (and column 0) (and position (add1 position)) #f new-grcl-state)]
+                (define-values (consume? new-grcl-state) (char-grapheme-step #\return 0))
+                (loop (fx+ i 1) 0 (and line (add1 line)) (and column 0) (and position (add1 position)) #f new-grcl-state)]
                [else
                 (end-grcl)])]
             [else
@@ -221,7 +221,7 @@
           (cond
             [(and (fx= 0 span) (not state))
              (if (fx= 0 grcl-state)
-                 (loop (add1 i) 0 line (and column (+ (bitwise-and column -8) 8)) (and position (add1 position)) #f 0)
+                 (loop (fx+ i 1) 0 line (and column (+ (bitwise-and column -8) 8)) (and position (add1 position)) #f 0)
                  ;; A tab (which is a control character) cannot continue a grapheme cluster
                  (end-grcl))]
             [else
@@ -229,45 +229,45 @@
          [(b . >= . 128)
           ;; This is one place where we tentatively increment the column and position, to be
           ;; reverted later if decoding and/or clustering collapses multiple bytes:
-          (loop (add1 i) (add1 span) line (and column (add1 column)) (and position (add1 position)) state grcl-state)]
+          (loop (fx+ i 1) (fx+ span 1) line (and column (add1 column)) (and position (add1 position)) state grcl-state)]
          [else
           (cond
             [(and (fx= 0 span) (not state))
              (cond
                [(not (pair? grcl-state))
                 ;; This common case is also handled in `port-count-byte!`
-                (define-values (consumed? new-grcl-state) (char-grapheme-cluster-step (integer->char b) grcl-state))
+                (define-values (consumed? new-grcl-state) (char-grapheme-step (integer->char b) grcl-state))
                 (cond
                   [(or (fx= 0 grcl-state)
                        consumed?)
                    ;; number of grcl-pending characters is accurately reflected by `new-grcl-state`; if it's
                    ;; non-0, this is a tentative increment
-                   (loop (add1 i) 0 line (and column (add1 column)) (and position (add1 position)) #f new-grcl-state)]
+                   (loop (fx+ i 1) 0 line (and column (add1 column)) (and position (add1 position)) #f new-grcl-state)]
                   [(and consumed?
                         (fx= 0 new-grcl-state))
                    ;; old state must be non-0; since if new state is 0, then both characters consumed as one grcl,
                    ;; so don't increment
-                   (loop (add1 i) 0 line column position #f 0)]
+                   (loop (fx+ i 1) 0 line column position #f 0)]
                   [else
                    ;; two characters are now pending for the grapheme cluster, and this is a tentative increment
                    ;; for the second one
-                   (loop (add1 i) 0 line (and column (add1 column)) (and position (add1 position)) #f (cons new-grcl-state 2))])]
+                   (loop (fx+ i 1) 0 line (and column (add1 column)) (and position (add1 position)) #f (cons new-grcl-state 2))])]
                [else
-                (define-values (consumed? new-grcl-state) (char-grapheme-cluster-step (integer->char b) (car grcl-state)))
+                (define-values (consumed? new-grcl-state) (char-grapheme-step (integer->char b) (car grcl-state)))
                 (cond
                   [consumed?
                    ;; pending characters (and maybe new one) consumed as one grapheme cluster, so we need to revert
                    ;; all but one tentative increment; at most one character is pending, reflected by `new-grcl-state`
                    (define n (- (if (fx= 0 new-grcl-state) 1 2) (cdr grcl-state)))
-                   (loop (add1 i) 0 line (and column (+ column n)) (and position (+ position n)) #f new-grcl-state)]
+                   (loop (fx+ i 1) 0 line (and column (+ column n)) (and position (+ position n)) #f new-grcl-state)]
                   [else
                    ;; new character is pending
-                   (loop (add1 i) 0 line (and column (add1 column)) (and position (add1 position)) #f
+                   (loop (fx+ i 1) 0 line (and column (add1 column)) (and position (add1 position)) #f
                          (cons new-grcl-state (add1 (cdr grcl-state))))])])]
             [else
              ;; This is another place where we tentatively increment the column and position, to be
              ;; reverted later if clustering collapses multiple characters:
-             (loop (add1 i) (add1 span) line (and column (add1 column)) (and position (add1 position)) state grcl-state)])])]))))
+             (loop (fx+ i 1) (fx+ span 1) line (and column (add1 column)) (and position (add1 position)) state grcl-state)])])]))))
 
 ;; in atomic mode
 (define (port-count-all! in extra-ins amt bstr start)
@@ -293,7 +293,7 @@
       ;; Same as handling above in `port-count!` (see rationale there):
       (define grcl-state (location-grcl-state loc))
       (define-values (consumed? new-grcl-state)
-        (char-grapheme-cluster-step (if (fixnum? b) (integer->char b) #\x) grcl-state))
+        (char-grapheme-step (if (fixnum? b) (integer->char b) #\x) grcl-state))
       (cond
         [(and (fx= 0 new-grcl-state) ; implies `consumed?`
               (not (fx= 0 grcl-state)))

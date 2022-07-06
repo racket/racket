@@ -323,7 +323,7 @@
                      [peek-byte lookahead-u8]
                      [s:write write])
          console-output-port
-         $char-grapheme-cluster-other-state
+         $char-grapheme-other-state
          path-root
          path-last
          $make-read
@@ -1258,7 +1258,7 @@
 
 (define (console-output-port) (current-output-port))
 
-(define ($char-grapheme-cluster-other-state)
+(define ($char-grapheme-other-state)
   ;; Probably correct:
   1)
 

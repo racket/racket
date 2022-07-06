@@ -740,6 +740,7 @@
 (printf "    scheme_uchar_table[i] = udata;\n")
 (printf "    scheme_uchar_cases_table[i] = udata_cases;\n")
 (printf "    scheme_uchar_cats_table[i] = udata_cats;\n")
+(printf "    scheme_uchar_graphbreaks_table[i] = udata_graphbreaks;\n")
 (printf "  }\n")
 (printf "\n")
 (define (print-init top vectors suffix)
