@@ -60396,7 +60396,7 @@ static const char *startup_source =
 "(if(let-values(((or-part_0)(not rt_0)))(if or-part_0 or-part_0(not(char? c_1))))"
 "(let-values() c_1)"
 "(let-values()(*readtable-effective-char rt_0 c_1))))))"
-"(if(let-values(((or-part_0)(starts-num?_0 ec_0)))(if or-part_0 or-part_0(not(char? c_0))))"
+"(if(let-values(((or-part_0)(not(char? c_0))))(if or-part_0 or-part_0(starts-num?_0 ec_0)))"
 "(let-values()"
 "(let-values(((v_0)"
 "(if(char? c_0)"

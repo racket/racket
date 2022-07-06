@@ -17,8 +17,8 @@
   (define-values (line col pos) (port-next-location* in c))
   (define ec (readtable-effective-char (read-config-readtable config) c))
   (cond
-    [(or (starts-num? ec)
-         (not (char? c)))
+    [(or (not (char? c))
+         (starts-num? ec))
      (define v (if (char? c)
                    (read-symbol-or-number c in config #:mode mode)
                    c))
