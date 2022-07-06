@@ -1055,7 +1055,7 @@
 (require racket/flonum
          racket/fixnum)
 
-(define (run-comment-special)
+(define (run-comment-special [special-comment special-comment])
   (test (list 5) read (make-p (list #"(" special-comment #"5)") (lambda (x) 1) void))
   (test (list 5) read (make-p (list #"(5" special-comment #")") (lambda (x) 1) void))
   (test (cons 1 5) read (make-p (list #"(1 . " special-comment #"5)") (lambda (x) 1) void))
@@ -1068,12 +1068,22 @@
   (test (vector 1 2 5) read (make-p (list #"#(1 2 " special-comment #"5)") (lambda (x) 1) void))
   (test (flvector 1.0) read (make-p (list #"#fl(1.0 " special-comment #")") (lambda (x) 1) void))
   (test (fxvector 1) read (make-p (list #"#fx(1 " special-comment #")") (lambda (x) 1) void))
+  (test (hash 1 'a) read (make-p (list #"#hash(" special-comment #"(1 . a))") (lambda (x) 1) void))
+  (test (hash 1 'a) read (make-p (list #"#hash((" special-comment #"1 . a))") (lambda (x) 1) void))
+  (test (hash 1 'a) read (make-p (list #"#hash((1 " special-comment #". a))") (lambda (x) 1) void))
+  (test (hash 1 'a) read (make-p (list #"#hash((1 ." special-comment #" a))") (lambda (x) 1) void))
+  (test (hash 1 'a) read (make-p (list #"#hash((1 . a" special-comment #"))") (lambda (x) 1) void))
+  (test (hash 1 'a) read (make-p (list #"#hash((1 . a)" special-comment #")") (lambda (x) 1) void))
   (err/rt-test (read (make-p (list #"#fl(1.0 " a-special #")") (lambda (x) 1) void)) exn:fail:read?)
   (err/rt-test (read (make-p (list #"#fx(1 " a-special #")") (lambda (x) 1) void)) exn:fail:read?))
 (run-comment-special)
 (parameterize ([current-readtable (make-readtable #f)])
   (run-comment-special))
-  
+(parameterize ([current-readtable (make-readtable #f
+                                                  #\* 'terminating-macro (lambda args
+                                                                           (make-special-comment #f)))])
+  (run-comment-special #"*"))
+
 ;; Test read-char-or-special:
 (let ([p (make-p (list #"x" a-special #"y") (lambda (x) 5) void)])
   (test #\x peek-char-or-special p)

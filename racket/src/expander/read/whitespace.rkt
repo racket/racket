@@ -9,12 +9,15 @@
          "special.rkt"
          "special-comment.rkt")
 
-(provide read-char/skip-whitespace-and-comments)
+(provide read-char/skip-whitespace-and-comments
+         special-comment-via-readtable?)
 
-;; Skip whitespace, including non-character values that are
+;; Skip most whitespace, including non-character values that are
 ;; `special-comment?`s --- but return a special comment (always
 ;; `special`-wrapped) if `(read-config-keep-comment? config)`. The
 ;; result is a character that has been consumed.
+;; Readtable-based special comments are not skipped; those must be
+;; handled directly, possibly via `special-comment-via-readtable?`.
 (define (read-char/skip-whitespace-and-comments init-c read-one in config)
   (define rt (read-config-readtable config))
   (define source (read-config-source config))
@@ -112,3 +115,10 @@
      [(char=? c #\\)
       (loop #t)]
      [else (loop #f)])))
+
+(define (special-comment-via-readtable? c read-one in config)
+  ;; If it's a special or we have a readtable, we need to read ahead
+  ;; to make sure that it's not a comment. For consistency, always
+  ;; read ahead.
+  (define v (read-one c in (keep-comment config)))
+  (and (special-comment? v) v))

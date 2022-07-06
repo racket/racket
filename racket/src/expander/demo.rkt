@@ -1,6 +1,15 @@
 #lang racket/base
 (require "main.rkt"
-         "common/set.rkt")
+         "common/set.rkt"
+         "read/readtable.rkt"
+         "read/special-comment.rkt")
+
+(parameterize ([current-readtable
+                (make-readtable #f
+                                #\* 'terminating-macro (lambda args
+                                                         (make-special-comment #f)))])
+  (read (open-input-string "#fx(1* 2)")))
+(exit)
 
 ;; ----------------------------------------
 
