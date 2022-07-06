@@ -2,6 +2,32 @@ This directory contains scripts, resources, and other Windows-specific
 content for a Racket build.
 
 ========================================================================
+ Building from a Source Distribution
+========================================================================
+
+If you are building from a source distribution (as opposed to a Git
+repository checkout), then beware that a regular/full Racket
+distribution will not build correctly. A regular source distribution
+is intended for Unix platforms, and it does not include native
+libraries that are needed on Windows. You should start with a source
+distribution that is labelled "Minimal Racket", instead.
+
+When building from a minimal Racket source distribution, then most
+likely "racket-lib" is already included and installed as part of the
+the distribution, but without Windows-specific dependencies of
+"racket-lib". After following steps below to build and install,
+complete the build with
+
+   ..\..\raco pkg update --auto racket-lib
+
+If your goal is to arrive at the same content as a regular Racket
+distribution, then after building and installing minimal Racket,
+finish with
+
+   ..\..\raco pkg install -i main-distribution
+
+
+========================================================================
  Building from the Command Line via Visual Studio
 ========================================================================
 
@@ -76,21 +102,27 @@ Completing the Build
 --------------------
 
 The build scripts for Racket do not install support DLLs for encoding
-conversion, extflonums, and OpenSLL. To install those libraries,
-finish with
+conversion, extflonums (in BC), and OpenSLL. To install those
+libraries, finish with
 
    ..\..\raco pkg install racket-lib
 
 If you are building from a source distribution (as opposed to a Git
-repository checkout), then most likely "racket-lib" is already
-included and installed as part of the the distribution, but without
-Windows-specific dependencies of "racket-lib". In that case, instead
-of the above command, use
-
-   ..\..\raco pkg update --auto racket-lib
+repository checkout), see "Building from a Source Distribution" above.
 
 Only if you are starting completely from scratch, see also
 "..\native-lib\README.txt".
+
+
+========================================================================
+ Building from the Command Line via MinGW
+========================================================================
+
+You can build Racket on Windows using MinGW and a Unix-like shell such
+as MSYS2. follow the instructions for a Unix build as described in
+"..\README.txt" --- but see also "Completing the Build" in the Visual
+Studio section above, because that also applies to a MinGW-based
+build.
 
 
 ========================================================================
