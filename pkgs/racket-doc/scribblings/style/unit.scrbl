@@ -76,16 +76,16 @@ implementation:
  @tt{good}
  racket/base
 
-;; the module implements a tv server
+(code:comment2 #, @elem{the module implements a tv server})
 
 (provide
-  ;; launch the tv server function
+  (code:comment2 #, @elem{launch the tv server function})
   tv-launch
-  ;; set up a tv client to receive messages from the tv server
+  (code:comment2 #, @elem{set up a tv client to receive messages from the tv server})
   tv-client)
 
-(code:comment #, @line)
-(code:comment #, @t{import and implementation section})
+(code:comment2 #, @line)
+(code:comment2 #, @t{import and implementation section})
 
 (require 2htdp/universe htdp/image)
 
@@ -115,18 +115,18 @@ If you choose to use @racket[provide] with @racket[contract-out], you
  @tt{good}
  racket/base
 
-;; the module implements a tv server
+(code:comment2 #, @elem{the module implements a tv server})
 
 (require racket/contract) ;; needed for contract-out
 
 (provide
   (contract-out
-    ;; initialize the board for the given number of players
+    (code:comment2 #, @elem{initialize the board for the given number of players})
     [board-init        (-> player#/c plain-board/c)]
-    ;; initialize a board and place the tiles
+    (code:comment2 #, @elem{initialize a board and place the tiles})
     [create-board      (-> player#/c (listof placement/c)
 			   (or/c plain-board/c string?))]
-    ;; create a board from an X-expression representation
+    (code:comment2 #, @elem{create a board from an X-expression representation})
     [board-deserialize (-> xexpr? plain-board/c)]))
 
 (require xml)
@@ -138,8 +138,8 @@ If you choose to use @racket[provide] with @racket[contract-out], you
 (define placement/c
   (flat-named-contract "placement" ...))
 
-(code:comment #, @line)
-(code:comment #, @t{import and implementation section})
+(code:comment2 #, @line)
+(code:comment2 #, @t{import and implementation section})
 
 (require 2htdp/universe htdp/image)
 
@@ -195,22 +195,22 @@ This helps people find the relevant information quickly.
  @tt{good}
  racket
 
- ;; This module implements
- ;; several strategies.
+ (code:comment2 #, @elem{This module implements})
+ (code:comment2 #, @elem{several strategies.})
 
  (provide
-  ;; Stgy = State -> Action
+  (code:comment2 #, @elem{Stgy = State -> Action})
 
-  ;; Stgy
-  ;; people's strategy
+  (code:comment2 #, @elem{Stgy})
+  (code:comment2 #, @elem{people's strategy})
   human-strategy
 
-  ;; Stgy
-  ;; tree traversal
+  (code:comment2 #, @elem{Stgy})
+  (code:comment2 #, @elem{tree traversal})
   ai-strategy)
 
- (code:comment #, @1/2-line[])
- (code:comment #, @t{implementation})
+ (code:comment2 #, @1/2-line[])
+ (code:comment2 #, @t{implementation})
 
  (require "basics.rkt")
 
@@ -231,23 +231,23 @@ This helps people find the relevant information quickly.
  @tt{bad}
  racket
 
- ;; This module implements
- ;; several strategies.
+ (code:comment2 #, @elem{This module implements})
+ (code:comment2 #, @elem{several strategies.})
 
- (code:comment #, @1/2-line[])
- (code:comment #, @t{implementation})
+ (code:comment2 #, @1/2-line[])
+ (code:comment2 #, @t{implementation})
 
  (require "basics.rkt")
 
- ;; Stgy = State -> Action
+ (code:comment2 #, @elem{Stgy = State -> Action})
 
  (define (general p)
    ... )
  ... some 100 lines ...
 
  (provide
-  ;; Stgy
-  ;; a person's strategy
+  (code:comment2 #, @elem{Stgy})
+  (code:comment2 #, @elem{a person's strategy})
   human-strategy)
 
  (define human-strategy
@@ -255,8 +255,8 @@ This helps people find the relevant information quickly.
  ... some 100 lines ...
 
  (provide
-  ;; Stgy
-  ;; a tree traversal
+  (code:comment2 #, @elem{Stgy})
+  (code:comment2 #, @elem{a tree traversal})
   ai-strategy)
 
  (define ai-strategy
@@ -283,14 +283,14 @@ should come with a description of the grammar clause it introduces
 racket
 
 (provide
- ;; (define-strategy (s:id a:id b:id c:id d:id)
- ;;   action:definition-or-expression)
- ;;
- ;; (define-strategy (s board tiles available score) ...)
- ;; defines a function from an instance of player to a
- ;; placement. The four identifiers denote the state of
- ;; the board, the player's hand, the places where a
- ;; tile can be placed, and the player's current score.
+ (code:comment# #, @elem{(define-strategy (s:id a:id b:id c:id d:id)
+   action:definition-or-expression)})
+ 
+ (code:comment2 #, @elem{(define-strategy (s board tiles available score) ...)})
+ (code:comment2 #, @elem{defines a function from an instance of player to a})
+ (code:comment2 #, @elem{placement. The four identifiers denote the state of})
+ (code:comment2 #, @elem{the board, the player's hand, the places where a})
+ (code:comment2 #, @elem{tile can be placed, and the player's current score.})
  define-strategy)
 ))]
 
@@ -353,7 +353,7 @@ As of version 5.3, Racket supports sub-modules. Use sub-modules to
 
  (provide
    (contract-out
-     (code:comment #, @t{convert a fahrenheit temperature to a celsius})
+     (code:comment2 #, @t{convert a fahrenheit temperature to a celsius})
      [fahrenheit->celsius (-> number? number?)]))
 
  (define (fahrenheit->celsius f)
@@ -437,10 +437,10 @@ constants and one for a function.
 (define/contract AbsoluteF real? -459.67)
 
 (define/contract (celsius->fahrenheit c)
-  (code:comment #, @t{convert a celsius temperature to a fahrenheit temperature})
+  (code:comment2 #, @t{convert a celsius temperature to a fahrenheit temperature})
   (-> (and/c real? (>=/c AbsoluteC))
       (and/c real? (>=/c AbsoluteF)))
-  ;; -- IN --
+  (code:comment2 #, @elem{-- IN --})
   (+ (* 9/5 c) 32))
 
 (module+ test

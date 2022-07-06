@@ -189,8 +189,8 @@ the @racket[#:unprotected-submodule] functionality of @racket[contract-out].
 
 
 
- (code:comment #, @1/2-line[])
- (code:comment #, @t{implementation})
+ (code:comment2 #, @1/2-line[])
+ (code:comment2 #, @t{implementation})
 
  (define (general p)
    (lambda (_) pi))
@@ -219,8 +219,8 @@ the @racket[#:unprotected-submodule] functionality of @racket[contract-out].
      (human strategy/c)
      (ai strategy/c)))
 
- (code:comment #, @1/2-line[])
- (code:comment #, @t{implementation})
+ (code:comment2 #, @1/2-line[])
+ (code:comment2 #, @t{implementation})
 
   (define (general s)
     (lambda (_) pi))
@@ -252,9 +252,9 @@ straightforward:
  (require "fast.rkt")
 
  human
- ;; comes with contracts 
- ;; as if we had required 
- ;; "good.rkt" itself
+ (code:comment2 #, @elem{comes with contracts})
+ (code:comment2 #, @elem{as if we had required })
+ (code:comment2 #, @elem{"good.rkt" itself})
 
  (define state1 0)
  (define state2 
@@ -272,8 +272,8 @@ straightforward:
     no-contract))
 
  human
- ;; comes without
- ;; a contract
+ (code:comment2 #, @elem{comes without})
+ (code:comment2 #, @elem{a contract})
 
  (define state* 
    (build-list 0 1))
@@ -361,8 +361,8 @@ above, with the right one derived manually from the one on the left:
      (human strategy/c)
      (ai strategy/c)))
 
- (code:comment #, @1/2-line[])
- (code:comment #, @t{implementation})
+ (code:comment2 #, @1/2-line[])
+ (code:comment2 #, @t{implementation})
 
  (define (general p)
    (lambda (_) pi))
@@ -389,8 +389,8 @@ above, with the right one derived manually from the one on the left:
      (human strategy/c)
      (ai strategy/c)))
 
- (code:comment #, @1/2-line[])
- (code:comment #, @t{implementation})
+ (code:comment2 #, @1/2-line[])
+ (code:comment2 #, @t{implementation})
 
  (module no-contract racket 
    (provide 

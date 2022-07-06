@@ -93,7 +93,7 @@ Examples:
                     @tt{good}
                     racket
 
-		    (code:comment #, @t{drracket style})
+		    (code:comment2 #, @t{drracket style})
                     (if (positive? (rocket-x r))
                         (launch r)
                         (redirect (- x)))
@@ -103,7 +103,7 @@ Examples:
                      @tt{bad}
                      racket
 
-		     (code:comment #, @t{.el emacs-file if})
+		     (code:comment2 #, @t{.el emacs-file if})
                      (if (positive? (rocket-x r))
                          (launch r)
                        (redirect (- x)))
@@ -226,7 +226,7 @@ racket
 
 (place-image img 10 10 background)
 
-(code:comment #, @t{and})
+(code:comment2 #, @t{and})
 
 (above img
        (- width  hdelta)
