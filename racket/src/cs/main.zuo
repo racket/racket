@@ -266,6 +266,8 @@
               (target-path src-target)
               path)))
 
+  (mkdir-p (at-dir "compiled"))
+
   (make-targets
    `([:target ,racket.so (,main.so ,@compile-file-deps)
               ,(lambda (path token)
