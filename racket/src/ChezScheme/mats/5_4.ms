@@ -1602,56 +1602,56 @@
   (equal? (string-titlecase "ciao123 futzmo.  33ar") "Ciao123 Futzmo.  33Ar")
 )
 
-(mat grapheme-cluster
-  (error? (string-grapheme-cluster-count 'a))
-  (error? (string-grapheme-cluster-count "a" -1))
-  (error? (string-grapheme-cluster-count "a" 'a))
-  (error? (string-grapheme-cluster-count "a" 2))
-  (error? (string-grapheme-cluster-count "a" 1 0))
-  (error? (string-grapheme-cluster-count "a" 0 'a))
-  (error? (string-grapheme-cluster-count "a" 1 2))
+(mat grapheme
+  (error? (string-grapheme-count 'a))
+  (error? (string-grapheme-count "a" -1))
+  (error? (string-grapheme-count "a" 'a))
+  (error? (string-grapheme-count "a" 2))
+  (error? (string-grapheme-count "a" 1 0))
+  (error? (string-grapheme-count "a" 0 'a))
+  (error? (string-grapheme-count "a" 1 2))
 
-  (eqv? 0 (string-grapheme-cluster-count ""))
-  (eqv? 1 (string-grapheme-cluster-count "a"))
-  (eqv? 0 (string-grapheme-cluster-count "a" 1))
-  (eqv? 0 (string-grapheme-cluster-count "a" 1 1))
-  (eqv? 0 (string-grapheme-cluster-count "a" 1 1))
+  (eqv? 0 (string-grapheme-count ""))
+  (eqv? 1 (string-grapheme-count "a"))
+  (eqv? 0 (string-grapheme-count "a" 1))
+  (eqv? 0 (string-grapheme-count "a" 1 1))
+  (eqv? 0 (string-grapheme-count "a" 1 1))
 
-  (error? (string-grapheme-cluster-length "a"))
-  (error? (string-grapheme-cluster-length 'a 0))
-  (error? (string-grapheme-cluster-length "a" -1))
-  (error? (string-grapheme-cluster-length "a" 'a))
-  (error? (string-grapheme-cluster-length "a" 2))
-  (error? (string-grapheme-cluster-length "a" 1 0))
-  (error? (string-grapheme-cluster-length "a" 0 'a))
-  (error? (string-grapheme-cluster-length "a" 1 2))
+  (error? (string-grapheme-span "a"))
+  (error? (string-grapheme-span 'a 0))
+  (error? (string-grapheme-span "a" -1))
+  (error? (string-grapheme-span "a" 'a))
+  (error? (string-grapheme-span "a" 2))
+  (error? (string-grapheme-span "a" 1 0))
+  (error? (string-grapheme-span "a" 0 'a))
+  (error? (string-grapheme-span "a" 1 2))
 
-  (eqv? 0 (string-grapheme-cluster-length "" 0))
-  (eqv? 1 (string-grapheme-cluster-length "a" 0))
-  (eqv? 0 (string-grapheme-cluster-length "a" 1))
-  (eqv? 0 (string-grapheme-cluster-length "a" 1 1))
-  (eqv? 0 (string-grapheme-cluster-length "a" 1 1))
+  (eqv? 0 (string-grapheme-span "" 0))
+  (eqv? 1 (string-grapheme-span "a" 0))
+  (eqv? 0 (string-grapheme-span "a" 1))
+  (eqv? 0 (string-grapheme-span "a" 1 1))
+  (eqv? 0 (string-grapheme-span "a" 1 1))
 
-  (error? (char-grapheme-cluster-step "a" 0))
-  (error? (char-grapheme-cluster-step 'a 0))
-  (error? (char-grapheme-cluster-step #\a #\a))
-  (error? (char-grapheme-cluster-step #\a (expt 2 100)))
+  (error? (char-grapheme-step "a" 0))
+  (error? (char-grapheme-step 'a 0))
+  (error? (char-grapheme-step #\a #\a))
+  (error? (char-grapheme-step #\a (expt 2 100)))
 
-  (let-values ([(consume? state) (char-grapheme-cluster-step #\a 0)])
+  (let-values ([(consume? state) (char-grapheme-step #\a 0)])
     (and (not consume?)
          (not (eqv? 0 state))))
 
-  (let-values ([(consume? state) (char-grapheme-cluster-step #\a 0)])
-    (let-values ([(consume? state) (char-grapheme-cluster-step #\b state)])
+  (let-values ([(consume? state) (char-grapheme-step #\a 0)])
+    (let-values ([(consume? state) (char-grapheme-step #\b state)])
       (and consume?
            (not (eqv? 0 state)))))
 
-  (let-values ([(consume? state) (char-grapheme-cluster-step #\x1 0)])
+  (let-values ([(consume? state) (char-grapheme-step #\x1 0)])
     (and consume?
          (eqv? 0 state)))
 
-  (let-values ([(consume? state) (char-grapheme-cluster-step #\a 0)])
-    (let-values ([(consume? state) (char-grapheme-cluster-step #\x300 state)])
+  (let-values ([(consume? state) (char-grapheme-step #\a 0)])
+    (let-values ([(consume? state) (char-grapheme-step #\x300 state)])
       (and (not consume?)
            (not (eqv? 0 state)))))
 
@@ -2281,7 +2281,7 @@
                            (cond
                              [(= i (string-length s)) '()]
                              [else
-                              (cons i (loop (+ i (string-grapheme-cluster-length s i))))]))])
+                              (cons i (loop (+ i (string-grapheme-span s i))))]))])
                     (unless (equal? pieces str-pieces)
                       (error 'seq "mismatch ~s ~s ~s ~s" seq s pieces str-pieces)))
                   (let ([stream-str-pieces
@@ -2293,7 +2293,7 @@
                                   (list start))]
                              [else
                               (let-values ([(consume? state)
-                                            (char-grapheme-cluster-step (string-ref s i) state)])
+                                            (char-grapheme-step (string-ref s i) state)])
                                 (if consume?
                                     (cons start (loop (+ i 1)
                                                       (if (fx= state 0) (+ i 1) i)
@@ -2301,7 +2301,7 @@
                                     (loop (+ i 1) start state)))]))])
                     (unless (equal? pieces stream-str-pieces)
                       (error 'seq "stream mismatch ~s ~s ~s ~s" seq s pieces stream-str-pieces)))
-                  (let ([n (string-grapheme-cluster-count s)])
+                  (let ([n (string-grapheme-count s)])
                     (unless (= n (length pieces))
                       (error 'seq "count mismatch ~s ~s ~s ~s" seq s n (length pieces))))))
               seqs)

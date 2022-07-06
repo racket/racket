@@ -66,24 +66,27 @@
   ;; Iterate through the given byte string
   (let loop ([i in-start] [j out-start] [base-i base-i] [accum accum] [remaining remaining]
                           [grcl-done 0] [grcl-state grcl-state])
+    ;; When a character is ready:
+    (define (step-grapheme ch)
+      (cond
+        [grcl-state
+         (define-values (consume? new-grcl-state*)
+           (char-grapheme-step ch (if (pair? grcl-state)
+                                      (car grcl-state)
+                                      grcl-state)))
+         (define new-grcl-state (if (or consume?
+                                        (eqv? grcl-state 0))
+                                    new-grcl-state*
+                                    (cons new-grcl-state* (if (pair? grcl-state) (add1 (cdr grcl-state)) 2))))
+         (define new-grcl-done (if consume? (fx+ grcl-done 1) grcl-done))
+         (values new-grcl-done new-grcl-state)]
+        [else (values 0 #f)]))
 
     ;; Shared handling for success:
     (define (complete accum)
       (when out-str (string-set! out-str j (integer->char accum)))
       (define-values (new-grcl-done new-grcl-state)
-        (cond
-          [grcl-state
-           (define-values (consume? new-grcl-state*)
-             (char-grapheme-cluster-step (integer->char accum) (if (pair? grcl-state)
-                                                                   (car grcl-state)
-                                                                   grcl-state)))
-           (define new-grcl-state (if (or consume?
-                                          (eqv? grcl-state 0))
-                                      new-grcl-state*
-                                      (cons new-grcl-state* (if (pair? grcl-state) (add1 (cdr grcl-state)) 2))))
-           (define new-grcl-done (if consume? (fx+ grcl-done 1) grcl-done))
-           (values new-grcl-done new-grcl-state)]
-          [else (values 0 #f)]))
+        (step-grapheme (integer->char accum)))
       (define next-j (fx+ j 1))
       (define next-i (fx+ i 1))
       (cond
@@ -103,6 +106,9 @@
       (cond
        [error-ch
         (when out-str (string-set! out-str j error-ch))
+        (define-values (new-grcl-done new-grcl-state)
+          (step-grapheme error-ch))
+
         (define next-j (fx+ j 1))
         (define next-i (fx+ base-i 1))
         (cond
@@ -110,10 +116,10 @@
           (values (fx- next-i in-start)
                   (fx- next-j out-start)
                   'continues
-                  grcl-done
-                  grcl-state)]
+                  new-grcl-done
+                  new-grcl-state)]
          [else
-          (loop next-i next-j next-i 0 0 grcl-done grcl-state)])]
+          (loop next-i next-j next-i 0 0 new-grcl-done new-grcl-state)])]
        [else
         (values (fx- base-i in-start)
                 (fx- j out-start)

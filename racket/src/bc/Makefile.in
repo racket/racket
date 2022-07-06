@@ -179,6 +179,6 @@ plain-install-cgc: $(ZUO)
 install-both: $(ZUO)
 	$(ZUO) . install-both
 
-$(ZUO):
+$(ZUO): $(srcdir)/../zuo/zuo.c
 	mkdir -p bin
 	$(CC_FOR_BUILD) -DZUO_LIB_PATH='"'"$(upsrcdir)/../zuo/lib"'"' -o $(ZUO) $(srcdir)/../zuo/zuo.c

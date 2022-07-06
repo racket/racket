@@ -420,9 +420,9 @@ allocated string).}
 @; ----------------------------------------
 @section{String Grapheme Clusters}
 
-@defproc[(string-grapheme-cluster-length [str string?] 
-                                         [start exact-nonnegative-integer?]
-                                         [end exact-nonnegative-integer? (string-length str)])
+@defproc[(string-grapheme-span [str string?] 
+                               [start exact-nonnegative-integer?]
+                               [end exact-nonnegative-integer? (string-length str)])
          exact-nonnegative-integer?]{
 
 Returns the number of characters (i.e., code points) in the string
@@ -437,20 +437,20 @@ for @racket[substring], otherwise the @exnraise[exn:fail:contract].
 See also @racket[char-grapheme-cluster-step].
 
 @mz-examples[
-(string-grapheme-cluster-length "" 0)
-(string-grapheme-cluster-length "a" 0)
-(string-grapheme-cluster-length "ab" 0)
-(string-grapheme-cluster-length "\r\n" 0)
-(string-grapheme-cluster-length "\r\nx" 0)
-(string-grapheme-cluster-length "\r\nx" 2)
-(string-grapheme-cluster-length "\r\nx" 0 1)
+(string-grapheme-span "" 0)
+(string-grapheme-span "a" 0)
+(string-grapheme-span "ab" 0)
+(string-grapheme-span "\r\n" 0)
+(string-grapheme-span "\r\nx" 0)
+(string-grapheme-span "\r\nx" 2)
+(string-grapheme-span "\r\nx" 0 1)
 ]
 
-@history[#:added "8.6.0.1"]}
+@history[#:added "8.6.0.2"]}
 
-@defproc[(string-grapheme-cluster-count [str string?] 
-                                        [start exact-nonnegative-integer?]
-                                        [end exact-nonnegative-integer? (string-length str)])
+@defproc[(string-grapheme-count [str string?] 
+                                [start exact-nonnegative-integer?]
+                                [end exact-nonnegative-integer? (string-length str)])
          exact-nonnegative-integer?]{
 
 Returns the number of grapheme clusters in @racket[(substring start
@@ -460,16 +460,16 @@ The @racket[start] and @racket[end] arguments must be valid indices as
 for @racket[substring], otherwise the @exnraise[exn:fail:contract].
 
 @mz-examples[
-(string-grapheme-cluster-count "")
-(string-grapheme-cluster-count "a")
-(string-grapheme-cluster-count "ab")
-(string-grapheme-cluster-count "ab" 0 2)
-(string-grapheme-cluster-count "ab" 0 1)
-(string-grapheme-cluster-count "\r\n")
-(string-grapheme-cluster-count "a\r\nb")
+(string-grapheme-count "")
+(string-grapheme-count "a")
+(string-grapheme-count "ab")
+(string-grapheme-count "ab" 0 2)
+(string-grapheme-count "ab" 0 1)
+(string-grapheme-count "\r\n")
+(string-grapheme-count "a\r\nb")
 ]
 
-@history[#:added "8.6.0.1"]}
+@history[#:added "8.6.0.2"]}
 
 @; ----------------------------------------
 @section{Additional String Functions}
