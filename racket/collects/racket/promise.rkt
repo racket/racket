@@ -33,7 +33,8 @@
   ;; We don't want to apply a `syncinfo`, but declaring the `syncinfo`
   ;; as a procedure tells `promise-forced?` when the promise is not
   ;; yet forced
-  #:property prop:procedure (case-lambda))
+  #:property prop:procedure (case-lambda)
+  #:property prop:running? (lambda (o) (running-thread? (syncinfo-thunk o))))
 
 (define-struct (promise/sync promise) ()
   #:property prop:custom-write

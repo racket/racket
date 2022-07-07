@@ -970,7 +970,17 @@
   (test #f sync/timeout 0 pr)
   (test 'done force pr)
   (test #t promise-forced? pr)
+  (test #f promise-running? pr)
   (test (void) sync/timeout 0 pr))
+
+(let* ([p (delay/sync (sync never-evt))]
+       [th (thread (lambda () (force p)))])
+  (test #f promise-forced? p)
+  (test #f promise-running? p)
+  (sync (system-idle-evt))
+  (test #f promise-forced? p)
+  (test #t promise-running? p)
+  (kill-thread th))
 
 (test '(list 3 4) 'quasiquote `(list ,(+ 1 2) 4))
 (test '(list a (quote a)) 'quasiquote (let ((name 'a)) `(list ,name ',name)))
