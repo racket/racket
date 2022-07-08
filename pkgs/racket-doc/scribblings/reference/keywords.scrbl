@@ -63,7 +63,7 @@ for each pair of keywords is the same as using
 @; ----------------------------------------
 @section{Additional Keyword Functions}
 
-@note-lib[racket/keyword]
+@note-lib-only[racket/keyword]
 @(define keyword-eval (make-base-eval))
 @examples[#:hidden #:eval keyword-eval (require racket/keyword)]
 

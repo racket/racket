@@ -118,7 +118,7 @@ for each pair of symbols is the same as using
 @; ----------------------------------------
 @section{Additional Symbol Functions}
 
-@note-lib[racket/symbol]
+@note-lib-only[racket/symbol]
 @(define symbol-eval (make-base-eval))
 @examples[#:hidden #:eval symbol-eval (require racket/symbol)]
 
