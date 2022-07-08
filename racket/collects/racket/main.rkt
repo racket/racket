@@ -15,6 +15,7 @@
          racket/list
          racket/vector
          racket/string
+         racket/symbol
          racket/bytes
          racket/function
          racket/path
@@ -48,6 +49,7 @@
                        racket/list
                        racket/vector
                        racket/string
+                       racket/symbol
                        racket/bytes
                        racket/function
                        racket/path
