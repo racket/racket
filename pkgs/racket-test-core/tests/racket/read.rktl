@@ -1055,7 +1055,8 @@
 (require racket/flonum
          racket/fixnum)
 
-(define (run-comment-special [special-comment special-comment])
+(define (run-comment-special [special-comment special-comment]
+                             #:skip-num? [skip-num? #f])
   (test (list 5) read (make-p (list #"(" special-comment #"5)") (lambda (x) 1) void))
   (test (list 5) read (make-p (list #"(5" special-comment #")") (lambda (x) 1) void))
   (test (cons 1 5) read (make-p (list #"(1 . " special-comment #"5)") (lambda (x) 1) void))
@@ -1066,8 +1067,9 @@
   (test (list 2 1 5) read (make-p (list #"(1 . " special-comment #"2 . 5)") (lambda (x) 1) void))
   (test (list 2 1 5) read (make-p (list #"(1 . 2 " special-comment #" . 5)") (lambda (x) 1) void))
   (test (vector 1 2 5) read (make-p (list #"#(1 2 " special-comment #"5)") (lambda (x) 1) void))
-  (test (flvector 1.0) read (make-p (list #"#fl(1.0 " special-comment #")") (lambda (x) 1) void))
-  (test (fxvector 1) read (make-p (list #"#fx(1 " special-comment #")") (lambda (x) 1) void))
+  (unless skip-num?
+    (test (flvector 1.0) read (make-p (list #"#fl(1.0 " special-comment #")") (lambda (x) 1) void))
+    (test (fxvector 1) read (make-p (list #"#fx(1 " special-comment #")") (lambda (x) 1) void)))
   (test (hash 1 'a) read (make-p (list #"#hash(" special-comment #"(1 . a))") (lambda (x) 1) void))
   (test (hash 1 'a) read (make-p (list #"#hash((" special-comment #"1 . a))") (lambda (x) 1) void))
   (test (hash 1 'a) read (make-p (list #"#hash((1 " special-comment #". a))") (lambda (x) 1) void))
@@ -1083,6 +1085,32 @@
                                                   #\* 'terminating-macro (lambda args
                                                                            (make-special-comment #f)))])
   (run-comment-special #"*"))
+(parameterize ([current-readtable (make-readtable #f
+                                                  #\* 'dispatch-macro (lambda args
+                                                                        (make-special-comment #f)))])
+  (run-comment-special #" #* " #:skip-num? #t))
+
+(let ()
+  ;; check that minimal characters are read to determine that wrong
+  ;; characters won't produce a comment via the readtable
+  (define (check-consumed s n [read read])
+    (define i (open-input-bytes s))
+    (err/rt-test/once (read i) exn:fail:read?)
+    (test n file-position i))
+  (check-consumed #"(1 . x yzq)" 8)
+  (parameterize ([current-readtable (make-readtable #f
+                                                    #\y 'terminating-macro (lambda (ch in . args)
+                                                                             (read-char in)))])
+    (check-consumed #"(1 . x yzq)" 9))
+  (check-consumed #"(1 . x #yzq)" 8)
+  (parameterize ([current-readtable (make-readtable #f
+                                                    #\y 'dispatch-macro (lambda (ch in . args)
+                                                                          (read-char in)))])
+    (check-consumed #"(1 . x #yzq)" 10))
+  (check-consumed #"#hash(yzq)" 7)
+  (check-consumed #"#hash(#yzq)" 7)
+  (check-consumed #"yzq #lang" 1 read-language)
+  (check-consumed #"#yzq #lang" 2 read-language))
 
 ;; Test read-char-or-special:
 (let ([p (make-p (list #"x" a-special #"y") (lambda (x) 5) void)])

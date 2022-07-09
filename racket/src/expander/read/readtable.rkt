@@ -126,17 +126,17 @@
 ;; Map a character to another character (if any) whose default
 ;; treatment should be used; be sure to map non-characters like
 ;; EOF to themselves.
-(define-inline (readtable-effective-char rt c)
+(define-inline (readtable-effective-char rt c [handler #\x]) ; `handler` default is a non-special character
   (cond
    [(or (not rt) (not (char? c))) c]
-   [else (*readtable-effective-char rt c)]))
+   [else (*readtable-effective-char rt c handler)]))
 
-(define (*readtable-effective-char rt c)
+(define (*readtable-effective-char rt c handler)
   (define target (hash-ref (readtable-char-ht rt) c #f))
   (cond
    [(not target) c]
    [(char? target) target]
-   [else #\x])) ; return some non-special character
+   [else handler]))
 
 ;; Similar to `readtable-effective-char`, but for a character after
 ;; `#` to detect whether it has the usual meaning
