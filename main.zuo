@@ -455,7 +455,7 @@
     (rm* "build/catalog-copy")
     (built-raco options "pkg" "catalog-copy" (lookup 'SRC_CATALOG) "build/catalog-copy")
     (server-cache-config options)
-    (built-raco options "pkg" "install" "--all-platforms" user-auto-options
+    (built-raco options "pkg" "install" "--all-platforms" source-user-auto
                 required-pkgs
                 (shell->strings (lookup 'DISTRO_BUILD_PKGS)))
     (server-set-config options)
