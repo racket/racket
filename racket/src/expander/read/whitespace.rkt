@@ -117,8 +117,20 @@
      [else (loop #f)])))
 
 (define (special-comment-via-readtable? c read-one in config)
-  ;; If it's a special or we have a readtable, we need to read ahead
-  ;; to make sure that it's not a comment. For consistency, always
-  ;; read ahead.
-  (define v (read-one c in (keep-comment config)))
+  ;; If we have a readtable, we may need to read ahead to make sure
+  ;; that `c` doesn't start a comment. Always reading would be more
+  ;; consistent in some ways, it works better in other ways to limit
+  ;; reading and only read if a readtable callback that could produce
+  ;; a comment.
+  (define v
+    (cond
+      [(and (char? c)
+            (let ([ec (readtable-effective-char (read-config-readtable config) c #f)])
+              (or (not ec)
+                  (and (char=? ec #\#)
+                       (let ([c2 (peek-char in)])
+                         (and (char? c2)
+                              (not (readtable-effective-char/# (read-config-readtable config) c2))))))))
+       (read-one c in (keep-comment config))]
+      [else c]))
   (and (special-comment? v) v))
