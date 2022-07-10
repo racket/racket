@@ -1665,6 +1665,20 @@
 	null
 	(cons (integer->char i) (loop (add1 i)))))))
 
+(for ([p '((#\a Other)
+           (#\return CR)
+           (#\newline LF)
+           (#\tab Control)
+           (#\u200D ZWJ)
+           (#\u300 Extend)
+           (#\u601 Prepend)
+           (#\u0A03 SpacingMark)
+           (#\u1111 L)
+           (#\u11A1 V)
+           (#\u11B1 T)
+           (#\uAC1C LV)
+           (#\uAC1E LVT))])
+  (test (cadr p) char-grapheme-break-property (car p)))
 
 ;; ----------------------------------------
 ;; Whatever bytes->string/locale does with a bad locale, it shouldn't crash

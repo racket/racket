@@ -436,31 +436,6 @@ ASCII code for the character.
 
 %----------------------------------------------------------------------------
 \entryheader
-\formdef{char-extended-pictographic?}{\categoryprocedure}{(char-extended-pictographic? \var{char})}
-\formdef{char-extend?}{\categoryprocedure}{(char-extend? \var{char})}
-\returns a boolean indicating whether the character has a property
-\listlibraries
-\endentryheader
-
-\noindent
-\scheme{char-extended-pictographic?} reports whether \var{char} has
-the Unicode Extended\_Pictographic property. \scheme{char-extend?}
-reports whether the grapheme-break property of \var{char} is Extend.
-These two functions could be useful for determining grapheme clusters
-in a string of characters, and they are used internally by functions
-like \scheme{char-grapheme-step}, \scheme{string-grapheme-span},
-and \scheme{string-grapheme-count}.
-
-\schemedisplay
-(char-extended-pictographic? #\a)   ;=> #f
-(char-extended-pictographic? #\xA9) ;=> #t
-
-(char-extend? #\a)    ;=> #f
-(char-extend? #\x300) ;=> #t
-\endschemedisplay
-
-%----------------------------------------------------------------------------
-\entryheader
 \formdef{char-grapheme-step}{\categoryprocedure}{(char-grapheme-step \var{char} \var{state})}
 \returns two values: a boolean indicating whether a cluster terminated and a new state
 \listlibraries
@@ -489,6 +464,44 @@ specified only in that providing such a state produced by
 \scheme{char-grapheme-step} in another call to
 \scheme{char-grapheme-step} continues detecting
 grapheme boundaries in the sequence.
+
+%----------------------------------------------------------------------------
+\entryheader
+\formdef{char-grapheme-break-property}{\categoryprocedure}{(char-grapheme-break-property \var{char})}
+\returns a symbol
+\listlibraries
+\endentryheader
+
+\noindent
+\scheme{char-grapheme-break-property} reports the grapheme-break
+property of \var{char}, one of \scheme{Other}, \scheme{CR},
+\scheme{LF}, \scheme{Control}, \scheme{Extend}, \scheme{ZWJ},
+\scheme{Regional_Indicator}, \scheme{Prepend}, \scheme{SpacingMark},
+\scheme{L}, \scheme{V}, \scheme{T}, \scheme{LV}, or \scheme{LVT}.
+This function is used in the implementation of
+\scheme{char-grapheme-step}.
+
+\schemedisplay
+(char-grapheme-break-property #\a)    ;=> Other
+(char-grapheme-break-property #\x300) ;=> Extend
+\endschemedisplay
+
+%----------------------------------------------------------------------------
+\entryheader
+\formdef{char-extended-pictographic?}{\categoryprocedure}{(char-extended-pictographic? \var{char})}
+\returns a boolean
+\listlibraries
+\endentryheader
+
+\noindent
+\scheme{char-extended-pictographic?} reports whether \var{char} has
+the Unicode Extended\_Pictographic property. This function is used in
+the implementation of \scheme{char-grapheme-step}.
+
+\schemedisplay
+(char-extended-pictographic? #\a)   ;=> #f
+(char-extended-pictographic? #\xA9) ;=> #t
+\endschemedisplay
 
 
 \section{Strings}
