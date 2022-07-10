@@ -1547,9 +1547,9 @@
 ! 5_4.mo:Expected error in mat char-whitespace?: "incorrect argument count in call (char-whitespace?)".
 ! 5_4.mo:Expected error in mat char-whitespace?: "incorrect argument count in call (char-whitespace? #\a #\b)".
   5_4.mo:Expected error in mat char-whitespace?: "char-whitespace?: a is not a character".
-! 5_4.mo:Expected error in mat char-extend?: "incorrect argument count in call (char-extend?)".
-! 5_4.mo:Expected error in mat char-extend?: "incorrect argument count in call (char-extend? #\a #\b)".
-  5_4.mo:Expected error in mat char-extend?: "char-extend?: a is not a character".
+! 5_4.mo:Expected error in mat char-grapheme-break-property: "incorrect argument count in call (char-grapheme-break-property)".
+! 5_4.mo:Expected error in mat char-grapheme-break-property: "incorrect argument count in call (char-grapheme-break-property #\a #\b)".
+  5_4.mo:Expected error in mat char-grapheme-break-property: "char-grapheme-break-property: a is not a character".
 ! 5_4.mo:Expected error in mat char-extended-pictographic?: "incorrect argument count in call (char-extended-pictographic?)".
 ! 5_4.mo:Expected error in mat char-extended-pictographic?: "incorrect argument count in call (char-extended-pictographic? #\a #\b)".
   5_4.mo:Expected error in mat char-extended-pictographic?: "char-extended-pictographic?: a is not a character".
@@ -1715,9 +1715,9 @@
 ! 5_4.mo:Expected error in mat char-whitespace?: "incorrect number of arguments 0 to #<procedure char-whitespace?>".
 ! 5_4.mo:Expected error in mat char-whitespace?: "incorrect number of arguments 2 to #<procedure char-whitespace?>".
   5_4.mo:Expected error in mat char-whitespace?: "char-whitespace?: a is not a character".
-! 5_4.mo:Expected error in mat char-extend?: "incorrect number of arguments 0 to #<procedure char-extend?>".
-! 5_4.mo:Expected error in mat char-extend?: "incorrect number of arguments 2 to #<procedure char-extend?>".
-  5_4.mo:Expected error in mat char-extend?: "char-extend?: a is not a character".
+! 5_4.mo:Expected error in mat char-grapheme-break-property: "incorrect number of arguments 0 to #<procedure char-grapheme-break-property>".
+! 5_4.mo:Expected error in mat char-grapheme-break-property: "incorrect number of arguments 2 to #<procedure char-grapheme-break-property>".
+  5_4.mo:Expected error in mat char-grapheme-break-property: "char-grapheme-break-property: a is not a character".
 ! 5_4.mo:Expected error in mat char-extended-pictographic?: "incorrect number of arguments 0 to #<procedure char-extended-pictographic?>".
 ! 5_4.mo:Expected error in mat char-extended-pictographic?: "incorrect number of arguments 2 to #<procedure char-extended-pictographic?>".
   5_4.mo:Expected error in mat char-extended-pictographic?: "char-extended-pictographic?: a is not a character".

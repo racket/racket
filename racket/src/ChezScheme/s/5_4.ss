@@ -247,10 +247,6 @@
                  (unsafe-op c)
                  ($oops who "~s is not a character" c))))]))
 
-    (define $char-extend?
-      (lambda (c)
-        (fx= ($str-grapheme-cluster-break c) Extend)))
-
     (define-char-op char-upcase $char-upcase)
     (define-char-op char-downcase $char-downcase)
     (define-char-op char-titlecase $char-titlecase)
@@ -265,7 +261,7 @@
     (define-char-op $constituent? $char-constituent?)
     (define-char-op $subsequent? $char-subsequent?)
     (define-char-op char-extended-pictographic? $char-extended-pictographic?)
-    (define-char-op char-extend? $char-extend?)
+    (define-char-op char-grapheme-break-property $char-grapheme-break-property)
   )
 
   (let ()
@@ -890,7 +886,7 @@
       (lambda (ch state)
         (let ([prev (fx- (fxand state (fx- (fxsll 1 grapheme-cluster-break-bits) 1)) 1)]
               [ext-pict (fxsrl state grapheme-cluster-break-bits)]
-              [prop ($str-grapheme-cluster-break ch)])
+              [prop ($char-grapheme-cluster-break ch)])
           (define (init-state) 0)
           (define (prop-state)
             ;; when we know that `($char-extended-pictographic? ch)` is false

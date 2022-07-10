@@ -537,15 +537,15 @@
     (char-whitespace? #\linefeed)
  )
 
-(mat char-extend?
-    (error? (char-extend?))
-    (error? (char-extend? #\a #\b))
-    (error? (char-extend? 'a))
-    (not (char-extend? #\space))
-    (not (char-extend? #\a))
-    (char-extend? #\x300)
-    (char-extend? #\x1122F)
-    (not (char-extend? #\x1122E))
+(mat char-grapheme-break-property
+    (error? (char-grapheme-break-property))
+    (error? (char-grapheme-break-property #\a #\b))
+    (error? (char-grapheme-break-property 'a))
+    (eq? 'Other (char-grapheme-break-property #\space))
+    (eq? 'Other (char-grapheme-break-property #\a))
+    (eq? 'Extend (char-grapheme-break-property #\x300))
+    (eq? 'Extend (char-grapheme-break-property #\x1122F))
+    (eq? 'SpacingMark (char-grapheme-break-property #\x1122E))
  )
 
 (mat char-extended-pictographic?

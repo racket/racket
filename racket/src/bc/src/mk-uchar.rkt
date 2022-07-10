@@ -155,12 +155,12 @@
 	(vector-set! vec3 (bitwise-and c low) v3)
 	(vector-set! vec4 (bitwise-and c low) v4)))))
 
-(define (mapn c from v v2 v3 v4 cc)
+(define (mapn c from v v2 v3 get-v4 cc)
   (if (= c from)
-      (map1 c v v2 v3 v4 cc)
+      (map1 c v v2 v3 (get-v4 c) cc)
       (begin
-	(map1 from v v2 v3 v4 cc)
-	(mapn c (add1 from) v v2 v3 v4 cc))))
+	(map1 from v v2 v3 (get-v4 from) cc)
+	(mapn c (add1 from) v v2 v3 get-v4 cc))))
 
 (define (set-compose-initial! c)
   (let ([top-index (arithmetic-shift c (- low-bits))])
@@ -489,8 +489,9 @@
                        combining)
                       ;; Category
                       (combine-cat cat)
-                      ;; Grapheme cluster breaks
-                      (hash-ref grapheme-cluster-breaks code 0)
+                      ;; Grapheme cluster breaks, can vary within a "<first>"-"<last>" range
+                      (lambda (code)
+                        (hash-ref grapheme-cluster-breaks code 0))
                       ;; Combining class - used again to filter initial composes
                       combining))
 	      (loop code))))))))
@@ -715,6 +716,17 @@
 			  ",\n  ~s")
 		      (string-downcase (car c))))
 	    l)
+  (printf "\n};\n"))
+
+(let ([l graph-props])
+  (printf "\n#define NUM_GRAPHEME_BREAK_PROPERTIES ~a\n" (length l))
+  (printf "READ_ONLY static const char *grapheme_break_propoerty_names[] = {")
+  (for ([p (in-list graph-props)]
+        [i (in-naturals)])
+    (printf (if (zero? i)
+                "\n  ~s"
+                ",\n  ~s")
+            p))
   (printf "\n};\n"))
 
 (set! ranges (cons (list range-bottom range-top (range-v . > . -1))

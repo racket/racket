@@ -241,7 +241,7 @@
           `(module ($char-upcase $char-downcase $char-titlecase $char-foldcase
                     $str-upcase $str-downcase $str-titlecase $str-foldcase
                     $str-decomp-canon $str-decomp-compat
-                    $str-grapheme-cluster-break
+                    $char-grapheme-cluster-break $char-grapheme-break-property
                     $composition-pairs
                     ,@grapheme-cluster-break-props grapheme-cluster-break-property-count)
              (define char-upcase-table ',(build-table chardata-ucchar ls))
@@ -296,7 +296,9 @@
              (define ($str-foldcase c) (strop string-foldcase-table c))
              (define ($str-decomp-canon c) (strop decomp-canon-table c))
              (define ($str-decomp-compat c) (strop decomp-compat-table c))
-             (define ($str-grapheme-cluster-break c) (intop grapheme-cluster-break-table c))
+             (define ($char-grapheme-cluster-break c) (intop grapheme-cluster-break-table c))
+             (define ($char-grapheme-break-property c) (vector-ref ',(list->vector grapheme-cluster-break-props)
+                                                                   (intop grapheme-cluster-break-table c)))
              (define ($composition-pairs)
                ',(get-composition-pairs
                    (build-uncommonized-table chardata-decomp-canon ls))))))))))

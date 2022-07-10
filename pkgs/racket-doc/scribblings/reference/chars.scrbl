@@ -234,13 +234,6 @@ property.
 
 @history[#:added "8.6.0.1"]}
 
-@defproc[(char-extended? [char char?]) boolean?]{
-
-Returns @racket[#t] if the unicode graheme-break property for
-@racket[char] has the value ``Extend.''
-
-@history[#:added "8.6.0.1"]}
-
 @defproc[(char-general-category [char char?]) symbol?]{
 
 Returns a symbol representing the character's Unicode general
@@ -255,6 +248,18 @@ category, which is @indexed-racket['lu], @indexed-racket['ll],
 @indexed-racket['zp], @indexed-racket['zl], @indexed-racket['cc],
 @indexed-racket['cf], @indexed-racket['cs], @indexed-racket['co], or
 @indexed-racket['cn].}
+
+@defproc[(char-grapheme-break-property [char char?]) ?]{
+
+Returns the Unicode graheme-break property for @racket[char], which is
+@indexed-racket['Other], @indexed-racket['CR], @indexed-racket['LF],
+@indexed-racket['Control], @indexed-racket['Extend],
+@indexed-racket['ZWJ], @indexed-racket['Regional_Indicator],
+@indexed-racket['Prepend], @indexed-racket['SpacingMark],
+@indexed-racket['L], @indexed-racket['V], @indexed-racket['T],
+@indexed-racket['LV], or @indexed-racket['LVT].
+
+@history[#:added "8.6.0.1"]}
 
 @defproc[(make-known-char-range-list) 
          (listof (list/c exact-nonnegative-integer?

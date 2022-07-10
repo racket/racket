@@ -1,9 +1,10 @@
 (module ($char-upcase $char-downcase $char-titlecase $char-foldcase
          $str-upcase $str-downcase $str-titlecase $str-foldcase
          $str-decomp-canon $str-decomp-compat
-         $str-grapheme-cluster-break $composition-pairs Other CR LF
-         Control Extend ZWJ Regional_Indicator Prepend SpacingMark L
-         V T LV LVT grapheme-cluster-break-property-count)
+         $char-grapheme-cluster-break $char-grapheme-break-property
+         $composition-pairs Other CR LF Control Extend ZWJ
+         Regional_Indicator Prepend SpacingMark L V T LV LVT
+         grapheme-cluster-break-property-count)
   (define char-upcase-table
     '#(#(#0=#(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
               0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
@@ -3464,8 +3465,8 @@
   (define code-point-limit 1114112)
   (define table-ref
     (lambda (tbl i)
-      (let ([#1495=#{g3 c8ko8lzjvk6f48gaiug7ike2z-4} (* 64 64)])
-        (let ([#1496=#{g4 c8ko8lzjvk6f48gaiug7ike2z-5} (* 64)])
+      (let ([#1495=#{g3 d7ljflszbe7rmqhg95mhtbb5s-4} (* 64 64)])
+        (let ([#1496=#{g4 d7ljflszbe7rmqhg95mhtbb5s-5} (* 64)])
           (vector-ref
             (vector-ref
               (vector-ref tbl (fxdiv i #1495#))
@@ -3501,8 +3502,13 @@
   (define ($str-decomp-canon c) (strop decomp-canon-table c))
   (define ($str-decomp-compat c)
     (strop decomp-compat-table c))
-  (define ($str-grapheme-cluster-break c)
+  (define ($char-grapheme-cluster-break c)
     (intop grapheme-cluster-break-table c))
+  (define ($char-grapheme-break-property c)
+    (vector-ref
+      '#(Other CR LF Control Extend ZWJ Regional_Indicator Prepend
+         SpacingMark L V T LV LVT)
+      (intop grapheme-cluster-break-table c)))
   (define ($composition-pairs)
     '(#(#1215# #1214# #1213# #1212# #1211# #1210# #1209# #1208#
         #1207# #1206# #1205# #1204# #1203# #1159# #1158# #1157#

@@ -1227,8 +1227,8 @@
   (char-ci=? [sig [(char char ...) -> (boolean)]] [flags pure mifoldable discard cp03 safeongoodargs])   ; not restricted to 2+ arguments
   (char-ci>=? [sig [(char char ...) -> (boolean)]] [flags pure mifoldable discard safeongoodargs])  ; not restricted to 2+ arguments
   (char-ci>? [sig [(char char ...) -> (boolean)]] [flags pure mifoldable discard safeongoodargs])   ; not restricted to 2+ arguments
-  (char-extend? [sig [(char) -> (boolean)]] [flags pure mifoldable discard ieee r5rs])
-  (char-extended-pictographic? [sig [(char) -> (boolean)]] [flags pure mifoldable discard ieee r5rs])
+  (char-extended-pictographic? [sig [(char) -> (boolean)]] [flags pure mifoldable discard])
+  (char-grapheme-break-property [sig [(char) -> (symbol)]] [flags pure mifoldable discard])
   (char-grapheme-step [sig [(char fixnum) -> (boolean fixnum)]] [flags])
   (char-name [sig [(sub-ptr) (sub-symbol maybe-char) -> (ptr)]] [flags cptypes2])
   (char-ready? [sig [() (textual-input-port) -> (boolean)]] [flags ieee r5rs])
