@@ -131,6 +131,13 @@ The @racketmodname[racket] library combines
              #:url "http://www.cs.utah.edu/plt/publications/gpce13-f-color.pdf"
              #:date "2002")
 
+  (bib-entry #:key "Flatt07"
+             #:author "Matthew Flatt, Gang Yu, Robert Bruce Findler, and Matthias Felleisen"
+             #:title "Adding Delimited and Composable Control to a Production Programming Environment"
+             #:location "International Conference on Functional Programming (ICFP)"
+             #:url "http://www.cs.utah.edu/plt/publications/icfp07-fyff.pdf"
+             #:date "2007")
+
   (bib-entry #:key "Friedman95"
              #:title "Exception system proposal"
              #:author "Daniel P. Friedman, C. T. Haynes, and R. Kent Dybvig"
