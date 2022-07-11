@@ -112,7 +112,7 @@ explicitly closed, usually with @racket[close-input-port] or
 @racket[close-output-port].
 
 @margin-note{A @tech{file-stream port} for communicating with a
-subprocess is normally a pipe with a limited capacity. Beware of
+subprocess is normally a pipe with a limited buffer capacity. Beware of
 creating deadlock by serializing a write to a subprocess followed by a
 read, while the subprocess does the same, so that both processes end
 up blocking on a write because the other end must first read to make
