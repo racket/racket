@@ -167,6 +167,9 @@ Example:
 (subprocess-wait sp)
 ]
 
+@; PLACEHOLDER: maybe explain here that subprocess-wait should be called
+@; after all the I/O to ensure the process is in a position to terminate?
+
 @history[#:changed "6.11.0.1" @elem{Added the @racket[group] argument.}
          #:changed "7.4.0.5" @elem{Added waiting for a fifo without a reader
                                    as @racket[stdout] and/or @racket[stderr].}
@@ -429,6 +432,8 @@ function:
 (with-output-to-string (lambda () (system "date")))
 ]}
 
+@; PLACEHOLDER: add something explaining why system* is recommended instead
+@; (sorawee)
 
 @defproc*[([(system* [command path-string?]
                      [arg (or/c path? string-no-nuls? bytes-no-nuls?)] ...
