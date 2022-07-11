@@ -1,2 +1,4 @@
 .git* export-ignore
 /.mailmap export-ignore
+/racket/src/cs/schemified/*.scm linguist-generated=true
+*.zuo linguist-language=Racket
