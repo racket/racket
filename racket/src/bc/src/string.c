@@ -5456,7 +5456,7 @@ intptr_t scheme_utf8_grcl_decode_count(const unsigned char *s, intptr_t start, i
           || (_grcl_state->state == (MZ_GRAPHBREAK_CONTROL+1)))) {
     /* Try fast path (all ASCII): */
     intptr_t i, crlf = 0;
-    if (_grcl_state->state == (MZ_GRAPHBREAK_CR+1)) {
+    if (_grcl_state && (_grcl_state->state == (MZ_GRAPHBREAK_CR+1))) {
       if ((start < end)
           && (s[start] == '\n')) {
         crlf++;
