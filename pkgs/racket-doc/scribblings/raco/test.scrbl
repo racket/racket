@@ -131,7 +131,7 @@ The @exec{raco test} command accepts several flags:
       operating-system process.}
 
  @item{@Flag{j} @nonterm{n} or @DFlag{jobs} @nonterm{n}
-      --- Runs up to @nonterm{n} tests in parallel.}
+      --- Runs up to @nonterm{n} test files in parallel.}
 
  @item{@DFlag{timeout} @nonterm{seconds}
       --- Sets the default timeout (after which a test counts as failed)
