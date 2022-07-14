@@ -3400,7 +3400,7 @@ print_char_string(const char *str, int len,
 		  int notdisplay, PrintParams *pp)
 {
   char minibuf[12], *esc;
-  int a, i, v, ui, cont_utf8 = 0, isize;
+  int a, i, v, ui, cont_utf8 = 0, isize, keep = 0;
 
   if (notdisplay) {
     print_utf8_string(pp, "\"", 0, 1);
@@ -3408,6 +3408,9 @@ print_char_string(const char *str, int len,
     for (a = i = ui = 0; i < len; i += isize, ui++) {
       v = ((unsigned char *)str)[i];
       isize = 1;
+
+      if (keep && (v < 128))
+        v = 'x';
 
       switch (v) {
       case '\"': 
@@ -3427,22 +3430,29 @@ print_char_string(const char *str, int len,
 	  if (cont_utf8) {
 	    cont_utf8--;
 	    ui--;
+            if (keep) keep++;
 	    esc = NULL;
 	  } else {
 	    int clen;
 	    clen = scheme_utf8_encode(ustr, ui+delta, ui+delta+1, NULL, 0, 0);
-	    if (scheme_isgraphic(ustr[ui+delta])
+	    if (keep
+                || scheme_isgraphic(ustr[ui+delta])
 		|| scheme_isblank(ustr[ui+delta])) {
 	      cont_utf8 = clen - 1;
+              if ((keep == 0) && scheme_isgraphic(ustr[ui+delta]))
+                keep = scheme_grapheme_cluster_span(ustr, ui+delta, ulen);
 	      esc = NULL;
 	    } else {
 	      esc = minibuf;
 	      isize = clen;
 	    }
 	  }
-	} else if (scheme_isgraphic(v)
+	} else if (keep
 		   || scheme_isblank(v)) {
 	  esc = NULL;
+        } else if (scheme_isgraphic(v)) {
+          esc = NULL;
+          keep = scheme_grapheme_cluster_span(ustr, ui+delta, ulen);
 	} else {
 	  esc = minibuf;
 	}
@@ -3462,6 +3472,9 @@ print_char_string(const char *str, int len,
         print_utf8_string(pp, esc, 0, -1);
         a = i+isize;
       }
+
+      if (keep)
+        keep--;
     }
     if (a < i)
       print_utf8_string(pp, str, a, i-a);

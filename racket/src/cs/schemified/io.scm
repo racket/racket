@@ -20028,61 +20028,66 @@
                                       max-length_3)))
                                 (let ((i_1 (add1 i_0)))
                                   (loop_0 i_1 i_1 max-length_4))))
-                            (if (let ((or-part_0 (char-graphic? c_0)))
-                                  (if or-part_0 or-part_0 (char-blank? c_0)))
-                              (loop_0 start-i_0 (add1 i_0) max-length_2)
-                              (let ((n_0 (char->integer c_0)))
-                                (let ((pad_0
-                                       (|#%name|
-                                        pad
-                                        (lambda (n_1 s_0)
-                                          (begin
-                                            (let ((len_1 (string-length s_0)))
-                                              (if (< len_1 n_1)
-                                                (string-append
-                                                 (make-string
-                                                  (- n_1 len_1)
-                                                  '#\x30)
-                                                 s_0)
-                                                s_0)))))))
-                                  (let ((max-length_3
-                                         (write-string/max
-                                          str_0
-                                          o_0
-                                          max-length_2
-                                          start-i_0
-                                          i_0)))
-                                    (let ((max-length_4
-                                           (if (<= n_0 65535)
-                                             (let ((max-length_4
-                                                    (write-bytes/max
-                                                     #vu8(92 117)
-                                                     o_0
-                                                     max-length_3)))
-                                               (write-string/max
-                                                (pad_0
-                                                 4
-                                                 (string-upcase
-                                                  (number->string n_0 16)))
-                                                o_0
-                                                max-length_4))
-                                             (let ((max-length_4
-                                                    (write-bytes/max
-                                                     #vu8(92 85)
-                                                     o_0
-                                                     max-length_3)))
-                                               (write-string/max
-                                                (pad_0
-                                                 8
-                                                 (string-upcase
-                                                  (number->string n_0 16)))
-                                                o_0
-                                                max-length_4)))))
-                                      (let ((i_1 (add1 i_0)))
-                                        (loop_0
-                                         i_1
-                                         i_1
-                                         max-length_4))))))))))))))))))
+                            (if (char-graphic? c_0)
+                              (loop_0
+                               start-i_0
+                               (+ i_0 (string-grapheme-span str_0 i_0))
+                               max-length_2)
+                              (if (char-blank? c_0)
+                                (loop_0 start-i_0 (add1 i_0) max-length_2)
+                                (let ((n_0 (char->integer c_0)))
+                                  (let ((pad_0
+                                         (|#%name|
+                                          pad
+                                          (lambda (n_1 s_0)
+                                            (begin
+                                              (let ((len_1
+                                                     (string-length s_0)))
+                                                (if (< len_1 n_1)
+                                                  (string-append
+                                                   (make-string
+                                                    (- n_1 len_1)
+                                                    '#\x30)
+                                                   s_0)
+                                                  s_0)))))))
+                                    (let ((max-length_3
+                                           (write-string/max
+                                            str_0
+                                            o_0
+                                            max-length_2
+                                            start-i_0
+                                            i_0)))
+                                      (let ((max-length_4
+                                             (if (<= n_0 65535)
+                                               (let ((max-length_4
+                                                      (write-bytes/max
+                                                       #vu8(92 117)
+                                                       o_0
+                                                       max-length_3)))
+                                                 (write-string/max
+                                                  (pad_0
+                                                   4
+                                                   (string-upcase
+                                                    (number->string n_0 16)))
+                                                  o_0
+                                                  max-length_4))
+                                               (let ((max-length_4
+                                                      (write-bytes/max
+                                                       #vu8(92 85)
+                                                       o_0
+                                                       max-length_3)))
+                                                 (write-string/max
+                                                  (pad_0
+                                                   8
+                                                   (string-upcase
+                                                    (number->string n_0 16)))
+                                                  o_0
+                                                  max-length_4)))))
+                                        (let ((i_1 (add1 i_0)))
+                                          (loop_0
+                                           i_1
+                                           i_1
+                                           max-length_4)))))))))))))))))))
          (loop_0 0 0 max-length_1))))))
 (define print-bytes
   (lambda (bstr_0 o_0 max-length_0)

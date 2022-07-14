@@ -62,6 +62,9 @@
   (ptest "1/2" 1/2)
   (ptest "#f" #f)
   (ptest "#\\x" #\x)
+  (ptest "\"apple\"" "apple")
+  (ptest "\"\U1f3f4\u200d\u2620\ufe0f\"" "\U1f3f4\u200d\u2620\ufe0f") ; pirate flag
+
   (ptest "'apple" 'apple)
   (ptest "'|apple banana|" '|apple banana|)
   (ptest "'||" '||)

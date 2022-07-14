@@ -3583,7 +3583,7 @@ static Scheme_Object *char_grapheme_cluster_step(int argc, Scheme_Object *argv[]
   return scheme_values(2, a);
 }
 
-intptr_t scheme_grapheme_cluster_span(mzchar *str, intptr_t start, intptr_t finish)
+intptr_t scheme_grapheme_cluster_span(const mzchar *str, intptr_t start, intptr_t finish)
 {
   intptr_t i;
   int state;

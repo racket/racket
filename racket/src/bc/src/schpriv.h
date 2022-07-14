@@ -3907,7 +3907,7 @@ Scheme_Object *scheme_copy_list(Scheme_Object *l);
 
 Scheme_Object *scheme_append_strings(Scheme_Object *s1, Scheme_Object *s2);
 XFORM_NONGCING int scheme_grapheme_cluster_step(mzchar c, int *_state);
-intptr_t scheme_grapheme_cluster_span(mzchar *str, intptr_t start, intptr_t finish);
+intptr_t scheme_grapheme_cluster_span(const mzchar *str, intptr_t start, intptr_t finish);
 
 Scheme_Object *scheme_unsafe_make_location(void);
 Scheme_Object *scheme_unsafe_make_srcloc(int argc, Scheme_Object **argv);
