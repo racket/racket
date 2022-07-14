@@ -11,3 +11,5 @@
 (define pkg-desc "Racket's implementation of macros, modules, and top-level evaluation")
 
 (define pkg-authors '(mflatt))
+
+(define license '(Apache-2.0 OR MIT))
