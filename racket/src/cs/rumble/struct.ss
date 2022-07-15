@@ -441,10 +441,6 @@
                         (list (or eql?
                                   (lambda (a b eql? mode) (eq? a b)))
                               hash-code)))
-(define struct-set-default-equal+hash!
-  (let ([l (list default-struct-equal? default-struct-hash default-struct-hash)])
-    (lambda (rtd)
-      (struct-property-set! prop:equal+hash rtd l))))
 (define (inherit-equal+hash! rtd parent-rtd)
   (struct-property-set! prop:equal+hash rtd (struct-property-ref prop:equal+hash parent-rtd #f)))
 
@@ -1370,6 +1366,11 @@
                     (loop (fx+ j 1)
                           (hash-code-combine hc (hash-code (unsafe-struct-ref s j)))))))
             (eq-hash-code raw-s))))]))
+
+(define struct-set-default-equal+hash!
+  (let ([l (list default-struct-equal? default-struct-hash default-struct-hash)])
+    (lambda (rtd)
+      (struct-property-set! prop:equal+hash rtd l))))
 
 (define struct->vector
   (case-lambda

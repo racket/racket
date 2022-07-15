@@ -5521,7 +5521,7 @@
                                                         (begin
                                                           (set-custodian-need-shutdown!
                                                            c_0
-                                                           'neeed/sent-wakeup)
+                                                           'need/sent-wakeup)
                                                           (let ((app_0
                                                                  place-wakeup))
                                                             (|#%app|

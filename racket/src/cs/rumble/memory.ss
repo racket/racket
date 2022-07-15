@@ -61,6 +61,11 @@
 ;; and control layer may be in uninterrupted mode, so don't
 ;; do anything that might use "control.ss" (especially in logging).
 (define (collect/report g)
+  ;; If you get "$collect-rendezvous: cannot return to the collect-request-handler", then
+  ;; probably something here is trying to raise an exception. To get more information try
+  ;; uncommenting the exception-handler line below, and then move its last close parenthesis
+  ;; to the end of the enclosing function.
+  #;(guard (x [else (if (condition? x) (display-condition x) (#%write x)) (#%newline) (#%flush-output-port)]))
   (let ([this-counter (if g (bitwise-arithmetic-shift-left 1 (* log-collect-generation-radix g)) gc-counter)]
         [pre-allocated (bytes-allocated)]
         [pre-allocated+overhead (current-memory-bytes)]
@@ -108,7 +113,8 @@
                       (let ([domains (weaken-accounting-domains domains)])
                         ;; Accounting collection:
                         (let ([counts (collect gen 1 gen (weaken-accounting-roots roots))])
-                          (lambda () (k counts domains))))])))]
+                          (lambda ()
+                            (call-with-accounting-domains k counts domains))))])))]
                [(and request-incremental?
                      (fx= gen (sub1 (collect-maximum-generation))))
                 ;; "Incremental" mode by not promoting to the maximum generation
@@ -251,6 +257,15 @@
     (if (null? domains)
         '()
         (weak-cons (car domains) (loop (cdr domains))))))
+
+;; Filter any domain (and associated count) that went to `#!bwp` during collection
+(define (call-with-accounting-domains k counts domains)
+  (let loop ([counts counts] [domains domains] [r-counts '()] [r-domains '()])
+    (cond
+      [(null? counts) (k (reverse r-counts) (reverse r-domains))]
+      [(eq? #!bwp (car domains)) (loop (cdr counts) (cdr domains) r-counts r-domains)]
+      [else (loop (cdr counts) (cdr domains)
+                  (cons (car counts) r-counts) (cons (car domains) r-domains))])))
 
 ;; ----------------------------------------
 

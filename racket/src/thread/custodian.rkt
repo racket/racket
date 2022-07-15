@@ -272,7 +272,7 @@
                       #:unless (custodian-this-place? c))
              (when (eq? (custodian-need-shutdown c) 'needed)
                ;; Make sure custodian's place is polling for shutdowns:
-               (set-custodian-need-shutdown! c 'neeed/sent-wakeup)
+               (set-custodian-need-shutdown! c 'need/sent-wakeup)
                (place-wakeup (custodian-place c)))
              c))
      (host:mutex-release memory-limit-lock)    
@@ -571,7 +571,7 @@
                          (loop (cdr roots) even-more-local-roots accum-roots accum-custs)]))))
                 (call-with-size-increments
                  roots custs
-                 (lambda (sizes custs)
+                 (lambda (sizes custs) ; received `custs` may be shorter than provided `custs`
                    (for ([size (in-list sizes)]
                          [c (in-list custs)])
                      (set-custodian-memory-use! c (+ size (custodian-memory-use c))))
