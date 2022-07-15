@@ -272,7 +272,7 @@
                       #:unless (custodian-this-place? c))
              (when (eq? (custodian-need-shutdown c) 'needed)
                ;; Make sure custodian's place is polling for shutdowns:
-               (set-custodian-need-shutdown! c 'need/sent-wakeup)
+               (set-custodian-need-shutdown! c 'needed/sent-wakeup)
                (place-wakeup (custodian-place c)))
              c))
      (host:mutex-release memory-limit-lock)    
