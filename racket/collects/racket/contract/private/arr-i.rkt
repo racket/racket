@@ -9,6 +9,9 @@
          "generate.rkt"
          syntax/location
          racket/private/performance-hint
+         (only-in '#%paramz
+                  extend-parameterization
+                  parameterization-key)
          (for-syntax racket/base
                      racket/stxparam-exptime
                      syntax/name
@@ -98,6 +101,7 @@
          blame swapped-blame ;; used by the #:pre and #:post checking
          (append blames
                  (->i-pre/post-procs ctc)
+                 (->i-param-procs ctc)
                  partial-doms
                  (->i-arg-dep-ctcs ctc)
                  partial-indy-doms
@@ -190,7 +194,7 @@
 (struct ->i (blame-info
              arg-ctcs arg-dep-ctcs indy-arg-ctcs
              rng-ctcs rng-dep-ctcs indy-rng-ctcs
-             pre/post-procs
+             pre/post-procs param-procs
              mandatory-args opt-args mandatory-kwds opt-kwds rest
              mtd? here mk-wrapper name-info)
         #:property prop:custom-write custom-write-property-proc)
@@ -238,8 +242,9 @@
                    [args-info (vector-ref name-info 0)]
                    [rest-info (vector-ref name-info 1)]
                    [pre-infos  (vector-ref name-info 2)]
-                   [rng-info  (vector-ref name-info 3)]
-                   [post-infos (vector-ref name-info 4)])
+                   [param-infos  (vector-ref name-info 3)]
+                   [rng-info  (vector-ref name-info 4)]
+                   [post-infos (vector-ref name-info 5)])
               `(->i ,(arg/ress->spec args-info
                                      (map ->i-arg-contract (->i-arg-ctcs ctc))
                                      (->i-arg-dep-ctcs ctc)
@@ -276,6 +281,13 @@
                             `(#:pre ,ids ,code)]
                            [(equal? name 'desc)
                             `(#:pre/desc ,ids ,code)])))
+                    ,@(apply
+                       append
+                       (for/list ([param-info param-infos])
+                         (define ids (list-ref param-info 0))
+                         (define pexp (list-ref param-info 1))
+                         (define vexp (list-ref param-info 2))
+                         `(#:param ,ids ,pexp ,vexp)))
                     ,(cond
                        [(not rng-info)
                         'any]
@@ -323,14 +335,14 @@
 (define (make-->i is-chaperone-contract? blame-info
                   arg-ctcs arg-dep-ctcs indy-arg-ctcs
                   rng-ctcs rng-dep-ctcs indy-rng-ctcs
-                  pre/post-procs
+                  pre/post-procs param-procs
                   mandatory-args opt-args mandatory-kwds opt-kwds rest
                   mtd? here mk-wrapper name-info)
   (define maker (if is-chaperone-contract? chaperone->i impersonator->i))
   (maker blame-info
          arg-ctcs arg-dep-ctcs indy-arg-ctcs
          rng-ctcs rng-dep-ctcs indy-rng-ctcs
-         pre/post-procs
+         pre/post-procs param-procs
          mandatory-args opt-args mandatory-kwds opt-kwds rest
          mtd? here mk-wrapper name-info))
 
@@ -358,18 +370,18 @@ evaluted left-to-right.)
 
 
   ;; set up some unreferred to variables for
-  ;; the pre/post conditions to base the graph on
-  ;; get-var : (or/c pre/post arg) -> identifier
+  ;; the pre/post conditions and params to base the graph on
+  ;; get-var : (or/c pre/post? param? arg) -> identifier
   ;; (unfortuntately we rely on `eq?` here)
-  (define pre/post-fake-vars (make-hasheq))
+  (define fake-vars (make-hasheq))
   (for ([arg (in-list args)]
-        #:when (pre/post? arg))
-    (hash-set! pre/post-fake-vars arg
+        #:when (or (pre/post? arg) (param? arg)))
+    (hash-set! fake-vars arg
                (car (generate-temporaries (list arg)))))
   (define (get-var arg)
     (if (arg/res? arg)
         (arg/res-var arg)
-        (hash-ref pre/post-fake-vars arg)))
+        (hash-ref fake-vars arg)))
 
   ;; track the indices into `args` for the nodes in the graph
   ;; and do the same thing but only for the subset that are actually args
@@ -381,13 +393,20 @@ evaluted left-to-right.)
     (hash-set! numbers arg i)
     (free-identifier-mapping-put! id->arg/res (get-var arg) arg))
 
-  ;; track the original order of the pre/post conditions
+  ;; track the original order of the pre/post conditions and params
   (define pre/post-numbers (make-hasheq))
-  (let ([i 0])
-    (for ([arg (in-list args)])
-      (when (pre/post? arg)
-        (hash-set! pre/post-numbers arg i)
-        (set! i (+ i 1)))))
+  (define param-numbers (make-hasheq))
+
+  (define (count! pred? ht)
+    (define i 0)
+    (for ([arg (in-list args)]
+          #:when (pred? arg))
+      (hash-set! ht arg i)
+      (set! i (+ i 1))))
+
+  (count! pre/post? pre/post-numbers)
+  (count! param? param-numbers)
+
   ;; build the graph, where `comes-before` are the backwards
   ;; edges and `comes-after` are the forwards edges
   ;; we use new temporary variables for the pre/posts
@@ -399,9 +418,11 @@ evaluted left-to-right.)
     (free-identifier-mapping-put! comes-before the-var '())
     (free-identifier-mapping-put! comes-after the-var '()))
   (for ([arg (in-list args)])
-    (define the-vars (if (arg/res? arg)
-                         (or (arg/res-vars arg) '())
-                         (pre/post-vars arg)))
+    (define the-vars
+      (cond
+        [(arg/res? arg) (or (arg/res-vars arg) '())]
+        [(pre/post? arg) (pre/post-vars arg)]
+        [(param? arg) (param-vars arg)]))
     (define arg-id (get-var arg))
     (for ([dep-id (in-list the-vars)])
       (define dep (free-identifier-mapping-get id->arg/res dep-id (λ () #f)))
@@ -468,7 +489,8 @@ evaluted left-to-right.)
             (if (arg/res? arg)
                 (hash-ref numbers arg)
                 "pre/post, which has an index we don't want to use"))
-          pre/post-numbers))
+          pre/post-numbers
+          param-numbers))
 
 ;; args/vars->arglist : (listof arg?) (vectorof identifier?) -> syntax
 ;; (vector-length vars) = (length args)
@@ -514,7 +536,8 @@ evaluted left-to-right.)
 ;; recursion.  If all of the result contracts (which would need to be passed to
 ;; this function as well as results-checkers) can be evaluated early, then we can
 ;; preserve tail recursion in the fashion of -> etc.
-(define-for-syntax (args/vars->arg-checker result-checkers args rst wrapper-args this-param)
+(define-for-syntax (args/vars->arg-checker result-checkers args rst wrapper-args this-param
+                                           parameterize?)
   (let ([opts? (ormap arg-optional? args)]
         [this-params (if this-param (list this-param) '())])
 
@@ -527,11 +550,18 @@ evaluted left-to-right.)
        (λ (x y) (keyword<? (syntax-e (car x)) (syntax-e (car y))))))
     (define keyword-arguments (map cdr sorted-kwd/arg-pairs))
     (define regular-arguments (map (λ (arg) (hash-ref wrapper-args arg)) non-kwd-args))
+    (define param-mark
+      (if parameterize?
+          (list #''mark #'parameterization-key #'cur-parameterization)
+          '()))
     (cond
       [(and opts? (ormap arg-kwd args))
        ;; has both optional and keyword args
-       #`(keyword-return/no-unsupplied
+       #`(#,(if (null? param-mark)
+                #'keyword-return/no-unsupplied
+                #'keyword-return/no-unsupplied/param-mark)
           #,(if (null? result-checkers) #f (car result-checkers))
+          #,@(if (null? param-mark) null (list #`(list #,@param-mark)))
           '#,(map car sorted-kwd/arg-pairs)
           (list #,@keyword-arguments)
           #,(if rst
@@ -544,7 +574,11 @@ evaluted left-to-right.)
        (define wrapper-args-as-list
          (for/list ([arg (in-list args)])
            (hash-ref wrapper-args arg)))
-       #`(return/no-unsupplied #,(if (null? result-checkers) #f (car result-checkers))
+       #`(#,(if (null? param-mark)
+                #'return/no-unsupplied
+                #'return/no-unsupplied/param-mark)
+          #,(if (null? result-checkers) #f (car result-checkers))
+          #,@(if (null? param-mark) null (list #`(list #,@param-mark)))
                                #,(if rst
                                      #'rest-args
                                      #''())
@@ -553,14 +587,15 @@ evaluted left-to-right.)
       [else
        (cond
          [(and (null? keyword-arguments) rst)
-          #`(apply values #,@result-checkers #,@this-params #,@regular-arguments rest-args)]
+          #`(apply values #,@result-checkers #,@param-mark
+                   #,@this-params #,@regular-arguments rest-args)]
          [(null? keyword-arguments)
-          #`(values #,@result-checkers #,@this-params #,@regular-arguments)]
+          #`(values #,@result-checkers #,@param-mark #,@this-params #,@regular-arguments)]
          [rst
-          #`(apply values #,@result-checkers (list #,@keyword-arguments)
+          #`(apply values #,@result-checkers #,@param-mark (list #,@keyword-arguments)
                    #,@this-params #,@regular-arguments rest-args)]
          [else
-          #`(values #,@result-checkers (list #,@keyword-arguments)
+          #`(values #,@result-checkers #,@param-mark (list #,@keyword-arguments)
                     #,@this-params #,@regular-arguments)])])))
 
 (define (return/no-unsupplied res-checker rest-args . args)
@@ -568,6 +603,12 @@ evaluted left-to-right.)
       (apply values res-checker
              (append (filter (λ (x) (not (eq? x the-unsupplied-arg))) args) rest-args))
       (apply values (append (filter (λ (x) (not (eq? x the-unsupplied-arg))) args) rest-args))))
+
+(define (return/no-unsupplied/param-mark res-checker param-mark rest-args . args)
+  (if res-checker
+      (apply values res-checker
+             (append param-mark (filter (λ (x) (not (eq? x the-unsupplied-arg))) args) rest-args))
+      (apply values (append param-mark (filter (λ (x) (not (eq? x the-unsupplied-arg))) args) rest-args))))
 
 (define (keyword-return/no-unsupplied res-checker kwds kwd-args rest-args . args)
   (let-values ([(supplied-kwds supplied-kwd-args)
@@ -595,6 +636,37 @@ evaluted left-to-right.)
       [else
        (apply values supplied-kwd-args
               (append (filter (λ (x) (not (eq? x the-unsupplied-arg))) args) rest-args))])))
+
+(define (keyword-return/no-unsupplied/param-mark res-checker param-mark kwds kwd-args rest-args . args)
+  (let-values ([(supplied-kwds supplied-kwd-args)
+                (let loop ([kwds kwds]
+                           [kwd-args kwd-args])
+                  (cond
+                    [(null? kwds) (values '() '())]
+                    [else
+                     (let-values ([(kwds-rec args-rec) (loop (cdr kwds) (cdr kwd-args))])
+                       (cond
+                         [(eq? (car kwd-args) the-unsupplied-arg)
+                          (values kwds-rec args-rec)]
+                         [else
+                          (values (cons (car kwds) kwds-rec)
+                                  (cons (car kwd-args) args-rec))]))]))])
+    (cond
+      [(and res-checker (null? supplied-kwd-args))
+       (apply values res-checker
+              (append param-mark (filter (λ (x) (not (eq? x the-unsupplied-arg))) args) rest-args))]
+      [(null? supplied-kwd-args)
+       (apply values (append param-mark (filter (λ (x) (not (eq? x the-unsupplied-arg))) args) rest-args))]
+      [res-checker
+       (apply values res-checker
+              (append param-mark
+                      (cons supplied-kwd-args (filter (λ (x) (not (eq? x the-unsupplied-arg))) args))
+                      rest-args))]
+      [else
+    (apply values
+              (append param-mark
+                      (cons supplied-kwd-args (filter (λ (x) (not (eq? x the-unsupplied-arg))) args))
+                      rest-args))])))
 
 (define-for-syntax (maybe-generate-temporary x)
   (and x (car (generate-temporaries (list x)))))
@@ -672,6 +744,31 @@ evaluted left-to-right.)
                                                             x)))
                  (pre/post-vars a-pre/post))))))
 
+(define-for-syntax (build-param-code a-param param-indicies
+                                     indy-arg-vars ordered-args
+                                     indy-res-vars ordered-ress)
+  (define id (string->symbol (format "param-proc~a" (hash-ref param-indicies a-param))))
+  #`(let-values ([(p v)
+                  (#,id #,@(map (λ (var) (arg/res-to-indy-var indy-arg-vars
+                                                              ordered-args
+                                                              indy-res-vars
+                                                              ordered-ress
+                                                              var))
+                                (param-vars a-param)))])
+      (checked-extend-parameterization cur-parameterization p v)))
+
+(define (checked-extend-parameterization cur-param param val)
+  (unless (parameter? param)
+    (raise-argument-error '->i "parameter? in the #:param argument" param))
+  (extend-parameterization cur-param param val))
+
+;; Initializes `cur-parameterization`
+(define-for-syntax (add-parameterization-let body parameterize?)
+  (if parameterize?
+      #`(let ([cur-parameterization (current-parameterization)])
+          #,body)
+      body))
+
 ;; add-wrapper-let :
 ;;   syntax? -- placed into the body position of the generated let expression
 ;;   boolean? -- indicates if this is a chaperone contract
@@ -693,6 +790,8 @@ evaluted left-to-right.)
 ;;   (hash [pre/post -o> nat]) pre-indicies/post-indicies, indicates the original
 ;;        ordering of the pre/post conditions (mapping from the order in indy-arg/res-vars
 ;;        to the ordering in the original istx object, aka program order)
+;;   (hash [param -o> nat]) param-indicies, similar to above
+;;        to the ordering in the original istx object, aka program order)
 ;;   (listof identifier) (listof arg/var) (listof identifier) (listof arg/var)
 ;;        the last four inputs are used only to call arg/res-to-indy-var.
 ;; adds nested lets that bind the wrapper-args and the indy-arg/res-vars to projected values,
@@ -702,7 +801,7 @@ evaluted left-to-right.)
                                     ordered-arg/reses indicies
                                     arg/res-proj-vars indy-arg/res-proj-vars
                                     wrapper-arg/ress indy-arg/res-vars
-                                    pre-indicies/post-indicies
+                                    pre-indicies/post-indicies param-indicies
                                     indy-arg-vars ordered-args indy-res-vars ordered-ress)
 
   (define (add-unsupplied-check an-arg/res wrapper-arg stx)
@@ -787,6 +886,13 @@ evaluted left-to-right.)
                         #`(#,arg/res-proj-var #,wrapper-arg neg-party)]))]
                  #,@indy-binding)
              #,body))]
+      [(param? an-arg/res)
+       #`(let ([cur-parameterization
+                #,(build-param-code an-arg/res
+                                    param-indicies
+                                    indy-arg-vars ordered-args
+                                    indy-res-vars ordered-ress)])
+           #,body)]
       [else
        #`(begin #,(build-pre/post-code an-arg/res pre-indicies/post-indicies
                                        indy-arg-vars ordered-args indy-res-vars ordered-ress)
@@ -865,7 +971,7 @@ evaluted left-to-right.)
                ordered-ress res-indices
                res-proj-vars indy-res-proj-vars
                wrapper-ress indy-res-vars
-               post-indicies
+               post-indicies #f
                indy-arg-vars ordered-args indy-res-vars ordered-ress))]
           [args
            (bad-number-of-results blame val
@@ -904,7 +1010,7 @@ evaluted left-to-right.)
                   ordered-ress res-indices
                   arg-proj-vars indy-arg-proj-vars
                   res-proj-vars indy-res-proj-vars
-                  pre-indicies post-indicies)
+                  pre-indicies param-indicies post-indicies)
     (build-wrapper-proc-arglist an-istx used-indy-vars))
 
   ;; hash[arg/res -o> identifier]
@@ -935,8 +1041,10 @@ evaluted left-to-right.)
 
 
   (define this-param (and method? (car (generate-temporaries '(this)))))
+  (define parameterize? (not (hash-empty? param-indicies)))
 
   (define wrapper-body
+    (add-parameterization-let
     (add-wrapper-let
      (add-pre-conds
       an-istx pre-indicies
@@ -955,14 +1063,16 @@ evaluted left-to-right.)
         (istx-args an-istx)
         (istx-rst an-istx)
         wrapper-args
-        this-param)))
+         this-param
+         parameterize?)))
      (istx-is-chaperone-contract? an-istx)
      #t
      ordered-args arg-indices
      arg-proj-vars indy-arg-proj-vars
      wrapper-args indy-arg-vars
-     pre-indicies
-     indy-arg-vars ordered-args indy-res-vars ordered-ress))
+      pre-indicies param-indicies
+      indy-arg-vars ordered-args indy-res-vars ordered-ress)
+     parameterize?))
   (values
    (map cdr blame-ids)
    (with-syntax ([arg-checker (or (syntax-local-infer-name stx) 'arg-checker)])
@@ -1009,20 +1119,23 @@ evaluted left-to-right.)
 
 (define-for-syntax (build-wrapper-proc-arglist an-istx used-indy-vars)
 
-  (define pre+args+rst (append (istx-pre an-istx)
+  (define pre+param+args+rst (append (istx-pre an-istx)
                                (istx-args an-istx)
+                                     (istx-params an-istx)
                                (if (istx-rst an-istx)
                                    (list (istx-rst an-istx))
                                    '())))
   (define res+post (append (istx-post an-istx)
                            (or (istx-ress an-istx) '())))
-  (define-values (ordered-args arg-indices pre-indicies) (find-ordering pre+args+rst))
-  (define-values (ordered-ress res-indices post-indicies) (find-ordering res+post))
+  (define-values (ordered-args arg-indices pre-indicies param-indicies)
+    (find-ordering pre+param+args+rst))
+  (define-values (ordered-ress res-indices post-indicies _)
+    (find-ordering res+post))
 
   (define arg-proj-vars
-    (for/vector ([pre+arg+rst (in-list pre+args+rst)])
-      (and (arg/res? pre+arg+rst)
-           (car (generate-temporaries (list (arg/res-var pre+arg+rst)))))))
+    (for/vector ([pre+param+arg+rst (in-list pre+param+args+rst)])
+      (and (arg/res? pre+param+arg+rst)
+           (car (generate-temporaries (list (arg/res-var pre+param+arg+rst)))))))
 
   (define blame-ids (build-blame-ids ordered-args ordered-ress))
 
@@ -1030,7 +1143,7 @@ evaluted left-to-right.)
   ;; but it contains #fs in places where we don't need the indy projections (because the corresponding
   ;; argument is not dependened on by anything or this one is a pre/post condition)
   (define indy-arg-proj-vars
-    (for/vector ([an-arg/res (in-list pre+args+rst)])
+    (for/vector ([an-arg/res (in-list pre+param+args+rst)])
       (and (arg/res? an-arg/res)
            (maybe-generate-temporary
             (and (free-identifier-mapping-get used-indy-vars
@@ -1066,22 +1179,26 @@ evaluted left-to-right.)
                          [i (in-naturals)])
                 (string->symbol (format "post-proc~a" i)))
 
+            #,@(for/list ([param (istx-params an-istx)]
+                          [i (in-naturals)])
+                 (string->symbol (format "param-proc~a" i)))
+
            ;; first the non-dependent arg projections
-           #,@(for/list ([arg/res (in-list pre+args+rst)]
+           #,@(for/list ([arg/res (in-list pre+param+args+rst)]
                          [arg-proj-var (in-vector arg-proj-vars)]
                          #:when (and (arg/res? arg/res)
                                      (not (arg/res-vars arg/res))))
                 arg-proj-var)
 
            ;; then the dependent arg projections
-           #,@(for/list ([arg/res (in-list pre+args+rst)]
+           #,@(for/list ([arg/res (in-list pre+param+args+rst)]
                          [arg-proj-var (in-vector arg-proj-vars)]
                          #:when (and (arg/res? arg/res)
                                      (arg/res-vars arg/res)))
                 arg-proj-var)
 
            ;; then the non-dependent indy arg projections
-           #,@(for/list ([arg/res (in-list pre+args+rst)]
+           #,@(for/list ([arg/res (in-list pre+param+args+rst)]
                          [arg-proj-var (in-vector indy-arg-proj-vars)]
                          #:when (and (arg/res? arg/res)
                                      (not (arg/res-vars arg/res))
@@ -1111,12 +1228,12 @@ evaluted left-to-right.)
                 indy-res-proj-var)))
 
   (values wrapper-proc-arglist
-          blame-ids pre+args+rst
+          blame-ids pre+param+args+rst
           ordered-args arg-indices
           ordered-ress res-indices
           arg-proj-vars indy-arg-proj-vars
           res-proj-vars indy-res-proj-vars
-          pre-indicies post-indicies))
+          pre-indicies param-indicies post-indicies))
 
 (define-for-syntax (build-call-to-original-function args rst vars this-param)
   (define argument-list
@@ -1178,6 +1295,11 @@ evaluted left-to-right.)
     ;; pre-condition
     (for ([pre (in-list (istx-pre an-istx))])
       (for ([var (in-list (pre/post-vars pre))])
+        (free-identifier-mapping-put! vars var #t)))
+
+    ;; params
+    (for ([param (in-list (istx-params an-istx))])
+      (for ([var (in-list (param-vars param))])
         (free-identifier-mapping-put! vars var #t)))
 
     ;; results
@@ -1354,6 +1476,15 @@ evaluted left-to-right.)
                           #,@(for/list ([post (in-list (istx-post an-istx))])
                                (func post args+rst+results))))
 
+              #,(let ([func (λ (param vars-to-look-in)
+                              (define orig-vars
+                                (find-orig-vars (param-vars param) vars-to-look-in))
+                              #`(λ #,orig-vars
+                                  (values #,(param-pexp param)
+                                          #,(param-vexp param))))])
+                  #`(list #,@(for/list ([param (in-list (istx-params an-istx))])
+                               (func param args+rst))))
+
               #,(length (filter values (map (λ (arg) (and (not (arg-kwd arg))
                                                           (not (arg-optional? arg))))
                                             (istx-args an-istx))))
@@ -1394,6 +1525,10 @@ evaluted left-to-right.)
                      (list (map syntax-e (pre/post-vars pre))
                            (pre/post-kind pre)
                            (pre/post-quoted-dep-src-code pre)))
+                 #,(for/list ([param (in-list (istx-params an-istx))])
+                     (list (map syntax-e (param-vars param))
+                           (param-quoted-pexp param)
+                           (param-quoted-vexp param)))
                  #,(and (istx-ress an-istx)
                         (for/list ([a-res (in-list (istx-ress an-istx))])
                           `(,(if (arg/res-vars a-res) 'dep 'nodep)

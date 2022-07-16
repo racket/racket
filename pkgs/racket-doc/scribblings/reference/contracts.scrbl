@@ -1375,6 +1375,7 @@ symbols, and that return a symbol.
       (mandatory-dependent-dom ...)
       dependent-rest
       pre-condition
+      param-value
       dependent-range
       post-condition)
  (->i maybe-chaperone
@@ -1382,6 +1383,7 @@ symbols, and that return a symbol.
       (optional-dependent-dom ...)
       dependent-rest
       pre-condition
+      param-value
       dependent-range
       post-condition)]
 ([maybe-chaperone #:chaperone (code:line)]
@@ -1397,6 +1399,9 @@ symbols, and that return a symbol.
                            expr pre-condition)
                 (code:line #:pre/name (id ...)
                            string boolean-expr pre-condition)]
+ [param-value (code:line)
+              (code:line #:param (id ...)
+                         param-expr val-expr param-value)]
  [dependent-range any
                   id+ctc
                   un+ctc
@@ -1434,6 +1439,13 @@ which it depends. If the @racket[#:pre/name] keyword is used, the string
 supplied is used as part of the error message; similarly with @racket[#:post/name].
 If @racket[#:pre/desc] or @racket[#:post/desc] is used, the the result of
 the expression is treated the same way as @racket[->*].
+
+Following the pre-condition is the optional @racket[param-value] non-terminal
+that specifies parameters to be assigned to during the dynamic extent of the
+function. Each assignment is introduced with the @racket[#:param] keyword followed
+by the list of names on which it depends, a @racket[param-expr] that determines
+the parameter to set, and a @racket[value-expr] that will be associated with
+the parameter.
 
 The @racket[dependent-range] non-terminal specifies the possible result
 contracts. If it is @racket[any], then any value is allowed. Otherwise, the
@@ -1526,6 +1538,8 @@ is supplied:
 In contrast, @racket[_x]'s expression is always evaluated (indeed,
 it is evaluated when the @racket[->i] expression is evaluated because
 it does not have any dependencies).
+
+@history[#:changed "8.7.0.1" @list{Added @racket[#:param].}]
 }
 
 @defform*/subs[#:literals (any values)
