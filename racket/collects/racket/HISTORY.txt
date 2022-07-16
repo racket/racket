@@ -1,3 +1,6 @@
+Version 8.8
+Add `#:param` option to `->i`
+
 Version 8.7
 Use Unicode 14.0 for character and string operations
 Add grapheme operations, such as `string-grapheme-count`
