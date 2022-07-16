@@ -1027,19 +1027,18 @@
                       #f
                       v v v2 v2))))
 
-(test-comp #:except 'chez-scheme ; unsafe car does not assume immutable
-           '(lambda (w z)
+(test-comp '(lambda (w z)
               (if (list w z (random 7))
                   (let ([l (list (random))])
                     (if l
-                        (list (car l) (cdr l))
+                        (if z (car l) (cdr l))
                         'oops))
                   "bad"))
            '(lambda (w z)
               (begin
                 (list w z (random 7))
                 (let ([l (list (random))])
-                  (list (unsafe-car l) (unsafe-cdr l))))))
+                  (if z (unsafe-car l) (unsafe-cdr l))))))
 
 (test-comp '(lambda (w z)
               (let ([l (if w
@@ -1070,36 +1069,31 @@
                     (unsafe-cdr w)))
            #f)
 
-(test-comp #:except 'chez-scheme
-           '(lambda (w z)
+(test-comp '(lambda (w z)
               (list (if (pair? w) (car z) (car w))
                     (cdr w)))
            '(lambda (w z)
               (list (if (pair? w) (car z) (car w))
                     (unsafe-cdr w))))
 
-(test-comp #:except 'chez-scheme
-           '(lambda (w z)
+(test-comp '(lambda (w z)
               (list (if z (car w) (cdr w))
                     (cdr w)))
            '(lambda (w z)
               (list (if z (car w) (cdr w))
                     (unsafe-cdr w))))
 
-(test-comp #:except 'chez-scheme
-           '(lambda (w z x)
+(test-comp '(lambda (w z x)
               (list (car x) (if z (car w) (cdr w)) (car x)))
            '(lambda (w z x)
               (list (car x) (if z (car w) (cdr w)) (unsafe-car x))))
 
-(test-comp #:except 'chez-scheme
-           '(lambda (w z x)
+(test-comp '(lambda (w z x)
               (list (car x) (if z (car w) 2) (car x)))
            '(lambda (w z x)
               (list (car x) (if z (car w) 2) (unsafe-car x))))
 
-(test-comp #:except 'chez-scheme
-           '(lambda (w z x)
+(test-comp '(lambda (w z x)
               (list (car x) (if z 1 (cdr w)) (car x)))
            '(lambda (w z x)
               (list (car x) (if z 1 (cdr w)) (unsafe-car x))))
