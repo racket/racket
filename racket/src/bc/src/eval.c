@@ -3533,8 +3533,11 @@ Scheme_Object *scheme_eval(Scheme_Object *obj, Scheme_Env *env)
   Scheme_Object *eval_proc, *a[2];
   eval_proc = scheme_get_startup_export("eval-top-level");
   a[0] = obj;
-  a[1] = env->namespace;
-  return scheme_apply(eval_proc, 2, a);
+  if (env) {
+    a[1] = env->namespace;
+    return scheme_apply(eval_proc, 2, a);
+  } else
+    return scheme_apply(eval_proc, 1, a);
 }
 
 Scheme_Object *scheme_eval_multi(Scheme_Object *obj, Scheme_Env *env)
@@ -3542,8 +3545,11 @@ Scheme_Object *scheme_eval_multi(Scheme_Object *obj, Scheme_Env *env)
   Scheme_Object *eval_proc, *a[2];
   eval_proc = scheme_get_startup_export("eval-top-level");
   a[0] = obj;
-  a[1] = env->namespace;
-  return scheme_apply_multi(eval_proc, 2, a);
+  if (env) {
+    a[1] = env->namespace;
+    return scheme_apply_multi(eval_proc, 2, a);
+  } else
+    return scheme_apply_multi(eval_proc, 1, a);
 }
 
 static Scheme_Object *finish_eval_with_prompt(void *_data, int argc, Scheme_Object **argv)
@@ -3555,13 +3561,19 @@ static Scheme_Object *finish_eval_with_prompt(void *_data, int argc, Scheme_Obje
 Scheme_Object *scheme_eval_with_prompt(Scheme_Object *obj, Scheme_Env *env)
 {
   return scheme_call_with_prompt(finish_eval_with_prompt, 
-                                 scheme_make_pair(obj, (Scheme_Object *)env));
+                                 scheme_make_pair(obj,
+                                                  (env
+                                                   ? (Scheme_Object *)env
+                                                   : scheme_false)));
 }
 
 static Scheme_Object *finish_eval_multi_with_prompt(void *_data, int argc, Scheme_Object **argv)
 {
   Scheme_Object *data = (Scheme_Object *)_data;
-  return scheme_eval_multi(SCHEME_CAR(data), (Scheme_Env *)SCHEME_CDR(data));
+  return scheme_eval_multi(SCHEME_CAR(data),
+                           (SCHEME_TRUEP(SCHEME_CDR(data))
+                            ? (Scheme_Env *)SCHEME_CDR(data)
+                            : NULL));
 }
 
 Scheme_Object *scheme_eval_multi_with_prompt(Scheme_Object *obj, Scheme_Env *env)
@@ -3651,7 +3663,8 @@ static Scheme_Object *namespace_introduce(Scheme_Object *stx)
 
 static Scheme_Object *do_eval_string_all(Scheme_Object *port, const char *str, Scheme_Env *env, 
                                          int cont, int w_prompt)
-/* cont == -2 => module (no result)
+/* env can be NULL to use the current environment
+   cont == -2 => module (no result)
    cont == -1 => single result
    cont == 1 -> multiple result ok
    cont == 2 -> #%top-interaction, multiple result ok, use current_print to show results */

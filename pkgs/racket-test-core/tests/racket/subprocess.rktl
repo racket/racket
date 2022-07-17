@@ -757,6 +757,24 @@
   (subprocess-wait sp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `--eval` and similar can set the namespace
+
+(let ()
+    (define-values (sp o i e) (subprocess #f #f #f self
+                                          "-e" (format "~s"
+                                                       '(let ([ns (make-base-namespace)])
+                                                          (eval '(define here "yes") ns)
+                                                          (current-namespace ns)))
+                                          "-e" "(displayln here)"))
+    (close-output-port i)
+    (test "yes" read-line o)
+    (read-bytes 1024 o)
+    (read-bytes 1024 e)
+    (sync sp)
+    (close-input-port e)
+    (close-input-port o))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (for ([f (list tmpfile tmpfile2)] #:when (file-exists? f)) (delete-file f))
 

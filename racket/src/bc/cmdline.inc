@@ -307,10 +307,10 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
         
         if (!scheme_setjmp(newbuf)) {
           if (fa->eval_kind[i] == mzcmd_EVAL) {
-            scheme_eval_string_all_with_prompt(fa->evals_and_loads[i], fa->global_env, 2);
+            scheme_eval_string_all_with_prompt(fa->evals_and_loads[i], NULL, 2);
           } else if (fa->eval_kind[i] == mzcmd_LOAD) {
             /* eval from stdin */
-            scheme_eval_all_with_prompt(NULL, fa->global_env, 2);
+            scheme_eval_all_with_prompt(NULL, NULL, 2);
           } else if (fa->eval_kind[i] == mzcmd_EMBEDDED_REG) {
             scheme_register_embedded_load(-1, fa->evals_and_loads[i]);
             scheme_embedded_load(-1, fa->evals_and_loads[i], 1);
@@ -380,7 +380,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
           a[0] = e;
           b = scheme_apply(idb, 1, a);
           if (b == scheme_make_false()) {
-            if (!scheme_lookup_global(scheme_intern_symbol("main"), fa->global_env)) {
+            if (!scheme_lookup_global(scheme_intern_symbol("main"), NULL)) {
               scheme_signal_error("main: not defined or required into the top-level environment");
             }
           }
@@ -388,7 +388,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
           e = scheme_make_pair(e, scheme_vector_to_list(fa->main_args));
           e = scheme_datum_to_kernel_stx(e);
           
-	  e = scheme_eval_multi_with_prompt(e, fa->global_env);
+	  e = scheme_eval_multi_with_prompt(e, NULL);
 
           if (SAME_OBJ(e, SCHEME_MULTIPLE_VALUES)) {
             Scheme_Object **mv;
