@@ -37,15 +37,16 @@ evaluates each spliced form before continuing to expand, compile, and
 evaluate later forms.}
 
 
-@defproc[(eval [top-level-form any/c]
-               [namespace namespace? (current-namespace)])
-         any]{
+@defproc*[([(eval [top-level-form any/c]) any]
+           [(eval [top-level-form any/c] [namespace namespace?]) any])]{
 
 @guidealso["namespaces"]
 
 Calls the current @tech{evaluation handler} to evaluate
-@racket[top-level-form]. The @tech{evaluation handler} is called in
-tail position with respect to the @racket[eval] call, and
+@racket[top-level-form]. The evaluation handler is called in
+tail position with respect to the @racket[eval] call. An evaluation
+handler uses the @tech{current namespace}; in the two-argument case of
+@racket[eval], the call to the evaluation handler is
 @racket[parameterize]d to set @racket[current-namespace] to
 @racket[namespace].
 
@@ -74,10 +75,8 @@ For interactive evaluation in the style of
 with @racketidfont{#%top-interaction}, which is normally bound to
 @racket[#%top-interaction], before passing it to @racket[eval].}
 
-
-@defproc[(eval-syntax [stx syntax?]
-                      [namespace namespace? (current-namespace)])
-         any]{
+@defproc*[([(eval-syntax [stx syntax?]) any]
+           [(eval-syntax [stx syntax?] [namespace namespace?]) any])]{
 
 Like @racket[eval], except that @racket[stx] must be a syntax object,
 and its lexical context is not enriched before it is passed to the
