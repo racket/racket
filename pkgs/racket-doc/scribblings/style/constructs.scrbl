@@ -67,9 +67,8 @@ Racket comes with quite a few definitional constructs, including
 for the last one, definitional constructs increase the indentation level.
 Therefore, favor @scheme[define] when feasible.
 
-@compare[
-@racketmod0[#:file
-@tt{good}
+@compare0[
+@racketmod0[
 racket
 
 (define (swap x y)
@@ -78,8 +77,7 @@ racket
   (set-box! y t))
 ]
 @; -----------------------------------------------------------------------------
-@racketmod0[#:file
-@tt{bad}
+@racketmod0[
 racket
 
 (define (swap x y)
@@ -92,31 +90,29 @@ racket
 @bold{Warning} A @racket[let*] binding block is not easily replaced with a
 series of @racket[define]s because the former has @emph{sequential} scope
 and the latter has @emph{mutually recursive} scope.
-@compare[
-@racketmod0[#:file
-@tt{works}
+@compare0[#:left "works" #:right (list "does " @bold{not})
+@racketmod0[
 racket
+
 (define (print-two f)
   (let* ([_ (print (first f))]
-	 [f (rest f)]
-	 [_ (print (first f))]
-	 [f (rest f)])
+         [f (rest f)]
+         [_ (print (first f))]
+         [f (rest f)])
     (code:comment2 "IN")
     f))
 ]
 @; -----------------------------------------------------------------------------
-@racketmod0[#:file
-
-@tt{does @bold{not}}
+@racketmod0[
 racket
 
 (define (print-two f)
-   (print (first f))
-   (define f (rest f))
-   (print (first f))
-   (define f (rest f))
-   (code:comment2 "IN")
-   f)
+  (print (first f))
+  (define f (rest f))
+  (print (first f))
+  (define f (rest f))
+  (code:comment2 "IN")
+  f)
 ]
 ]
 
@@ -128,9 +124,8 @@ too. Because @scheme[cond] and its relatives (@scheme[case],
 @scheme[match], etc) now allow local uses of @scheme[define], you should
 prefer them over @scheme[if].
 
-@compare[
-@racketmod0[#:file
-@tt{good}
+@compare0[
+@racketmod0[
 racket
 
 (cond
@@ -142,14 +137,13 @@ racket
        (rate f)
        (curved (g r)))])
 ]
-@racketmod0[#:file
-@tt{bad}
+@racketmod0[
 racket
 
 (if (empty? l)
     #false
     (let ([f (first l)]
-	  [r (rest l)])
+          [r (rest l)])
       (if (discounted? f)
           (rate f)
           (curved (g r)))))
@@ -173,28 +167,25 @@ You should also favor @scheme[cond] (and its relatives) over @scheme[if] to
 Don't nest expressions too deeply. Instead name intermediate results. With
 well-chosen names your expression becomes easy to read.
 
-@compare[
-@racketmod0[#:file
-@tt{good}
+@compare0[
+@racketmod0[
 racket
-(define (next-month date)
-  (define day (first date))
-  (define month (second date))
+(define (next-month d)
+  (define day (first d))
+  (define month (second d))
   (if (= month 12)
       `(,(+ day 1) 1)
       `(,day ,(+ month 1))))
 ]
 @; -----------------------------------------------------------------------------
-@racketmod0[#:file
-@tt{bad}
+@racketmod0[
 racket
 (define (next-month d)
-  (if (= (cadr d) 12)
-      `(,(+ (car d) 1)
-	1
-	,(caddr d))
-      `(,(car d)
-	,(+ (cadr d) 1))))
+  (if (= (second d) 12)
+      `(,(+ (first d) 1)
+        1)
+      `(,(first d)
+        ,(+ (second d) 1))))
 ]
 ]
  Clearly ``too deeply'' is subjective. On occasion it also isn't the
@@ -218,9 +209,8 @@ While nobody denies that @racket[lambda] is cute, @racket[define]d
 functions have names that tell you what they compute and that help
 accelerate reading.
 
-@compare[
-@racketmod0[#:file
-@tt{good}
+@compare0[
+@racketmod0[
 racket
 
 (define (process f)
@@ -230,29 +220,26 @@ racket
        (to-list f)))
 ]
 @; -----------------------------------------------------------------------------
-@racketmod0[#:file
-@tt{bad}
+@racketmod0[
 racket
 
 (define (process f)
   (map (lambda (x)
-	 ... 10 lines ...)
+         ... 10 lines ...)
        (to-list f)))
 ]
 ]
 
 Even a curried function does not need @racket[lambda].
-@compare[
-@racketmod0[#:file
-@tt{good}
+@compare0[#:right "acceptable"
+@racketmod0[
 racket
 
 (define ((cut fx-image) image2)
   ...)
 ]
 @; -----------------------------------------------------------------------------
-@racketmod0[#:file
-@tt{acceptable}
+@racketmod0[
 racket
 
 (define (cut fx-image)
@@ -263,8 +250,8 @@ racket
  The left side signals currying in the very first line of the function,
  while the reader must read two lines for the version on the right side.
 
-Of course, many constructs (call-with ..) or higher-order functions
-(filter) are made for short @racket[lambda]; don't hesitate to use
+Of course, many constructs (e.g. @racket[call-with-values]) or higher-order functions
+(e.g. @racket[filter]) are made for short @racket[lambda]; don't hesitate to use
 @racket[lambda] for such cases.
 
 
@@ -290,17 +277,14 @@ With the availability of @racket[for/fold], @racket[for/list],
  decouple the traversal from lists.
 
 @margin-note*{See also @racket[for/sum] and @racket[for/product] in Racket.}
-@compare[
+@compare0[
 @;%
-@(begin
-#reader scribble/comment-reader
-[racketmod0 #:file
-@tt{good}
+(racketmod0
 racket
 
 (code:comment2 #, @elem{[Sequence X] -> Number})
 (define (sum-up s)
-  (for/fold ((sum 0)) ((x s))
+  (for/fold ([sum 0]) ([x s])
     (+ sum x)))
 
 (code:comment2 #, @elem{examples:})
@@ -308,26 +292,21 @@ racket
 (sum-up #(1 2 3))
 (sum-up
   (open-input-string
-    "1 2 3"))
-])
+    "1 2 3")))
 @; -----------------------------------------------------------------------------
 @;%
-@(begin
-#reader scribble/comment-reader
-[racketmod0 #:file
-@tt{bad}
+(racketmod0
 racket
 
 (code:comment2 #, @elem{[Listof X] -> Number})
 (define (sum-up alist)
   (foldr (lambda (x sum)
-            (+ sum x))
+           (+ sum x))
           0
           alist))
 
 (code:comment2 #, @elem{example:})
-(sum-up '(1 2 3))
-])
+(sum-up '(1 2 3)))
 ]
  In this example, the @racket[for] loop on the left comes with two
  advantages. First, a reader doesn't need to absorb an intermediate
@@ -346,9 +325,8 @@ racket
 Define functions when possible, Or, do not introduce macros when functions
 will do.
 
-@compare[
-@racketmod0[#:file
-@tt{good}
+@compare0[
+@racketmod0[
 racket
 ...
 (code:comment2 #, @elem{Message -> String})
@@ -356,17 +334,12 @@ racket
   (first (second msg)))
 ]
 @; -----------------------------------------------------------------------------
-@(begin
-#reader scribble/comment-reader
-[racketmod0 #:file
-@tt{bad}
+(racketmod0
 racket
 ...
 (code:comment2 #, @elem{Message -> String})
 (define-syntax-rule (name msg)
-  (first (second msg)))
-]
-)
+  (first (second msg))))
 ]
  A function is immediately useful in a higher-order context. For a macro,
  achieving the same goal takes a lot more work.
@@ -378,47 +351,45 @@ racket
 When you handle exceptions, specify the exception as precisely as
 possible.
 
-@compare[
-@racketmod0[#:file
-@tt{good}
+@compare0[
+@racketmod0[
 racket
 ...
 (code:comment2 #, @t{FN [X -> Y] FN -> Void})
 (define (convert in f out)
   (with-handlers
-      ((exn:fail:read? X))
+      ([exn:fail:read? X])
     (with-output-to out
       (writer f))))
 
-(code:comment2 #, @t{may raise exn:fail:read})
+(code:comment2 #, @t{may raise @racket[exn:fail:read]})
 (define ((writer f))
- (with-input-from in
-   (reader f)))
+  (with-input-from in
+    (reader f)))
 
-(code:comment2 #, @t{may raise exn:fail:read})
+(code:comment2 #, @t{may raise @racket[exn:fail:read]})
 (define ((reader f))
- ... f ...)
+  ... f ...)
 ]
 @; -----------------------------------------------------------------------------
-@racketmod0[#:file
-@tt{bad}
+@racketmod0[
 racket
 ...
 (code:comment2 #, @t{FN [X -> Y] FN -> Void})
 (define (convert in f out)
   (with-handlers
-      (((code:hilite (lambda _ #t)) X))
+      ([(code:hilite (lambda _ #t)) X])
     (with-output-to out
       (writer f))))
 
-(code:comment2 #, @t{may raise exn:fail:read})
+(code:comment2 #, @t{may raise @racket[exn:fail:read]})
 (define ((writer f))
- (with-input-from in
-   (reader f)))
+  (with-input-from in
+    (reader f)))
 
-(code:comment2 #, @t{may raise exn:fail:read})
+(code:comment2 #, @t{may raise @racket[exn:fail:read]})
 (define ((reader f))
- ... f ...)
+  ... f ...)
 ]
 ]
  Using @racket[(lambda _ #t)] as an exception predicate suggests to the
@@ -430,44 +401,42 @@ It is equally bad to use @racket[exn?] as the exception predicate  even if
  you mean to catch all kinds of failures. Doing so catches break
  exceptions, too. To catch all failures, use @racket[exn:fail?] as shown on
  the left:
-@compare[
-@racketmod0[#:file
-@tt{good}
+@compare0[
+@racketmod0[
 racket
 ...
 (code:comment2 #, @t{FN [X -> Y] FN -> Void})
 (define (convert in f out)
   (with-handlers
-      ((exn:fail? X))
+      ([exn:fail? X])
     (with-output-to out
       (writer f))))
 
-(code:comment2 #, @t{may raise exn:fail:read})
+(code:comment2 #, @t{may raise @racket[exn:fail:read]})
 (define ((writer f))
- (with-input-from in
-   (reader f)))
+  (with-input-from in
+    (reader f)))
 
-(code:comment2 #, @t{may raise exn:fail:read})
+(code:comment2 #, @t{may raise @racket[exn:fail:read]})
 (define ((reader f))
  ... f ...)
 ]
-@racketmod0[#:file
-@tt{bad}
+@racketmod0[
 racket
 ...
 (code:comment2 #, @t{FN [X -> Y] FN -> Void})
 (define (convert in f out)
   (with-handlers
-      (((code:hilite exn?) X))
+      ([(code:hilite exn?) X])
     (with-output-to out
       (writer f))))
 
-(code:comment2 #, @t{may raise exn:fail:read})
+(code:comment2 #, @t{may raise @racket[exn:fail:read]})
 (define ((writer f))
- (with-input-from in
-   (reader f)))
+  (with-input-from in
+    (reader f)))
 
-(code:comment2 #, @t{may raise exn:fail:read})
+(code:comment2 #, @t{may raise @racket[exn:fail:read]})
 (define ((reader f))
  ... f ...)
 ]
@@ -476,14 +445,13 @@ racket
 Finally, a handler for a @racket[exn:fail?] clause should never
  succeed for all possible failures because it silences all kinds of
  exceptions that you probably want to see:
-@codebox[
-@racketmod0[#:file
-@tt{bad}
+@codebox0[#:label "bad"
+@racketmod0[
 racket
 ...
 (code:comment2 #, @t{FN [X -> Y] FN -> Void})
 (define (convert in f out)
-  (with-handlers ((exn:fail? handler))
+  (with-handlers ([exn:fail? handler])
     (with-output-to out
       (writer f))))
 
@@ -494,14 +462,14 @@ racket
      (displayln "drracket is special")]
     [else (void)]))
 
-(code:comment2 #, @t{may raise exn:fail:read})
+(code:comment2 #, @t{may raise @racket[exn:fail:read]})
 (define ((writer f))
- (with-input-from in
-   (reader f)))
+  (with-input-from in
+    (reader f)))
 
-(code:comment2 #, @t{may raise exn:fail:read})
+(code:comment2 #, @t{may raise @racket[exn:fail:read]})
 (define ((reader f))
- ... f ...)
+  ... f ...)
 ]
 ]
  If you wish to deal with several different kind of failures, say
@@ -514,9 +482,8 @@ racket
 
 If you need to set a parameter, use @racket[parameterize]:
 
-@compare[
-@racketmod0[#:file
-@tt{good}
+@compare0[
+@racketmod0[
 racket
 ...
 (define cop
@@ -524,13 +491,12 @@ racket
 
 (code:comment2 #, @t{String OPort -> Void})
 (define (send msg op)
-  (parameterize ((cop op))
+  (parameterize ([cop op])
     (display msg))
   (record msg))
 ]
 @; -----------------------------------------------------------------------------
-@racketmod0[#:file
-@tt{bad}
+@racketmod0[
 racket
 ...
 (define cop
