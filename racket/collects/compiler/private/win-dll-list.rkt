@@ -12,9 +12,12 @@
 	  (format template filename-version-part)
 	  (format template "xxxxxxx"))))
   (append
-   (list
-    "libiconv-2.dll"
-    "longdouble.dll")
+   (filter
+    (lambda (p)
+      (file-exists? (search-dll p)))
+    (list
+     "libiconv-2.dll"
+     "longdouble.dll"))
    (if extras-only?
        '()
        (cond

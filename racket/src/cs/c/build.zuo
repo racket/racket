@@ -121,11 +121,18 @@
   (define rktio_config.h (list-ref librktio.a+rktio_config.h 1))
 
   (define main-deps
-    (list (at-source "main.c")
-          (at-source "boot.h")
-          (at-dir "cs_config.h")
-          (at-source "../../start/config.inc")
-          (at-source "../../start/self_exe.inc")))
+    (append
+     (list (at-source "main.c")
+           (at-source "boot.h")
+           (at-dir "cs_config.h")
+           (at-source "../../start/config.inc")
+           (at-source "../../start/self_exe.inc"))
+     (if windows?
+         (list
+          (at-source "../../start/embedded_dll.inc")
+          (at-source "../../start/cmdl_to_argv.inc")
+          (at-source "../../start/delayed.inc"))
+         '())))
 
   (define main.o (at-dir (.c->.o "main.c")))
   (define grmain.o (at-dir (.c->.o "grmain.c")))

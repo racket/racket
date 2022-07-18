@@ -65,7 +65,8 @@
         (add-plt-segment dest-file data #:name #"__RKTBOOT")
         ;; Find segment at run time:
         0]
-       [("ta6nt" "ti3nt" "win32\\x86_64" "win32\\i386")
+       [("ta6nt" "ti3nt" "tarm64nt"
+         "win32\\x86_64" "win32\\i386" "win32\\arm64")
         (copy-file use-src-file dest-file #t)
         (define-values (pe rsrcs) (call-with-input-file*
                                    dest-file
