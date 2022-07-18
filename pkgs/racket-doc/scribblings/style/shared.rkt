@@ -10,6 +10,8 @@
   1/2-line
   LINEWIDTH
   eli
+  codebox
+  compare
   codebox0
   compare0
   column-table
@@ -47,6 +49,14 @@
     [(nested-flow _ content) (nested-flow stretching-style content)]
     [_ d]))
 
+;; compare: two code snippets, in two columns: left is good, right is bad
+;; The styling is slightly broken.
+;; Consider using compare0 instead;
+;; compare is provided only for backward compatibility
+(define (compare stuff1 stuff2)
+  (define stuff (list (list stuff1) (list stuff2)))
+  (table (sty 2 500) (apply map (compose make-flow list) stuff)))
+
 ;; compare0: two code snippets, in two columns: left is good, right is bad
 (define (compare0 #:left [left "good"] #:right [right "bad"]
                   stuff1 stuff2)
@@ -54,7 +64,14 @@
                       (list (stretch (filebox (tt right) stuff2)))))
   (table (sty 2 500) (apply map (compose make-flow list) stuff)))
 
-;; good: a code snippet in a box
+;; codebox: a code snippet in a box. The styling is slightly broken.
+;; Consider using codebox0 instead;
+;; codebox is provided only for backward compatibility
+(define (codebox stuff1)
+  (define stuff (list (list stuff1)))
+  (table (sty 1 700) (apply map (compose make-flow list) stuff)))
+
+;; codebox0: a code snippet in a box.
 (define (codebox0 stuff1 #:label [label "good"])
   (define stuff (list (list (stretch (filebox (tt label) stuff1)))))
   (table (sty 1 700) (apply map (compose make-flow list) stuff)))
