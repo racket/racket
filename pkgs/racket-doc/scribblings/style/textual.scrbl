@@ -22,29 +22,26 @@ the top so that readers do not accidentally re-indent the file.}
 Racket isn't C. Put all closing parentheses on one line, the last line of
 your code.
 
-@compare[
- @racketmod[#:file
- @tt{good}
+@compare0[#:right "really bad"
+ @racketmod0[
  racket
 @;%
  (define (conversion f)
    (* 5/9 (- f 32)))
 ]
- @filebox[@tt{really bad} ;; gotta use codeblock0 to keep the newlines
  @codeblock0{#lang racket
  (define (conversion f)
    (* 5/9 (- f 32)
      )
    )
- }]
+ }
 ]
 
 You are allowed to place all closing parenthesis on a line by itself at the
 end of long sequences, be those definitions or pieces of data.
 
-@compare[
- @racketmod[#:file
- @tt{acceptable}
+@compare0[#:left "acceptable" #:right "also acceptable"
+ @racketmod0[
  racket
  (define modes
    '(edit
@@ -55,7 +52,6 @@ end of long sequences, be those definitions or pieces of data.
      step
      ))
  ]
- @filebox[@tt{also acceptable} ;; use codeblock0 to keep the newlines
  @codeblock0{#lang racket
  (define turn%
    (class object%
@@ -69,7 +65,7 @@ end of long sequences, be those definitions or pieces of data.
      (define/public (is-placable? place)
        (send state legal? place))
      ))
- }]
+ }
 ]
  Doing so is most useful when you expect to add, delete, or swap items in
  such sequences.
@@ -88,25 +84,23 @@ that it follows DrRacket's indentation style.
 
 Examples:
 
-@compare[
-         @racketmod[#:file
-                    @tt{good}
-                    racket
+@compare0[
+ @racketmod0[
+ racket
 
-		    (code:comment2 #, @t{drracket style})
-                    (if (positive? (rocket-x r))
-                        (launch r)
-                        (redirect (- x)))
-                                         ]
+ (code:comment2 #, @t{drracket style})
+ (if (positive? (rocket-x r))
+     (launch r)
+     (redirect (- x)))
+ ]
 
-          @racketmod[#:file
-                     @tt{bad}
-                     racket
+ @racketmod0[
+ racket
 
-		     (code:comment2 #, @t{.el emacs-file if})
-                     (if (positive? (rocket-x r))
-                         (launch r)
-                       (redirect (- x)))
+ (code:comment2 #, @t{.el emacs-file if})
+ (if (positive? (rocket-x r))
+     (launch r)
+   (redirect (- x)))
  ]
 ]
 
@@ -162,9 +156,8 @@ Next to indentation, proper line breaks are critical.
 
 For an @scheme[if] expression, put each alternative on a separate line.
 
-@compare[
-@racketmod[#:file
-@tt{good}
+@compare0[
+@racketmod0[
 racket
 
 (if (positive? x)
@@ -172,8 +165,7 @@ racket
     (redirect (- x)))
 ]
 
-@racketmod[#:file
-@tt{bad}
+@racketmod0[
 racket
 
 (if (positive? x) (launch r)
@@ -183,9 +175,8 @@ racket
 
 It is acceptable to have an entire @racket[if] expressions on one line if
 it fits within the specified line width (@LINEWIDTH[]):
-@codebox[
-@racketmod[#:file
-@tt{also good}
+@codebox0[#:label "also good"
+@racketmod0[
 racket
 
 (if (positive? x) x (- x))
@@ -194,9 +185,8 @@ racket
 
 Each definition and each local definition deserves at least one line.
 
-@compare[
-@racketmod[#:file
-@tt{good}
+@compare0[
+@racketmod0[
 racket
 
 (define (launch x)
@@ -205,8 +195,7 @@ racket
   ...)
 ]
 
-@racketmod[#:file
-@tt{bad}
+@racketmod0[
 racket
 
 (define (launch x)
@@ -219,9 +208,8 @@ All of the arguments to a function belong on a single line unless the line
 becomes too long, in which case you want to put each argument expression on
 its own line
 
-@compare[
-@racketmod[#:file
-@tt{good}
+@compare0[
+@racketmod0[
 racket
 
 (place-image img 10 10 background)
@@ -234,8 +222,7 @@ racket
        bg)
 ]
 
-@racketmod[#:file
-@tt{bad}
+@racketmod0[
 racket
 
 (above ufo
@@ -244,9 +231,8 @@ racket
 ]]
 
 Here is an exception:
-@codebox[
-@racketmod[#:file
-@tt{good}
+@codebox0[
+@racketmod0[
 racket
 
 (overlay/offset (rectangle 100 10 "solid" "blue")
@@ -263,35 +249,27 @@ racket
 Use meaningful names. The Lisp convention is to use full English words
 separated by dashes. Racket code benefits from the same convention.
 
-@compare[
+@compare0[
 @;%
-@(begin
-#reader scribble/comment-reader
-[racketmod #:file
-@tt{good}
+(racketmod0
 racket
 
 render-game-state
 
 send-message-to-client
 
-traverse-forest
-])
+traverse-forest)
 
 @; -----------------------------------------------------------------------------
 @;%
-@(begin
-#reader scribble/comment-reader
-[racketmod #:file
-@tt{bad}
+(racketmod0
 racket
 
 rndr-st
 
 sendMessageToClient
 
-traverse_forest
-])
+traverse_forest)
 ]
 @;
  Note that _ (the underline character) is also classified as bad
@@ -301,21 +279,14 @@ traverse_forest
 Another widely used convention is to @emph{prefix} a function name with the data
  type of the main argument. This convention generalizes the selector-style
  naming scheme of @racket[struct].
-@codebox[
-@(begin
-#reader scribble/comment-reader
-[racketmod #:file
-@tt{good}
+@codebox0[
+(racketmod0
 racket
 
-board-free-spaces      board-closed-spaces    board-serialize
-])]
+board-free-spaces      board-closed-spaces    board-serialize)]
  In contrast, variables use a @emph{suffix} that indicates their type:
-@codebox[
-@(begin
-#reader scribble/comment-reader
-[racketmod #:file
-@tt{good}
+@codebox0[
+(racketmod0
 racket
 
 (define (win-or-lose? game-state)
@@ -323,8 +294,7 @@ racket
   (define health-level-nat (game-state-health game-state))
   (define name-string      (game-state-name game-state))
   (define name-symbol      (string->symbol name-string))
-  ...)
-])]
+  ...))]
  The convention is particularly helpful when the same piece of data shows
  up in different guises, say, symbols and strings.
 
@@ -376,20 +346,18 @@ else helps, consider using (potentially) empty comment lines.
 In addition, every pair of expressions on a line should have at least one
 space between the two, even if they’re separated by parentheses.
 
-@compare[
- @racketmod[#:file
- @tt{good}
+@compare0[
+ @racketmod0[
  racket
 
  (define (f x g)
-   [(< x 3) (g (g 3))])
+   (cond [(< x 3) (g (g 3))]))
 ]
- @racketmod[#:file
- @tt{bad}
+ @racketmod0[
  racket
 
  (define(f x g)
-   [(< x 3)(g(g 3))])
+   (cond[(< x 3)(g(g 3))]))
  ]
 ]
 
