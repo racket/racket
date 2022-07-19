@@ -262,7 +262,7 @@ GetRealSectionSize(PMEMORYMODULE module, PIMAGE_SECTION_HEADER section) {
 }
 
 static BOOL
-FinalizeSection(PMEMORYMODULE module, PSECTIONFINALIZEDATA sectionData) {
+FinalizeSection(PMEMORYMODULE module, PSECTIONFINALIZEDATA sectionData, BOOL pre_entry) {
     DWORD protect, oldProtect;
     BOOL executable;
     BOOL readable;
@@ -273,6 +273,7 @@ FinalizeSection(PMEMORYMODULE module, PSECTIONFINALIZEDATA sectionData) {
     }
 
     if (sectionData->characteristics & IMAGE_SCN_MEM_DISCARDABLE) {
+        if (pre_entry) return TRUE;
         // section is not needed any more and can safely be freed
         if (sectionData->address == sectionData->alignedAddress &&
             (sectionData->last ||
@@ -289,6 +290,7 @@ FinalizeSection(PMEMORYMODULE module, PSECTIONFINALIZEDATA sectionData) {
     executable = (sectionData->characteristics & IMAGE_SCN_MEM_EXECUTE) != 0;
     readable =   (sectionData->characteristics & IMAGE_SCN_MEM_READ) != 0;
     writeable =  (sectionData->characteristics & IMAGE_SCN_MEM_WRITE) != 0;
+    if (pre_entry && !executable) writeable = 1;
     protect = ProtectionFlags[executable][readable][writeable];
     if (sectionData->characteristics & IMAGE_SCN_MEM_NOT_CACHED) {
         protect |= PAGE_NOCACHE;
@@ -304,7 +306,7 @@ FinalizeSection(PMEMORYMODULE module, PSECTIONFINALIZEDATA sectionData) {
 }
 
 static BOOL
-FinalizeSections(PMEMORYMODULE module)
+FinalizeSections(PMEMORYMODULE module, BOOL pre_entry)
 {
     int i;
     PIMAGE_SECTION_HEADER section = IMAGE_FIRST_SECTION(module->headers);
@@ -342,7 +344,7 @@ FinalizeSections(PMEMORYMODULE module)
             continue;
         }
 
-        if (!FinalizeSection(module, &sectionData)) {
+        if (!FinalizeSection(module, &sectionData, pre_entry)) {
             return FALSE;
         }
         sectionData.address = sectionAddress;
@@ -351,7 +353,7 @@ FinalizeSections(PMEMORYMODULE module)
         sectionData.characteristics = section->Characteristics;
     }
     sectionData.last = TRUE;
-    if (!FinalizeSection(module, &sectionData)) {
+    if (!FinalizeSection(module, &sectionData, pre_entry)) {
         return FALSE;
     }
     return TRUE;
@@ -750,9 +752,12 @@ HMEMORYMODULE MemoryLoadLibraryEx(const void *data, size_t size,
     }
 #endif
 
-    // mark memory pages depending on section headers and release
-    // sections that are marked as "discardable"
-    if (!FinalizeSections(result)) {
+    // RACKET: mark memory pages depending on section headers, but
+    // allow writing to non-executable pages as a workaround for MinGW
+    // pseudo relocation as performed by the entry; it's not clear why
+    // a workaround is needed, but maybe it has to do with faking the
+    // instance handle
+    if (!FinalizeSections(result, TRUE)) {
         goto error;
     }
 
@@ -782,6 +787,12 @@ HMEMORYMODULE MemoryLoadLibraryEx(const void *data, size_t size,
         }
     } else {
         result->exeEntry = NULL;
+    }
+
+    // mark memory pages depending on section headers (inclduing read-only) and release
+    // sections that are marked as "discardable"
+    if (!FinalizeSections(result, FALSE)) {
+        goto error;
     }
 
     return (HMEMORYMODULE)result;
