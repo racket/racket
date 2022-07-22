@@ -612,11 +612,11 @@ all path separators the platform default (on Windows).}
 
 @defproc[(find-relative-path [base path-string?] [path path-string?]) path-string?]{
 
-Attempts to finds a path relative to @racket[base] that accesses the
+Attempts to find a path relative to @racket[base] that accesses the
 same file or directory as @racket[path]. Both @racket[base] and
 @racket[path] must be normalized in the sense of
 @racket[simple-form-path], otherwise @filepath{.} and @filepath{..}
-elements are treated normal path elements. Assuming that @racket[base]
+elements are treated as normal path elements. Assuming that @racket[base]
 and @racket[path] are normalized, the result is always normalized.
 
 The result path depends on whether @racket[base] and @racket[path] are
@@ -1276,7 +1276,7 @@ Zuo process. The hash table includes the following keys:
 
 @itemlist[
 
-@item{@racket['args]: comment-line arguments provided when the
+@item{@racket['args]: command-line arguments provided when the
       process was started, not counting Zuo configuration arguments or
       the name of a script to run}
 
