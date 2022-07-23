@@ -127,7 +127,7 @@ path. A @racket[module] form is not allowed in an @tech{expression context}
 or @tech{internal-definition context}.
 
 @margin-note/ref{For a @racket[module]-like form that works in
-definitions context other than the top level or a module body, see
+definition contexts other than the top level or a module body, see
 @racket[define-package].}
 
 The @racket[module-path] form must be as for @racket[require], and it
