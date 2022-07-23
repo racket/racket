@@ -589,6 +589,10 @@ enable_embed="zuo"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 EMBED_LIBS
+LIBS_FOR_BUILD
+LDFLAGS_FOR_BUILD
+CFLAGS_FOR_BUILD
+CC_FOR_BUILD
 OBJEXT
 EXEEXT
 ac_ct_CC
@@ -2582,6 +2586,17 @@ ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+
+if test "${CC_FOR_BUILD}" = ""; then
+  CC_FOR_BUILD='$(CC) -O2'
+  CFLAGS_FOR_BUILD='$(CPPFLAGS) $(CFLAGS)'
+  LDFLAGS_FOR_BUILD='$(LDFLAGS)'
+  LIBS_FOR_BUILD='$(LIBS)'
+fi
+
+
+
 
 
 

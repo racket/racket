@@ -84,6 +84,16 @@ A boot image is machine-independent, whether in a stand-alone file or
 embedded in `.c` source.
 
 
+Cross Compiling
+---------------
+
+If you use `./configure --host=...` to cross compile, then you will
+also need to add something like `CC_FOR_BUILD=cc` as a `./configure`
+argument to specify the compiler for a `zuo` to use on the build
+machine. If necessary, you can also specify `CFLAGS_FOR_BUILD`,
+`LDFLAGS_FOR_BUILD`, and/or `LIBS_FOR_BUILD`.
+
+
 Embedding Zuo in Another Application
 ------------------------------------
 
