@@ -35,9 +35,7 @@
 
 (check (hash-keys (hash)) '())
 (check (hash-keys (hash 'a 1)) '(a))
-(check (let ([keys (hash-keys (hash 'a 1 'b 2))])
-         (or (equal? keys '(a b))
-             (equal? keys '(b a)))))
+(check (hash-keys (hash 'a 1 'b 2)) '(a b)) ; always in order
 (check (length (hash-keys (hash 'a 1 'b 2 'c 3))) 3)
 (check (length (hash-keys (hash 'a 1 'b 2 'a 3))) 2)
 (check-arg-fail (hash-keys 0) "not a hash table")
@@ -50,3 +48,7 @@
 (check (hash-keys-subset? (hash 'a 1 'b 2) (hash 'b 1)) #f)
 (check-arg-fail (hash-keys-subset? 0 (hash)) "not a hash table")
 (check-arg-fail (hash-keys-subset? (hash) 0) "not a hash table")
+
+;; print sorts keys alphabetically:
+(check (~a (hash 'a 1 'b 2)) "#hash((a . 1) (b . 2))")
+(check (~a (hash 'b 2 'a 1)) "#hash((a . 1) (b . 2))")

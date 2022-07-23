@@ -538,10 +538,20 @@ support to convert the textual form back into a hash table value.
 
 Analogous to @realracket*[hash? hash hash-ref hash-set hash-remove
 hash-keys hash-count hash-keys-subset?] from @racketmodname[racket].
-Besides being constrained to symbol keys, there is one additional
-difference: the third argument to @racket[hash-ref], when supplied,
-is always used as a value to return if a key is missing, as
-opposed to a failure thunk.}
+
+Besides being constrained to symbol keys, there are two additional
+differences:
+
+@itemlist[
+
+ @item{the third argument to @racket[hash-ref], when supplied, is
+       always used as a value to return if a key is missing, as
+       opposed to a failure thunk; and}
+
+ @item{the @racket[hash-keys] function returns interned keys sorted
+       alphabetically.}
+
+]}
 
 
 @section{Procedures}

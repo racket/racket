@@ -47,7 +47,10 @@
     (target (at-dir (add-exe name))
             (lambda (path token)
               (rule (list image_zuo.c
-                          (input-data-target 'config config)
+                          (input-data-target 'config (cons
+                                                      lib-path
+                                                      (map (lambda (key) (hash-ref config key))
+                                                           '(CC CPPFLAGS CFLAGS LDFLAGS LIBS))))
                           (quote-module-path))
                     (lambda ()
                       (define l (split-path path))

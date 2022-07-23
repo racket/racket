@@ -1299,6 +1299,59 @@ static zuo_t *zuo_trie_keys(zuo_t *trie_in, zuo_t *accum) {
 }
 
 /*======================================================================*/
+/* symbol-list sorting                                                  */
+/*======================================================================*/
+
+/* merge sort used to make hash printing deterministic */
+static zuo_t *zuo_symbol_list_sort(zuo_t *l_in) {
+  zuo_t *l, *left, *right, *first, *last;
+  zuo_uint_t len = 0, i;
+
+  for (l = l_in, len = 0; l != z.o_null; l = _zuo_cdr(l))
+    len++;
+
+  if (len < 2)
+    return l_in;
+
+  left = z.o_null;
+  for (l = l_in, i = len >> 1; i > 0; l = _zuo_cdr(l), i--)
+    left = zuo_cons(_zuo_car(l), left);
+  right = l;
+
+  left = zuo_symbol_list_sort(left);
+  right = zuo_symbol_list_sort(right);
+
+  first = last = z.o_null;
+  while ((left != z.o_null) && (right != z.o_null)) {
+    zuo_t *p;
+
+    if (strcmp(ZUO_STRING_PTR(((zuo_symbol_t *)_zuo_car(left))->str),
+               ZUO_STRING_PTR(((zuo_symbol_t *)_zuo_car(right))->str))
+        < 1) {
+      p = zuo_cons(_zuo_car(left), z.o_null);
+      left = _zuo_cdr(left);
+    } else {
+      p = zuo_cons(_zuo_car(right), z.o_null);
+      right = _zuo_cdr(right);
+    }
+
+    if (first == z.o_null)
+      first = p;
+    else
+      ((zuo_pair_t *)last)->cdr = p;
+    last = p;
+  }
+
+  ((zuo_pair_t *)last)->cdr = ((left != z.o_null) ? left : right);
+
+  return first;
+}
+
+static zuo_t *zuo_trie_sorted_keys(zuo_t *trie_in, zuo_t *accum) {
+  return zuo_symbol_list_sort(zuo_trie_keys(trie_in, accum));
+}
+
+/*======================================================================*/
 /* terminal support                                                     */
 /*======================================================================*/
 
@@ -1571,7 +1624,7 @@ static void zuo_out(zuo_out_t *out, zuo_t *obj, zuo_print_mode_t mode) {
         out_string(out, "opaque");
       out_string(out, ">");
     } else if (obj->tag == zuo_trie_node_tag) {
-      zuo_t *keys = zuo_trie_keys(obj, z.o_null);
+      zuo_t *keys = zuo_trie_sorted_keys(obj, z.o_null);
       if (mode == zuo_print_mode) {
         out_string(out, "(hash");
         if (keys != z.o_null)
@@ -2587,7 +2640,7 @@ static zuo_t *zuo_hash_remove(zuo_t *ht, zuo_t *sym) {
 
 static zuo_t *zuo_hash_keys(zuo_t *ht) {
   check_hash("hash-keys", ht);
-  return zuo_trie_keys(ht, z.o_null);
+  return zuo_trie_sorted_keys(ht, z.o_null);
 }
 
 static zuo_t *zuo_hash_keys_subset_p(zuo_t *ht, zuo_t *ht2) {
