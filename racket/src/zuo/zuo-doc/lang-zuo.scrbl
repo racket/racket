@@ -500,7 +500,9 @@ back into Zuo.
 )]{
 
 Analogous to @realracket*[symbol? symbol->string string->symbol
-string->uninterned-symbol] from @racketmodname[racket].}
+string->uninterned-symbol] from @racketmodname[racket], but
+@racket[string->symbol] accepts only strings that do not contain the
+null character.}
 
 
 @section{Hash Tables (Persistent Maps)}

@@ -19,3 +19,6 @@
 (check (not (equal? 'apple (string->uninterned-symbol "apple"))))
 (check-arg-fail (string->symbol 'apple) not-string)
 (check-arg-fail (string->uninterned-symbol 'apple) not-string)
+
+(check-arg-fail (string->symbol "apple\0spice") "without a nul character")
+(check (symbol? (string->uninterned-symbol "apple\0spice")))

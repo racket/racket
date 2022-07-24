@@ -1323,7 +1323,7 @@ static zuo_t *zuo_symbol_list_sort(zuo_t *l_in) {
 
   first = last = z.o_null;
   while ((left != z.o_null) && (right != z.o_null)) {
-    zuo_t *p;
+    zuo_t *p, *s_left, *s_right;
 
     if (strcmp(ZUO_STRING_PTR(((zuo_symbol_t *)_zuo_car(left))->str),
                ZUO_STRING_PTR(((zuo_symbol_t *)_zuo_car(right))->str))
@@ -2573,8 +2573,28 @@ static zuo_t *zuo_substring(zuo_t *obj, zuo_t *start_i, zuo_t *end_i) {
   return zuo_sized_string((const char *)&((zuo_string_t *)obj)->s[s_idx], e_idx - s_idx);
 }
 
+static int zuo_is_string_without_nul(zuo_t *obj) {
+  zuo_int_t i;
+
+  if ((obj->tag != zuo_string_tag)
+      || ZUO_STRING_LEN(obj) == 0)
+    return 0;
+
+  for (i = ZUO_STRING_LEN(obj); i--; ) {
+    if (((zuo_string_t *)obj)->s[i] == 0)
+      return 0;
+  }
+
+  return 1;
+}
+
 static zuo_t *zuo_string_to_symbol(zuo_t *obj) {
-  check_string("string->symbol", obj);
+  if (!zuo_is_string_without_nul(obj)) {
+    const char *who = "string->symbol";
+    check_string(who, obj);
+    zuo_fail_arg(who, "string without a nul character", obj);
+  }
+
   return zuo_symbol_from_string(ZUO_STRING_PTR(obj), obj);
 }
 
@@ -3577,18 +3597,7 @@ static void *zuo_envvars_block(const char *who, zuo_t *envvars)
 #endif
 
 static int zuo_is_path_string(zuo_t *obj) {
-  zuo_int_t i;
-
-  if ((obj->tag != zuo_string_tag)
-      || ZUO_STRING_LEN(obj) == 0)
-    return 0;
-
-  for (i = ZUO_STRING_LEN(obj); i--; ) {
-    if (((zuo_string_t *)obj)->s[i] == 0)
-      return 0;
-  }
-
-  return 1;
+  return zuo_is_string_without_nul(obj);
 }
 
 static zuo_t *zuo_path_string_p(zuo_t *obj) {
