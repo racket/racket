@@ -19,6 +19,7 @@ LIBS = @LIBS@
 
 CC_FOR_BUILD = @CC_FOR_BUILD@
 CFLAGS_FOR_BUILD = @CFLAGS_FOR_BUILD@
+CPPFLAGS_FOR_BUILD = @CPPFLAGS_FOR_BUILD@
 LDFLAGS_FOR_BUILD = @LDFLAGS_FOR_BUILD@
 LIBS_FOR_BUILD = @LIBS_FOR_BUILD@
 
@@ -29,7 +30,7 @@ zuos-to-run-and-install: zuo
 	./zuo . zuos-to-run-and-install
 
 zuo: $(srcdir)/zuo.c
-	$(CC_FOR_BUILD) $(FLAGS_FOR_BUILD) -DZUO_LIB_PATH='"'"$(srcdir)/lib"'"' -o zuo $(srcdir)/zuo.c $(LDFLAGS_FOR_BUILD) $(LIBS_FOR_BUILD)
+	$(CC_FOR_BUILD) $(CFLAGS_FOR_BUILD) $(CPPFLAGS_FOR_BUILD) -DZUO_LIB_PATH='"'"$(srcdir)/lib"'"' -o zuo $(srcdir)/zuo.c $(LDFLAGS_FOR_BUILD) $(LIBS_FOR_BUILD)
 
 .PHONY: check
 check: zuo
