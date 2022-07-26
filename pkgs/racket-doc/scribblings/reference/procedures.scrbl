@@ -614,12 +614,6 @@ implemented in a lower-level language. Not all procedures of
 distinction between primitives and other procedures may be useful to
 other low-level code.
 
-The distinction between primitives and other procedures may also be
-useful for adjusting exception messages through parameters such as
-@racket[error-primitive-name->symbol-handler], but the notion of
-``primitive'' for those handlers and the notion for
-@racket[primitive?] do not coincide completely.
-
 @defproc[(primitive? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a primitive procedure,
