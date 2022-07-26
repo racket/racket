@@ -13,7 +13,7 @@ inspired by the work of Haynes and Friedman @cite["Haynes84"].
 Engines log their behavior via a logger with the name 
 @racket['racket/engine]. The logger is created when the module
 is instantiated and uses the result of @racket[(current-logger)]
-as its parent. The library adds logs a @racket['debug] level
+as its parent. The library adds to logs a @racket['debug] level
 message: when @racket[engine-run]
 is called, when the engine timeout expires, and when the engine is
 stopped (either because it terminated or it reached a safe point to
@@ -51,7 +51,7 @@ Returns @racket[#t] if @racket[v] is an engine produced by
 @defproc[(engine-run [until (or/c evt? real?)][engine engine?])
          boolean?]{
 
-Allows the thread associated with @racket[engine] to execute for up
+Allows the thread associated with @racket[engine] to execute for up to
 as long as @racket[until] milliseconds (if @racket[until] is a real
 number) or @racket[until] is ready (if @racket[until] is an event). If
 @racket[engine]'s procedure disables suspends, then the engine
@@ -59,10 +59,10 @@ can run arbitrarily long until it re-enables suspends.
 
 The @racket[engine-run] procedure returns @racket[#t] if
 @racket[engine]'s procedure completes (or if it completed earlier),
-and the result is available via @racket[engine-result].  The
+and the result is available via @racket[engine-result]. The
 @racket[engine-run] procedure returns @racket[#f] if
 @racket[engine]'s procedure does not complete before it is
-suspended after the @racket[until] condition is met. If @racket[engine]'s
+suspended. If @racket[engine]'s
 procedure raises an exception, then it is re-raised by
 @racket[engine-run].}
 
