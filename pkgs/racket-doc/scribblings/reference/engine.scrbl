@@ -13,7 +13,7 @@ inspired by the work of Haynes and Friedman @cite["Haynes84"].
 Engines log their behavior via a logger with the name 
 @racket['racket/engine]. The logger is created when the module
 is instantiated and uses the result of @racket[(current-logger)]
-as its parent. The library adds to logs a @racket['debug] level
+as its parent. The library logs a @racket['debug]-level
 message: when @racket[engine-run]
 is called, when the engine timeout expires, and when the engine is
 stopped (either because it terminated or it reached a safe point to
