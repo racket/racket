@@ -1267,7 +1267,7 @@
 		  pre-thunk act-thunk post-thunk
 		  ;; sema-wait or sema-wait/enable-break:
 		  pre-semaphore-wait act-semaphore-wait post-semaphore-wait)
-	   ;; This reset function is called for a cptured continuation
+	   ;; This reset function is called for a captured continuation
 	   ;;  to reset the effective arguments
 	   (define (reset
 		    -capture-pre -capture-act -capture-post
