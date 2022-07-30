@@ -1023,10 +1023,9 @@
   (define (setup)
     (call-with-dest-racket
      (lambda (bindir dest-racket)
-       (define copytree-racket (and cross? (config-bootstrap-racket)))
+       (define copytree-racket (and cross? (hash-ref (config-bootstrap-racket) 'racket)))
        (maybe-copytree config dest-racket copytree-racket at-dir)
-       (run-raco-setup config dest-racket
-                       (and cross? (hash-ref (config-bootstrap-racket) 'racket))
+       (run-raco-setup config dest-racket copytree-racket
                        ;; this can be redundant if it's also supplied via `SETUP_MACHINE_FLAGS`,
                        ;; but redundant should be ok:
                        (list "-MCR" (~a (at-dir "compiled") ":")
