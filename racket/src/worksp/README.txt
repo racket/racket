@@ -16,15 +16,15 @@ When building from a minimal Racket source distribution, then most
 likely "racket-lib" is already included and installed as part of the
 the distribution, but without Windows-specific dependencies of
 "racket-lib". After following steps below to build and install,
-complete the build with
+complete the build with (in the "src" parent directory of "worksp)
 
-   ..\..\raco pkg update --auto racket-lib
+   ..\raco pkg update --auto racket-lib
 
 If your goal is to arrive at the same content as a regular Racket
 distribution, then after building and installing minimal Racket,
 finish with
 
-   ..\..\raco pkg install -i main-distribution
+   ..\raco pkg install -i main-distribution
 
 
 ========================================================================
@@ -52,15 +52,17 @@ build either the Racket BC or Racket CS implementations (or both).
 Racket CS
 ---------
 
-Build the Racket CS implementation using
+Build the Racket CS implementation from the "src" parent directory of
+"worksp" using
 
    winfig.bat
+   nmake
+   nmake install
 
-The result is "..\..\Racket.exe", DLLs and "GRacket.exe" in
-"..\..\lib", and other files in "..\..\lib", "..\..\etc", etc.
-Many intermediate files will be put in "../build".
+The result is "..\Racket.exe", DLLs and "GRacket.exe" in "..\lib", and
+other files in "..\lib", "..\etc", etc.
 
-To add a "CS" suffix to the generated executables, call "winfing.bat"
+To add a "CS" suffix to the generated executables, call "winfig.bat"
 with `/suffix CS`.
 
 To disable compression of embedded boot files, set the
@@ -74,12 +76,15 @@ See also "Completing the Build" below.
 Racket BC
 ---------
 
-Build the Racket BC implementation using
+Build the Racket BC implementation from the "src" parent directory of
+"worksp" using using
 
    winfig.bat /bconly /suffix BC
+   nmake
+   nmake install
 
-The result is "..\..\RacketBC.exe", DLLs and "GRacketBC.exe" in
-"..\..\lib", and other files in "..\..\lib", "..\..\etc", etc.
+The result is "..\RacketBC.exe", DLLs and "GRacketBC.exe" in "..\lib",
+and other files in "..\lib", "..\etc", etc.
 
 To avoid the "BC" suffix, omit `/suffix BC`.
 
@@ -105,13 +110,13 @@ The build scripts for Racket do not install support DLLs for encoding
 conversion, extflonums (in BC), and OpenSLL. To install those
 libraries, finish with
 
-   ..\..\raco pkg install racket-lib
+   ..\raco pkg install racket-lib
 
 If you are building from a source distribution (as opposed to a Git
 repository checkout), see "Building from a Source Distribution" above.
 
 Only if you are starting completely from scratch, see also
-"..\native-lib\README.txt".
+"..\..\native-lib\README.txt".
 
 
 ========================================================================

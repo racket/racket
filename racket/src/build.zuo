@@ -7,7 +7,15 @@
 
   (define default-vm (hash-ref config 'default_vm "cs"))
 
+  (define (msvc-prep-makefile dir)
+    (when (eq? 'windows (hash-ref (runtime-env) 'toolchain-type))
+      (unless (file-exists? (at-dir dir "Makefile"))
+        (shell/wait (find-relative-path (at-dir dir)
+                                        (at-source dir "winfig.bat"))
+                    (hash 'dir (at-dir dir))))))
+
   (define (get-cs-targets)
+    (msvc-prep-makefile "cs/c")
     (and (equal? (hash-ref config 'use_cs "yes") "yes")
          ((dynamic-require (at-source "cs/c/build.zuo")
                            'targets-at)
@@ -15,6 +23,7 @@
           vars)))
         
   (define (get-bc-targets)
+    (msvc-prep-makefile "bc")
     (and (equal? (hash-ref config 'use_bc "no") "yes")
          ((dynamic-require (at-source "bc/build.zuo")
                            'targets-at)
