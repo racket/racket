@@ -16,7 +16,7 @@ When building from a minimal Racket source distribution, then most
 likely "racket-lib" is already included and installed as part of the
 the distribution, but without Windows-specific dependencies of
 "racket-lib". After following steps below to build and install,
-complete the build with (in the "src" parent directory of "worksp)
+complete the build (in the "src" parent directory of "worksp") with
 
    ..\raco pkg update --auto racket-lib
 
@@ -77,7 +77,7 @@ Racket BC
 ---------
 
 Build the Racket BC implementation from the "src" parent directory of
-"worksp" using using
+"worksp" using
 
    winfig.bat /bconly /suffix BC
    nmake
