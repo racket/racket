@@ -170,7 +170,7 @@ the @rfc for more information about JSON.
 @defproc[(string->jsexpr [str string?] [#:null jsnull any/c (json-null)])
          jsexpr?]{
   Parses a recognizable prefix of the string @racket[str] as an immutable @tech{jsexpr}.
-  If the prefix isn't a delimited per se   (true, false, null), it
+  If the prefix isn't delimited per se (true, false, null), it
   must be separated by whitespace from the remaining characters.
 
 
@@ -182,7 +182,7 @@ the @rfc for more information about JSON.
 @defproc[(bytes->jsexpr [str bytes?] [#:null jsnull any/c (json-null)])
          jsexpr?]{
   Parses a recognizable prefix of the string @racket[str] as an immutable @tech{jsexpr}.
-  If the prefix isn't a delimited per se (true, false, null), it
+  If the prefix isn't delimited per se (true, false, null), it
   must be separated by whitespace from the remaining bytes.
 
 
