@@ -48,6 +48,8 @@
            arm32le tarm32le arm64le tarm64le
            ppc32le tppc32le)
      'linux]
+    [(i3gnu ti3gnu)
+     'gnu-hurd]
     [(a6fb ta6fb i3fb ti3fb
            arm32fb tarm32fb arm64fb tarm64fb
            ppc32fb tppc32fb)
@@ -85,6 +87,7 @@
             i3nb ti3nb
             i3fb ti3fb
             i3s2 ti3s2
+            i3gnu ti3gnu
             i3qnx)
      'i386]
     [(arm32le tarm32le

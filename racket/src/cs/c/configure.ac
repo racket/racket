@@ -272,8 +272,15 @@ case "$host_os" in
     ;;
   irix*)
     ;;
-  linux*)
-    MACH_OS=le
+  linux*|gnu*)
+    case "$host_os" in
+      linux*)
+        MACH_OS=le
+        ;;
+      *)
+        MACH_OS=gnu # Hurd
+        ;;
+    esac
     case "$host_os" in
       *linux-android*)
         ;;
@@ -465,6 +472,9 @@ if test "${build_os}_${build_cpu}" != "${host_os}_${host_cpu}" ; then
       ;;
     linux*)
       BUILD_OS=le
+      ;;
+    gnu*) # Hurd - must come after linux*
+      BUILD_OS=gnu
       ;;
     *mingw*)
       BUILD_OS=nt
