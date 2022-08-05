@@ -959,11 +959,12 @@ attributes.
 
 @specsubform[(@#,defhere[~between] H-pattern min-number max-number between-option ...)
              #:grammar
-             ([reps-option (code:line #:name name-expr)
+             ([between-option (code:line #:name name-expr)
                            (code:line #:too-few too-few-message-expr)
                            (code:line #:too-many too-many-message-expr)])
-             #:contracts ([name-expr (or/c syntax? #f)]
-                          [too-few-message-expr (or/c syntax? #f)])]{
+             #:contracts ([name-expr (or/c string? #f)]
+                          [too-few-message-expr (or/c string? #f)]
+                          [too-many-message-expr (or/c string? #f)])]{
 
 Matches if the inner @racket[H-pattern] matches. This pattern must be
 matched at least @racket[min-number] and at most @racket[max-number]
