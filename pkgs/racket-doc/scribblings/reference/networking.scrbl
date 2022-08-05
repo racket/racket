@@ -25,7 +25,7 @@ to an ephemeral port, which can be determined by calling
 @racket[tcp-addresses].  The @racket[max-allow-wait] argument
 determines the maximum number of client connections that can be
 waiting for acceptance. (When @racket[max-allow-wait] clients are
-waiting acceptance, no new client connections can be made.)
+awaiting acceptance, no new client connections can be made.)
 
 If the @racket[reuse?] argument is true, then @racket[tcp-listen] will
 create a listener even if the port is involved in a @tt{TIME_WAIT}
