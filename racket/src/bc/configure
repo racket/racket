@@ -5018,7 +5018,7 @@ case "$host_os" in
       X_PRE_LIBS=""
     fi
     ;;
-  linux*)
+  linux*,gnu*)
     LIBS="$LIBS -ldl -lm -lrt -rdynamic"
     DYN_CFLAGS="-fPIC"
     curses_portable_link="/usr/lib/${host_cpu}-${host_os}/libncurses.a /usr/lib/${host_cpu}-${host_os}/libtermcap.a"
