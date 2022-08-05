@@ -79,12 +79,14 @@
 
 #endif
 
-  /************** Linux with gcc ****************/
+  /************** Linux (or Hurd) with gcc ****************/
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__GNU__)
 
 # ifdef __ANDROID__
 #  define SCHEME_OS "android"
+# elif defined(__GNU__)
+#  define SCHEME_OS "gnu-hurd"
 # else
 #  define SCHEME_OS "linux"
 # endif
@@ -146,13 +148,15 @@
 # define USE_IEEE_FP_PREDS
 # define USE_EXPLICT_FP_FORM_CHECK
 
-# define LINUX_FIND_STACK_BASE
+# define LINUX_FIND_STACK_BASE /* also ok for Hurd */
 
 # define FLAGS_ALREADY_SET
 
 #if defined(__i386__)
-# define MZ_USE_JIT_I386
-# define MZ_JIT_USE_MPROTECT
+# ifndef __GNU__ /* Hurd */
+#  define MZ_USE_JIT_I386
+#  define MZ_JIT_USE_MPROTECT
+# endif
 # ifndef MZ_NO_UNWIND_SUPPORT
 #  define MZ_USE_DWARF_LIBUNWIND
 # endif
