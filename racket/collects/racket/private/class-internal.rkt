@@ -2214,7 +2214,8 @@ last few projections.
          [augonly-names (append pubment-names overment-names augment-names)]
          ;; Misc utilities
          [no-new-methods? (null? public-names)]
-         [no-method-changes? (and (null? public-names)
+         [no-method-changes? (and (null? interfaces)
+                                  (null? public-names)
                                   (null? override-names)
                                   (null? augride-names)
                                   (null? final-names))]

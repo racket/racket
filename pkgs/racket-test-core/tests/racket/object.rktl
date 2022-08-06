@@ -2400,5 +2400,29 @@
   (test 'outer values (send (new c2%) f)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that interface contracts on a subclass work correctly.
+
+(let ()
+  (define sup%
+    (class* object% ()
+      (super-new)
+      (define/public (f x) x)))
+
+  (define f-returns-int<%>
+    (interface () [f (->m any/c integer?)]))
+
+  (define sub%
+    (class* sup% (f-returns-int<%>)
+      (super-new)))
+
+  (define sup-obj (new sup%))
+  (test #t equal? (send sup-obj f 10) 10)
+  (test #t equal? (send sup-obj f "hi") "hi")
+
+  (define sub-obj (new sub%))
+  (test #t equal? (send sub-obj f 10) 10)
+  (err/rt-test (send sub-obj f "hi") exn:fail:contract?))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
