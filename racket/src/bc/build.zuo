@@ -3,7 +3,9 @@
          "../worksp/gendef.zuo"
          "../mac/codesign.zuo"
          (only-in "../start/build.zuo"
-                  [targets-at starter-targets-at]))
+                  [targets-at starter-targets-at])
+         (only-in zuo/c
+                  [.c->.o orig:.c->.o]))
 
 (provide-targets targets-at)
 
@@ -103,8 +105,8 @@
   (define starter-targets (starter-targets-at at-dir config windows?))
   (define starter (find-target "starter" starter-targets))
 
-  (define mzdyncgc.o (at-dir (if windows? "mzdyn.obj" (.c->.o "mzdyn.c"))))
-  (define mzdyn3m.o (at-dir (if windows? "mzdyn3m.obj" (.c->.o "mzdyn3m.c"))))
+  (define mzdyncgc.o (at-dir (if windows? "mzdyn.obj" (orig:.c->.o "mzdyn.c"))))
+  (define mzdyn3m.o (at-dir (if windows? "mzdyn3m.obj" (orig:.c->.o "mzdyn3m.c"))))
   (define mzdyncgc.exp (at-dir "mzdyn.exp"))
   (define mzdyn3m.exp (at-dir "mzdyn3m.exp"))
 
@@ -1322,6 +1324,10 @@
                               (c-compile path
                                          (at-source "dynsrc/mzdyn.c")
                                          (let* ([config (mz-config config)]
+                                                [config (let ([plain-cc (or (lookup 'PLAIN_CC) "")])
+                                                          (if (equal? "" plain-cc)
+                                                              config
+                                                              (hash-set config 'CC (shell-subst plain-cc config))))]
                                                 [config (config-merge config
                                                                       'CFLAGS
                                                                       (or (lookup 'DYN_CFLAGS) ""))])
