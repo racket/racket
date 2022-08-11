@@ -157,7 +157,8 @@
                (define to-delete (path-add-extension (get-compilation-path path->mode roots path) #".zo"))
                (when (file-exists? to-delete)
                  (trace-printf "deleting:  ~s" to-delete)
-                 (with-compiler-security-guard (delete-file* to-delete))))]
+                 (parameterize ([compiler-security-guard security-guard])
+                   (with-compiler-security-guard (delete-file* to-delete)))))]
             [(if cp->m
                  (not (equal? (current-path->mode) cp->m))
                  (let ([current-cfp (use-compiled-file-paths)])
