@@ -985,8 +985,8 @@ Reads from the input file or input stream associated with
 that many bytes, @racket[eof] to read all content up to an
 end-of-file, or @racket['avail] where supported (on Unix) to read as
 many bytes as available in non-blocking mode. The result is
-@racket[eof] if @racket[amount] is not @racket[0] or @racket['avail]
-and no bytes are available before an end-of-file; otherwise, it is a
+@racket[eof] if @racket[amount] is not @racket[0], @racket[eof], or @racket['avail]
+and if no bytes are available before an end-of-file; otherwise, it is a
 string containing the read bytes.
 
 The number of bytes in the returned string can be less than
