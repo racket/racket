@@ -932,7 +932,7 @@ within a @racket[module] form (see @racket[syntax-transforming-module-expression
 then the @exnraise[exn:fail:contract].}
 
 
-@defproc[(syntax-local-lift-require [raw-require-spec any/c] [stx syntax?])
+@defproc[(syntax-local-lift-require [raw-require-spec any/c] [stx syntax?] [new-scope? #t])
          syntax?]{
 
 Lifts a @racket[#%require] form corresponding to
@@ -941,27 +941,31 @@ to the top-level or to the top of the module currently being expanded
  or to an enclosing @racket[begin-for-syntax].
 
 The resulting syntax object is the same as @racket[stx], except that a
-fresh @tech{scope} is added. The same @tech{scope} is
+fresh @tech{scope} is added if @racket[new-scope?] is true. The same @tech{scope} is
 added to the lifted @racket[#%require] form, so that the
 @racket[#%require] form can bind uses of imported identifiers in the
 resulting syntax object (assuming that the lexical information of
 @racket[stx] includes the binding environment into which the
-@racket[#%require] is lifted).
+@racket[#%require] is lifted). If @racket[new-scope?] is @racket[#f], then
+the result exactly @racket[stx], and no scope is added to the lifted
+@racket[#%require] form; in that case, take care to ensure that the lifted
+require does not change the meaning of already-expanded identifiers in the module,
+otherwise re-expansion of the enclosing module will not produce the same result
+as the expanded module.
 
-If @racket[raw-require-spec] and @racket[stx] are part of the input to
-a transformer, then typically @racket[syntax-local-introduce] should be
-applied to each before passing them to
-@racket[syntax-local-lift-require], and then
-@racket[syntax-local-introduce] should be applied to the result of
-@racket[syntax-local-lift-require]. Otherwise, marks added
-by the macro expander can prevent access to the new imports.
+If @racket[raw-require-spec] is part of the input to a transformer,
+then typically @racket[syntax-local-introduce] should be applied
+before passing it to @racket[syntax-local-lift-require]. Otherwise,
+marks added by the macro expander can prevent access to the new
+imports.
 
 @transform-time[]
 
 @history[#:changed "6.90.0.27" @elem{Changed the @tech{scope} added to inputs from a
                                      macro-introduction scope to one that does not affect whether or
                                      not the resulting syntax is considered original as reported by
-                                     @racket[syntax-original?].}]}
+                                     @racket[syntax-original?].}
+         #:changed "8.6.0.4" @elem{Added the @racket[new-scope?] optional argument.}]}
 
 @defproc[(syntax-local-lift-provide [raw-provide-spec-stx syntax?])
          void?]{

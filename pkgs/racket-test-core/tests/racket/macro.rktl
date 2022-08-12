@@ -1510,6 +1510,22 @@
  #rx"provided identifier is not defined or required")
 
 ;; ----------------------------------------
+;; Check require lifting without adding a new scope
+
+(module uses-a-no-scope-lifted-require racket/base
+  (require (for-syntax racket/base))
+  (provide also-sub)
+  (module sub racket/base
+    (provide sub)
+    (define sub "sub"))
+  (define-syntax (lift stx)
+    (syntax-local-lift-require #'(submod "." sub) #'(void) #f))
+  (lift)
+  (define also-sub sub))
+
+(test "sub" dynamic-require ''uses-a-no-scope-lifted-require 'also-sub)
+
+;; ----------------------------------------
 ;; Check module lifting in a top-level context
 
 (define-syntax (do-lift-example-1 stx)
