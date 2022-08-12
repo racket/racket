@@ -84,6 +84,13 @@ The @racketmodname[racket] library combines
 
 @(bibliography
 
+  (bib-entry #:key "Baker93"
+             #:author "Henry G. Baker"
+             #:title "Equal Rights for Functional Objects or, the More Things Change, the More They are the Same"
+             #:date "1993"
+             #:location "SIGPLAN OOPS Messenger"
+             #:url "https://doi.org/10.1145/165593.165596")
+
   (bib-entry #:key "C99"
              #:author "ISO/IEC"
              #:title "ISO/IEC 9899:1999 Cor. 3:2007(E)"

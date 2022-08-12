@@ -42,6 +42,8 @@ preferred for most uses.
  equal independent of @emph{mutations}. Generally, for to values to be equal-always, corresponding
  immutable values within @racket[v1] and @racket[v2] must be @racket[equal?],
  while corresponding mutable values within them must be @racket[eq?].
+ @margin-note*{Precedents for this operator in other languages include
+ @tt{egal} @cite["Baker93"].}
 
  Two values @racket[v1] and @racket[v2] are @racket[equal-always?] if and only
  if there exists a third value @racket[_v3] such that @racket[v1] and
