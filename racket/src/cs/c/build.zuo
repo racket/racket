@@ -643,7 +643,8 @@
                                                                    ;; these are for Windows:
                                                                    'runtimeAs "static"
                                                                    'linkAs "exe"
-                                                                   'kernelLibName "kernel")))
+                                                                   'kernelLibName "kernel"
+                                                                   'STRIP (lookup 'STRIP_DEBUG "strip"))))
                    (build (find-target (if cross? "kernel" "build") m-targets) token)
                    (unless cross?
                      (build (find-target check-bootstrap-same-stamp the-targets)
