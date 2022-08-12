@@ -55,6 +55,11 @@ PRESERVE_IN_EXECUTABLE
 char *boot_file_data = "BooT FilE OffsetS:\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 static int boot_file_offset = 18;
 
+#ifdef WIN32
+PRESERVE_IN_EXECUTABLE
+char *racket_dll_name = "libracketcsxxxxxxx.dll";
+#endif
+
 #ifdef OS_X
 # include <mach-o/dyld.h>
 static long find_rktboot_section(char *me)
@@ -184,13 +189,13 @@ static int bytes_main(int argc, char **argv,
   register_embedded_dll_hooks();
   if (embedded_dll_open) {
     void *dll;
-    dll = embedded_dll_open("libracketcsxxxxxxx.dll", 1);
-    boot_rsrc_offset = in_memory_get_offset("libracketcsxxxxxxx.dll");
+    dll = embedded_dll_open(racket_dll_name, 1);
+    boot_rsrc_offset = in_memory_get_offset(racket_dll_name);
     racket_boot_p = (racket_boot_t)scheme_dll_find_object(dll, "racket_boot");
     dll_path = self_exe;
   } else {
     HMODULE dll = NULL;
-    dll_path = load_delayed_dll_x(NULL, "libracketcsxxxxxxx.dll", &dll);
+    dll_path = load_delayed_dll_x(NULL, racket_dll_name, &dll);
     racket_boot_p = (racket_boot_t)GetProcAddress(dll, "racket_boot");
   }
   boot_exe = string_to_utf8(dll_path);
