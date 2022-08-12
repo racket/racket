@@ -831,7 +831,20 @@
 
 (module bins-bread-and-butter-for-label racket/base
   (#%require (for-meta #f (portal check-top-level-portal (yes ok #f)))))
-  
+
+(module check-syntax-local-lift-portal racket/base
+  (require (for-syntax racket/base))
+  (define-syntax (lift stx)
+    (define x-id (syntax-local-lift-require #'(portal x #t) #'x))
+    (unless (portal-syntax? (syntax-local-value x-id))
+      (error "portal lift failed"))
+    #'(void))
+  (lift)
+  (#%expression (lift))
+  (let ()
+    (lift)
+    (void)))
+
 ;; ----------------------------------------
 
 (module distinct-binding-tests racket/base

@@ -190,6 +190,11 @@
    ;; Accumulate module path indexes used by submodules to refer to this module
    (define mpis-to-reset (box null))
 
+   ;; For recording `portal` via `#%require`:
+   (define add-defined-portal (make-add-defined-portal self requires+provides
+                                                       portal-syntaxes defined-syms
+                                                       all-scopes-s frame-id m-ns))
+
    ;; Initial require
    (define (initial-require! #:bind? bind?)
      (cond
@@ -332,7 +337,8 @@
                                                 [require-lifts (make-require-lift-context
                                                                 phase
                                                                 (make-parse-lifted-require m-ns self requires+provides
-                                                                                           #:declared-submodule-names declared-submodule-names)
+                                                                                           #:declared-submodule-names declared-submodule-names
+                                                                                           #:add-defined-portal add-defined-portal)
                                                                 initial-lifted-requires)]
                                                 [to-module-lifts (make-to-module-lift-context
                                                                   phase
@@ -358,6 +364,7 @@
                                    #:modules-being-compiled modules-being-compiled
                                    #:mpis-to-reset mpis-to-reset
                                    #:portal-syntaxes portal-syntaxes
+                                   #:add-defined-portal add-defined-portal
                                    #:loop pass-1-and-2-loop))
 
          ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -500,8 +507,9 @@
                    [require-lifts (make-require-lift-context
                                    phase
                                    (make-parse-lifted-require m-ns self requires+provides
-                                                              #:declared-submodule-names (make-hasheq)))]))
-   
+                                                              #:declared-submodule-names (make-hasheq)
+                                                              #:add-defined-portal add-defined-portal))]))
+
    (define mb-scopes-s
      (if keep-enclosing-scope-at-phase
          ;; for `(module* name #f)`, use the `(module* ...)` form:
@@ -731,6 +739,7 @@
                                 #:modules-being-compiled modules-being-compiled
                                 #:mpis-to-reset mpis-to-reset
                                 #:portal-syntaxes portal-syntaxes
+                                #:add-defined-portal add-defined-portal
                                 #:loop pass-1-and-2-loop)
   (namespace-visit-available-modules! m-ns phase)
   (let loop ([tail? #t] [bodys bodys])
@@ -886,22 +895,7 @@
                                        #:declared-submodule-names declared-submodule-names
                                        #:who 'module
                                        #:all-scopes-stx all-scopes-stx
-                                       #:add-defined-portal
-                                       (lambda (id phase portal-stx orig-s)
-                                         (check-ids-unbound (list id) phase requires+provides #:in orig-s)
-                                         (define syms (select-defined-syms-and-bind! (list id) defined-syms
-                                                                                     self phase all-scopes-stx
-                                                                                     #:requires+provides requires+provides
-                                                                                     #:in orig-s
-                                                                                     #:frame-id frame-id
-                                                                                     #:as-transformer? #t))
-                                         (add-defined-syms! requires+provides syms phase #:as-transformer? #t)
-                                         (define sym (car syms))
-                                         (define t (portal-syntax portal-stx))
-                                         (when phase
-                                           (namespace-set-transformer! m-ns phase sym t))
-                                         (add-portal-stx! portal-syntaxes t sym phase)
-                                         sym))
+                                       #:add-defined-portal add-defined-portal)
           (log-expand partial-body-ctx 'exit-case ready-body)
           (cons ready-body
                 (loop tail? rest-bodys))]
@@ -1512,13 +1506,15 @@
 ;; ----------------------------------------
 
 (define (make-parse-lifted-require m-ns self requires+provides
-                                   #:declared-submodule-names declared-submodule-names)
+                                   #:declared-submodule-names declared-submodule-names
+                                   #:add-defined-portal add-defined-portal)
   (lambda (s phase)
     (define-match m s '(#%require req))
     (parse-and-perform-requires! (list (m 'req)) s #:self self
                                  m-ns phase #:run-phase phase
                                  requires+provides
                                  #:declared-submodule-names declared-submodule-names
+                                 #:add-defined-portal add-defined-portal
                                  #:who 'require)
     (set-requires+provides-all-bindings-simple?! requires+provides #f)))
 
@@ -1544,3 +1540,22 @@
   (hash-set! portal-syntaxes
              phase
              (hash-set ht sym (portal-syntax-content val))))
+
+(define (make-add-defined-portal self requires+provides
+                                 portal-syntaxes defined-syms
+                                 all-scopes-stx frame-id m-ns)
+  (lambda (id phase portal-stx orig-s)
+    (check-ids-unbound (list id) phase requires+provides #:in orig-s)
+    (define syms (select-defined-syms-and-bind! (list id) defined-syms
+                                                self phase all-scopes-stx
+                                                #:requires+provides requires+provides
+                                                #:in orig-s
+                                                #:frame-id frame-id
+                                                #:as-transformer? #t))
+    (add-defined-syms! requires+provides syms phase #:as-transformer? #t)
+    (define sym (car syms))
+    (define t (portal-syntax portal-stx))
+    (when phase
+      (namespace-set-transformer! m-ns phase sym t))
+    (add-portal-stx! portal-syntaxes t sym phase)
+    sym))
