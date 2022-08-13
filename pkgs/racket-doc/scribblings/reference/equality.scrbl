@@ -39,7 +39,7 @@ preferred for most uses.
 @defproc[(equal-always? [v1 any/c] [v2 any/c]) boolean?]{
 
  Indicates whether @racket[v1] and @racket[v2] are equal and will always stay
- equal independent of @emph{mutations}. Generally, for to values to be equal-always, corresponding
+ equal independent of @emph{mutations}. Generally, for two values to be equal-always, corresponding
  immutable values within @racket[v1] and @racket[v2] must be @racket[equal?],
  while corresponding mutable values within them must be @racket[eq?].
  @margin-note*{Precedents for this operator in other languages include
