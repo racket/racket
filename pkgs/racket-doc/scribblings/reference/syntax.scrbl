@@ -2789,13 +2789,14 @@ For backward compatibility only; equivalent to @racket[syntax-local-introduce].
 @defform*[[(begin form ...)
            (begin expr ...+)]]{
 
-The first form applies when @racket[begin] appears at the top level,
-at module level, or in an internal-definition position (before any
-expression in the internal-definition sequence). In that case, the
+The first form applies when @racket[begin] appears at the @tech{top-level context},
+at @tech{module context}, or in an @tech{internal-definition context}. In that case, the
 @racket[begin] form is equivalent to splicing the @racket[form]s into
 the enclosing context.
+The @tech{internal-definition context} itself is said to have an
+@deftech{implicit begin} of this first form.
 
-The second form applies for @racket[begin] in an expression position.
+The second form applies for @racket[begin] in an @tech{expression context}.
 In that case, the @racket[expr]s are evaluated in order, and the
 results are ignored for all but the last @racket[expr]. The last
 @racket[expr] is in tail position with respect to the @racket[begin]

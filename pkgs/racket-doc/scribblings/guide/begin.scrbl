@@ -34,24 +34,16 @@ tail position with respect to the @racket[begin] form.
 (print-triangle 4)
 ]
 
-Many forms, such as @racket[lambda] or @racket[cond] support a
-sequence of expressions even without a @racket[begin]. Such positions are
-sometimes said to have an @deftech{implicit begin}.
-
-@defexamples[
-(define (print-triangle height)
-  (cond
-    [(positive? height)
-     (display (make-string height #\*))
-     (newline)
-     (print-triangle (sub1 height))]))
-(print-triangle 4)
-]
-
 The @racket[begin] form is special at the top level, at module level,
-or as a @racket[body] after only internal definitions. In those
-positions, instead of forming an expression, the content of
+or as a @racket[_body] (e.g. of @racket[let] or @racket[lambda];
+see @tech{internal definition} for more details).
+Such @racket[begin] form has a slightly different grammar:
+
+@specform[(begin def-or-expr ...)]{}
+
+In those positions, instead of forming an expression, the content of
 @racket[begin] is spliced into the surrounding context.
+The content could contain definitions.
 
 @defexamples[
 (let ([curly 0])
@@ -63,6 +55,22 @@ positions, instead of forming an expression, the content of
 
 This splicing behavior is mainly useful for macros, as we discuss
 later in @secref["macros"].
+
+The whole @racket[_body] sequence is sometimes said to have an @deftech{implicit begin}.
+The restriction of an @tech{implicit begin} follows the restriction of the @racket[_body] sequence:
+the sequence should end with an expression.
+
+@defexamples[
+(code:comment @#,t{Implicit @racket[begin]})
+(let ()
+  (define num 1)
+  (add1 num))
+(code:comment @#,t{Explicit @racket[begin]})
+(let ()
+  (begin
+    (define num 1)
+    (add1 num)))
+]
 
 @;------------------------------------------------------------------------
 @section{Effects After: @racket[begin0]}
