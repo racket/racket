@@ -799,7 +799,7 @@ enable_embedfw
 enable_mac64
 enable_libs
 enable_postlink
-enable_noopt
+enable_strip
 enable_ubsan
 enable_asan
 enable_csdefault
@@ -2552,6 +2552,7 @@ if test "${enable_iconv+set}" = set; then :
 fi
 
 
+
 # Check whether --enable-curses was given.
 if test "${enable_curses+set}" = set; then :
   enableval=$enable_curses;
@@ -2741,9 +2742,9 @@ if test "${enable_postlink+set}" = set; then :
 fi
 
 
-# Check whether --enable-noopt was given.
-if test "${enable_noopt+set}" = set; then :
-  enableval=$enable_noopt;
+# Check whether --enable-strip was given.
+if test "${enable_strip+set}" = set; then :
+  enableval=$enable_strip;
 fi
 
 
@@ -4451,7 +4452,7 @@ case "$host_os" in
     ;;
   linux*|gnu*)
     case "$host_os" in
-      *linux*)
+      linux*)
         MACH_OS=le
         ;;
       *)
@@ -4737,7 +4738,7 @@ if test "${build_os}_${build_cpu}" != "${host_os}_${host_cpu}" ; then
     linux*)
       BUILD_OS=le
       ;;
-    gnu*) # Hurd: must come after linux*
+    gnu*) # Hurd - must come after linux*
       BUILD_OS=gnu
       ;;
     *mingw*)

@@ -48,6 +48,7 @@ AC_ARG_ENABLE(lt,      [  --enable-lt=<prog>      use <prog> instead of libtool;
 m4_include(../ac/instlib_arg.m4)
 
 AC_ARG_ENABLE(libffi,  [  --enable-libffi         use installed libffi (enabled by default for Unix)], , enable_libffi=default)
+m4_include(../ac/iconv_arg.m4)
 m4_include(../ac/curses_arg.m4)
 
 m4_include(../ac/sdk_arg.m4)

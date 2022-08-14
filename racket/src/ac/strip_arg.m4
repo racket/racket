@@ -1,4 +1,4 @@
-AC_ARG_ENABLE(noopt,   [  --enable-strip          strip debug on install (usually enabled by default)])
+AC_ARG_ENABLE(strip,   [  --enable-strip          strip debug on install (usually enabled by default)])
 
 STRIP_DEBUG=":"
 STRIP_LIB_DEBUG=":"

@@ -819,6 +819,7 @@ enable_dynlib
 enable_lt
 enable_libs
 enable_libffi
+enable_iconv
 enable_curses
 enable_curseslib
 enable_sdk
@@ -847,6 +848,7 @@ enable_ffipoll
 enable_gprof
 enable_gcov
 enable_postlink
+enable_strip
 enable_noopt
 enable_ubsan
 enable_jitframe
@@ -1488,6 +1490,7 @@ Optional Features:
   --enable-lt=<prog>      use <prog> instead of libtool; disable to use bundled
   --enable-libs           install static libraries (enabled by default for Unix)
   --enable-libffi         use installed libffi (enabled by default for Unix)
+  --enable-iconv          use iconv (usually auto-enabled)
   --enable-curses         use curses (usually auto-enabled)
   --enable-curseslib=<libs> use <libs> for linking to curses library
   --enable-sdk=<path>     use Mac OS 10.4 SDK directory
@@ -2772,6 +2775,12 @@ else
   enable_libffi=default
 fi
 
+# Check whether --enable-iconv was given.
+if test "${enable_iconv+set}" = set; then :
+  enableval=$enable_iconv;
+fi
+
+
 
 # Check whether --enable-curses was given.
 if test "${enable_curses+set}" = set; then :
@@ -2962,9 +2971,9 @@ fi
 
 
 
-# Check whether --enable-noopt was given.
-if test "${enable_noopt+set}" = set; then :
-  enableval=$enable_noopt;
+# Check whether --enable-strip was given.
+if test "${enable_strip+set}" = set; then :
+  enableval=$enable_strip;
 fi
 
 
