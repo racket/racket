@@ -67,7 +67,8 @@
          [""
           (if default-yes? 'yes 'no)]
          [x
-          (eprintf "Invalid answer: ~a\n" x)
+          (unless (equal? x "?")
+            (eprintf "Invalid answer: ~a\n" x))
           (eprintf " Answer ~a`y' or `Y' for \"yes\", ~a`n' or `N' for \"no\", or\n"
                    (if default-yes? "nothing or " "")
                    (if default-yes? "" "nothing or "))
