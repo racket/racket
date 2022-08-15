@@ -707,7 +707,7 @@
       (in-producer gen-combinations #f))
 
 ;; This implements an algorithm known as "Ord-Smith".  (It is described in a
-;; paper called "Permutation Generation Methods" by Robert Sedgewlck, listed as
+;; paper called "Permutation Generation Methods" by Robert Sedgewick, listed as
 ;; Algorithm 8.)  It has a number of good properties: it is very fast, returns
 ;; a list of results that has a maximum number of shared list tails, and it
 ;; returns a list of reverses of permutations in lexical order of the input,
