@@ -317,8 +317,8 @@
 ;; Check whether an identifier has a binding that is from a non-shadowable
 ;; require; if something is found but it will be replaced, then record that
 ;; bindings are not simple. Returns a status to indicate whether/how the binding
-;; is defined or required already, since `allow-defined?` and ok-binding/delated`
-;; allows that possibilify; the possible results are #f, 'defined, or 'required.
+;; is defined or required already, since `allow-defined?` and `ok-binding/delated`
+;; allow that possibilify; the possible results are #f, 'defined, or 'required.
 (define (check-not-defined #:check-not-required? [check-not-required? #f]
                            #:allow-defined? [allow-defined? #f]
                            r+p id phase space #:in orig-s

@@ -422,6 +422,11 @@ case "$MACH_HOST_CPU" in
     ;;
 esac
 
+if test "${MACH}" = "" ; then
+  default_mach_was_empty=yes
+else
+  default_mach_was_empty=no
+fi
 
 if test "${enable_mach}" != "" ; then
   MACH="${enable_mach}"
@@ -444,13 +449,15 @@ elif test "$MACH" = "" -o "$MACH_OS" = "" ; then
    exit 1
 fi
 
-# For a pb build where Racket is supplied, force cross-build
-# mode on the assumption that the host is not a pb build
-# (because it should be created with default configure options)
+# For a pb build where Racket is supplied and MACH was not originally
+# empty, force cross-build mode on the assumption that the host is not
+# a pb build (because it should be created with default configure options)
 if test "${enable_pb}" = "yes" ; then
   if test "${enable_racket}" != "" ; then
     if test "${enable_target}" = "" ; then
-      enable_target="${MACH}"
+      if test "${default_mach_was_empty}" = "no" ; then
+        enable_target="${MACH}"
+      fi
     fi
   fi
 fi
