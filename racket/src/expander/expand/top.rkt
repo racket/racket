@@ -18,7 +18,8 @@
          "lift-context.rkt"
          "lift-key.rkt"
          "log.rkt"
-         "portal-syntax.rkt")
+         "portal-syntax.rkt"
+         "top-portal-syntax.rkt")
 
 (add-core-form!
  'define-values
@@ -115,14 +116,7 @@
                                 #:who 'require
                                 ;; We don't need to check for conflicts:
                                 #:initial-require? #t
-                                #:add-defined-portal
-                                (lambda (id phase portal-stx orig-s)
-                                  (define-values (ids syms) (as-expand-time-top-level-bindings (list id) orig-s ctx))
-                                  (define sym (car syms))
-                                  (when phase
-                                    (define t (portal-syntax portal-stx))
-                                    (namespace-set-transformer! ns phase sym t))
-                                  sym))
+                                #:add-defined-portal (make-top-add-defined-portal ns ctx))
    ;; Nothing to expand
    (if (expand-context-to-parsed? ctx)
        (parsed-require s)

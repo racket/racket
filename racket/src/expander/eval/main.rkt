@@ -26,6 +26,7 @@
          "reflect.rkt"
          "../expand/log.rkt"
          "../expand/parsed.rkt"
+         "../expand/top-portal-syntax.rkt"
          "../common/performance.rkt"
          "../compile/correlated-linklet.rkt")
 
@@ -318,7 +319,7 @@
    (define lift-ctx (make-lift-context (make-top-level-lift ctx)))
    (define require-lift-ctx (make-require-lift-context
                              (namespace-phase ns)
-                             (make-parse-top-lifted-require ns)))
+                             (make-parse-top-lifted-require ns ctx)))
    (define exp-s
      (expand-in-context s (struct*-copy expand-context ctx
                                         [lifts lift-ctx]
@@ -328,7 +329,7 @@
            (get-and-clear-lifts! lift-ctx)
            exp-s)))
 
-(define (make-parse-top-lifted-require ns)
+(define (make-parse-top-lifted-require ns ctx)
   (lambda (s phase)
     ;; We don't "hide" this require in the same way as
     ;; a top-level `#%require`, because it's already
@@ -337,6 +338,7 @@
     (parse-and-perform-requires! (list (m 'req)) s
                                  ns phase #:run-phase phase
                                  (make-requires+provides #f)
+                                 #:add-defined-portal (make-top-add-defined-portal ns ctx)
                                  #:who 'require)))
 
 (define (wrap-lifts-as-lifted-parsed-begin require-lifts

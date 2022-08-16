@@ -1525,6 +1525,25 @@
 
 (test "sub" dynamic-require ''uses-a-no-scope-lifted-require 'also-sub)
 
+
+;; ----------------------------------------
+;; Check portal lifting to the top level
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(require (for-syntax racket/base)))
+  (eval '(define-syntax (lift stx)
+           (define id (syntax-local-lift-require
+                       #'(portal ptl 5)
+                       #'ptl))
+           #`(portal-lookup #,id)))
+  (eval '(define-syntax (portal-lookup stx)
+           (syntax-case stx ()
+             [(_ id)
+              (datum->syntax
+               #'id
+               (portal-syntax? (syntax-local-value #'id #f)))])))
+ (test #t eval '(lift)))
+
 ;; ----------------------------------------
 ;; Check module lifting in a top-level context
 
