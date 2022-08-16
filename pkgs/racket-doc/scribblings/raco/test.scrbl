@@ -168,6 +168,10 @@ The @exec{raco test} command accepts several flags:
        stderr output is treated as success as long as it matches any
        one @nonterm{pattern}.}
 
+ @item{@DFlag{errortrace}
+       --- Dynamically loads @racketmodname[errortrace #:indirect]
+       before running the tests. Note that already-compiled files will not
+       include the tracing information.}
  @item{@Flag{y} or @DFlag{make}
        --- Enable automatic
         generation and update of compiled @filepath{.zo} files.

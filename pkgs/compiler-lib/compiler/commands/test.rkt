@@ -29,6 +29,7 @@
 (define configure-runtime 'default)
 (define first-avail? #f)
 (define run-anyways? #t)
+(define load-errortrace? #f)
 (define quiet? #f)
 (define quiet-program? #f)
 (define check-stderr? #f)
@@ -57,6 +58,10 @@
                            (* 4 60 60))) ; default: wait at most 4 hours
 
 (define test-exe-name (string->symbol (short-program+command-name)))
+;; The *absolute* module path of errortrace
+;; Note: must be a value that can be passed to other places,
+;; i.e. must satisfy the predicate `place-message-allowed?`.
+(define errortrace-module-path 'errortrace/main)
 
 ;; Stub for running a test in a process:
 (module process racket/base
@@ -71,7 +76,8 @@
   (define rt-module (read (open-input-string (vector-ref argv 2))))
   (define d (read (open-input-string (vector-ref argv 3))))
   (define make? (read (open-input-string (vector-ref argv 4))))
-  (define args (list-tail (vector->list argv) 5))
+  (define errortrace-path-or-false (read (open-input-string (vector-ref argv 5))))
+  (define args (list-tail (vector->list argv) 6))
 
   ;; In case PLTUSERHOME is set, make sure relevant
   ;; directories exist:
@@ -81,7 +87,8 @@
 
   (when make?
     (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler)))
-  
+  (when errortrace-path-or-false
+    (dynamic-require errortrace-path-or-false 0))
   (parameterize ([current-command-line-arguments (list->vector args)])
     (when rt-module (dynamic-require rt-module d))
     (dynamic-require test-module d)
@@ -103,12 +110,15 @@
   (define (go pch)
     (define l (place-channel-get pch))
     (define make? (list-ref l 3))
-    (define args (list-ref l 5))
+    (define errortrace-path-or-false (list-ref l 4))
+    (define args (list-ref l 6))
     (when make?
       (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler)))
+    (when errortrace-path-or-false
+      (dynamic-require errortrace-path-or-false 0))
     ;; Run the test:
     (parameterize ([current-command-line-arguments (list->vector args)]
-                   [current-directory (list-ref l 4)])
+                   [current-directory (list-ref l 5)])
       (when (cadr l) (dynamic-require (cadr l) (caddr l)))
       (dynamic-require (car l) (caddr l))
       ((executable-yield-handler) 0))
@@ -213,7 +223,12 @@
                                #:err stderr)))
            
            ;; Send the module path to test:
-           (place-channel-put pl (list p rt-p d make? (current-directory) args))
+           (place-channel-put pl
+                              (list p rt-p d
+                                    make?
+                                    (and load-errortrace? errortrace-module-path)
+                                    (current-directory)
+                                    args))
 
            ;; Wait for the place to finish:
            (unless (sync/timeout timeout (place-dead-evt pl))
@@ -258,6 +273,7 @@
                       (format "~s" (normalize-module-path rt-p))
                       (format "~s" d)
                       (format "~s" make?)
+                      (format "~s" (and load-errortrace? errortrace-module-path))
                       args)))
            (define proc (list-ref ps 4))
            
@@ -1102,6 +1118,10 @@
  [("--deps")
   "If treating arguments as packages, also test dependencies"
   (set! check-pkg-deps? #t)]
+ #:once-any
+ [("--errortrace")
+  "Load errortrace before testing"
+  (set! load-errortrace? #t)]
  [("--make" "-y")
   "Enable automatic update of compiled files"
   (set! make? #t)]
@@ -1138,6 +1158,18 @@
    (when (and make?
               (eq? 'direct (or default-mode (and single-file? 'direct))))
      (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler)))
+   ;; Note 1: Must load errortrace before the test target is loaded.
+   ;; Moreover, checking module-declared? in test-files actually loads the module!
+   ;;
+   ;; Note 2: errortrace and bytecode compilation usually don't work together,
+   ;; so we disallow combining them in the options. If errortrace is loaded
+   ;; after make? sets current-load/use-compiled, the compilation won't
+   ;; take place; if errortrace (and racket/base) is loaded before make? sets
+   ;; current-load/use-compiled, raco test will end up compiling everything
+   ;; which is unlikely to be what the user wants.
+   (when (and load-errortrace?
+              (eq? 'direct (or default-mode (and single-file? 'direct))))
+     (dynamic-require errortrace-module-path 0))
    (define sum
      ;; The #:sema argument everywhre makes tests start
      ;; in a deterministic order:
