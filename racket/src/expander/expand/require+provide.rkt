@@ -345,7 +345,18 @@
   (cond
    [(not b) (check-default-space)]
    [(not (module-binding? b))
-    (raise-syntax-error #f "identifier out of context" id)]
+    (cond
+      [allow-defined?
+       ;; A local binding shadows this would-be `require`, which is
+       ;; possible and sensible if a require is lifted without a new
+       ;; scope. This is not sensible if some scope has been put onto a
+       ;; `require` form out-of-context, but it seems that we can't help
+       ;; report the non-sensible configuration without disallowing the
+       ;; sensible one.
+       (set-requires+provides-all-bindings-simple?! r+p #f)
+       'defined]
+      [else
+       (raise-syntax-error #f "identifier out of context" id)])]
    [else
     (define defined? (and b (eq? (requires+provides-self r+p)
                                  (module-binding-module b))))
