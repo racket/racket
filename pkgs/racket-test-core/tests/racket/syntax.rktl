@@ -1392,6 +1392,26 @@
 (syntax-test #'(let ([#%app 5])
 		 (+ 1 2)))
 
+(err/rt-test ('oops (/ 1 0)) exn:fail:contract:divide-by-zero?)
+(test "#<procedure:*>\n"
+      'left-to-right-error
+      (let ([o (open-output-string)])
+        (parameterize ([current-output-port o])
+          (with-handlers ([exn:fail? void])
+            ((void)
+             (letrec ((E (writeln *))
+                      (H 1))
+               (let () H)))))
+        (get-output-string o)))
+
+
+(err/rt-test ((if (zero? (random 1)) 'oops 'nope) (/ 1 0)) exn:fail:contract:divide-by-zero?)
+(err/rt-test ((void)
+              (letrec ((E (/ 1 0))
+                       (H 1))
+                (let () H)))
+             exn:fail:contract:divide-by-zero?)
+
 (test 3 '#%app (#%app + 1 2))
 (syntax-test #'())
 (syntax-test #'(#%app))

@@ -342,9 +342,10 @@
     #f]))
 
 (define (not-a-procedure f)
-  (raise-arguments-error 'application
-                         "not a procedure;\n expected a procedure that can be applied to arguments"
-                         "given" f))
+  (lambda args
+    (raise-arguments-error 'application
+                           "not a procedure;\n expected a procedure that can be applied to arguments"
+                           "given" f)))
 
 (define (wrong-arity-wrapper f)
   (lambda args
