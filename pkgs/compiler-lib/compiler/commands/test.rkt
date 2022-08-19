@@ -1167,9 +1167,19 @@
    ;; take place; if errortrace (and racket/base) is loaded before make? sets
    ;; current-load/use-compiled, raco test will end up compiling everything
    ;; which is unlikely to be what the user wants.
-   (when (and load-errortrace?
-              (eq? 'direct (or default-mode (and single-file? 'direct))))
-     (dynamic-require errortrace-module-path 0))
+   (when load-errortrace?
+     (with-handlers ([exn:fail:filesystem:missing-module?
+                      (λ (e)
+                        (raise-user-error
+                         'raco
+                         (string-append
+                          "The flag --errortrace depends on errortrace,"
+                          " but errortrace-lib is not installed")))])
+       (module-declared? errortrace-module-path #t))
+     ;; If running the tests in the current namespace, install errortrace.
+     ;; Otherwise, the other places/processes will load errortrace.
+     (when (eq? 'direct (or default-mode (and single-file? 'direct)))
+       (dynamic-require errortrace-module-path 0)))
    (define sum
      ;; The #:sema argument everywhre makes tests start
      ;; in a deterministic order:
