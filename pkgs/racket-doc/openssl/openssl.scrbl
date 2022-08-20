@@ -276,6 +276,14 @@ current platform for client connections.
 @history[#:added "6.1.1.3"]
 }
 
+@defproc[(ssl-protocol-version [p ssl-port?])
+         ssl-protocol-symbol/c]{
+
+Returns a symbol representing the SSL/TLS protocol version negotiated for the
+connection represented by @racket[p].
+
+@history[#:added "8.6.0.4"]}
+
 @; ----------------------------------------------------------------------
 
 @section{TCP-like Server Procedures}
@@ -878,24 +886,43 @@ If @racket[ssl-peer-verified?] would return @racket[#t] for
 the certificate presented by the SSL port's peer, otherwise the result
 is @racket[#f].}
 
+@defproc[(ssl-default-channel-binding [p ssl-port?])
+         (list/c symbol? bytes?)]{
+
+Returns the default channel binding type and value for @racket[p], based on the
+connection's TLS protocol version. Following
+@hyperlink["https://datatracker.ietf.org/doc/html/rfc9266#section-3"]{RFC 9266 Section 3},
+the result uses @racket['tls-exporter] for TLS 1.3 and later;
+it uses @racket['tls-unique] for TLS 1.2 and earlier.
+
+@history[#:added "8.6.0.4"]}
+
 @defproc[(ssl-channel-binding [p ssl-port?]
-                              [type (or/c 'tls-unique 'tls-server-end-point)])
+                              [type (or/c 'tls-exporter
+                                          'tls-unique
+                                          'tls-server-end-point)])
          bytes?]{
 
 Returns channel binding information for the TLS connection of
 @racket[p]. An authentication protocol run over TLS can incorporate
-information identifying the TLS connection (@racket['tls-unique]) or
+information identifying the TLS connection (@racket['tls-exporter] or
+@racket['tls-unique]) or
 server certificate (@racket['tls-server-end-point]) into the
 authentication process, thus preventing the authentication steps from
 being replayed on another channel. Channel binding is described in
 general in @hyperlink["https://tools.ietf.org/html/rfc5056"]{RFC 5056};
 channel binding for TLS is described in
-@hyperlink["https://tools.ietf.org/html/rfc5929"]{RFC 5929}.
+@hyperlink["https://tools.ietf.org/html/rfc5929"]{RFC 5929} and
+@hyperlink["https://datatracker.ietf.org/doc/html/rfc9266"]{RFC 9266}.
 
 If the channel binding cannot be retrieved (for example, if the
 connection is closed), an exception is raised.
 
-@history[#:added "7.7.0.9"]}
+@history[
+#:added "7.7.0.9"
+#:changed "8.6.0.4" @elem{Added @racket['tls-exporter]. An exception is raised
+for @racket['tls-unique] with a TLS 1.3 connection.}
+]}
 
 
 @defproc[(ssl-get-alpn-selected [p ssl-port?])
