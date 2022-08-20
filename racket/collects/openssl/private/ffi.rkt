@@ -16,6 +16,18 @@
 (define-ffi-definer define-ssl libssl
   #:default-make-fail make-not-available)
 
+;; OpenSSL ownership conventions:
+;; - "get0" means ownership retained by parent object, refcount not incremented
+;; - "get1" means copied or shared & incremented refcount; we should free result
+;; - "set0" means ownership passed to parent object
+;; - "set1" means ownership not passed; copied or shared & incremented refcount
+;; Sources:
+;; - https://www.openssl.org/docs/man3.0/man7/crypto.html "Library Conventions"
+;; - https://www.openssl.org/docs/man3.0/man7/openssl-threads.html
+;; Unfortunately, many older function have ambiguous names.
+
+(define ((do-not-free [remark #f]) v) v)
+
 ;; ----------------------------------------
 
 (define X509_V_OK 0)
@@ -127,7 +139,8 @@
 (define-crypto DH_free (_fun _DH* -> _void) #:wrap (deallocator))
 (define-crypto EC_KEY_free (_fun _EC_KEY* -> _void) #:wrap (deallocator))
 
-(define-crypto EC_KEY_new_by_curve_name (_fun _int -> _EC_KEY*) #:wrap (allocator EC_KEY_free))
+(define-crypto EC_KEY_new_by_curve_name (_fun _int -> _EC_KEY*)
+  #:wrap (allocator EC_KEY_free))
 
 (define-crypto BIO_s_mem (_fun -> _BIO_METHOD*))
 (define-crypto BIO_new (_fun _BIO_METHOD* -> _BIO*/null))
@@ -196,10 +209,12 @@
                                     (lambda () (make-not-available name))))))
   #:wrap (allocator X509_free))
 (define-ssl SSL_get_certificate (_fun _SSL* -> _X509*/null)
-  #:wrap (allocator X509_free))
+  #:wrap (do-not-free "owned by SSL object"))
 
-(define-crypto X509_get_subject_name (_fun _X509* -> _X509_NAME*))
-(define-crypto X509_get_issuer_name (_fun _X509* -> _X509_NAME*))
+(define-crypto X509_get_subject_name (_fun _X509* -> _X509_NAME*)
+  #:wrap (do-not-free "owned by X509"))
+(define-crypto X509_get_issuer_name (_fun _X509* -> _X509_NAME*)
+  #:wrap (do-not-free "owned by X509"))
 (define-crypto X509_NAME_oneline (_fun _X509_NAME* _bytes _int -> _bytes))
 
 (define-ssl SSL_get_error (_fun _SSL* _int -> _int))
@@ -212,7 +227,8 @@
   (define-ssl SSL_load_error_strings (_fun -> _void) #:fail (lambda () void)))
 
 (define-crypto GENERAL_NAME_free _fpointer)
-(define-crypto PEM_read_bio_DHparams (_fun _BIO* _pointer _pointer _pointer -> _DH*) #:wrap (allocator DH_free))
+(define-crypto PEM_read_bio_DHparams (_fun _BIO* _pointer _pointer _pointer -> _DH*)
+  #:wrap (allocator DH_free))
 (define-crypto ASN1_STRING_length (_fun _ASN1_STRING* -> _int))
 (define-crypto ASN1_STRING_data (_fun _ASN1_STRING* -> _pointer))
 (define-crypto X509_NAME_get_index_by_NID (_fun _X509_NAME* _int _int -> _int))
