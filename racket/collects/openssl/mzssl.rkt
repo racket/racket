@@ -172,7 +172,11 @@ TO DO:
   [ssl-peer-issuer-name
    (c-> ssl-port? (or/c bytes? #f))]
   [ssl-channel-binding
-   (c-> ssl-port? (or/c 'tls-unique 'tls-server-end-point) bytes?)]
+   (c-> ssl-port? (or/c 'tls-exporter 'tls-unique 'tls-server-end-point) bytes?)]
+  [ssl-default-channel-binding
+   (c-> ssl-port? (list/c symbol? bytes?))]
+  [ssl-protocol-version
+   (c-> ssl-port? (or/c symbol? #f))]
   [ssl-get-alpn-selected
    (c-> ssl-port? (or/c bytes? #f))]
   [ports->ssl-ports
@@ -1581,13 +1585,40 @@ TO DO:
     (when namestack (sk_pop_free namestack GENERAL_NAME_free))
     names))
 
+(define (ssl-default-channel-binding p)
+  ;; Reference: RFC 9266 (https://datatracker.ietf.org/doc/html/rfc9266), Section 3
+  (define who 'ssl-channel-binding)
+  (define-values (mzssl _in?) (lookup 'ssl-channel-binding p))
+  (define ssl (mzssl-ssl mzssl))
+  (define tlsver (SSL_version ssl))
+  (cond [(>= tlsver TLS1_3_VERSION)
+         (list 'tls-exporter (ssl-channel-binding p 'tls-exporter))]
+        [else
+         (list 'tls-unique (ssl-channel-binding p 'tls-unique))]))
+
 (define (ssl-channel-binding p type)
   ;; Reference: https://tools.ietf.org/html/rfc5929
   (define who 'ssl-channel-binding)
   (define-values (mzssl _in?) (lookup 'ssl-channel-binding p))
   (define ssl (mzssl-ssl mzssl))
+  (define tlsver (SSL_version ssl))
   (case type
+    [(tls-exporter)
+     ;; Reference: RFC 9266 (https://datatracker.ietf.org/doc/html/rfc9266)
+     ;; Only ok for TLS 1.3 and older TLS with Extended Master Secret extension!
+     (unless (or (>= tlsver TLS1_3_VERSION)
+                 (= (SSL_get_extms_support ssl) 1))
+       (error who "tls-exporter channel binding undefined~a"
+              ";\n requires TLS 1.3 or Extended Master Secret extension"))
+     (define buf (make-bytes 32))
+     (define label #"EXPORTER-Channel-Binding")
+     (define context #"")
+     (define r (SSL_export_keying_material ssl buf label context))
+     (cond [(= r 1) buf]
+           [else (error who "failed getting Exported Keying Material")])]
     [(tls-unique)
+     (unless (< tlsver TLS1_3_VERSION)
+       (error who "tls-unique channel binding is undefined for TLS 1.3"))
      (define MAX_FINISH_LEN 50) ;; usually 12 bytes, but be cautious (see RFC 5246 7.4.9)
      (define get-finished ;; assumes no session resumption
        (cond [(mzssl-server? mzssl) SSL_get_peer_finished]
@@ -1617,6 +1648,17 @@ TO DO:
      (define r (X509_digest x509 hash-evp buf buflen))
      (X509_free x509)
      (if (> r 0) buf (error who "internal error: certificate digest failed"))]))
+
+(define (ssl-protocol-version p)
+  (define-values (mzssl _in?) (lookup 'ssl-protocol-version p))
+  (define ssl (mzssl-ssl mzssl))
+  (define tlsver (SSL_version ssl))
+  (cond [(= tlsver TLS1_3_VERSION) 'tls13]
+        [(= tlsver TLS1_2_VERSION) 'tls12]
+        [(= tlsver TLS1_1_VERSION) 'tls11]
+        [(= tlsver TLS1_VERSION) 'tls]
+        [(= tlsver SSL3_VERSION) 'sslv3]
+        [else #f]))
 
 (define (ssl-get-alpn-selected p)
   (define-values (mzssl _in?) (lookup 'ssl-get-alpn-selected p))

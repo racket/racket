@@ -60,6 +60,7 @@
 (define SSL_CTRL_SET_TLSEXT_HOSTNAME 55)
 (define SSL_CTRL_SET_TMP_DH 3)
 (define SSL_CTRL_SET_TMP_ECDH 4)
+(define SSL_CTRL_GET_EXTMS_SUPPORT 122)
 (define SSL_CTRL_SET_MIN_PROTO_VERSION 123)
 (define SSL_CTRL_SET_MAX_PROTO_VERSION 124)
 
@@ -360,3 +361,15 @@
              (lambda (ssl host)
                (X509_VERIFY_PARAM_set1_host (SSL_get0_param ssl)
                                             (string->bytes/latin-1 host))))))
+
+(define-ssl SSL_export_keying_material
+  (_fun [ssl : _SSL*]
+        [out : _bytes] [olen : _size = (bytes-length out)]
+        [label : _bytes] [llen : _size = (bytes-length label)]
+        [context : _bytes]
+        [contextlen : _size = (if context (bytes-length context) 0)]
+        [use-context? : _bool = (and context #t #f)]
+        -> _int))
+
+(define (SSL_get_extms_support s)
+  (SSL_ctrl/bytes s SSL_CTRL_GET_EXTMS_SUPPORT 0 #f))
