@@ -298,7 +298,7 @@ are not supported and @racket[read-single-flonum] is set to
 would otherwise be produced. Special infinity and not-a-number flonums
 and single-flonums are distinct; specials with the @litchar{.0}
 suffix, like @racket[+nan.0], are double-precision flonums, while
-specials with the @litchar{.f} suffix, like @racketvalfont{+nan.0}, 
+specials with the @litchar{.f} suffix, like @racketvalfont{+nan.f}, 
 are single-flonums if enabled though @racket[read-single-flonum].
 
 A @litchar{#} in an @nunterm{inexact} number is the same as
