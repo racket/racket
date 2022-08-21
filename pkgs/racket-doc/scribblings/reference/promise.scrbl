@@ -174,3 +174,49 @@ TODO: Say something on:
   demand.
 ;}
 }
+
+@(define promise-eval
+   (let ([eval (make-base-eval)])
+     (eval '(require racket/promise))
+     eval))
+
+@defform[
+  (for/list/concurrent maybe-group (for-clause ...)
+    body-or-break ... body)
+  #:grammar
+  [(maybe-group (code:line)
+                (code:line #:group thread-group-expr))]
+  #:contracts ([thread-group-expr thread-group?])]{
+
+  Iterates like @racket[for/list], but the bodies (following any
+  @racket[#:break] or @racket[#:final] clauses) are wrapped in
+  @racket[delay/thread].  Each @tech{promise} is forced before the
+  result list is returned.
+
+  Threads are created under @racket[thread-group-expr], which defaults
+  to @racket[(make-thread-group)].  An optional @racket[#:group]
+  clause may be provided, in which case the threads will be created
+  under that thread group.
+
+  This form does not support returning multiple values.
+
+  @examples[
+    #:eval promise-eval
+    (time
+     (for/list/concurrent ([i (in-range 5)])
+       (define duration (/ 1.0 (random 50 100)))
+       (sleep duration)
+       (printf "thread ~a slept for ~a milliseconds~n" i (truncate (* duration 1000)))
+       i))
+  ]
+
+  @history[#:added "8.6.0.4"]
+}
+
+@defform[(for*/list/concurrent maybe-group (for-clause ...)
+           body-or-break ... body)]{
+  Like @racket[for/list/concurrent], but with the implicit nesting of
+  @racket[for*/list].
+
+  @history[#:added "8.6.0.4"]
+}
