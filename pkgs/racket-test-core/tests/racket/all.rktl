@@ -39,6 +39,7 @@
 (load-in-sandbox "trace.rktl")
 (load-in-sandbox "trait.rktl")
 (load-in-sandbox "promise.rktl")
+(load-in-sandbox "future.rktl")
 
 (load-in-sandbox "moddep.rktl")
 (load-in-sandbox "boundmap-test.rktl")
