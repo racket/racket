@@ -801,12 +801,13 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    is copied (which makes sense for precompiled packages).}
 
  @item{@indexed-racket[install-platform] : @racket[platform-spec?]
-   --- Determines whether files are copied or moved
-   for @racket[copy-foreign-libs], @racket[move-foreign-libs],
-   @racket[copy-shared-files], or @racket[move-shared-files]. 
-   See @racket[matching-platform?] for information on the way that the
-   specification is compared to @racket[(system-type)]
-   and @racket[(system-library-subpath #f)].}
+   If this specification matches the current platform, the foreign
+   libraries associated with this package are copied or moved into
+   useful locations. See @racket[copy-foreign-libs],
+   @racket[move-foreign-libs], @racket[copy-shared-files], and
+   @racket[move-shared-files]. Also see @racket[matching-platform?] for
+   information on the way that the specification is compared to
+   @racket[(system-type)] and @racket[(system-library-subpath #f)].}
 
  @item{@indexed-racket[install-collection] : @racket[path-string?] ---
    A library module relative to the collection that provides
