@@ -167,6 +167,7 @@
                                       #f
                                       (machine-type)))
    (define compiled-roots-path-list-string (getenv "PLTCOMPILEDROOTS"))
+   (define port-count-graphemes (not (getenv "PLT_PORT_COUNT_CHARS")))
    (define embedded-load-in-places '())
 
    (define init-compiled-file-check (let ([s (getenv "PLT_COMPILED_FILE_CHECK")])
@@ -817,7 +818,8 @@
                                         compiled-roots-path-list-string
                                         (version))])
                 (path-list-string->path-list s roots)))
-             (current-compiled-file-roots roots)))))
+             (current-compiled-file-roots roots))))
+     (port-count-graphemes-enabled port-count-graphemes))
 
    ;; Called when Racket is embedded in a larger application:
    (define (register-embedded-entry-info! escape)

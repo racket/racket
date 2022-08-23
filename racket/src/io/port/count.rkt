@@ -11,10 +11,12 @@
          "../string/utf-8-decode.rkt")
 
 (provide port-count-lines-enabled
+         port-count-graphemes-enabled
          finish-port/count
 
          port-count-lines!
          port-counts-lines?
+         port-counts-graphemes?
          port-next-location
          set-port-next-location!
          
@@ -26,6 +28,9 @@
 
 (define port-count-lines-enabled
   (make-parameter #f (lambda (v) (and v #t)) 'port-count-lines-enabled))
+
+(define port-count-graphemes-enabled
+  (make-parameter #t (lambda (v) (and v #t)) 'port-count-graphemes-enabled))
 
 (define (finish-port/count p)
   (when (port-count-lines-enabled)
@@ -40,7 +45,8 @@
     (atomically
      (check-not-closed who p)
      (unless (core-port-count p)
-       (set-core-port-count! p (location #f 0 1 0 (add1 (or (core-port-offset p) 0))))
+       (define grcl-state (if (port-count-graphemes-enabled) 0 'no))
+       (set-core-port-count! p (location #f grcl-state 1 0 (add1 (or (core-port-offset p) 0))))
        (define count-lines! (method core-port p count-lines!))
        (when count-lines!
          (count-lines! p))))))
@@ -52,6 +58,16 @@
           [(output-port? p) (->core-output-port p)]
           [else
            (check who #:test #f #:contract "port?" p)]))
+       #t))
+
+(define/who (port-counts-graphemes? p)
+  (and (let ([cl (core-port-count
+                  (cond
+                    [(input-port? p) (->core-input-port p)]
+                    [(output-port? p) (->core-output-port p)]
+                    [else
+                     (check who #:test #f #:contract "port?" p)]))])
+         (and cl (not (symbol? (location-grcl-state cl)))))
        #t))
 
 (define/who (port-next-location p)
@@ -126,7 +142,7 @@
                [column (location-column loc)]
                [position (location-position loc)]
                [state (location-state loc)]
-               [grcl-state (location-grcl-state loc)]) ; 0 => no pending, fixnum => 1 pending, otherwise `(cons state pending)`
+               [grcl-state (location-grcl-state loc)]) ; 'cr or 'no => CRLF only, 0 => no pending, fixnum => 1 pending, otherwise `(cons state pending)`
       (define (finish-utf-8 i abort-mode)
         (define-values (used-bytes got-chars new-state got-grcl new-grcl-state)
           (utf-8-decode! bstr (- i span) i
@@ -151,10 +167,12 @@
                                          0)))
                               (- (cond
                                    [(pair? grcl-state) (cdr grcl-state)]
+                                   [(symbol? grcl-state) (if (eq? grcl-state 'cr) 1 0)]
                                    [(fx= 0 grcl-state) 0]
                                    [else 1])
                                  (cond
                                    [(pair? new-grcl-state) (cdr new-grcl-state)]
+                                   [(symbol? new-grcl-state) (if (eq? grcl-state 'cr) 1 0)]
                                    [(fx= 0 new-grcl-state) 0]
                                    [else 1]))))
         (define (keep-aborts s) (if (eq? s 'complete) #f s))
@@ -185,7 +203,7 @@
              (loop i 0 line (and column (- column n)) (and position (- position n)) #f 0)]
             [else
              ;; pending character is its own grapheme cluster
-             (loop i 0 line column position #f 0)]))
+             (loop i 0 line column position #f (if (symbol? grcl-state) #f (if (symbol? grcl-state) 'no 0)))]))
         (cond
          [(eq? b (char->integer #\newline))
           (cond
@@ -195,6 +213,11 @@
              (end-grcl)]
             [(eqv? 0 grcl-state)
              (loop (fx+ i 1) 0 (and line (add1 line)) (and column 0) (and position (add1 position)) #f 0)]
+            [(symbol? grcl-state)
+             ;; 'cr or 'no, where we've hit "\r\n" if 'cr
+             (if (eq? grcl-state 'cr)
+                 (loop (fx+ i 1) 0 line column position #f 'no)
+                 (loop (fx+ i 1) 0 (and line (add1 line)) (and column 0) (and position (add1 position)) #f 'no))]
             [else
              ;; "\r\n" combination counts as a single position; it turns out that `char-grapheme-step`
              ;; will return `new-grcl-state` as 0 if a "\r\n" is consumed
@@ -213,6 +236,8 @@
                [(eqv? 0 grcl-state)
                 (define-values (consume? new-grcl-state) (char-grapheme-step #\return 0))
                 (loop (fx+ i 1) 0 (and line (add1 line)) (and column 0) (and position (add1 position)) #f new-grcl-state)]
+               [(symbol? grcl-state)
+                (loop (fx+ i 1) 0 (and line (add1 line)) (and column 0) (and position (add1 position)) #f 'cr)]
                [else
                 (end-grcl)])]
             [else
@@ -220,7 +245,7 @@
          [(eq? b (char->integer #\tab))
           (cond
             [(and (fx= 0 span) (not state))
-             (if (fx= 0 grcl-state)
+             (if (eqv? 0 grcl-state)
                  (loop (fx+ i 1) 0 line (and column (+ (bitwise-and column -8) 8)) (and position (add1 position)) #f 0)
                  ;; A tab (which is a control character) cannot continue a grapheme cluster
                  (end-grcl))]
@@ -236,22 +261,26 @@
              (cond
                [(not (pair? grcl-state))
                 ;; This common case is also handled in `port-count-byte!`
-                (define-values (consumed? new-grcl-state) (char-grapheme-step (integer->char b) grcl-state))
                 (cond
-                  [(or (fx= 0 grcl-state)
-                       consumed?)
-                   ;; number of grcl-pending characters is accurately reflected by `new-grcl-state`; if it's
-                   ;; non-0, this is a tentative increment
-                   (loop (fx+ i 1) 0 line (and column (add1 column)) (and position (add1 position)) #f new-grcl-state)]
-                  [(and consumed?
-                        (fx= 0 new-grcl-state))
-                   ;; old state must be non-0; since if new state is 0, then both characters consumed as one grcl,
-                   ;; so don't increment
-                   (loop (fx+ i 1) 0 line column position #f 0)]
+                  [(symbol? grcl-state)
+                   (loop (fx+ i 1) 0 line (and column (add1 column)) (and position (add1 position)) #f 'no)]
                   [else
-                   ;; two characters are now pending for the grapheme cluster, and this is a tentative increment
-                   ;; for the second one
-                   (loop (fx+ i 1) 0 line (and column (add1 column)) (and position (add1 position)) #f (cons new-grcl-state 2))])]
+                   (define-values (consumed? new-grcl-state) (char-grapheme-step (integer->char b) grcl-state))
+                   (cond
+                     [(or (fx= 0 grcl-state)
+                          consumed?)
+                      ;; number of grcl-pending characters is accurately reflected by `new-grcl-state`; if it's
+                      ;; non-0, this is a tentative increment
+                      (loop (fx+ i 1) 0 line (and column (add1 column)) (and position (add1 position)) #f new-grcl-state)]
+                     [(and consumed?
+                           (fx= 0 new-grcl-state))
+                      ;; old state must be non-0; since if new state is 0, then both characters consumed as one grcl,
+                      ;; so don't increment
+                      (loop (fx+ i 1) 0 line column position #f 0)]
+                     [else
+                      ;; two characters are now pending for the grapheme cluster, and this is a tentative increment
+                      ;; for the second one
+                      (loop (fx+ i 1) 0 line (and column (add1 column)) (and position (add1 position)) #f (cons new-grcl-state 2))])])]
                [else
                 (define-values (consumed? new-grcl-state) (char-grapheme-step (integer->char b) (car grcl-state)))
                 (cond
@@ -292,21 +321,30 @@
      [else
       ;; Same as handling above in `port-count!` (see rationale there):
       (define grcl-state (location-grcl-state loc))
-      (define-values (consumed? new-grcl-state)
-        (char-grapheme-step (if (fixnum? b) (integer->char b) #\x) grcl-state))
       (cond
-        [(and (fx= 0 new-grcl-state) ; implies `consumed?`
-              (not (fx= 0 grcl-state)))
-         (set-location-grcl-state! loc 0)]
-        [else
+        [(symbol? grcl-state)
+         ;; only counting CRLF
          (define column (location-column loc))
          (define position (location-position loc))
          (when position (set-location-position! loc (add1 position)))
          (when column (set-location-column! loc (add1 column)))
-         (set-location-grcl-state! loc (if (or consumed?
-                                               (fx= 0 grcl-state))
-                                           new-grcl-state
-                                           (cons new-grcl-state 2)))])])))
+         (set-location-grcl-state! loc 'no)]
+        [else
+         (define-values (consumed? new-grcl-state)
+           (char-grapheme-step (if (fixnum? b) (integer->char b) #\x) grcl-state))
+         (cond
+           [(and (fx= 0 new-grcl-state) ; implies `consumed?`
+                 (not (fx= 0 grcl-state)))
+            (set-location-grcl-state! loc 0)]
+           [else
+            (define column (location-column loc))
+            (define position (location-position loc))
+            (when position (set-location-position! loc (add1 position)))
+            (when column (set-location-column! loc (add1 column)))
+            (set-location-grcl-state! loc (if (or consumed?
+                                                  (fx= 0 grcl-state))
+                                              new-grcl-state
+                                              (cons new-grcl-state 2)))])])])))
 
 ;; in atomic mode
 (define (port-count-byte-all! in extra-ins b)

@@ -721,7 +721,8 @@ Scheme_Object *scheme_make_port_type(const char *name)
 
 static void init_port_locations(Scheme_Port *ip)
 {
-  int cl;
+  Scheme_Config *config;
+  int cl, cg;
 
   ip->position = 0;
   ip->readpos = 0; /* like position, but post UTF-8 decoding and grapheme clustering */
@@ -729,8 +730,15 @@ static void init_port_locations(Scheme_Port *ip)
   ip->oldColumn = 0;
   ip->column = 0;
   ip->charsSinceNewline = 1;
-  cl = SCHEME_TRUEP(scheme_get_param(scheme_current_config(), MZCONFIG_PORT_COUNT_LINES));
+
+  config = scheme_current_config();
+  cl = SCHEME_TRUEP(scheme_get_param(config, MZCONFIG_PORT_COUNT_LINES));
+  if (cl)
+    cg = SCHEME_TRUEP(scheme_get_param(config, MZCONFIG_PORT_COUNT_GRAPHEMES));
+  else
+    cg = 0;
   ip->count_lines = cl;
+  ip->count_graphemes = cg;
 }
 
 void scheme_set_next_port_custodian(Scheme_Custodian *c)
@@ -1025,7 +1033,7 @@ XFORM_NONGCING static void do_count_lines(Scheme_Port *ip, const char *buffer, i
     int n;
     degot += state_len(state);
     n = scheme_utf8_grcl_decode_count((const unsigned char *)buffer, offset, offset + i + 1, &state, 0, 0xFFFD,
-                                      &ip->grcl_state);
+                                      &ip->grcl_state, ip->count_graphemes);
     degot += (i + 1 - n);
     ip->utf8state = 0; /* assert: state == 0, because we ended with a newline */
     if ((i < got - 1) && ip->grcl_state.state) {
@@ -1086,7 +1094,7 @@ XFORM_NONGCING static void do_count_lines(Scheme_Port *ip, const char *buffer, i
     for (i = prev_i; i < got; i++) {
       if (buffer[offset + i] == '\t') {
 	n = scheme_utf8_grcl_decode_count((const unsigned char *)buffer, offset + prev_i, offset + i, &state, 0, 0xFFFD,
-                                          &ip->grcl_state);
+                                          &ip->grcl_state, ip->count_graphemes);
         if (ip->grcl_state.state) {
           /* tab will not combine */
           ip->grcl_state.state = 0;
@@ -1101,7 +1109,7 @@ XFORM_NONGCING static void do_count_lines(Scheme_Port *ip, const char *buffer, i
     }
     if (prev_i < i) {
       n = scheme_utf8_grcl_decode_count((const unsigned char *)buffer, offset + prev_i, offset + i, &state, 1, 0xFFFD,
-                                        &ip->grcl_state);
+                                        &ip->grcl_state, ip->count_graphemes);
       n += state_len(state);
       col += n;
       degot += ((i - prev_i) - n);
@@ -3067,6 +3075,8 @@ scheme_count_lines (Scheme_Object *port)
 
   if (!ip->count_lines) {
     ip->count_lines = 1;
+    if (SCHEME_TRUEP(scheme_get_param(scheme_current_config(), MZCONFIG_PORT_COUNT_GRAPHEMES)))
+      ip->count_graphemes = 1;
     if (ip->count_lines_fun) {
       Scheme_Count_Lines_Fun cl = ip->count_lines_fun;
       cl(ip);

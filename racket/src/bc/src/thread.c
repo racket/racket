@@ -8178,6 +8178,7 @@ static void make_initial_config(Scheme_Thread *p)
     init_param(cells, paramz, MZCONFIG_READ_HANDLER, ph);
   }
   init_param(cells, paramz, MZCONFIG_PORT_COUNT_LINES, scheme_false);
+  init_param(cells, paramz, MZCONFIG_PORT_COUNT_GRAPHEMES, scheme_true);
 
   {
     Scheme_Object *lh;

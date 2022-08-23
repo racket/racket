@@ -1301,9 +1301,11 @@ static int run_from_cmd_line(int argc, char *_argv[],
     }
   }
 
-  if (getenv("PLT_COMPILE_ANY")) {
+  if (getenv("PLT_COMPILE_ANY"))
     scheme_set_startup_compile_machine_independent(1);
-  }
+
+  if (getenv("PLT_PORT_COUNT_CHARS"))
+    scheme_set_port_count_graphemes(0);
 
   scheme_set_logging2_spec(syslog_level, stderr_level, stdout_level);
 

@@ -89,8 +89,10 @@ static Scheme_Object *port_write_handler(int, Scheme_Object **args);
 static Scheme_Object *port_print_handler(int, Scheme_Object **args);
 static Scheme_Object *global_port_print_handler(int, Scheme_Object **args);
 static Scheme_Object *global_port_count_lines(int, Scheme_Object **args);
+static Scheme_Object *global_port_count_graphemes(int, Scheme_Object **args);
 static Scheme_Object *port_count_lines(int, Scheme_Object **args);
 static Scheme_Object *port_counts_lines_p(int, Scheme_Object **args);
+static Scheme_Object *port_counts_graphemes_p(int, Scheme_Object **args);
 static Scheme_Object *port_next_location(int, Scheme_Object **args);
 static Scheme_Object *set_port_next_location(int, Scheme_Object **args);
 
@@ -215,6 +217,7 @@ scheme_init_port_fun(Scheme_Startup_Env *env)
   ADD_PARAMETER("load-on-demand-enabled",            load_on_demand_enabled,     MZCONFIG_LOAD_DELAY_ENABLED,    env);
 #endif
   ADD_PARAMETER("port-count-lines-enabled",          global_port_count_lines,    MZCONFIG_PORT_COUNT_LINES,      env);
+  ADD_PARAMETER("port-count-graphemes-enabled",      global_port_count_graphemes, MZCONFIG_PORT_COUNT_GRAPHEMES, env);
 
   ADD_FOLDING_PRIM("input-port?",            input_port_p,               1, 1, 1, env);
   ADD_FOLDING_PRIM("output-port?",           output_port_p,              1, 1, 1, env); 
@@ -309,6 +312,7 @@ scheme_init_port_fun(Scheme_Startup_Env *env)
   ADD_NONCM_PRIM("port-file-identity",             scheme_file_identity,           1, 1, env);
   ADD_NONCM_PRIM("port-count-lines!",              port_count_lines,               1, 1, env);
   ADD_NONCM_PRIM("port-counts-lines?",             port_counts_lines_p,            1, 1, env);
+  ADD_NONCM_PRIM("port-counts-graphemes?",         port_counts_graphemes_p,        1, 1, env);
           
   REGISTER_SO(scheme_eof_object_p_proc);
   scheme_eof_object_p_proc = scheme_make_folding_prim(eof_object_p, "eof-object?", 1, 1, 1);
@@ -4314,10 +4318,29 @@ static Scheme_Object *port_counts_lines_p(int argc, Scheme_Object *argv[])
   return (ip->count_lines ? scheme_true : scheme_false);
 }
 
+static Scheme_Object *port_counts_graphemes_p(int argc, Scheme_Object *argv[])
+{
+  Scheme_Port *ip;
+
+  if (!SCHEME_INPUT_PORTP(argv[0]) && !SCHEME_OUTPUT_PORTP(argv[0]))
+    scheme_wrong_contract("port-counts-graphemes?", "port?", 0, argc, argv);
+
+  ip = scheme_port_record(argv[0]);
+
+  return (ip->count_graphemes ? scheme_true : scheme_false);
+}
+
 static Scheme_Object *global_port_count_lines(int argc, Scheme_Object **argv)
 {
   return scheme_param_config("port-count-lines-enabled",
 			     scheme_make_integer(MZCONFIG_PORT_COUNT_LINES),
+			     argc, argv, -1, NULL, NULL, 1);
+}
+
+static Scheme_Object *global_port_count_graphemes(int argc, Scheme_Object **argv)
+{
+  return scheme_param_config("port-count-graphemes-enabled",
+			     scheme_make_integer(MZCONFIG_PORT_COUNT_GRAPHEMES),
 			     argc, argv, -1, NULL, NULL, 1);
 }
 

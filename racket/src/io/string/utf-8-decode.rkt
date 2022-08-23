@@ -70,16 +70,30 @@
     (define (step-grapheme ch)
       (cond
         [grcl-state
-         (define-values (consume? new-grcl-state*)
-           (char-grapheme-step ch (if (pair? grcl-state)
-                                      (car grcl-state)
-                                      grcl-state)))
-         (define new-grcl-state (if (or consume?
-                                        (eqv? grcl-state 0))
-                                    new-grcl-state*
-                                    (cons new-grcl-state* (if (pair? grcl-state) (add1 (cdr grcl-state)) 2))))
-         (define new-grcl-done (if consume? (fx+ grcl-done 1) grcl-done))
-         (values new-grcl-done new-grcl-state)]
+         (cond
+           [(symbol? grcl-state)
+            ;; only count CRLF, grcl-state is 'no or 'cr
+            (cond
+              [(eq? grcl-state 'cr)
+               (cond
+                 [(eqv? #\newline ch) (values (fx+ grcl-done 1) 'no)]
+                 [(eqv? #\return ch) (values (fx+ grcl-done 1) 'cr)]
+                 [else (values (fx+ grcl-done 2) 'no)])]
+              [else
+               (if (eqv? #\return ch)
+                   (values grcl-done 'cr)
+                   (values (fx+ grcl-done 1) 'no))])]
+           [else
+            (define-values (consume? new-grcl-state*)
+              (char-grapheme-step ch (if (pair? grcl-state)
+                                         (car grcl-state)
+                                         grcl-state)))
+            (define new-grcl-state (if (or consume?
+                                           (eqv? grcl-state 0))
+                                       new-grcl-state*
+                                       (cons new-grcl-state* (if (pair? grcl-state) (add1 (cdr grcl-state)) 2))))
+            (define new-grcl-done (if consume? (fx+ grcl-done 1) grcl-done))
+            (values new-grcl-done new-grcl-state)])]
         [else (values 0 #f)]))
 
     ;; Shared handling for success:
@@ -208,7 +222,7 @@
              [(and (fx= 2 remaining)
                    (next-accum . fx<= . #b11111))
               ;; A shorter byte sequence would work, so this is an
-              ;; encoding mistae.
+              ;; encoding mistake.
               (error-k)]
              [(and (fx= 3 remaining)
                    (next-accum . fx<= . #b1111))

@@ -14,6 +14,9 @@
 SHARED_OK int scheme_allow_set_undefined;
 void scheme_set_allow_set_undefined(int v) { scheme_allow_set_undefined =  v; }
 int scheme_get_allow_set_undefined() { return scheme_allow_set_undefined; }
+SHARED_OK int scheme_port_count_graphemes = 1;
+void scheme_set_port_count_graphemes(int v) { scheme_port_count_graphemes =  v; }
+int scheme_get_port_count_graphemes() { return scheme_port_count_graphemes; }
 THREAD_LOCAL_DECL(int scheme_starting_up);
 
 int scheme_keep_builtin_context;

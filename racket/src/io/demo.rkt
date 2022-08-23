@@ -449,13 +449,14 @@
   (test (void) (file-position out 10))
   (test #"hola!!\0\0\0\0" (get-output-bytes out)))
 
+(define (next-location p)
+  (define-values (line col pos) (port-next-location p))
+  (list line col pos))
+
 (let ()
   (define-values (i o) (make-pipe))
   (port-count-lines! i)
   (port-count-lines! o)
-  (define (next-location p)
-    (define-values (line col pos) (port-next-location p))
-    (list line col pos))
   (test '(1 0 1) (next-location i))
   (test '(1 0 1) (next-location o))
 
@@ -520,13 +521,31 @@
 (let ()
   (define i (open-input-string "\u0019\u0000\u000E"))
   (port-count-lines! i)
-  (define (next-location p)
-    (define-values (line col pos) (port-next-location p))
-    (list line col pos))
 
   (test '(1 0 1) (next-location i))
   (test "\u0019\u0000\u000E" (read-string 3 i))
   (test '(1 3 4) (next-location i)))
+
+(parameterize ([port-count-graphemes-enabled #f])
+  (define i (open-input-string "e\u300\r\nxy"))
+  (port-count-lines! i)
+
+  (test '(1 0 1) (next-location i))
+  (test "e\u300" (read-string 2 i))
+  (test '(1 2 3) (next-location i))
+  (test "\r" (read-string 1 i))
+  (test '(2 0 4) (next-location i))
+  (test "\n" (read-string 1 i))
+  (test '(2 0 4) (next-location i))
+  (test "xy" (read-string 2 i))
+  (test '(2 2 6) (next-location i)))
+
+(parameterize ([port-count-graphemes-enabled #f])
+  (define o (open-output-string))
+  (port-count-lines! o)
+  (log-error "NOW")
+  (write-string "app\u03BBe" o)
+  (test '(1 5 6) (next-location o)))
 
 ;; ----------------------------------------
 

@@ -1415,6 +1415,7 @@ enum {
   MZCONFIG_SECURITY_GUARD,
 
   MZCONFIG_PORT_COUNT_LINES,
+  MZCONFIG_PORT_COUNT_GRAPHEMES,
 
   MZCONFIG_SCHEDULER_RANDOM_STATE,
 
@@ -1481,7 +1482,7 @@ typedef struct Scheme_GrCl_State
 struct Scheme_Port
 {
   Scheme_Object so;
-  char count_lines, was_cr;
+  char count_lines, count_graphemes, was_cr;
   intptr_t position, readpos, lineNumber, charsSinceNewline;
   intptr_t column, oldColumn; /* column tracking with one tab/newline ungetc */
   int utf8state;
@@ -1867,6 +1868,7 @@ MZ_EXTERN int scheme_defining_primitives;
 MZ_EXTERN int scheme_case_sensitive; /* Defaults to 0 */
 MZ_EXTERN int scheme_no_keywords; /* Defaults to 0 */
 MZ_EXTERN int scheme_allow_set_undefined; /* Defaults to 0 */
+MZ_EXTERN int scheme_port_count_graphemes; /* Defaults to 1 */
 MZ_EXTERN int scheme_square_brackets_are_parens; /* Defaults to 1 */
 MZ_EXTERN int scheme_curly_braces_are_parens; /* Defaults to 1 */
 MZ_EXTERN int scheme_hash_percent_syntax_only; /* Defaults to 0 */
@@ -1879,6 +1881,7 @@ MZ_EXTERN int scheme_ignore_link_paths; /* Defaults to 0 */
 
 MZ_EXTERN void scheme_set_case_sensitive(int);
 MZ_EXTERN void scheme_set_allow_set_undefined(int);
+MZ_EXTERN void scheme_set_port_count_graphemes(int);
 MZ_EXTERN void scheme_set_binary_mode_stdio(int);
 MZ_EXTERN void scheme_set_startup_use_jit(int);
 MZ_EXTERN void scheme_set_startup_compile_machine_independent(int);
