@@ -112,7 +112,7 @@
   #:authentic)
 
 (struct location ([state #:mutable]      ; state of UTF-8 decoding
-                  [grcl-state #:mutable] ; state of grapheme clustering
+                  [cr-state #:mutable]   ; state of CRLF counting as a single LF
                   [line #:mutable]       ; count newlines
                   [column #:mutable]     ; count UTF-8 characters in line
                   [position #:mutable])  ; count UTF-8 characters

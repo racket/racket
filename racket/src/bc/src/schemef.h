@@ -667,9 +667,6 @@ MZ_EXTERN mzchar *scheme_utf8_decode_to_buffer_len(const unsigned char *s, intpt
 						   mzchar *buf, intptr_t blen, intptr_t *rlen);
 XFORM_NONGCING MZ_EXTERN intptr_t scheme_utf8_decode_count(const unsigned char *s, intptr_t start, intptr_t end, 
 							   int *_state, int might_continue, int permissive);
-XFORM_NONGCING MZ_EXTERN intptr_t scheme_utf8_grcl_decode_count(const unsigned char *s, intptr_t start, intptr_t end, 
-                                                                int *_state, int might_continue, int permissive,
-                                                                Scheme_GrCl_State *_grcl_state, int count_graphemes);
 
 MZ_EXTERN intptr_t scheme_utf8_encode(const unsigned int *us, intptr_t start, intptr_t end, 
 				      unsigned char *s, intptr_t dstart,

@@ -20,11 +20,7 @@
                      remaining     ; number of bytes expected to finidh decoding
                      pending-amt)) ; number of bytes contributing to `accum`
 
-;; Returns (values bytes-used
-;;                 chars-written
-;;                 (or/c 'complete 'continues 'aborts 'error state-for-aborts)
-;;                 graphemes-written  ; if `grcl-state` is not #f
-;;                 grapheme-state)    ; if `grcl-state` is not #f
+;; Returns (values bytes-used chars-written (or/c 'complete 'continues 'aborts 'error state-for-aborts)),
 ;; where the number of bytes used can go negative if a previous abort state is provided
 ;; and further decoding reveals that earlier bytes were in error.
 ;;
@@ -46,7 +42,6 @@
 ;;
 (define (utf-8-decode! in-bstr in-start in-end
                        out-str out-start out-end  ; `out-str` and `out-end` can be #f no string result needed
-                       grcl-state                 ; #f or state-fixnum or `(cons state-fixnum pending)`
                        #:error-char [error-ch #f] ; replaces an encoding error if non-#f
                        #:abort-mode [abort-mode 'error] ; 'error, 'aborts, or 'state
                        #:state [state #f])        ; state that was returned in place of a previous 'aborts result
@@ -64,43 +59,11 @@
         0))
 
   ;; Iterate through the given byte string
-  (let loop ([i in-start] [j out-start] [base-i base-i] [accum accum] [remaining remaining]
-                          [grcl-done 0] [grcl-state grcl-state])
-    ;; When a character is ready:
-    (define (step-grapheme ch)
-      (cond
-        [grcl-state
-         (cond
-           [(symbol? grcl-state)
-            ;; only count CRLF, grcl-state is 'no or 'cr
-            (cond
-              [(eq? grcl-state 'cr)
-               (cond
-                 [(eqv? #\newline ch) (values (fx+ grcl-done 1) 'no)]
-                 [(eqv? #\return ch) (values (fx+ grcl-done 1) 'cr)]
-                 [else (values (fx+ grcl-done 2) 'no)])]
-              [else
-               (if (eqv? #\return ch)
-                   (values grcl-done 'cr)
-                   (values (fx+ grcl-done 1) 'no))])]
-           [else
-            (define-values (consume? new-grcl-state*)
-              (char-grapheme-step ch (if (pair? grcl-state)
-                                         (car grcl-state)
-                                         grcl-state)))
-            (define new-grcl-state (if (or consume?
-                                           (eqv? grcl-state 0))
-                                       new-grcl-state*
-                                       (cons new-grcl-state* (if (pair? grcl-state) (add1 (cdr grcl-state)) 2))))
-            (define new-grcl-done (if consume? (fx+ grcl-done 1) grcl-done))
-            (values new-grcl-done new-grcl-state)])]
-        [else (values 0 #f)]))
+  (let loop ([i in-start] [j out-start] [base-i base-i] [accum accum] [remaining remaining])
 
     ;; Shared handling for success:
     (define (complete accum)
       (when out-str (string-set! out-str j (integer->char accum)))
-      (define-values (new-grcl-done new-grcl-state)
-        (step-grapheme (integer->char accum)))
       (define next-j (fx+ j 1))
       (define next-i (fx+ i 1))
       (cond
@@ -109,19 +72,15 @@
                  (fx- next-j out-start)
                  (if (fx= next-i in-end)
                      'complete
-                     'continues)
-                 new-grcl-done
-                 new-grcl-state)]
+                     'continues))]
         [else
-         (loop next-i next-j next-i 0 0 new-grcl-done new-grcl-state)]))
+         (loop next-i next-j next-i 0 0)]))
 
     ;; Shared handling for encoding failures:
     (define (encoding-failure)
       (cond
        [error-ch
         (when out-str (string-set! out-str j error-ch))
-        (define-values (new-grcl-done new-grcl-state)
-          (step-grapheme error-ch))
 
         (define next-j (fx+ j 1))
         (define next-i (fx+ base-i 1))
@@ -129,17 +88,13 @@
          [(and out-end (fx= next-j out-end))
           (values (fx- next-i in-start)
                   (fx- next-j out-start)
-                  'continues
-                  new-grcl-done
-                  new-grcl-state)]
+                  'continues)]
          [else
-          (loop next-i next-j next-i 0 0 new-grcl-done new-grcl-state)])]
+          (loop next-i next-j next-i 0 0)])]
        [else
         (values (fx- base-i in-start)
                 (fx- j out-start)
-                'error
-                grcl-done
-                grcl-state)]))
+                'error)]))
     
     ;; Dispatch on byte:
     (cond
@@ -149,23 +104,17 @@
        [(fx= remaining 0)
         (values (fx- base-i in-start)
                 (fx- j out-start)
-                'complete
-                grcl-done
-                grcl-state)]
+                'complete)]
        [(eq? abort-mode 'error)
         (encoding-failure)]
        [(eq? abort-mode 'state)
         (values (fx- i in-start) ; all bytes used
                 (fx- j out-start)
-                (utf-8-state accum remaining (fx- i base-i))
-                grcl-done
-                grcl-state)]
+                (utf-8-state accum remaining (fx- i base-i)))]
        [else
         (values (fx- base-i in-start) 
                 (fx- j out-start)
-                'aborts
-                grcl-done
-                grcl-state)])]
+                'aborts)])]
      [(i . fx< . in-start)
       ;; Happens only if we resume decoding with some state
       ;; and hit a decoding error; treat the byte as another
@@ -176,9 +125,9 @@
       (utf-8-decode-byte/inline b accum remaining
                                 complete
                                 (lambda (accum remaining)
-                                  (loop (fx+ i 1) j i accum remaining grcl-done grcl-state))
+                                  (loop (fx+ i 1) j i accum remaining))
                                 (lambda (accum remaining)
-                                  (loop (fx+ i 1) j base-i accum remaining grcl-done grcl-state))
+                                  (loop (fx+ i 1) j base-i accum remaining))
                                 encoding-failure)])))
 
 (define-syntax-rule (utf-8-decode-byte/inline b accum remaining
@@ -222,7 +171,7 @@
              [(and (fx= 2 remaining)
                    (next-accum . fx<= . #b11111))
               ;; A shorter byte sequence would work, so this is an
-              ;; encoding mistake.
+              ;; encoding mistae.
               (error-k)]
              [(and (fx= 3 remaining)
                    (next-accum . fx<= . #b1111))
@@ -288,10 +237,9 @@
         str])]
     [else
      ;; Measure result string:
-     (define-values (used-bytes got-chars state get-grcl grcl-state)
+     (define-values (used-bytes got-chars state)
        (utf-8-decode! bstr start end
-                      #f 0 #f
-                      #f
+                      #f 0 #f 
                       #:error-char err-char
                       #:abort-mode 'error))
      (cond
@@ -302,7 +250,6 @@
         (define str (make-string got-chars))
         (utf-8-decode! bstr start end
                        str 0 #f
-                       #f
                        #:error-char err-char
                        #:abort-mode 'error)
         str])]))

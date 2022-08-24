@@ -166,8 +166,7 @@ XFORM_NONGCING static intptr_t utf8_decode_x(const unsigned char *s, intptr_t st
                                              unsigned int *us, intptr_t dstart, intptr_t dend,
                                              intptr_t *ipos, intptr_t *jpos,
                                              char compact, char utf16,
-                                             int *state, int might_continue, int permissive, int wtf,
-                                             Scheme_GrCl_State *_grcl_state, int count_graphemes);
+                                             int *state, int might_continue, int permissive, int wtf);
 XFORM_NONGCING static intptr_t utf8_encode_x(const unsigned int *us, intptr_t start, intptr_t end,
                                              unsigned char *s, intptr_t dstart, intptr_t dend,
                                              intptr_t *_ipos, intptr_t *_opos, char utf16, int wtf);
@@ -1226,8 +1225,7 @@ do_byte_string_to_char_string(const char *who,
 		       NULL, 0, -1,
 		       NULL, NULL, 0, 0,
 		       NULL, 0, 
-		       (perm > -1) ? 0xD800 : 0, 0,
-                       NULL, 0);
+		       (perm > -1) ? 0xD800 : 0, 0);
   if (ulen < 0) {
     scheme_contract_error(who,
                           "string is not a well-formed UTF-8 encoding",
@@ -1240,8 +1238,7 @@ do_byte_string_to_char_string(const char *who,
 		v, 0, -1,
 		NULL, NULL, 0, 0,
 		NULL, 0, 
-		(perm > -1) ? 0xD800 : 0, 0,
-                NULL, 0);
+		(perm > -1) ? 0xD800 : 0, 0);
   
   if (perm > -1) {
     for (i = 0; i < ulen; i++) {
@@ -1591,8 +1588,7 @@ byte_string_utf8_index(int argc, Scheme_Object *argv[])
   result = utf8_decode_x((unsigned char *)chars, istart, ifinish,
 			 NULL, 0, pos,
 			 &ipos, &opos,
-			 0, 0, NULL, 0, perm ? 1 : 0, 0,
-                         NULL, 0);
+			 0, 0, NULL, 0, perm ? 1 : 0, 0);
 
   if (((result < 0) && (result != -3))
       || ((ipos == ifinish) && (opos <= pos)))
@@ -1640,8 +1636,7 @@ byte_string_utf8_ref(int argc, Scheme_Object *argv[])
     utf8_decode_x((unsigned char *)chars, istart, ifinish,
 		  NULL, 0, pos,
 		  &ipos, &opos,
-		  0, 0, NULL, 0, perm ? 1 : 0, 0,
-                  NULL, 0);
+		  0, 0, NULL, 0, perm ? 1 : 0, 0);
     if (opos < pos)
       return scheme_false;
     istart = ipos;
@@ -1650,8 +1645,7 @@ byte_string_utf8_ref(int argc, Scheme_Object *argv[])
   utf8_decode_x((unsigned char *)chars, istart, ifinish,
 		us, 0, 1,
 		&ipos, &opos,
-		0, 0, NULL, 0, perm ? 0xFFFFFF : 0, 0,
-                NULL, 0);
+		0, 0, NULL, 0, perm ? 0xFFFFFF : 0, 0);
 
   if (opos < 1)
     return scheme_false;
@@ -2804,8 +2798,7 @@ static char *do_convert(rktio_converter_t *cd,
 	r = utf8_decode_x((unsigned char *)in, id + dip, iilen,
 			  (unsigned int *)out, (od + dop) >> 2, iolen >> 2,
 			  &ipos, &opos,
-			  0, 0, NULL, 0, 0, 0,
-                          NULL, 0);
+			  0, 0, NULL, 0, 0, 0);
 	
 	opos <<= 2;
 	dop = (opos - od);
@@ -4846,8 +4839,7 @@ static Scheme_Object *convert_one(const char *who, int opos, int argc, Scheme_Ob
       status = utf8_decode_x((unsigned char *)instr, istart, ifinish,
 			     (unsigned int *)r, _ostart, _ofinish,
 			     &amt_read, &amt_wrote,
-			     1, utf16, NULL, 1, c->permissive, c->wtf,
-                             NULL, 0);
+			     1, utf16, NULL, 1, c->permissive, c->wtf);
       
       if (utf16) {
 	_ostart <<= 1;
@@ -4871,8 +4863,7 @@ static Scheme_Object *convert_one(const char *who, int opos, int argc, Scheme_Ob
 	    utf8_decode_x((unsigned char *)instr, istart, ifinish,
 			  (unsigned int *)r, ostart, _ofinish,
 			  NULL, NULL,
-			  1, utf16, NULL, 1, c->permissive, c->wtf,
-                          NULL, 0);
+			  1, utf16, NULL, 1, c->permissive, c->wtf);
 	    r[amt_wrote] = 0;
 	  }
 	} else if (!r)
@@ -4969,10 +4960,9 @@ static intptr_t utf8_decode_x(const unsigned char *s, intptr_t start, intptr_t e
                               unsigned int *us, intptr_t dstart, intptr_t dend,
                               intptr_t *ipos, intptr_t *jpos,
                               char compact, char utf16, int *_state,
-                              int might_continue, int permissive, int wtf,
-                              Scheme_GrCl_State *_grcl_state, int count_graphemes)
+                              int might_continue, int permissive, int wtf)
      /* Results:
-	non-negative => translation complete, = number of produced chars/graphemes
+	non-negative => translation complete, = number of produced chars
 	-1 => input ended in middle of encoding (only if might_continue)
 	-2 => encoding error (only if permissive is 0)
 	-3 => not enough output room
@@ -4990,18 +4980,14 @@ static intptr_t utf8_decode_x(const unsigned char *s, intptr_t start, intptr_t e
 
 	permissive is non-zero => use permissive as value for bad byte
 	sequences. When generating UTF-8, this must be an ASCII character
-        or U+FFFD.
-
-        _grcl_state as non-NULL implies grapheme-clustering mode, or
-        at least CRLF-clustering mode (if count_graphemes is 0); not
-        supported in UTF-16 mode */
+        or U+FFFD. */
 {
   intptr_t i, j, oki;
   int failmode = -3, state;
   int init_doki;
   int nextbits, v;
   unsigned int sc;
-  int pending_surrogate = 0, grcl_combined = 0;
+  int pending_surrogate = 0;
 
   if (_state) {
     state = (*_state) & 0x7;
@@ -5250,58 +5236,8 @@ static intptr_t utf8_decode_x(const unsigned char *s, intptr_t start, intptr_t e
             ((unsigned char *)us)[j] = v;
           }
 	}
-      } else {
-        if (us)
-          us[j] = v;
-        if (_grcl_state) {
-          int prev_state = _grcl_state->state;
-          if (!count_graphemes) {
-            if (v == '\r') {
-              if (_grcl_state->state)
-                --grcl_combined;
-              _grcl_state->state = MZ_GRAPHBREAK_CR+1;
-              _grcl_state->pending_chars = 1;
-            } else if (_grcl_state->state) {
-              /* must be MZ_GRAPHBREAK_CR+1 */
-              if (v == '\n') {
-                _grcl_state->state = 0;
-                _grcl_state->pending_chars = 0;                
-                grcl_combined++;
-              } else {
-                /* flush any char along with "\r" */
-                _grcl_state->state = 0;
-                _grcl_state->pending_chars = 0;
-                --grcl_combined;
-              }
-            } else {
-              /* no change */
-            }
-          } else {
-            int consumed;
-            consumed = scheme_grapheme_cluster_step(v, &_grcl_state->state);
-            if (consumed) {
-              if (_grcl_state->state) {
-                /* new char is pending, but old consumed */
-                if (v == '\n') {
-                  /* force flush a control character to help line counting */
-                  _grcl_state->state = 0;
-                  _grcl_state->pending_chars = 0;
-                  --grcl_combined;
-                } else {
-                  _grcl_state->pending_chars = 1;
-                }
-              } else {
-                /* new char is included in previously pending combination */
-                if (_grcl_state->pending_chars)
-                  grcl_combined++;
-                _grcl_state->pending_chars = 0;
-              }
-            } else {
-              grcl_combined++;
-              _grcl_state->pending_chars++;
-            }
-          }
-        }
+      } else if (us) {
+	us[j] = v;
       }
       j++;
       i++;
@@ -5379,7 +5315,7 @@ static intptr_t utf8_decode_x(const unsigned char *s, intptr_t start, intptr_t e
     return -1;
   }
 
-  return j - dstart - grcl_combined;
+  return j - dstart;
 }
 
 intptr_t scheme_utf8_decode(const unsigned char *s, intptr_t start, intptr_t end,
@@ -5387,8 +5323,7 @@ intptr_t scheme_utf8_decode(const unsigned char *s, intptr_t start, intptr_t end
                             intptr_t *ipos, char utf16, int permissive)
 {
   return utf8_decode_x(s, start, end, us, dstart, dend,
-		       ipos, NULL, utf16, utf16, NULL, 0, permissive, WIN_UTF16_AS_WTF16(utf16),
-                       NULL, 0);
+		       ipos, NULL, utf16, utf16, NULL, 0, permissive, WIN_UTF16_AS_WTF16(utf16));
 }
 
 intptr_t scheme_utf8_decode_offset_prefix(const unsigned char *s, intptr_t start, intptr_t end,
@@ -5396,8 +5331,7 @@ intptr_t scheme_utf8_decode_offset_prefix(const unsigned char *s, intptr_t start
                                           intptr_t *ipos, char utf16, int permissive)
 {
   return utf8_decode_x(s, start, end, us, dstart, dend,
-		       ipos, NULL, utf16, utf16, NULL, 1, permissive, WIN_UTF16_AS_WTF16(utf16),
-                       NULL, 0);
+		       ipos, NULL, utf16, utf16, NULL, 1, permissive, WIN_UTF16_AS_WTF16(utf16));
 }
 
 intptr_t scheme_utf8_decode_as_prefix(const unsigned char *s, intptr_t start, intptr_t end,
@@ -5407,14 +5341,13 @@ intptr_t scheme_utf8_decode_as_prefix(const unsigned char *s, intptr_t start, in
 {
   intptr_t opos;
   utf8_decode_x(s, start, end, us, dstart, dend,
-		ipos, &opos, utf16, utf16, NULL, 1, permissive, WIN_UTF16_AS_WTF16(utf16),
-                NULL, 0);
+		ipos, &opos, utf16, utf16, NULL, 1, permissive, WIN_UTF16_AS_WTF16(utf16));
   return opos - dstart;
 }
 
 intptr_t scheme_utf8_decode_all(const unsigned char *s, intptr_t len, unsigned int *us, int permissive)
 {
-  return utf8_decode_x(s, 0, len, us, 0, -1, NULL, NULL, 0, 0, NULL, 0, permissive, 0, NULL, 0);
+  return utf8_decode_x(s, 0, len, us, 0, -1, NULL, NULL, 0, 0, NULL, 0, permissive, 0);
 }
 
 intptr_t scheme_utf8_decode_prefix(const unsigned char *s, intptr_t len, unsigned int *us, int permissive)
@@ -5433,7 +5366,7 @@ intptr_t scheme_utf8_decode_prefix(const unsigned char *s, intptr_t len, unsigne
       return len;
   }
 
-  return utf8_decode_x(s, 0, len, us, 0, -1, NULL, NULL, 0, 0, NULL, 1, permissive, 0, NULL, 0);
+  return utf8_decode_x(s, 0, len, us, 0, -1, NULL, NULL, 0, 0, NULL, 1, permissive, 0);
 }
 
 mzchar *scheme_utf8_decode_to_buffer_len(const unsigned char *s, intptr_t len,
@@ -5443,8 +5376,7 @@ mzchar *scheme_utf8_decode_to_buffer_len(const unsigned char *s, intptr_t len,
 
   ulen = utf8_decode_x(s, 0, len, NULL, 0, -1,
 		       NULL, NULL, 0, 0,
-		       NULL, 0, 0, 0,
-                       NULL, 0);
+		       NULL, 0, 0, 0);
   if (ulen < 0)
     return NULL;
   if (ulen + 1 > blen) {
@@ -5452,8 +5384,7 @@ mzchar *scheme_utf8_decode_to_buffer_len(const unsigned char *s, intptr_t len,
   }
   utf8_decode_x(s, 0, len, buf, 0, -1,
 		NULL, NULL, 0, 0,
-		NULL, 0, 0, 0,
-                NULL, 0);
+		NULL, 0, 0, 0);
   buf[ulen] = 0;
   *_ulen = ulen;
   return buf;
@@ -5466,79 +5397,29 @@ mzchar *scheme_utf8_decode_to_buffer(const unsigned char *s, intptr_t len,
   return scheme_utf8_decode_to_buffer_len(s, len, buf, blen, &ulen);
 }
 
-intptr_t scheme_utf8_grcl_decode_count(const unsigned char *s, intptr_t start, intptr_t end,
-                                       int *_state, int might_continue, int permissive,
-                                       Scheme_GrCl_State *_grcl_state, int count_graphemes)
+intptr_t scheme_utf8_decode_count(const unsigned char *s, intptr_t start, intptr_t end,
+			     int *_state, int might_continue, int permissive)
 {
   intptr_t pos = 0, r;
 
-  if ((!_state || !*_state)
-      && (!_grcl_state
-          || !_grcl_state->state
-          || (_grcl_state->state == (MZ_GRAPHBREAK_OTHER+1))
-          || (_grcl_state->state == (MZ_GRAPHBREAK_CR+1))
-          || (_grcl_state->state == (MZ_GRAPHBREAK_CONTROL+1)))) {
+  if (!_state || !*_state) {
     /* Try fast path (all ASCII): */
-    intptr_t i, crlf = 0;
-    if (_grcl_state && (_grcl_state->state == (MZ_GRAPHBREAK_CR+1))) {
-      if ((start < end)
-          && (s[start] == '\n')) {
-        crlf++;
-        _grcl_state->pending_chars = 0;
-      }
-    }
+    intptr_t i;
     for (i = start; i < end; i++) {
       if (s[i] > 127)
 	break;
-      if ((s[i] == '\r')
-          && ((i + 1) < end)
-          && (s[i] == '\n'))
-        crlf++;
     }
-    if (i == end) {
-      int pending;
-      if (_grcl_state && (start < end)) {
-        pending = -_grcl_state->pending_chars;
-        if (s[i-1] == '\r') {
-          _grcl_state->state = (MZ_GRAPHBREAK_CR+1);
-          _grcl_state->pending_chars = 1;
-          pending++;
-        } else if ((s[i-1] < 32) || (s[i-1] >= 127)) {
-          /* control character does not combine */
-          _grcl_state->state = 0;
-          _grcl_state->pending_chars = 0;
-        } else if (!count_graphemes) {
-          /* only counting CRLF */
-          _grcl_state->state = 0;
-          _grcl_state->pending_chars = 0;
-        } else {
-          _grcl_state->state = (MZ_GRAPHBREAK_OTHER+1);
-          _grcl_state->pending_chars = 1;
-          pending++;
-        }
-      } else
-        pending = 0;
-      return end - start - crlf - pending;
-    }
+    if (i == end)
+      return end - start;
   }
 
-  r = utf8_decode_x(s, start, end,
-                    NULL, 0, -1,
-                    NULL, &pos,
-                    0, 0, _state,
-                    might_continue, permissive, 0,
-                    _grcl_state, count_graphemes);
+  utf8_decode_x(s, start, end,
+		NULL, 0, -1,
+		NULL, &pos,
+		0, 0, _state,
+		might_continue, permissive, 0);
 
-  if (_grcl_state)
-    return r;
-  else
-    return pos;
-}
-
-intptr_t scheme_utf8_decode_count(const unsigned char *s, intptr_t start, intptr_t end,
-                                  int *_state, int might_continue, int permissive)
-{
-  return scheme_utf8_grcl_decode_count(s, start, end, _state, might_continue, permissive, NULL, 0);
+  return pos;
 }
 
 static intptr_t utf8_encode_x(const unsigned int *us, intptr_t start, intptr_t end,

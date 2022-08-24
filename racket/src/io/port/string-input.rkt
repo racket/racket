@@ -66,10 +66,9 @@
     [(not (exact-integer? v)) (values v 0)]
     [(zero? v) (values 0 0)]
     [else
-     (define-values (used-bytes got-chars state got-gcrl grcl-state)
+     (define-values (used-bytes got-chars state)
        (utf-8-decode! bstr 0 v
                       str start (+ start amt)
-                      #f
                       #:error-char #\uFFFD
                       #:abort-mode 'state))
      ;; Includes consumed bytes:
@@ -109,12 +108,11 @@
              ;; `eof` or a special-value procedure, in which case the
              ;; abort mode should be 'error to trigger decodings as
              ;; errors
-             (define-values (used-bytes got-chars new-state got-gcrl gcrl-state)
+             (define-values (used-bytes got-chars new-state)
                (if (eq? v 0)
-                   (values 0 0 state 0 #f)
+                   (values 0 0 state)
                    (utf-8-decode! bstr 0 (if (integer? v) v 0)
                                   str start (+ start amt)
-                                  #f
                                   #:error-char #\uFFFD
                                   #:state (and (utf-8-state? state) state)
                                   #:abort-mode (if (integer? v)

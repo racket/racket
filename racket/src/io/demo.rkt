@@ -449,14 +449,13 @@
   (test (void) (file-position out 10))
   (test #"hola!!\0\0\0\0" (get-output-bytes out)))
 
-(define (next-location p)
-  (define-values (line col pos) (port-next-location p))
-  (list line col pos))
-
 (let ()
   (define-values (i o) (make-pipe))
   (port-count-lines! i)
   (port-count-lines! o)
+  (define (next-location p)
+    (define-values (line col pos) (port-next-location p))
+    (list line col pos))
   (test '(1 0 1) (next-location i))
   (test '(1 0 1) (next-location o))
 
@@ -480,72 +479,7 @@
   (test #"x\r" (read-bytes 2 i))
   (test '(3 0 7) (next-location i))
   (test #"\n!" (read-bytes 2 i))
-  (test '(3 1 8) (next-location i))
-
-  (write-string "e\u300" o)
-  (test '(3 2 9) (next-location o))
-  (test #"e" (read-bytes 1 i))
-  (test '(3 2 9) (next-location i))
-  (test #"\314" (read-bytes 1 i))
-  (test '(3 3 10) (next-location i)) ; tentatively incremented mid-UTF-8
-  (test #"\200" (read-bytes 1 i))
-  (test '(3 2 9) (next-location i))  ; UTF-8 concluded, grapheme cluster is still tentative, though
-
-  (write-string "!" o)
-  (test '(3 3 10) (next-location o))
-  (test #"!" (read-bytes 1 i))
-  (test '(3 3 10) (next-location i))
-
-  (write-string "\r" o)
-  (test '(4 0 11) (next-location o))
-  (test #"\r" (read-bytes 1 i))
-  (test '(4 0 11) (next-location i))
-
-  (write-string "\n" o)
-  (test '(4 0 11) (next-location o))
-  (test #"\n" (read-bytes 1 i))
-  (test '(4 0 11) (next-location i))
-
-  (write-string "." o)
-  (test '(4 1 12) (next-location o))
-  (test #"." (read-bytes 1 i))
-  (test '(4 1 12) (next-location i))
-
-  (write-string "app\u03BBe" o)
-  (test '(4 6 17) (next-location o))
-  (test "app\u03BBe" (read-string 5 i))
-  (test '(4 6 17) (next-location i))
-
-  (void))
-
-(let ()
-  (define i (open-input-string "\u0019\u0000\u000E"))
-  (port-count-lines! i)
-
-  (test '(1 0 1) (next-location i))
-  (test "\u0019\u0000\u000E" (read-string 3 i))
-  (test '(1 3 4) (next-location i)))
-
-(parameterize ([port-count-graphemes-enabled #f])
-  (define i (open-input-string "e\u300\r\nxy"))
-  (port-count-lines! i)
-
-  (test '(1 0 1) (next-location i))
-  (test "e\u300" (read-string 2 i))
-  (test '(1 2 3) (next-location i))
-  (test "\r" (read-string 1 i))
-  (test '(2 0 4) (next-location i))
-  (test "\n" (read-string 1 i))
-  (test '(2 0 4) (next-location i))
-  (test "xy" (read-string 2 i))
-  (test '(2 2 6) (next-location i)))
-
-(parameterize ([port-count-graphemes-enabled #f])
-  (define o (open-output-string))
-  (port-count-lines! o)
-  (log-error "NOW")
-  (write-string "app\u03BBe" o)
-  (test '(1 5 6) (next-location o)))
+  (test '(3 1 8) (next-location i)))
 
 ;; ----------------------------------------
 

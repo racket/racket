@@ -721,24 +721,16 @@ Scheme_Object *scheme_make_port_type(const char *name)
 
 static void init_port_locations(Scheme_Port *ip)
 {
-  Scheme_Config *config;
-  int cl, cg;
+  int cl;
 
   ip->position = 0;
-  ip->readpos = 0; /* like position, but post UTF-8 decoding and grapheme clustering */
+  ip->readpos = 0; /* like position, but post UTF-8 decoding, collapses CRLF, etc. */
   ip->lineNumber = 1;
   ip->oldColumn = 0;
   ip->column = 0;
   ip->charsSinceNewline = 1;
-
-  config = scheme_current_config();
-  cl = SCHEME_TRUEP(scheme_get_param(config, MZCONFIG_PORT_COUNT_LINES));
-  if (cl)
-    cg = SCHEME_TRUEP(scheme_get_param(config, MZCONFIG_PORT_COUNT_GRAPHEMES));
-  else
-    cg = 0;
+  cl = SCHEME_TRUEP(scheme_get_param(scheme_current_config(), MZCONFIG_PORT_COUNT_LINES));
   ip->count_lines = cl;
-  ip->count_graphemes = cg;
 }
 
 void scheme_set_next_port_custodian(Scheme_Custodian *c)
@@ -977,15 +969,13 @@ static void post_progress(Scheme_Input_Port *ip)
 
 XFORM_NONGCING static void inc_pos_for_special(Scheme_Port *ip)
 {
-  int a = 1 + ip->grcl_state.pending_chars;
+  int a = 1;
   if (ip->column >= 0)
-    ip->column = (intptr_t)((uintptr_t)ip->column + a);
+    ip->column += a;
   if (ip->readpos >= 0)
-    ip->readpos = (intptr_t)((uintptr_t)ip->readpos + a);
+    ip->readpos += a;
   ip->charsSinceNewline += a;
   ip->utf8state = 0;
-  ip->grcl_state.state = 0;
-  ip->grcl_state.pending_chars = 0;
 }
 
 static Scheme_Object *quick_plus(Scheme_Object *s, intptr_t v)
@@ -1013,12 +1003,12 @@ static Scheme_Object *quick_plus(Scheme_Object *s, intptr_t v)
 XFORM_NONGCING static void do_count_lines(Scheme_Port *ip, const char *buffer, intptr_t offset, intptr_t got)
 {
   intptr_t i;
-  intptr_t c, degot = 0;
+  int c, degot = 0;
 
   ip->oldColumn = ip->column; /* works for a single-char read, like `read' */
 
   if (ip->readpos >= 0)
-    ip->readpos = (intptr_t)((uintptr_t)ip->readpos + got); /* add for CR LF below */
+    ip->readpos += got; /* add for CR LF below */
 
   /* Find start of last line: */
   for (i = got, c = 0; i--; c++) {
@@ -1032,20 +1022,13 @@ XFORM_NONGCING static void do_count_lines(Scheme_Port *ip, const char *buffer, i
     int state = ip->utf8state;
     int n;
     degot += state_len(state);
-    n = scheme_utf8_grcl_decode_count((const unsigned char *)buffer, offset, offset + i + 1, &state, 0, 0xFFFD,
-                                      &ip->grcl_state, ip->count_graphemes);
+    n = scheme_utf8_decode_count((const unsigned char *)buffer, offset, offset + i + 1, &state, 0, 0xFFFD);
     degot += (i + 1 - n);
     ip->utf8state = 0; /* assert: state == 0, because we ended with a newline */
-    if ((i < got - 1) && ip->grcl_state.state) {
-      /* flush CR state so column counting is right */
-      ip->grcl_state.state = 0;
-      ip->grcl_state.pending_chars = 0;
-      degot -= 1;
-    }
   }
 	
   if (i >= 0) {
-    intptr_t n = 0;
+    int n = 0;
     ip->charsSinceNewline = c + 1;
     i++;
     /* Continue walking, back over the previous lines, to find
@@ -1055,10 +1038,8 @@ XFORM_NONGCING static void do_count_lines(Scheme_Port *ip, const char *buffer, i
 	if (!(i && (buffer[offset + i - 1] == '\r'))
 	    && !(!i && ip->was_cr)) {
 	  n++;
-	} else if ((i + 1) != (got - c))
+	} else
 	  degot++; /* adjust positions for CRLF -> LF conversion */
-        else
-          degot--; /* compesenate for grcl decode */
       } else if (buffer[offset + i] == '\r') {
 	n++;
       }
@@ -1073,34 +1054,21 @@ XFORM_NONGCING static void do_count_lines(Scheme_Port *ip, const char *buffer, i
       ip->column = 0;
   } else {
     ip->charsSinceNewline += c;
-    if (ip->was_cr && ip->grcl_state.pending_chars) {
-      /* flush CR state so column counting is right */
-      ip->grcl_state.state = 0;
-      ip->grcl_state.pending_chars = 0;
-      degot -= 1;
-    }
     ip->was_cr = 0;
   }
 
   /* Do the last line to get the column count right and to
      further adjust positions for UTF-8 decoding: */
   {
-    intptr_t col = ip->column, n;
-    intptr_t prev_i = got - c;
+    int col = ip->column, n;
+    int prev_i = got - c;
     int state = ip->utf8state;
     n = state_len(state);
     degot += n;
     col -= n;
     for (i = prev_i; i < got; i++) {
       if (buffer[offset + i] == '\t') {
-	n = scheme_utf8_grcl_decode_count((const unsigned char *)buffer, offset + prev_i, offset + i, &state, 0, 0xFFFD,
-                                          &ip->grcl_state, ip->count_graphemes);
-        if (ip->grcl_state.state) {
-          /* tab will not combine */
-          ip->grcl_state.state = 0;
-          ip->grcl_state.pending_chars = 0;
-          n++;
-        }
+	n = scheme_utf8_decode_count((const unsigned char *)buffer, offset + prev_i, offset + i, &state, 0, 0xFFFD);
 	degot += ((i - prev_i) - n);
 	col += n;
 	col = col - (col & 0x7) + 8;
@@ -1108,8 +1076,7 @@ XFORM_NONGCING static void do_count_lines(Scheme_Port *ip, const char *buffer, i
       }
     }
     if (prev_i < i) {
-      n = scheme_utf8_grcl_decode_count((const unsigned char *)buffer, offset + prev_i, offset + i, &state, 1, 0xFFFD,
-                                        &ip->grcl_state, ip->count_graphemes);
+      n = scheme_utf8_decode_count((const unsigned char *)buffer, offset + prev_i, offset + i, &state, 1, 0xFFFD);
       n += state_len(state);
       col += n;
       degot += ((i - prev_i) - n);
@@ -2612,13 +2579,13 @@ scheme_ungetc (int ch, Scheme_Object *port)
     if (ip->p.position > (len - 1))
       ip->p.position -= (len - 1);
 
-    if (ip->ungotten_count + len >= SCHEME_UNGET_BUFFER_SIZE)
+    if (ip->ungotten_count + len >= 24)
       scheme_signal_error("ungetc overflow");
     while (len) {
       ip->ungotten[ip->ungotten_count++] = e[--len];
     }
   } else {
-    if (ip->ungotten_count == SCHEME_UNGET_BUFFER_SIZE)
+    if (ip->ungotten_count == 24)
       scheme_signal_error("ungetc overflow");
     ip->ungotten[ip->ungotten_count++] = ch;
   }
@@ -2634,11 +2601,6 @@ scheme_ungetc (int ch, Scheme_Object *port)
       ip->p.column = ip->p.oldColumn;
     } else if (ch == '\t')
       ip->p.column = ip->p.oldColumn;
-    
-    /* This isn't right, but we don't expected line counting to
-       needed where the primitive reader might use ungetc */
-    ip->p.grcl_state.state = 0;
-    ip->p.grcl_state.pending_chars = 0;
   }
 }
 
@@ -2862,9 +2824,6 @@ do_tell (Scheme_Object *port, int not_via_loc)
   else
     pos = ip->readpos;
 
-  if (!not_via_loc && (pos >= 0) && (ip->grcl_state.state != 0))
-    pos++;
-
   return pos;
 }
 
@@ -2910,9 +2869,6 @@ scheme_tell_column (Scheme_Object *port)
   CHECK_IOPORT_CLOSED("get-file-column", ip);
 
   col = ip->column;
-
-  if ((col >= 0) && (ip->grcl_state.state != 0) && !ip->was_cr)
-    col++;
 
   return col;
 }
@@ -2963,7 +2919,6 @@ static void extract_next_location(const char *who, int argc, Scheme_Object **a, 
   /* Internally, positions count from 0 instead of 1 */
   if (pos > -1)
     pos--;
-
 
   if (_line) *_line = line;
   if (_col) *_col = col;
@@ -3061,8 +3016,6 @@ void scheme_set_port_location(int argc, Scheme_Object **argv)
     ip->readpos = pos;
     ip->lineNumber = line;
     ip->column = col;
-    ip->grcl_state.state = 0;
-    ip->grcl_state.pending_chars = 0;
   }
 }
 
@@ -3075,8 +3028,6 @@ scheme_count_lines (Scheme_Object *port)
 
   if (!ip->count_lines) {
     ip->count_lines = 1;
-    if (SCHEME_TRUEP(scheme_get_param(scheme_current_config(), MZCONFIG_PORT_COUNT_GRAPHEMES)))
-      ip->count_graphemes = 1;
     if (ip->count_lines_fun) {
       Scheme_Count_Lines_Fun cl = ip->count_lines_fun;
       cl(ip);

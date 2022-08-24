@@ -1,9 +1,6 @@
 Version 8.7
 Use Unicode 14.0 for character and string operations
 Add grapheme operations, such as `string-grapheme-count`
-Change port counting to take grapheme clusters into account
- by default; the `port-count-graphemes-enabled` parameter
- disables grapheme decoding
 
 Version 8.6, July 2022
 Change build to use Zuo

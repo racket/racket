@@ -6,55 +6,42 @@
 @section-index["line numbers"]
 @section-index["column numbers"]
 @section-index["port positions"]
-@section-index["grapheme clusters"]
 
 By default, Racket keeps track of the @deftech{position} in a port as
 the number of bytes that have been read from or written to any port
 (independent of the read/write position, which is accessed or changed
 with @racket[file-position]). Optionally, however, Racket can track
-the position in terms of Unicode grapheme clusters (after UTF-8 decoding)
-or characters, instead of
+the position in terms of characters (after UTF-8 decoding), instead of
 bytes, and it can track @deftech{line locations} and @deftech{column
 locations}; this optional tracking must be specifically enabled for a
 port via @racket[port-count-lines!] or the
-@racket[port-count-lines-enabled] parameter.
-Port counting uses grapheme clusters unless the
-@racket[port-count-graphemes-enabled] parameter is set to @racket[#f]
-at the point when counting is enabled for a port.
-Position, line, and
+@racket[port-count-lines-enabled] parameter. Position, line, and
 column locations for a port are used by @racket[read-syntax]. 
-
 Position and line locations are numbered
 from @math{1}; column locations are numbered from @math{0}.
+
 When counting lines, Racket treats linefeed, return, and
 return-linefeed combinations as a line terminator and as a single
-position (on all platforms, even when not otherwise counting graphemes).
-Each tab advances the column count to one
+position (on all platforms). Each tab advances the column count to one
 before the next multiple of @math{8}. When a sequence of bytes in the
 range 128 to 253 forms a UTF-8 encoding of a character, the
 position/column is incremented once for each byte, and
 then decremented appropriately when a complete encoding sequence is
-discovered. In grapheme-counting mode, when a character is found whose grapheme cluster might be
-continued by the next character, the character is tentatively considered
-as completing a grapheme cluster, and the position/column count is
-@emph{not} incremented if the next character continues the
-grapheme cluster. See also @secref["ports"] for more information on UTF-8
+discovered. See also @secref["ports"] for more information on UTF-8
 decoding for ports.
 
-On @tech{BC}, a position is known for any port as long as its value can be expressed
+A position is known for any port as long as its value can be expressed
 as a fixnum (which is more than enough tracking for realistic
 applications in, say, syntax-error reporting).  If the position for a
 port exceeds the value of the largest fixnum, then the position for
 the port becomes unknown, and line and column tacking is disabled.
+Return-linefeed combinations are treated as a single character
+position only when line and column counting is enabled.
 
 @tech{Custom ports} can define their own counting functions, which are
 not subject to the rules above, except that the counting functions are
 invoked only when tracking is specifically enabled with
 @racket[port-count-lines!].
-
-@history[#:changed "8.6.0.2" @elem{Changed position and column
-                                   counting to grapheme clusters
-                                   by default, instead of characters.}]
 
 @;------------------------------------------------------------------------
 
@@ -65,7 +52,7 @@ for a port. Counting can be turned
 on at any time, though generally it is turned on before any data is
 read from or written to a port. At the point that line counting is
 turned on, @racket[port-next-location] typically starts reporting as
-its last result (one more than) the number of grapheme clusters read since
+its last result (one more than) the number of characters read since
 line counting was enabled, instead of (one more than) bytes read since
 the port was opened.
 
@@ -80,15 +67,6 @@ be disabled for a port after it is enabled.}
 Returns @racket[#t] if @tech{line location} and @tech{column location}
 counting has been enabled for
 @racket[port], @racket[#f] otherwise.}
-
-
-@defproc[(port-counts-graphemes? [port port?]) boolean?]{
-
-Returns @racket[#t] if @tech{line location} and @tech{column location}
-counting has been enabled for
-@racket[port] in grapheme-counting mode, @racket[#f] otherwise.
-
-@history[#:added "8.6.0.5"]}
 
 
 @defproc[(port-next-location [port port?]) 
@@ -133,15 +111,3 @@ a @tech{custom port} that defines its own counting function, then
 A @tech{parameter} that determines whether line counting is enabled
 automatically for newly created ports. The default value is
 @racket[#f].}
-
-@defboolparam[port-count-graphemes-enabled on?]{
-
-A @tech{parameter} that determines whether counting increments the
-position counter once per grapheme, as opposed to once per character.
-The default value is @racket[#t], which counts by graphemes, unless
-the @as-index{@envvar{PLT_PORT_COUNT_CHARS}} environment variable is
-set (to anything) on startup, in which case the parameter is
-initialized to @racket[#f].
-
-@history[#:added "8.6.0.5"]}
-

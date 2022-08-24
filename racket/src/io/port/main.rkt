@@ -145,11 +145,9 @@
          
          port-count-lines!
          port-counts-lines?
-         port-counts-graphemes?
          port-next-location
          set-port-next-location!
          port-count-lines-enabled
-         port-count-graphemes-enabled
 
          current-input-port
          current-output-port
