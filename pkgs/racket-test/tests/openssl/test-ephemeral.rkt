@@ -45,27 +45,26 @@
 
 (cond
  [(memq 'tls12 (supported-server-protocols))
-  ;; Test DHE ciphers (note: cipher spec is "EDH", contrary to openssl ciphers docs)
-  (test-ephemeral (lambda (server-ctx)
-                    (ssl-server-context-enable-dhe! server-ctx ssl-dh4096-param-bytes))
-                  "AES+EDH")
+  (test-case "test DHE ciphers"
+    ;; note: cipher spec is "EDH", contrary to openssl ciphers docs
+    (test-ephemeral (lambda (server-ctx)
+                      (ssl-server-context-enable-dhe! server-ctx ssl-dh4096-param-bytes))
+                    "AES+EDH"))
+  (test-case "test ECDHE ciphers"
+    (test-ephemeral (lambda (server-ctx)
+                      (ssl-server-context-enable-ecdhe! server-ctx 'secp521r1))
+                    "ECDHE-RSA-AES128-SHA256"))
 
-  ;; Test ECDHE ciphers
-  (test-ephemeral (lambda (server-ctx)
-                    (ssl-server-context-enable-ecdhe! server-ctx 'secp521r1))
-                  "ECDHE-RSA-AES128-SHA256")
-
-  ;; Sanity check for DHE: connection fails when enable! not called
+  ;; These used to be sanity checks for DHE and ECDHE, where the connection
+  ;; fails when `enable!` is not called. But calling `enable!` is no longer
+  ;; necessary.
+  #;
   (check-exn
    #rx"connect failed"
    (lambda ()
      ;; for DrDr, suppress accept error printing
      (parameterize ((current-error-port (open-output-string)))
        (test-ephemeral void "AES+EDH"))))
-
-  ;; This used to be a sanity check for ECDHE, where the connection
-  ;; fails when `enable!` is not called. But calling `enable!` is
-  ;; apparently no longer necessary.
   #;
   (check-exn
    #rx"connect failed"
