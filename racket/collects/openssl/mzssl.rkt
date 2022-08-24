@@ -56,35 +56,6 @@ TO DO:
 (define (alpn-protocol-bytes/c v)
   (and (bytes? v) (< 0 (bytes-length v) 256)))
 
-(define curve-nid-alist
-  '((sect163k1 . 721)
-    (sect163r1 . 722)
-    (sect163r2 . 723)
-    (sect193r1 . 724)
-    (sect193r2 . 725)
-    (sect233k1 . 726)
-    (sect233r1 . 727)
-    (sect239k1 . 728)
-    (sect283k1 . 729)
-    (sect283r1 . 730)
-    (sect409k1 . 731)
-    (sect409r1 . 732)
-    (sect571k1 . 733)
-    (sect571r1 . 734)
-    (secp160k1 . 708)
-    (secp160r1 . 709)
-    (secp160r2 . 710)
-    (secp192k1 . 711)
-    (secp224k1 . 712)
-    (secp224r1 . 713)
-    (secp256k1 . 714)
-    (secp384r1 . 715)
-    (secp521r1 . 716)
-    (prime192v1 . 409)
-    (prime256v1 . 415)))
-
-(define curve/c (apply or/c (map car curve-nid-alist)))
-
 (define verify-source/c
   (or/c path-string?
         (list/c 'directory path-string?)
@@ -114,7 +85,7 @@ TO DO:
   [ssl-server-context-enable-dhe!
    (->* (ssl-server-context?) ((or/c path-string? bytes?)) void?)]
   [ssl-server-context-enable-ecdhe!
-   (->* (ssl-server-context?) (curve/c) void?)]
+   (->* (ssl-server-context?) (symbol?) void?)]
   [ssl-client-context?
    (c-> any/c boolean?)]
   [ssl-server-context?
@@ -511,6 +482,10 @@ TO DO:
       (unless (and (= 1 (SSL_CTX_set_min_proto_version ctx min-proto))
                    (= 1 (SSL_CTX_set_max_proto_version ctx max-proto)))
         (error who "failed setting min/max protocol versions: ~e" protocol-symbol))))
+  (unless client?
+    (when (and v1.0.2/later? (not v1.1.0/later?))
+      ;; See comments under ssl-server-context-enable-ecdhe!
+      (SSL_CTX_set_ecdh_auto ctx 1)))
   ctx)
 
 (define (encrypt->method who e client?)
@@ -594,19 +569,12 @@ TO DO:
 (define (ssl-seal-context! mzctx)
   (set-ssl-context-sealed?! mzctx #t))
 
-(define (ssl-server-context-enable-ecdhe! context [name 'secp521r1])
-  (define (symbol->nid name)
-    (cond [(assq name curve-nid-alist)
-           => cdr]
-          [else
-           (error 'ssl-server-context-enable-ecdhe!
-                  "bad curve name\n  curve name: ~e" name)]))
-  (define ctx (extract-ctx 'ssl-server-context-enable-ecdhe! #t context))
-  (define key (EC_KEY_new_by_curve_name (symbol->nid name)))
-  (check-valid key 'ssl-server-context-enable-ecdhe! "enabling ECDHE")
-  (unless (= 1 (SSL_CTX_ctrl ctx SSL_CTRL_SET_TMP_ECDH 0 key))
-    (error 'ssl-server-context-enable-ecdhe! "enabling ECDHE"))
-  (SSL_CTX_ctrl ctx SSL_CTRL_OPTIONS SSL_OP_SINGLE_ECDH_USE #f)
+(define (ssl-server-context-enable-ecdhe! context [name 'ignored])
+  ;; No longer necessary, ECDHE enabled in auto mode in (server) context
+  ;; construction.  Can customize with SSL_set1_groups[_list], but generally
+  ;; unnecessary, so currently unsupported.
+  (log-openssl-warning
+   "ssl-server-context-enable-ecdhe!: ignoring given ECDH parameters")
   (void))
 
 (define (ssl-server-context-enable-dhe! context [ssl-dh4096-param ssl-dh4096-param-bytes])

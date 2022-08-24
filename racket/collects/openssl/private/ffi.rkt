@@ -59,7 +59,7 @@
 (define SSL_CTRL_SET_TLSEXT_SERVERNAME_CB 53)
 (define SSL_CTRL_SET_TLSEXT_HOSTNAME 55)
 (define SSL_CTRL_SET_TMP_DH 3)
-(define SSL_CTRL_SET_TMP_ECDH 4)
+(define SSL_CTRL_SET_ECDH_AUTO 94)
 (define SSL_CTRL_GET_EXTMS_SUPPORT 122)
 (define SSL_CTRL_SET_MIN_PROTO_VERSION 123)
 (define SSL_CTRL_SET_MAX_PROTO_VERSION 124)
@@ -70,7 +70,6 @@
 (define SSL_OP_NO_TLSv1_2  #x08000000)
 (define SSL_OP_NO_TLSv1_1  #x10000000)
 
-(define SSL_OP_SINGLE_ECDH_USE #x00080000)
 (define SSL_OP_SINGLE_DH_USE #x00100000)
 
 (define SSL_OP_IGNORE_UNEXPECTED_EOF #x00000080)
@@ -149,11 +148,6 @@
     #:fail (lambda () SSLv23_client_method))
   (define-ssl TLS_server_method (_fun -> _SSL_METHOD*)
     #:fail (lambda () SSLv23_server_method)))
-
-(begin ;; deprecated in v3.0.0
-  (define-crypto EC_KEY_free (_fun _EC_KEY* -> _void) #:wrap (deallocator))
-  (define-crypto EC_KEY_new_by_curve_name (_fun _int -> _EC_KEY*)
-    #:wrap (allocator EC_KEY_free)))
 
 (define-crypto BIO_s_mem (_fun -> _BIO_METHOD*))
 (define-crypto BIO_new (_fun _BIO_METHOD* -> _BIO*/null))
@@ -405,3 +399,7 @@
 (define (SSL_set_tlsext_host_name s hostname)
   (SSL_ctrl/bytes s SSL_CTRL_SET_TLSEXT_HOSTNAME
                   TLSEXT_NAMETYPE_host_name (string->bytes/latin-1 hostname)))
+
+(define (SSL_CTX_set_ecdh_auto ctx onoff)
+  ;; no-op since v1.1.0
+  (SSL_CTX_ctrl ctx SSL_CTRL_SET_ECDH_AUTO onoff #f))
