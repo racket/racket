@@ -53,6 +53,9 @@ TO DO:
 (define protocol-symbol/c
   (or/c 'secure 'auto 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12 'tls13))
 
+(define dhparams-symbol/c
+  (or/c 'ffdhe2048 'ffdhe3072 'ffdhe4096 'ffdhe6144 'ffdhe8192))
+
 (define (alpn-protocol-bytes/c v)
   (and (bytes? v) (< 0 (bytes-length v) 256)))
 
@@ -83,7 +86,9 @@ TO DO:
          #:certificate-chain (or/c path-string? #f))
         ssl-server-context?)]
   [ssl-server-context-enable-dhe!
-   (->* (ssl-server-context?) ((or/c path-string? bytes?)) void?)]
+   (->* (ssl-server-context?)
+        ((or/c 'auto dhparams-symbol/c path-string? bytes?))
+        void?)]
   [ssl-server-context-enable-ecdhe!
    (->* (ssl-server-context?) (symbol?) void?)]
   [ssl-client-context?
@@ -285,15 +290,7 @@ TO DO:
    (λ (p) (delay p))
    force))
 
-(define ssl-dh4096-param-bytes
-  (include/reader "dh4096.pem" (lambda (src port)
-                                 (let loop ([accum '()])
-                                   (define bstr (read-bytes 4096 port))
-                                   (if (eof-object? bstr)
-                                       (if (null? accum)
-                                           eof
-                                           (datum->syntax #'here (apply bytes-append (reverse accum))))
-                                       (loop (cons bstr accum)))))))
+(define ssl-dh4096-param-bytes #"")
 
 ;; Make this bigger than 4096 to accommodate at least
 ;; 4096 of unencrypted data
@@ -483,9 +480,18 @@ TO DO:
                    (= 1 (SSL_CTX_set_max_proto_version ctx max-proto)))
         (error who "failed setting min/max protocol versions: ~e" protocol-symbol))))
   (unless client?
-    (when (and v1.0.2/later? (not v1.1.0/later?))
-      ;; See comments under ssl-server-context-enable-ecdhe!
-      (SSL_CTX_set_ecdh_auto ctx 1)))
+    ;; Always enable DHE and ECDHE support (only needed for server contexts).
+    (cond [v1.1.0/later?
+           ;; DHE supports automatic selection of DH params:
+           (SSL_CTX_set_dh_auto ctx 1)
+           ;; and ECDHE automatic curve selection is enabled by default.
+           (void)]
+          [else
+           ;; In v1.0.2, DHE requires explicitly setting the group; this is the
+           ;; best built-in available in v1.0.2:
+           (SSL_CTX_set_tmp_dh ctx (DH_get_2048_256))
+           ;; and ECDHE supports automatic curve selection, but must be enabled:
+           (SSL_CTX_set_ecdh_auto ctx 1)]))
   ctx)
 
 (define (encrypt->method who e client?)
@@ -577,22 +583,32 @@ TO DO:
    "ssl-server-context-enable-ecdhe!: ignoring given ECDH parameters")
   (void))
 
-(define (ssl-server-context-enable-dhe! context [ssl-dh4096-param ssl-dh4096-param-bytes])
-  (define params (if (bytes? ssl-dh4096-param)
-                     ssl-dh4096-param
-                     (call-with-input-file* ssl-dh4096-param port->bytes)))
-  (define params-bio (BIO_new_mem_buf params (bytes-length params)))
-  (check-valid params-bio 'ssl-server-context-enable-dhe! "loading Diffie-Hellman parameters")
-  (with-failure
-    (lambda ()
-      (BIO_free params-bio))
-    (define ctx (extract-ctx 'ssl-server-context-enable-dhe! #t context))
-    (define dh (PEM_read_bio_DHparams params-bio #f #f #f))
-    (check-valid dh 'ssl-server-context-enable-dhe! "loading Diffie-Hellman parameters")
-    (unless (= 1 (SSL_CTX_ctrl ctx SSL_CTRL_SET_TMP_DH 0 dh))
-      (error 'ssl-server-context-enable-dhe! "failed to enable DHE"))
-    (SSL_CTX_ctrl ctx SSL_CTRL_OPTIONS SSL_OP_SINGLE_DH_USE #f)
-    (void)))
+(define (ssl-server-context-enable-dhe! context [params 'ffdhe4096])
+  ;; DHE enabled in auto mode in (server) context construction.
+  (define who 'ssl-server-context-enable-dhe!)
+  (define ctx (extract-ctx who #t context))
+  (cond [(dhparam-symbol->nid params)
+         => (lambda (nid)
+              (define dh (DH_new_by_nid nid))
+              (unless (= 1 (SSL_CTX_set_tmp_dh ctx dh))
+                (error who "failed to enable DHE with ~s" params)))]
+        [(eq? params 'auto)
+         (unless (= 1 (SSL_CTX_set_dh_auto ctx 1))
+           (error who "failed to enable DHE with automatic parameters"))]
+        [else ;; path-string or bytes
+         (log-openssl-warning "ssl-server-context-enable-dhe!: ~a"
+                              "ignoring given DH parameters, using built-in instead")
+         (ssl-server-context-enable-dhe! context 'ffdhe4096)])
+  (void))
+
+(define (dhparam-symbol->nid sym)
+  (case sym
+    [(ffdhe2048) NID_ffdhe2048]
+    [(ffdhe3072) NID_ffdhe3072]
+    [(ffdhe4096) NID_ffdhe4096]
+    [(ffdhe6144) NID_ffdhe6144]
+    [(ffdhe8192) NID_ffdhe8192]
+    [else #f]))
 
 (define (ssl-load-... who load-it ssl-context-or-listener pathname
                       #:try? [try? #f])

@@ -60,6 +60,7 @@
 (define SSL_CTRL_SET_TLSEXT_HOSTNAME 55)
 (define SSL_CTRL_SET_TMP_DH 3)
 (define SSL_CTRL_SET_ECDH_AUTO 94)
+(define SSL_CTRL_SET_DH_AUTO 118)
 (define SSL_CTRL_GET_EXTMS_SUPPORT 122)
 (define SSL_CTRL_SET_MIN_PROTO_VERSION 123)
 (define SSL_CTRL_SET_MAX_PROTO_VERSION 124)
@@ -69,8 +70,6 @@
 (define SSL_OP_NO_TLSv1    #x04000000)
 (define SSL_OP_NO_TLSv1_2  #x08000000)
 (define SSL_OP_NO_TLSv1_1  #x10000000)
-
-(define SSL_OP_SINGLE_DH_USE #x00100000)
 
 (define SSL_OP_IGNORE_UNEXPECTED_EOF #x00000080)
 
@@ -86,6 +85,12 @@
 (define NID_sha256 672)
 (define NID_sha384 673)
 (define NID_sha512 674)
+
+(define NID_ffdhe2048 1126)
+(define NID_ffdhe3072 1127)
+(define NID_ffdhe4096 1128)
+(define NID_ffdhe6144 1129)
+(define NID_ffdhe8192 1130)
 
 (define SSL_ST_ACCEPT #x2000)
 
@@ -258,9 +263,14 @@
 
 (begin ;; deprecated in v3.0.0
   (define-crypto DH_free (_fun _DH* -> _void) #:wrap (deallocator))
-  (define-crypto PEM_read_bio_DHparams
-    (_fun _BIO* _pointer _pointer _pointer -> _DH*)
-    #:wrap (allocator DH_free)))
+  (define-crypto DH_get_2048_256 (_fun -> _DH*) #:fail (lambda () (lambda () #f))
+    #:wrap (allocator DH_free))
+  (define (SSL_CTX_set_tmp_dh ctx dh)
+    (SSL_CTX_ctrl ctx SSL_CTRL_SET_TMP_DH 0 dh))
+  (begin ;; added in v1.1.1
+    (define-crypto DH_new_by_nid
+      (_fun [nid : _int] -> _DH*)
+      #:wrap (allocator DH_free))))
 
 (define-crypto GENERAL_NAME_free _fpointer)
 (define-crypto ASN1_STRING_length (_fun _ASN1_STRING* -> _int))
@@ -403,3 +413,6 @@
 (define (SSL_CTX_set_ecdh_auto ctx onoff)
   ;; no-op since v1.1.0
   (SSL_CTX_ctrl ctx SSL_CTRL_SET_ECDH_AUTO onoff #f))
+
+(define (SSL_CTX_set_dh_auto ctx onoff)
+  (SSL_CTX_ctrl ctx SSL_CTRL_SET_DH_AUTO onoff #f))
