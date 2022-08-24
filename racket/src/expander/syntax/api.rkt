@@ -2,6 +2,7 @@
 (require "../common/phase.rkt"
          "../common/phase+space.rkt"
          "../common/module-path.rkt"
+         "../common/set.rkt"
          (rename-in "syntax.rkt"
                     [syntax-srcloc raw:syntax-srcloc]
                     [syntax->datum raw:syntax->datum]
@@ -37,7 +38,8 @@
                   namespace-module-get-portal-syntax-lookup)
          (only-in "../namespace/namespace.rkt"
                   current-namespace)
-         "../expand/log.rkt")
+         "../expand/log.rkt"
+         "mapped-name.rkt")
 
 ;; Provides public versions of syntax functions (with contract checks,
 ;; for example); see also "taint-api.rkt"
@@ -74,7 +76,8 @@
          identifier-prune-lexical-context
          syntax-shift-phase-level
          syntax-track-origin
-         syntax-debug-info)
+         syntax-debug-info
+         syntax-bound-symbols)
 
 (define/who (syntax-e s)
   (check who syntax? s)
@@ -262,3 +265,7 @@
   (define ctx (get-current-expand-context #:fail-ok? #t))
   (when ctx (log-expand ctx 'track-syntax 'track-origin new-stx s))
   s)
+
+(define/who (syntax-bound-symbols stx [phase (syntax-local-phase-level)])
+  (check who syntax? stx)
+  (set->list (syntax-mapped-names stx phase)))

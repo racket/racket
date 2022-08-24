@@ -77,6 +77,7 @@
                       syntax-shift-phase-level
                       syntax-source-module
                       identifier-prune-to-source-module
+                      syntax-bound-symbols
 
                       syntax-srcloc
                       syntax-source

@@ -314,4 +314,16 @@ not instantiate the module.
 
 @history[#:added "8.3.0.8"]}
 
+@defproc[(syntax-bound-symbols [stx stx?]
+                               [phase-level (or/c exact-integer? #f)
+                                            (syntax-local-phase-level)])
+         (listof symbol?)]{
+
+Returns a list of all symbols for which @racket[(identifier-binding
+(datum->syntax stx _sym) phase-level)] would produce a non-@racket[#f]
+value. This procedure takes time proportional to the number of scopes
+on @racket[stx] plus the length of the result list.
+
+@history[#:added "8.6.0.6"]}
+
 @close-eval[stx-eval]
