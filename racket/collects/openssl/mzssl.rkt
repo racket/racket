@@ -1401,8 +1401,7 @@ TO DO:
         (error/ssl who "~a failed (hostname not provided for verification)"
                    (if connect? "connect" "accept"))))
     (when (string? hostname)
-      (SSL_ctrl/bytes ssl SSL_CTRL_SET_TLSEXT_HOSTNAME
-                      TLSEXT_NAMETYPE_host_name (string->bytes/latin-1 hostname))
+      (SSL_set_tlsext_host_name ssl hostname)
       (when (and verify? verify-hostname?)
         ;; If verify? and verify-hostname? are true, then let OpenSSL
         ;; do hostname verification automatically during negotiation.

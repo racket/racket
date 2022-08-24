@@ -373,3 +373,7 @@
 
 (define (SSL_get_extms_support s)
   (SSL_ctrl/bytes s SSL_CTRL_GET_EXTMS_SUPPORT 0 #f))
+
+(define (SSL_set_tlsext_host_name s hostname)
+  (SSL_ctrl/bytes s SSL_CTRL_SET_TLSEXT_HOSTNAME
+                  TLSEXT_NAMETYPE_host_name (string->bytes/latin-1 hostname)))
