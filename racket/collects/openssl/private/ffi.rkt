@@ -150,11 +150,10 @@
   (define-ssl TLS_server_method (_fun -> _SSL_METHOD*)
     #:fail (lambda () SSLv23_server_method)))
 
-(define-crypto DH_free (_fun _DH* -> _void) #:wrap (deallocator))
-(define-crypto EC_KEY_free (_fun _EC_KEY* -> _void) #:wrap (deallocator))
-
-(define-crypto EC_KEY_new_by_curve_name (_fun _int -> _EC_KEY*)
-  #:wrap (allocator EC_KEY_free))
+(begin ;; deprecated in v3.0.0
+  (define-crypto EC_KEY_free (_fun _EC_KEY* -> _void) #:wrap (deallocator))
+  (define-crypto EC_KEY_new_by_curve_name (_fun _int -> _EC_KEY*)
+    #:wrap (allocator EC_KEY_free)))
 
 (define-crypto BIO_s_mem (_fun -> _BIO_METHOD*))
 (define-crypto BIO_new (_fun _BIO_METHOD* -> _BIO*/null))
@@ -263,9 +262,13 @@
   (define-ssl SSL_library_init (_fun -> _void) #:fail (lambda () void))
   (define-ssl SSL_load_error_strings (_fun -> _void) #:fail (lambda () void)))
 
+(begin ;; deprecated in v3.0.0
+  (define-crypto DH_free (_fun _DH* -> _void) #:wrap (deallocator))
+  (define-crypto PEM_read_bio_DHparams
+    (_fun _BIO* _pointer _pointer _pointer -> _DH*)
+    #:wrap (allocator DH_free)))
+
 (define-crypto GENERAL_NAME_free _fpointer)
-(define-crypto PEM_read_bio_DHparams (_fun _BIO* _pointer _pointer _pointer -> _DH*)
-  #:wrap (allocator DH_free))
 (define-crypto ASN1_STRING_length (_fun _ASN1_STRING* -> _int))
 (define-crypto ASN1_STRING_data (_fun _ASN1_STRING* -> _pointer))
 (define-crypto X509_NAME_get_index_by_NID (_fun _X509_NAME* _int _int -> _int))
