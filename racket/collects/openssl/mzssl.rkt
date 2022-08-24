@@ -53,9 +53,6 @@ TO DO:
 (define protocol-symbol/c
   (or/c 'secure 'auto 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12 'tls13))
 
-(define dhparams-symbol/c
-  (or/c 'ffdhe2048 'ffdhe3072 'ffdhe4096 'ffdhe6144 'ffdhe8192))
-
 (define (alpn-protocol-bytes/c v)
   (and (bytes? v) (< 0 (bytes-length v) 256)))
 
@@ -86,9 +83,7 @@ TO DO:
          #:certificate-chain (or/c path-string? #f))
         ssl-server-context?)]
   [ssl-server-context-enable-dhe!
-   (->* (ssl-server-context?)
-        ((or/c 'auto dhparams-symbol/c path-string? bytes?))
-        void?)]
+   (->* (ssl-server-context?) ((or/c 'auto path-string? bytes?)) void?)]
   [ssl-server-context-enable-ecdhe!
    (->* (ssl-server-context?) (symbol?) void?)]
   [ssl-client-context?
@@ -583,32 +578,11 @@ TO DO:
    "ssl-server-context-enable-ecdhe!: ignoring given ECDH parameters")
   (void))
 
-(define (ssl-server-context-enable-dhe! context [params 'ffdhe4096])
-  ;; DHE enabled in auto mode in (server) context construction.
-  (define who 'ssl-server-context-enable-dhe!)
-  (define ctx (extract-ctx who #t context))
-  (cond [(dhparam-symbol->nid params)
-         => (lambda (nid)
-              (define dh (DH_new_by_nid nid))
-              (unless (= 1 (SSL_CTX_set_tmp_dh ctx dh))
-                (error who "failed to enable DHE with ~s" params)))]
-        [(eq? params 'auto)
-         (unless (= 1 (SSL_CTX_set_dh_auto ctx 1))
-           (error who "failed to enable DHE with automatic parameters"))]
-        [else ;; path-string or bytes
-         (log-openssl-warning "ssl-server-context-enable-dhe!: ~a"
-                              "ignoring given DH parameters, using built-in instead")
-         (ssl-server-context-enable-dhe! context 'ffdhe4096)])
+(define (ssl-server-context-enable-dhe! context [params 'ignored])
+  ;; No effect. DHE enabled in auto mode in (server) context construction.
+  (log-openssl-warning
+   "ssl-server-context-enable-dhe!: ignoring given DH parameters")
   (void))
-
-(define (dhparam-symbol->nid sym)
-  (case sym
-    [(ffdhe2048) NID_ffdhe2048]
-    [(ffdhe3072) NID_ffdhe3072]
-    [(ffdhe4096) NID_ffdhe4096]
-    [(ffdhe6144) NID_ffdhe6144]
-    [(ffdhe8192) NID_ffdhe8192]
-    [else #f]))
 
 (define (ssl-load-... who load-it ssl-context-or-listener pathname
                       #:try? [try? #f])

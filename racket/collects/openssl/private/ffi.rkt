@@ -86,12 +86,6 @@
 (define NID_sha384 673)
 (define NID_sha512 674)
 
-(define NID_ffdhe2048 1126)
-(define NID_ffdhe3072 1127)
-(define NID_ffdhe4096 1128)
-(define NID_ffdhe6144 1129)
-(define NID_ffdhe8192 1130)
-
 (define SSL_ST_ACCEPT #x2000)
 
 (define SSL3_VERSION    #x0300)
@@ -266,11 +260,7 @@
   (define-crypto DH_get_2048_256 (_fun -> _DH*) #:fail (lambda () (lambda () #f))
     #:wrap (allocator DH_free))
   (define (SSL_CTX_set_tmp_dh ctx dh)
-    (SSL_CTX_ctrl ctx SSL_CTRL_SET_TMP_DH 0 dh))
-  (begin ;; added in v1.1.1
-    (define-crypto DH_new_by_nid
-      (_fun [nid : _int] -> _DH*)
-      #:wrap (allocator DH_free))))
+    (SSL_CTX_ctrl ctx SSL_CTRL_SET_TMP_DH 0 dh)))
 
 (define-crypto GENERAL_NAME_free _fpointer)
 (define-crypto ASN1_STRING_length (_fun _ASN1_STRING* -> _int))
