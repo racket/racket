@@ -1629,7 +1629,7 @@ TO DO:
            [(< 0 r MAX_FINISH_LEN) (subbytes buf 0 r)]
            [else (error who "internal error: TLS Finished message too large")])]
     [(tls-server-end-point)
-     (define x509
+     (define x509 ;; ownership varies, don't free
        (cond [(mzssl-server? mzssl) (SSL_get_certificate ssl)]
              [else (SSL_get_peer_certificate ssl)]))
      (unless x509 (error who "failed to get server certificate"))
@@ -1646,7 +1646,6 @@ TO DO:
      (unless (> buflen 0) (error who "internal error: bad digest length"))
      (define buf (make-bytes buflen))
      (define r (X509_digest x509 hash-evp buf buflen))
-     (X509_free x509)
      (if (> r 0) buf (error who "internal error: certificate digest failed"))]))
 
 (define (ssl-protocol-version p)
