@@ -47,6 +47,9 @@ TO DO:
 
 (define-logger openssl)
 
+(when (and libssl (not v1.0.2/later?))
+  (log-openssl-error "OpenSSL library too old, version 1.0.2 or later required."))
+
 (define protocol-symbol/c
   (or/c 'secure 'auto 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12))
 
