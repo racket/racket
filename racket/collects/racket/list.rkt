@@ -770,7 +770,7 @@
          (when (> N 254) (error 'permutations "input list too long: ~e" l))
          (define c (make-bytes (add1 N) 0))
          (define i 0)
-         (define cur (reverse l))
+         (define cur l)
          (define (next)
            (define r cur)
            (define ci (bytes-ref c i))
