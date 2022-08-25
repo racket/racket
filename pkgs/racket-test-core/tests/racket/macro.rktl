@@ -1152,29 +1152,6 @@
   (test 10 'ten (invoke compare)))
 
 ;; ----------------------------------------
-;; `syntax-bound-symbols`
-
-(let ([check-bound
-       (lambda (s stx [bound? #t])
-         (test (and bound? s) 'is-bound
-               (ormap (lambda (s2)
-                        (and (eq? s2 s) s))
-                      (syntax-bound-symbols stx))))])
-  (check-bound 'ormap #'stx)
-  (check-bound 'test #'stx)
-  (let ([locally-bound-only 5])
-    (define-syntax (check-bind stx)
-      #`(quote #,(ormap (lambda (s2)
-                          (eq? s2 'locally-bound-only))
-                        (syntax-bound-symbols stx))))
-    (test #t 'locally-bound (check-bind))
-    (check-bound 'locally-bound-only #'stx #f)))
-
-(test '() syntax-bound-symbols #'anything 100)
-(test '() syntax-bound-symbols (datum->syntax #f 'nothing))
-(test '() syntax-bound-symbols ((make-syntax-introducer) (datum->syntax #f 'nothing)))
-
-;; ----------------------------------------
 ;; Check zo marshaling of prefab in a list:
 
 (let ([s #'(quote-syntax (#s(foo bar)))])

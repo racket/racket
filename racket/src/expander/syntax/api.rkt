@@ -77,7 +77,8 @@
          syntax-shift-phase-level
          syntax-track-origin
          syntax-debug-info
-         syntax-bound-symbols)
+         syntax-bound-symbols
+         syntax-bound-phases)
 
 (define/who (syntax-e s)
   (check who syntax? s)
@@ -268,4 +269,8 @@
 
 (define/who (syntax-bound-symbols stx [phase (syntax-local-phase-level)])
   (check who syntax? stx)
-  (set->list (syntax-mapped-names stx phase)))
+  (set->list (syntax-mapped-names stx phase #:only-interned? #t)))
+
+(define/who (syntax-bound-phases stx)
+  (check who syntax? stx)
+  (set->list (syntax-mapped-phases stx)))

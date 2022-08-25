@@ -78,6 +78,7 @@
                       syntax-source-module
                       identifier-prune-to-source-module
                       syntax-bound-symbols
+                      syntax-bound-phases
 
                       syntax-srcloc
                       syntax-source

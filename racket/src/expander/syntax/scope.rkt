@@ -71,7 +71,8 @@
            (struct-out interned-scope)
            (struct-out multi-scope)
            (struct-out representative-scope)
-           scope-set-at-fallback))
+           scope-set-at-fallback
+           shifted-multi-scope-add-binding-phases))
 
 ;; A scope represents a distinct "dimension" of binding. We can attach
 ;; the bindings for a set of scopes to an arbitrary scope in the set;
@@ -809,6 +810,21 @@
                                    [shifted-multi-scopes
                                     (shift-all (syntax-shifted-multi-scopes s))]))
                     syntax-e))))
+
+
+;; add each phase where `sms` might possibly have a binding
+(define (shifted-multi-scope-add-binding-phases sms phases)
+  (define ms (shifted-multi-scope-multi-scope sms))
+  (define phase (shifted-multi-scope-phase sms))
+  (cond
+    [(shifted-to-label-phase? phase)
+     (set-add phases #f)]
+    [else
+     (for/fold ([phases phases])
+               ([ph (in-hash-keys (unbox (multi-scope-scopes ms)))])
+       (if (label-phase? ph)
+           (set-add phases #f)
+           (set-add phases (phase- phase ph))))]))
 
 ;; ----------------------------------------
 

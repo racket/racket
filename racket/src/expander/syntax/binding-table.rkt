@@ -304,7 +304,8 @@
 ;; ----------------------------------------
 
 ;; Return a set of symbols that have bindings for a given scope set
-(define (binding-table-symbols table scs s extra-shifts)
+(define (binding-table-symbols table scs s extra-shifts
+                               #:only-interned? [only-interned? #f])
   (define-values (ht bulk-bindings)
     (if (hash? table)
         (values table null)
@@ -312,14 +313,16 @@
                 (table-with-bulk-bindings-bulk-bindings table))))
   (set-union
    (for/seteq ([(sym at-sym) (in-hash ht)]
+               #:when (or (not only-interned?) (symbol-interned? sym))
                #:when (for/or ([an-scs (in-hash-keys at-sym)])
                         (subset? an-scs scs)))
-              sym)
+     sym)
    (for*/seteq ([bba (in-list bulk-bindings)]
                 #:when (subset? (bulk-binding-at-scopes bba) scs)
                 [sym (in-hash-keys
-                      (bulk-binding-symbols (bulk-binding-at-bulk bba) s extra-shifts))])
-               sym)))
+                      (bulk-binding-symbols (bulk-binding-at-bulk bba) s extra-shifts))]
+                #:when (or (not only-interned?) (symbol-interned? sym)))
+     sym)))
 
 ;; ----------------------------------------
 ;; Pruning functions are called by scope serialization

@@ -319,11 +319,28 @@ not instantiate the module.
                                             (syntax-local-phase-level)])
          (listof symbol?)]{
 
-Returns a list of all symbols for which @racket[(identifier-binding
-(datum->syntax stx _sym) phase-level)] would produce a non-@racket[#f]
-value. This procedure takes time proportional to the number of scopes
-on @racket[stx] plus the length of the result list.
+Returns a list of all @tech{interned} symbols for which
+@racket[(identifier-binding (datum->syntax stx _sym) phase-level)]
+would produce a non-@racket[#f] value. This procedure takes time
+proportional to the number of scopes on @racket[stx] plus the length
+of the result list.
 
 @history[#:added "8.6.0.6"]}
+
+@defproc[(syntax-bound-phases [stx stx?])
+         (listof (or/c exact-integer? #f))]{
+
+Returns a list that includes all @racket[_phase-level]s for which
+@racket[(syntax-bound-symbols stx _phase-level)] might produce a
+non-empty list.
+
+@examples[
+#:eval stx-eval
+(syntax-bound-phases #'anything)
+(require (for-meta 8 racket/base))
+(syntax-bound-phases #'anything)
+]
+
+@history[#:added "8.6.0.8"]}
 
 @close-eval[stx-eval]
