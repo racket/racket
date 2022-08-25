@@ -13,6 +13,7 @@
          resolved-module-path?
          make-resolved-module-path
          resolved-module-path-name
+         safe-resolved-module-path-name
          resolved-module-path-root-name
          resolved-module-path->module-path
          
@@ -96,6 +97,16 @@
           base
           (apply string-append (for/list ([i (in-list syms)])
                                  (format " ~s" i)))))
+
+(define safe-resolved-module-path-name
+  (let ([resolved-module-path-name
+         (lambda (v)
+           (unless (resolved-module-path? v)
+             (raise-argument-error 'resolved-module-path-name
+                                   "resolved-module-path?"
+                                   v))
+           (resolved-module-path-name v))])
+    resolved-module-path-name))
 
 (define (resolved-module-path-root-name r)
   (define name (resolved-module-path-name r))

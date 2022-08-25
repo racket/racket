@@ -748,6 +748,9 @@
 (test #t module-path? '(planet "foo.rkt" ("robby" "redex.plt") "sub" "deeper"))
 (test #t module-path? '(planet "foo%2e.rkt" ("robby%2e" "redex%2e.plt") "sub%2e" "%2edeeper"))
 
+(err/rt-test (make-resolved-module-path "not good"))
+(err/rt-test (resolved-module-path-name "not good"))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; check `relative-in'
 
