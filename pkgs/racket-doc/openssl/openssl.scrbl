@@ -705,38 +705,32 @@ collection for testing purposes where the peer identifies itself using
          void?]
 @defproc[(ssl-server-context-enable-ecdhe!
            [context ssl-server-context?]
-           [curve-name symbol? 'secp521r1])
+           [curve-name symbol? 'ignored])
          void?]
 ]]{
 
-Enables cipher suites that provide
-@hyperlink["http://en.wikipedia.org/wiki/Forward_secrecy"]{perfect
-forward secrecy} via ephemeral Diffie-Hellman (DHE) or ephemeral
-elliptic-curve Diffie-Hellman (ECDHE) key exchange, respectively.
+@bold{Deprecated.} Provided for backwards compatibility only. These procedures
+have no effect on @racket[context], but they log a warning if called.
 
-For DHE, the @racket[dh-param] must be a path to a @filepath{.pem}
-file containing DH parameters or the content of such a file as a byte
-string.
-
-For ECDHE, the @racket[curve-name] must be one of the following
-symbols naming a standard elliptic curve:
-@(add-between
-  (map (lambda (s) (racket '@#,(racketvalfont (symbol->string s))))
-       '(sect163k1 sect163r1 sect163r2 sect193r1 sect193r2 sect233k1 sect233r1
-         sect239k1 sect283k1 sect283r1 sect409k1 sect409r1 sect571k1 sect571r1
-         secp160k1 secp160r1 secp160r2 secp192k1 secp224k1 secp224r1 secp256k1
-         secp384r1 secp521r1 prime192v prime256v))
-  ", ").
+Ciphers supporting
+@hyperlink["http://en.wikipedia.org/wiki/Forward_secrecy"]{perfect forward
+secrecy} via ephemeral Diffie-Hellman (DHE) or ephemeral elliptic-curve
+Diffie-Hellman (ECDHE) key exchange are enabled by default, with automatic
+selection of key-exchange groups. Customization of the groups (DH parameters
+and EC curves) is no longer supported.
 
 @history[#:changed "7.7.0.4" @elem{Allow a byte string as the @racket[dh-param]
-                                   argument to @racket[ssl-server-context-enable-dhe!].}]}
+                                   argument to @racket[ssl-server-context-enable-dhe!].}
+         #:changed "8.14.0.2" @elem{Deprecated, changed to have no effect.}]}
 
 @defthing[ssl-dh4096-param-bytes bytes?]{
 
-Byte string describing 4096-bit Diffie-Hellman parameters in @filepath{.pem} format.
+@bold{Deprecated.} Provided for backwards compatibility only. Defined as
+@racket[#""]. See @racket[ssl-server-context-enable-dhe!].
 
 @history[#:changed "7.7.0.4" @elem{Added as a replacement for
-                                   @racketidfont{ssl-dh4096-param-path}.}]}
+                                   @racketidfont{ssl-dh4096-param-path}.}
+         #:changed "8.14.0.2" @elem{Deprecated, redefined to empty byte string.}]}
 
 @defproc[(ssl-set-server-name-identification-callback!
            [context ssl-server-context?]
