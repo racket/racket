@@ -319,7 +319,10 @@
 (define-crypto EVP_sha384 (_fun -> _EVP_MD*/null))
 (define-crypto EVP_sha512 (_fun -> _EVP_MD*/null))
 (define-crypto EVP_MD_size (_fun _EVP_MD* -> _int)
-  #:fail (lambda () (get-ffi-obj 'EVP_MD_get_size libcrypto (_fun _EVP_MD* -> _int))))
+  #:make-fail (lambda (name)
+                (lambda ()
+                  (get-ffi-obj 'EVP_MD_get_size libcrypto (_fun _EVP_MD* -> _int)
+                               (make-not-available name)))))
 
 (define-ssl OBJ_find_sigid_algs
   (_fun _int (alg : (_ptr o _int)) (_pointer = #f) -> (r : _int)
