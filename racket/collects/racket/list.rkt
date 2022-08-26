@@ -145,7 +145,12 @@
     (unless (null? p)
       (unless (exact-nonnegative-integer? (car p))
         (apply raise-argument-error 'list-update* "exact-nonnegative-integer?" i l pairs))
-      (check (cddr p) (+ 2 i))))
+      (define q (cdr p))
+      (define f (car q))
+      (unless (and (procedure? f)
+                   (procedure-arity-includes? f 1))
+        (apply raise-argument-error 'list-update* "(-> any/c any/c)" (+ 1 i) l pairs))
+      (check (cdr q) (+ 2 i))))
   (define cache (apply hasheq pairs))
   (let loop ([l l] [i 0] [j (hash-count cache)])
     (cond
