@@ -128,6 +128,9 @@
     (raise-argument-error 'list-update "list?" 0 l i f))
   (unless (exact-nonnegative-integer? i)
     (raise-argument-error 'list-update "exact-nonnegative-integer?" 1 l i f))
+  (define len (length l))
+  (unless (< i len)
+    (raise-range-error 'list-update "list" "" i l 0 (sub1 len)))
   (unless (and (procedure? f)
                (procedure-arity-includes? f 1))
     (raise-argument-error 'list-update "(-> any/c any/c)" 2 l i f))
@@ -140,11 +143,21 @@
   (unless (list? l)
     (apply raise-argument-error 'list-update* "list?" 0 l pairs))
   (unless (even? (length pairs))
-    (error 'list-update* "expected an even number of association elements, but received an odd number: ~e" pairs))
+    (raise-arguments-error
+     'list-update*
+     (format "expected ~a, but received ~a"
+             "an even number of association elements"
+             "an odd number of association elements")
+     "association elements"
+     pairs))
+  (define len (length l))
   (let check ([p pairs] [i 1])
     (unless (null? p)
-      (unless (exact-nonnegative-integer? (car p))
+      (define j (car p))
+      (unless (exact-nonnegative-integer? j)
         (apply raise-argument-error 'list-update* "exact-nonnegative-integer?" i l pairs))
+      (unless (< j len)
+        (raise-range-error 'list-update* "list" "" j l 0 (sub1 len)))
       (define q (cdr p))
       (define f (car q))
       (unless (and (procedure? f)
@@ -164,6 +177,9 @@
     (raise-argument-error 'list-set "list?" 0 l i v))
   (unless (exact-nonnegative-integer? i)
     (raise-argument-error 'list-set "exact-nonnegative-integer?" 1 l i v))
+  (define len (length l))
+  (unless (< i len)
+    (raise-range-error 'list-set "list" "" i l 0 (sub1 len)))
   (let loop ([l l] [i i])
     (cond
       [(zero? i) (cons v (cdr l))]
@@ -173,11 +189,21 @@
   (unless (list? l)
     (apply raise-argument-error 'list-set* "list?" 0 l pairs))
   (unless (even? (length pairs))
-    (error 'list-set* "expected an even number of association elements, but received an odd number: ~e" pairs))
+    (raise-arguments-error
+     'list-set*
+     (format "expected ~a, but received ~a"
+             "an even number of association elements"
+             "an odd number of association elements")
+     "association elements"
+     pairs))
+  (define len (length l))
   (let check ([p pairs] [i 1])
     (unless (null? p)
-      (unless (exact-nonnegative-integer? (car p))
+      (define j (car p))
+      (unless (exact-nonnegative-integer? j)
         (apply raise-argument-error 'list-set* "exact-nonnegative-integer?" i l pairs))
+      (unless (< j len)
+        (raise-range-error 'list-set* "list" "" j l 0 (sub1 len)))
       (check (cddr p) (+ 2 i))))
   (define cache (apply hasheq pairs))
   (let loop ([l l] [i 0] [j (hash-count cache)])
