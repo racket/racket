@@ -11,7 +11,9 @@
          make-list
 
          list-update
+         list-update*
          list-set
+         list-set*
 
          index-of
          index-where
@@ -129,16 +131,56 @@
   (unless (and (procedure? f)
                (procedure-arity-includes? f 1))
     (raise-argument-error 'list-update "(-> any/c any/c)" 2 l i f))
-  (cond
-   [(zero? i) (cons (f (car l)) (cdr l))]
-   [else (cons (car l) (list-update (cdr l) (sub1 i) f))]))
+  (let loop ([l l] [i i])
+    (cond
+      [(zero? i) (cons (f (car l)) (cdr l))]
+      [else (cons (car l) (loop (cdr l) (sub1 i)))])))
 
-(define (list-set l k v)
+(define (list-update* l . pairs)
   (unless (list? l)
-    (raise-argument-error 'list-set "list?" 0 l k v))
-  (unless (exact-nonnegative-integer? k)
-    (raise-argument-error 'list-set "exact-nonnegative-integer?" 1 l k v))
-  (list-update l k (lambda (_) v)))
+    (apply raise-argument-error 'list-update* "list?" 0 l pairs))
+  (unless (even? (length pairs))
+    (error 'list-update* "expected an even number of association elements, but received an odd number: ~e" pairs))
+  (let check ([p pairs] [i 1])
+    (unless (null? p)
+      (unless (exact-nonnegative-integer? (car p))
+        (apply raise-argument-error 'list-update* "exact-nonnegative-integer?" i l pairs))
+      (check (cddr p) (+ 2 i))))
+  (define cache (apply hasheq pairs))
+  (let loop ([l l] [i 0] [j (hash-count cache)])
+    (cond
+      [(zero? j) l]
+      [(hash-ref cache i #f)
+       => (λ (f) (cons (f (car l)) (loop (cdr l) (add1 i) (sub1 j))))]
+      [else (cons (car l) (loop (cdr l) (add1 i) j))])))
+
+(define (list-set l i v)
+  (unless (list? l)
+    (raise-argument-error 'list-set "list?" 0 l i v))
+  (unless (exact-nonnegative-integer? i)
+    (raise-argument-error 'list-set "exact-nonnegative-integer?" 1 l i v))
+  (let loop ([l l] [i i])
+    (cond
+      [(zero? i) (cons v (cdr l))]
+      [else (cons (car l) (loop (cdr l) (sub1 i)))])))
+
+(define (list-set* l . pairs)
+  (unless (list? l)
+    (apply raise-argument-error 'list-set* "list?" 0 l pairs))
+  (unless (even? (length pairs))
+    (error 'list-set* "expected an even number of association elements, but received an odd number: ~e" pairs))
+  (let check ([p pairs] [i 1])
+    (unless (null? p)
+      (unless (exact-nonnegative-integer? (car p))
+        (apply raise-argument-error 'list-set* "exact-nonnegative-integer?" i l pairs))
+      (check (cddr p) (+ 2 i))))
+  (define cache (apply hasheq pairs))
+  (let loop ([l l] [i 0] [j (hash-count cache)])
+    (cond
+      [(zero? j) l]
+      [(hash-has-key? cache i)
+       (cons (hash-ref cache i) (loop (cdr l) (add1 i) (sub1 j)))]
+      [else (cons (car l) (loop (cdr l) (add1 i) j))])))
 
 ;; internal use below
 (define (drop* list n) ; no error checking, returns #f if index is too large
