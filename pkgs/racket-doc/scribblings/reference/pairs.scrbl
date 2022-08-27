@@ -1003,7 +1003,7 @@ This function takes time proportional to the maximum value among @racket[pos ...
 (list-update* '(0 1 2) 1 add1 2 sub1)
 (list-update* '(0 1 2) 2 sub1 1 add1)
 (list-update* '(0 1 2) 1 add1 1 add1)]
-@history[#:added "8.6.0.5"]{}
+@history[#:added "8.6.0.9"]{}
 }
 
 @defproc[(list-set [lst list?]
@@ -1037,7 +1037,7 @@ This function takes time proportional to the maximum value among @racket[pos ...
 (list-set* '(0 1 2) 0 3 1 4)
 (list-set* '(0 1 2) 1 4 0 3)
 (list-set* '(0 1 2) 0 3 0 4)]
-@history[#:added "8.6.0.5"]{}
+@history[#:added "8.6.0.9"]{}
 }
 
 @defproc[(index-of [lst list?] [v any/c]
