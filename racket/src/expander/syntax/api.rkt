@@ -195,10 +195,10 @@
   (check who identifier? b)
   (raw:free-identifier=? a b #f #f))
 
-(define/who (identifier-binding id [phase (syntax-local-phase-level)] [top-level-symbol? #f])
+(define/who (identifier-binding id [phase (syntax-local-phase-level)] [top-level-symbol? #f] [exactly? #f])
   (check who identifier? id)
   (check who phase? #:contract phase?-string phase)
-  (raw:identifier-binding id phase top-level-symbol?))
+  (raw:identifier-binding id phase top-level-symbol? #:exactly? exactly?))
 
 (define/who (identifier-transformer-binding id [phase  (syntax-local-phase-level)])
   (check who identifier? id)
@@ -267,9 +267,9 @@
   (when ctx (log-expand ctx 'track-syntax 'track-origin new-stx s))
   s)
 
-(define/who (syntax-bound-symbols stx [phase (syntax-local-phase-level)])
+(define/who (syntax-bound-symbols stx [phase (syntax-local-phase-level)] [exactly? #f])
   (check who syntax? stx)
-  (set->list (syntax-mapped-names stx phase #:only-interned? #t)))
+  (set->list (syntax-mapped-names stx phase #:only-interned? #t #:exactly? exactly?)))
 
 (define/who (syntax-bound-phases stx)
   (check who syntax? stx)

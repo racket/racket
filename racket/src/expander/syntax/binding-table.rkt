@@ -305,7 +305,8 @@
 
 ;; Return a set of symbols that have bindings for a given scope set
 (define (binding-table-symbols table scs s extra-shifts
-                               #:only-interned? [only-interned? #f])
+                               #:only-interned? [only-interned? #f]
+                               #:exactly? [exactly? #f])
   (define-values (ht bulk-bindings)
     (if (hash? table)
         (values table null)
@@ -315,10 +316,14 @@
    (for/seteq ([(sym at-sym) (in-hash ht)]
                #:when (or (not only-interned?) (symbol-interned? sym))
                #:when (for/or ([an-scs (in-hash-keys at-sym)])
-                        (subset? an-scs scs)))
+                        (if exactly?
+                            (set=? an-scs scs)
+                            (subset? an-scs scs))))
      sym)
    (for*/seteq ([bba (in-list bulk-bindings)]
-                #:when (subset? (bulk-binding-at-scopes bba) scs)
+                #:when (if exactly?
+                           (set=? (bulk-binding-at-scopes bba) scs)
+                           (subset? (bulk-binding-at-scopes bba) scs))
                 [sym (in-hash-keys
                       (bulk-binding-symbols (bulk-binding-at-bulk bba) s extra-shifts))]
                 #:when (or (not only-interned?) (symbol-interned? sym)))

@@ -10,12 +10,15 @@
 (provide syntax-mapped-names
          syntax-mapped-phases)
 
-(define (syntax-mapped-names s phase #:only-interned? [only-interned? #f])
+(define (syntax-mapped-names s phase
+                             #:only-interned? [only-interned? #f]
+                             #:exactly? [exactly? #f])
   (define s-scs (syntax-scope-set s phase))
   (for/fold ([syms (seteq)]) ([sc (in-set s-scs)])
     (set-union syms
                (binding-table-symbols (scope-binding-table sc) s-scs s null
-                                      #:only-interned? only-interned?))))
+                                      #:only-interned? only-interned?
+                                      #:exactly? exactly?))))
 
 (define (syntax-mapped-phases s)
   (define smss (fallback-first (syntax-shifted-multi-scopes s)))

@@ -99,8 +99,9 @@
     (local-binding-key b)]
    [else (syntax-e id)]))
 
-(define (identifier-binding id phase [top-level-symbol? #f])
-  (define b (resolve+shift id phase))
+(define (identifier-binding id phase [top-level-symbol? #f]
+                            #:exactly? [exactly? #f])
+  (define b (resolve+shift id phase #:exactly? exactly?))
   (cond
    [(module-binding? b)
     (if (top-level-module-path-index? (module-binding-module b))

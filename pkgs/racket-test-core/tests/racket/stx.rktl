@@ -805,6 +805,9 @@
 (test #t symbol? (car sym-list-for-x))
 (test #f eq? 'x (car sym-list-for-x)) ; since macro-introduced
 
+(test #t pair? (identifier-binding #'car 0 #f #;exact: #t))
+(test #f pair? (identifier-binding ((make-syntax-introducer) #'car) 0 #f #;exact: #t))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; identifier-binding and (nominal) phase reporting
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2848,13 +2851,15 @@
 ;; syntax-bound-symbols
 
 (let ([check-bound
-       (lambda (s stx [bound? #t])
+       (lambda (s stx [bound? #t] #:exactly? [exactly? #f])
          (test (and bound? s) 'is-bound
                (ormap (lambda (s2)
                         (and (eq? s2 s) s))
-                      (syntax-bound-symbols stx))))])
+                      (syntax-bound-symbols stx (syntax-local-phase-level) exactly?))))])
   (check-bound 'ormap #'stx)
   (check-bound 'test #'stx)
+  (check-bound 'test #'stx #:exactly? #t)
+  (check-bound 'test ((make-syntax-introducer) #'stx) #f #:exactly? #t)
   (define-syntax (gen stx)
     (let ([gs (datum->syntax #f (gensym))])
       #`(let ([locally-bound-only 5]

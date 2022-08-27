@@ -97,7 +97,8 @@ is @racket[#f].}
 @defproc[(identifier-binding [id-stx identifier?]
                              [phase-level (or/c exact-integer? #f)
                                           (syntax-local-phase-level)]
-                             [top-level-symbol? any/c #f])
+                             [top-level-symbol? any/c #f]
+                             [exact-scopes? any/c #f])
          (or/c 'lexical
                #f
                (list/c module-path-index?
@@ -203,9 +204,16 @@ from @racket[identifier-binding] is for the identifier in the
 transformer, so that @racket[identifier-binding] is consistent with
 @racket[free-identifier=?].
 
+If @racket[exact-scopes?] is a true value, then the result is
+@racket[#f] unless the binding for @racket[id-stx] has exactly the
+@tech{scopes} of @racket[id-stx]. An exact-scopes check is useful for
+detecting whether an identifier is already bound in a specific
+definition context, for example.
+
 @history[#:changed "6.6.0.4" @elem{Added the @racket[top-level-symbol?] argument to report
                                    information on top-level bindings.}
-        #:changed "8.2.0.3" @elem{Generalized phase results to phase--space combinations.}]}
+        #:changed "8.2.0.3" @elem{Generalized phase results to phase--space combinations.}
+        #:changed "8.6.0.9" @elem{Added the @racket[exact-scopes?] argument.}]}
 
 
 @defproc[(identifier-transformer-binding [id-stx identifier?]
@@ -316,16 +324,18 @@ not instantiate the module.
 
 @defproc[(syntax-bound-symbols [stx stx?]
                                [phase-level (or/c exact-integer? #f)
-                                            (syntax-local-phase-level)])
+                                            (syntax-local-phase-level)]
+                               [exact-scopes? any/c #f])
          (listof symbol?)]{
 
 Returns a list of all @tech{interned} symbols for which
-@racket[(identifier-binding (datum->syntax stx _sym) phase-level)]
+@racket[(identifier-binding (datum->syntax stx _sym) phase-level #f exact-scopes?)]
 would produce a non-@racket[#f] value. This procedure takes time
 proportional to the number of scopes on @racket[stx] plus the length
 of the result list.
 
-@history[#:added "8.6.0.6"]}
+@history[#:added "8.6.0.6"
+         #:changed "8.6.0.9" @elem{Added the @racket[exact-scopes?] argument.}]}
 
 @defproc[(syntax-bound-phases [stx stx?])
          (listof (or/c exact-integer? #f))]{
