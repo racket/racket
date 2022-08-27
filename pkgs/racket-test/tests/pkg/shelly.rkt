@@ -4,6 +4,7 @@
          racket/system
          racket/match
          compiler/find-exe
+         syntax/parse/define
          (for-syntax racket/base
                      syntax/parse))
 
@@ -30,13 +31,15 @@
 (define-syntax-rule (check-case m e ...)
   (exception-if-failed test-case m e ...))
 
-(define-syntax-rule (check-similar? act exp name)
+(define-syntax-parse-rule (check-similar? act exp name)
+  #:with check-regexp-stx (syntax/loc (syntax exp) (check-regexp-match exp-v act-v name))
+  #:with check-equal-stx  (syntax/loc (syntax exp) (check-equal? act-v exp-v name))
   (let ()
     (define exp-v exp)
     (define act-v act)
     (if (regexp? exp-v)
-      (check-regexp-match exp-v act-v name)
-      (check-equal? act-v exp-v name))))
+      check-regexp-stx
+      check-equal-stx)))
 
 (define (exn:input-port-closed? x)
   (and (exn:fail? x)
