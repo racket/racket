@@ -135,7 +135,7 @@ The @racketmodname[racket] library combines
              #:author "Matthew Flatt"
              #:title "Composable and Compilable Macros: You Want it When?"
              #:location "International Conference on Functional Programming (ICFP)"
-             #:url "http://www.cs.utah.edu/plt/publications/gpce13-f-color.pdf"
+             #:url "https://www.cs.utah.edu/plt/publications/macromod.pdf"
              #:date "2002")
 
   (bib-entry #:key "Flatt07"
