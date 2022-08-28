@@ -745,7 +745,8 @@ In contrast, if these modules were changed to store the value of
 display @litchar["2"].
 
 The Separate Compilation Guarantee is described in more detail
-in the paper ``Composable and Compilable Macros'' @cite["Flatt02"], including
+in the papers ``Composable and Compilable Macros'' @cite["Flatt02"]
+and ``Submodules in Racket'' @cite["Flatt13"], including
 informative examples. The paper ``Advanced Macrology and the
 implementation of Typed Scheme'' @cite["Culpepper07"] also contains an
 extended example of why it is important and how to design effectful
