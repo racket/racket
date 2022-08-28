@@ -35,11 +35,14 @@
              [(= 2 len) (cdr stx)]
              [else (bad-syntax stx)]))))
 
-(define (run-zuo* args input k)
+(define (run-zuo* args input k [env #f])
   (define p (apply process
                    (cons (hash-ref (runtime-env) 'exe #f)
                          (append args
-                                 (list (hash 'stdin 'pipe 'stdout 'pipe 'stderr 'pipe))))))
+                                 (list (let ([c (hash 'stdin 'pipe 'stdout 'pipe 'stderr 'pipe)])
+                                         (if env
+                                             (hash-set c 'env env)
+                                             c)))))))
   (fd-write (hash-ref p 'stdin) input)
   (fd-close (hash-ref p 'stdin))
   (define out (fd-read (hash-ref p 'stdout) eof))
@@ -134,5 +137,5 @@
 (define not-string "not a string")
 (define not-path "not a path string")
 
-(define tmp-dir (build-path (car (split-path (quote-module-path))) ".." "build" "tmp"))
+(define tmp-dir (build-path (or (car (split-path (quote-module-path))) ".") ".." "build" "tmp"))
 (mkdir-p tmp-dir)
