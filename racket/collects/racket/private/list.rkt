@@ -344,9 +344,9 @@
                    [(x y) (app f (g x y))]
                    [args  (app f (apply g args))])])])
           (if (null? allowed-kwds)
-              (case arity
-                [(0 1 2) composed]
-                [else (procedure-reduce-arity composed arity)])
+              (if (equal? arity (procedure-arity composed))
+                  composed
+                  (procedure-reduce-arity composed arity))
               (procedure-reduce-keyword-arity
                (make-keyword-procedure
                 (lambda (kws kw-args . xs)
