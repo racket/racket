@@ -145,6 +145,13 @@ The @racketmodname[racket] library combines
              #:url "http://www.cs.utah.edu/plt/publications/icfp07-fyff.pdf"
              #:date "2007")
 
+  (bib-entry #:key "Flatt13"
+             #:author "Matthew Flatt"
+             #:title "Submodules in Racket: You Want It When, Again?"
+             #:location "International Conference on Generative Programming: Concepts & Experiences (GPCE'13)"
+             #:url "https://www.cs.utah.edu/plt/publications/gpce13-f-color.pdf"
+             #:date "2013")
+
   (bib-entry #:key "Friedman95"
              #:title "Exception system proposal"
              #:author "Daniel P. Friedman, C. T. Haynes, and R. Kent Dybvig"
