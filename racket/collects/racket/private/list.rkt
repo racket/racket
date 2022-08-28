@@ -333,22 +333,26 @@
             ([(arity) (procedure-arity g)]
              [(required-kwds allowed-kwds) (procedure-keywords g)]
              [(composed)
-              ;; FIXME: would be nice to use `procedure-rename',
-              ;; `procedure-reduce-arity' and `procedure-reduce-keyword-arity'
-              ;; in the places marked below, but they currently add a
-              ;; significant overhead.
-              (if (eq? 1 arity)
-                  (lambda (x) (app f (g x)))
-                  (case-lambda          ; <--- here
-                    [(x)   (app f (g x))]
-                    [(x y) (app f (g x y))]
-                    [args  (app f (apply g args))]))])
+              (case arity
+                [(0) (λ ()    (app f (g)))]
+                [(1) (λ (x)   (app f (g x)))]
+                [(2) (λ (x y) (app f (g x y)))]
+                [else
+                 (case-lambda
+                   [()    (app f (g))]
+                   [(x)   (app f (g x))]
+                   [(x y) (app f (g x y))]
+                   [args  (app f (apply g args))])])])
           (if (null? allowed-kwds)
-              composed
-              (make-keyword-procedure   ; <--- and here
-               (lambda (kws kw-args . xs)
-                 (app f (keyword-apply g kws kw-args xs)))
-               composed))))
+              (case arity
+                [(0 1 2) composed]
+                [else (procedure-reduce-arity composed arity)])
+              (procedure-reduce-keyword-arity
+               (make-keyword-procedure
+                (lambda (kws kw-args . xs)
+                  (app f (keyword-apply g kws kw-args xs)))
+                composed)
+               arity required-kwds allowed-kwds))))
       (define-syntax-rule (can-compose* name n g f fs)
         (unless (null? (let-values ([(req _) (procedure-keywords g)]) req))
           (apply raise-argument-error 'name "procedure-with-no-required-keywords?"
