@@ -329,20 +329,20 @@
       (define-syntax-rule (app1 E1 E2) (E1 E2))
       (define-syntax-rule (app* E1 E2) (call-with-values (lambda () E2) E1))
       (define-syntax-rule (mk-simple-compose app f g)
-        (let*-values
+        (let-values
             ([(arity) (procedure-arity g)]
-             [(required-kwds allowed-kwds) (procedure-keywords g)]
-             [(composed)
-              (case arity
-                [(0) (λ ()    (app f (g)))]
-                [(1) (λ (x)   (app f (g x)))]
-                [(2) (λ (x y) (app f (g x y)))]
-                [else
-                 (case-lambda
-                   [()    (app f (g))]
-                   [(x)   (app f (g x))]
-                   [(x y) (app f (g x y))]
-                   [args  (app f (apply g args))])])])
+             [(required-kwds allowed-kwds) (procedure-keywords g)])
+          (define composed
+            (case arity
+              [(0) (λ ()    (app f (g)))]
+              [(1) (λ (x)   (app f (g x)))]
+              [(2) (λ (x y) (app f (g x y)))]
+              [else
+               (case-lambda
+                 [()    (app f (g))]
+                 [(x)   (app f (g x))]
+                 [(x y) (app f (g x y))]
+                 [args  (app f (apply g args))])]))
           (if (null? allowed-kwds)
               (if (equal? arity (procedure-arity composed))
                   composed
@@ -366,8 +366,8 @@
         (if (null? rfuns)
             f
             ;; (very) slightly slower alternative:
-            #;(pipeline1 (let* ([fst (car rfuns)]
-                                [composed (lambda (x) (fst (f x)))])
+            #;(pipeline1 (let ([fst (car rfuns)])
+                           (define (composed x) (fst (f x)))
                            composed)
                          (cdr rfuns))
             (let ([composed
