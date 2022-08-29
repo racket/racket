@@ -3,13 +3,15 @@
 (require (for-syntax racket/base racket/list syntax/name)
          racket/list racket/private/arity)
 
-(provide identity const thunk thunk* negate curry curryr
+(provide identity const const* thunk thunk* negate curry curryr
          (all-from-out racket/private/arity)
          conjoin disjoin)
 
 (define (identity x) x)
 
-(define const
+(define const (λ (c) (thunk* c)))
+
+(define const*
   (case-lambda
     [()    (thunk* (values))]
     [(c)   (thunk* c)]

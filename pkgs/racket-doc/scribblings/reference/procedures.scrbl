@@ -7,7 +7,7 @@
 @racket[v] is a procedure, @racket[#f] otherwise.}
 
 
-@defproc[(apply [proc procedure?] 
+@defproc[(apply [proc procedure?]
                 [v any/c] ... [lst list?]
                 [#:<kw> kw-arg any/c] ...) any]{
 
@@ -351,7 +351,7 @@ new procedure is the same as for @racket[plain-proc]. See also
  (define show2
    (make-keyword-procedure (lambda (kws kw-args . rest)
                              (list kws kw-args rest))
-                           (lambda args 
+                           (lambda args
                              (list->vector args)))))
 (show2 1)
 (show2 #:init 0 1 2 3 #:extra 4)
@@ -382,7 +382,7 @@ must require no more keywords than the ones listed in
  (define orig-show
    (make-keyword-procedure (lambda (kws kw-args . rest)
                              (list kws kw-args rest))))
- (define show (procedure-reduce-keyword-arity 
+ (define show (procedure-reduce-keyword-arity
                orig-show 3 '(#:init) '(#:extra #:init))))
 (show #:init 0 1 2 3 #:extra 4)
 (eval:error (show 1))
@@ -454,7 +454,7 @@ redundant and disallowed).
 
 @examples[
 (struct annotated-proc (base note)
-  #:property prop:procedure 
+  #:property prop:procedure
              (struct-field-index base))
 (define plus1 (annotated-proc
                 (lambda (x) (+ x 1))
@@ -489,9 +489,9 @@ is disallowed).
 @mz-examples[
 (struct fish (weight color)
   #:mutable
-  #:property 
-  prop:procedure  
-  (lambda (f n) 
+  #:property
+  prop:procedure
+  (lambda (f n)
     (let ([w (fish-weight f)])
       (set-fish-weight! f (+ n w)))))
 (define wanda (fish 12 'red))
@@ -645,21 +645,31 @@ applied.}
 Returns @racket[v].
 }
 
-@defproc[(const [v any] ...) procedure?]{
+@defproc[(const [v any]) procedure?]{
 
 Returns a procedure that accepts any arguments (including keyword
-arguments) and returns @racket[v]s.
+arguments) and returns @racket[v].
 
 @mz-examples[#:eval fun-eval
-((const))
-((const) 1 2 3)
-((const) 'a 'b #:c 'c)
 ((const 'foo))
 ((const 'foo) 1 2 3)
 ((const 'foo) 'a 'b #:c 'c)
-((const 'foo 'foo))
-((const 'foo 'foo) 1 2 3)
-((const 'foo 'foo) 'a 'b #:c 'c)
+]}
+
+@defproc[(const* [v any] ...) procedure?]{
+
+Similar to @racket[const], except it returns @racket[v]s.
+
+@mz-examples[#:eval fun-eval
+((const*))
+((const*) 1 2 3)
+((const*) 'a 'b #:c 'c)
+((const* 'foo))
+((const* 'foo) 1 2 3)
+((const* 'foo) 'a 'b #:c 'c)
+((const* 'foo 'foo))
+((const* 'foo 'foo) 1 2 3)
+((const* 'foo 'foo) 'a 'b #:c 'c)
 ]}
 
 @deftogether[(@defform[(thunk  body ...+)]

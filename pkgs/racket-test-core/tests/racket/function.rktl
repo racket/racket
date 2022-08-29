@@ -216,7 +216,10 @@
 (let ()
   (test 'foo (const 'foo))
   (test 'foo (const 'foo) 1)
-  (test 'foo (const 'foo) 1 2 3 4 5))
+  (test 'foo (const 'foo) 1 2 3 4 5)
+  (test 'foo (const* 'foo))
+  (test 'foo (const* 'foo) 1)
+  (test 'foo (const* 'foo) 1 2 3 4 5))
 
 ;; ---------- thunk ----------
 (let ([th1 (thunk 'foo)] [th2 (thunk* 'bar)])
