@@ -2,7 +2,7 @@
 
 (provide config-file->hash)
 
-(define (config-file->hash path [vars (hash)])
+(define (config-file->hash path [vars (hash)] [merge-env? #t])
   (unless (path-string? path) (arg-error 'config->hash "path string" path))
   (unless (hash? vars) (arg-error 'config->hash "hash table" vars))
   (define content (file->string path))
@@ -40,10 +40,32 @@
                [else accum]))
            (hash)
            lines))
-  (foldl (lambda (key config)
-           (hash-set config key (hash-ref vars key) ))
-         config
-         (hash-keys vars)))
+  (define vars+config
+    (foldl (lambda (key config)
+             (hash-set config key (hash-ref vars key)))
+           config
+           (hash-keys vars)))
+  (define env-vars
+    (or (and merge-env?
+             (ormap (lambda (p)
+                      (and (equal? (car p) "ZUO_CONFIG_ENV_VARS")
+                           (let ([vars (string-split (cdr p))])
+                             (foldl (lambda (var vars)
+                                      (hash-set vars (string->symbol var) #t))
+                                    (hash)
+                                    vars))))
+                    (hash-ref (runtime-env) 'env)))
+        (hash)))
+  (if (= 0 (hash-count env-vars))
+      vars+config
+      (foldl (lambda (p config)
+               (define key (string->symbol (car p)))
+               (if (and (hash-ref env-vars key #f)
+                        (not (hash-ref config key #f)))
+                   (hash-set config key (cdr p))
+                   config))
+             vars+config
+             (hash-ref (runtime-env) 'env))))
 
 (define (remove-makefile-comment s)
   (define l (string-split s "#"))

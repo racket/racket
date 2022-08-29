@@ -460,11 +460,16 @@ assignments, where @nonterm{name} is formed by @litchar{a}-@litchar{z},
 not starting @litchar{0}-@litchar{9}. These variables can appear
 anywhere in the command line and are removed from the argument list
 sent on to @racket[build/command-line], but no argument after a
-@racket{--} argument is parsed as a variable assignment.
+@litchar{--} argument is parsed as a variable assignment.
 
 The @racket[targets-at] procedure is applied to @racket[at-dir] and a
 hash table of variables, where each variable name is converted to a
-symbol and the value is left exact as after @litchar{=}.}
+symbol and the value is left exact as after @litchar{=}.
+
+Note that environment variables are not consulted in addition to
+command-line arguments. The @racket[config-file->hash] function can
+use environment variables listed in a @envvar{ZUO_CONFIG_ENV_VARS}
+environment variable as defaults when parsing a configuration file.}
 
 @defproc[(find-target [name string?]
                       [targets (listof target?)]

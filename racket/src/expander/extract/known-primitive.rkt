@@ -30,7 +30,7 @@
   (hash-set! seen-defns 'procedure-arity (known-function-of-satisfying '(procedure) 'any))
   (hash-set! seen-defns 'procedure-arity-mask (known-function-of-satisfying '(procedure) 'exact-integer))
   (hash-set! seen-defns 'procedure-realm (known-function-of-satisfying '(procedure) 'symbol))
-  (hash-set! seen-defns 'object-name (known-function 1 #t)) ; assuming no `prop:object-name`
+  (hash-set! seen-defns 'object-name (known-function 1 #t)) ; hack: assumes no procedure-valued `prop:object-name` property
   (hash-set! seen-defns 'procedure-rename (known-function-of-satisfying '(procedure symbol symbol) 'procedure))
   (hash-set! seen-defns 'procedure-reduce-arity-mask (known-function-of-satisfying '(procedure exact-integer (or symbol false) symbol) 'procedure))
   (hash-set! seen-defns 'prop:custom-write (known-property-of-function 3))

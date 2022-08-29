@@ -299,6 +299,10 @@
   (define-values (prop:named-keyword-procedure named-keyword-procedure? keyword-procedure-name+fail)
     (make-struct-type-property 'named-keyword-procedure))
 
+  (define (keyword-procedure-name+fail* p)
+    (define v (keyword-procedure-name+fail p))
+    (if (vector? v) v (v p)))
+
   ;; Allows support for new-prop:procedure to extract a field (i.e., this property
   ;; makes it possible to extract a field for an integer `new-prop:procedure` value):
   (define-values (prop:procedure-accessor procedure-accessor? procedure-accessor-ref)
@@ -373,28 +377,36 @@
                       (list (cons prop:arity-string generate-arity-string)
                             (cons prop:incomplete-arity #t))))
 
-  ;; Constructor generator for a wrapper on a procedure with a required keyword.
-  ;; The `procedure' property is a per-type method that has exactly
-  ;;  the right arity, and that sends all arguments to `missing-kw'.
-  (define (make-required name realm fail-proc method? impersonator?)
-    (let-values ([(s: mk ? -ref -set!)
-                  (make-struct-type (or name 'unknown)
-                                    (if impersonator?
-                                        (if method?
-                                            struct:keyword-method-impersonator/arity-error
-                                            struct:keyword-procedure-impersonator/arity-error)
-                                        (if method?
-                                            struct:keyword-method/arity-error
-                                            struct:keyword-procedure/arity-error))
-                                    0 0 #f
-                                    (list (cons prop:named-keyword-procedure
-                                                (vector name realm fail-proc)))
-                                    (current-inspector)
-                                    fail-proc)])
-      mk))
+  (define-syntax (define-named-variant stx)
+    (syntax-case stx ()
+      [(_ make-required-keyword-procedure/arity-error
+          struct:keyword-procedure/arity-error)
+       #'(define-values (struct:rkp/ae make-required-keyword-procedure/arity-error rkp/ae? rkp/ae-ref rkp/ae-set!)
+           (make-struct-type 'procedure
+                             struct:keyword-procedure/arity-error
+                             3 0 #f
+                             (list (cons prop:procedure 0)
+                                   (cons prop:object-name 1)
+                                   (cons prop:named-keyword-procedure (lambda (r)
+                                                                        (vector (rkp/ae-ref r 1)
+                                                                                (rkp/ae-ref r 2)
+                                                                                (rkp/ae-ref r 0)))))
+                             (current-inspector)
+                             #f
+                             '(0 1 2)))]))  
+  (define-named-variant make-required-keyword-procedure/arity-error
+    struct:keyword-procedure/arity-error)
+  (define-named-variant make-required-keyword-method/arity-error
+    struct:keyword-method/arity-error)
+  (define-named-variant make-required-keyword-procedure-impersonator/arity-error
+    struct:keyword-procedure-impersonator/arity-error)
+  (define-named-variant make-required-keyword-method-impersonator/arity-error
+    struct:keyword-method-impersonator/arity-error)
   
-  ;; Macro variant of `make-required`, used for lambda form with a required
-  ;; keyword.  We use a macro so that the `make-struct-type` is visible
+  ;; Constructor generator for a wrapper on a procedure with a required keyword.
+  ;; The `procedure' property value `fail-proc` is a per-type method that has exactly
+  ;;  the right arity, and that sends all arguments to `missing-kw'.
+  ;; We use a macro so that the `make-struct-type` is visible
   ;; to the optimizer, which in turn allows it to determine that the first
   ;; result is a constructor that always succeeds.
   ;; >> Beware that `name` and `fail-proc` are duplicated in the macro expansion. <<
@@ -918,6 +930,9 @@
      null
      null
      args))
+
+  (define (raise-missing-kw name req-kws args)
+    (raise-wrong-kws name #t #t #f null null req-kws null args))
 
   (define-for-syntax (generate-proc-id default local-name)
     (cond
@@ -1592,79 +1607,88 @@
                   (if (keyword-procedure? p)
                       (check-kw-args p kws)
                       (values #f (car kws))))
-                (let ([n (let ([method-n
-                                (+ method-n
-                                   (if (or (keyword-method? p) (okm? p)) 1 0))])
+                (let ([n (let ([method-n (+ method-n
+                                            (if (or (keyword-method? p) (okm? p)) 1 0))])
                            (if (n . >= . method-n) (- n method-n) n))]
-                      [args-str
-                       (if (and (null? args) (null? kws))
-                           ""
-                           ;; Format arguments:
-                           (apply
-                            string-append
-                            "\n  arguments...:"
-                            (append
-                             (map (lambda (v)
-                                    (format "\n   ~e" v))
-                                  args)
-                             (map (lambda (kw kw-arg)
-                                    (format "\n   ~a ~e" kw kw-arg))
-                                  kws kw-args))))]
-                      [proc-name (lambda (p) (or (and (named-keyword-procedure? p)
-                                                 (vector-ref (keyword-procedure-name+fail p) 0))
-                                            (object-name p)
-                                            p))])
-                  (define (application-message str)
-                    (error-message->adjusted-string 'application
-                                                    'racket/primitive
-                                                    str
-                                                    'racket/primitive))
-                  (raise
-                   ((if (or extra-kw missing-kw) exn:fail:contract exn:fail:contract:arity)
-                    (if extra-kw
-                        (if (keyword-procedure? p)
-                            (application-message
-                             (format
-                              (string-append
-                               "procedure does not expect an argument with given keyword\n"
-                               "  procedure: ~a\n"
-                               "  given keyword: ~a"
-                               "~a")
-                              (proc-name p) extra-kw args-str))
-                            (if (procedure? p)
-                                (application-message
-                                 (format
-                                  (string-append
-                                   "procedure does not accept keyword arguments\n"
-                                   "  procedure: ~a"
-                                   "~a")
-                                  (proc-name p) args-str))
-                                (application-message
-                                 (format
-                                  (string-append
-                                   "not a procedure;\n"
-                                   " expected a procedure that can be applied to arguments\n"
-                                   "  given: ~e"
-                                   "~a")
-                                  p args-str))))
-                        (if missing-kw
-                            (application-message
-                             (format
-                              (string-append
-                               "required keyword argument not supplied\n"
-                               "  procedure: ~a\n"
-                               "  required keyword: ~a"
-                               "~a")
-                              (proc-name p) missing-kw args-str))
-                            (application-message
-                             (format
-                              (string-append
-                               "no case matching ~a non-keyword argument~a\n"
-                               "  procedure: ~a"
-                               "~a")
-                              (- n 2) (if (= 1 (- n 2)) "" "s")
-                              (proc-name p) args-str))))
-                    (current-continuation-marks)))))))))
+                      [name/val (cond
+                                  [(or (keyword-procedure? p)
+                                       (procedure? p)
+                                       (not extra-kw))
+                                   (or (and (named-keyword-procedure? p)
+                                            (vector-ref (keyword-procedure-name+fail* p) 0))
+                                       (object-name p)
+                                       p)]
+                                  [else p])])
+                  (raise-wrong-kws name/val (keyword-procedure? p) (procedure? p)
+                                   n kws kw-args missing-kw extra-kw args)))))))
+
+    (define (raise-wrong-kws name/val kw-proc? proc? n kws kw-args missing-kw extra-kw args)
+      (let ([args-str
+             (if (and (null? args) (null? kws))
+                 ""
+                 ;; Format arguments:
+                 (apply
+                  string-append
+                  "\n  arguments...:"
+                  (append
+                   (map (lambda (v)
+                          (format "\n   ~e" v))
+                        args)
+                   (map (lambda (kw kw-arg)
+                          (format "\n   ~a ~e" kw kw-arg))
+                        kws kw-args))))])
+        (define (application-message str)
+          (error-message->adjusted-string 'application
+                                          'racket/primitive
+                                          str
+                                          'racket/primitive))
+        (raise
+         ((if (or extra-kw missing-kw) exn:fail:contract exn:fail:contract:arity)
+          (if extra-kw
+              (if kw-proc?
+                  (application-message
+                   (format
+                    (string-append
+                     "procedure does not expect an argument with given keyword\n"
+                     "  procedure: ~a\n"
+                     "  given keyword: ~a"
+                     "~a")
+                    name/val extra-kw args-str))
+                  (if proc?
+                      (application-message
+                       (format
+                        (string-append
+                         "procedure does not accept keyword arguments\n"
+                         "  procedure: ~a"
+                         "~a")
+                        name/val args-str))
+                      (application-message
+                       (format
+                        (string-append
+                         "not a procedure;\n"
+                         " expected a procedure that can be applied to arguments\n"
+                         "  given: ~e"
+                         "~a")
+                        name/val args-str))))
+              (if missing-kw
+                  (application-message
+                   (format
+                    (string-append
+                     "required keyword argument not supplied\n"
+                     "  procedure: ~a\n"
+                     "  required keyword: ~a"
+                     "~a")
+                    name/val missing-kw args-str))
+                  (application-message
+                   (format
+                    (string-append
+                     "no case matching ~a non-keyword argument~a\n"
+                     "  procedure: ~a"
+                     "~a")
+                    (- n 2) (if (= 1 (- n 2)) "" "s")
+                    name/val args-str))))
+          (current-continuation-marks)))))
+
   (define (keyword-procedure-extract p kws n)
     (keyword-procedure-extract/method kws n p 0))
 
@@ -1754,27 +1778,29 @@
                  allowed-kw
                  plain-proc)
                 ;; Some keywords are required, so "plain" proc is
-                ;;  irrelevant; we build a new one that wraps `missing-kws'.
-                ((make-required (or name
-                                    (and (named-keyword-procedure? proc)
-                                         (vector-ref (keyword-procedure-name+fail proc) 0))
-                                    (object-name proc))
-                                (or (and name realm)
-                                    (and (named-keyword-procedure? proc)
-                                         (or (vector-ref (keyword-procedure-name+fail proc) 1)
-                                             (procedure-realm
-                                              (vector-ref (keyword-procedure-name+fail proc) 2))))
-                                    (procedure-realm proc))
-                                (procedure-reduce-arity-mask
-                                 missing-kw
-                                 (arithmetic-shift mask 1))
-                                (or (okm? proc)
-                                    (keyword-method? proc))
-                                #f)
-                 kw-checker
-                 new-kw-proc
-                 req-kw
-                 allowed-kw))))))
+                ;;  irrelevant; we build a new one that wraps `raise-missing-kws'.
+                (let ([name (or name
+                                (and (named-keyword-procedure? proc)
+                                     (vector-ref (keyword-procedure-name+fail* proc) 0))
+                                (object-name proc))]
+                      [realm (or (and name realm)
+                                 (and (named-keyword-procedure? proc)
+                                      (vector-ref (keyword-procedure-name+fail* proc) 1))
+                                 (procedure-realm proc))])
+                  ((if (or (okm? proc)
+                           (keyword-method? proc))
+                       make-required-keyword-method/arity-error
+                       make-required-keyword-procedure/arity-error)
+                   kw-checker
+                   new-kw-proc
+                   req-kw
+                   allowed-kw
+                   (procedure-reduce-arity-mask
+                    (lambda args
+                      (raise-missing-kw name req-kw))
+                    mask)
+                   name
+                   realm)))))))
 
   (define (arity->mask a)
     (cond
@@ -1858,16 +1884,23 @@
                     [else
                      ;; Constructor must be from `make-required', but not a method.
                      ;; Make a new variant that's a method:
-                     (let* ([name+fail (keyword-procedure-name+fail proc)]
-                            [mk (make-required (vector-ref name+fail 0)
-                                               (vector-ref name+fail 1)
-                                               (vector-ref name+fail 2)
-                                               #t #f)])
-                       (mk
+                     (let* ([raw-name+fail (keyword-procedure-name+fail proc)]
+                            [name+fail (if (vector? raw-name+fail) raw-name+fail (raw-name+fail proc))]
+                            [name (vector-ref name+fail 0)]
+                            [req-kw (keyword-procedure-required proc)])
+                       (make-required-keyword-method/arity-error
                         (keyword-procedure-checker proc)
                         (keyword-procedure-proc proc)
-                        (keyword-procedure-required proc)
-                        (keyword-procedure-allowed proc)))])
+                        req-kw
+                        (keyword-procedure-allowed proc)
+                        (if (vector? raw-name+fail)
+                            (procedure-reduce-arity-mask
+                             (lambda args
+                               (raise-missing-kw name req-kw))
+                             (arithmetic-shift (procedure-arity-mask (vector-ref name+fail 2)) -1))
+                            (vector-ref name+fail 2))
+                        name
+                        (vector-ref name+fail 1)))])
                    ;; Not a keyword-accepting procedure:
                    (procedure->method proc))))])
       procedure->method))
@@ -1902,7 +1935,7 @@
              (if (keyword-procedure? proc)
                  (cond
                    [(named-keyword-procedure? proc)
-                    (define name+fail (keyword-procedure-name+fail proc))
+                    (define name+fail (keyword-procedure-name+fail* proc))
                     (or (vector-ref name+fail 1)
                         (procedure-realm (vector-ref name+fail 2)))]
                    [(okp? proc)
@@ -2137,17 +2170,26 @@
                                (values
                                 (if is-impersonator?
                                     ;; Constructor must be from `make-required':
-                                    (let* ([name+fail (keyword-procedure-name+fail n-proc)]
-                                           [mk (make-required (vector-ref name+fail 0)
-                                                              (vector-ref name+fail 1)
-                                                              (vector-ref name+fail 2)
-                                                              (keyword-method? n-proc) #t)])
-                                      (mk
+                                    (let* ([raw-name+fail (keyword-procedure-name+fail proc)]
+                                           [name+fail (if (vector? raw-name+fail) raw-name+fail (raw-name+fail proc))]
+                                           [name (vector-ref name+fail 0)]
+                                           [req-kw (keyword-procedure-required proc)])
+                                      ((if (keyword-method? n-proc)
+                                           make-required-keyword-method-impersonator/arity-error
+                                           make-required-keyword-procedure-impersonator/arity-error)
                                        (keyword-procedure-checker n-proc)
                                        (chaperone-procedure/add-mark (keyword-procedure-proc n-proc) kw-chaperone)
                                        (keyword-procedure-required n-proc)
                                        (keyword-procedure-allowed n-proc)
-                                       n-proc))
+                                       n-proc
+                                       (if (vector? raw-name+fail)
+                                           (procedure-reduce-arity-mask
+                                            (lambda args
+                                              (raise-missing-kw name req-kw))
+                                            (arithmetic-shift (procedure-arity-mask (vector-ref name+fail 2)) -1))
+                                           (vector-ref name+fail 2))
+                                       (vector-ref name+fail 0)
+                                       (vector-ref name+fail 1)))
                                     (chaperone-struct
                                      n-proc
                                      keyword-procedure-proc
