@@ -362,6 +362,7 @@
      (and (quoted? false? super-expr)
           ;; checking that we have at least 2 fields
           (immutable-field? 1 immutables-expr))]
+    [(prop:object-name) (immutable-field? val-expr immutables-expr)]
     [else
      (define o (lookup-defn defns prop-name))
      (cond
