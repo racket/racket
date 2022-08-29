@@ -421,14 +421,7 @@
                (unless (procedure? g)
                  (raise-argument-error 'name "procedure?" 1 f g))
                (can-compose name 0 f f '())
-               (cond
-                 [(id? g)
-                  (if (and (eq? 'name 'compose1)
-                           (not (eqv? 2 (procedure-arity-mask f))))
-                      (procedure-reduce-arity-mask f 2)
-                      f)]
-                 [(id? f) g]
-                 [else (simple-compose f g)])]
+               (if (id? f) g (simple-compose f g))]
               [() values]
               [(f0 . fs0)
                (let loop ([f f0] [fs fs0] [i 0] [rfuns '()])
@@ -437,12 +430,10 @@
                  (if (pair? fs)
                    (begin (can-compose name i f f0 fs0)
                           (loop (car fs) (cdr fs) (add1 i) (cons f rfuns)))
-                   (let ([f (name (car rfuns) f)]
-                         [rfuns (remq* (list values) (cdr rfuns))])
-                     (cond
-                       [(null? rfuns) f]
-                       [(id? f) (pipeline (car rfuns) (cdr rfuns))]
-                       [else (simple-compose (pipeline (car rfuns) (cdr rfuns)) f)]))))]))))
+                   (let ([rfuns (remq* (list values) rfuns)])
+                     (if (null? rfuns)
+                         f
+                         (simple-compose (pipeline (car rfuns) (cdr rfuns)) f)))))]))))
       (mk compose1 app1 can-compose1 pipeline1
           (lambda (f g) (mk-simple-compose app1 f g)))
       (mk compose  app* can-compose* pipeline*
