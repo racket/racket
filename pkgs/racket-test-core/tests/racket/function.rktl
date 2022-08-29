@@ -145,7 +145,8 @@
   (define (f0 a b c x) '())
   (define (f1 a b c x #:y [y 'y]) '())
   (define (f2 a b c x #:y y) '())
-  (for* ([f (in-list (list f0 f1 f2 values))]
+  (for* ([C (in-list (list compose compose1))]
+         [f (in-list (list f0 f1 f2 values))]
          [g (in-list (list (C list list list list f)
                            (C list list list list values f)
                            (C list list values list list values f)))])
