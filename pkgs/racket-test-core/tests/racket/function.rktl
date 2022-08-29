@@ -142,7 +142,19 @@
   (err/rt-test* ((C add1 sub1)) exn:fail:contract:arity?)
   (err/rt-test ((compose (lambda () 1) add1) 8) exn:fail:contract:arity?)
   (arity-test compose1 0 -1)
-  (arity-test compose  0 -1))
+  (arity-test compose  0 -1)
+  ;; Preserve information
+  (define (f0 a b c x) '())
+  (define (f1 a b c x #:y [y 'y]) '())
+  (define (f2 a b c x #:y y) '())
+  (for ([f (in-list (list f0 f1 f2))])
+    (define g (C list list list list f))
+    (test #t equal?
+          (procedure-arity f)
+          (procedure-arity g))
+    (test #t equal?
+          (call-with-values (λ () (procedure-arity f)) list)
+          (call-with-values (λ () (procedure-arity g)) list))))
 
 ;; ---------- procedure-result-arity ----------
 
