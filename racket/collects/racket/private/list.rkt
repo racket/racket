@@ -330,13 +330,13 @@
       (define-syntax-rule (app* E1 E2) (call-with-values (lambda () E2) E1))
       (define-syntax-rule (mk-simple-compose app f g)
         (let-values
-            ([(arity) (procedure-arity g)]
+            ([(arity-mask) (procedure-arity-mask g)]
              [(required-kwds allowed-kwds) (procedure-keywords g)])
           (define composed
-            (case arity
-              [(0) (λ ()    (app f (g)))]
-              [(1) (λ (x)   (app f (g x)))]
-              [(2) (λ (x y) (app f (g x y)))]
+            (case arity-mask
+              [(1) (λ ()    (app f (g)))]
+              [(2) (λ (x)   (app f (g x)))]
+              [(4) (λ (x y) (app f (g x y)))]
               [else
                (case-lambda
                  [()    (app f (g))]
@@ -344,15 +344,15 @@
                  [(x y) (app f (g x y))]
                  [args  (app f (apply g args))])]))
           (if (null? allowed-kwds)
-              (if (equal? arity (procedure-arity composed))
+              (if (eqv? arity-mask (procedure-arity-mask composed))
                   composed
-                  (procedure-reduce-arity composed arity))
-              (procedure-reduce-keyword-arity
+                  (procedure-reduce-arity-mask composed arity-mask))
+              (procedure-reduce-keyword-arity-mask
                (make-keyword-procedure
                 (lambda (kws kw-args . xs)
                   (app f (keyword-apply g kws kw-args xs)))
                 composed)
-               arity required-kwds allowed-kwds))))
+               arity-mask required-kwds allowed-kwds))))
       (define-syntax-rule (can-compose* name n g f fs)
         (unless (null? (let-values ([(req _) (procedure-keywords g)]) req))
           (apply raise-argument-error 'name "procedure-with-no-required-keywords?"
@@ -382,14 +382,14 @@
             f
             ;; use the other composition style in this case, to optimize an
             ;; occasional arity-1 procedure in the pipeline
-            (if (eqv? 1 (procedure-arity f))
+            (if (eqv? 2 (procedure-arity-mask f))
                 ;; if `f' is single arity, then going in reverse they will *all* be
                 ;; single arities
                 (let loop ([f f] [rfuns rfuns])
                   (if (null? rfuns)
                       (procedure-rename f 'composed)
                       (loop (let ([fst (car rfuns)])
-                              (if (eqv? 1 (procedure-arity fst))
+                              (if (eqv? 2 (procedure-arity-mask fst))
                                   (lambda (x) (fst (f x)))
                                   (lambda (x) (app* fst (f x)))))
                             (cdr rfuns))))
@@ -401,11 +401,11 @@
                     (if (null? funs)
                         (procedure-rename f 'composed)
                         (loop (let ([fst (car funs)])
-                                (if (eqv? 1 (procedure-arity f))
-                                    (if (eqv? 1 (procedure-arity fst))
+                                (if (eqv? 2 (procedure-arity-mask f))
+                                    (if (eqv? 2 (procedure-arity-mask fst))
                                         (lambda (x) (f (fst x)))
                                         (lambda xs (f (apply fst xs))))
-                                    (if (eqv? 1 (procedure-arity fst))
+                                    (if (eqv? 2 (procedure-arity-mask fst))
                                         (lambda (x) (app* f (fst x)))
                                         (lambda xs (app* f (apply fst xs))))))
                               (cdr funs))))))))
@@ -424,8 +424,8 @@
                (cond
                  [(id? g)
                   (if (and (eq? 'name 'compose1)
-                           (not (eqv? 1 (procedure-arity f))))
-                      (procedure-reduce-arity f 1)
+                           (not (eqv? 2 (procedure-arity-mask f))))
+                      (procedure-reduce-arity-mask f 2)
                       f)]
                  [(id? f) g]
                  [else (simple-compose f g)])]
@@ -447,7 +447,7 @@
           (lambda (f g) (mk-simple-compose app1 f g)))
       (mk compose  app* can-compose* pipeline*
           (lambda (f g)
-            (if (eqv? 1 (procedure-arity f))
+            (if (eqv? 2 (procedure-arity-mask f))
                 (mk-simple-compose app1 f g)
                 (mk-simple-compose app* f g))))
       (values compose1 compose)))
