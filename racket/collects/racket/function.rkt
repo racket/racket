@@ -9,9 +9,12 @@
 
 (define (identity x) x)
 
-(define (const c)
-  (define (const . _) c)
-  (make-keyword-procedure const const))
+(define const
+  (case-lambda
+    [()    (thunk* (values))]
+    [(c)   (thunk* c)]
+    [(c d) (thunk* (values c d))]
+    [c*    (thunk* (apply values c*))]))
 
 (define-syntax (thunk stx)
   (syntax-case stx ()

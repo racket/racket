@@ -645,14 +645,21 @@ applied.}
 Returns @racket[v].
 }
 
-@defproc[(const [v any]) procedure?]{
+@defproc[(const [v any] ...) procedure?]{
 
 Returns a procedure that accepts any arguments (including keyword
-arguments) and returns @racket[v].
+arguments) and returns @racket[v]s.
 
 @mz-examples[#:eval fun-eval
-((const 'foo) 1 2 3)
+((const))
+((const) 1 2 3)
+((const) 'a 'b #:c 'c)
 ((const 'foo))
+((const 'foo) 1 2 3)
+((const 'foo) 'a 'b #:c 'c)
+((const 'foo 'foo))
+((const 'foo 'foo) 1 2 3)
+((const 'foo 'foo) 'a 'b #:c 'c)
 ]}
 
 @deftogether[(@defform[(thunk  body ...+)]
