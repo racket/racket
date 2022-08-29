@@ -153,8 +153,8 @@
           (procedure-arity f)
           (procedure-arity g))
     (test #t equal?
-          (call-with-values (λ () (procedure-arity f)) list)
-          (call-with-values (λ () (procedure-arity g)) list))))
+          (call-with-values (λ () (procedure-keywords f)) list)
+          (call-with-values (λ () (procedure-keywords g)) list))))
 
 ;; ---------- procedure-result-arity ----------
 
