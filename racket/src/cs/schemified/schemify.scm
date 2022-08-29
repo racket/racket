@@ -7731,6 +7731,13 @@
         or-part_0
         (let ((or-part_1 (boolean? e_0)))
           (if or-part_1 or-part_1 (symbol? e_0)))))))
+(define known-copy->local-id
+  (lambda (k_0 key_0 imports_0 prim-knowns_0)
+    (let ((im_0 (hash-ref imports_0 key_0 #f)))
+      (let ((id_0 (known-copy-id k_0)))
+        (if (not im_0)
+          id_0
+          (if (hash-ref prim-knowns_0 (unwrap id_0) #f) id_0 #f))))))
 (define find-known+import
   (lambda (key_0 prim-knowns_0 knowns_0 imports_0 mutated_0)
     (let ((c2_0 (hash-ref prim-knowns_0 key_0 #f)))
@@ -7741,12 +7748,19 @@
             (if (not (simple-mutated-state? (hash-ref mutated_0 key_0 #f)))
               (values #f #f)
               (if (known-copy? c1_0)
-                (find-known+import
-                 (unwrap (known-copy-id c1_0))
-                 prim-knowns_0
-                 knowns_0
-                 imports_0
-                 mutated_0)
+                (let ((new-key_0
+                       (unwrap
+                        (known-copy->local-id
+                         c1_0
+                         key_0
+                         imports_0
+                         prim-knowns_0))))
+                  (find-known+import
+                   new-key_0
+                   prim-knowns_0
+                   knowns_0
+                   imports_0
+                   mutated_0))
                 (values c1_0 (hash-ref imports_0 key_0 #f))))
             (values #f #f)))))))
 (define find-known
@@ -25139,7 +25153,11 @@
                                       or-part_2
                                       (if (known-copy? c1_0)
                                         (authentic-valued?_0
-                                         (known-copy-id c1_0))
+                                         (known-copy->local-id
+                                          c1_0
+                                          u-v_0
+                                          imports_0
+                                          prim-knowns_0))
                                         #f)))))))
                           #f)))
                     (not (pair? u-v_0)))))))))))

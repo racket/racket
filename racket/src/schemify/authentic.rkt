@@ -2,6 +2,7 @@
 (require "wrap.rkt"
          "match.rkt"
          "known.rkt"
+         "known-copy.rkt"
          "import.rkt"
          "mutated-state.rkt")
 
@@ -29,7 +30,7 @@
                       (and (known-literal? k)
                            (not (impersonator? (known-literal-value k))))
                       (and (known-copy? k)
-                           (authentic-valued? (known-copy-id k)))))]
+                           (authentic-valued? (known-copy->local-id k u-v imports prim-knowns)))))]
             [else #f])]
          [else
           ;; Any literal allows as unquoted is authentic

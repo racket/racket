@@ -2,6 +2,7 @@
 (require "wrap.rkt"
          "import.rkt"
          "known.rkt"
+         "known-copy.rkt"
          "mutated-state.rkt")
 
 (provide find-known+import
@@ -17,7 +18,8 @@
             [(not (simple-mutated-state? (hash-ref mutated key #f)))
              (values #f #f)]
             [(known-copy? k)
-             (find-known+import (unwrap (known-copy-id k)) prim-knowns knowns imports mutated)]
+             (define new-key (unwrap (known-copy->local-id k key imports prim-knowns)))
+             (find-known+import new-key prim-knowns knowns imports mutated)]
             [else (values k (hash-ref imports key #f))]))]
     [else (values #f #f)]))
 

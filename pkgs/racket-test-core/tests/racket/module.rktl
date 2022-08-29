@@ -4039,5 +4039,32 @@ case of module-leve bindings; it doesn't cover local bindings.
         (dynamic-require ''defines-a-and-b-infinity 'b)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Regression test aimed at a compiler bug: the target of known-copy
+;; information from an imported module was confused with an import
+;; from another module where the target and import happen to have the
+;; same name
+
+(module check-no-crash-on-misapplication racket/base
+  (provide check)
+
+  (module one racket/base
+    (provide thing)
+    (define f (random))
+    (define thing f))
+
+  (module two racket/base
+    (provide f)
+    (define (f x) (let loop () (loop))))
+
+  (require 'one
+           'two)
+
+  (define (check)
+    (when (thing #f)
+      (f 10))))
+
+(err/rt-test ((dynamic-require ''check-no-crash-on-misapplication 'check)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
