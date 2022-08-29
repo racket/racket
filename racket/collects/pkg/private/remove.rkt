@@ -84,6 +84,7 @@
   (define all-pkgs-set
     (list->set all-pkgs))
   (define metadata-ns (make-metadata-namespace))
+  ;; The list of input packages, without duplication
   (define in-pkgs (remove-duplicates given-pkgs))
 
   ;; Check that all packages are installed, so we don't remove half of
@@ -92,8 +93,8 @@
     (unless (set-member? all-pkgs pkg)
       (pkg-not-installed pkg db)))
 
-  (define remove-pkgs
-    (if auto?
+  (define auto-dep-pkgs
+    (if (or auto? from-command-line?)
         ;; compute fixpoint:
         (let ([init-drop (set-union
                           (list->set
@@ -115,6 +116,11 @@
                 (set->list drop)
                 (loop still-drop
                       (set-union keep delta)))))
+        null))
+
+  (define remove-pkgs
+    (if auto?
+        auto-dep-pkgs
         ;; just given pkgs:
         (if demote?
             null
@@ -164,6 +170,29 @@
 
   (for-each (remove-package #f quiet? use-trash? dry-run?)
             remove-pkgs)
+
+  (when (and (not auto?)
+             from-command-line?
+             (not quiet?)
+             (not dry-run?))
+    (define unused-pkgs
+      (sort (set->list (set-subtract (list->set auto-dep-pkgs)
+                                     (list->set remove-pkgs)))
+            string<?))
+    (unless (null? unused-pkgs)
+      (printf "The following packages were automatically installed and are no longer used:\n ")
+      (let print-loop ([pos 1] [unused-pkgs unused-pkgs])
+        (when (pair? unused-pkgs)
+          (printf " ~a" (car unused-pkgs))
+          (define next-pos
+            (+ pos (string-length (car unused-pkgs))))
+          (cond
+            [(and (> next-pos 60) (pair? (cdr unused-pkgs)))
+             (printf "\n ")
+             (print-loop 1 (cdr unused-pkgs))]
+            [else
+             (print-loop next-pos (cdr unused-pkgs))])))
+      (printf/flush "\nUse `raco pkg remove --auto` to remove them.\n")))
 
   (cond
    [(or (null? remove-pkgs) demote? dry-run?)
