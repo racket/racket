@@ -115,9 +115,9 @@
 ;; ----------------------------------------
 
 (begin ;; removed in v1.1.0
-  (define-ssl SSLeay (_fun -> _ulong) #:fail (lambda () (lambda () 0))))
+  (define-crypto SSLeay (_fun -> _ulong) #:fail (lambda () (lambda () 0))))
 (begin ;; added in v1.1.0
-  (define-ssl OpenSSL_version_num (_fun -> _ulong) #:fail (lambda () SSLeay)))
+  (define-crypto OpenSSL_version_num (_fun -> _ulong) #:fail (lambda () SSLeay)))
 
 (define v1.0.1/later? (>= (OpenSSL_version_num) #x10001000)) ;; MNNPPxxx
 (define v1.0.2/later? (>= (OpenSSL_version_num) #x10002000))
