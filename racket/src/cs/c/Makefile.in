@@ -127,16 +127,20 @@ FRAMEWORK_INSTALL_DIR = @FRAMEWORK_INSTALL_DIR@
 # installation "etc" directory
 SELF_ROOT_CONFIG_DIR =
 
-# Typically "--no-user":
+# Flags supplied to `raco` when installing, typically "--no-user";
+# values of two variable are appended for historical reasons
 INSTALL_SETUP_FLAGS = @INSTALL_SETUP_FLAGS@
+PLT_SETUP_OPTIONS =
 
 # Flags supplied to `racket` when running `raco` to set up
 # packages and collections; the intent is to allow flags
 # like `-MRC` to compile machine-independent bytecode
 # while redirecting machine-specific bytecode to a separate
 # filesystem tree, and/or `--cross-compiler` to support
-# corss compilation
+# cross compilation; values of two variable are appended for
+# historical reasons
 SETUP_MACHINE_FLAGS = 
+INSTALL_SETUP_RACKET_FLAGS =
 
 # Shell command to run after building an executable, where the
 # just-built executable is added to the end of the command

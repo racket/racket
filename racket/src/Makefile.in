@@ -3,52 +3,57 @@
 
 ZUO=bin/zuo
 
+# A few variables have traditionally been supported as environment
+# variables, so propagate uses (without definitions) here:
+INSTALL_VARS_FROM_ENV = DESTDIR="$(DESTDIR)" \
+                        PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)"
+
 all: $(ZUO)
 	$(ZUO) . all
 
 install: $(ZUO)
-	$(ZUO) . install DESTDIR="$(DESTDIR)"
+	$(ZUO) . install $(INSTALL_VARS_FROM_ENV)
 
 plain-install: $(ZUO)
-	$(ZUO) . plain-install DESTDIR="$(DESTDIR)"
+	$(ZUO) . plain-install $(INSTALL_VARS_FROM_ENV)
 
 .PHONY: cs
 cs: $(ZUO)
 	$(ZUO) . cs
 
 install-cs: $(ZUO)
-	$(ZUO) . install-cs DESTDIR="$(DESTDIR)"
+	$(ZUO) . install-cs $(INSTALL_VARS_FROM_ENV)
 
 plain-install-cs: $(ZUO)
-	$(ZUO) . plain-install-cs DESTDIR="$(DESTDIR)"
+	$(ZUO) . plain-install-cs $(INSTALL_VARS_FROM_ENV)
 
 .PHONY: bc
 bc: $(ZUO)
 	$(ZUO) . bc
 
 install-bc: $(ZUO)
-	$(ZUO) . install-bc DESTDIR="$(DESTDIR)"
+	$(ZUO) . install-bc $(INSTALL_VARS_FROM_ENV)
 
 plain-install-bc: $(ZUO)
-	$(ZUO) . plain-install-bc DESTDIR="$(DESTDIR)"
+	$(ZUO) . plain-install-bc $(INSTALL_VARS_FROM_ENV)
 
 3m: $(ZUO)
 	$(ZUO) . 3m
 
 install-3m: $(ZUO)
-	$(ZUO) . install-3m DESTDIR="$(DESTDIR)"
+	$(ZUO) . install-3m $(INSTALL_VARS_FROM_ENV)
 
 plain-install-3m: $(ZUO)
-	$(ZUO) . plain-install-3m DESTDIR="$(DESTDIR)"
+	$(ZUO) . plain-install-3m $(INSTALL_VARS_FROM_ENV)
 
 cgc: $(ZUO)
 	$(ZUO) . cgc
 
 install-cgc: $(ZUO)
-	$(ZUO) . install-cgc DESTDIR="$(DESTDIR)"
+	$(ZUO) . install-cgc $(INSTALL_VARS_FROM_ENV)
 
 plain-install-cgc: $(ZUO)
-	$(ZUO) . plain-install-cgc DESTDIR="$(DESTDIR)"
+	$(ZUO) . plain-install-cgc $(INSTALL_VARS_FROM_ENV)
 
 $(ZUO):
 	mkdir -p bin

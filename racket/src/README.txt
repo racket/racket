@@ -229,19 +229,23 @@ Detailed instructions:
     libraries can find the installation directories. At this stage, in
     case you are packaging an installation instead of installing
     directly, you can redirect the installation by setting the
-    "DESTDIR" makefile variable to an absolute path for the
+    `DESTDIR` makefile variable to an absolute path for the
     packaging area. For example, `make DESTDIR=/tmp/racket-build
     install` places the installation into "/tmp/racket-build" instead
     of the location originally specified with `--prefix`. The
     resulting installation will not work, however, until it is moved
-    to the location originally specified with `--prefix`.
+    to the location originally specified with `--prefix`. When using
+    `make` instead of `zuo`, `DESTDIR` can be set as an environment
+    variable.
 
     Finally, the `make install` step compiles ".zo" bytecode files for
     installed Racket source, generates launcher programs like DrRacket
     (if it's already installed as a package), and builds documentation
     (again, if installed). Use `make plain-install` to install without
     compiling ".zo" files, creating launchers, or building
-    documentation.
+    documentation. Supplying `PLT_SETUP_OPTIONS` (allowed as an
+    environment variable with `make`) sets flags that are passed on to
+    `raco setup` by `make install`.
 
     For a `--prefix` build, unless `--enable-sharezo` is specified,
     "compiled" directories containing ".zo" files are moved from
