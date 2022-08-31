@@ -17,10 +17,7 @@
       (hash-set! futures (current-future) #t))
     (hash-count futures)))
 
-;; The form should return void?, but the existing implementation
-;; returns the result of the last future instead.  For
-;; backwards-compatibility, we'll preserve the current behavior.
-(test '(1 1)
+(test (void)
   (for*/async ([i (in-range 2)]
                [j (in-range 2)])
     (list i j)))

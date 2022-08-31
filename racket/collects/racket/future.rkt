@@ -42,6 +42,7 @@
                (let loop ([fs futures])
                  (when (pair? fs)
                    (loop (cdr fs))
-                   (touch (car fs)))))))]))
+                   (touch (car fs))))
+               (void))))]))
     (values (transformer #'for/fold/derived)
             (transformer #'for*/fold/derived))))
