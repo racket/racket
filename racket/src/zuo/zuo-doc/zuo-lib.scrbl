@@ -312,10 +312,7 @@ in the @tech{tool configuration} @racket[config].}
 
 @defzuomodule[zuo/config]
 
-@defproc[(config-file->hash [file path-string?]
-                            [overrides hash? (hash)]
-                            [merge-env? any/c #t])
-         hash?]{
+@defproc[(config-file->hash [file path-string?] [overrides hash? (hash)]) hash?]{
 
 Parses @racket[file] as having configuration lines of the form
 @nonterm{name} @litchar{=} @nonterm{value}, with any number of ignored
@@ -335,13 +332,4 @@ last mapping overrides earlier ones.
 
 After reading @racket[file], keys from @racket[overrides] are merged
 to the result hash table, where values in @racket[overrides] replace
-ones read from @racket[file]. For example, @racket[overrides] might be
-supplied through a command line to take precedence over entries in a
-configuration file.
-
-Finally, if @racket[merge-env?] is true, then space-separated
-environment variables listed in a @as-index{@envvar{ZUO_CONFIG_ENV_VARS}}
-provide default values. That is, for each listed environment variable
-whose name is not covered by @racket[file] and @racket[overrides], a
-mapping of that name to the environment variable's value is added to
-the result hash table.}
+ones read from @racket[file].}

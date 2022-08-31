@@ -6,9 +6,9 @@
 
 (define Mf-config (build-path tmp-dir "Mf-config"))
 
-(define (config->hash content [overrides (hash)] [merge-env? #f])
+(define (config->hash content [overrides (hash)])
   (display-to-file content Mf-config :truncate)
-  (config-file->hash Mf-config overrides merge-env?))
+  (config-file->hash Mf-config overrides))
 
 (check (config->hash "") (hash))
 (check (config->hash "" (hash 'X "x")) (hash 'X "x"))
@@ -42,25 +42,4 @@
 (check (config->hash "X = 5\\\n# 1 \\\n 2") (hash 'X "5"))
 (check (config->hash "X = 5\\\n 1 \\\n 2") (hash 'X "5 1  2"))
 
-(let ([path-val (ormap (lambda (p) (and (equal? (car p) "PATH")
-                                        (cdr p)))
-                       (hash-ref (runtime-env) 'env))])
-  (when path-val
-    (check (hash-ref (config->hash "X = 5\\\n 1 \\\n 2" (hash) #t) 'PATH #f) #f)))
-
-(run-zuo* '("")
-          (~a "#lang zuo\n"
-              (~s `(let ([c (config-file->hash ,Mf-config)])
-                     (list (hash-ref c 'EXAMPLE_1 #f)
-                           (hash-ref c 'EXAMPLE_2 #f)
-                           (hash-ref c 'EXAMPLE_3 #f)))))
-          (lambda (status out err)
-            (check err "")
-            (check status 0)
-            (check out "(list \"1\" \"2\" #f)\n"))
-          (list* (cons "EXAMPLE_1" "1")
-                 (cons "EXAMPLE_2" "2")
-                 (cons "ZUO_CONFIG_ENV_VARS" "EXAMPLE_1 EXAMPLE_2")
-                 (hash-ref (runtime-env) 'env)))
-          
 (rm* Mf-config)
