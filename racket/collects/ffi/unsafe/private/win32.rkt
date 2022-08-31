@@ -332,7 +332,7 @@
              (set-GUID-s1! guid (bitwise-and #xFFFF (arithmetic-shift n (* -10 8))))
              (set-GUID-s2! guid (bitwise-and #xFFFF (arithmetic-shift n (* -8 8))))
              (set-GUID-c! guid (for/list ([i (in-range 8)])
-                                 (bitwise-and #xFF (arithmetic-shift n (* (- -7 i)))))))))
+                                 (bitwise-and #xFF (arithmetic-shift n (* (+ -7 i) 8))))))))
 
 (define-ole StringFromIID(_hfun _GUID-pointer (p : (_ptr o _pointer))
                                 -> StringFromIID p))
