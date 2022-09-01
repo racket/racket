@@ -403,7 +403,7 @@
                                   loads))
                 (check-path-arg file-name "file name" arg within-arg)
                 (set-run-file! (string->path file-name))
-                (flags-loop (cons "--" rest-args) (see saw 'non-config)))]
+                (flags-loop (cons "--" rest-args) (see saw 'non-config 'top)))]
              [("-e" "--eval")
               (let-values ([(expr rest-args) (next-arg "expression" arg within-arg args)])
                 (set! loads
