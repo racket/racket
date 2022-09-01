@@ -184,7 +184,7 @@ flags:
        @margin-note*{Despite its name, @DFlag{script} is not usually
        used for Unix scripts. See @guidesecref["scripts"] for more
        information on scripts.}
-        as a script. This flag is like @Flag{t} @nonterm{file} plus
+        as a script. This flag is like @Flag{f} @nonterm{file} plus
         @Flag{N} @nonterm{file} to set the program name and @Flag{-}
         to cause all further command-line elements to be treated as
         non-flag arguments.}
