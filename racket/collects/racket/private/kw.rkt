@@ -1511,8 +1511,6 @@
 
   ;; Generates a keyword an arity checker dynamically:
   (define (make-keyword-checker req-kws allowed-kws arity-mask)
-    ;; If min-args is #f, then max-args is an arity value.
-    ;; If max-args is #f, then >= min-args is accepted.
     (define-syntax (arity-check-lambda stx)
       (syntax-case stx ()
         [(_ (kws) kw-body)
@@ -1711,28 +1709,30 @@
        (do-procedure-reduce-keyword-arity 'procedure-reduce-keyword-arity-mask proc #f mask #f 'racket req-kw allowed-kw)]))
   
   (define (do-procedure-reduce-keyword-arity who proc arity mask name realm req-kw allowed-kw)
-    (let* ([plain-proc (let ([p (if (okp? proc) 
-                                    (okp-ref proc 0)
-                                    proc)])
-                         (if arity
-                             (procedure-reduce-arity p arity name realm)
-                             (procedure-reduce-arity-mask p mask name realm)))])
-      (define (sorted? kws)
+    (let* ([plain-proc (and (or (null? allowed-kw)
+                                (null? req-kw))
+                            (let ([p (if (okp? proc)
+                                         (okp-ref proc 0)
+                                         proc)])
+                              (if arity
+                                  (procedure-reduce-arity p arity name realm)
+                                  (procedure-reduce-arity-mask p mask name realm))))])
+      (define (sorted-kws? kws)
         (let loop ([kws kws])
           (cond
-           [(null? kws) #t]
-           [(null? (cdr kws)) #t]
-           [(keyword<? (car kws) (cadr kws)) (loop (cdr kws))]
-           [else #f])))
+            [(null? kws) #t]
+            [(not (pair? kws)) #f]
+            [(not (keyword? (car kws))) #f]
+            [(null? (cdr kws)) #t]
+            [(keyword<? (car kws) (cadr kws)) (loop (cdr kws))]
+            [else #f])))
 
-      (unless (and (list? req-kw) (andmap keyword? req-kw)
-                   (sorted? req-kw))
+      (unless (sorted-kws? req-kw)
         (raise-argument-error* who 'racket/primitive
                                "(and/c (listof? keyword?) sorted? distinct?)"
                                2 proc (or arity mask) req-kw allowed-kw))
       (when allowed-kw
-        (unless (and (list? allowed-kw) (andmap keyword? allowed-kw)
-                     (sorted? allowed-kw))
+        (unless (sorted-kws? allowed-kw)
           (raise-argument-error* who 'racket/primitive
                                  "(or/c (and/c (listof? keyword?) sorted? distinct?) #f)"
                                  3 proc (or arity mask) req-kw allowed-kw))

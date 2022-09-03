@@ -352,7 +352,7 @@
                 (lambda (kws kw-args . xs)
                   (app f (keyword-apply g kws kw-args xs)))
                 composed)
-               arity-mask required-kwds allowed-kwds))))
+               arity-mask required-kwds allowed-kwds 'composed 'racket))))
       (define-syntax-rule (can-compose* name n g f fs)
         (unless (null? (let-values ([(req _) (procedure-keywords g)]) req))
           (apply raise-argument-error 'name "procedure-with-no-required-keywords?"
