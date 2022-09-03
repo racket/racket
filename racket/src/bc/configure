@@ -5442,7 +5442,7 @@ $as_echo "no" >&6; }
 fi
 
   if test "x$ac_ct_STRIP" = x; then
-    STRIP=""
+    STRIP=":"
   else
     case $cross_compiling:$ac_tool_warned in
 yes:)
@@ -5463,6 +5463,9 @@ fi
   fi
   if test "${strip_needs_dash_s}" = "yes" ; then
     check_strip_dash_s=yes
+  fi
+  if test "${STRIP}" = ":"; then
+    check_strip_dash_s=no
   fi
   if test "${check_strip_dash_s}" = "yes" ; then
     # Can only support library stripping if something like "-S" is available:

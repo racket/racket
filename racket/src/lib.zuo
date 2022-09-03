@@ -393,13 +393,19 @@
       (cp src dest)
       (shell/wait (hash-ref config 'ICP_LIB) (string->shell src) (string->shell dest))))
 
+(define (do-strip config key path)
+  (unless (eq? 'windows (hash-ref (runtime-env) 'toolchain-type))
+    (define strip (hash-ref config 'STRIP_DEBUG ""))
+    (when (equal? strip "")
+      (error (~a "`" key "` variable is empty; use \":\" to skip stripping")))
+    (unless (equal? strip ":")
+      (shell/wait strip (string->shell path)))))
+
 (define (strip-debug config path)
-  (unless (eq? 'windows (system-type))
-    (shell/wait (hash-ref config 'STRIP_DEBUG) (string->shell path))))
+  (do-strip config 'STRIP_DEBUG path))
 
 (define (strip-lib-debug config path)
-  (unless (eq? 'windows (system-type))
-    (shell/wait (hash-ref config 'STRIP_LIB_DEBUG) (string->shell path))))
+  (do-strip config 'STRIP_LIB_DEBUG path))
 
 (define (run-raco-setup config dest-racket cross-bootstrap-racket cross-compiler-args)
   (define windows? (eq? 'windows (system-type)))
