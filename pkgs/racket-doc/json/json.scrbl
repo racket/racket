@@ -31,7 +31,7 @@ the @rfc for more information about JSON.
 
   @itemize[
     @item{the value of @racket[jsnull], @racket['null] by default,
-  which is recognized using @racket[eq?]}
+          which is recognized using @racket[eq?]}
     @item{@racket[boolean?]}
     @item{@racket[string?]}
     @item{@racket[(or/c exact-integer? (and/c inexact-real? rational?))]}
@@ -44,16 +44,16 @@ the @rfc for more information about JSON.
   (jsexpr? "cheesecake")
   (jsexpr? 3.5)
   (jsexpr? (list 18 'null #f))
-  (jsexpr? #hasheq((turnip . 82)))
+  (jsexpr? #hasheq([turnip . 82]))
   (jsexpr? (vector 1 2 3 4))
-  (jsexpr? #hasheq(("turnip" . 82)))
+  (jsexpr? #hasheq(["turnip" . 82]))
   (jsexpr? +inf.0)
 ]
 }
 
 @defparam[json-null jsnull any/c]{
   This parameter determines the default Racket value that corresponds to
-  a JSON ``@tt{null}''.  By default, it is the @racket['null] symbol.
+  a JSON ``@tt{null}''. By default, it is the @racket['null] symbol.
   In some cases a different value may better fit your needs, therefore
   all functions in this library accept a @racket[#:null] keyword
   argument for the value that is used to represent a JSON ``@tt{null}'',
@@ -67,8 +67,9 @@ the @rfc for more information about JSON.
 
 @defproc[(write-json [x jsexpr?] [out output-port? (current-output-port)]
                      [#:null jsnull any/c (json-null)]
-                     [#:encode encode (or/c 'control 'all) 'control])
-         any]{
+                     [#:encode encode (or/c 'control 'all) 'control]
+                     [#:indent indent (or/c #f #\tab natural-number/c) #f])
+         void?]{
   Writes the @racket[x] @tech{jsexpr}, encoded as JSON, to the
   @racket[out] output port.
 
@@ -80,35 +81,50 @@ the @rfc for more information about JSON.
   the range of @tt{U+10000} and above are encoded as two @tt{\uHHHH}
   escapes, see Section 2.5 of the @|rfc|.
 
+  @racket[indent] is used to indicate format style. If it is
+
+  @itemize[
+     @item{@racket[#f], the converted JSON won't be formatted.}
+     @item{@racket[#\tab], it is used as white space for indenting.}
+     @item{a natural number, it indicates the number of whitespaces to
+             use as white space for indenting.}]
+
 @examples[#:eval ev
   (with-output-to-string
-    (λ () (write-json #hasheq((waffle . (1 2 3))))))
+    (λ () (write-json #hasheq([waffle . (1 2 3)]))))
   (with-output-to-string
-    (λ () (write-json #hasheq((와플 . (1 2 3)))
+    (λ () (write-json #hasheq([와플 . (1 2 3)])
                       #:encode 'all)))
+  (for ([indent (in-list '(#f 0 4 #\tab))])
+    (newline)
+    (write-json #hasheq([waffle . (1 2 3)] [와플 . (1 2 3)])
+                #:indent indent)
+    (newline))
 ]
 }
 
 @defproc[(jsexpr->string [x jsexpr?]
                          [#:null jsnull any/c (json-null)]
-                         [#:encode encode (or/c 'control 'all) 'control])
+                         [#:encode encode (or/c 'control 'all) 'control]
+                         [#:indent indent (or/c #f #\tab natural-number/c) #f])
          string?]{
   Generates a JSON source string for the @tech{jsexpr} @racket[x].
 
 @examples[#:eval ev
-  (jsexpr->string #hasheq((waffle . (1 2 3))))
+  (jsexpr->string #hasheq([waffle . (1 2 3)]))
 ]
 }
 
 @defproc[(jsexpr->bytes [x jsexpr?]
                         [#:null jsnull any/c (json-null)]
-                        [#:encode encode (or/c 'control 'all) 'control])
+                        [#:encode encode (or/c 'control 'all) 'control]
+                        [#:indent indent (or/c #f #\tab natural-number/c) #f])
          bytes?]{
   Generates a JSON source byte string for the @tech{jsexpr} @racket[x].
   (The byte string is encoded in UTF-8.)
 
 @examples[#:eval ev
-  (jsexpr->bytes #hasheq((waffle . (1 2 3))))
+  (jsexpr->bytes #hasheq([waffle . (1 2 3)]))
 ]
 }
 
@@ -124,8 +140,8 @@ the @rfc for more information about JSON.
   characters in the port so that a second call can retrieve the
   remaining JSON input(s). If the JSON inputs aren't delimited per se
   (true, false, null), they  must be separated by whitespace from the
-  following JSON input. 
-  
+  following JSON input.
+
 
 @examples[#:eval ev
   (with-input-from-string

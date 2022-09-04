@@ -10,8 +10,9 @@
 ;; -----------------------------------------------------------------------------
 ;; DEPENDENCIES
 
-;; racket/contract must come before provide
 (require syntax/readerr
+         racket/list
+         ;; racket/contract must come before provide
          racket/contract)
 
 ;; tests in:
@@ -25,7 +26,7 @@
 
 (provide
  ;; Parameter
- json-null ;; Parameter
+ json-null
 
  ;; Any -> Boolean
  jsexpr?
@@ -35,8 +36,9 @@
    (->* (any/c) ;; jsexpr? but dependent on #:null arg
         (output-port? ;; (current-output-port)
          #:null any/c ;; (json-null)
-         #:encode (or/c 'control 'all)) ;; 'control
-        any)]
+         #:encode (or/c 'control 'all) ;; 'control
+         #:indent (or/c #f #\tab natural-number/c)) ;; #f
+        void?)]
   [read-json
    (->* ()
         (input-port? #:null any/c) ;; (json-null)
@@ -44,13 +46,15 @@
   [jsexpr->string
    (->* (any/c) ;; jsexpr? but dependent on #:null arg
         (#:null any/c ;; (json-null)
-         #:encode (or/c 'control 'all)) ;; 'control
-        any)] ;; string?
+         #:encode (or/c 'control 'all) ;; 'control
+         #:indent (or/c #f #\tab natural-number/c)) ;; #f
+        string?)]
   [jsexpr->bytes
    (->* (any/c) ;; jsexpr? but dependent on #:null arg
         (#:null any/c ;; (json-null)
-         #:encode (or/c 'control 'all)) ;; 'control
-        any)] ;; bytes?
+         #:encode (or/c 'control 'all) ;; 'control
+         #:indent (or/c #f #\tab natural-number/c)) ;; #f
+        bytes?)]
   [string->jsexpr
    (->* (string?)
         (#:null any/c) ;; (json-null)
@@ -88,10 +92,12 @@
 ;; GENERATION  (from Racket to JSON)
 
 (define (write-json x [o (current-output-port)]
-                    #:null [jsnull (json-null)] #:encode [enc 'control])
-  (write-json* 'write-json x o jsnull enc))
+                    #:null [jsnull (json-null)]
+                    #:encode [enc 'control]
+                    #:indent [indent #f])
+  (write-json* 'write-json x o jsnull enc indent))
 
-(define (write-json* who x o jsnull enc)
+(define (write-json* who x o jsnull enc indent)
   (define (escape m)
     (define ch (string-ref m 0))
     (case ch
@@ -129,7 +135,17 @@
     (write-bytes #"\"" o)
     (write-string (regexp-replace* rx-to-encode str escape) o)
     (write-bytes #"\"" o))
-  (let loop ([x x])
+  (define (format/write-whitespace)
+    (when indent (write-bytes #" " o)))
+  (define (format/write-newline)
+    (when indent (write-bytes #"\n" o)))
+  (define (format/write-indent layer)
+    (cond
+      [(eq? #\tab indent)
+       (write-bytes (make-bytes layer #x9) o)]
+      [(exact-nonnegative-integer? indent)
+       (write-bytes (make-bytes (* layer indent) #x20) o)]))
+  (let write-jsval ([x x] [layer 0])
     (cond [(or (exact-integer? x) (inexact-rational? x)) (write x o)]
           [(eq? x #f)     (write-bytes #"false" o)]
           [(eq? x #t)     (write-bytes #"true" o)]
@@ -138,26 +154,67 @@
           [(list? x)
            (write-bytes #"[" o)
            (when (pair? x)
-             (loop (car x))
-             (for ([x (in-list (cdr x))]) (write-bytes #"," o) (loop x)))
+             (cond
+               [(<= (length x) 10)
+                (let ([layer (add1 layer)])
+                  (let ([x (car x)])
+                    (when (hash? x)
+                      (format/write-newline)
+                      (format/write-indent layer))
+                    (write-jsval x layer))
+                  (for ([x (in-list (cdr x))])
+                    (write-bytes #"," o)
+                    (if (hash? x)
+                        (begin
+                          (format/write-newline)
+                          (format/write-indent layer))
+                        (format/write-whitespace))
+                    (write-jsval x layer)))
+                (when (hash? (car (last-pair x)))
+                  (format/write-newline)
+                  (format/write-indent layer))]
+               [else
+                (let ([layer (add1 layer)])
+                  (let ([x (car x)])
+                    (format/write-newline)
+                    (format/write-indent layer)
+                    (write-jsval x layer))
+                  (for ([x (in-list (cdr x))])
+                    (write-bytes #"," o)
+                    (format/write-newline)
+                    (format/write-indent layer)
+                    (write-jsval x layer)))
+                (format/write-newline)
+                (format/write-indent layer)]))
            (write-bytes #"]" o)]
           [(hash? x)
-           (write-bytes #"{" o)
            (define first? #t)
-           (hash-for-each
-            x
-            (lambda (k v)
-              (unless (symbol? k)
-                (raise-type-error who "legal JSON key value" k))
-              (if first? (set! first? #f) (write-bytes #"," o))
-              ;; use a string encoding so we get the same deal with
-              ;; `rx-to-encode'
-              (write-json-string (symbol->string k))
-              (write-bytes #":" o)
-              (loop v))
-            ;; order output
-            #true)
-            (write-bytes #"}" o)]
+           (define (write-hash-kv layer)
+             (λ (k v)
+               (unless (symbol? k)
+                 (raise-type-error who "legal JSON key value" k))
+               (if first? (set! first? #f) (write-bytes #"," o))
+               (format/write-newline)
+               (format/write-indent layer)
+               ;; use a string encoding so we get the same deal with
+               ;; `rx-to-encode'
+               (write-json-string (symbol->string k))
+               (write-bytes #":" o)
+               (if (hash? v)
+                   (begin
+                     (format/write-newline)
+                     (format/write-indent layer))
+                   (format/write-whitespace))
+               (write-jsval v layer)))
+
+           (write-bytes #"{" o)
+           (let ([layer (add1 layer)])
+             (hash-for-each x (write-hash-kv layer)
+                            ;; order output
+                            #t))
+           (format/write-newline)
+           (format/write-indent layer)
+           (write-bytes #"}" o)]
           [else (raise-type-error who "legal JSON value" x)]))
   (void))
 
@@ -475,9 +532,9 @@
        (if top?
            eof
            (bad-input))]
-      [(eqv? ch #\t) (read-literal #"true") #t]
+      [(eqv? ch #\t) (read-literal #"true")  #t]
       [(eqv? ch #\f) (read-literal #"false") #f]
-      [(eqv? ch #\n) (read-literal #"null") jsnull]
+      [(eqv? ch #\n) (read-literal #"null")  jsnull]
       [(or (and ((char->integer ch) . <= . (char->integer #\9))
                 ((char->integer ch) . >= . (char->integer #\0)))
            (eqv? ch #\-))
@@ -508,14 +565,20 @@
 ;; -----------------------------------------------------------------------------
 ;; CONVENIENCE FUNCTIONS
 
-(define (jsexpr->string x #:null [jsnull (json-null)] #:encode [enc 'control])
+(define (jsexpr->string x
+                        #:null [jsnull (json-null)]
+                        #:encode [enc 'control]
+                        #:indent [indent #f])
   (define o (open-output-string))
-  (write-json* 'jsexpr->string x o jsnull enc)
+  (write-json* 'jsexpr->string x o jsnull enc indent)
   (get-output-string o))
 
-(define (jsexpr->bytes x #:null [jsnull (json-null)] #:encode [enc 'control])
+(define (jsexpr->bytes x
+                       #:null [jsnull (json-null)]
+                       #:encode [enc 'control]
+                       #:indent [indent #f])
   (define o (open-output-bytes))
-  (write-json* 'jsexpr->bytes x o jsnull enc)
+  (write-json* 'jsexpr->bytes x o jsnull enc indent)
   (get-output-bytes o))
 
 (define (string->jsexpr str #:null [jsnull (json-null)])
