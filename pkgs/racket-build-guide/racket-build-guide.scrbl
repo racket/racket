@@ -17,3 +17,4 @@ how to contribute to Racket development.
 @include-section["distribute.scrbl"]
 @include-section["contribute.scrbl"]
 @include-section["zuo.scrbl"]
+@include-section["bootstrap.scrbl"]
