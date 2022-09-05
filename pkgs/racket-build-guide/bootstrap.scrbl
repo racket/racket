@@ -8,7 +8,7 @@ existing Racket installation to build Racket. Distribution archives
 include the needed bootstrapping artifacts in a portable form. The
 Racket Git repository similarly includes some of those artifacts
 checked in directly, and some are in a separate repository that is
-downloaded by `make`. Specifically:
+downloaded by @exec{make}. Specifically:
 
 @itemlist[
 

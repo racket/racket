@@ -623,6 +623,7 @@ ac_includes_default="\
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 upsrcdir
+CFLAGS_FOR_BUILD
 CC_FOR_BUILD
 RKTIO_CONFIGURE_ARGS
 PLT_CS_SLSP_SUFFIX
@@ -6125,6 +6126,7 @@ done
 
 
 RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
+
 
 
 

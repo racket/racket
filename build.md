@@ -880,10 +880,12 @@ inspired by `make` and [Shake](https://shakebuild.com/). When you build
 Racket with `make`, the makefile target ensures that `zuo` is built, and
 then it bounces the build request to a `"main.zuo"` script.
 
-Racket makefiles build `zuo` using the `CC` makefile variable, which
-normally defaults to `cc`. If you need to specify a C compiler or
-options for building Zuo, supply `CC=<compiler>` and/or `CFLAGS=<flags>`
-to `make`.
+Racket makefiles build `zuo` using the `CC_FOR_BUILD` makefile variable
+plus `CFLAGS_FOR_BUILD`. The `CC_FOR_BUILD` variable defaults to using
+the `CC` makefile variable plus `-O2`, while `CC` normally defaults to
+`cc`. If you need to specify a C compiler or options for building Zuo,
+supply `CC=<compiler>`, `CC_FOR_BUILD=<compiler>`, and/or
+`CFLAGS_FOR_BUILD=<flags>` to `make`.
 
 In you have `zuo` installed, you can generally substitute `zuo .` in
 place of `make` when building Racket components. You can even use just
@@ -918,7 +920,7 @@ existing Racket installation to build Racket. Distribution archives
 include the needed bootstrapping artifacts in a portable form. The
 Racket Git repository similarly includes some of those artifacts checked
 in directly, and some are in a separate repository that is downloaded by
-‘make‘. Specifically:
+`make`. Specifically:
 
 * `"racket/src/cs/schemified"` includes macro-expanded, schemified
   versions of layers that are implemented in Racket for Racket CS, and

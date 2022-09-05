@@ -623,6 +623,7 @@ ac_includes_default="\
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 upsrcdir
+CFLAGS_FOR_BUILD
 CC_FOR_BUILD
 RKTIO_CONFIGURE_ARGS
 LIBFFI_CONFIGURE_ARGS
@@ -7443,6 +7444,7 @@ case "$srcdir" in
 esac
 
 LIBS="$LIBS $EXTRALIBS"
+
 
 
 

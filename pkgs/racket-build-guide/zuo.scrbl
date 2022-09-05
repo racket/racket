@@ -13,11 +13,14 @@ with @exec{make}, the makefile target ensures that @exec{zuo} is
 built, and then it bounces the build request to a @filepath{main.zuo}
 script.
 
-Racket makefiles build @exec{zuo} using the @exec{CC} makefile
-variable, which normally defaults to @exec{cc}. If you need to specify
-a C compiler or options for building Zuo, supply
-@exec{CC=@nonterm{compiler}} and/or @exec{CFLAGS=@nonterm{flags}} to
-@exec{make}.
+Racket makefiles build @exec{zuo} using the @exec{CC_FOR_BUILD}
+makefile variable plus @exec{CFLAGS_FOR_BUILD}. The
+@exec{CC_FOR_BUILD} variable defaults to using the @exec{CC} makefile
+variable plus @exec{-O2}, while @exec{CC} normally defaults to
+@exec{cc}. If you need to specify a C compiler or options for building
+Zuo, supply @exec{CC=@nonterm{compiler}},
+@exec{CC_FOR_BUILD=@nonterm{compiler}}, and/or
+@exec{CFLAGS_FOR_BUILD=@nonterm{flags}} to @exec{make}.
 
 In you have @exec{zuo} installed, you can generally substitute
 @exec{zuo .} in place of @exec{make} when building Racket components.

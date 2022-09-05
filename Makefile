@@ -94,6 +94,10 @@ BOOTFILE_RACKET =
 # this path can be relative to the cross build directory
 CS_HOST_WORKAREA_PREFIX =
 
+# For building Zuo:
+CC_FOR_BUILD = $(CC) -O2
+CFLAGS_FOR_BUILD =
+
 # ------------------------------------------------------------
 # Racket CS boot files
 
@@ -627,7 +631,7 @@ ping: $(ZUO)
 
 racket/src/build/bin/zuo: racket/src/zuo/zuo.c
 	mkdir -p racket/src/build/bin
-	$(CC) $(CFLAGS) -O2 -DZUO_LIB_PATH='"../../zuo/lib"' -o $(ZUO) racket/src/zuo/zuo.c
+	$(CC_FOR_BUILD) $(CFLAGS_FOR_BUILD) -DZUO_LIB_PATH='"../../zuo/lib"' -o $(ZUO) racket/src/zuo/zuo.c
 
 racket\src\build\zuo.exe: racket\src\zuo\zuo.c
 	IF NOT EXIST racket\src\build cmd /c mkdir racket\src\build
