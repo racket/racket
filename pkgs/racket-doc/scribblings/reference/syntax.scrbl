@@ -230,8 +230,9 @@ that produces syntax definitions must be defined before it is used.
 
 No identifier can be imported or defined more than once at any
 @tech{phase level} within a single module, except that a definition
-via @racket[define-values] or @racket[define-syntaxes] can shadow a
-preceding import via @racket[#%require].
+via @racket[define-values] or @racket[define-syntaxes] can shadow an
+import via @racket[#%require]---as long as no preceding
+@racket[#%declare] form includes @racket[#:require=defined].
 Every exported identifier must be imported or
 defined. No expression can refer to a @tech{top-level variable}.
 A @racket[module*] form in which the enclosing module's bindings are visible
@@ -400,6 +401,7 @@ Legal only in a @tech{module begin context}, and handled by the
          #:grammar
          ([declaration-keyword #:cross-phase-persistent
                                #:empty-namespace
+                               #:require=define
                                #:unsafe
                                (code:line #:realm identifier)])]{
 
@@ -418,6 +420,12 @@ module:
        namespace with no bindings; limiting namespace support in this
        way can reduce the @tech{lexical information} that
        otherwise must be preserved for the module.}
+
+@item{@indexed-racket[#:require=define] --- declares that no
+       subsequent definition immediately with the module body is
+       allowed to shadow a @racket[#%require] (or @racket[require])
+       binding. This declaration does not affect shadowing of a
+       module's initial imports (i.e., the module's language).}
 
 @item{@indexed-racket[#:unsafe] --- declares that the module can be
        compiled without checks that could trigger
@@ -448,7 +456,8 @@ context} or a @tech{module-begin context}. Each
 
 @history[#:changed "6.3" @elem{Added @racket[#:empty-namespace].}
          #:changed "7.9.0.5" @elem{Added @racket[#:unsafe].}
-         #:changed "8.4.0.2" @elem{Added @racket[#:realm].}]}
+         #:changed "8.4.0.2" @elem{Added @racket[#:realm].}
+         #:changed "8.6.0.9" @elem{Added @racket[#:require=define].}]}
 
 
 @;------------------------------------------------------------------------

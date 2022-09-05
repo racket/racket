@@ -24,6 +24,9 @@
          
          requires+provides-all-bindings-simple?
          set-requires+provides-all-bindings-simple?!
+
+         requires+provides-definitions-shadow-imports?
+         disable-definitions-shadow-imports!
          
          (struct-out required)
          add-required-space!
@@ -59,7 +62,8 @@
                            spaces     ; sym -> #t to track all relevant spaces from requires
                            portal-syntaxes ; phase -> sym -> syntax
                            [can-cross-phase-persistent? #:mutable]
-                           [all-bindings-simple? #:mutable]) ; tracks whether bindings are easily reconstructed
+                           [all-bindings-simple? #:mutable] ; tracks whether bindings are easily reconstructed
+                           [definitions-shadow-imports? #:mutable])
   #:authentic)
 
 ;; A `required` represents an identifier required into a module
@@ -94,8 +98,9 @@
                      (make-hasheq)  ; also-required
                      (make-hasheq)  ; spaces
                      portal-syntaxes
-                     #t
-                     #t))
+                     #t   ; can-cross-phase-persistent?
+                     #t   ; all-bindings-simple?
+                     #t)) ; definitions-shadow-imports?
 
 (define (requires+provides-reset! r+p)
   ;; Don't clear `require-mpis-in-order`, since we want to accumulate
@@ -211,7 +216,7 @@
             (define id (datum->syntax s-at-space sym s-at-space))
             (adjust-shadow-requires! r+p id phase space)
             (check-not-defined #:check-not-required? #t
-                               #:allow-defined? #t
+                               #:allow-defined? (requires+provides-definitions-shadow-imports? r+p)
                                r+p id phase space #:in orig-s
                                #:unless-matches
                                (lambda ()
@@ -305,7 +310,7 @@
   (for ([space (in-hash-keys (requires+provides-spaces r+p))])
     (remove! (add-space-scope id space) #:bind-as-ambiguous? #t)))
 
-;; Prune a list of `required`s t remove any with a different binding
+;; Prune a list of `required`s to remove any with a different binding
 (define (remove-non-matching-requireds reqds id phase mpi nominal-phase+space-shift sym)
   ;; Ok to produce a list-ish instead of a list, but we don't have `for*/list-ish`:
   (for*/list ([r (in-list-ish reqds)]
@@ -372,7 +377,9 @@
        ;; Doesn't count as previously defined
        (check-default-space)]
       [else
-       (define define-shadowing-require? (and (not defined?) (not check-not-required?)))
+       (define define-shadowing-require? (and (not defined?)
+                                              (requires+provides-definitions-shadow-imports? r+p)
+                                              (not check-not-required?)))
        (define mpi (intern-mpi r+p (module-binding-nominal-module b)))
        (define at-mod (hash-ref (requires+provides-requires r+p) mpi #f))
        (define ok-binding (and (not define-shadowing-require?)
@@ -381,7 +388,14 @@
                                    ok-binding/delayed)))
        (define (raise-already-bound defined? where)
          (raise-syntax-error who
-                             (string-append "identifier already "
+                             (string-append "identifier"
+                                            (cond
+                                              [(and (not defined?) (not check-not-required?))
+                                               " for definition"]
+                                              [(and defined? check-not-required?)
+                                               " for require"]
+                                              [else ""])
+                                            " already "
                                             (if defined? "defined" "required")
                                             (cond
                                               [(zero-phase? phase) ""]
@@ -545,6 +559,9 @@
                                         (lambda () (esc #f))))]
                 [reqd (in-list-ish reqds)])
       (normalize-required reqd mod-name phase+space-shift sym))))
+
+(define (disable-definitions-shadow-imports! r+p)
+  (set-requires+provides-definitions-shadow-imports?! r+p #f))
 
 ;; ----------------------------------------
 

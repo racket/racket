@@ -415,7 +415,7 @@
                          [else
                           (adjust-shadow-requires! requires+provides s bind-phase bind-space)
                           (check-not-defined #:check-not-required? #t
-                                             #:allow-defined? #t ; `define` shadows `require`
+                                             #:allow-defined? (requires+provides-definitions-shadow-imports? requires+provides)
                                              requires+provides
                                              s bind-phase bind-space
                                              #:unless-matches binding

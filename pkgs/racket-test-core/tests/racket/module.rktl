@@ -144,6 +144,12 @@
   (define car 5)
   (provide car))
 
+;; ... even in `#:require=define` mode
+(module _shadow_initial_always_ racket/base
+  (#%declare #:require=define)
+  (define car 5)
+  (provide car))
+
 (test 5 dynamic-require ''_shadow_ 'car)
 
 ;; Ok to redefine imported:
@@ -153,6 +159,13 @@
 (test 6 dynamic-require ''defines-car-that-overrides-import/stx 'car)
 ;; Can't redefine multiple times or import after definition:
 (syntax-test #'(module m racket/base (#%require racket/base) (define car 5) (define car 5)))
+
+;; Not in `#:require=define` mode
+(syntax-test #'(module m racket/base (#%require racket/base) (#%declare #:require=define) (define car 5)))
+(syntax-test #'(module m racket/base (#%require racket/base (for-syntax racket/base)) (#%declare #:require=define) (define-syntax car 5)))
+(syntax-test #'(module m racket/base (#%declare #:require=define) (define car 5) (#%require racket/base)))
+(syntax-test #'(module m racket/base (#%require (for-syntax racket/base)) (#%declare #:require=define) (define-syntax car 5) (require racket/base)))
+(syntax-test #'(module m racket/base (#%require (for-syntax racket/base)) (#%declare #:require=define) (define-syntax car 5) (require (only-in racket/base car))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -255,16 +255,27 @@
 
   (define (converter src-target [skip-export? #f])
     (lambda (path token)
-      (racket vars
-              (at-source "convert.rkt")
-              (if unsafe?
-                  "--unsafe"
-                  '())
-              (if skip-export?
-                  "--skip-export"
-                  '())
-              (target-path src-target)
-              path)))
+      ;; to temporarily use a modified ".scm" instead of syncing
+      ;; with the source, put ";; KEEP" as a first line
+      (cond
+        [(and (file-exists? path)
+              (equal? ";; KEEP\n"
+                      (let ([fd (fd-open-input path)])
+                        (define s (fd-read fd 8))
+                        (fd-close fd)
+                        s)))
+         (alert "keeping modified file" path)]
+        [else
+         (racket vars
+                (at-source "convert.rkt")
+                (if unsafe?
+                    "--unsafe"
+                    '())
+                (if skip-export?
+                    "--skip-export"
+                    '())
+                (target-path src-target)
+                path)])))
 
   (mkdir-p (at-dir "compiled"))
 
