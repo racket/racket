@@ -651,7 +651,9 @@ Returns a procedure that accepts no arguments and returns @racket[v].
 
 @mz-examples[#:eval fun-eval
 ((global 'foo))
-]}
+]
+
+@history[#:added "8.6.0.10"]}
 
 @defproc[(global* [v any/c] ...) procedure?]{
 
@@ -661,7 +663,9 @@ Similar to @racket[global], except it returns @racket[v]s.
 ((global*))
 ((global* 'foo))
 ((global* 'foo 'foo))
-]}
+]
+
+@history[#:added "8.6.0.10"]}
 
 @defproc[(const [v any/c]) procedure?]{
 
@@ -688,7 +692,9 @@ Similar to @racket[const], except it returns @racket[v]s.
 ((const* 'foo 'foo))
 ((const* 'foo 'foo) 1 2 3)
 ((const* 'foo 'foo) 'a 'b #:c 'c)
-]}
+]
+
+@history[#:added "8.6.0.10"]}
 
 @deftogether[(@defform[(thunk  body ...+)]
               @defform[(thunk* body ...+)])]{
