@@ -758,7 +758,7 @@ Combines calls to each function with @racket[or].  Equivalent to
 }
 
 @defproc*[([(curry [proc procedure?]) procedure?]
-           [(curry [proc procedure?] [v any/c] ...+) any/c])]{
+           [(curry [proc procedure?] [v any/c] ...+) any])]{
 
 The result of @racket[(curry proc)] is a procedure that is a curried
 version of @racket[proc]. When
@@ -815,7 +815,7 @@ have been supplied.
 @history[#:changed "7.0.0.7" @elem{Added support for keyword arguments.}]}
 
 @defproc*[([(curryr [proc procedure?]) procedure?]
-           [(curryr [proc procedure?] [v any/c] ...+) any/c])]{
+           [(curryr [proc procedure?] [v any/c] ...+) any])]{
 
 Like @racket[curry], except that the arguments are collected in the
 opposite direction: the first step collects the rightmost group of
