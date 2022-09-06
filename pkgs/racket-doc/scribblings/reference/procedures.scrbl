@@ -645,7 +645,7 @@ applied.}
 Returns @racket[v].
 }
 
-@defproc[(global [v any]) procedure?]{
+@defproc[(global [v any/c]) procedure?]{
 
 Returns a procedure that accepts no arguments and returns @racket[v].
 
@@ -653,7 +653,7 @@ Returns a procedure that accepts no arguments and returns @racket[v].
 ((global 'foo))
 ]}
 
-@defproc[(global* [v any] ...) procedure?]{
+@defproc[(global* [v any/c] ...) procedure?]{
 
 Similar to @racket[global], except it returns @racket[v]s.
 
@@ -663,7 +663,7 @@ Similar to @racket[global], except it returns @racket[v]s.
 ((global* 'foo 'foo))
 ]}
 
-@defproc[(const [v any]) procedure?]{
+@defproc[(const [v any/c]) procedure?]{
 
 Returns a procedure that accepts any arguments (including keyword
 arguments) and returns @racket[v].
@@ -674,7 +674,7 @@ arguments) and returns @racket[v].
 ((const 'foo) 'a 'b #:c 'c)
 ]}
 
-@defproc[(const* [v any] ...) procedure?]{
+@defproc[(const* [v any/c] ...) procedure?]{
 
 Similar to @racket[const], except it returns @racket[v]s.
 
