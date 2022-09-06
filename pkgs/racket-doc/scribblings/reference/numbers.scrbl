@@ -521,7 +521,7 @@ Among the real numbers within @racket[(abs tolerance)] of @racket[x],
 @history/arity[]}
 
 
-@defproc[(> [x real?] [y real?] ...+) boolean?]{ Returns @racket[#t] if
+@defproc[(> [x real?] [y real?] ...) boolean?]{ Returns @racket[#t] if
  the arguments in the given order are strictly decreasing,
  @racket[#f] otherwise.
 
