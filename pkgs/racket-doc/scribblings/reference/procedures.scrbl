@@ -645,6 +645,24 @@ applied.}
 Returns @racket[v].
 }
 
+@defproc[(global [v any]) procedure?]{
+
+Returns a procedure that accepts no arguments and returns @racket[v].
+
+@mz-examples[#:eval fun-eval
+((global 'foo))
+]}
+
+@defproc[(global* [v any] ...) procedure?]{
+
+Similar to @racket[global], except it returns @racket[v]s.
+
+@mz-examples[#:eval fun-eval
+((global*))
+((global* 'foo))
+((global* 'foo 'foo))
+]}
+
 @defproc[(const [v any]) procedure?]{
 
 Returns a procedure that accepts any arguments (including keyword

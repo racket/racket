@@ -3,11 +3,25 @@
 (require (for-syntax racket/base racket/list syntax/name)
          racket/list racket/private/arity)
 
-(provide identity const const* thunk thunk* negate curry curryr
-         (all-from-out racket/private/arity)
-         conjoin disjoin)
+(provide identity
+         global  global*
+         const   const*
+         thunk   thunk*
+         curry   curryr
+         conjoin disjoin
+         negate
+         (all-from-out racket/private/arity))
 
 (define (identity x) x)
+
+(define global (λ (c) (thunk c)))
+
+(define global*
+  (case-lambda
+    [()    (thunk (values))]
+    [(c)   (thunk c)]
+    [(c d) (thunk (values c d))]
+    [c*    (thunk (apply values c*))]))
 
 (define const (λ (c) (thunk* c)))
 
@@ -20,7 +34,11 @@
 
 (define-syntax (thunk stx)
   (syntax-case stx ()
-    [(_ body0 body ...) (syntax/loc stx (lambda () body0 body ...))]))
+    [(_ body0 body ...)
+     (syntax-property
+      (syntax/loc stx
+        (lambda () body0 body ...))
+      'inferred-name (syntax-local-infer-name stx))]))
 
 (define-syntax (thunk* stx)
   (syntax-case stx ()
