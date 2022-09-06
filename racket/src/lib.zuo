@@ -395,7 +395,7 @@
 
 (define (do-strip config key path)
   (unless (eq? 'windows (hash-ref (runtime-env) 'toolchain-type))
-    (define strip (hash-ref config 'STRIP_DEBUG ""))
+    (define strip (hash-ref config key ""))
     (when (equal? strip "")
       (error (~a "`" key "` variable is empty; use \":\" to skip stripping")))
     (unless (equal? strip ":")
