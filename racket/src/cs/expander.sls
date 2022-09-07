@@ -65,12 +65,17 @@
      [(key table)
       (hash-set! user-installed-tables key table)]))
 
+  (define-syntax redirect-primitive
+    (syntax-rules (call-with-values apply)
+      [(_ call-with-values) |#%call-with-values|]
+      [(_ id) id]))
+
   (define-syntax define-primitive-table
     (syntax-rules ()
       [(_ id [prim known] ...)
        (define id
          (let ([ht (make-hasheq)])
-           (hash-set! ht 'prim prim)
+           (hash-set! ht 'prim (redirect-primitive prim))
            ...
            (unsafe-hash-seal! ht)
            ht))]))

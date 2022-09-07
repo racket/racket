@@ -143,6 +143,14 @@
   (test (void) namespace-undefine-variable! 'bar)
   (test 28 namespace-variable-value 'bar #t (lambda () 28)))
 
+(test 'cwv-ok
+      (namespace-variable-value 'call-with-values (make-base-namespace))
+      (lambda () 'cwv-ok)
+      (let ()
+        (struct p (proc)
+          #:property prop:procedure 0)
+        (p (lambda (v) v))))
+
 ;; ----------------------------------------
 
 (test #f

@@ -4080,4 +4080,11 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(test 'cwv-ok
+      (dynamic-require ''#%kernel 'call-with-values)
+      (lambda () 'cwv-ok)
+      (chaperone-procedure (lambda (v) v) (lambda (v) v)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)
