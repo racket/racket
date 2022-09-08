@@ -751,9 +751,9 @@
             (finish-continuation-trace slow-k l accum accums))]
       [else
        (let* ([name (or (and (not offset)
-                             (let ([attachments (continuation-next-attachments k)])
+                             (let ([attachments (#%$continuation-attachments k)])
                                (and (pair? attachments)
-                                    (not (eq? attachments (continuation-next-attachments (#%$continuation-link k))))
+                                    (not (eq? attachments (#%$continuation-attachments (#%$continuation-link k))))
                                     (let ([n (extract-mark-from-frame (car attachments) linklet-instantiate-key #f)])
                                       (and n
                                            (string->symbol (format "body of ~a" n)))))))

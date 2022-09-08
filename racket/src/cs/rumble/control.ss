@@ -51,7 +51,7 @@
 ;; metacontinuation frames between the abort and prompt are removed
 ;; one-by-one, running any winders in each frame. Finally, the
 ;; `resume-k` continuation of the target prompt's metacontinuation is
-;; called; the `resume-k` is called using `#%call-in-continuation` to
+;; called; the `resume-k` is called using `#%$call-in-continuation` to
 ;; run a thunk in the restored continuation to apply the prompt's
 ;; handler.
 ;;
@@ -271,15 +271,15 @@
   (assert-not-in-system-wind)
   (call/cc
    (lambda (resume-k)
-     (let ([marks (current-mark-stack)]) ; grab marks before `#%call-in-continuation`
-       (#%call-in-continuation
+     (let ([marks (current-mark-stack)]) ; grab marks before `#%$call-in-continuation`
+       (#%$call-in-continuation
         #%$null-continuation
         '()
         (lambda ()
           (let-values ([results
                         ;; mark the "empty" continuation frame
                         ;; that just continues the metacontinuation:
-                        (call-setting-continuation-attachment
+                        (#%$call-setting-continuation-attachment
                          'empty
                          (lambda ()
                            (let ([mf (make-metacontinuation-frame tag
@@ -305,7 +305,7 @@
              [else
               (start-uninterrupted 'resume-mc)
               (let ([mf (pop-metacontinuation-frame)])
-                (#%call-in-continuation
+                (#%$call-in-continuation
                  (metacontinuation-frame-resume-k mf)
                  (metacontinuation-frame-marks mf)
                  (lambda ()
@@ -327,7 +327,7 @@
   (call/cc
    (lambda (resume-k)
      (let ([marks (current-mark-stack)])
-       (#%call-in-continuation
+       (#%$call-in-continuation
         #%$null-continuation
         '()
         (lambda ()
@@ -347,13 +347,13 @@
               (current-metacontinuation '())
               (let ([r (proc mc)])
                 (let ([mf (pop-metacontinuation-frame)])
-                  (#%call-in-continuation
+                  (#%$call-in-continuation
                    (metacontinuation-frame-resume-k mf)
                    (metacontinuation-frame-marks mf)
                    (lambda () r))))))))))))
 
 (define (call-in-empty-metacontinuation-frame-for-compose proc)
-  (call-getting-continuation-attachment
+  (#%$call-getting-continuation-attachment
    'none
    (lambda (at)
      (cond
@@ -364,7 +364,7 @@
       [else
        ;; Consume attachment to move it (if there is one) to the new
        ;; metacontinuation frame's splice:
-       (call-consuming-continuation-attachment
+       (#%$call-consuming-continuation-attachment
         empty-mark-frame
         (lambda (new-splice)
           (call-in-empty-metacontinuation-frame
@@ -431,7 +431,7 @@
         ;; Remove the prompt and resume its continuation
         ;; as we call the handler:
         (let ([mf (pop-metacontinuation-frame)])
-          (#%call-in-continuation
+          (#%$call-in-continuation
            (metacontinuation-frame-resume-k mf)
            (metacontinuation-frame-marks mf)
            (lambda ()
@@ -582,15 +582,15 @@
       [(and (null? (continuation-mc c))
             (null? (full-continuation-winders c))
             (eq? (current-mark-splice) (full-continuation-mark-splice c))
-            (let ([marks (continuation-next-attachments (full-continuation-k c))])
+            (let ([marks (#%$continuation-attachments (full-continuation-k c))])
               (or (null? marks)
                   (and (null? (cdr marks))
                        (eq? (car marks) 'empty)))))
        ;; Shortcut for no winds and no change to break status:
        (end-uninterrupted 'cc)
        (if (#%procedure? args)
-           (#%call-in-continuation (full-continuation-k c) (full-continuation-mark-stack c)
-                                   (lambda () (args)))
+           (#%$call-in-continuation (full-continuation-k c) (full-continuation-mark-stack c)
+                                    (lambda () (args)))
            (#%apply (full-continuation-k c) args))]
       [(not (composable-continuation-wind? c))
        (apply-immediate-continuation/no-wind c args)]
@@ -624,15 +624,15 @@
            (eq? tag (metacontinuation-frame-tag (car mc)))
            (same-winders? (current-winders) (full-continuation-winders c))
            (eq? (current-mark-splice) (full-continuation-mark-splice c))
-           (eq? (continuation-next-attachments (full-continuation-k c))
+           (eq? (#%$continuation-attachments (full-continuation-k c))
                 (current-mark-stack)))
       ;; Short cut: jump within the same metacontinuation, no winder
       ;; changes or changes to marks (so no break-enabled changes),
       ;; and no tag impersonators to deal with
       (end-uninterrupted 'cc)
       (if (#%procedure? args)
-          (#%call-in-continuation (full-continuation-k c) (full-continuation-mark-stack c)
-                                  (lambda () (args)))
+          (#%$call-in-continuation (full-continuation-k c) (full-continuation-mark-stack c)
+                                   (lambda () (args)))
           (#%apply (full-continuation-k c) args))]
      [else
       (let-values ([(common-mc   ; shared part of the current metacontinuation
@@ -1046,10 +1046,10 @@
     [(_ key val body)
      (let* ([k key]
             [v val])
-       (call-consuming-continuation-attachment
+       (#%$call-consuming-continuation-attachment
         empty-mark-frame
         (lambda (a)
-          (call-setting-continuation-attachment
+          (#%$call-setting-continuation-attachment
            (mark-frame-update a k v)
            (lambda ()
              body)))))]))
@@ -1066,7 +1066,7 @@
           ;; Assume no mark in place for this frame
           #'(let* ([k key]
                    [v val])
-              (call-setting-continuation-attachment
+              (#%$call-setting-continuation-attachment
                (if (impersonator? k)
                    (mark-frame-update empty-mark-frame k v)
                    (cons k v))
@@ -1076,10 +1076,10 @@
           ;; Assume `key` produces an authentic value
           #'(let* ([k key]
                    [v val])
-              (call-consuming-continuation-attachment
+              (#%$call-consuming-continuation-attachment
                empty-mark-frame
                (lambda (a)
-                 (call-setting-continuation-attachment
+                 (#%$call-setting-continuation-attachment
                   (if a
                       (mark-frame-update a k v)
                       (cons k v))
@@ -1089,7 +1089,7 @@
           ;; Assume no mark in place, and `key` produces an authentic value
           #'(let* ([k key]
                    [v val])
-              (call-setting-continuation-attachment
+              (#%$call-setting-continuation-attachment
                (cons k v)
                (lambda ()
                  body)))]
@@ -1175,7 +1175,7 @@
     [(_ key-expr (|#%name| _ (lambda (arg) body ...)) default-v-expr)
      #'(call-with-immediate-continuation-mark/inline key-expr (lambda (arg) body ...) default-v-expr)]
     [(_ key-expr (lambda (arg) body ...) default-v-expr)
-     #'(call-getting-continuation-attachment
+     #'(#%$call-getting-continuation-attachment
         empty-mark-frame
         (lambda (a)
           (let* ([key key-expr]
@@ -1595,7 +1595,7 @@
             (continuation-mark-key-chaperone? k))
         (let ([new-v
                ;; Restore attachment while interposing
-               (call-setting-continuation-attachment
+               (#%$call-setting-continuation-attachment
                 old-a
                 (lambda ()
                   (let ([new-v (|#%app|
@@ -1926,7 +1926,7 @@
         [winders (cdr winders)])
     (current-winders winders)
     (let ([thunk (winder-thunk winder)])
-      (#%call-in-continuation
+      (#%$call-in-continuation
        (winder-k winder)
        (winder-marks winder)
        (lambda ()
@@ -2005,7 +2005,7 @@
   (set! break-enabled-transition-hook proc))
 
 (define (apply-with-break-transition k all-marks args)
-  (#%call-in-continuation
+  (#%$call-in-continuation
    k
    all-marks
    (lambda ()
