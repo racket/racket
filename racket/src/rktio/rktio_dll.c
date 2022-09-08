@@ -77,9 +77,9 @@ rktio_dll_t *rktio_dll_open(rktio_t *rktio, rktio_const_string_t name, rktio_boo
   }
 
 #ifdef RKTIO_SYSTEM_UNIX
-# if defined(__ANDROID__)
+# if defined(__ANDROID__) && !defined(__LP64__)
   if (!name) handle = RTLD_DEFAULT; else
-# elif defined(__CYGWIN32__)
+# elif defined(__CYGWIN32__) || (defined(__ANDROID__) && defined(__LP64__))
   if (!name) { handle = RTLD_DEFAULT; null_ok = 1; } else
 # endif
     handle = dlopen(name, RTLD_NOW | (as_global ? RTLD_GLOBAL : RTLD_LOCAL));
