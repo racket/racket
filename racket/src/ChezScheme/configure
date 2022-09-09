@@ -860,7 +860,7 @@ else
   else
       maybem=$m
   fi
-  echo 'No suitable machine type found in "boot".'
+  echo "No suitable machine type found in \"${srcdir}/boot\"."
   echo ""
   echo "Available machine types:"
   echo "  $machs"
@@ -876,17 +876,7 @@ else
       echo "  $0 -m=<machine type>"
       echo "to specify one of the available machine types."
   fi
-  echo ""
-  if [ "$m" = "" ] ; then
-      echo 'If no directory in "boot" exists for the correct machine type,'
-      echo "then you can use Racket v7.1 or later with"
-  else
-      echo "Since no directory in "'"boot"'" exists for $m, you can try"
-      echo "using Racket v7.1 or later with"
-  fi
-  echo "  racket rktboot/main.rkt --machine=$maybem"
-  echo "to create the boot files, and then try $0 again."
-  if [ -f boot/pb/scheme.boot ] ; then
+  if [ -f "$srcdir"/boot/pb/scheme.boot ] ; then
       echo ""
       echo "Alternatively, a pb machine type is available, so try"
       echo "  $0 --pb"
@@ -894,6 +884,8 @@ else
       echo "to create the boot files using a portable-bytecode build,"
       echo "and then try $0 again."
   fi
+  echo ""
+  echo "See \"${srcdir}/BUILDING\" for more ways of getting boot files."
   exit 1
 fi
 

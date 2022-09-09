@@ -133,8 +133,14 @@
        (shell/wait "git checkout -q" branch
                    (hash 'dir pb-dir))]
       [(eq? step 'build)
-       (shell/wait "racket rktboot/main.rkt --machine pb"
-                   (hash 'dir (at-source "racket/src/ChezScheme")))]
+       (define scheme (find-executable-path "scheme"))
+       (cond
+         [scheme
+          (define reboot (dynamic-require "racket/src/ChezScheme/s/reboot.zuo" 'reboot))
+          (reboot 'infer "pb" scheme (hash 'work-dir "build" 'out-dir "racket/src/ChezScheme"))]
+         [else
+          (shell/wait "racket rktboot/main.rkt --machine pb"
+                      (hash 'dir (at-source "racket/src/ChezScheme")))])]
       [(eq? step 'stage)
        (define options (hash 'dir pb-dir))
        (shell/wait "git branch" branch options)
