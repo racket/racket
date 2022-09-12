@@ -307,7 +307,7 @@
                       (and ignore-stderr
                            (regexp-match? ignore-stderr s))))
           (parameterize ([error-print-width 16384])
-            (error test-exe-name "non-empty stderr: ~e" (get-output-bytes e)))))
+            (error test-exe-name "non-empty stderr: ~.a" (get-output-bytes e)))))
       (unless (zero? result-code)
         (error test-exe-name "non-zero exit: ~e" result-code))
       (cond
