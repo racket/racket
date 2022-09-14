@@ -20,4 +20,5 @@
            (thread)
            (io)
            (regexp)
-           (linklet)))
+           (linklet)
+           (only $system $lambda/lift-barrier)))
