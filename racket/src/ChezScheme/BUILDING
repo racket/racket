@@ -112,7 +112,7 @@ WAYS TO GET BOOT FILES
 
 5. If you have Racket installed as `racket`, then
 
-     racket rktboot/main.rkt --machine <machine type>
+     racket ../rktboot/main.rkt --machine <machine type>
 
    creates boot files for <machine type>.
 

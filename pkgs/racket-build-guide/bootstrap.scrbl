@@ -37,7 +37,7 @@ For more information about modifying Chez Scheme, see
 @filepath{racket/src/cs/README.txt}. As explained there, you can
 create new boot files in @filepath{racket/src/ChezScheme/boot/pb} or
 platform-specific boot files using even a relatively old version of
-Racket.
+Chez Scheme or Racket.
 
 For information about modifying the macro expander for Racket CS
 and/or BC, see @filepath{racket/src/expander/README.txt}. Building the
