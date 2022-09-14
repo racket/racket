@@ -693,11 +693,11 @@
                                                         (lookup 'RACKET)
                                                         r)))
                           (define racket.exe (executable->path bootfile-racket at-dir))
-                          ;; "rktboot/main.rkt" performs it's own timestamp-based "make"
+                          ;; "rktboot/main.rkt" performs its own timestamp-based "make"
                           (process/wait racket.exe
                                         (setup-boot at-dir config (hash 'mode "--chain"
                                                                         'compiled-subdir "compiled/rktboot"))
-                                        (at-source "../../ChezScheme/rktboot/main.rkt")
+                                        (at-source "../../rktboot/main.rkt")
                                         "--scheme-src" (at-source "../../ChezScheme")
                                         "--dest" (at-dir CS)
                                         "--machine" m))])]

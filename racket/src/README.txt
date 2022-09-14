@@ -657,6 +657,8 @@ Sources for the Racket CS implementation
 
  * "regexp" --- regexp matcher
 
+ * "rktboot" --- create Chez Scheme boot files using Racket
+
 See also the shared sources below, which includes rktio, the macro
 expander, and schemify.
 

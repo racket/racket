@@ -11,7 +11,8 @@ Chez Scheme source directory. Build boot files that way before
 
 The Chez Scheme simulation hasn't been made especially fast, so expect
 the bootstrap process to take 10 times as long as using an existing
-Chez Scheme.
+Chez Scheme in regular "cross boot" mode, or about twice as long as an
+existing Chez Scheme in "reboot" mode.
 
 While the similation of Chez Scheme should be robust to many Chez
 Scheme changes, it does rely on details of the Chez Scheme
