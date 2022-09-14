@@ -318,7 +318,11 @@
      (define sha256 (or (rule-sha256 r) (file-sha256/state (target-path t) state)))
      (when (equal? sha256 no-sha256) ((rule-build r)))
      (update-target-state state t (list sha256))]
-    [else (build-unbuilt t state seen top?)]))
+    [else (call-with-name+stack
+           (target-name t)
+           seen
+           (lambda ()
+             (build-unbuilt t state seen top?)))]))
 
 ;; Starts a build for a specific target
 (define (build-unbuilt t state seen top?)
@@ -328,7 +332,9 @@
                          '()))
   (define alert-top? (and top? (not (hash-ref (target-options t) 'quiet? #f))))
   (define dep-top? (and alert-top? (symbol? path)))
-  (define new-seen (hash-set seen (target-key t) #t))
+  (define new-seen (hash-set (hash-set seen (target-key t) #t)
+                             stack-key
+                             (cons path (hash-ref seen stack-key '()))))
 
   ;; delete a target file if we don't finish:
   (define path-handle (and (path-string? path)
@@ -810,6 +816,29 @@
   (let ([a (assoc "ZUO_JOBS" (hash-ref (runtime-env) 'env '()))])
     (or (and a (string->integer (cdr a)))
         1)))
+
+;; creates a non-tail call labelled "target <name>" so that
+;; it shows up in a stack trace
+(define (call-with-name name thunk)
+  ((kernel-eval `(lambda (proc)
+                   ,(~a "target " name)
+                   (let ([result (proc)])
+                     result)))
+   thunk))
+
+(define stack-key (string->uninterned-symbol "stack"))
+
+(define (call-with-name+stack name seen thunk)
+  (let loop ([stack (if (> (hash-count seen) 16)
+                        ;; avoid quadratic behavior in the unlikely
+                        ;; event that dependencies get deep:
+                        '()
+                        (reverse (hash-ref seen stack-key '())))])
+    (if (null? stack)
+        (call-with-name name thunk)
+        (call-with-name (car stack)
+                        (lambda ()
+                          (loop (cdr stack)))))))
 
 ;; ------------------------------------------------------------
 ;; `make`-like target and dependency declaration
