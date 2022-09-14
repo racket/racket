@@ -226,9 +226,7 @@
                          ;; we only need whether it's 1 job or more:
                          (if (token-uni? token) 1 2)
                          (hash-ref options 'jobs (default-jobs)))]
-           [seen (if token
-                     (token-seen token)
-                     (hash))])
+           [seen (hash)])
       ;; Start a threading context, so we can have parallel build tasks
       ((if token (lambda (th) (th)) call-in-main-thread)
        (lambda ()
