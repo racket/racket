@@ -23,16 +23,17 @@ repository, and the rest are in a sibling "pb" repository that that
 Racket repository's top-level makefile checks out.
 
 Building Racket CS from original sources requires an existing Racket
-build:
+or Chez Scheme build:
 
- * Chez Scheme is typically used to compile Chez Scheme boot files,
-   but any recent version of Racket (v7.1 and up) can generate boot
-   files for Chez Scheme.
+ * Chez Scheme (v9.5.3 and up) is typically used to compile Chez
+   Scheme boot files, but any recent version of Racket (v7.1 and up)
+   can generate boot files for Chez Scheme.
 
    When you use `configure` as described in "../README.txt", supply
-   `--enable-racket=...` to select a Racket implementation to build
-   Racket CS boot files. That implementation could be one that is
-   built by first using `configure --enable-bc`.
+   `--enable-scheme=...` to select a Scheme implementation to build
+   boot files, or supply `--enable-racket=...` to select a Racket
+   implementation to build boot files. A Racket implementation could
+   be one that is built by first using `configure --enable-bc`.
 
    Alternatively, boot files for the pb (portable bytecode) Chez
    Scheme variant can be used to compile Chez Scheme on any supported

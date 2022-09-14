@@ -131,7 +131,7 @@
                                  (cons "SCHEMEHEAPDIRS"
                                        (path->complete-path (build-path host-workarea "boot" m))))
                            (hash)))
-       (reboot m xm scheme (hash 'shell-options options)))))
+       (reboot m xm scheme (hash 'shell-options options 'out-dir (at-dir ".."))))))
   
   (define (run-tests token name [vars vars])
     (check-not-kernel-only)

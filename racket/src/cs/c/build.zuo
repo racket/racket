@@ -6,7 +6,8 @@
          (only-in "../../start/build.zuo"
                   [targets-at starter-targets-at])
          (only-in "../main.zuo"
-                  [targets-at cs-targets-at]))
+                  [targets-at cs-targets-at])
+         "scheme-version.zuo")
 
 (provide-targets targets-at)
 
@@ -663,25 +664,31 @@
                           (define host-m-targets (scheme-targets-at (make-at-dir (at-dir CS m))
                                                                     (hash-set* config
                                                                                'm host-m)))
-                          (define args
+                          (define target-name+args
                             (cond
                               [(not (equal? (lookup 'SCHEME_DIR) ""))
                                ;; use existing Scheme workarea to build boot files
-                               (list "--host-workarea"
-                                     (at-dir (lookup 'SCHEME_DIR) host-m)
-                                     m)]
+                               (cons "bootquick"
+                                     (list "--host-workarea"
+                                           (at-dir (lookup 'SCHEME_DIR) host-m)
+                                           m))]
                               [(not (equal? (lookup 'SCHEME) ""))
-                               ;; use existing Scheme to build boot files
-                               (list "--host-scheme"
-                                     (executable->path (lookup 'SCHEME) at-dir)
-                                     m)]
+                               ;; use existing Scheme to build boot files; if it doesn't
+                               ;; report the same version as we're trying to build, use it
+                               ;; in "reboot" mode
+                               (define exe (executable->path (lookup 'SCHEME) at-dir))
+                               (cons (if (same-scheme-version? exe)
+                                         "bootquick"
+                                         "reboot")
+                                     (list "--host-scheme" exe m))]
                               [else
                                ;; assuming auto Racket and/or Scheme is built before we get here
-                               (list "--host-workarea"
-                                     (at-dir "local/cs/c/ChezScheme" host-m)
-                                     m)]))
-                          (build (command-target->target (find-target "bootquick" host-m-targets)
-                                                         args)
+                               (cons "bootquick"
+                                     (list "--host-workarea"
+                                           (at-dir "local/cs/c/ChezScheme" host-m)
+                                           m))]))
+                          (build (command-target->target (find-target (car target-name+args) host-m-targets)
+                                                         (cdr target-name+args))
                                  token))])]
            [(or (not (equal? (lookup 'BOOTFILE_RACKET) ""))
                 (not (equal? (lookup 'RACKET) "")))
