@@ -2799,8 +2799,7 @@ For backward compatibility only; equivalent to @racket[syntax-local-introduce].
            (begin expr ...+)]]{
 
 The first form applies when @racket[begin] appears at the top level,
-at module level, or in an internal-definition position (before any
-expression in the internal-definition sequence). In that case, the
+at module level, or in an internal-definition position. In that case, the
 @racket[begin] form is equivalent to splicing the @racket[form]s into
 the enclosing context.
 
