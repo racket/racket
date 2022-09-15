@@ -148,6 +148,7 @@ use_flag_pthread=yes
 use_flag_posix_pthread=no
 
 OSX="f"
+SIGNED_EXE="f"
 MINGW="f"
 CONFIGURE_RACKET_SO_COMPILE=""
 COMPRESS_COMP=""
@@ -319,6 +320,7 @@ case "$host_os" in
     MACH_OS=osx
     LIBS="${LIBS} -framework CoreFoundation"
     LDFLAGS="${LDFLAGS} -Wl,-headerpad_max_install_names"
+    SIGNED_EXE="t"
     if test "${enable_xonx}" = "no" ; then
       OSX="t"
     else
@@ -449,11 +451,11 @@ elif test "$MACH" = "" -o "$MACH_OS" = "" ; then
    exit 1
 fi
 
-# For a pb build where Racket is supplied and MACH was not originally
+# For a pb build where Racket is supplied as "auto" and MACH was not originally
 # empty, force cross-build mode on the assumption that the host is not
 # a pb build (because it should be created with default configure options)
 if test "${enable_pb}" = "yes" ; then
-  if test "${enable_racket}" != "" ; then
+  if test "${enable_racket}" = "auto" ; then
     if test "${enable_target}" = "" ; then
       if test "${default_mach_was_empty}" = "no" ; then
         enable_target="${MACH}"
@@ -879,6 +881,7 @@ AC_SUBST(KERNEL_TARGET_MACH)
 AC_SUBST(CROSS_MODE)
 AC_SUBST(SETUP_BOOT_MODE)
 AC_SUBST(OSX)
+AC_SUBST(SIGNED_EXE)
 AC_SUBST(MINGW)
 AC_SUBST(Z_LIB)
 AC_SUBST(LZ4_LIB)

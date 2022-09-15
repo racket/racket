@@ -125,6 +125,8 @@ FRAMEWORK_REL_INSTALL = @FRAMEWORK_REL_INSTALL@
 # Supplies the path for install, using "${libpltdir}" for relative
 # or an absolute path otherwise
 FRAMEWORK_INSTALL_DIR = @FRAMEWORK_INSTALL_DIR@
+# Whether to sign executables (ad hoc) for Mac OS ("t" or "f")
+SIGNED_EXE=@SIGNED_EXE@
 
 # This might be set to a directory that narrows installation actions
 # to just the main collects (no packages), for example; when non-empty

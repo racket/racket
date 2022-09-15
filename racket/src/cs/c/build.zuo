@@ -23,7 +23,7 @@
   (define host-m (lookup 'MACH))
   (define m (hash-ref config 'TARGET_MACH host-m))
 
-  (define macx? (glob-match? "*osx" m)) ; maybe xonx
+  (define signed-exe? (equal? (lookup 'SIGNED_EXE) "t"))
   (define mac? (equal? (lookup 'OSX) "t"))
   (define mac-fw? (and mac?
                        (equal? (lookup 'MACLIBRKT_LINK_MODE) "fw")))
@@ -291,10 +291,10 @@
     (apply bootstrap-racket args))
 
   (define (strip-signature dest)
-    (when macx?
+    (when signed-exe?
       (strip-signature* cross? bootstrap-racket dest)))
   (define (restore-signature dest)
-    (when macx?
+    (when signed-exe?
       (restore-signature* cross? bootstrap-racket dest)))
 
   (define (install_name_tool . args)
