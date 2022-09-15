@@ -1,5 +1,6 @@
 #lang racket/base
 (require '#%paramz
+         racket/private/choose-file-to-load
          "../eval/collection.rkt"
          "../syntax/api.rkt"
          "../eval/main.rkt"
@@ -118,41 +119,6 @@
                  (default-continuation-prompt-tag)
                  (lambda args
                    (apply abort-current-continuation (default-continuation-prompt-tag) args))))))))])))
-
-(define version-bytes (string->bytes/utf-8 (version)))
-(define version-length (bytes-length version-bytes))
-(define vm-bytes (string->bytes/utf-8 (symbol->string (system-type 'vm))))
-(define vm-length (bytes-length vm-bytes))
-
-(define (linklet-bundle-or-directory-start i tag)
-  (define version-length (string-length (version)))
-  (define vm-length (string-length (symbol->string (system-type 'vm))))
-  (and (equal? (peek-byte i) (char->integer #\#))
-       (equal? (peek-byte i 1) (char->integer #\~))
-       (equal? (peek-byte i 2) version-length)
-       (equal? (peek-bytes version-length 3 i) version-bytes)
-       (equal? (peek-byte i (+ 3 version-length)) vm-length)
-       (equal? (peek-bytes vm-length (+ 4 version-length) i) vm-bytes)
-       (equal? (peek-byte i (+ 4 version-length vm-length)) (char->integer tag))
-       (+ version-length
-          vm-length
-          ;; "#~" and tag and version length byte and vm length byte:
-          5)))
-
-(define (linklet-directory-start i)
-  (define pos (linklet-bundle-or-directory-start i #\D))
-  (and pos (+ pos
-              ;; Bundle count:
-              4)))
-
-(define (linklet-bundle-hash-code i)
-  (define pos (linklet-bundle-or-directory-start i #\B))
-  (define hash-code (and pos (peek-bytes 20 pos i)))
-  (and (bytes? hash-code)
-       (= 20 (bytes-length hash-code))
-       (for/or ([c (in-bytes hash-code)])
-         (not (eq? c 0)))
-       hash-code))
 
 (define (cached-bundle i)
   (cond

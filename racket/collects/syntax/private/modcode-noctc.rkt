@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/list
          racket/path
+         racket/private/choose-file-to-load
          "../modread.rkt")
 
 (provide moddep-current-open-input-file
@@ -91,6 +92,15 @@
            (and (file-exists? p) p))
          (apply build-path (reroot-path* base (car roots)) args))]))
 
+(define (get-metadata-path/multiple-sub-paths #:roots roots path0-base sub-paths . args)
+  (define candidates
+    (for/list ([sub-path (in-list (if (list? sub-paths) sub-paths (list sub-paths)))])
+      (apply get-metadata-path #:roots roots path0-base sub-path args)))
+  (or (for/first ([candidate (in-list candidates)]
+                  #:when (file-exists? candidate))
+        candidate)
+      (car candidates)))
+
 (define (default-compiled-sub-path)
   (let ([l (use-compiled-file-paths)])
     (if (pair? l)
@@ -98,121 +108,44 @@
         "compiled")))
 
 (define (get-module-path
-          path0-str
-          #:roots [root-strs (current-compiled-file-roots)]
-          #:submodule? [submodule? #f]
-          #:sub-path [sub-path/kw (default-compiled-sub-path)]
-          [sub-path sub-path/kw]
-          #:choose [choose (lambda (src zo so) #f)]
-          #:rkt-try-ss? [rkt-try-ss? #t])
-  (define path0 (path-string->path path0-str))
-  (define roots (root-strs->roots root-strs))
-  (define resolved-path (resolve path0))
-  (define-values (path0-rel path0-file path0-dir?) (split-path path0))
-  (define-values (main-src-file alt-src-file)
-    (if rkt-try-ss?
-        (let* ([b (path->bytes path0-file)]
-               [len (bytes-length b)])
-          (cond
-            [(and (len . >= . 4) (bytes=? #".rkt" (subbytes b (- len 4))))
-             ;; .rkt => try .rkt then .ss
-             (values path0-file
-                     (bytes->path (bytes-append (subbytes b 0 (- len 4))
-                                                #".ss")))]
-            [else
-             ;; No search path
-             (values path0-file #f)]))
-      (values path0-file #f)))
-  (define main-src-path
-    (if (eq? main-src-file path0-file)
-        resolved-path
-        (build-path path0-rel main-src-file)))
-  (define alt-src-path
-    (and alt-src-file
-         (if (eq? alt-src-file path0-file)
-             resolved-path
-             (build-path path0-rel alt-src-file))))
-  (define path0-base (if (eq? path0-rel 'relative) 'same path0-rel))
-  (define main-src-date
-    (file-or-directory-modify-seconds main-src-path #f (lambda () #f)))
-  (define alt-src-date
-    (and alt-src-path
-         (not main-src-date)
-         (file-or-directory-modify-seconds alt-src-path #f (lambda () #f))))
-  (define src-date (or main-src-date alt-src-date))
-  (define src-file (if alt-src-date alt-src-file main-src-file))
-  (define src-path (if alt-src-date alt-src-path main-src-path))
-  (define try-alt? (and alt-src-file (not alt-src-date) (not main-src-date)))
-  (define (get-so file)
-    (get-metadata-path #:roots roots
-                       path0-base
-                       sub-path
-                       "native"
-                       (system-library-subpath)
-                       (path-add-extension file (system-type 'so-suffix))))
-  (define zo
-    (get-metadata-path #:roots roots
-                       path0-base
-                       sub-path
-                       (path-add-extension src-file #".zo")))
-  (define alt-zo
-    (and try-alt?
-         (get-metadata-path #:roots roots
-                            path0-base
-                            sub-path
-                            (path-add-extension alt-src-file #".zo"))))
-  (define so (get-so src-file))
-  (define alt-so (and try-alt? (get-so alt-src-file)))
-  (define prefer (choose src-path zo so))
-  (cond
-    ;; Use .zo, if it's new enough
-    [(or (eq? prefer 'zo)
-         (and (not prefer)
-              (pair? roots)
-              (or (date>=? zo src-date)
-                  (and try-alt?
-                       (date>=? alt-zo src-date)))))
-     (let ([zo (if (date>=? zo src-date)
-                   zo
-                   (if (and try-alt? (date>=? alt-zo src-date))
-                       alt-zo
-                       zo))])
-       (values (simple-form-path zo) 'zo))]
-    ;; Maybe there's an .so? Use it only if we don't prefer source
-    ;; and only if there's no submodule path.
-    [(and (not submodule?)
-          (or (eq? prefer 'so)
-              (and (not prefer)
-                   (pair? roots)
-                   (or (date>=? so src-date)
-                       (and try-alt?
-                            (date>=? alt-so src-date))))))
-     (let ([so (if (date>=? so src-date)
-                   so
-                   (if (and try-alt? (date>=? alt-so src-date))
-                       alt-so
-                       so))])
-       (values (simple-form-path so) 'so))]
-    ;; Use source if it exists
-    [(or (eq? prefer 'src) src-date)
-     (values (simple-form-path src-path) 'src)]
-    ;; Report a not-there error
-    [else (raise (make-exn:get-module-code
-                   (format "get-module-code: no such file: ~e" resolved-path)
-                   (current-continuation-marks)
-                   #f))]))
+         path0-str
+         #:roots [root-strs (current-compiled-file-roots)]
+         #:submodule? [submodule? #f]
+         #:sub-path [sub-path/kw (use-compiled-file-paths)]
+         [_sub-paths sub-path/kw]
+         #:choose [choose #f]
+         #:rkt-try-ss? [rkt-try-ss? #t])
+  (define-values (the-module-declare-source file-type the-path)
+    (choose-file-to-load path0-str
+                         #f
+                         (not submodule?)
+                         rkt-try-ss?
+                         choose
+                         root-strs
+                         (if (list? sub-path/kw)
+                             sub-path/kw
+                             (list sub-path/kw))))
+  (unless the-path
+    (raise (make-exn:get-module-code
+            (format "get-module-code: no such file: ~e" path0-str)
+            (current-continuation-marks)
+            #f)))
+  (values (if (string? the-path)
+              (string->path the-path)
+              the-path)
+          file-type))
 
 (define (get-module-code
           path0-str
           #:roots [root-strs (current-compiled-file-roots)]
           #:submodule-path [submodule-path '()]
-          #:sub-path [sub-path/kw (default-compiled-sub-path)]
+          #:sub-path [sub-path/kw (use-compiled-file-paths)]
           [sub-path sub-path/kw]
           #:compile [compile/kw compile]
           [compiler compile/kw]
           #:extension-handler [ext-handler/kw #f]
           [ext-handler ext-handler/kw] 
-          #:choose [choose (lambda (src zo so) #f)]
+          #:choose [choose #f]
           #:notify [notify void]
           #:source-reader [read-src-syntax read-syntax]
           #:rkt-try-ss? [rkt-try-ss? #t])
@@ -220,12 +153,12 @@
   (define roots (root-strs->roots root-strs))
   (define-values (path type)
     (get-module-path
-      path0
-      #:roots roots
-      #:submodule? (pair? submodule-path)
-      #:sub-path sub-path
-      #:choose choose
-      #:rkt-try-ss? rkt-try-ss?))
+     path0
+     #:roots roots
+     #:submodule? (pair? submodule-path)
+     #:sub-path sub-path
+     #:choose choose
+     #:rkt-try-ss? rkt-try-ss?))
   (define (extract-submodule m [sm-path submodule-path])
     (cond
       [(null? sm-path) m]

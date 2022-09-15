@@ -1,6 +1,7 @@
 #lang racket/base
 (require '#%paramz
          racket/private/place-local
+         racket/private/choose-file-to-load
          "../eval/collection.rkt"
          "../syntax/api.rkt"
          "../syntax/error.rkt"
@@ -25,33 +26,8 @@
 
          boot-primitives)
 
-(define-values (dll-suffix)
-  (system-type 'so-suffix))
-
 (define default-load/use-compiled
-  (let* ([resolve (lambda (s)
-                    (if (complete-path? s)
-                        s
-                        (let ([d (current-load-relative-directory)])
-                          (if d (path->complete-path s d) s))))]
-         [date-of-1 (lambda (a)
-                      (let ([v (file-or-directory-modify-seconds a #f (lambda () #f))])
-                        (and v (cons a v))))]
-         [date-of (lambda (a modes roots)
-                    (ormap (lambda (root-dir)
-                             (ormap
-                              (lambda (compiled-dir)
-                                (let ([a (a root-dir compiled-dir)])
-                                  (date-of-1 a)))
-                              modes))
-                           roots))]
-         [date>=?
-          (lambda (modes roots a bm)
-            (and a
-                 (let ([am (date-of a modes roots)])
-                   (or (and (not bm) am) 
-                       (and am bm (>= (cdr am) (cdr bm)) am)))))]
-         [with-dir* (lambda (base t) 
+  (let* ([with-dir* (lambda (base t)
                       (parameterize ([current-load-relative-directory 
                                       (if (path? base) 
                                           base 
@@ -76,111 +52,27 @@
           (parameterize ([current-module-declare-source (cadr use-path/src)])
             (with-dir* (caddr use-path/src)
               (lambda () ((current-load) (car use-path/src) expect-module))))
-          ;; Check .zo vs. src dates, etc.:
-          (let*-values ([(orig-path) (resolve path)]
-                        [(base orig-file dir?) (split-path path)]
-                        [(file alt-file) (if expect-module
-                                             (let* ([b (path->bytes orig-file)]
-                                                    [len (bytes-length b)])
-                                               (cond
-                                                [(and (len . >= . 4)
-                                                      (bytes=? #".rkt" (subbytes b (- len 4))))
-                                                 ;; .rkt => try .rkt then .ss
-                                                 (values orig-file
-                                                         (bytes->path (bytes-append (subbytes b 0 (- len 4)) #".ss")))]
-                                                [else
-                                                 ;; No search path
-                                                 (values orig-file #f)]))
-                                             (values orig-file #f))]
-                        [(path) (if (eq? file orig-file)
-                                    orig-path
-                                    (build-path base file))]
-                        [(alt-path) (and alt-file
-                                         (if (eq? alt-file orig-file)
-                                             orig-path
-                                             (build-path base alt-file)))]
-                        [(base) (if (eq? base 'relative) 'same base)]
-                        [(modes) (use-compiled-file-paths)]
-                        [(roots) (current-compiled-file-roots)]
-                        [(reroot) (lambda (p d)
-                                    (cond
-                                     [(eq? d 'same) p]
-                                     [(relative-path? d) (build-path p d)]
-                                     [else (reroot-path p d)]))])
-            (let* ([main-path-d (date-of-1 path)]
-                   [alt-path-d (and alt-path 
-                                    (not main-path-d)
-                                    (date-of-1 alt-path))]
-                   [path-d (or main-path-d alt-path-d)]
-                   [get-so (lambda (file rep-sfx?)
-                             (and (eq? 'racket (system-type 'vm))
-                                  (lambda (root-dir compiled-dir)
-                                    (build-path (reroot base root-dir)
-                                                compiled-dir
-                                                "native"
-                                                (system-library-subpath)
-                                                (if rep-sfx?
-                                                    (path-add-extension
-                                                     file
-                                                     dll-suffix)
-                                                    file)))))]
-                   [zo (lambda (root-dir compiled-dir)
-                         (build-path (reroot base root-dir)
-                                     compiled-dir
-                                     (path-add-extension file #".zo")))]
-                   [alt-zo (lambda (root-dir compiled-dir)
-                             (build-path (reroot base root-dir)
-                                         compiled-dir
-                                         (path-add-extension alt-file #".zo")))]
-                   [so (get-so file #t)]
-                   [alt-so (get-so alt-file #t)]
-                   [try-main? (or main-path-d (not alt-path-d))]
-                   [try-alt? (and alt-file (or alt-path-d (not main-path-d)))]
-                   [with-dir (lambda (t) (with-dir* base t))])
-              (cond
-               [(and so
-                     try-main?
-                     (date>=? modes roots so path-d))
-                => (lambda (so-d)
-                     (parameterize ([current-module-declare-source #f])
-                       (with-dir (lambda () ((current-load-extension) (car so-d) expect-module)))))]
-               [(and alt-so
-                     try-alt?
-                     (date>=? modes roots alt-so alt-path-d))
-                => (lambda (so-d)
-                     (parameterize ([current-module-declare-source alt-path])
-                       (with-dir (lambda () ((current-load-extension) (car so-d) expect-module)))))]
-               [(and try-main?
-                     (date>=? modes roots zo path-d))
-                => (lambda (zo-d)
-                     (register-zo-path name ns-hts (car zo-d) #f base)
-                     (parameterize ([current-module-declare-source #f])
-                       (with-dir (lambda () ((current-load) (car zo-d) expect-module)))))]
-               [(and try-alt?
-                     (date>=? modes roots alt-zo path-d))
-                => (lambda (zo-d)
-                     (register-zo-path name ns-hts (car zo-d) alt-path base)
-                     (parameterize ([current-module-declare-source alt-path])
-                       (with-dir (lambda () ((current-load) (car zo-d) expect-module)))))]
-               [(or (not (pair? expect-module))
-                    (car expect-module)
-                    (is-compiled-file? (if try-main? path alt-path)))
-                (let ([p (if try-main? path alt-path)])
-                  ;; "quiet" failure when asking for a submodule:
-                  (unless (and (pair? expect-module)
-                               (not (file-exists? p)))
-                    (parameterize ([current-module-declare-source (and expect-module 
-                                                                       (not try-main?)
-                                                                       p)])
-                      (with-dir (lambda () ((current-load) p expect-module))))))])))))))
+          (let-values ([(the-module-declare-source file-type the-path)
+                        (choose-file-to-load path expect-module #t expect-module
+                                             #f
+                                             (current-compiled-file-roots)
+                                             (use-compiled-file-paths))])
+            (when the-path
+              (define-values (_base orig-file dir?) (split-path path))
+              (define base (if (eq? _base 'relative) 'same _base))
+              (when (equal? file-type 'zo)
+                (register-zo-path name ns-hts the-path the-module-declare-source base))
+              (parameterize ([current-module-declare-source the-module-declare-source])
+                (with-dir* base
+                  (lambda () ((if (equal? file-type 'so)
+                                  (current-load-extension)
+                                  (current-load))
+                              the-path
+                              expect-module))))))))))
 
 (define (register-zo-path name ns-hts path src-path base)
   (when ns-hts
     (hash-set! (cdr ns-hts) name (list path src-path base))))
-
-(define (is-compiled-file? p)
-  (and (file-exists? p)
-       (call-with-input-file* p linklet-directory-start)))
 
 (define (default-reader-guard path)
   path)
