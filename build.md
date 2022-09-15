@@ -944,7 +944,7 @@ layers.
 For more information about modifying Chez Scheme, see
 `"racket/src/cs/README.txt"`. As explained there, you can create new
 boot files in `"racket/src/ChezScheme/boot/pb"` or platform-specific
-boot files using even a relatively old version of Racket.
+boot files using even a relatively old version of Chez Scheme or Racket.
 
 For information about modifying the macro expander for Racket CS and/or
 BC, see `"racket/src/expander/README.txt"`. Building the expander may
