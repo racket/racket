@@ -27,13 +27,15 @@ typedef char *self_exe_t;
 # include <unistd.h>
 static char *get_self_path(char *exec_file)
 {
-  char buf[256], *s = buf;
-  ssize_t len, blen = sizeof(buf);
+  char *s;
+  ssize_t len, blen = 256;
+
+  s = malloc(blen);
 
   while (1) {
     len = readlink("/proc/self/exe", s, blen-1);
     if (len == (blen-1)) {
-      if (s != buf) free(s);
+      free(s);
       blen *= 2;
       s = malloc(blen);
     } else if (len < 0) {
@@ -43,10 +45,7 @@ static char *get_self_path(char *exec_file)
       break;
   }
   s[len] = 0;
-  if (s == buf)
-    return strdup(buf);
-  else
-    return s;
+  return s;
 }
 # undef USE_GENERIC_GET_SELF_PATH
 #endif
