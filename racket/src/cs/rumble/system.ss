@@ -46,7 +46,8 @@
     [(a6nt ta6nt i3nt ti3nt arm64nt tarm64nt) 'windows]
     [(a6le ta6le i3le ti3le
            arm32le tarm32le arm64le tarm64le
-           ppc32le tppc32le)
+           ppc32le tppc32le
+           rv64le trv64le)
      'linux]
     [(i3gnu ti3gnu)
      'gnu-hurd]
@@ -108,6 +109,8 @@
               ppc32ob tppc32ob
               ppc32nb tppc32nb)
      'ppc]
+    [(rv64le trv64le)
+     'riscv64]
     [(pb tpb
          pb64l tpb64l pb64b tpb64b
          pb32l tpb32l pb32b tpb32b)
