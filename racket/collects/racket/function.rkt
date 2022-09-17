@@ -17,20 +17,22 @@
 (define global (λ (c) (thunk c)))
 
 (define global*
-  (case-lambda
-    [()    (thunk (values))]
-    [(c)   (thunk c)]
-    [(c d) (thunk (values c d))]
-    [c*    (thunk (apply values c*))]))
+  (let ([global* (thunk (values))])
+    (case-lambda
+      [()    global*]
+      [(c)   (thunk c)]
+      [(c d) (thunk (values c d))]
+      [c*    (thunk (apply values c*))])))
 
 (define const (λ (c) (thunk* c)))
 
 (define const*
-  (case-lambda
-    [()    (thunk* (values))]
-    [(c)   (thunk* c)]
-    [(c d) (thunk* (values c d))]
-    [c*    (thunk* (apply values c*))]))
+  (let ([const* (thunk* (values))])
+    (case-lambda
+      [()    const*]
+      [(c)   (thunk* c)]
+      [(c d) (thunk* (values c d))]
+      [c*    (thunk* (apply values c*))])))
 
 (define-syntax (thunk stx)
   (syntax-case stx ()

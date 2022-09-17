@@ -653,7 +653,7 @@ Returns a procedure that accepts no arguments and returns @racket[v].
 ((global 'foo))
 ]
 
-@history[#:added "8.6.0.10"]}
+@history[#:added "8.6.0.12"]}
 
 @defproc[(global* [v any/c] ...) procedure?]{
 
@@ -665,7 +665,7 @@ Similar to @racket[global], except it returns @racket[v]s.
 ((global* 'foo 'foo))
 ]
 
-@history[#:added "8.6.0.10"]}
+@history[#:added "8.6.0.12"]}
 
 @defproc[(const [v any/c]) procedure?]{
 
@@ -694,7 +694,7 @@ Similar to @racket[const], except it returns @racket[v]s.
 ((const* 'foo 'foo) 'a 'b #:c 'c)
 ]
 
-@history[#:added "8.6.0.10"]}
+@history[#:added "8.6.0.12"]}
 
 @deftogether[(@defform[(thunk  body ...+)]
               @defform[(thunk* body ...+)])]{
