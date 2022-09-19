@@ -4,7 +4,6 @@
          racket/list racket/private/arity)
 
 (provide identity
-         global  global*
          const   const*
          thunk   thunk*
          curry   curryr
@@ -13,16 +12,6 @@
          (all-from-out racket/private/arity))
 
 (define (identity x) x)
-
-(define global (λ (c) (thunk c)))
-
-(define global*
-  (let ([global* (thunk (values))])
-    (case-lambda
-      [()    global*]
-      [(c)   (thunk c)]
-      [(c d) (thunk (values c d))]
-      [c*    (thunk (apply values c*))])))
 
 (define const (λ (c) (thunk* c)))
 

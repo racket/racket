@@ -212,16 +212,6 @@
   (err/rt-test (identity 1 2))
   (err/rt-test (identity)))
 
-;; ---------- global ----------
-(let ()
-  (test 'foo (global 'foo))
-  (test 'foo (global 'foo))
-  (test 'foo (global 'foo))
-  (test #t eq? (global*) (global*))
-  (test 'foo (global* 'foo))
-  (test 'foo (global* 'foo))
-  (test 'foo (global* 'foo)))
-
 ;; ---------- const ----------
 (let ()
   (test 'foo (const 'foo))
