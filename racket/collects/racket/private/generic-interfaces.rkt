@@ -48,7 +48,8 @@
                        ;; Bound identifiers used for implementations:
                        (list (quote-syntax equal-proc-impl)
                              (quote-syntax hash-proc-impl)
-                             (quote-syntax hash2-proc-impl))))
+                             (quote-syntax hash2-proc-impl))
+                       (list #t #t #t)))
 
   (define-values (prop:gen:equal-mode+hash equal-mode+hash? gen:equal-mode+hash-acc)
     (make-struct-type-property
@@ -84,7 +85,8 @@
                              (quote-syntax hash-mode-proc))
                        ;; Bound identifiers used for implementations:
                        (list (quote-syntax equal-mode-proc-impl)
-                             (quote-syntax hash-mode-proc-impl) )))
+                             (quote-syntax hash-mode-proc-impl) )
+                       (list #t #t)))
 
   (define-values (prop:gen:custom-write gen:custom-write? gen:custom-write-acc)
     (make-struct-type-property
@@ -114,6 +116,7 @@
                        (quote-syntax gen:custom-write?)
                        (quote-syntax gen:custom-write-acc)
                        (list (quote-syntax write-proc))
-                       (list (quote-syntax write-proc-impl))))
+                       (list (quote-syntax write-proc-impl))
+                       (list #t)))
 
   )
