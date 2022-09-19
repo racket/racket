@@ -22,7 +22,8 @@ a structure type are defined using the @racket[#:methods] keyword
                 (code:line #:fallbacks [fallback-impl ...])
                 (code:line #:defined-predicate defined-pred-id)
                 (code:line #:defined-table defined-table-id)
-                (code:line #:derive-property prop-expr prop-value-expr)]
+                (code:line #:derive-property prop-expr prop-value-expr)
+                (code:line #:requires [required-method-id ...])]
                [kw-formals* (arg* ...)
                             (arg* ...+ . rest-id)
                             rest-id]
@@ -109,6 +110,11 @@ automatically implement this structure type property using the provided values.
 When @racket[prop-value-expr] is executed, each @racket[method-id] is bound to
 its specific implementation for the @tech{structure type}.
 
+The @racket[#:requires] option may be provided at most once.
+When it is provided, any instance of the generic interface
+@emph{must} supply an implementation of the specified @racket[required-method-id]s.
+Otherwise, a compile-time error is raised.
+
 If a value @racket[v] satisfies @racket[id]@racketidfont{?}, then @racket[v] is
 a @deftech{generic instance} of @racketidfont{gen:}@racket[id].
 
@@ -122,6 +128,9 @@ If @racket[method-id] is not an implemented generic method of a generic
 instance @racket[v], and @racket[method-id] has a fallback implementation that
 does not raise an @racket[exn:fail:support] exception when given @racket[v],
 then @racket[method-id] is a @deftech{supported generic method} of @racket[v].
+
+@history[#:changed "8.7.0.5"
+         @elem{Added the @racket[#:requires] option.}]
 
 }
 

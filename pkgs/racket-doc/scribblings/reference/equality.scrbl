@@ -389,7 +389,12 @@ indexing and comparison operations, especially in the implementation of
 
    (equal? eastern-farm western-farm)
    (equal? eastern-farm northern-farm)
-   (equal? western-farm southern-farm))}
+   (equal? western-farm southern-farm))
+
+ @history[#:changed "8.7.0.5"
+          @elem{Added a check so that omitting any of
+                @racket[_equal-proc], @racket[_hash-proc], and @racket[_hash2-proc]
+                is now a syntax error.}]}
 
 
 @defthing[gen:equal-mode+hash any/c]{
@@ -447,7 +452,11 @@ indexing and comparison operations, especially in the implementation of
    (eval:check (equal-always? gsx gsy) #f)
    (eval:check (equal-always? gsx gsx) #t))
 
-@history[#:added "8.5.0.3"]}
+@history[#:added "8.5.0.3"
+         #:changed "8.7.0.5"
+         @elem{Added a check so that omitting either
+               @racket[_equal-mode-proc] or @racket[_hash-mode-proc]
+               is now a syntax error.}]}
 
 
 @defthing[prop:equal+hash struct-type-property?]{

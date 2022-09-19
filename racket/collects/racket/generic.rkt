@@ -101,6 +101,12 @@
                               (hash-ref options 'derived '()))))]
       [(#:derive-property . other)
        (wrong-syntax (stx-car stx) "invalid #:derive-property specification")]
+      [(#:requires [required-meth ...] . args)
+       (if (hash-ref options 'requires #f)
+           (wrong-syntax (stx-car stx) "duplicate #:requires specification")
+           (parse #'args (hash-set options 'requires #'[required-meth ...])))]
+      [(#:requires . other)
+       (wrong-syntax (stx-car stx) "invalid #:requires specification")]
       [(kw . args)
        (keyword? (syntax-e #'kw))
        (wrong-syntax #'kw "invalid keyword argument")]
@@ -120,7 +126,8 @@
                   (hash-ref options 'fast-defaults '())
                   (hash-ref options 'defaults '())
                   (hash-ref options 'fallbacks '())
-                  (hash-ref options 'derived '()))]
+                  (hash-ref options 'derived '())
+                  (hash-ref options 'requires '()))]
       [other
        (wrong-syntax #'other
                      "expected a list of arguments with no dotted tail")])))
@@ -132,12 +139,13 @@
        (unless (identifier? #'name)
          (wrong-syntax #'name "expected an identifier"))
        (define-values
-         (methods support table fasts defaults fallbacks derived)
+         (methods support table fasts defaults fallbacks derived requires)
          (parse #'rest))
        (define/with-syntax [fast-default ...] fasts)
        (define/with-syntax [default ...] defaults)
        (define/with-syntax [fallback ...] fallbacks)
        (define/with-syntax [derive ...] derived)
+       (define/with-syntax [required-meth ...] requires)
        (define/with-syntax [method ...] methods)
        (define/with-syntax [method-name ...] (map stx-car methods))
        (define/with-syntax [method-index ...]
@@ -166,6 +174,7 @@
              #:defaults [default ...]
              #:fallbacks [fallback ...]
              #:derive-properties [derive ...]
+             #:requires [required-meth ...]
              method ...)
            table-defn
            (define-generics-contract ctc-name gen-name)))]))

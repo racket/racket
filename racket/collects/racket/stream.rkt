@@ -65,7 +65,8 @@
                            (quote-syntax stream-rest))
                      (list (quote-syntax stream-empty?)
                            (quote-syntax stream-first)
-                           (quote-syntax stream-rest))))
+                           (quote-syntax stream-rest))
+                     (list #t #t #t)))
 
 (define-match-expander stream
   (syntax-rules ()
