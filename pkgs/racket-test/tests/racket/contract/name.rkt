@@ -25,6 +25,9 @@
   (test-name 'any/c any/c)
 
   (test-name '(or/c) (or/c))
+  (test-name '(or/c) (or/c none/c))
+  (test-name '(or/c) (or/c (or/c)))
+  (test-name '(or/c) (or/c (first-or/c)))
   (test-name '(or/c integer? gt0?) (or/c integer? (let ([gt0? (lambda (x) (> x 0))]) gt0?)))
   (test-name '(or/c integer? boolean?)
              (or/c (flat-contract integer?)
@@ -35,7 +38,11 @@
              (or/c boolean? (-> (>=/c 5) (>=/c 5))))
   (test-name 'boolean? (or/c #f #t))
   (test-name 'boolean? (or/c #t #f))
+  (test-name 'boolean? (or/c (or/c) #t #f))
+  (test-name 'boolean? (or/c #t (or/c) #f))
+  (test-name 'boolean? (or/c #t #f (or/c)))
   (test-name '(or/c #t #f 'x) (or/c #t #f 'x))
+  (test-name '(or/c #t #f 'x) (or/c #t #f (or/c) 'x))
   (test-name '(or/c any/c #f) (or/c any/c #f))
   (test-name '(or/c #f any/c) (or/c #f any/c))
 
@@ -45,6 +52,9 @@
              (if/c integer? odd? boolean?))
   
   (test-name '(first-or/c) (first-or/c))
+  (test-name '(first-or/c) (first-or/c none/c))
+  (test-name '(first-or/c) (first-or/c (first-or/c)))
+  (test-name '(first-or/c) (first-or/c (or/c)))
   (test-name '(first-or/c integer? gt0?) (first-or/c integer? (let ([gt0? (lambda (x) (> x 0))]) gt0?)))
   (test-name '(first-or/c integer? boolean?)
              (first-or/c (flat-contract integer?)
@@ -53,6 +63,10 @@
              (first-or/c (-> (>=/c 5) (>=/c 5)) boolean?))
   (test-name '(first-or/c boolean? (-> (>=/c 5) (>=/c 5)))
              (first-or/c boolean? (-> (>=/c 5) (>=/c 5))))
+  (test-name '(first-or/c #t #f 'x) (first-or/c #t #f 'x))
+  (test-name '(first-or/c #t #f 'x) (first-or/c #t #f (first-or/c) 'x))
+  (test-name '(first-or/c any/c #f) (first-or/c any/c #f))
+  (test-name '(first-or/c #f any/c) (first-or/c #f any/c))
   
   (test-name 'mumble (let ([frotz/c integer?]
                            [bazzle/c boolean?])
@@ -230,8 +244,9 @@
                     (-> (<=/c 5) (<=/c 5) (<=/c 5))))
 
   (test-name 'any/c (and/c))
-  (test-name '(and/c any/c) (and/c any/c))
-  (test-name '(and/c any/c any/c) (and/c any/c any/c))
+  (test-name 'any/c (and/c any/c))
+  (test-name 'any/c (and/c any/c any/c))
+  (test-name '(and/c number? integer?) (and/c number? (and/c) integer?))
   (test-name '(and/c number? integer?) (and/c number? integer?))
   (test-name '(and/c number? integer?) (and/c (flat-contract number?)
                                               (flat-contract integer?)))

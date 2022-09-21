@@ -145,13 +145,14 @@
        #:chaperone chaperone?
        #:no-negative-blame? no-negative-blame
        #:name (or name-from-hos
-                  (if (= (length names) 1)
-                      (car names)
-                      #`(let ([names (list #,@names)])
-                          (if (or (equal? names '(#f #t))
-                                  (equal? names '(#t #f)))
-                              'boolean?
-                              (cons 'or/c names))))))))
+                  #`(let ([names (remove* '(none/c (or/c) (first-or/c)) (list #,@names))])
+                      (case (length names)
+                        [(0) '(or/c)]
+                        [(1) (car names)]
+                        [else
+                         (case names
+                           [((#t #f) (#f #t)) 'boolean?]
+                           [else `(or/c . ,names)])]))))))
   
   (syntax-case stx (or/c)
     [(or/c p ...)

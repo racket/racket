@@ -14,65 +14,71 @@
                      [_flat-murec-contract flat-murec-contract]))
 
 (define/subexpression-pos-prop/name or/c-name or/c
-  (case-lambda 
-    [() (make-none/c '(or/c))]
-    [(x) (coerce-contract 'or/c x)]
-    [raw-args
-     (define args (coerce-contracts 'or/c raw-args))
-     (define-values (ho-contracts flat-contracts)
-       (let loop ([ho-contracts '()]
-                  [flat-contracts '()]
-                  [args args])
-         (cond
-           [(null? args) (values (reverse ho-contracts) (reverse flat-contracts))]
-           [else 
-            (let ([arg (car args)])
-              (cond
-                [(flat-contract? arg)
-                 (loop ho-contracts (cons arg flat-contracts) (cdr args))]
-                [else
-                 (loop (cons arg ho-contracts) flat-contracts (cdr args))]))])))
-     (define pred (make-flat-predicate flat-contracts))
-     (define the-or/c
-       (cond
-         [(null? ho-contracts)
-          (cond
-            [(and (pair? flat-contracts)
-                  (pair? (cdr flat-contracts))
-                  (null? (cddr flat-contracts))
-                  (or (and (equal? false/c-contract (car flat-contracts))
-                           (equal? true/c-contract (cadr flat-contracts)))
-                      (and (equal? false/c-contract (cadr flat-contracts))
-                           (equal? true/c-contract (car flat-contracts)))))
-             (coerce-contract 'or/c boolean?)]
-            [else
-             (make-flat-or/c pred flat-contracts)])]
-         [(null? (cdr ho-contracts))
-          (define name (apply build-compound-type-name 'or/c args))
-          (if (chaperone-contract? (car ho-contracts))
-              (make-chaperone-single-or/c name pred flat-contracts (car ho-contracts))
-              (make-impersonator-single-or/c name pred flat-contracts (car ho-contracts)))]
-         [else
-          (define name (apply build-compound-type-name 'or/c args))
-          (if (andmap chaperone-contract? ho-contracts)
-              (make-chaperone-multi-or/c name flat-contracts ho-contracts)
-              (make-impersonator-multi-or/c name flat-contracts ho-contracts))]))
-     (cond
-       [(ormap prop:any/c? args) (named-any/c (contract-name the-or/c))]
-       [else the-or/c])]))
+  (let ([none? (make-none/c '(or/c))])
+    (case-lambda
+      [() none?]
+      [raw-arg*
+       (define raw-args (remq* (list none/c none? (first-or/c)) raw-arg*))
+       (case (length raw-args)
+         [(0) none?]
+         [(1) (coerce-contract 'or/c (car raw-args))]
+         [else 
+          (define args (coerce-contracts 'or/c raw-args))
+          (define-values (ho-contracts flat-contracts)
+            (let loop ([ho-contracts '()]
+                       [flat-contracts '()]
+                       [args args])
+              (if (null? args)
+                  (values (reverse ho-contracts) (reverse flat-contracts))
+                  (let ([arg (car args)])
+                    (if (flat-contract? arg)
+                        (loop ho-contracts (cons arg flat-contracts) (cdr args))
+                        (loop (cons arg ho-contracts) flat-contracts (cdr args)))))))
+          (define pred (make-flat-predicate flat-contracts))
+          (define the-or/c
+            (cond
+              [(null? ho-contracts)
+               (if (and (pair? flat-contracts)
+                        (pair? (cdr flat-contracts))
+                        (null? (cddr flat-contracts))
+                        (or (and (equal? false/c-contract (car flat-contracts))
+                                 (equal? true/c-contract (cadr flat-contracts)))
+                            (and (equal? false/c-contract (cadr flat-contracts))
+                                 (equal? true/c-contract (car flat-contracts)))))
+                   (coerce-contract 'or/c boolean?)
+                   (make-flat-or/c pred flat-contracts))]
+              [(null? (cdr ho-contracts))
+               (define name (apply build-compound-type-name 'or/c args))
+               (define ho-contract (car ho-contracts))
+               (if (chaperone-contract? ho-contract)
+                   (make-chaperone-single-or/c name pred flat-contracts ho-contract)
+                   (make-impersonator-single-or/c name pred flat-contracts ho-contract))]
+              [else
+               (define name (apply build-compound-type-name 'or/c args))
+               (if (andmap chaperone-contract? ho-contracts)
+                   (make-chaperone-multi-or/c name flat-contracts ho-contracts)
+                   (make-impersonator-multi-or/c name flat-contracts ho-contracts))]))
+          (if (ormap prop:any/c? args)
+              (named-any/c (contract-name the-or/c))
+              the-or/c)])])))
 
 (define/subexpression-pos-prop first-or/c
-  (case-lambda 
-    [() (make-none/c '(first-or/c))]
-    [(x) (coerce-contract 'first-or/c x)]
-    [raw-args
-     (define args (coerce-contracts 'first-or/c raw-args))
-     (cond
-       [(andmap flat-contract? args)
-        (make-flat-first-or/c (make-flat-predicate args) args)]
-       [(andmap chaperone-contract? args)
-        (make-chaperone-first-or/c args)]
-       [else (make-impersonator-first-or/c args)])]))
+  (let ([none? (make-none/c '(first-or/c))])
+    (case-lambda
+      [() none?]
+      [raw-arg*
+       (define raw-args (remq* (list none/c none? (or/c)) raw-arg*))
+       (case (length raw-args)
+         [(0) none?]
+         [(1) (coerce-contract 'first-or/c (car raw-args))]
+         [else
+          (define args (coerce-contracts 'first-or/c raw-args))
+          (cond
+            [(andmap flat-contract? args)
+             (make-flat-first-or/c (make-flat-predicate args) args)]
+            [(andmap chaperone-contract? args)
+             (make-chaperone-first-or/c args)]
+            [else (make-impersonator-first-or/c args)])])])))
 
 (define (make-flat-predicate flat-contracts)
   (cond

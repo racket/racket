@@ -190,101 +190,104 @@
      (identifier? #'x)
      #'and/c]))
 
-(define/subexpression-pos-prop/name real-and/c-name (and/c . raw-fs)
-  (let ([contracts (coerce-contracts 'and/c raw-fs)])
-    (cond
-      [(null? contracts) any/c]
-      [(andmap flat-contract? contracts)
-       (define preds (map flat-contract-predicate contracts))
-       (cond
-         [(and (pair? (cdr preds))
-               (null? (cddr preds)))
-          (cond
-            [(eq? (car preds) real?)
-             (define second-pred (cadr preds))
-             (cond
-               [(eq? second-pred negative?)
-                (renamed-<-ctc 0 `(and/c real? negative?))]
-               [(eq? second-pred positive?)
-                (renamed->-ctc 0 `(and/c real? positive?))]
-               [else
-                (define second-contract (cadr contracts))
-                (cond
-                  [(equal? (contract-name second-contract) '(not/c positive?))
-                   (renamed-between/c -inf.0 0 `(and/c real? (not/c positive?)))]
-                  [(equal? (contract-name second-contract) '(not/c negative?))
-                   (renamed-between/c 0 +inf.0 `(and/c real? (not/c negative?)))]
-                  [else
-                   (make-first-order-and/c contracts preds)])])]
-            [(or (eq? (car preds) exact-nonnegative-integer?)
-                 (eq? (car preds) natural?)
-                 (eq? (cadr preds) exact-nonnegative-integer?)
-                 (eq? (cadr preds) natural?))
-             (define other (if (procedure? (car preds)) (cadr contracts) (car contracts)))
-             (cond
-               [(between/c-s? other)
-                (define other-low (between/c-s-low other))
-                (define other-high (between/c-s-high other))
-                (integer-in (exact-ceiling (max 0 (if (= other-low -inf.0) 0 other-low)))
-                            (if (= other-high +inf.0) #f (exact-floor other-high)))]
-               [else (make-first-order-and/c contracts preds)])]
-            [(or (eq? (car preds) exact-positive-integer?)
-                 (eq? (cadr preds) exact-positive-integer?))
-             (define other (if (procedure? (car preds)) (cadr contracts) (car contracts)))
-             (cond
-               [(between/c-s? other)
-                (define other-low (between/c-s-low other))
-                (define other-high (between/c-s-high other))
-                (integer-in (exact-ceiling (max 1 (if (= other-low -inf.0) 1 other-low)))
-                            (if (= other-high +inf.0) #f (exact-floor other-high)))]
-               [else (make-first-order-and/c contracts preds)])]
-            [(or (eq? (car preds) exact-integer?)
-                 (eq? (cadr preds) exact-integer?))
-             (define other (if (procedure? (car preds)) (cadr contracts) (car contracts)))
-             (cond
-               [(between/c-s? other)
-                (define other-low (between/c-s-low other))
-                (define other-high (between/c-s-high other))
-                (integer-in (if (= other-low -inf.0) #f (exact-ceiling other-low))
-                            (if (= other-high +inf.0) #f (exact-floor other-high)))]
-               [else (make-first-order-and/c contracts preds)])]
-            [else
-             (make-first-order-and/c contracts preds)])]
-         [(and (pair? (cdr preds))
-               (pair? (cddr preds))
-               (null? (cdddr preds)))
-          (cond
-            [(or (eq? (car preds) exact-integer?)
-                 (eq? (cadr preds) exact-integer?)
-                 (eq? (caddr preds) exact-integer?))
-             (define lb #f)
-             (define ub #f)
-             (for ([ctc (in-list contracts)])
-               (cond
-                 [(between/c-s? ctc)
-                  (define lo (between/c-s-low ctc))
-                  (define hi (between/c-s-high ctc))
-                  (cond
-                    [(and (= lo -inf.0) (integer? hi))
-                     (set! ub (inexact->exact hi))]
-                    [(and (= hi +inf.0) (integer? lo))
-                     (set! lb (inexact->exact lo))])]
-                 [(</>-ctc? ctc)
-                  (define x (</>-ctc-x ctc))
-                  (when (integer? x)
-                    (cond
-                      [(<-ctc? ctc) (set! ub (- (inexact->exact x) 1))]
-                      [(>-ctc? ctc) (set! lb (+ (inexact->exact x) 1))]))]))
-             (cond
-               [(and lb ub)
-                (integer-in lb ub)]
-               [else (make-first-order-and/c contracts preds)])]
-            [else (make-first-order-and/c contracts preds)])]
-         [else
-          (make-first-order-and/c contracts preds)])]
-      [(andmap chaperone-contract? contracts)
-       (make-chaperone-and/c contracts)]
-      [else (make-impersonator-and/c contracts)])))
+(define/subexpression-pos-prop/name and/c-name and/c
+  (case-lambda
+    [() any/c]
+    [raw-f*
+     (define raw-fs (remq* (list any/c) raw-f*))
+     (case (length raw-fs)
+       [(0) any/c]
+       [(1) (coerce-contract 'and/c (car raw-fs))]
+       [else
+        (define contracts (coerce-contracts 'and/c raw-fs))
+        (cond
+          [(andmap flat-contract? contracts)
+           (define preds (map flat-contract-predicate contracts))
+           (cond
+             [(and (pair? (cdr preds))
+                   (null? (cddr preds)))
+              (cond
+                [(eq? (car preds) real?)
+                 (define second-pred (cadr preds))
+                 (cond
+                   [(eq? second-pred negative?)
+                    (renamed-<-ctc 0 `(and/c real? negative?))]
+                   [(eq? second-pred positive?)
+                    (renamed->-ctc 0 `(and/c real? positive?))]
+                   [else
+                    (define second-contract (cadr contracts))
+                    (cond 
+                      [(equal? (contract-name second-contract) '(not/c positive?))
+                       (renamed-between/c -inf.0 0 `(and/c real? (not/c positive?)))]
+                      [(equal? (contract-name second-contract) '(not/c negative?))
+                       (renamed-between/c 0 +inf.0 `(and/c real? (not/c negative?)))]
+                      [else (make-first-order-and/c contracts preds)])])]
+                [(or (eq? (car preds) exact-nonnegative-integer?)
+                     (eq? (car preds) natural?)
+                     (eq? (cadr preds) exact-nonnegative-integer?)
+                     (eq? (cadr preds) natural?))
+                 (define other (if (procedure? (car preds)) (cadr contracts) (car contracts)))
+                 (cond
+                   [(between/c-s? other)
+                    (define other-low (between/c-s-low other))
+                    (define other-high (between/c-s-high other))
+                    (integer-in (exact-ceiling (max 0 (if (= other-low -inf.0) 0 other-low)))
+                                (if (= other-high +inf.0) #f (exact-floor other-high)))]
+                   [else (make-first-order-and/c contracts preds)])]
+                [(or (eq? (car preds) exact-positive-integer?)
+                     (eq? (cadr preds) exact-positive-integer?))
+                 (define other (if (procedure? (car preds)) (cadr contracts) (car contracts)))
+                 (cond
+                   [(between/c-s? other)
+                    (define other-low (between/c-s-low other))
+                    (define other-high (between/c-s-high other))
+                    (integer-in (exact-ceiling (max 1 (if (= other-low -inf.0) 1 other-low)))
+                                (if (= other-high +inf.0) #f (exact-floor other-high)))]
+                   [else (make-first-order-and/c contracts preds)])]
+                [(or (eq? (car preds) exact-integer?)
+                     (eq? (cadr preds) exact-integer?))
+                 (define other (if (procedure? (car preds)) (cadr contracts) (car contracts)))
+                 (cond
+                   [(between/c-s? other)
+                    (define other-low (between/c-s-low other))
+                    (define other-high (between/c-s-high other))
+                    (integer-in (if (= other-low -inf.0) #f (exact-ceiling other-low))
+                                (if (= other-high +inf.0) #f (exact-floor other-high)))]
+                   [else (make-first-order-and/c contracts preds)])]
+                [else (make-first-order-and/c contracts preds)])]
+             [(and (pair? (cdr preds))
+                   (pair? (cddr preds))
+                   (null? (cdddr preds)))
+              (cond
+                [(or (eq? (car preds) exact-integer?)
+                     (eq? (cadr preds) exact-integer?)
+                     (eq? (caddr preds) exact-integer?))
+                 (define lb #f)
+                 (define ub #f)
+                 (for ([ctc (in-list contracts)])
+                   (cond
+                     [(between/c-s? ctc)
+                      (define lo (between/c-s-low ctc))
+                      (define hi (between/c-s-high ctc))
+                      (cond
+                        [(and (= lo -inf.0) (integer? hi))
+                         (set! ub (inexact->exact hi))]
+                        [(and (= hi +inf.0) (integer? lo))
+                         (set! lb (inexact->exact lo))])]
+                     [(</>-ctc? ctc)
+                      (define x (</>-ctc-x ctc))
+                      (when (integer? x)
+                        (cond
+                          [(<-ctc? ctc) (set! ub (- (inexact->exact x) 1))]
+                          [(>-ctc? ctc) (set! lb (+ (inexact->exact x) 1))]))]))
+                 (if (and lb ub)
+                     (integer-in lb ub)
+                     (make-first-order-and/c contracts preds))]
+                [else (make-first-order-and/c contracts preds)])]
+             [else (make-first-order-and/c contracts preds)])]
+          [(andmap chaperone-contract? contracts)
+           (make-chaperone-and/c contracts)]
+          [else (make-impersonator-and/c contracts)])])]))
 
 (define (exact-floor x) (floor (inexact->exact x)))
 (define (exact-ceiling x) (ceiling (inexact->exact x)))
