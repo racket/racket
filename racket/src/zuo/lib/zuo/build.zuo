@@ -152,11 +152,12 @@
 (define make-phony-rule
   (let ([phony-rule
          (lambda (deps build)
-           (unless (and (list? deps)
-                        (andmap target? deps))
-             (arg-error 'phony-rule "list of targets" deps))
-           (unless (procedure? build)
-             (arg-error 'phony-rule "procedure" build))
+           (let ([deps (map coerce-to-target deps)])
+             (unless (and (list? deps)
+                          (andmap target? deps))
+               (arg-error 'phony-rule "list of targets" deps))
+             (unless (procedure? build)
+               (arg-error 'phony-rule "procedure" build)))
            (phony-rule deps build))])
     phony-rule))
 
