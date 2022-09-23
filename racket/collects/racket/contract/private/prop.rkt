@@ -52,6 +52,9 @@
          prop:arrow-contract-get-info
          (struct-out arrow-contract-info)
 
+         get-any?
+         get-none?
+
          prop:any/c prop:any/c?
          prop:none/c prop:none/c?
          
@@ -411,6 +414,9 @@
 
 (define (get-any? c) any?)
 (define (any? x) #t)
+
+(define (get-none? c) none?)
+(define (none? x) #f)
 
 (define (weakest a b) #f)
 

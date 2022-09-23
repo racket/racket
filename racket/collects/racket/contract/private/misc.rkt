@@ -606,8 +606,6 @@
                           n))
   (make-procedure-arity-includes/c n))
 
-(define (get-any? c) any?)
-(define (any? x) #t)
 (define any/c-blame->neg-party-fn (λ (blame) any/c-neg-party-fn))
 (define any/c-neg-party-fn (λ (val neg-party) val))
 
@@ -703,7 +701,7 @@
    #:stronger (λ (this that) (prop:none/c? that))
    #:equivalent (λ (this that) (prop:none/c? that))
    #:name (λ (ctc) (none/c-name ctc))
-   #:first-order (λ (ctc) (λ (val) #f))))
+   #:first-order get-none?))
 
 (define/final-prop none/c (make-none/c 'none/c))
 
