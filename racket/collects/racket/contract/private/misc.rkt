@@ -28,10 +28,9 @@
          parameter/c
          procedure-arity-includes/c
          
-         any/c named-any/c
+         any/c make-any/c
          any
-         none/c
-         make-none/c
+         none/c make-none/c
 
          prompt-tag/c
          continuation-mark-key/c
@@ -666,34 +665,21 @@
   (define env (contract-random-generate-get-current-environment))
   (λ () (random-any/c env fuel)))
 
-(define-struct any/c ()
+(define-struct any/c (name)
   #:property prop:custom-write custom-write-property-proc
+  #:property prop:any/c #f
   #:omit-define-syntaxes
-  #:property prop:any/c #f
   #:property prop:flat-contract
   (build-flat-contract-property
    #:trusted trust-me
    #:late-neg-projection (λ (ctc) any/c-blame->neg-party-fn)
    #:stronger (λ (this that) (prop:any/c? that))
    #:equivalent (λ (this that) (prop:any/c? that))
-   #:name (λ (ctc) 'any/c)
+   #:name (λ (ctc) (any/c-name ctc))
    #:generate any/c-random-generate
    #:first-order get-any?))
 
-(define/final-prop any/c (make-any/c))
-
-(define-struct named-any/c (name)
-  #:property prop:custom-write custom-write-property-proc
-  #:property prop:any/c #f
-  #:property prop:flat-contract
-  (build-flat-contract-property
-   #:trusted trust-me
-   #:late-neg-projection (λ (ctc) any/c-blame->neg-party-fn)
-   #:stronger (λ (this that) (prop:any/c? that))
-   #:equivalent (λ (this that) (prop:any/c? that))
-   #:name (λ (ctc) (named-any/c-name ctc))
-   #:generate any/c-random-generate
-   #:first-order get-any?))
+(define/final-prop any/c (make-any/c 'any/c))
 
 (define-syntax (any stx)
   (raise-syntax-error 'any "use of 'any' outside the range of an arrow contract" stx))
@@ -708,13 +694,14 @@
 
 (define-struct none/c (name)
   #:property prop:custom-write custom-write-property-proc
+  #:property prop:none/c #f
   #:omit-define-syntaxes
   #:property prop:flat-contract
   (build-flat-contract-property
    #:trusted trust-me
    #:late-neg-projection none-curried-late-neg-proj
-   #:stronger (λ (this that) #t)
-   #:equivalent (λ (this that) (none/c? that))
+   #:stronger (λ (this that) (prop:none/c? that))
+   #:equivalent (λ (this that) (prop:none/c? that))
    #:name (λ (ctc) (none/c-name ctc))
    #:first-order (λ (ctc) (λ (val) #f))))
 

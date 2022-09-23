@@ -59,26 +59,31 @@
                    (make-chaperone-multi-or/c name flat-contracts ho-contracts)
                    (make-impersonator-multi-or/c name flat-contracts ho-contracts))]))
           (if (ormap prop:any/c? args)
-              (named-any/c (contract-name the-or/c))
+              (make-any/c (contract-name the-or/c))
               the-or/c)])])))
 
 (define/subexpression-pos-prop first-or/c
-  (let ([none? (make-none/c '(first-or/c))])
+  (let ([none? (make-none/c '(first-or/c))]
+        [not-none/c? (not/c prop:none/c?)])
     (case-lambda
       [() none?]
       [raw-arg*
-       (define raw-args (remq* (list none/c none? (or/c)) raw-arg*))
+       (define raw-args (filter not-none/c? raw-arg*))
        (case (length raw-args)
          [(0) none?]
          [(1) (coerce-contract 'first-or/c (car raw-args))]
          [else
           (define args (coerce-contracts 'first-or/c raw-args))
-          (cond
-            [(andmap flat-contract? args)
-             (make-flat-first-or/c (make-flat-predicate args) args)]
-            [(andmap chaperone-contract? args)
-             (make-chaperone-first-or/c args)]
-            [else (make-impersonator-first-or/c args)])])])))
+          (define the-or/c
+            (cond
+              [(andmap flat-contract? args)
+               (make-flat-first-or/c (make-flat-predicate args) args)]
+              [(andmap chaperone-contract? args)
+               (make-chaperone-first-or/c args)]
+              [else (make-impersonator-first-or/c args)]))
+          (if (ormap prop:any/c? args)
+              (make-any/c (contract-name the-or/c))
+              the-or/c)])])))
 
 (define (make-flat-predicate flat-contracts)
   (cond

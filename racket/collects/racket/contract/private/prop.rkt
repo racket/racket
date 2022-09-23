@@ -53,6 +53,7 @@
          (struct-out arrow-contract-info)
 
          prop:any/c prop:any/c?
+         prop:none/c prop:none/c?
          
          build-context
 
@@ -611,6 +612,11 @@
 ;; that the contract accepts any value
 (define-values (prop:any/c prop:any/c? prop:get-any/c)
   (make-struct-type-property 'prop:any/c))
+
+;; this property's value isn't looked at; it is just a signal
+;; that the contract accepts any value
+(define-values (prop:none/c prop:none/c? prop:get-none/c)
+  (make-struct-type-property 'prop:none/c))
 
 ;; get-info : (-> ctc arrow-contract-info?)
 (define-values (prop:arrow-contract prop:arrow-contract? prop:arrow-contract-get-info)
