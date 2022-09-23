@@ -348,7 +348,7 @@ A @deftech{structure type property} allows per-type information to be
                                     [contract-str (or/c string? symbol? #f) #f]
                                     [realm symbol? 'racket])
          (values struct-type-property?
-                 procedure?
+                 (any/c . -> . boolean?)
                  procedure?)]{
 
 Creates a new structure type property and returns three values:
