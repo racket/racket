@@ -5,6 +5,7 @@
          "rand.rkt"
          "generate.rkt"
          "misc.rkt"
+         racket/list
          (for-syntax racket/base))
 
 (provide symbols or/c first-or/c one-of/c
@@ -63,12 +64,11 @@
               the-or/c)])])))
 
 (define/subexpression-pos-prop first-or/c
-  (let ([none? (make-none/c '(first-or/c))]
-        [not-none/c? (not/c prop:none/c?)])
+  (let ([none? (make-none/c '(first-or/c))])
     (case-lambda
       [() none?]
       [raw-arg*
-       (define raw-args (filter not-none/c? raw-arg*))
+       (define raw-args (remove-duplicates (filter-not prop:none/c? raw-arg*) eq?))
        (case (length raw-args)
          [(0) none?]
          [(1) (coerce-contract 'first-or/c (car raw-args))]
