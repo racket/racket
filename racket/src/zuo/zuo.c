@@ -4785,7 +4785,7 @@ static zuo_t *zuo_module_to_hash(zuo_t *module_path) {
 
 static zuo_t *zuo_eval_module(zuo_t *module_path, zuo_t *input_str) {
   /* This is a convenience function to be used only to start evaluation */
-  zuo_t *lang, *read_and_eval, *mod;
+  zuo_t *lang, *read_and_eval, *mod, *quoted_module_path;
   zuo_int_t post;
 
   zuo_log_module_start(module_path);
@@ -4808,10 +4808,14 @@ static zuo_t *zuo_eval_module(zuo_t *module_path, zuo_t *input_str) {
   Z.o_stash = _zuo_cdr(Z.o_stash);
   module_path = _zuo_car(Z.o_stash);
 
+  quoted_module_path = zuo_cons(zuo_symbol("quote"),
+                                zuo_cons(module_path,
+                                         z.o_null));
+
   mod = zuo_kernel_eval(zuo_cons(read_and_eval,
                                  zuo_cons(input_str,
                                           zuo_cons(zuo_integer(post),
-                                                   zuo_cons(module_path,
+                                                   zuo_cons(quoted_module_path,
                                                             z.o_null)))));
 
   module_path = _zuo_car(Z.o_stash);
