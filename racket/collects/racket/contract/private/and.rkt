@@ -196,9 +196,9 @@
     [() any/c]
     [raw-arg*
      (define raw-args (remove-duplicates (filter-not prop:any/c? raw-arg*) eq?))
-     (case (length raw-args)
-       [(0) any/c]
-       [(1) (coerce-contract 'and/c (car raw-args))]
+     (cond
+       [(null? raw-args) any/c]
+       [(null? (cdr raw-args)) (coerce-contract 'and/c (car raw-args))]
        [else
         (define args (coerce-contracts 'and/c raw-args))
         (define the-and/c

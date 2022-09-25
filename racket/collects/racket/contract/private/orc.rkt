@@ -20,9 +20,9 @@
       [() none?]
       [raw-arg*
        (define raw-args (remq* (list none/c none? (first-or/c)) raw-arg*))
-       (case (length raw-args)
-         [(0) none?]
-         [(1) (coerce-contract 'or/c (car raw-args))]
+       (cond
+         [(null? raw-args) none?]
+         [(null? (cdr raw-args)) (coerce-contract 'or/c (car raw-args))]
          [else 
           (define args (coerce-contracts 'or/c raw-args))
           (define-values (ho-contracts flat-contracts)
@@ -69,9 +69,9 @@
       [() none?]
       [raw-arg*
        (define raw-args (remove-duplicates (filter-not prop:none/c? raw-arg*) eq?))
-       (case (length raw-args)
-         [(0) none?]
-         [(1) (coerce-contract 'first-or/c (car raw-args))]
+       (cond
+         [(null? raw-args) none?]
+         [(null? (cdr raw-args)) (coerce-contract 'first-or/c (car raw-args))]
          [else
           (define args (coerce-contracts 'first-or/c raw-args))
           (define the-or/c
