@@ -146,9 +146,9 @@
        #:no-negative-blame? no-negative-blame
        #:name (or name-from-hos
                   #`(let ([names (remove* '(none/c (or/c) (first-or/c)) (list #,@names))])
-                      (case (length names)
-                        [(0) '(or/c)]
-                        [(1) (car names)]
+                      (cond
+                        [(null? names) '(or/c)]
+                        [(null? (cdr names)) (car names)]
                         [else
                          (case names
                            [((#t #f) (#f #t)) 'boolean?]
