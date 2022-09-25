@@ -620,7 +620,7 @@
   (make-struct-type-property 'prop:any/c))
 
 ;; this property's value isn't looked at; it is just a signal
-;; that the contract accepts none value
+;; that the contract accepts no value
 (define-values (prop:none/c prop:none/c? prop:get-none/c)
   (make-struct-type-property 'prop:none/c))
 
