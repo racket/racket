@@ -32,6 +32,7 @@
                     normal))
 
   (ctest #t trust/not-stronger? any/c any/c)
+  (ctest #t trust/not-stronger? none/c none/c)
   (ctest #t trust/not-stronger? integer? any/c)
   (ctest #t trust/not-stronger? none/c integer?)
 

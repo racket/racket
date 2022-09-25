@@ -19,9 +19,9 @@
   (case-lambda
     [() or/c:none/c]
     [raw-arg*
-     (define raw-args (remq* (list none/c or/c:none/c (first-or/c)) raw-arg*))
+     (define raw-args (remq* (list none/c (or/c) (first-or/c)) raw-arg*))
      (cond
-       [(null? raw-args) or/c:none/c]
+       [(null? raw-args) (or/c)]
        [(null? (cdr raw-args)) (coerce-contract 'or/c (car raw-args))]
        [else
         (define args (coerce-contracts 'or/c raw-args))
@@ -70,7 +70,7 @@
     [raw-arg*
      (define raw-args (remove-duplicates (filter-not prop:none/c? raw-arg*) eq?))
      (cond
-       [(null? raw-args) first-or/c:none/c]
+       [(null? raw-args) (first-or/c)]
        [(null? (cdr raw-args)) (coerce-contract 'first-or/c (car raw-args))]
        [else
         (define args (coerce-contracts 'first-or/c raw-args))
