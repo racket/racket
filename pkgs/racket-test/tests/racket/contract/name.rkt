@@ -38,6 +38,7 @@
              (or/c boolean? (-> (>=/c 5) (>=/c 5))))
   (test-name 'boolean? (or/c #f #t))
   (test-name 'boolean? (or/c #t #f))
+  #;(test-name 'boolean? (or/c (make-none/c 'none) #t #f)) ; FIXME
   (test-name 'boolean? (or/c (or/c) #t #f))
   (test-name 'boolean? (or/c #t (or/c) #f))
   (test-name 'boolean? (or/c #t #f (or/c)))
