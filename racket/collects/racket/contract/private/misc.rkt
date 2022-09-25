@@ -702,7 +702,7 @@
   (build-flat-contract-property
    #:trusted trust-me
    #:late-neg-projection none-curried-late-neg-proj
-   #:stronger (λ (this that) (prop:none/c? that))
+   #:stronger (λ (this that) #t)
    #:equivalent (λ (this that) (prop:none/c? that))
    #:name (λ (ctc) (none/c-name ctc))
    #:first-order get-none?))
