@@ -673,6 +673,7 @@
   (λ () (random-any/c env fuel)))
 
 (define-struct any/c ()
+  #:constructor-name any/c
   #:property prop:custom-write custom-write-property-proc
   #:property prop:any/c #f
   #:property prop:flat-contract
@@ -681,6 +682,7 @@
 (define/final-prop _any/c (let ([any/c (any/c)]) any/c))
 
 (define-struct (named-any/c any/c) (name)
+  #:constructor-name make-any/c
   #:property prop:flat-contract
   (any/c-flat-contract-property (λ (ctc) (named-any/c-name ctc))))
 
