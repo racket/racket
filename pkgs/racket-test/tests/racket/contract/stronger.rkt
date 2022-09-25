@@ -33,6 +33,7 @@
 
   (ctest #t trust/not-stronger? any/c any/c)
   (ctest #t trust/not-stronger? integer? any/c)
+  (ctest #t trust/not-stronger? none/c integer?)
 
   (ctest #t trust/not-stronger? (integer-in 0 4) (integer-in 0 4))
   (ctest #t trust/not-stronger? (integer-in 1 3) (integer-in 0 4))
