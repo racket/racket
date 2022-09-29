@@ -88,8 +88,9 @@ forms or adjust the way forms are displayed:
 @itemlist[
 
   @item{@envvar-indexed{PLT_LINKLET_SHOW_GENSYM} --- prints full
-        generated names, instead of abbreviations that may conflate
-        different symbols}
+        generated names, instead of abbreviations; the default behavior
+	corresponds to Chez Scheme's @tt{'pretty/suffix} mode for
+	@tt{print-gensym}}
 
    @item{@envvar-indexed{PLT_LINKLET_SHOW_PRE_JIT} --- shows a
          schemified forms before a transformation to JIT mode, which

@@ -192,7 +192,8 @@
                              [(getenv "PLT_CS_MAKE_COMPRESSED_DATA") #t]
                              [else #f])]))
 
-  (define gensym-on? (getenv "PLT_LINKLET_SHOW_GENSYM"))
+  (define gensym-mode (cond [(getenv "PLT_LINKLET_SHOW_GENSYM") #t]
+			    [else 'pretty/suffix]))
   (define pre-jit-on? (getenv "PLT_LINKLET_SHOW_PRE_JIT"))
   (define lambda-on? (getenv "PLT_LINKLET_SHOW_LAMBDA"))
   (define post-lambda-on? (getenv "PLT_LINKLET_SHOW_POST_LAMBDA"))
@@ -211,7 +212,7 @@
                           [else '()]))
   (define cp0-on? (getenv "PLT_LINKLET_SHOW_CP0"))
   (define assembly-on? (getenv "PLT_LINKLET_SHOW_ASSEMBLY"))
-  (define show-on? (or gensym-on?
+  (define show-on? (or (eq? #t gensym-mode)
                        pre-jit-on?
                        post-lambda-on?
                        post-interp-on?
@@ -230,7 +231,7 @@
         (printf ";; ~a ---------------------\n" what)
         (call-with-system-wind
          (lambda ()
-           (parameterize ([print-gensym gensym-on?]
+           (parameterize ([print-gensym gensym-mode]
                           [print-extended-identifiers #t])
              (pretty-print (strip-jit-wrapper
                             (strip-nested-annotations
@@ -264,8 +265,10 @@
                                                         (printf " ---------------------\n"))]
                                         [-compile (lambda (e)
                                                     (if (not (null? passes-on))
-                                                        (parameterize ([#%$np-tracer passes-on])
-                                                          (compile e))
+                                                        (parameterize ([print-gensym gensym-mode]
+                                                                       [print-extended-identifiers #t]
+                                                                       [#%$np-tracer passes-on])
+                                                            (compile e))
                                                         (compile e)))])
                                    (when (or (not (null? passes-on)) assembly-on?)
                                      (print-header))
