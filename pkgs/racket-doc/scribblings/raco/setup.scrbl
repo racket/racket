@@ -2050,7 +2050,7 @@ See also @racket[collects-relative->path].}
           [rel (or/c bytes?
                      path-string?
                      (cons/c 'collects (non-empty-listof bytes?)))])
-         path>]{
+         path?]{
 
 The inverse of @racket[path->main-collects-relative]: if @racket[rel]
 is a pair that starts with @racket['collects], then it is converted
