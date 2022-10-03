@@ -222,7 +222,7 @@ downloaded from a separate Git repository by @exec{make}. If you have
 Racket v7.1 or later, then you can choose instead to bootstrap using
 that Racket implementation with
 
-@commandline{make cs RACKET_FOR_BOOTFILES=racket}
+@commandline{make cs BOOTFILE_RACKET=racket}
 
 The @exec{make bc} target (or @exec{make bc-as-is} for a rebuild) builds an older
 variant of Racket, called Racket BC, which does not use Chez Scheme.
