@@ -1445,7 +1445,7 @@ Optional Features:
   --enable-docs           build docs on install (enabled by default)
   --enable-usersetup      setup user-specific files on install
   --enable-racket=<path>  use <path> as Racket for build; or "auto" to create
-  --enable-scheme=<path>  use <path> as host build for cross
+  --enable-scheme=<path>  use <path> as Chez Scheme for build
   --enable-mach=<mach>    use Chez Scheme machine type <mach>
   --enable-target=<mach>  cross-build for Chez Scheme machine type <mach>
   --enable-pb             build for platform without native-code backend

@@ -430,9 +430,11 @@ Cross-compilation requires at least two flags to `configure`:
 
 For Racket CS, an additional flag is required:
 
- * `--enable-scheme=SCHEME`, where SCHEME is a Chez Scheme executable
-   executable that runs on the build platform; the executable must be
-   the same version as used in Racket built for the target platform.
+ * `--enable-scheme=SCHEME`, where SCHEME is a Chez Scheme (v9.5.3 and
+   up) executable that runs on the build platform; it does not need to
+   match the Chez Scheme version as used in the Racket being built; a
+   "reboot" bootstrapping path is able to reconstruct boot files across
+   versions.
  
    Supplying `--enable-scheme=DIR` is also supported, where DIR is a
    path that has a "ChezScheme" directory where Chez Scheme is built
@@ -443,9 +445,9 @@ allowed for non-cross builds, too:
 
  * For Racket CS, supplying either selects a Racket or Chez Scheme
    implementation used to create boot files to the build platform.
-   Suppling Chez Scheme is a much more direct path, but when Racket is
-   supplied, its version does not have to match the version being
-   built.
+   Supplying Chez Scheme is a much more direct path. These executables
+   do not need to match the versions being built, as there are
+   bootstrapping paths that can handle differences where needed.
 
  * For Racket BC, `--enable-racket=RACKET` selects a Racket for
    prepare C sources to cooperate with garbage collection. Its version

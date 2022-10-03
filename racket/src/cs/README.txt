@@ -42,10 +42,12 @@ or Chez Scheme build:
    installed in the "../ChezScheme/boot/pb" directory as described by
    "../ChezScheme/BUILDING".
 
-   Supplying `--enable-scheme=...` is also an option if you alerady
-   have the same version of Chez Scheme built on the current platform.
-   Another build will be created, anyway, but more quickly than
-   without Chez Scheme.
+   Supplying `--enable-scheme=...` is also an option if you already have
+   Chez Scheme built on the current platform; it does not need to match
+   the Chez Scheme version as used in the Racket being built; a "reboot"
+   bootstrapping path is able to reconstruct boot files even across
+   versions. Another build will be created anyway, but more quickly
+   than without Chez Scheme.
 
  * Racket is needed to generate the files in the "schemified"
    directory from the sources in sibling directories like "../io". The
