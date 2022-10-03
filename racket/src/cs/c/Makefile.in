@@ -36,18 +36,14 @@ RACKET = @RACKET@
 # doesn't replace the Racket build here for other purposes
 BOOTFILE_RACKET = @BOOTFILE_RACKET@
 
-# If `SCHEME` is set, it must be compatible to the current build;
+# If `SCHEME` is set, then it needs only to be a Scheme that
+# is recent enough to run "../../ChezScheme/s/reboot.ss";
 # if `SCHEME_DIR` is set and `SCHEME` is not, then `SCHEME_DIR` refers
 # to an existing build directory;
 # if `RACKET` is "auto", then an auto-generated Scheme is used and
 # both of these are ignored
 SCHEME = @SCHEME@
 SCHEME_DIR = @SCHEME_DIR@
-
-# If `BOOTFILE_SCHEME` is set, then it needs only to be a Scheme that
-# is recent enough to run "../../ChezScheme/s/reboot.ss", and it
-# doesn't replace the Scheme build here for other purposes
-BOOTFILE_SCHEME = @BOOTFILE_SCHEME@
 
 # C compiler, etc.
 CC = @CC@

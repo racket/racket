@@ -23,7 +23,7 @@ AC_ARG_ENABLE(compressmore, [  --enable-compressmore   compress compiled code ev
 AC_ARG_ENABLE(compressboot, [  --enable-compressboot   compress boot files])
 m4_include(../ac/path_arg.m4)
 AC_ARG_ENABLE(racket,     [  --enable-racket=<path>  use <path> as Racket for build; or "auto" to create])
-AC_ARG_ENABLE(scheme,     [  --enable-scheme=<path>  use <path> as host build for cross])
+AC_ARG_ENABLE(scheme,     [  --enable-scheme=<path>  use <path> as Chez Scheme for build])
 AC_ARG_ENABLE(mach,       [  --enable-mach=<mach>    use Chez Scheme machine type <mach>])
 AC_ARG_ENABLE(target,     [  --enable-target=<mach>  cross-build for Chez Scheme machine type <mach>])
 AC_ARG_ENABLE(pb,         [  --enable-pb             build for platform without native-code backend])
