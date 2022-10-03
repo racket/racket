@@ -176,7 +176,7 @@ BUILD_VARS = MAKE=$(MAKE) \
              CS_CROSS_SUFFIX="$(CS_CROSS_SUFFIX)" \
              RACKET="$(RACKET)" \
              PLAIN_RACKET="$(PLAIN_RACKET)" \
-             RACKET_FOR_BOOTFILES="$(RACKET_FOR_BOOTFILES)" \
+             BOOTFILE_RACKET="$(BOOTFILE_RACKET)" \
              CS_HOST_WORKAREA_PREFIX="$(CS_HOST_WORKAREA_PREFIX)" \
              PB_BRANCH="$(PB_BRANCH)" \
              PB_REPO="$(PB_REPO)" \
