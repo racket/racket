@@ -486,3 +486,14 @@
 (define (flatan n) (#2%flatan n))
 
 (define (fxquotient n d) (#2%fxquotient n d))
+
+(define (init-flonum-printing!)
+  (print-subnormal-precision #f)
+  (print-positive-exponent-sign #t)
+  (print-select-flonum-exponential-format
+   (lambda (r e n-digits)
+     (not (or (fx> r 10)
+              (cond
+                [(fx< e -4) #f]
+                [(fx< e 14) #t]
+                [else (fx< (fx- e n-digits) 3)]))))))
