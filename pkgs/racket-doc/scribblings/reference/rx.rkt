@@ -7,143 +7,143 @@
 ;; the table is unlikely to see this request, but it's worth a try.)
 
 (define grammar @string-append{
-  Regexp   ::= Pces               Match Pces                                      #co
-            |  Regexp|Regexp      Match either Regexp, try left first             #co 1
-  Pces     ::=                    Match empty                                     #co
-            |  PcePces            Match Pce followed by Pces                      #co
-  Pce      ::= Repeat             Match Repeat, longest possible                  #co 3
-            |  Repeat?            Match Repeat, shortest possible                 #co 6
-            |  Atom               Match Atom exactly once                         #co
-  Repeat   ::= Atom*              Match Atom 0 or more times                      #co 3
-            |  Atom+              Match Atom 1 or more times                      #co 4
-            |  Atom?              Match Atom 0 or 1 times                         #co 5
-  Repeat   ::= ...                ...                                             #px
-            |  Atom{N}            Match Atom exactly N times                      #px 7
-            |  Atom{N,}           Match Atom N or more times                      #px 8
-            |  Atom{,M}           Match Atom between 0 and M times                #px 9
-            |  Atom{N,M}          Match Atom between N and M times                #px 10
-            |  Atom{}             Match Atom 0 or more times                      #px
-  Atom     ::= (Regexp)           Match sub-expression Regexp and report          #co 11
-            |  [Rng]              Match any character in Rng                      #co 2
-            |  [^Rng]             Match any character not in Rng                  #co 12
+  Regexp   ::= Pces               Match Pces                                       #co
+            |  Regexp|Regexp      Match either Regexp, try left first              #co 1
+  Pces     ::=                    Match empty                                      #co
+            |  PcePces            Match Pce followed by Pces                       #co
+  Pce      ::= Repeat             Match Repeat, longest possible                   #co 3
+            |  Repeat?            Match Repeat, shortest possible                  #co 6
+            |  Atom               Match Atom exactly once                          #co
+  Repeat   ::= Atom*              Match Atom 0 or more times                       #co 3
+            |  Atom+              Match Atom 1 or more times                       #co 4
+            |  Atom?              Match Atom 0 or 1 times                          #co 5
+  Repeat   ::= ...                ...                                              #px
+            |  Atom{N}            Match Atom exactly N times                       #px 7
+            |  Atom{N,}           Match Atom N or more times                       #px 8
+            |  Atom{,M}           Match Atom between 0 and M times                 #px 9
+            |  Atom{N,M}          Match Atom between N and M times                 #px 10
+            |  Atom{}             Match Atom 0 or more times                       #px
+  Atom     ::= (Regexp)           Match sub-expression Regexp and report           #co 11
+            |  [Rng]              Match any character in Rng                       #co 2
+            |  [^Rng]             Match any character not in Rng                   #co 12
             |  .                  Match any except newline (unless in dotall mode) #co 13
             |  ^                  Match start (or after newline in multiline mode) #co 14
             |  $                  Match end (or before newline in multiline mode)  #co 15
-            |  Literal            Match a single literal character                #co 1
-            |  (?Mode:Regexp)     Match Regexp using Mode                         #co 35
-            |  (?>Regexp)         Match Regexp, only first possible               #co
-            |  Look               Match empty if Look matches                     #co
-            |  (?TstPces|Pces)    Match 1st Pces if Tst, else 2nd Pces            #co 36
-            |  (?TstPces)         Match Pces if Tst, empty if not Tst             #co
-            |  \`at`end`of`pattern` Match the nul character (ASCII 0)             #co
-  Atom     ::= ...                ...                                             #px
-            |  \N                 Match latest reported match for N##th _(_       #px 16
-            |  Class              Match any character in Class                    #px
-            |  \b                 Match _\w*_ boundary                            #px 17
-            |  \B                 Match where _\b_ does not                       #px 18
-            |  \p{Property}       Match (UTF-8 encoded) in Property               #px 19
-            |  \P{Property}       Match (UTF-8 encoded) not in Property           #px 20
+            |  Literal            Match a single literal character                 #co 1
+            |  (?Mode:Regexp)     Match Regexp using Mode                          #co 35
+            |  (?>Regexp)         Match Regexp, only first possible                #co
+            |  Look               Match empty if Look matches                      #co
+            |  (?TstPces|Pces)    Match 1st Pces if Tst, else 2nd Pces             #co 36
+            |  (?TstPces)         Match Pces if Tst, empty if not Tst              #co
+            |  \`at`end`of`pattern` Match the nul character (ASCII 0)              #co
+  Atom     ::= ...                ...                                              #px
+            |  \N                 Match latest reported match for N##th _(_        #px 16
+            |  Class              Match any character in Class                     #px
+            |  \b                 Match _\w*_ boundary                             #px 17
+            |  \B                 Match where _\b_ does not                        #px 18
+            |  \p{Property}       Match (UTF-8 encoded) in Property                #px 19
+            |  \P{Property}       Match (UTF-8 encoded) not in Property            #px 20
   Literal  :== Any character except _(_, _)_, _*_, _+_, _?_, _[_, _._, _^_, _\_, or _|_                #rx
   Literal  :== Any character except _(_, _)_, _*_, _+_, _?_, _[_, _]_, _{_, _}_, _._, _^_, _\_, or _|_ #px
-            |  \Aliteral                Match Aliteral                            #ot 21
-  Aliteral :== Any character                                                      #rx
-  Aliteral :== Any character except _a_-_z_, _A_-_Z_, _0_-_9_                     #px
-  Rng      ::= ]                  Rng contains _]_ only                           #co 27
-            |  -                  Rng contains _-_ only                           #co 28
-            |  Mrng               Rng contains everything in Mrng                 #co
-            |  Mrng-              Rng contains _-_ and everything in Mrng         #co
-  Mrng     ::= ]Lrng              Mrng contains _]_ and everything in Lrng        #co 29
-            |  -Lrng              Mrng contains _-_ and everything in Lrng        #co 29
-            |  Lirng              Mrng contains everything in Lirng               #co
-  Lirng    ::= Riliteral          Lirng contains a literal character              #co
-            |  Riliteral-Rliteral Lirng contains Unicode range inclusive          #co 22
-            |  LirngLrng          Lirng contains everything in both               #co
-  Lrng     ::= ^                  Lrng contains _^_                               #co 30
-            |  Rliteral-Rliteral  Lrng contains Unicode range inclusive           #co
-            |  ^Lrng              Lrng contains _^_ and more                      #co
-            |  Lirng              Lrng contains everything in Lirng               #co
-  Look     ::= (?=Regexp)         Match if Regexp matches                         #mode 31
-            |  (?!Regexp)         Match if Regexp doesn't match                   #mode 32
-            |  (?<=Regexp)        Match if Regexp matches preceding               #mode 33
-            |  (?<!Regexp)        Match if Regexp doesn't match preceding         #mode 34
-  Tst      ::= (N)                True if N##th _(_ has a match                   #mode
-            |  Look               True if Look matches                            #mode 36
-  Lirng    ::= ...                ...                                             #px
-            |  Class              Lirng contains all characters in Class          #px
-            |  Posix              Lirng contains all characters in Posix          #px 26
-            |  \Eliteral          Lirng contains Eliteral                         #px
-  Riliteral :== Any character except _]_, _-_, or _^_                             #rx
-  Riliteral :== Any character except _]_, _\_, _-_, or _^_                        #px
-  Rliteral  :== Any character except _]_ or _-_                                   #rx
-  Rliteral  :== Any character except _]_, _\_, or _-_                             #px
-  Eliteral  :== Any character except _a_-_z_, _A_-_Z_                             #px
-  Mode     ::=                    Like the enclosing mode                         #mode
-            |  Modei              Like Mode, but case-insensitive                 #mode 35
-            |  Mode-i             Like Mode, but sensitive                        #mode
-            |  Modem              Like Mode, but in multiline mode                #mode
-            |  Mode-m             Like Mode, but not in multiline mode            #mode
-            |  Modes              Like Mode, but in dotall mode                   #mode
-            |  Mode-s             Like Mode, but not in dotall mode               #mode
-  Class    ::= \d                 Contains _0_-_9_                                #cat 23
-            |  \D                 Contains characters not in _\d_                 #cat
-            |  \w                 Contains _a_-_z_, _A_-_Z_, _0_-_9_, ___         #cat 24
-            |  \W                 Contains characters not in _\w_                 #cat
-            |  \s                 Contains space, tab, newline, formfeed, return  #cat 25
-            |  \S                 Contains characters not in _\s_                 #cat
-  Posix    ::= [:alpha:]          Contains _a_-_z_, _A_-_Z_                       #cat
-            |  [:upper:]          Contains _A_-_Z_                                #cat
-            |  [:lower:]          Contains _a_-_z_                                #cat 26
-            |  [:digit:]          Contains _0_-_9_                                #cat
-            |  [:xdigit:]         Contains _0_-_9_, _a_-_f_, _A_-_F_              #cat
-            |  [:alnum:]          Contains _a_-_z_, _A_-_Z_, _0_-_9_              #cat
-            |  [:word:]           Contains _a_-_z_, _A_-_Z_, _0_-_9_, ___         #cat
-            |  [:blank:]          Contains space and tab                          #cat
-            |  [:space:]          Contains space, tab, newline, formfeed, return  #cat
-            |  [:graph:]          Contains all ASCII characters that use ink      #cat
-            |  [:print:]          Contains space, tab, and ASCII ink users        #cat
-            |  [:cntrl:]          Contains all characters with scalar value < 32  #cat
-            |  [:ascii:]          Contains all ASCII characters                   #cat
-  Property ::= Category           Includes all characters in Category             #cat
-            |  ^Category          Includes all characters not in Category         #cat
-  Category ::= Ll                 Letter, lowercase                               #ucat 19
-            |  Lu                 Letter, uppercase                               #ucat
-            |  Lt                 Letter, titlecase                               #ucat
-            |  Lm                 Letter, modifier                                #ucat
-            |  L&                 Union of _Ll_, _Lu_, _Lt_, and _Lm_             #ucat
-            |  Lo                 Letter, other                                   #ucat
-            |  L                  Union of _L&_ and _Lo_                          #ucat
-            |  Nd                 Number, decimal digit                           #ucat
-            |  Nl                 Number, letter                                  #ucat
-            |  No                 Number, other                                   #ucat
-            |  NN                 Union of _Nd_, _Nl_, and _No_                   #ucat
-            |  Ps                 Punctuation, open                               #ucat
-            |  Pe                 Punctuation, close                              #ucat
-            |  Pi                 Punctuation, initial quote                      #ucat
-            |  Pf                 Punctuation, final quote                        #ucat
-            |  Pc                 Punctuation, connector                          #ucat
-            |  Pd                 Punctuation, dash                               #ucat
-            |  Po                 Punctuation, other                              #ucat
+            |  \Aliteral                Match Aliteral                             #ot 21
+  Aliteral :== Any character                                                       #rx
+  Aliteral :== Any character except _a_-_z_, _A_-_Z_, _0_-_9_                      #px
+  Rng      ::= ]                  Rng contains _]_ only                            #co 27
+            |  -                  Rng contains _-_ only                            #co 28
+            |  Mrng               Rng contains everything in Mrng                  #co
+            |  Mrng-              Rng contains _-_ and everything in Mrng          #co
+  Mrng     ::= ]Lrng              Mrng contains _]_ and everything in Lrng         #co 29
+            |  -Lrng              Mrng contains _-_ and everything in Lrng         #co 29
+            |  Lirng              Mrng contains everything in Lirng                #co
+  Lirng    ::= Riliteral          Lirng contains a literal character               #co
+            |  Riliteral-Rliteral Lirng contains Unicode range inclusive           #co 22
+            |  LirngLrng          Lirng contains everything in both                #co
+  Lrng     ::= ^                  Lrng contains _^_                                #co 30
+            |  Rliteral-Rliteral  Lrng contains Unicode range inclusive            #co
+            |  ^Lrng              Lrng contains _^_ and more                       #co
+            |  Lirng              Lrng contains everything in Lirng                #co
+  Look     ::= (?=Regexp)         Match if Regexp matches                          #mode 31
+            |  (?!Regexp)         Match if Regexp doesn't match                    #mode 32
+            |  (?<=Regexp)        Match if Regexp matches preceding                #mode 33
+            |  (?<!Regexp)        Match if Regexp doesn't match preceding          #mode 34
+  Tst      ::= (N)                True if N##th _(_ has a match                    #mode
+            |  Look               True if Look matches                             #mode 36
+  Lirng    ::= ...                ...                                              #px
+            |  Class              Lirng contains all characters in Class           #px
+            |  Posix              Lirng contains all characters in Posix           #px 26
+            |  \Eliteral          Lirng contains Eliteral                          #px
+  Riliteral :== Any character except _]_, _-_, or _^_                              #rx
+  Riliteral :== Any character except _]_, _\_, _-_, or _^_                         #px
+  Rliteral  :== Any character except _]_ or _-_                                    #rx
+  Rliteral  :== Any character except _]_, _\_, or _-_                              #px
+  Eliteral  :== Any character except _a_-_z_, _A_-_Z_                              #px
+  Mode     ::=                    Like the enclosing mode                          #mode
+            |  Modei              Like Mode, but case-insensitive                  #mode 35
+            |  Mode-i             Like Mode, but sensitive                         #mode
+            |  Modem              Like Mode, but in multiline mode                 #mode
+            |  Mode-m             Like Mode, but not in multiline mode             #mode
+            |  Modes              Like Mode, but in dotall mode                    #mode
+            |  Mode-s             Like Mode, but not in dotall mode                #mode
+  Class    ::= \d                 Contains _0_-_9_                                 #cat 23
+            |  \D                 Contains characters not in _\d_                  #cat
+            |  \w                 Contains _a_-_z_, _A_-_Z_, _0_-_9_, ___          #cat 24
+            |  \W                 Contains characters not in _\w_                  #cat
+            |  \s                 Contains space, tab, newline, formfeed, return   #cat 25
+            |  \S                 Contains characters not in _\s_                  #cat
+  Posix    ::= [:alpha:]          Contains _a_-_z_, _A_-_Z_                        #cat
+            |  [:upper:]          Contains _A_-_Z_                                 #cat
+            |  [:lower:]          Contains _a_-_z_                                 #cat 26
+            |  [:digit:]          Contains _0_-_9_                                 #cat
+            |  [:xdigit:]         Contains _0_-_9_, _a_-_f_, _A_-_F_               #cat
+            |  [:alnum:]          Contains _a_-_z_, _A_-_Z_, _0_-_9_               #cat
+            |  [:word:]           Contains _a_-_z_, _A_-_Z_, _0_-_9_, ___          #cat
+            |  [:blank:]          Contains space and tab                           #cat
+            |  [:space:]          Contains space, tab, newline, formfeed, return   #cat
+            |  [:graph:]          Contains all ASCII characters that use ink       #cat
+            |  [:print:]          Contains space, tab, and ASCII ink users         #cat
+            |  [:cntrl:]          Contains all characters with scalar value < 32   #cat
+            |  [:ascii:]          Contains all ASCII characters                    #cat
+  Property ::= Category           Includes all characters in Category              #cat
+            |  ^Category          Includes all characters not in Category          #cat
+  Category ::= Ll                 Letter, lowercase                                #ucat 19
+            |  Lu                 Letter, uppercase                                #ucat
+            |  Lt                 Letter, titlecase                                #ucat
+            |  Lm                 Letter, modifier                                 #ucat
+            |  L&                 Union of _Ll_, _Lu_, _Lt_, and _Lm_              #ucat
+            |  Lo                 Letter, other                                    #ucat
+            |  L                  Union of _L&_ and _Lo_                           #ucat
+            |  Nd                 Number, decimal digit                            #ucat
+            |  Nl                 Number, letter                                   #ucat
+            |  No                 Number, other                                    #ucat
+            |  NN                 Union of _Nd_, _Nl_, and _No_                    #ucat
+            |  Ps                 Punctuation, open                                #ucat
+            |  Pe                 Punctuation, close                               #ucat
+            |  Pi                 Punctuation, initial quote                       #ucat
+            |  Pf                 Punctuation, final quote                         #ucat
+            |  Pc                 Punctuation, connector                           #ucat
+            |  Pd                 Punctuation, dash                                #ucat
+            |  Po                 Punctuation, other                               #ucat
             |  P                  Union of _Ps_, _Pe_, _Pi_, _Pf_, _Pc_, _Pd_, and _Po_ #ucat
-            |  Mn                 Mark, non-spacing                               #ucat
-            |  Mc                 Mark, spacing combining                         #ucat
-            |  Me                 Mark, enclosing                                 #ucat
-            |  MM                 Union of _Mn_, _Mc_, and _Me_                   #ucat
-            |  Sc                 Symbol, currency                                #ucat
-            |  Sk                 Symbol, modifier                                #ucat
-            |  Sm                 Symbol, math                                    #ucat
-            |  So                 Symbol, other                                   #ucat
-            |  S                  Union of _Sc_, _Sk_, _Sm_, and _So_             #ucat
-            |  Zl                 Separator, line                                 #ucat
-            |  Zp                 Separator, paragraph                            #ucat
-            |  Zs                 Separator, space                                #ucat
-            |  Z                  Union of _Zl_, _Zp_, and _Zs_                   #ucat
-            |  Cc                 Other, control                                  #ucat
-            |  Cf                 Other, format                                   #ucat
-            |  Cs                 Other, surrogate                                #ucat
-            |  Cn                 Other, not assigned                             #ucat
-            |  Co                 Other, private use                              #ucat
-            |  C                  Union of _Cc_, _Cf_, _Cs_, _Cn_, and _Co_       #ucat
-            |  .                  Union of all Unicode categories                 #ucat
+            |  Mn                 Mark, non-spacing                                #ucat
+            |  Mc                 Mark, spacing combining                          #ucat
+            |  Me                 Mark, enclosing                                  #ucat
+            |  MM                 Union of _Mn_, _Mc_, and _Me_                    #ucat
+            |  Sc                 Symbol, currency                                 #ucat
+            |  Sk                 Symbol, modifier                                 #ucat
+            |  Sm                 Symbol, math                                     #ucat
+            |  So                 Symbol, other                                    #ucat
+            |  S                  Union of _Sc_, _Sk_, _Sm_, and _So_              #ucat
+            |  Zl                 Separator, line                                  #ucat
+            |  Zp                 Separator, paragraph                             #ucat
+            |  Zs                 Separator, space                                 #ucat
+            |  Z                  Union of _Zl_, _Zp_, and _Zs_                    #ucat
+            |  Cc                 Other, control                                   #ucat
+            |  Cf                 Other, format                                    #ucat
+            |  Cs                 Other, surrogate                                 #ucat
+            |  Cn                 Other, not assigned                              #ucat
+            |  Co                 Other, private use                               #ucat
+            |  C                  Union of _Cc_, _Cf_, _Cs_, _Cn_, and _Co_        #ucat
+            |  .                  Union of all Unicode categories                  #ucat
   })
 
 (define-syntax regexp-case
