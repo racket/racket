@@ -26,9 +26,9 @@
   Atom     ::= (Regexp)           Match sub-expression Regexp and report          #co 11
             |  [Rng]              Match any character in Rng                      #co 2
             |  [^Rng]             Match any character not in Rng                  #co 12
-            |  .                  Match any (except newline in multi mode)        #co 13
-            |  ^                  Match start (or after newline in multi mode)    #co 14
-            |  $                  Match end (or before newline in multi mode)     #co 15
+            |  .                  Match any except newline (unless in dotall mode) #co 13
+            |  ^                  Match start (or after newline in multiline mode) #co 14
+            |  $                  Match end (or before newline in multiline mode)  #co 15
             |  Literal            Match a single literal character                #co 1
             |  (?Mode:Regexp)     Match Regexp using Mode                         #co 35
             |  (?>Regexp)         Match Regexp, only first possible               #co
@@ -80,10 +80,10 @@
   Mode     ::=                    Like the enclosing mode                         #mode
             |  Modei              Like Mode, but case-insensitive                 #mode 35
             |  Mode-i             Like Mode, but sensitive                        #mode
-            |  Modes              Like Mode, but not in multi mode                #mode
-            |  Mode-s             Like Mode, but in multi mode                    #mode
-            |  Modem              Like Mode, but in multi mode                    #mode
-            |  Mode-m             Like Mode, but not in multi mode                #mode
+            |  Modem              Like Mode, but in multiline mode                #mode
+            |  Mode-m             Like Mode, but not in multiline mode            #mode
+            |  Modes              Like Mode, but in dotall mode                   #mode
+            |  Mode-s             Like Mode, but not in dotall mode               #mode
   Class    ::= \d                 Contains _0_-_9_                                #cat 23
             |  \D                 Contains characters not in _\d_                 #cat
             |  \w                 Contains _a_-_z_, _A_-_Z_, _0_-_9_, ___         #cat 24
