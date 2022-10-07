@@ -306,9 +306,8 @@
            #t
            new-mod*-subs))))
   (unless (eq? mod new-mod)
-    (call-with-output-file*
+    (call-with-output-file/writable
      new-p
-     #:exists 'truncate/replace
      (lambda (out) (write new-mod out)))))
 
 (define (fixup-local-redirect-reference p js-path #:user [user-js-path js-path])
@@ -340,9 +339,8 @@
                                       (string->bytes/utf-8 user-js-path)
                                       (subbytes s (+ delta end2)))]
                        [else s]))))
-    (call-with-output-file*
+    (call-with-output-file/writable
      p
-     #:exists 'truncate/replace
      (lambda (out) (write-bytes new-bstr out)))))
 
 ;; Used in binary[-lib] mode:
@@ -383,9 +381,8 @@
          (convert-mod info-lib defns)]))
     (unless (equal? new-content content)
       ;; write updated:
-      (call-with-output-file* 
+      (call-with-output-file/writable
        new-p
-       #:exists 'truncate
        (lambda (out)
          (write new-content out)
          (newline out)))
@@ -503,3 +500,29 @@
                     which
                     dir)
             (current-continuation-marks)))))
+
+(define (call-with-output-file/writable pth proc)
+  ;; In case `pth` was copied from a file without the user-write-bit set,
+  ;; explicitly make it writable while we overwrite it.
+  (define (run)
+    (call-with-output-file* pth
+      #:exists 'truncate/replace
+      proc))
+  (cond
+    [(file-exists? pth)
+     (define old-mode
+       (file-or-directory-permissions pth 'bits))
+     (define new-mode
+       (if (eq? (system-type) 'windows)
+           (bitwise-ior old-mode user-write-bit group-write-bit other-write-bit)
+           (bitwise-ior old-mode user-write-bit)))
+     (if (= old-mode new-mode)
+         (run)
+         (dynamic-wind
+          (λ ()
+            (file-or-directory-permissions pth new-mode))
+          run
+          (λ ()
+            (file-or-directory-permissions pth old-mode))))]
+    [else
+     (run)]))
