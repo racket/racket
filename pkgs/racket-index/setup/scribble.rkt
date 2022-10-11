@@ -257,7 +257,10 @@
         ;; we might not have write permissions for the previous layer:
         ;; ensure that we do for the new file
         (define orig-mode (file-or-directory-permissions db-file 'bits))
-        (define writeable-mode (bitwise-ior user-write-bit orig-mode))
+        (define writeable-mode
+          (if (eq? (system-type) 'windows)
+              (bitwise-ior orig-mode user-write-bit group-write-bit other-write-bit)
+              (bitwise-ior orig-mode user-write-bit)))
         (unless (= writeable-mode orig-mode)
           (file-or-directory-permissions db-file writeable-mode)))
       (doc-db-disconnect
