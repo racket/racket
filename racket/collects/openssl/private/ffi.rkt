@@ -314,6 +314,13 @@
         [arg : _pointer]
         -> _int))
 
+(define-ssl SSL_CTX_set_keylog_callback
+  (_fun [ctx : _SSL_CTX*]
+        [cb : (_fun [ssl : _SSL*]
+                    [line : _bytes/nul-terminated] ;; const char *
+                    -> _void)]
+        -> _void))
+
 (define-crypto EVP_sha224 (_fun -> _EVP_MD*/null))
 (define-crypto EVP_sha256 (_fun -> _EVP_MD*/null))
 (define-crypto EVP_sha384 (_fun -> _EVP_MD*/null))

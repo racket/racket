@@ -161,6 +161,8 @@ TO DO:
         void?)]
   [ssl-set-verify-hostname!
    (c-> ssl-context? any/c void?)]
+  [ssl-set-keylogger!
+   (c-> ssl-context? (or/c #f logger?) void?)]
   [ssl-peer-verified?
    (c-> ssl-port? boolean?)]
   [ssl-peer-certificate-hostnames
@@ -379,7 +381,11 @@ TO DO:
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Structs
 
-(define-struct ssl-context (ctx [verify-hostname? #:mutable] [sealed? #:mutable]))
+(define-struct ssl-context
+  (ctx
+   [verify-hostname? #:mutable]
+   [sealed? #:mutable]
+   [keylog-cb #:mutable]))
 (define-struct (ssl-client-context ssl-context) ())
 (define-struct (ssl-server-context ssl-context)
   ([sni-cb #:mutable #:auto]
@@ -390,7 +396,9 @@ TO DO:
                                               (lambda (x) lst))))
 
 ;; internal:
-(define-struct mzssl (ssl i o r-bio w-bio pipe-r pipe-w 
+;; mzctx: (or/c #f ssl-context?) - retained to prevent early garbage
+;;        collection of its associated `keylog-cb`, if any.
+(define-struct mzssl (ssl mzctx i o r-bio w-bio pipe-r pipe-w
                           buffer lock
                           w-closed? r-closed?
                           flushing? must-write must-read
@@ -465,7 +473,7 @@ TO DO:
 
 (define (make-context who protocol-symbol client? priv-key cert-chain)
   (define ctx (make-raw-context who protocol-symbol client?))
-  (define mzctx ((if client? make-ssl-client-context make-ssl-server-context) ctx #f #f))
+  (define mzctx ((if client? make-ssl-client-context make-ssl-server-context) ctx #f #f #f))
   (when cert-chain (ssl-load-certificate-chain! mzctx cert-chain))
   (cond [(and (pair? priv-key) (eq? (car priv-key) 'pem))
          (ssl-load-private-key! mzctx (cadr priv-key) #f #f)]
@@ -544,11 +552,14 @@ TO DO:
 
 (define (get-context who context-or-encrypt-method client?
                      #:need-unsealed? [need-unsealed? #f])
-  (if (ssl-context? context-or-encrypt-method)
-      (extract-ctx who need-unsealed? context-or-encrypt-method)
-      (if (and client? (eq? context-or-encrypt-method 'secure))
-          (ssl-context-ctx (ssl-secure-client-context))
-          (make-raw-context who context-or-encrypt-method client?))))
+  (cond
+    [(ssl-context? context-or-encrypt-method)
+     (values context-or-encrypt-method (extract-ctx who need-unsealed? context-or-encrypt-method))]
+    [(and client? (eq? context-or-encrypt-method 'secure))
+     (define mzctx (ssl-secure-client-context))
+     (values mzctx (ssl-context-ctx mzctx))]
+    [else
+     (values #f (make-raw-context who context-or-encrypt-method client?))]))
 
 (define (get-context/listener who ssl-context-or-listener [fail? #t]
                               #:need-unsealed? [need-unsealed? #f])
@@ -877,6 +888,19 @@ TO DO:
              (cond [(equal? locs c-locs) c-ctx]
                    [else (reset)])]
             [else (reset)]))))
+
+(define (ssl-set-keylogger! ssl-context logger)
+  (define ctx
+    (extract-ctx 'ssl-set-keylogger! #t ssl-context))
+  (cond
+    [logger
+     (define (cb _ssl line)
+       (log-message logger 'debug 'openssl-keylogger "callback" line))
+     (set-ssl-context-keylog-cb! ssl-context cb)
+     (SSL_CTX_set_keylog_callback ctx cb)]
+    [else
+     (set-ssl-context-keylog-cb! ssl-context #f)
+     (SSL_CTX_set_keylog_callback ctx #f)]))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; SSL ports
@@ -1359,7 +1383,7 @@ TO DO:
            (if connect? "client" "server")
            context-or-encrypt-method))
   (atomically ;; connect functions to subsequent check-valid (ie, ERR_get_error)
-   (let ([ctx (get-context who context-or-encrypt-method connect?)])
+   (let-values ([(mzctx ctx) (get-context who context-or-encrypt-method connect?)])
      (check-valid ctx who "context creation")
      (with-failure
       (lambda () (when (and ctx
@@ -1383,13 +1407,13 @@ TO DO:
             (SSL_set_bio ssl r-bio w-bio)
             ;; ssl has r-bio & w-bio (no ref count?), so drop it:
             (set! free-bio? #f)
-            (values ssl r-bio w-bio connect?)))))))))
+            (values ssl mzctx r-bio w-bio connect?)))))))))
 
 (define (wrap-ports who i o context-or-encrypt-method connect/accept
                     close? shutdown-on-close? error/ssl
                     hostname alpn)
   ;; Create the SSL connection:
-  (let-values ([(ssl r-bio w-bio connect?)
+  (let-values ([(ssl mzctx r-bio w-bio connect?)
                 (create-ssl who context-or-encrypt-method connect/accept error/ssl)]
                [(verify-hostname?)
                 (cond [(ssl-context? context-or-encrypt-method)
@@ -1419,7 +1443,7 @@ TO DO:
     ;; connect/accept:
     (let-values ([(buffer) (make-bytes BUFFER-SIZE)]
            [(pipe-r pipe-w) (make-pipe)])
-      (let ([mzssl (make-mzssl ssl i o r-bio w-bio pipe-r pipe-w 
+      (let ([mzssl (make-mzssl ssl mzctx i o r-bio w-bio pipe-r pipe-w
                                buffer (make-semaphore 1)
                                #f #f
                                #f #f #f 2
