@@ -26,8 +26,8 @@ jobs:
         distribution: 'full'
         variant: 'CS'
         version: 'current'
-    - name: Scribble License Files
-      run: raco pkg install --auto -j $(nproc) pkgs/racket-index
+    - name: Update racket-index
+      run: sudo raco pkg update -j $(nproc) --batch --auto pkgs/racket-index
 
   generation-check:
     runs-on: ubuntu-18.04
