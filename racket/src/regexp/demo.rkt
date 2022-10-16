@@ -310,3 +310,40 @@
 (check #"a*b"
        (make-bytes 1024 (char->integer #\a))
        100000)
+
+;; regression tests where string is long enough to trigger lazy decoding:
+(let ([xstr (string-append "#lang racket\n"
+                           "\n"
+                           ";; Case insensitive words:\n"
+                           "(define ci-word%\n"
+                           "  (class* object% (equal<%>)\n"
+                           "\n"
+                           "    ;; Initialization\n"
+                           "    (init-field word)\n"
+                           "    (super-new)\n"
+                           "\n"
+                           "    ;; We define equality to ignore case:\n"
+                           "    (define/public (equal-to? other recur)\n"
+                           "      (string-ci=? word (get-field word other)))\n"
+                           "\n"
+                           "    ;; The hash codes need to be insensitive to casing as well.\n"
+                           "    ;; We'll just downcase the word and get its hash code.\n"
+                           "    (define/public (equal-hash-code-of hash-code)\n"
+                           "      (hash-code (string-downcase word)))\n"
+                           "\n"
+                           "    (define/public (equal-secondary-hash-code-of hash-code)\n"
+                           "      (hash-code (string-downcase word)))))\n"
+                           "\n"
+                           ";; We can create a hash with a single word:\n"
+                           "(define h (make-hash))\n"
+                           "(hash-set! h (new ci-word% [word \"inconceivable!\"]) 'value)\n"
+                           "\n"
+                           ";; Lookup into the hash should be case-insensitive, so that\n"
+                           ";; both of these should return 'value.\n"
+                           "(hash-ref h (new ci-word% [word \"inconceivable!\"]))\n"
+                           "(hash-ref h (new ci-word% [word \"INCONCEIVABLE!\"]))\n"
+                           "\n"
+                           ";; Comparison fails if we use a non-ci-word%:\n"
+                           "(hash-ref h \"inconceivable!\" 'i-dont-think-it-means-what-you-think-it-means)")])
+  (void (rx:regexp-replace* (rx:regexp "(?m:^$)") xstr "\xA0"))
+  (void (rx:regexp-replace* (rx:pregexp "\\b") xstr "\xA0")))

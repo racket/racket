@@ -5843,11 +5843,11 @@
       (if (let ((or-part_0 (= pos_0 start_0)))
             (if or-part_0
               or-part_0
-              (=
-               10
-               (if (bytes? s_0)
-                 (unsafe-bytes-ref s_0 (sub1 pos_0))
-                 (lazy-bytes-ref s_0 (sub1 pos_0))))))
+              (if (bytes? s_0)
+                (= 10 (unsafe-bytes-ref s_0 (sub1 pos_0)))
+                (if (lazy-bytes-before-end? s_0 (sub1 pos_0) limit_0)
+                  (= 10 (lazy-bytes-ref s_0 (sub1 pos_0)))
+                  #f))))
         (|#%app| next-m_0 s_0 pos_0 start_0 limit_0 end_0 state_0 stack_0)
         #f))))
 (define line-end-matcher
@@ -5880,10 +5880,11 @@
               (if or-part_0
                 or-part_0
                 (not
-                 (word-byte?
-                  (if (bytes? s_0)
-                    (unsafe-bytes-ref s_0 (sub1 pos_0))
-                    (lazy-bytes-ref s_0 (sub1 pos_0)))))))))
+                 (if (bytes? s_0)
+                   (word-byte? (unsafe-bytes-ref s_0 (sub1 pos_0)))
+                   (if (lazy-bytes-before-end? s_0 (sub1 pos_0) end_0)
+                     (word-byte? (lazy-bytes-ref s_0 (sub1 pos_0)))
+                     #f)))))))
        (eq?
         app_0
         (let ((or-part_0
