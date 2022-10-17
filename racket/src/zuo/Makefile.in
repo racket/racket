@@ -34,7 +34,8 @@ zuo: $(srcdir)/zuo.c
 
 .PHONY: check
 check: zuo
-	./zuo . check
+	./zuo . to-run/zuo
+	to-run/zuo . check
 
 .PHONY: install
 install: zuo

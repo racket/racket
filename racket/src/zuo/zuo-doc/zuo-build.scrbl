@@ -42,6 +42,48 @@ rule can call @racket[build] to start a nested build, or it can call
 @racket[build/dep] to build or register a dependency that is
 discovered in the process of building.
 
+Here's an example of a Zuo script to build @filepath{demo} by
+compiling and linking @filepath{main.c} and @filepath{helper.c}:
+
+@racketblock[
+@#,hash-lang[] zuo
+
+(provide-targets targets-at)
+
+(define (targets-at at-dir vars)
+  (define demo (at-dir (.exe "demo")))
+
+  (define main.c (at-source "main.c"))
+  (define main.o (at-dir (.c->.o "main.c")))
+
+  (define helper.c (at-source "helper.c"))
+  (define helper.o (at-dir (.c->.o "helper.c")))
+
+  (make-targets
+   `([:target ,demo (,main.o ,helper.o)
+              ,(lambda (dest token)
+                 (c-link dest (list main.o helper.o) vars))]
+     [:target ,main.o (,main.c)
+              ,(lambda (dest token)
+                 (c-compile dest main.c vars))]
+     [:target ,helper.o (,helper.c)
+              ,(lambda (dest token)
+                 (c-compile dest helper.c vars))]
+     [:target clean ()
+              ,(lambda (token)
+                 (for-each rm* (list main.o helper.o demo)))])))
+]
+
+Although the @racket[make-targets] function takes a makefile-like
+description of targets and dependencies, this script is still much
+more verbose than a Unix-specific makefile that performs the same
+task. Zuo is designed to support the kind of syntactic abstraction
+that could make this script compact, but the current implementation is
+aimed at build tasks that are larger and more complex. In those cases,
+it's not just a matter of dispatching to external tools like a C
+compiler, and most Zuo code ends up in helper functions and libraries
+outside the @racket[make-targets] form.
+
 @section[#:tag "make-target"]{Creating Targets}
 
 Construct a @deftech{target} with either @racket[input-file-target]
@@ -206,8 +248,9 @@ A build runs in a @tech{threading context}, so a target's
 so can enable parallelism among targets, depending on the
 @racket['jobs] option provided to @racket[build] or
 @racket[build/command-line], a @DFlag{jobs} command-line argument
-parsed by @racket[build/command-line], or the @envvar{ZUO_JOBS}
-environment variable.
+parsed by @racket[build/command-line], a jobserver configuration as
+provided by GNU make and communicated through the @envvar{MAKEFLAGS}
+environment variable, or the @envvar{ZUO_JOBS} environment variable.
 
 When calling @racket[build] for a nested build from a target's
 @racket[_get-deps] or @racket[_rebuild] procedures, supply the
@@ -388,9 +431,11 @@ following keys are recognized:
 @item{@racket['jobs] mapped to a positive integer: controls the
       maximum build steps that are allowed to proceed concurrently,
       and this concurrency turns into parallelism when a task uses a
-      process and @racket[thread-process-wait]; the @envvar{ZUO_JOBS}
-      environment variable determines the default if it is set,
-      otherwise the default is 1}
+      process and @racket[thread-process-wait]; if @racket['jobs] is
+      not mapped, a jobserver is used if found via
+      @racket[maybe-jobserver-client]; otherwise, the default is the
+      value of the @envvar{ZUO_JOBS} environment variable if it is
+      set, @racket[1] if not}
 
 @item{@racket['log?] mapped to any value: enables logging of rebuild
       reasons via @racket[alert] when the value is not @racket[#f];
@@ -412,7 +457,11 @@ this one might check the states of some of the same files, but any
 triggered actions are separate, and @tech{phony} targets are similarly
 triggered independently. Use @racket[build/dep] or
 @racket[build/no-dep], instead, to recursively trigger targets within
-the same build.}
+the same build.
+
+@history[#:changed "1.1" @elem{Use @racket[maybe-jobserver-client] if
+                               @racket['jobs] is not set in
+                               @racket[options].}]}
 
 
 @defproc[(build/dep [target (or target? path-string?)] [token token?]) void?]{

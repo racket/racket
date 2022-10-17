@@ -38,7 +38,8 @@ will do the same thing as `make` and `make install` with a default
 configuration.
 
 The Zuo executable runs only modules. If you run Zuo with no
-command-line arguments, then it loads `main.zuo`. Otherwise, the first
+command-line arguments, then it loads `main.zuo`. Use the `-c`
+flag to provide module text as an argument. Otherwise, the first
 argument to Zuo is a file to run or a directory containing a
 `main.zuo` to run, and additional arguments are delivered to that Zuo
 program via the `runtime-env` procedure. Running the command

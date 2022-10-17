@@ -130,3 +130,40 @@
     (check (equal? (fd-read in len) (substring big 0 len)))
     (check (fd-read in 1) (string (string-ref big len)))
     (fd-close in)))
+
+(check (fd-poll '() 0) #f)
+(check (fd-poll '() 1) #f)
+(check-arg-fail (fd-poll 'stdin) "not a list of")
+(check-arg-fail (fd-poll '(stdin)) "not a list of")
+(check-arg-fail (fd-poll '() 'oops) "not a nonnegative integer or #f")
+
+(define zuo.exe (hash-ref (runtime-env) 'exe))
+
+(let ([ht (process zuo.exe
+                   "-c"
+                   (~a "#lang zuo/base\n"
+                       (~s '(let ()
+                              (define in (fd-open-input 'stdin))
+                              (define out (fd-open-output 'stdout))
+                              (let loop ()
+                                (define msg (fd-read in 1))
+                                (unless (eq? msg eof)
+                                  (fd-write out msg)
+                                  (loop))))))
+                   (hash 'stdin 'pipe
+                         'stdout 'pipe))])
+  (define in (hash-ref ht 'stdout))
+  (define out (hash-ref ht 'stdin))
+  (check (fd-poll (list in) 0) #f)
+  (check (fd-poll (list in out) 0) out)
+  (check (fd-poll (list in out)) out)
+  (fd-write out "x")
+  (check (fd-poll (list in)) in)
+  (check (fd-poll (list in) 0) in)
+  (check (fd-poll (list in in in) 0) in)
+  (check (fd-poll (list in out)) in)
+  (check (fd-read in 1) "x")
+  (fd-close in)
+  (fd-close out)
+  (process-wait (hash-ref ht 'process))
+  (void))

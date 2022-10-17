@@ -522,31 +522,4 @@
                   (hash-ref config 'INSTALL_PKGSCOPE))))
 
 (define (infer-gnu-make-jobs)
-  ;; GNU make sets `MAKEFLAGS` to include `-j` and `--jobserver-fds=<in>,<out>`
-  ;; when parallel builds are enabled via `-j`, where <in> and <out> are
-  ; file descriptors for pipes to read and write 1-character job tokens
-  (define a (assoc "MAKEFLAGS" (hash-ref (runtime-env) 'env)))
-  (and a
-       (let ([args (shell->strings (cdr a))])
-         (and (ormap (lambda (arg) (string=? "-j" arg)) args)
-              (ormap (let ([match? (let ([fds? (glob->matcher "--jobserver-fds=*")]
-                                         [auth? (glob->matcher "--jobserver-auth=*")])
-                                     (lambda (s) (or (fds? s) (auth? s))))])
-                       (lambda (arg)
-                         (and (match? arg)
-                              (let ([fds (map string->integer
-                                              (string-split (cadr (string-split arg "=")) ","))])
-                                (and (= (length fds) 2)
-                                     (andmap integer? fds)
-                                     ;; read in all available job tokens, then give them back up,
-                                     ;; just so we can infer the number of tokens that would be available
-                                     (let ([in (fd-open-input (car fds))]
-                                           [out (fd-open-output (cadr fds))])
-                                       (and (fd-valid? in)
-                                            (fd-valid? out)
-                                            (let ([s (fd-read in 'avail)])
-                                              (and (string? s)
-                                                   (begin
-                                                     (fd-write out s)
-                                                     (+ 1 (string-length s))))))))))))
-                     args)))))
+  (maybe-jobserver-jobs))

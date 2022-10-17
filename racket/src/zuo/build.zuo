@@ -49,7 +49,7 @@
               (rule (list image_zuo.c
                           (input-data-target 'config (cons
                                                       lib-path
-                                                      (map (lambda (key) (hash-ref config key))
+                                                      (map (lambda (key) (hash-ref config key #f))
                                                            '(CC CPPFLAGS CFLAGS LDFLAGS LIBS))))
                           (quote-module-path))
                     (lambda ()

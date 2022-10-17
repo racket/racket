@@ -33,21 +33,39 @@ build.zuo} and @exec{./zuo build.zuo install} (omit the @exec{./} on Windows)
 will do the same thing as @exec{make} and @exec{make install} with
 a default configuration.
 
-The Zuo executable runs only modules. If you run Zuo with no
-command-line arguments, then it loads @filepath{main.zuo} in the
-current directory. Otherwise, the first argument to Zuo is a file to
-run or a directory containing a @filepath{main.zuo} to run, and
-additional arguments are delivered to that program via the
-@racket[runtime-env] procedure. Either way, if this initial script has
-a @racketidfont{main} submodule, the submodule is run.
+The Zuo executable runs only modules:
 
-Note that starting Zuo with the argument @filepath{.} equivalent to
-the argument @filepath{./main.zuo}, which is a convenient shorthand
-for using @exec{zuo} as a replacement for @exec{make} while still
-passing arguments. When Zuo receives the empty string (which would be
-invalid as a file path) as a first argument, it reads a module from
-standard input.
+@itemlist[
 
+ @item{If you run Zuo with no command-line arguments, then it loads
+       @filepath{main.zuo} in the current directory.}
+
+ @item{As long as the @Flag{c} is not used and the first argument is
+       not the empty string, the first argument to Zuo is used as a
+       file to run or a directory containing a @filepath{main.zuo} to
+       run.
+
+       Note that starting Zuo with the argument @filepath{.} is
+       equivalent to the argument @filepath{./main.zuo}, so @exec{zuo
+       .} is a convenient replacement for @exec{make} while still
+       passing arguments.}
+
+ @item{If the @Flag{c} flag is provided to Zuo, the first argument is
+       treated as the text of a module to run, instead of the name of
+       a file or directory.}
+
+ @item{If the first argument to Zuo is the empty string (which would
+       be invalid as a file path), the module to run is read from
+       standard input.}
+
+]
+
+Additional Zuo arguments are delivered to that program via the
+@racket[runtime-env] procedure. When the initial script module has a
+@racketidfont{main} submodule (see @racket[module+]), that submodule
+is run.
+
+@history[#:changed "1.1" @elem{Added the @Flag{c} flag.}]
 
 @section{Library Modules and Startup Performance}
 

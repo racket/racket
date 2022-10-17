@@ -2,6 +2,7 @@
 (require "cmdline.zuo"
          "thread.zuo"
          "config.zuo"
+         "jobserver.zuo"
          "private/build-db.zuo")
 
 (provide (rename-out [make-target target]
@@ -48,7 +49,7 @@
 (struct token (target      ; the target that received this token
                ch          ; a channel to access the build state
                seen        ; to detect dependency cycles
-               resource-ch ; build state's resource channel
+               resourcer   ; build state's resource manager
                uni?))      ; build state's `uni?` flag
 
 (struct target (key       ; shortcut: `string->symbol` of the path
@@ -212,7 +213,7 @@
                      db            ; key -> (cons sha256 dep-sha256s) | #t [for db file itself]
                      time-cache    ; key -> (cons timestamp sha256)
                      saw-targets   ; key -> target [to detect multiple for same output]
-                     resource-ch   ; channel with available resources enqueued
+                     resourcer     ; build stat's resource manager
                      log?          ; logging enabled?
                      uni?))        ; just one job?
 
@@ -222,15 +223,23 @@
     (unless (target? t) (arg-error 'build "target or list of targets" t-in))
     (unless (hash? options) (arg-error 'build "hash table" options))
     (unless (or (not token) (token? token)) (arg-error 'build "build token or #f" token))
-    (let* ([resource-ch (and token (token-resource-ch token))]
-           [num-jobs (if token
-                         ;; we only need whether it's 1 job or more:
-                         (if (token-uni? token) 1 2)
-                         (hash-ref options 'jobs (default-jobs)))]
+    (let* ([resourcer (and token (token-resourcer token))]
+           [given-num-jobs (if token
+                               ;; we only need whether it's 1 job or more:
+                               (if (token-uni? token) 1 2)
+                               (hash-ref options 'jobs #f))]
            [seen (hash)])
       ;; Start a threading context, so we can have parallel build tasks
       ((if token (lambda (th) (th)) call-in-main-thread)
        (lambda ()
+         (define jobserver-resourcer (and (not resourcer)
+                                          (not given-num-jobs)
+                                          (maybe-jobserver-client)))
+         (define num-jobs (or given-num-jobs
+                              (and jobserver-resourcer
+                                   ;; assume jobserver allows more than 1:
+                                   2)
+                              (default-jobs)))
          (define ch (channel))
          (define state (build-state ch
                                     (hash)
@@ -238,15 +247,16 @@
                                     (hash)
                                     (hash)
                                     (hash)
-                                    (or resource-ch
-                                        (make-resources num-jobs))
+                                    (or resourcer
+                                        jobserver-resourcer
+                                        (make-resourcer num-jobs))
                                     (or (hash-ref options 'log? #f)
                                         (assoc "ZUO_BUILD_LOG" (hash-ref (runtime-env) 'env)))
                                     (= num-jobs 1)))
-         (when resource-ch
+         (when resourcer
            (release-resource state "nested"))
          (do-build t state seen #t)
-         (when resource-ch
+         (when resourcer
            (acquire-resource state "continue from nested")))))))
 
 (define (build/maybe-dep t-in token add-dep?)
@@ -354,7 +364,7 @@
   (define tok (token t
                      (build-state-ch state)
                      new-seen
-                     (build-state-resource-ch state)
+                     (build-state-resourcer state)
                      (build-state-uni? state)))
   (put-state (token-ch tok) queued-state "rule")
 
@@ -787,20 +797,27 @@
 (define (put-state ch state who)
   (channel-put ch state))
 
-(define (make-resources n)
+(define (make-resourcer n)
   (define ch (channel))
   (let loop ([n n])
     (unless (= n 0)
       (channel-put ch 'go)
       (loop (- n 1))))
-  ch)
+  (lambda (msg)
+    (cond
+      [(eq? msg 'get)
+       (channel-get ch)
+       (void)]
+      [(eq? msg 'put)
+       (channel-put ch 'go)]
+      [else
+       (error "bad resourcer msg" msg)])))
 
 (define (acquire-resource state who)
-  (channel-get (build-state-resource-ch state))
-  (void))
+  ((build-state-resourcer state) 'get))
 
 (define (release-resource state who)
-  (channel-put (build-state-resource-ch state) 'go))
+  ((build-state-resourcer state) 'put))
 
 (define (log-changed same? who state)
   (unless same?

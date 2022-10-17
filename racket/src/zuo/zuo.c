@@ -3,6 +3,7 @@
    declarations. */
 
 #define ZUO_VERSION 1
+#define ZUO_MINOR_VERSION 1
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
 # define ZUO_WINDOWS
@@ -25,6 +26,7 @@
 # include <time.h>
 # include <dirent.h>
 # include <signal.h>
+# include <poll.h>
 #endif
 #ifdef ZUO_WINDOWS
 # include <windows.h>
@@ -77,6 +79,8 @@ typedef unsigned long zuo_uintptr_t;
 
 typedef HANDLE zuo_raw_handle_t;
 #endif
+
+#define ZUO_HANDLE_ID(h) ((zuo_int_t)(h))
 
 /* the "image.zuo" script looks for this line: */
 #define EMBEDDED_IMAGE 0
@@ -343,10 +347,10 @@ static struct {
     zuo_t *o_pending_modules;
 
 #ifdef ZUO_UNIX
-    /* process status table and fd table */
+    /* process status table */
     zuo_t *o_pid_table;
-    zuo_t *o_fd_table;
 #endif
+    zuo_t *o_fd_table;
     zuo_t *o_cleanable_table;
 
     /* startup info */
@@ -1323,7 +1327,7 @@ static zuo_t *zuo_symbol_list_sort(zuo_t *l_in) {
 
   first = last = z.o_null;
   while ((left != z.o_null) && (right != z.o_null)) {
-    zuo_t *p, *s_left, *s_right;
+    zuo_t *p;
 
     if (strcmp(ZUO_STRING_PTR(((zuo_symbol_t *)_zuo_car(left))->str),
                ZUO_STRING_PTR(((zuo_symbol_t *)_zuo_car(right))->str))
@@ -4055,6 +4059,7 @@ static zuo_t *zuo_make_runtime_env(zuo_t *exe_path, const char *load_file, int a
 
 static zuo_t *zuo_finish_runtime_env(zuo_t *ht) {
   ht = zuo_hash_set(ht, zuo_symbol("version"), zuo_integer(ZUO_VERSION));
+  ht = zuo_hash_set(ht, zuo_symbol("minor-version"), zuo_integer(ZUO_MINOR_VERSION));
 
   ht = zuo_hash_set(ht, zuo_symbol("dir"), zuo_current_directory());
   ht = zuo_hash_set(ht, zuo_symbol("env"), zuo_get_envvars());
@@ -4126,12 +4131,12 @@ static void check_options_consumed(const char *who, zuo_t *options) {
 # define EINTR_RETRY(e) do { } while (((e) == -1) && (errno == EINTR))
 #endif
 
-static zuo_t *zuo_fd_handle(zuo_raw_handle_t handle, zuo_handle_status_t status)  {
+static zuo_t *zuo_fd_handle(zuo_raw_handle_t handle, zuo_handle_status_t status, int is_pipe) {
   zuo_t *h = zuo_handle(handle, status);
-#ifdef ZUO_UNIX
-  int added = 0;
-  Z.o_fd_table = trie_extend(Z.o_fd_table, handle, h, h, &added);
-#endif
+  {
+    int added = 0;
+    Z.o_fd_table = trie_extend(Z.o_fd_table, ZUO_HANDLE_ID(handle), h, is_pipe ? z.o_true : z.o_false, &added);
+  }
   return h;
 }
 
@@ -4255,9 +4260,7 @@ static void zuo_close_handle(zuo_raw_handle_t handle)
 static void zuo_close(zuo_raw_handle_t handle)
 {
   zuo_close_handle(handle);
-#ifdef ZUO_UNIX
-  Z.o_fd_table = trie_remove(Z.o_fd_table, handle, 0);
-#endif
+  Z.o_fd_table = trie_remove(Z.o_fd_table, ZUO_HANDLE_ID(handle), 0);
 }
 
 static zuo_raw_handle_t zuo_fd_open_input_handle(zuo_t *path, zuo_t *options) {
@@ -4402,7 +4405,7 @@ static zuo_t *zuo_fd_open_output(zuo_t *path, zuo_t *options) {
 	SetFilePointer(fd, 0, NULL, FILE_END);
     }
 #endif
-    fd_h = zuo_fd_handle(fd, zuo_handle_open_fd_out_status);
+    fd_h = zuo_fd_handle(fd, zuo_handle_open_fd_out_status, 0);
 
     return fd_h;
   } else if (path == zuo_symbol("stdout")) {
@@ -4432,16 +4435,21 @@ static zuo_t *zuo_fd_open_output(zuo_t *path, zuo_t *options) {
   }
 }
 
-static void zuo_check_input_output_fd(const char *who, zuo_t *fd_h) {
+static int zuo_is_input_output_fd(zuo_t *fd_h) {
   if (fd_h->tag == zuo_handle_tag) {
     zuo_handle_t *h = (zuo_handle_t *)fd_h;
     if ((h->u.h.status == zuo_handle_open_fd_out_status)
         || (h->u.h.status == zuo_handle_open_fd_in_status)) {
-      return;
+      return 1;
     }
   }
 
-  zuo_fail_arg(who, "open input or output file descriptor", fd_h);
+  return 0;
+}
+
+static void zuo_check_input_output_fd(const char *who, zuo_t *fd_h) {
+  if (!zuo_is_input_output_fd(fd_h))
+    zuo_fail_arg(who, "open input or output file descriptor", fd_h);
 }
 
 static zuo_t *zuo_fd_close(zuo_t *fd_h) {
@@ -4492,6 +4500,103 @@ static zuo_t *zuo_fd_read(zuo_t *fd_h, zuo_t *amount) {
   }
 
   return zuo_drain(ZUO_HANDLE_RAW(fd_h), amt);
+}
+
+zuo_t *zuo_fd_poll(zuo_t *fds_i, zuo_t *timeout_i) {
+  const char *who = "fd-poll";
+  zuo_t *l;
+  zuo_int_t len = 0, which = -1, timeout;
+#ifdef ZUO_UNIX
+  struct pollfd *fds;
+#endif
+#ifdef ZUO_WINDOWS
+  HANDLE *fds;
+#endif
+
+  for (l = fds_i; l != z.o_null; l = _zuo_cdr(l)) {
+    if ((l->tag != zuo_pair_tag)
+        || !zuo_is_input_output_fd(_zuo_car(l)))
+      zuo_fail_arg(who, "list of open input and output file descriptor handles", fds_i);
+    len++;
+  }
+
+  if ((timeout_i == z.o_undefined) || (timeout_i == z.o_false))
+    timeout = -1;
+  else if ((timeout_i->tag == zuo_integer_tag)
+           && (ZUO_INT_I(timeout_i) >= 0))
+    timeout = ZUO_INT_I(timeout_i);
+  else
+    zuo_fail_arg(who, "nonnegative integer or #f", timeout_i);
+
+#ifdef ZUO_UNIX
+  /* loop until on of the handles is marked as done */
+  {
+    zuo_int_t i;
+    int ready;
+
+    fds = malloc(sizeof(struct pollfd) * len);
+    for (l = fds_i, i = 0; l != z.o_null; l = _zuo_cdr(l), i++) {
+      zuo_handle_t *h = (zuo_handle_t *)_zuo_car(l);
+      fds[i].fd = h->u.h.u.handle;
+      if (h->u.h.status == zuo_handle_open_fd_out_status)
+        fds[i].events = POLLOUT;
+      else
+        fds[i].events = POLLIN;
+      fds[i].revents = 0;
+    }
+
+    /* wait for any process to exit, and update the corresponding handle */
+    EINTR_RETRY(ready = poll(fds, len, timeout));
+
+    if (ready > 0) {
+      for (i = 0; i < len; i++) {
+        if (fds[i].revents != 0) {
+          which = i;
+          break;
+        }
+      }
+    } else if (ready == 0)
+      which = len;
+    else
+      zuo_fail1w_errno(who, "poll failed", fds_i);
+  }
+#endif
+#ifdef ZUO_WINDOWS
+  if (len == 0) {
+    if (timeout != 0)
+      Sleep(timeout < 0 ? INFINITE : timeout);
+    which = len;
+  } else {
+    zuo_int_t i = 0;
+    DWORD r;
+
+    fds = malloc(sizeof(HANDLE) * len);
+
+    for (l = fds_i; l != z.o_null; l = _zuo_cdr(l)) {
+      zuo_handle_t *h = (zuo_handle_t *)_zuo_car(l);
+      fds[i++] = h->u.h.u.handle;
+    }
+
+    r = WaitForMultipleObjects(len, fds, FALSE, timeout < 0 ? INFINITE : timeout);
+
+    if (r == WAIT_TIMEOUT)
+      which = len;
+    else if (r != WAIT_FAILED)
+      which = r - WAIT_OBJECT_0;
+    else
+      zuo_fail1w(who, "poll failed", fds_i);
+  }
+#endif
+
+  for (l = fds_i; which > 0; l = _zuo_cdr(l))
+    which--;
+
+  free(fds);
+
+  if (l == z.o_null)
+    return z.o_false;
+  else
+    return _zuo_car(l);
 }
 
 static zuo_t *zuo_fd_terminal_p(zuo_t *fd_h, zuo_t *ansi) {
@@ -5302,7 +5407,7 @@ static zuo_t *zuo_resume_signal() {
 }
 
 static void zuo_clean_all() {
-  zuo_t *keys, *l;
+  zuo_t *keys, *l, *open_fds;
 
   if (Z.o_cleanable_table == z.o_undefined)
     return; /* must be an error during startup */
@@ -5310,6 +5415,14 @@ static void zuo_clean_all() {
   zuo_suspend_signal();
 
   keys = zuo_trie_keys(Z.o_cleanable_table, z.o_null);
+
+  /* close pipes connected to processes, so they'll know we're trying to exit */
+  open_fds = zuo_trie_keys(Z.o_fd_table, z.o_null);
+  for (l = open_fds; l != z.o_null; l = _zuo_cdr(l)) {
+    zuo_handle_t *h = (zuo_handle_t *)_zuo_car(l);
+    if (trie_lookup(Z.o_fd_table, ZUO_HANDLE_ID(h->u.h.u.handle)) == z.o_true)
+      zuo_close(h->u.h.u.handle);
+  }
 
   /* wait for all processes */
   for (l = keys; l != z.o_null; l = _zuo_cdr(l)) {
@@ -6078,11 +6191,11 @@ zuo_t *zuo_process(zuo_t *command_and_args)
   result = z.o_empty_hash;
   result = zuo_hash_set(result, zuo_symbol("process"), p_handle);
   if (redirect_in)
-    result = zuo_hash_set(result, zuo_symbol("stdin"), zuo_fd_handle(in, zuo_handle_open_fd_out_status));
+    result = zuo_hash_set(result, zuo_symbol("stdin"), zuo_fd_handle(in, zuo_handle_open_fd_out_status, 1));
   if (redirect_out)
-    result = zuo_hash_set(result, zuo_symbol("stdout"), zuo_fd_handle(out, zuo_handle_open_fd_in_status));
+    result = zuo_hash_set(result, zuo_symbol("stdout"), zuo_fd_handle(out, zuo_handle_open_fd_in_status, 1));
   if (redirect_err)
-    result = zuo_hash_set(result, zuo_symbol("stderr"), zuo_fd_handle(err, zuo_handle_open_fd_in_status));
+    result = zuo_hash_set(result, zuo_symbol("stderr"), zuo_fd_handle(err, zuo_handle_open_fd_in_status, 1));
 
   return result;
 }
@@ -6993,6 +7106,7 @@ static void zuo_primitive_init(int will_load_image) {
   ZUO_TOP_ENV_SET_PRIMITIVE1("fd-close", zuo_fd_close);
   ZUO_TOP_ENV_SET_PRIMITIVE2("fd-read", zuo_fd_read);
   ZUO_TOP_ENV_SET_PRIMITIVE2("fd-write", zuo_fd_write);
+  ZUO_TOP_ENV_SET_PRIMITIVEb("fd-poll", zuo_fd_poll);
   ZUO_TOP_ENV_SET_PRIMITIVEb("fd-terminal?", zuo_fd_terminal_p);
   ZUO_TOP_ENV_SET_PRIMITIVE1("fd-valid?", zuo_fd_valid_p);
 
@@ -7100,8 +7214,8 @@ static void zuo_runtime_init(zuo_t *lib_path, zuo_t *runtime_env) {
 
 #ifdef ZUO_UNIX
   Z.o_pid_table = z.o_empty_hash;
-  Z.o_fd_table = z.o_empty_hash;
 #endif
+  Z.o_fd_table = z.o_empty_hash;
   Z.o_cleanable_table = z.o_empty_hash;
 
   Z.o_library_path = lib_path; /* should be absolute or #f */
@@ -7119,6 +7233,7 @@ int zuo_main(int argc, char **argv) {
   char *load_file = NULL, *library_path = NULL, *boot_image = NULL;
   char *argv0 = argv[0];
   zuo_t *exe_path, *load_path, *lib_path;
+  int eval_argument = 0;
 
   argc--;
   argv++;
@@ -7131,6 +7246,7 @@ int zuo_main(int argc, char **argv) {
                        "If <file-or-dir> is a file, it is used as a module path to load.\n"
                        "If <file-or-dir> is a directory, \"main.zuo\" is loded.\n"
                        "If <file-or-dir> is \"\", a module is read from stdin.\n"
+                       "But if `-c` is provided, <file-or-dir> is parsed as a module.\n"
                        "The <argument>s are made available via the `system-env` procedure.\n"
                        "\n"
                        "Supported <option>s:\n"
@@ -7142,6 +7258,9 @@ int zuo_main(int argc, char **argv) {
                        "     the default is \"%s\" relative to the executable\n"
                        "  -M <file>\n"
                        "     Log the path of each opened file to <file>\n"
+                       "  -c\n"
+                       "     Use <file-or-dir> as module text, instead of the name of\n"
+                       "     a file or directory\n"
                        "  --\n"
                        "     No argument following this switch is used as a switch\n"
                        "  -h, --help\n"
@@ -7186,6 +7305,10 @@ int zuo_main(int argc, char **argv) {
         fprintf(stderr, "%s: expected a path after -M", argv0);
         zuo_fail("");
       }
+    } else if (!strcmp(argv[0], "-c")) {
+      eval_argument = 1;
+      argc--;
+      argv++;
     } else if (!strcmp(argv[0], "--")) {
       argc--;
       argv++;
@@ -7202,6 +7325,10 @@ int zuo_main(int argc, char **argv) {
     load_file = argv[0];
     argc--;
     argv++;
+  } else if (eval_argument) {
+    zuo_error_color();
+    fprintf(stderr, "%s: expected an argument after -c", argv0);
+    zuo_fail("");
   }
 
   /* Primitives must be registered before restoring an image */
@@ -7228,6 +7355,8 @@ int zuo_main(int argc, char **argv) {
       fprintf(stderr, "%s: no file specified, and no \"main.zuo\" found", argv0);
       zuo_fail("");
     }
+  } else if (eval_argument) {
+    load_path = zuo_string("argument");
   } else if (load_file[0] != 0) {
     zuo_t *st;
     load_path = zuo_string(load_file);
@@ -7250,7 +7379,9 @@ int zuo_main(int argc, char **argv) {
   {
     zuo_t *mod_ht, *submods, *main_proc;
 
-    if (load_file[0] == 0) {
+    if (eval_argument) {
+      mod_ht = zuo_eval_module(load_path, zuo_string(load_file));
+    } else if (load_file[0] == 0) {
       zuo_raw_handle_t in = zuo_fd_open_input_handle(zuo_symbol("stdin"), z.o_empty_hash);
       zuo_t *input = zuo_drain(in, -1);
       mod_ht = zuo_eval_module(load_path, input);

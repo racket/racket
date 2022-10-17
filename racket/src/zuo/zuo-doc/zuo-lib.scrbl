@@ -333,3 +333,49 @@ last mapping overrides earlier ones.
 After reading @racket[file], keys from @racket[overrides] are merged
 to the result hash table, where values in @racket[overrides] replace
 ones read from @racket[file].}
+
+@; ------------------------------------------------------------
+
+@section[#:tag "zuo-jobserver"]{Jobserver Client}
+
+@defzuomodule[zuo/jobserver]
+
+@history[#:added "1.1"]
+
+@defproc[(maybe-jobserver-client) (or/c procedure? #f)]{
+
+Returns a procedure if a jobserver configuration is found via the
+@envvar{MAKEFLAGS} environment variable, @racket[#f] otherwise. That
+environment variable is normally set by GNU Make when it runs a target
+command and when @Flag{j} was provided to @exec{make}. A jobserver
+configuration allows parallelism to span @exec{make} and other
+processes, such as a @exec{zuo} process, through a shared pool of
+jobserver tokens. In other words, a @Flag{j} flag to @exec{make} gets
+propagated to @exec{zuo}.
+
+When a procedure is returned, it accepts one argument: @racket['get]
+or @racket['put]. Apply the procedure with @racket['get] to acquire a
+jobserver token, and apply the procedure with @racket['put] to release
+a previously acquired token. The implicit jobserver token that belongs
+to the @exec{zuo} process should be taken explicitly with
+@racket['get] and released with @racket['put].
+
+The @racket[maybe-jobserver-client] procedure must be called in a
+@tech{threading context}. When it returns a procedure, that procedure
+must also be called (with @racket['get] or @racket['put]) in the same
+threading context.}
+
+@defproc[(maybe-jobserver-jobs) (or/c integer? #f)]{
+
+Similar to @racket[maybe-jobserver-client], but polls the jobserver
+(if any) to determine how many job tokens appear to be immediately
+available. The result is that number, or @racket[#f] if no jobserver
+configuration is found.
+
+Using @racket[maybe-jobserver-client] to cooperate interactively with
+the jobserver is normally better, but @racket[maybe-jobserver-jobs]
+can be useful to chaining to another tool that accepts job count as a
+number.
+
+Unlike @racket[maybe-jobserver-client], @racket[maybe-jobserver-jobs]
+does not need to be called in a @tech{threading context}.}

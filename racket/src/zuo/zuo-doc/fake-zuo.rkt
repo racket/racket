@@ -145,6 +145,7 @@
     fd-close
     fd-read
     fd-write
+    fd-poll
     eof
     fd-terminal?
     file->string
@@ -234,6 +235,9 @@
     call-in-main-thread
     thread? thread channel? channel channel-put channel-get
     thread-process-wait
-    config-file->hash))
+    config-file->hash
+
+    maybe-jobserver-client
+    maybe-jobserver-jobs))
 
 (intro-define-fake)

@@ -765,7 +765,7 @@ elements or a @litchar{.zuo} suffix.}
 
 Loads @racket[mod-path] if it has not been loaded already, and returns
 the @tech{hash table} representation of the loaded module. See also
-Secref["module-protocol"]}
+@secref["module-protocol"]}
 
 @defproc[(dynamic-require [mod-path module-path?] [export symbol?]) any/c]{
 
@@ -1000,6 +1000,19 @@ Writes the bytes of @racket[str] to the output file or output stream
 associated with @racket[handle], erroring for any other kind of
 @racket[handle].}
 
+@defproc[(fd-poll [handles (listof handle?)] [timeout-msecs (or/c integer? #f) #f]) (or/c handle? #f)]{
+
+Given a list of open input and output file descriptor handles as
+@racket[handles], checks whether any is ready for reading or writing.
+If @racket[timeout-msecs] is @racket[#f], @racket[fd-poll] blocks
+until at least one is ready, and then it returns the first element of
+@racket[handles] that is ready. If @racket[timeout-msecs] is a number,
+then it specifies a number of milliseconds to wait; the result is
+@racket[#f] if no handle in @racket[handles] is ready before
+@racket[timeout-msecs] milliseconds pass.
+
+@history[#:added "1.1"]}
+
 @defproc[(fd-terminal? [handle handle?] [check-ansi? any/c #f]) boolean?]{
 
 Returns @racket[#t] if the open input or output stream associated with
@@ -1093,7 +1106,9 @@ keys are as follows, and supplying an unrecognized key in
       created process to terminate; otherwise, and by default, the Zuo
       process waits for every processes created with @racket[process]
       to terminate before exiting itself, whether exiting normally, by
-      an error, or by a received termination signal (such as Ctl-C).}
+      an error, or by a received termination signal (such as Ctl-C);
+      any still-open input or output pipe created for the process is
+      closed before waiting for processes to exit.}
 
 @item{@racket['exact?] mapped to boolean (or any value): if not
       @racket[#f], a single @racket[arg] must be provided, and it is
@@ -1110,7 +1125,13 @@ keys are as follows, and supplying an unrecognized key in
 
 ]
 
-See also @racket[shell].}
+See also @racket[shell].
+
+@history[#:changed "1.1" @elem{Pipes created for a process are
+                               explicitly closed when a Zuo will
+                               terminate, and they are closed before
+                               waiting for processes to exit.}]}
+
 
 @defproc[(process-wait [process handle?] ...) handle?]{
 
@@ -1315,9 +1336,13 @@ Zuo process. The hash table includes the following keys:
 @item{@racket['can-exec?]: a boolean whether @racket[process] supports
       a true value for the @racket['exec?] option}
 
-@item{@racket['version]: Zuo's version number as an integer}
+@item{@racket['version]: Zuo's major version number as an integer}
 
-]}
+@item{@racket['minor-version]: Zuo's minor version number as an integer}
+
+]
+
+@history[#:changed "1.1" @elem{Added @racket['minor-version].}]}
 
 @defproc[(system-type) symbol?]{
 
