@@ -2377,10 +2377,15 @@
                            (if (unsafe-fx< index_0 8)
                              (range-add
                               (let ((range_0
-                                     (begin-unsafe
-                                      (range-union
-                                       null
-                                       (list (cons 97 122))))))
+                                     (let ((range_0
+                                            (begin-unsafe
+                                             (range-union
+                                              null
+                                              (list (cons 48 57))))))
+                                       (begin-unsafe
+                                        (range-union
+                                         range_0
+                                         (list (cons 97 122)))))))
                                 (begin-unsafe
                                  (range-union range_0 (list (cons 65 90)))))
                               95)

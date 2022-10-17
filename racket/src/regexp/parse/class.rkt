@@ -93,8 +93,10 @@
                      (chyte #\A) (chyte #\Z))]
         [(#"word") (range-add
                     (range-add-span 
-                     (range-add-span 
-                      empty-range
+                     (range-add-span
+                      (range-add-span
+                       empty-range
+                       (chyte #\0) (chyte #\9))
                       (chyte #\a) (chyte #\z))
                      (chyte #\A) (chyte #\Z))
                     (chyte #\_))]

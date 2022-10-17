@@ -1,5 +1,6 @@
 Version 8.8
 Add `#:param` option to `->i`
+Fix CS `[:word:]` regexp pattern to include ASCII digits
 
 Version 8.7
 Use Unicode 14.0 for character and string operations
