@@ -1649,5 +1649,15 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(test #t eq?
+      (datum-intern-literal (make-string 10 #\x))
+      (datum-intern-literal (make-string 10 #\x)))
+
+;; make sure this doesn't take too long and use so much memory
+;; that we crash:
+(test #t integer? (datum-intern-literal (- (expt 2 10000000))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; readtable has `report-errs`:
 (load-relative "readtable.rktl")

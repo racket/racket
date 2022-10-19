@@ -863,5 +863,10 @@
         #:kind 'immutable))
 
 ;; ----------------------------------------
+;; regression test to make sure this doesn't take too long:
+
+(test #t integer? (equal-hash-code (- (expt 2 10000000))))
+
+;; ----------------------------------------
 
 (report-errs)

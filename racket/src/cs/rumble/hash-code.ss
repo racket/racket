@@ -81,7 +81,10 @@
                          [(fx>= i len) hc]
                          [else
                           (let ([next-i (fx+ i (fx- (fixnum-width) 1))])
-                            (loop next-i
+                            (loop (if (fx< next-i (fx* (fixnum-width) 100))
+                                      next-i
+                                      ;; start skipping digits to arrive at a result faster:
+                                      (fxmax next-i (fx+ i (fx/ (fx- len i) 2))))
                                   (fx+/wraparound (bitwise-bit-field z i next-i)
                                                   (mix-hash-code hc))))])))]
       [(ratnum? z) (number-hash (+ (* (numerator z) 5) (denominator z)))]
