@@ -1,22 +1,26 @@
 
 ;; Check to make we're using a build of Chez Scheme
 ;; that has all the features we need.
-(define-values (need-maj need-min need-sub need-dev)
-  (values 9 5 9 7))
+(define-values (need-maj need-min need-sub need-pre)
+  (values 9 9 9 10))
 
-(unless (guard (x [else #f]) (eval 'scheme-build-number))
+(unless (guard (x [else #f]) (eval 'scheme-pre-release))
   (error 'compile-file
-         (error 'compile-file "need the Racket fork of Chez Scheme to build")))
+         (error 'compile-file "need a newer version of Chez Scheme")))
 
 (let-values ([(maj min sub) (scheme-version-number)]
-             [(dev) (scheme-build-number)])
+             [(pre) (scheme-pre-release)])
   (unless (or (> maj need-maj)
               (and (= maj need-maj)
                    (or (> min need-min)
                        (and (= min need-min)
                             (or (> sub need-sub)
                                 (and (= sub need-sub)
-                                     (>= dev need-dev)))))))
+                                     ;; #f pre-release is after a non-#f pre-release
+                                     (if need-pre
+                                         (or (not pre)
+                                             (>= pre need-pre))
+                                         (not pre))))))))
     (error 'compile-file "need a newer Chez Scheme")))
 
 ;; ----------------------------------------
