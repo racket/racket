@@ -36151,22 +36151,26 @@
                                   addr_0))
                                (lambda (addr_0)
                                  (if (if who1_0 (vector? addr_0) #f)
-                                   (raise-network-error
-                                    who1_0
-                                    addr_0
-                                    (string-append
-                                     "can't resolve "
-                                     which2_0
-                                     "address"
-                                     "\n  address: "
-                                     (if hostname17_0 hostname17_0 "<unspec>")
-                                     (if (if port-number-on-error?3_0
-                                           port-no18_0
-                                           #f)
-                                       (string-append
-                                        "\n  port number: "
-                                        (number->string port-no18_0))
-                                       "")))
+                                   (begin
+                                     (unsafe-end-atomic)
+                                     (raise-network-error
+                                      who1_0
+                                      addr_0
+                                      (string-append
+                                       "can't resolve "
+                                       which2_0
+                                       "address"
+                                       "\n  address: "
+                                       (if hostname17_0
+                                         hostname17_0
+                                         "<unspec>")
+                                       (if (if port-number-on-error?3_0
+                                             port-no18_0
+                                             #f)
+                                         (string-append
+                                          "\n  port number: "
+                                          (number->string port-no18_0))
+                                         ""))))
                                    (begin0
                                      (|#%app| proc19_0 addr_0)
                                      (if retain-address?8_0
