@@ -91,7 +91,6 @@
                                 (λ (help-string)
                                   (for-each (λ (l) (display l) (newline)) (wrap-to-count long-description 80))
                                   (newline)
-                                  (display "Usage:\n")
                                   (display help-string)
                                   (exit))))]
                             ...
