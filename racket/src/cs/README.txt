@@ -334,7 +334,7 @@ Safety and Debugging Mode
 -------------------------
 
 If you make changes to files in "rumble", you should turn off
-sunsafe mode by provided `UNSAFE_COMP=no` to `zuo`.
+unsafe mode by provided `UNSAFE_COMP=no` to `zuo`.
 
 You may want to supply `DEBUG_COMP=yes` so that backtraces provide
 expression-specific source locations instead of just
