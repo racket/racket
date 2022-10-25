@@ -1,6 +1,6 @@
 #lang zuo/base
-(require zuo/thread
-         zuo/glob)
+(require "thread.zuo"
+         "glob.zuo")
 
 (provide maybe-jobserver-jobs
          maybe-jobserver-client)
