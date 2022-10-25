@@ -747,8 +747,8 @@ If @racket[more-than-root?] is true, if @racket[base] and
 
 If @racket[path] is the same as @racket[base], then
 @racket[(build-path 'same)] is returned only if
-@racket[more-than-same?] is true. Otherwise, @racket[path] is
-returned when @racket[path] is the same as @racket[base].
+@racket[more-than-same?] is @racket[#f]. Otherwise, and by default,
+@racket[path] is returned when @racket[path] is the same as @racket[base].
 
 If @racket[normalize-case?] is true (the default), then pairs of path
 elements to be compared are first converted via
