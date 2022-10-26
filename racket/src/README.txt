@@ -392,7 +392,7 @@ build steps are essentially the same as for Unix, but with
 
    mkdir build
    cd build
-   ../winfig.bat
+   ..\winfig.bat
    nmake
    nmake install
 
