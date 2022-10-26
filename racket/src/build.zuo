@@ -10,6 +10,7 @@
   (define (msvc-prep-makefile dir)
     (when (eq? 'windows (hash-ref (runtime-env) 'toolchain-type))
       (unless (file-exists? (at-dir dir "Makefile"))
+        (mkdir-p dir)
         (shell/wait (find-relative-path (at-dir dir)
                                         (at-source dir "winfig.bat"))
                     (hash 'dir (at-dir dir))))))
