@@ -1944,6 +1944,20 @@ is bound to vectors of two elements, the exported identifier and a
 syntax object for the expression that produces the contract controlling
 the export.
 
+Example usage:
+
+@codeblock|{
+#lang racket/base
+
+(require racket/contract)
+
+(provide
+ (contract-out
+  [recip (-> (and/c real? (not/c zero?)) real?)]))
+
+(define (recip x) (/ 1 x))
+}|
+
 @history[#:changed "7.3.0.3" @list{Added @racket[#:unprotected-submodule].}
          #:changed "7.7.0.9" @list{Started ignoring @racket[ignored-id].}]
 }
