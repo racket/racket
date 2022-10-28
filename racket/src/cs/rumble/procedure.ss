@@ -46,18 +46,17 @@
      (if (#%procedure? proc)
          (#2%apply proc args)
          (#2%apply (extract-procedure proc (and (#%list? args) (length args))) args))]
-    [(proc)
-     (raise-arity-error 'apply (|#%app| arity-at-least 2) proc)]
-    [(proc . argss)
-     (if (#%procedure? proc)
-         (#2%apply #2%apply proc argss)
-         (let ([len (let loop ([argss argss] [accum 0])
-                      (cond
-                       [(null? (cdr argss)) (let ([l (car argss)])
-                                              (and (#%list? l)
-                                                   (+ accum (length l))))]
-                       [else (loop (cdr argss) (fx+ 1 accum))]))])
-           (#2%apply #2%apply (extract-procedure proc len) argss)))]))
+    [(proc arg . argss)
+     (let ([argss (cons arg argss)])
+       (if (#%procedure? proc)
+           (#2%apply #2%apply proc argss)
+           (let ([len (let loop ([argss argss] [accum 0])
+                        (cond
+                          [(null? (cdr argss)) (let ([l (car argss)])
+                                                 (and (#%list? l)
+                                                      (+ accum (length l))))]
+                          [else (loop (cdr argss) (fx+ 1 accum))]))])
+             (#2%apply #2%apply (extract-procedure proc len) argss))))]))
 
 (define-syntax (|#%app| stx)
   (syntax-case stx ()

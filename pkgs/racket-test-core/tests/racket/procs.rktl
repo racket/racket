@@ -382,7 +382,6 @@
                                              (not (memq '#:b req)))))
                                     procs))))))
   (try-combos procs values)
-  #;
   (let ([add-chaperone (lambda (p)
                          (cons
                           (chaperone-procedure
@@ -433,6 +432,8 @@
 (run-procedure-tests procedure-arity procedure-reduce-arity)
 (run-procedure-tests (lambda (p) (mask->arity (procedure-arity-mask p)))
                      (lambda (p a [name #f] [realm 'racket]) (procedure-reduce-arity-mask p (arity->mask a) name realm)))
+
+(test -4 procedure-arity-mask apply)
 
 ;; ------------------------------------------------------------
 ;; Check arity reporting for methods.
@@ -892,6 +893,9 @@
 (test 'foo
       object-name
       (procedure-rename (make-keyword-procedure (lambda (ks vs x . r) void)) 'foo))
+(test 'example
+      object-name
+      (procedure-rename apply 'example))
 
 ;; ----------------------------------------
 
