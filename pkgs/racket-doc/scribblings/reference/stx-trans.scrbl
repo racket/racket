@@ -167,7 +167,7 @@ rename transformer:
 ]
 
 @history[#:changed "6.3" @elem{Removed an optional second argument.}
-         #:changed "7.4.0.10" @elem{Adjust rename-transformer expansion
+         #:changed "7.4.0.10" @elem{Adjusted rename-transformer expansion
                                     to add a macro-introduction scope, the
                                     same as regular macro expansion.}]}
 
@@ -372,7 +372,7 @@ expansion history to external tools.
                                    an explicit wrapper.}
          #:changed "6.0.90.27" @elem{Loosened the contract on the @racket[intdef-ctx] argument to
                                      allow an empty list.}
-         #:changed "8.2.0.4" @elem{Changined binding to protected.}]}
+         #:changed "8.2.0.4" @elem{Changed binding to protected.}]}
 
 
 @defproc[(syntax-local-expand-expression [stx any/c] [opaque-only? any/c #f])
@@ -408,7 +408,7 @@ result of @racket[syntax-local-expand-expression] can include
 @transform-time[] @provided-as-protected[]
 
 @history[#:changed "6.90.0.13" @elem{Added the @racket[opaque-only?] argument.}
-         #:changed "8.2.0.4" @elem{Changined binding to protected.}]}
+         #:changed "8.2.0.4" @elem{Changed binding to protected.}]}
 
 
 @defproc[(local-transformer-expand [stx any/c]
@@ -433,9 +433,9 @@ or @racket[let-values] wrapper is added.
 
 @provided-as-protected[]
 
-@history[#:changed "6.5.0.3" @elem{Allow and capture lifts in a
+@history[#:changed "6.5.0.3" @elem{Allowed and captured lifts in a
                                    @racket['top-level] context.}
-         #:changed "8.2.0.4" @elem{Changined binding to protected.}]}
+         #:changed "8.2.0.4" @elem{Changed binding to protected.}]}
 
 
 @defproc[(local-expand/capture-lifts
@@ -466,7 +466,7 @@ If @racket[context-v] is @racket['top-level] or @racket['module], then
 
 @provided-as-protected[]
 
-@history[#:changed "8.2.0.4" @elem{Changined binding to protected.}]}
+@history[#:changed "8.2.0.4" @elem{Changed binding to protected.}]}
 
 
 @defproc[(local-transformer-expand/capture-lifts
@@ -487,7 +487,7 @@ transformer environment).
 
 @provided-as-protected[]
 
-@history[#:changed "8.2.0.4" @elem{Changined binding to protected.}]}
+@history[#:changed "8.2.0.4" @elem{Changed binding to protected.}]}
 
 
 @defproc[(syntax-local-apply-transformer
@@ -838,7 +838,7 @@ values), or an exception is raised if @racket[failure-thunk] is
 
 @provided-as-protected[]
 
-@history[#:changed "8.2.0.4" @elem{Changined binding to protected.}]}
+@history[#:changed "8.2.0.4" @elem{Changed binding to protected.}]}
 
 
 @defproc[(syntax-local-lift-expression [stx syntax?])
