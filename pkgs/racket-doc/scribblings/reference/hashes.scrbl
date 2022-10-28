@@ -354,11 +354,11 @@ result:
 
 @examples[
 #:eval the-eval
-(hash-ref (hash) "hi")
+(eval:error (hash-ref (hash) "hi"))
 (hash-ref (hash) "hi" 5)
 (hash-ref (hash) "hi" (lambda () "flab"))
 (hash-ref (hash "hi" "bye") "hi")
-(hash-ref (hash "hi" "bye") "no")
+(eval:error (hash-ref (hash "hi" "bye") "no"))
 ]
 
 @see-also-caveats[]}
