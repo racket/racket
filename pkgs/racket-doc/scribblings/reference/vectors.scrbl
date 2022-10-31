@@ -35,7 +35,9 @@ Returns @racket[#t] if @racket[v] is a vector, @racket[#f] otherwise.}
                       [v any/c 0]) vector?]{
 
 Returns a mutable vector with @racket[size] slots, where all slots are
-initialized to contain @racket[v].
+initialized to contain @racket[v]. Note that if @racket[v] is a @racket[vector],
+the vectors will be aliases. Instead use @racket[build-vector] for creating
+nested vectors.
 
 This function takes time proportional to @racket[size].}
 
