@@ -54,7 +54,6 @@
          enumerate
          $make-record-type
          $make-record-type-descriptor
-         $make-record-type-descriptor*
          $make-record-constructor-descriptor
          $record
          $record?
@@ -670,12 +669,6 @@
 
 (define ($make-record-constructor-descriptor rtd prcd protocol who)
   (make-record-constructor-descriptor rtd prcd protocol))
-
-(define ($make-record-type-descriptor* base-rtd name parent uid sealed? opaque? num-fields mutability-mask who . extras)
-  (define fields (for ([i (in-range num-fields)])
-                   (list (if (bitwise-bit-set? mutability-mask i) 'mutable 'immutable)
-                         (string->symbol (format "f~a" i)))))
-  (apply $make-record-type-descriptor base-rtd name parent uid sealed? opaque? fields who extras))
 
 (define-syntax-rule (s:module (id ...) body ...)
   (begin

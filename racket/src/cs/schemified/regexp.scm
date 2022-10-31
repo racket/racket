@@ -896,14 +896,13 @@
    #f
    'rx:alts))
 (define struct:rx:alts
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'rx:alts
    #f
    (|#%nongenerative-uid| rx:alts)
    #f
    #f
-   2
-   0))
+   '(2 . 0)))
 (define effect_2414 (finish_2542 struct:rx:alts))
 (define rx:alts1.1
   (|#%name|
@@ -950,14 +949,13 @@
    #f
    'rx:sequence))
 (define struct:rx:sequence
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'rx:sequence
    #f
    (|#%nongenerative-uid| rx:sequence)
    #f
    #f
-   2
-   0))
+   '(2 . 0)))
 (define effect_2459 (finish_2732 struct:rx:sequence))
 (define rx:sequence2.1
   (|#%name|
@@ -1014,14 +1012,13 @@
    #f
    'rx:group))
 (define struct:rx:group
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'rx:group
    #f
    (|#%nongenerative-uid| rx:group)
    #f
    #f
-   2
-   0))
+   '(2 . 0)))
 (define effect_1819 (finish_2954 struct:rx:group))
 (define rx:group3.1
   (|#%name|
@@ -1069,14 +1066,13 @@
    #f
    'rx:repeat))
 (define struct:rx:repeat
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'rx:repeat
    #f
    (|#%nongenerative-uid| rx:repeat)
    #f
    #f
-   4
-   0))
+   '(4 . 0)))
 (define effect_2312 (finish_1837 struct:rx:repeat))
 (define rx:repeat4.1
   (|#%name|
@@ -1151,14 +1147,13 @@
    #f
    'rx:maybe))
 (define struct:rx:maybe
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'rx:maybe
    #f
    (|#%nongenerative-uid| rx:maybe)
    #f
    #f
-   2
-   0))
+   '(2 . 0)))
 (define effect_2202 (finish_3260 struct:rx:maybe))
 (define rx:maybe5.1
   (|#%name|
@@ -1211,14 +1206,13 @@
    #f
    'rx:conditional))
 (define struct:rx:conditional
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'rx:conditional
    #f
    (|#%nongenerative-uid| rx:conditional)
    #f
    #f
-   6
-   0))
+   '(6 . 0)))
 (define effect_2905 (finish_2500 struct:rx:conditional))
 (define rx:conditional6.1
   (|#%name|
@@ -1342,14 +1336,13 @@
    #f
    'rx:lookahead))
 (define struct:rx:lookahead
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'rx:lookahead
    #f
    (|#%nongenerative-uid| rx:lookahead)
    #f
    #f
-   4
-   0))
+   '(4 . 0)))
 (define effect_2486 (finish_2488 struct:rx:lookahead))
 (define rx:lookahead7.1
   (|#%name|
@@ -1436,14 +1429,13 @@
    #f
    'rx:lookbehind))
 (define struct:rx:lookbehind
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'rx:lookbehind
    #f
    (|#%nongenerative-uid| rx:lookbehind)
    #f
    #f
-   6
-   12))
+   '(6 . 12)))
 (define effect_2468 (finish_3095 struct:rx:lookbehind))
 (define rx:lookbehind8.1
   (|#%name|
@@ -1599,14 +1591,13 @@
    #f
    'rx:cut))
 (define struct:rx:cut
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'rx:cut
    #f
    (|#%nongenerative-uid| rx:cut)
    #f
    #f
-   4
-   0))
+   '(4 . 0)))
 (define effect_2158 (finish_2346 struct:rx:cut))
 (define rx:cut9.1
   (|#%name|
@@ -1678,14 +1669,13 @@
    #f
    'rx:reference))
 (define struct:rx:reference
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'rx:reference
    #f
    (|#%nongenerative-uid| rx:reference)
    #f
    #f
-   2
-   0))
+   '(2 . 0)))
 (define effect_2306 (finish_1921 struct:rx:reference))
 (define rx:reference10.1
   (|#%name|
@@ -1744,14 +1734,13 @@
    #f
    'rx:range))
 (define struct:rx:range
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'rx:range
    #f
    (|#%nongenerative-uid| rx:range)
    #f
    #f
-   1
-   0))
+   '(1 . 0)))
 (define effect_2071 (finish_2471 struct:rx:range))
 (define rx:range11.1
   (|#%name|
@@ -1790,14 +1779,13 @@
    #f
    'rx:unicode-categories))
 (define struct:rx:unicode-categories
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'rx:unicode-categories
    #f
    (|#%nongenerative-uid| rx:unicode-categories)
    #f
    #f
-   2
-   0))
+   '(2 . 0)))
 (define effect_2341 (finish_2339 struct:rx:unicode-categories))
 (define rx:unicode-categories12.1
   (|#%name|
@@ -2059,14 +2047,13 @@
    #f
    'parse-config))
 (define struct:parse-config
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'parse-config
    #f
    (|#%nongenerative-uid| parse-config)
    #f
    #f
-   7
-   0))
+   '(7 . 0)))
 (define effect_2622 (finish_2581 struct:parse-config))
 (define parse-config1.1
   (|#%name|
@@ -4636,14 +4623,13 @@
    #f
    'lazy-bytes))
 (define struct:lazy-bytes
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'lazy-bytes
    #f
    (|#%nongenerative-uid| lazy-bytes)
    #f
    #f
-   13
-   3075))
+   '(13 . 3075)))
 (define effect_2741 (finish_2590 struct:lazy-bytes))
 (define lazy-bytes1.1
   (|#%name|
@@ -7162,14 +7148,13 @@
    #f
    'rx:regexp))
 (define struct:rx:regexp
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'regexp
    #f
    (|#%nongenerative-uid| regexp)
    #f
    #f
-   10
-   0))
+   '(10 . 0)))
 (define effect_2726 (finish_2797 struct:rx:regexp))
 (define rx:regexp1.1
   (|#%name|

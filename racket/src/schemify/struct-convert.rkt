@@ -107,36 +107,37 @@
                                                           ,(schemify (struct-type-info-parent sti) knowns)
                                                           ,@(schemify-body schemify knowns (struct-type-info-rest sti)))))
                  null)
-           (define ,struct:s (make-record-type-descriptor* ',(struct-type-info-name sti)
-                                                           ,(schemify (struct-type-info-parent sti) knowns)
-                                                           ,(if (not (struct-type-info-prefab-immutables sti))
-                                                                (if (and top?
-                                                                         (aim? target 'system))
-                                                                    `(#%nongenerative-uid ,(struct-type-info-name sti))
-                                                                    #f)
-                                                                `(structure-type-lookup-prefab-uid
-                                                                  ',(struct-type-info-name sti)
-                                                                  ,(schemify (struct-type-info-parent sti) knowns)
-                                                                  ,(struct-type-info-immediate-field-count sti)
-                                                                  0 #f
-                                                                  ',(struct-type-info-prefab-immutables sti)))
-                                                           ,(struct-type-info-sealed? sti)
-                                                           #f
-                                                           ,(struct-type-info-immediate-field-count sti)
-                                                           ,(let* ([n (struct-type-info-immediate-field-count sti)]
-                                                                   [mask (sub1 (arithmetic-shift 1 n))])
-                                                              (cond
-                                                                [(struct-type-info-non-prefab-immutables sti)
-                                                                 =>
-                                                                 (lambda (immutables)
-                                                                   (let loop ([imms immutables] [mask mask])
-                                                                     (cond
-                                                                      [(null? imms) mask]
-                                                                      [else
-                                                                       (let ([m (bitwise-not (arithmetic-shift 1 (car imms)))])
-                                                                         (loop (cdr imms) (bitwise-and mask m)))])))]
-                                                                [else
-                                                                 mask]))))
+           (define ,struct:s (make-record-type-descriptor ',(struct-type-info-name sti)
+                                                          ,(schemify (struct-type-info-parent sti) knowns)
+                                                          ,(if (not (struct-type-info-prefab-immutables sti))
+                                                               (if (and top?
+                                                                        (aim? target 'system))
+                                                                   `(#%nongenerative-uid ,(struct-type-info-name sti))
+                                                                   #f)
+                                                               `(structure-type-lookup-prefab-uid
+                                                                 ',(struct-type-info-name sti)
+                                                                 ,(schemify (struct-type-info-parent sti) knowns)
+                                                                 ,(struct-type-info-immediate-field-count sti)
+                                                                 0 #f
+                                                                 ',(struct-type-info-prefab-immutables sti)))
+                                                          ,(struct-type-info-sealed? sti)
+                                                          #f
+                                                          '(,(struct-type-info-immediate-field-count sti)
+                                                            .
+                                                            ,(let* ([n (struct-type-info-immediate-field-count sti)]
+                                                                    [mask (sub1 (arithmetic-shift 1 n))])
+                                                               (cond
+                                                                 [(struct-type-info-non-prefab-immutables sti)
+                                                                  =>
+                                                                  (lambda (immutables)
+                                                                    (let loop ([imms immutables] [mask mask])
+                                                                      (cond
+                                                                        [(null? imms) mask]
+                                                                        [else
+                                                                         (let ([m (bitwise-not (arithmetic-shift 1 (car imms)))])
+                                                                           (loop (cdr imms) (bitwise-and mask m)))])))]
+                                                                 [else
+                                                                  mask])))))
            ,@(if finish!-id
                  `((define ,(deterministic-gensym "effect") (,finish!-id ,struct:s)))
                  null)

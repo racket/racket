@@ -2122,14 +2122,13 @@
    #f
    'known-constant))
 (define struct:known-constant
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-constant
    #f
    (structure-type-lookup-prefab-uid 'known-constant #f 0 0 #f '())
    #f
    #f
-   0
-   0))
+   '(0 . 0)))
 (define effect_2537 (finish_2045 struct:known-constant))
 (define known-constant
   (|#%name|
@@ -2163,7 +2162,7 @@
    #f
    'known-consistent))
 (define struct:known-consistent
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-consistent
    (if (struct-type? struct:known-constant)
      struct:known-constant
@@ -2179,8 +2178,7 @@
     '())
    #f
    #f
-   0
-   0))
+   '(0 . 0)))
 (define effect_2382 (finish_2081 struct:known-consistent))
 (define known-consistent
   (|#%name|
@@ -2214,7 +2212,7 @@
    #f
    'known-authentic))
 (define struct:known-authentic
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-authentic
    (if (struct-type? struct:known-constant)
      struct:known-constant
@@ -2230,8 +2228,7 @@
     '())
    #f
    #f
-   0
-   0))
+   '(0 . 0)))
 (define effect_2570 (finish_2443 struct:known-authentic))
 (define known-authentic
   (|#%name|
@@ -2265,7 +2262,7 @@
    #f
    'known-copy))
 (define struct:known-copy
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-copy
    (if (struct-type? struct:known-constant)
      struct:known-constant
@@ -2281,8 +2278,7 @@
     '(0))
    #f
    #f
-   1
-   1))
+   '(1 . 1)))
 (define effect_2542 (finish_2536 struct:known-copy))
 (define known-copy
   (|#%name|
@@ -2324,7 +2320,7 @@
    #f
    'known-literal))
 (define struct:known-literal
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-literal
    (if (struct-type? struct:known-consistent)
      struct:known-consistent
@@ -2340,8 +2336,7 @@
     '(0))
    #f
    #f
-   1
-   1))
+   '(1 . 1)))
 (define effect_2788 (finish_2861 struct:known-literal))
 (define known-literal
   (|#%name|
@@ -2390,7 +2385,7 @@
    #f
    'known-procedure))
 (define struct:known-procedure
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-procedure
    (if (struct-type? struct:known-consistent)
      struct:known-consistent
@@ -2406,8 +2401,7 @@
     '(0))
    #f
    #f
-   1
-   1))
+   '(1 . 1)))
 (define effect_2677 (finish_2897 struct:known-procedure))
 (define known-procedure
   (|#%name|
@@ -2458,7 +2452,7 @@
    #f
    'known-procedure/single-valued))
 (define struct:known-procedure/single-valued
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-procedure/single-valued
    (if (struct-type? struct:known-procedure)
      struct:known-procedure
@@ -2474,8 +2468,7 @@
     '())
    #f
    #f
-   0
-   0))
+   '(0 . 0)))
 (define effect_2532 (finish_2542 struct:known-procedure/single-valued))
 (define known-procedure/single-valued
   (|#%name|
@@ -2514,7 +2507,7 @@
    #f
    'known-procedure/no-prompt))
 (define struct:known-procedure/no-prompt
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-procedure/no-prompt
    (if (struct-type? struct:known-procedure/single-valued)
      struct:known-procedure/single-valued
@@ -2530,8 +2523,7 @@
     '())
    #f
    #f
-   0
-   0))
+   '(0 . 0)))
 (define effect_1771 (finish_2099 struct:known-procedure/no-prompt))
 (define known-procedure/no-prompt
   (|#%name|
@@ -2570,7 +2562,7 @@
    #f
    'known-procedure/no-prompt/multi))
 (define struct:known-procedure/no-prompt/multi
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-procedure/no-prompt/multi
    (if (struct-type? struct:known-procedure)
      struct:known-procedure
@@ -2586,8 +2578,7 @@
     '())
    #f
    #f
-   0
-   0))
+   '(0 . 0)))
 (define effect_2793 (finish_2719 struct:known-procedure/no-prompt/multi))
 (define known-procedure/no-prompt/multi
   (|#%name|
@@ -2626,7 +2617,7 @@
    #f
    'known-procedure/no-return))
 (define struct:known-procedure/no-return
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-procedure/no-return
    (if (struct-type? struct:known-procedure/single-valued)
      struct:known-procedure/single-valued
@@ -2642,8 +2633,7 @@
     '())
    #f
    #f
-   0
-   0))
+   '(0 . 0)))
 (define effect_2517 (finish_2574 struct:known-procedure/no-return))
 (define known-procedure/no-return
   (|#%name|
@@ -2682,7 +2672,7 @@
    #f
    'known-procedure/parameter))
 (define struct:known-procedure/parameter
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-procedure/parameter
    (if (struct-type? struct:known-procedure/single-valued)
      struct:known-procedure/single-valued
@@ -2698,8 +2688,7 @@
     '())
    #f
    #f
-   0
-   0))
+   '(0 . 0)))
 (define effect_2451 (finish_2190 struct:known-procedure/parameter))
 (define known-procedure/parameter
   (|#%name|
@@ -2738,7 +2727,7 @@
    #f
    'known-procedure/can-inline))
 (define struct:known-procedure/can-inline
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-procedure/can-inline
    (if (struct-type? struct:known-procedure)
      struct:known-procedure
@@ -2754,8 +2743,7 @@
     '(0))
    #f
    #f
-   1
-   1))
+   '(1 . 1)))
 (define effect_2308 (finish_2550 struct:known-procedure/can-inline))
 (define known-procedure/can-inline
   (|#%name|
@@ -2811,7 +2799,7 @@
    #f
    'known-procedure/can-inline/need-imports))
 (define struct:known-procedure/can-inline/need-imports
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-procedure/can-inline/need-imports
    (if (struct-type? struct:known-procedure/can-inline)
      struct:known-procedure/can-inline
@@ -2827,8 +2815,7 @@
     '(0))
    #f
    #f
-   1
-   1))
+   '(1 . 1)))
 (define effect_2618
   (finish_1976 struct:known-procedure/can-inline/need-imports))
 (define known-procedure/can-inline/need-imports
@@ -2885,7 +2872,7 @@
    #f
    'known-procedure/folding))
 (define struct:known-procedure/folding
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-procedure/folding
    (if (struct-type? struct:known-procedure/no-prompt)
      struct:known-procedure/no-prompt
@@ -2901,8 +2888,7 @@
     '())
    #f
    #f
-   0
-   0))
+   '(0 . 0)))
 (define effect_2478 (finish_1734 struct:known-procedure/folding))
 (define known-procedure/folding
   (|#%name|
@@ -2941,7 +2927,7 @@
    #f
    'known-procedure/folding/limited))
 (define struct:known-procedure/folding/limited
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-procedure/folding/limited
    (if (struct-type? struct:known-procedure/folding)
      struct:known-procedure/folding
@@ -2957,8 +2943,7 @@
     '(0))
    #f
    #f
-   1
-   1))
+   '(1 . 1)))
 (define effect_2518 (finish_2008 struct:known-procedure/folding/limited))
 (define known-procedure/folding/limited
   (|#%name|
@@ -3014,7 +2999,7 @@
    #f
    'known-procedure/succeeds))
 (define struct:known-procedure/succeeds
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-procedure/succeeds
    (if (struct-type? struct:known-procedure/no-prompt)
      struct:known-procedure/no-prompt
@@ -3030,8 +3015,7 @@
     '())
    #f
    #f
-   0
-   0))
+   '(0 . 0)))
 (define effect_2467 (finish_2826 struct:known-procedure/succeeds))
 (define known-procedure/succeeds
   (|#%name|
@@ -3070,7 +3054,7 @@
    #f
    'known-procedure/then-pure))
 (define struct:known-procedure/then-pure
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-procedure/then-pure
    (if (struct-type? struct:known-procedure/succeeds)
      struct:known-procedure/succeeds
@@ -3086,8 +3070,7 @@
     '())
    #f
    #f
-   0
-   0))
+   '(0 . 0)))
 (define effect_1957 (finish_2544 struct:known-procedure/then-pure))
 (define known-procedure/then-pure
   (|#%name|
@@ -3126,7 +3109,7 @@
    #f
    'known-procedure/then-pure/folding-unsafe))
 (define struct:known-procedure/then-pure/folding-unsafe
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-procedure/then-pure/folding-unsafe
    (if (struct-type? struct:known-procedure/then-pure)
      struct:known-procedure/then-pure
@@ -3142,8 +3125,7 @@
     '(0))
    #f
    #f
-   1
-   1))
+   '(1 . 1)))
 (define effect_2700
   (finish_2400 struct:known-procedure/then-pure/folding-unsafe))
 (define known-procedure/then-pure/folding-unsafe
@@ -3200,7 +3182,7 @@
    #f
    'known-procedure/allocates))
 (define struct:known-procedure/allocates
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-procedure/allocates
    (if (struct-type? struct:known-procedure/succeeds)
      struct:known-procedure/succeeds
@@ -3216,8 +3198,7 @@
     '())
    #f
    #f
-   0
-   0))
+   '(0 . 0)))
 (define effect_2336 (finish_2051 struct:known-procedure/allocates))
 (define known-procedure/allocates
   (|#%name|
@@ -3256,7 +3237,7 @@
    #f
    'known-procedure/pure))
 (define struct:known-procedure/pure
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-procedure/pure
    (if (struct-type? struct:known-procedure/allocates)
      struct:known-procedure/allocates
@@ -3272,8 +3253,7 @@
     '())
    #f
    #f
-   0
-   0))
+   '(0 . 0)))
 (define effect_3058 (finish_2724 struct:known-procedure/pure))
 (define known-procedure/pure
   (|#%name|
@@ -3309,7 +3289,7 @@
    #f
    'known-procedure/pure/folding))
 (define struct:known-procedure/pure/folding
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-procedure/pure/folding
    (if (struct-type? struct:known-procedure/pure)
      struct:known-procedure/pure
@@ -3325,8 +3305,7 @@
     '())
    #f
    #f
-   0
-   0))
+   '(0 . 0)))
 (define effect_2264 (finish_2466 struct:known-procedure/pure/folding))
 (define known-procedure/pure/folding
   (|#%name|
@@ -3365,7 +3344,7 @@
    #f
    'known-procedure/has-unsafe))
 (define struct:known-procedure/has-unsafe
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-procedure/has-unsafe
    (if (struct-type? struct:known-procedure/no-prompt)
      struct:known-procedure/no-prompt
@@ -3381,8 +3360,7 @@
     '(0))
    #f
    #f
-   1
-   1))
+   '(1 . 1)))
 (define effect_1752 (finish_3128 struct:known-procedure/has-unsafe))
 (define known-procedure/has-unsafe
   (|#%name|
@@ -3438,7 +3416,7 @@
    #f
    'known-procedure/has-unsafe/folding))
 (define struct:known-procedure/has-unsafe/folding
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-procedure/has-unsafe/folding
    (if (struct-type? struct:known-procedure/has-unsafe)
      struct:known-procedure/has-unsafe
@@ -3454,8 +3432,7 @@
     '())
    #f
    #f
-   0
-   0))
+   '(0 . 0)))
 (define effect_2489 (finish_2439 struct:known-procedure/has-unsafe/folding))
 (define known-procedure/has-unsafe/folding
   (|#%name|
@@ -3494,7 +3471,7 @@
    #f
    'known-procedure/has-unsafe/folding/limited))
 (define struct:known-procedure/has-unsafe/folding/limited
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-procedure/has-unsafe/folding/limited
    (if (struct-type? struct:known-procedure/has-unsafe/folding)
      struct:known-procedure/has-unsafe/folding
@@ -3510,8 +3487,7 @@
     '(0))
    #f
    #f
-   1
-   1))
+   '(1 . 1)))
 (define effect_2512
   (finish_2602 struct:known-procedure/has-unsafe/folding/limited))
 (define known-procedure/has-unsafe/folding/limited
@@ -3569,7 +3545,7 @@
    #f
    'known-struct-type))
 (define struct:known-struct-type
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-struct-type
    (if (struct-type? struct:known-consistent)
      struct:known-consistent
@@ -3585,8 +3561,7 @@
     '(0 1 2 3))
    #f
    #f
-   4
-   15))
+   '(4 . 15)))
 (define effect_2667 (finish_2844 struct:known-struct-type))
 (define known-struct-type
   (|#%name|
@@ -3688,7 +3663,7 @@
    #f
    'known-constructor))
 (define struct:known-constructor
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-constructor
    (if (struct-type? struct:known-procedure/allocates)
      struct:known-procedure/allocates
@@ -3704,8 +3679,7 @@
     '(0))
    #f
    #f
-   1
-   1))
+   '(1 . 1)))
 (define effect_1913 (finish_2453 struct:known-constructor))
 (define known-constructor
   (|#%name|
@@ -3756,7 +3730,7 @@
    #f
    'known-predicate))
 (define struct:known-predicate
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-predicate
    (if (struct-type? struct:known-procedure/pure)
      struct:known-procedure/pure
@@ -3772,8 +3746,7 @@
     '(0))
    #f
    #f
-   1
-   1))
+   '(1 . 1)))
 (define effect_2144 (finish_2917 struct:known-predicate))
 (define known-predicate
   (|#%name|
@@ -3822,7 +3795,7 @@
    #f
    'known-accessor))
 (define struct:known-accessor
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-accessor
    (if (struct-type? struct:known-procedure/single-valued)
      struct:known-procedure/single-valued
@@ -3838,8 +3811,7 @@
     '(0))
    #f
    #f
-   1
-   1))
+   '(1 . 1)))
 (define effect_2905 (finish_2548 struct:known-accessor))
 (define known-accessor
   (|#%name|
@@ -3888,7 +3860,7 @@
    #f
    'known-mutator))
 (define struct:known-mutator
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-mutator
    (if (struct-type? struct:known-procedure/single-valued)
      struct:known-procedure/single-valued
@@ -3904,8 +3876,7 @@
     '(0))
    #f
    #f
-   1
-   1))
+   '(1 . 1)))
 (define effect_2521 (finish_2552 struct:known-mutator))
 (define known-mutator
   (|#%name|
@@ -3954,7 +3925,7 @@
    #f
    'known-struct-constructor))
 (define struct:known-struct-constructor
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-struct-constructor
    (if (struct-type? struct:known-constructor)
      struct:known-constructor
@@ -3970,8 +3941,7 @@
     '(0))
    #f
    #f
-   1
-   1))
+   '(1 . 1)))
 (define effect_3238 (finish_2184 struct:known-struct-constructor))
 (define known-struct-constructor
   (|#%name|
@@ -4027,7 +3997,7 @@
    #f
    'known-struct-predicate))
 (define struct:known-struct-predicate
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-struct-predicate
    (if (struct-type? struct:known-predicate)
      struct:known-predicate
@@ -4043,8 +4013,7 @@
     '(0 1 2))
    #f
    #f
-   3
-   7))
+   '(3 . 7)))
 (define effect_2384 (finish_2304 struct:known-struct-predicate))
 (define known-struct-predicate
   (|#%name|
@@ -4131,7 +4100,7 @@
    #f
    'known-field-accessor))
 (define struct:known-field-accessor
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-field-accessor
    (if (struct-type? struct:known-accessor)
      struct:known-accessor
@@ -4147,8 +4116,7 @@
     '(0 1 2 3))
    #f
    #f
-   4
-   15))
+   '(4 . 15)))
 (define effect_2259 (finish_3014 struct:known-field-accessor))
 (define known-field-accessor
   (|#%name|
@@ -4252,7 +4220,7 @@
    #f
    'known-field-mutator))
 (define struct:known-field-mutator
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-field-mutator
    (if (struct-type? struct:known-mutator)
      struct:known-mutator
@@ -4268,8 +4236,7 @@
     '(0 1 2))
    #f
    #f
-   3
-   7))
+   '(3 . 7)))
 (define effect_2603 (finish_2908 struct:known-field-mutator))
 (define known-field-mutator
   (|#%name|
@@ -4356,7 +4323,7 @@
    #f
    'known-struct-constructor/need-imports))
 (define struct:known-struct-constructor/need-imports
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-struct-constructor/need-imports
    (if (struct-type? struct:known-struct-constructor)
      struct:known-struct-constructor
@@ -4372,8 +4339,7 @@
     '(0))
    #f
    #f
-   1
-   1))
+   '(1 . 1)))
 (define effect_2146 (finish_2543 struct:known-struct-constructor/need-imports))
 (define known-struct-constructor/need-imports
   (|#%name|
@@ -4429,7 +4395,7 @@
    #f
    'known-struct-predicate/need-imports))
 (define struct:known-struct-predicate/need-imports
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-struct-predicate/need-imports
    (if (struct-type? struct:known-struct-predicate)
      struct:known-struct-predicate
@@ -4445,8 +4411,7 @@
     '(0))
    #f
    #f
-   1
-   1))
+   '(1 . 1)))
 (define effect_3156 (finish_2626 struct:known-struct-predicate/need-imports))
 (define known-struct-predicate/need-imports
   (|#%name|
@@ -4502,7 +4467,7 @@
    #f
    'known-field-accessor/need-imports))
 (define struct:known-field-accessor/need-imports
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-field-accessor/need-imports
    (if (struct-type? struct:known-field-accessor)
      struct:known-field-accessor
@@ -4518,8 +4483,7 @@
     '(0))
    #f
    #f
-   1
-   1))
+   '(1 . 1)))
 (define effect_2513 (finish_2444 struct:known-field-accessor/need-imports))
 (define known-field-accessor/need-imports
   (|#%name|
@@ -4575,7 +4539,7 @@
    #f
    'known-field-mutator/need-imports))
 (define struct:known-field-mutator/need-imports
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-field-mutator/need-imports
    (if (struct-type? struct:known-field-mutator)
      struct:known-field-mutator
@@ -4591,8 +4555,7 @@
     '(0))
    #f
    #f
-   1
-   1))
+   '(1 . 1)))
 (define effect_2273 (finish_2153 struct:known-field-mutator/need-imports))
 (define known-field-mutator/need-imports
   (|#%name|
@@ -4646,7 +4609,7 @@
    #f
    'known-struct-type-property/immediate-guard))
 (define struct:known-struct-type-property/immediate-guard
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'known-struct-type-property/immediate-guard
    #f
    (structure-type-lookup-prefab-uid
@@ -4658,8 +4621,7 @@
     '())
    #f
    #f
-   0
-   0))
+   '(0 . 0)))
 (define effect_2294
   (finish_2492 struct:known-struct-type-property/immediate-guard))
 (define known-struct-type-property/immediate-guard
@@ -4715,14 +4677,13 @@
    #f
    'import))
 (define struct:import
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'import
    #f
    (|#%nongenerative-uid| import)
    #f
    #f
-   4
-   0))
+   '(4 . 0)))
 (define effect_2192 (finish_2816 struct:import))
 (define import1.1
   (|#%name|
@@ -4788,14 +4749,13 @@
    #f
    'import-group))
 (define struct:import-group
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'import-group
    #f
    (|#%nongenerative-uid| import-group)
    #f
    #f
-   6
-   60))
+   '(6 . 60)))
 (define effect_2739 (finish_1986 struct:import-group))
 (define import-group2.1
   (|#%name|
@@ -5148,14 +5108,13 @@
    #f
    'export))
 (define struct:export
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'export
    #f
    (|#%nongenerative-uid| export)
    #f
    #f
-   2
-   0))
+   '(2 . 0)))
 (define effect_2782 (finish_2351 struct:export))
 (define export1.1
   (|#%name|
@@ -5202,14 +5161,13 @@
    #f
    'too-early))
 (define struct:too-early
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'too-early
    #f
    (|#%nongenerative-uid| too-early)
    #f
    #f
-   2
-   0))
+   '(2 . 0)))
 (define effect_2833 (finish_2682 struct:too-early))
 (define too-early1.1
   (|#%name|
@@ -8740,14 +8698,13 @@
    #f
    'struct-type-info))
 (define struct:struct-type-info
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'struct-type-info
    #f
    (|#%nongenerative-uid| struct-type-info)
    #f
    #f
-   11
-   0))
+   '(11 . 0)))
 (define effect_2037 (finish_2858 struct:struct-type-info))
 (define struct-type-info1.1
   (|#%name|
@@ -18786,55 +18743,60 @@
                                            (let ((app_4
                                                   (struct-type-info-sealed?
                                                    sti_0)))
-                                             (let ((app_5
-                                                    (struct-type-info-immediate-field-count
-                                                     sti_0)))
-                                               (list
-                                                'make-record-type-descriptor*
-                                                app_1
-                                                app_2
-                                                app_3
-                                                app_4
-                                                #f
-                                                app_5
-                                                (let ((n_0
-                                                       (struct-type-info-immediate-field-count
-                                                        sti_0)))
-                                                  (let ((mask_0
-                                                         (sub1
-                                                          (arithmetic-shift
-                                                           1
-                                                           n_0))))
-                                                    (let ((c1_0
-                                                           (struct-type-info-non-prefab-immutables
-                                                            sti_0)))
-                                                      (if c1_0
-                                                        (letrec*
-                                                         ((loop_0
-                                                           (|#%name|
-                                                            loop
-                                                            (lambda (imms_0
-                                                                     mask_1)
-                                                              (begin
-                                                                (if (null?
-                                                                     imms_0)
-                                                                  mask_1
-                                                                  (let ((m_0
-                                                                         (bitwise-not
-                                                                          (arithmetic-shift
-                                                                           1
-                                                                           (car
-                                                                            imms_0)))))
-                                                                    (let ((app_6
-                                                                           (cdr
-                                                                            imms_0)))
-                                                                      (loop_0
-                                                                       app_6
-                                                                       (bitwise-and
-                                                                        mask_1
-                                                                        m_0))))))))))
-                                                         (loop_0 c1_0 mask_0))
-                                                        mask_0)))))))))))))
+                                             (list
+                                              'make-record-type-descriptor
+                                              app_1
+                                              app_2
+                                              app_3
+                                              app_4
+                                              #f
+                                              (list
+                                               'quote
+                                               (let ((app_5
+                                                      (struct-type-info-immediate-field-count
+                                                       sti_0)))
+                                                 (list*
+                                                  app_5
+                                                  (let ((n_0
+                                                         (struct-type-info-immediate-field-count
+                                                          sti_0)))
+                                                    (let ((mask_0
+                                                           (sub1
+                                                            (arithmetic-shift
+                                                             1
+                                                             n_0))))
+                                                      (let ((c1_0
+                                                             (struct-type-info-non-prefab-immutables
+                                                              sti_0)))
+                                                        (if c1_0
+                                                          (letrec*
+                                                           ((loop_0
+                                                             (|#%name|
+                                                              loop
+                                                              (lambda (imms_0
+                                                                       mask_1)
+                                                                (begin
+                                                                  (if (null?
+                                                                       imms_0)
+                                                                    mask_1
+                                                                    (let ((m_0
+                                                                           (bitwise-not
+                                                                            (arithmetic-shift
+                                                                             1
+                                                                             (car
+                                                                              imms_0)))))
+                                                                      (let ((app_6
+                                                                             (cdr
+                                                                              imms_0)))
+                                                                        (loop_0
+                                                                         app_6
+                                                                         (bitwise-and
+                                                                          mask_1
+                                                                          m_0))))))))))
+                                                           (loop_0
+                                                            c1_0
+                                                            mask_0))
+                                                          mask_0)))))))))))))))
                                (list*
                                 app_1
                                 (let ((app_2
@@ -33505,14 +33467,13 @@
    #f
    'convert-mode))
 (define struct:convert-mode
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'convert-mode
    #f
    (|#%nongenerative-uid| convert-mode)
    #f
    #f
-   4
-   0))
+   '(4 . 0)))
 (define effect_2443 (finish_2118 struct:convert-mode))
 (define convert-mode1.1
   (|#%name|
@@ -42676,14 +42637,13 @@
    #f
    'to-unfasl))
 (define struct:to-unfasl
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'to-unfasl
    #f
    (|#%nongenerative-uid| to-unfasl)
    #f
    #f
-   3
-   0))
+   '(3 . 0)))
 (define effect_2898 (finish_3138 struct:to-unfasl))
 (define to-unfasl1.1
   (|#%name|
@@ -42814,14 +42774,13 @@
    #f
    'node))
 (define struct:node
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'node
    #f
    (|#%nongenerative-uid| node)
    #f
    #f
-   5
-   0))
+   '(5 . 0)))
 (define effect_2547 (finish_2779 struct:node))
 (define node1.1
   (|#%name|
@@ -43136,14 +43095,13 @@
    #f
    'stack-info))
 (define struct:stack-info
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'stack-info
    #f
    (|#%nongenerative-uid| stack-info)
    #f
    #f
-   5
-   28))
+   '(5 . 28)))
 (define effect_2334 (finish_2471 struct:stack-info))
 (define stack-info4.1
   (|#%name|
@@ -43486,14 +43444,13 @@
    #f
    'indirect))
 (define struct:indirect
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'indirect
    #f
    (|#%nongenerative-uid| indirect)
    #f
    #f
-   2
-   0))
+   '(2 . 0)))
 (define effect_2125 (finish_2360 struct:indirect))
 (define indirect1.1
   (|#%name|
@@ -43547,14 +43504,13 @@
    #f
    'boxed))
 (define struct:boxed
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'boxed
    #f
    (|#%nongenerative-uid| boxed)
    #f
    #f
-   1
-   0))
+   '(1 . 0)))
 (define effect_2970 (finish_2373 struct:boxed))
 (define boxed2.1
   (|#%name|
@@ -43591,14 +43547,13 @@
    #f
    'boxed/check))
 (define struct:boxed/check
-  (make-record-type-descriptor*
+  (make-record-type-descriptor
    'boxed/check
    struct:boxed
    (|#%nongenerative-uid| boxed/check)
    #f
    #f
-   0
-   0))
+   '(0 . 0)))
 (define effect_2937 (finish_2767 struct:boxed/check))
 (define boxed/check3.1
   (|#%name|

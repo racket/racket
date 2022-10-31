@@ -654,11 +654,12 @@
             [parent-fi (if parent-rtd*
                            (struct-type-field-info parent-rtd*)
                            empty-field-info)]
-            [rtd (make-record-type-descriptor* name
-                                               parent-rtd*
-                                               prefab-uid
-                                               (#%ormap (lambda (p) (eq? prop:sealed (car p))) props)
-                                               #f
+            [rtd (make-record-type-descriptor name
+                                              parent-rtd*
+                                              prefab-uid
+                                              (#%ormap (lambda (p) (eq? prop:sealed (car p))) props)
+                                              #f
+                                              (cons
                                                (+ init-count auto-count)
                                                (let ([mask (sub1 (general-arithmetic-shift 1 (+ init-count auto-count)))])
                                                  (if (eq? insp 'prefab)
@@ -668,10 +669,10 @@
                                                                           immutables)]
                                                                 [mask mask])
                                                        (cond
-                                                        [(null? imms) mask]
-                                                        [else
-                                                         (let ([m (bitwise-not (arithmetic-shift 1 (car imms)))])
-                                                           (loop (cdr imms) (bitwise-and mask m)))])))))]
+                                                         [(null? imms) mask]
+                                                         [else
+                                                          (let ([m (bitwise-not (arithmetic-shift 1 (car imms)))])
+                                                            (loop (cdr imms) (bitwise-and mask m)))]))))))]
             [parent-auto*-count (get-field-info-auto*-count parent-fi)]
             [parent-init*-count (get-field-info-init*-count parent-fi)]
             [parent-total*-count (get-field-info-total*-count parent-fi)]
@@ -768,13 +769,14 @@
                                  (cdr parent-prefab-key+count)
                                  0))]
              [uid (encode-prefab-key+count-as-symbol prefab-key+count)]
-             [rtd (make-record-type-descriptor* name
-                                                parent-rtd
-                                                uid #f #f
+             [rtd (make-record-type-descriptor name
+                                               parent-rtd
+                                               uid #f #f
+                                               (cons
                                                 total-count
                                                 ;; All fields must be reported as mutable, because
                                                 ;; we might need to mutate to create cyclic data:
-                                                (sub1 (bitwise-arithmetic-shift-left 1 total-count)))]
+                                                (sub1 (bitwise-arithmetic-shift-left 1 total-count))))]
              [mutables (prefab-key-mutables prefab-key total-count)])
         (with-global-lock
          (cond
@@ -1465,7 +1467,7 @@
                                          #'mk))]
                          [uid (datum->syntax #'name ((current-generate-id) (syntax->datum #'name)))])
              #'(begin
-                 (define struct:name (make-record-type-descriptor* 'name  struct:parent 'uid #f #f field-count 0))
+                 (define struct:name (make-record-type-descriptor 'name struct:parent 'uid #f #f '(field-count . 0)))
                  (define unsafe-make-name (record-constructor (make-record-constructor-descriptor struct:name #f #f)))
                  (define name ctr-expr)
                  (define authentic-name? (record-predicate struct:name))
