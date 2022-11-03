@@ -352,6 +352,15 @@ result:
 
 ]
 
+@examples[
+#:eval the-eval
+(eval:error (hash-ref (hash) "hi"))
+(hash-ref (hash) "hi" 5)
+(hash-ref (hash) "hi" (lambda () "flab"))
+(hash-ref (hash "hi" "bye") "hi")
+(eval:error (hash-ref (hash "hi" "bye") "no"))
+]
+
 @see-also-caveats[]}
 
 @defproc[(hash-ref-key [hash hash?]
