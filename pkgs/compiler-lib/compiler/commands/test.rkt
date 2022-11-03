@@ -315,7 +315,7 @@
                                 [b (in-bytes (subbytes s 19))]
                                 #:when (eq? 10 b))
                       i))
-               => (λ (i) (gensym (~a (subbytes s (+ 3 (bytes-length tag)) i))))]
+               => (λ (i) (gensym (~a (subbytes s 19 i))))]
               [else '||]))
           (parameterize ([error-print-width #x4000])
             (error test-exe-name "#<<~a~a\n~.a\n~a~a" tag n s tag n))))
