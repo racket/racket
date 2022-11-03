@@ -11,8 +11,8 @@
 (define (do-name-test line name contract-exp)
   (contract-eval #:test-case-name (format "name test on line ~a" line)
                  `(,test ,name contract-name ,contract-exp))
-  (contract-eval #:test-case-name (format "opt/c name test on line ~a" line)
-                 `(,test ,name contract-name (opt/c ,contract-exp))))
+  #;(contract-eval #:test-case-name (format "opt/c name test on line ~a" line)
+                   `(,test ,name contract-name (opt/c ,contract-exp))))
 
 (parameterize ([current-contract-namespace (make-basic-contract-namespace
                                             'racket/math
