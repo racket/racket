@@ -306,8 +306,19 @@
                            ignore-stderr-patterns)
                     (and ignore-stderr
                          (regexp-match? ignore-stderr s)))
-          (parameterize ([error-print-width 16384])
-            (error test-exe-name "#<<non-empty stderr\n~.a\nnon-empty stderr\n" s))))
+          (define tag #"non-empty stderr")
+          (define n
+            (cond
+              [(and (equal? #"#<<" (subbytes s 0 3))
+                    (equal? tag (subbytes s 3 19))
+                    (for/first ([i (in-naturals 19)]
+                                [b (in-bytes (subbytes s 19))]
+                                #:when (eq? 10 b))
+                      i))
+               => (λ (i) (gensym (~a (subbytes s (+ 3 (bytes-length tag)) i))))]
+              [else '||]))
+          (parameterize ([error-print-width #x4000])
+            (error test-exe-name "#<<~a~a\n~.a\n~a~a" tag n s tag n))))
       (unless (zero? result-code)
         (error test-exe-name "non-zero exit: ~e" result-code))
       (cond
