@@ -3,15 +3,25 @@
 (require (for-syntax racket/base racket/list syntax/name)
          racket/list racket/private/arity)
 
-(provide identity const thunk thunk* negate curry curryr
-         (all-from-out racket/private/arity)
-         conjoin disjoin)
+(provide identity
+         const   const*
+         thunk   thunk*
+         curry   curryr
+         conjoin disjoin
+         negate
+         (all-from-out racket/private/arity))
 
 (define (identity x) x)
 
-(define (const c)
-  (define (const . _) c)
-  (make-keyword-procedure const const))
+(define const (λ (c) (thunk* c)))
+
+(define const*
+  (let ([const* (thunk* (values))])
+    (case-lambda
+      [()    const*]
+      [(c)   (thunk* c)]
+      [(c d) (thunk* (values c d))]
+      [c*    (thunk* (apply values c*))])))
 
 (define-syntax (thunk stx)
   (syntax-case stx ()
