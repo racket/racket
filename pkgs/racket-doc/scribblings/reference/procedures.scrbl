@@ -672,7 +672,7 @@ Similar to @racket[const], except it returns @racket[v]s.
 ((const* 'foo 'foo) 'a 'b #:c 'c)
 ]
 
-@history[#:added "8.6.0.12"]}
+@history[#:added "8.7.0.5"]}
 
 @deftogether[(@defform[(thunk  body ...+)]
               @defform[(thunk* body ...+)])]{

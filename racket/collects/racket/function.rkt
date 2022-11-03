@@ -25,11 +25,7 @@
 
 (define-syntax (thunk stx)
   (syntax-case stx ()
-    [(_ body0 body ...)
-     (syntax-property
-      (syntax/loc stx
-        (lambda () body0 body ...))
-      'inferred-name (syntax-local-infer-name stx))]))
+    [(_ body0 body ...) (syntax/loc stx (lambda () body0 body ...))]))
 
 (define-syntax (thunk* stx)
   (syntax-case stx ()
