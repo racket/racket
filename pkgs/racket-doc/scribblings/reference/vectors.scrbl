@@ -35,7 +35,15 @@ Returns @racket[#t] if @racket[v] is a vector, @racket[#f] otherwise.}
                       [v any/c 0]) vector?]{
 
 Returns a mutable vector with @racket[size] slots, where all slots are
-initialized to contain @racket[v].
+initialized to contain @racket[v]. Note that @racket[v] is shared for 
+all elements, so for mutable data, mutating an element will affect other elements.
+@examples[
+  (make-vector 3 2)
+  (define v (make-vector 5 (box 3)))
+  v
+  (set-box! (vector-ref v 0) 7)
+  v
+]
 
 This function takes time proportional to @racket[size].}
 
