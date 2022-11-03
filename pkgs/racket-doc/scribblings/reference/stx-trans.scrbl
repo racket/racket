@@ -372,7 +372,7 @@ expansion history to external tools.
                                    an explicit wrapper.}
          #:changed "6.0.90.27" @elem{Loosened the contract on the @racket[intdef-ctx] argument to
                                      allow an empty list.}
-         #:changed "8.2.0.4" @elem{Changed binding to protected.}]}
+         #:changed "8.2.0.4" @elem{Changed binding to @tech{protected}.}]}
 
 
 @defproc[(syntax-local-expand-expression [stx any/c] [opaque-only? any/c #f])
@@ -408,7 +408,7 @@ result of @racket[syntax-local-expand-expression] can include
 @transform-time[] @provided-as-protected[]
 
 @history[#:changed "6.90.0.13" @elem{Added the @racket[opaque-only?] argument.}
-         #:changed "8.2.0.4" @elem{Changed binding to protected.}]}
+         #:changed "8.2.0.4" @elem{Changed binding to @tech{protected}.}]}
 
 
 @defproc[(local-transformer-expand [stx any/c]
@@ -435,7 +435,7 @@ or @racket[let-values] wrapper is added.
 
 @history[#:changed "6.5.0.3" @elem{Allowed and captured lifts in a
                                    @racket['top-level] context.}
-         #:changed "8.2.0.4" @elem{Changed binding to protected.}]}
+         #:changed "8.2.0.4" @elem{Changed binding to @tech{protected}.}]}
 
 
 @defproc[(local-expand/capture-lifts
@@ -466,7 +466,7 @@ If @racket[context-v] is @racket['top-level] or @racket['module], then
 
 @provided-as-protected[]
 
-@history[#:changed "8.2.0.4" @elem{Changed binding to protected.}]}
+@history[#:changed "8.2.0.4" @elem{Changed binding to @tech{protected}.}]}
 
 
 @defproc[(local-transformer-expand/capture-lifts
@@ -487,7 +487,7 @@ transformer environment).
 
 @provided-as-protected[]
 
-@history[#:changed "8.2.0.4" @elem{Changed binding to protected.}]}
+@history[#:changed "8.2.0.4" @elem{Changed binding to @tech{protected}.}]}
 
 
 @defproc[(syntax-local-apply-transformer
@@ -798,7 +798,7 @@ if not @racket[#f]. If @racket[failure-thunk] is @racket[false], the
  #:changed "6.90.0.27" @elem{Changed @racket[intdef-ctx] to accept a list of internal-definition
                              contexts in addition to a single internal-definition context or
                              @racket[#f].}
- #:changed "8.2.0.4" @elem{Changed binding to protected.}]}
+ #:changed "8.2.0.4" @elem{Changed binding to @tech{protected}.}]}
 
 
 @defproc[(syntax-local-value/immediate [id-stx syntax?]
@@ -838,7 +838,7 @@ values), or an exception is raised if @racket[failure-thunk] is
 
 @provided-as-protected[]
 
-@history[#:changed "8.2.0.4" @elem{Changed binding to protected.}]}
+@history[#:changed "8.2.0.4" @elem{Changed binding to @tech{protected}.}]}
 
 
 @defproc[(syntax-local-lift-expression [stx syntax?])

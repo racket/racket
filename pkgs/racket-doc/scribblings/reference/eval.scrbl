@@ -581,7 +581,7 @@ when compiled bytecode is loaded).
 The @racket[current-compile] binding is provided as @tech{protected}
 in the sense of @racket[protect-out].
 
-@history[#:changed "8.2.0.4" @elem{Changed binding to protected.}]}
+@history[#:changed "8.2.0.4" @elem{Changed binding to @tech{protected}.}]}
 
 
 @defproc[(compile [top-level-form any/c]) compiled-expression?]{

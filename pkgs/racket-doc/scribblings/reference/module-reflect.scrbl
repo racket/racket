@@ -197,7 +197,7 @@ The @racket[current-module-name-resolver] binding is provided as
          @elem{Added special treatment of @racket[submod] forms with a
                nonexistent collection by the default module name
                resolver.}
-         #:changed "8.2.0.4" @elem{Changed binding to protected.}]}
+         #:changed "8.2.0.4" @elem{Changed binding to @tech{protected}.}]}
 
 
 @defparam[current-module-declare-name name (or/c resolved-module-path? #f)]{
