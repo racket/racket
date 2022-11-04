@@ -4,6 +4,7 @@
 (library (chezpart)
   (export)
   (import (chezscheme))
+  (import (only $system $begin-unsafe))
   (export (import
            (rename (except (chezscheme)
                            remq remove
@@ -92,4 +93,5 @@
                    [call-with-input-file chez:call-with-input-file]
                    [read-char chez:read-char]
                    [gcd chez:gcd]
-                   [lcm chez:lcm]))))
+                   [lcm chez:lcm]))
+          (rename [$begin-unsafe begin-unsafe])))

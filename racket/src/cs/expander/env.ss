@@ -21,4 +21,7 @@
            (io)
            (regexp)
            (linklet)
-           (only $system $lambda/lift-barrier)))
+           (rename (only $system
+                         $lambda/lift-barrier
+                         $begin-unsafe)
+                   [$begin-unsafe begin-unsafe])))
