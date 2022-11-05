@@ -135,16 +135,17 @@
     (write-bytes #"\"" o)
     (write-string (regexp-replace* rx-to-encode str escape) o)
     (write-bytes #"\"" o))
-  (define (format/write-whitespace)
-    (when indent (write-bytes #" " o)))
-  (define (format/write-newline)
-    (when indent (write-bytes #"\n" o)))
-  (define (format/write-indent layer)
+  (define format/write-whitespace
+    (if indent (λ () (write-bytes #" " o)) void))
+  (define format/write-newline
+    (if indent (λ () (write-bytes #"\n" o)) void))
+  (define format/write-indent
     (cond
       [(eq? #\tab indent)
-       (write-bytes (make-bytes layer #x9) o)]
+       (λ (layer) (write-bytes (make-bytes layer #x9) o))]
       [(exact-nonnegative-integer? indent)
-       (write-bytes (make-bytes (* layer indent) #x20) o)]))
+       (λ (layer) (write-bytes (make-bytes (* layer indent) #x20) o))]
+      [else void]))
   (let write-jsval ([x x] [layer 0])
     (cond [(or (exact-integer? x) (inexact-rational? x)) (write x o)]
           [(eq? x #f)     (write-bytes #"false" o)]
