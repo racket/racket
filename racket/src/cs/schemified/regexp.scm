@@ -3066,7 +3066,7 @@
         (if (if (eqv? tmp_0 '#\x3f)
               #t
               (if (eqv? tmp_0 '#\x2a) #t (eqv? tmp_0 '#\x2b)))
-          (let ((fmt_0 "nested `~a` in patten"))
+          (let ((fmt_0 "nested `~a` in pattern"))
             (let ((args_0 (list (integer->char (chytes-ref$1 s_0 pos_0)))))
               (let ((fmt_1 fmt_0))
                 (begin-unsafe (apply regexp-error fmt_1 args_0)))))
