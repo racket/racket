@@ -714,7 +714,7 @@
                      #:post-patches (if (and mac? ppc?)
                                         (list gmp-inline-patch)
                                         null))]
-    [("mpfr") (config #:configure (append (if (and win? (not aarch64?))
+    [("mpfr") (config #:configure (append (if (and #f win?) ; creates dependency on "libwinpthread-1.dll"
                                               '("--enable-thread-safe")
                                               null)
                                           '("--enable-shared" "--disable-static"))
