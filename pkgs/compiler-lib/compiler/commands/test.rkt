@@ -311,9 +311,7 @@
             (define n
               (let ([s (~.a s)] [tag (~a #"\n" tag)])
                 (if (string-contains? s tag)
-                    (for/first ([i (in-naturals)]
-                                #:unless (string-contains? s (~a tag i)))
-                      i)
+                    (for/first ([i (in-naturals)] #:unless (string-contains? s (~a tag i))) i)
                     #"")))
             (error test-exe-name "#<<~a~a\n~.a\n~a~a" tag n s tag n))))
       (unless (zero? result-code)
