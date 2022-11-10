@@ -712,6 +712,8 @@
                     [sorted-kws (sort (map list kws kw-args kw-arg?s kw-reqs kw-not-supplieds)
                                       (lambda (a b) (keyword<? (syntax-e (car a))
                                                                (syntax-e (car b)))))]
+                    [drop-not-supplied (lambda (l) (list (car l) (cadr l) (caddr l) (cadddr l)))]
+                    [only-not-supplied (lambda (l) (list-ref l 4))]
                     [method? (syntax-property stx 'method-arity-error)]
                     [annotate-method (lambda (stx)
                                        (if method?
@@ -852,7 +854,10 @@
                                       (length plain-ids) opt-not-supplieds
                                       (not (null? (syntax-e #'rest)))
                                       needed-kws
-                                      sorted-kws))])
+                                      ;; split not-supplied defaults from the rest of keyword information,
+                                      ;; because the not-supplied terms will need to be syntax-quoted
+                                      (map drop-not-supplied sorted-kws)
+                                      (map only-not-supplied sorted-kws)))])
                    (cond
                     [(null? kws)
                      ;; just the no-kw part
@@ -916,7 +921,7 @@
                   stx
                   #f
                   (lambda (e) e)
-                  (lambda (impl kwimpl wrap core-id unpack-id n-req opt-not-supplieds rest? req-kws all-kws)
+                  (lambda (impl kwimpl wrap core-id unpack-id n-req opt-not-supplieds rest? req-kws all-kws all-kw-not-supplieds)
                     (quasisyntax/loc stx
                       (let ([#,core-id #,impl])
                         (let ([#,unpack-id #,kwimpl])
@@ -1182,7 +1187,7 @@
                                                                 lam-id)))
                                   (lambda (impl kwimpl wrap
                                                 core-id unpack-id
-                                                n-req opt-not-supplieds rest? req-kws all-kws)
+                                                n-req opt-not-supplieds rest? req-kws all-kws all-kw-not-supplieds)
                                     (with-syntax ([proc (car (generate-temporaries (list id)))])
                                       (quasisyntax/loc stx
                                         (begin
@@ -1191,8 +1196,8 @@
                                                 (make-keyword-syntax (lambda ()
                                                                        (values (quote-syntax #,core-id)
                                                                                (quote-syntax proc)))
-                                                                     #,n-req '#,opt-not-supplieds #,rest?
-                                                                     '#,req-kws '#,all-kws)))
+                                                                     #,n-req (quote-syntax #,opt-not-supplieds) #,rest?
+                                                                     '#,req-kws '#,all-kws (quote-syntax #,all-kw-not-supplieds))))
                                           #,(quasisyntax/loc stx
                                               (define #,core-id #,(core-wrap impl)))
                                           #,(quasisyntax/loc stx
@@ -1339,7 +1344,7 @@
       (raise-argument-error* 'syntax-procedure-converted-arguments 'racket/primitive "syntax?" stx))
     (syntax-property stx kw-converted-arguments-variant-of))
 
-  (define-for-syntax (make-keyword-syntax get-ids n-req opt-not-supplieds rest? req-kws all-kws)
+  (define-for-syntax (make-keyword-syntax get-ids n-req opt-not-supplieds rest? req-kws all-kws all-kw-not-supplieds)
     (make-kw-expander
      (lambda (stx)
        (define-values (impl-id wrap-id) (get-ids))
@@ -1375,15 +1380,7 @@
                  (syntax-property wrap-id alias-of 
                                   (cons (syntax-taint (syntax-local-introduce #'self))
                                         (syntax-taint (syntax-local-introduce wrap-id))))]
-                [n-opt (length opt-not-supplieds)]
-                [convert-default-expr (lambda (e)
-                                        ;; default-value expressions get quoted along the way,
-                                        ;; instead of syntax-quoted; in the case of `unsafe-undefined`,
-                                        ;; we need to switch back to a reference that has this module's
-                                        ;; inspector to allow access in an untrusted context
-                                        (if (eq? e 'unsafe-undefined)
-                                            #'unsafe-undefined
-                                            e))])
+                [n-opt (length (syntax->list opt-not-supplieds))])
             (if (free-identifier=? #'new-app (datum->syntax stx '#%app))
                 (parse-app (datum->syntax #f (cons #'new-app stx) stx)
                            (lambda (n)
@@ -1446,28 +1443,30 @@
                                                   (#%app
                                                    #,impl-id/prop
                                                    ;; keyword arguments:
-                                                   #,@(let loop ([kw-args kw-args] [all-kws all-kws])
+                                                   #,@(let loop ([kw-args kw-args]
+                                                                 [all-kws all-kws]
+                                                                 [all-kw-not-supplieds (syntax->list all-kw-not-supplieds)])
                                                         (cond
                                                           [(null? all-kws) null]
                                                           [(and (pair? kw-args)
                                                                 (eq? (syntax-e (caar kw-args)) (caar all-kws)))
                                                            (cons (cdar kw-args)
-                                                                 (loop (cdr kw-args) (cdr all-kws)))]
+                                                                 (loop (cdr kw-args) (cdr all-kws) (cdr all-kw-not-supplieds)))]
                                                           [else
-                                                           (cons (convert-default-expr (list-ref (car all-kws) 4))
-                                                                 (loop kw-args (cdr all-kws)))]))
+                                                           (cons (car all-kw-not-supplieds)
+                                                                 (loop kw-args (cdr all-kws) (cdr all-kw-not-supplieds)))]))
                                                    ;; required arguments:
                                                    #,@(let loop ([i n-req] [args args])
                                                         (if (zero? i)
                                                             null
-                                                            (cons (convert-default-expr (car args))
+                                                            (cons (car args)
                                                                   (loop (sub1 i) (cdr args)))))
                                                    ;; optional arguments:
-                                                   #,@(let loop ([opt-not-supplieds opt-not-supplieds] [args (list-tail args n-req)])
+                                                   #,@(let loop ([opt-not-supplieds (syntax->list opt-not-supplieds)] [args (list-tail args n-req)])
                                                         (cond
                                                           [(null? opt-not-supplieds) null]
                                                           [(null? args)
-                                                           (cons (convert-default-expr (car opt-not-supplieds))
+                                                           (cons (car opt-not-supplieds)
                                                                  (loop (cdr opt-not-supplieds) null))]
                                                           [else
                                                            (cons (car args) (loop (cdr opt-not-supplieds) (cdr args)))]))

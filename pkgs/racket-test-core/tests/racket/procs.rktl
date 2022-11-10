@@ -907,5 +907,39 @@
                   (arity-at-least? a))))))
 
 ;; ----------------------------------------
+;; Make sure literal keyword-argument and optional-argument defaults
+;; are preserved with source locations in a direct call
+
+(let ()
+  (define ten #'10)
+  (define eleven #'11)
+
+  (define e
+    (parameterize ([current-namespace (make-base-namespace)])
+      (expand #`(let ()
+                  (define (f #:x [x #,ten] [y #,eleven])
+                    x)
+                  (f)))))
+
+  (test #t
+        'keyword-optional-srclocs
+        (let loop ([e e])
+          (cond
+            [(syntax? e)
+             (syntax-case e (#%plain-app quote)
+               [(#%plain-app f (quote also-ten) (quote also-eleven))
+                (let ()
+                  (define (same-srcloc? a b)
+                    (and (equal? (syntax-source a)
+                                 (syntax-source b))
+                         (equal? (syntax-position a)
+                                 (syntax-position b))))
+                  (and (same-srcloc? ten #'also-ten)
+                       (same-srcloc? eleven #'also-eleven)))]
+               [_ (and (pair? (syntax-e e))
+                       (ormap loop (syntax->list e)))])]
+            [else #f]))))
+
+;; ----------------------------------------
 
 (report-errs)
