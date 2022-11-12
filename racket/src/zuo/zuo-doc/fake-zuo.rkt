@@ -192,6 +192,7 @@
     build-module-path
     kernel-env
     kernel-eval
+    dynamic-require
 
     runtime-env
     dump-image-and-exit

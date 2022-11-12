@@ -21,6 +21,17 @@ from @racketmodname[zuo], but not the ones from @racketmodname[zuo/cmdline],
 @racketmodname[zuo/build], @racketmodname[zuo/shell], @racketmodname[zuo/thread],
 @racketmodname[zuo/glob], or @racketmodname[zuo/config].
 
+When using @racket[module->hash] on @racketmodname[zuo/base],
+@racketmodname[zuo], or a module implemented with one of those
+languages, the resulting hash table includes @racket['dynamic-require]
+mapped to the @racket[dynamic-require] function. Getting
+@racket[dynamic-require] that way provides a path from the primitive
+@seclink["module-protocol"]{Zuo kernel module protocol} to
+@racketmodname[zuo/base] module exports.
+
+@history[#:changed "1.2" @elem{Added the @racket['dynamic-require] key
+        for @racketmodname[zuo] and related languages.}]
+
 @section{Syntax and Evaluation Model}
 
 A @racketmodname[zuo] module consists of a sequence of definitions

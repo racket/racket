@@ -271,6 +271,15 @@ each representing a submodule. When Zuo runs an initial script, it
 looks for a @racket['main] submodule and runs it (i.e., calls the
 thunk) if present.
 
+The @racketmodname[zuo], @racketmodname[zuo/base], and
+@racketmodname[zuo/hygienic] languages do not specify how their
+provided-variable information is represented in a module hash table,
+but they do specify that @racket['dynamic-require] is mapped to the
+@racket[dynamic-require] function, and then @racket[dynamic-require]
+can be used to access provided values.
+
+@history[#:changed "1.2" @elem{Added the @racket['dynamic-require] key
+        for @racketmodname[zuo] and related languages.}]
 
 @section[#:tag "paths"]{Path Handling}
 

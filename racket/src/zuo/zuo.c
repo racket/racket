@@ -3,7 +3,7 @@
    declarations. */
 
 #define ZUO_VERSION 1
-#define ZUO_MINOR_VERSION 1
+#define ZUO_MINOR_VERSION 2
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
 # define ZUO_WINDOWS
@@ -7464,13 +7464,18 @@ zuo_ext_t *zuo_ext_hash_set(zuo_ext_t *ht, zuo_ext_t *key, zuo_ext_t *val) { ret
 
 zuo_ext_t *zuo_ext_kernel_env() { return z.o_top_env; }
 zuo_ext_t *zuo_ext_apply(zuo_ext_t *proc, zuo_ext_t *args) {
-  /* special-case primtives, so this cna be used to perform primitive
+  /* special-case primtives, so this can be used to perform primitive
      operations without triggering a GC */
   if (proc->tag == zuo_primitive_tag) {
     zuo_primitive_t *f = (zuo_primitive_t *)proc;
     return f->dispatcher(f->proc, args);
-  } else
-    return zuo_kernel_eval(zuo_cons(proc, args));
+  } else {
+    /* quote arguments */
+    zuo_t *l, *quoted = z.o_null, *quote = zuo_symbol("quote");
+    for (l = zuo_cons(proc, args); l != z.o_null; l = _zuo_cdr(l))
+      quoted = zuo_cons(zuo_cons(quote, zuo_cons(_zuo_car(l), z.o_null)), quoted);
+    return zuo_kernel_eval(zuo_reverse(quoted));
+  }
 }
 
 void zuo_ext_runtime_init(zuo_ext_t *lib_path, zuo_ext_t *runtime_env) { zuo_runtime_init(lib_path, runtime_env); }

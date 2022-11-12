@@ -78,6 +78,11 @@ ZUO_EXPORT zuo_ext_t *zuo_ext_kernel_env();
    procedure. Arguments are in a list created with `zuo_ext_cons` and
    `zuo_ext_null`: */
 ZUO_EXPORT zuo_ext_t *zuo_ext_apply(zuo_ext_t *proc, zuo_ext_t *args);
+/* Note: Prior to version 1.2, this function was broken and evaluated
+   the procedure and arguments as expressions instead of using them as
+   values when `proc` is not a promitive. The following `#define`
+   reflects the repair: */
+#define ZUO_EXT_APPLY_ALWAYS_EXPECTS_VALUES 1
 
 /* ======================================================================== */
 /*
@@ -93,8 +98,14 @@ ZUO_EXPORT void zuo_ext_runtime_init(zuo_ext_t *lib_path, zuo_ext_t *runtime_env
 /* After `zuo_ext_runtime_init`, all functionality is available. You
    can load a module from a file by extracting `module->hash` from the
    kernel env. Or you can declare and run a module directly from
-   source text, giveing it a module path that is eiter a symbolic
-   library path or a file path. */
+   source text, giving it a module path that is eiter a symbolic
+   library path or a file path.
+
+   Note that the result of the kernel's `module->hash` function or the
+   `zuo_ext_eval_module` is just a hash table. If the module is
+   implemented in `zuo` or a related language, you can use the symbol
+   `'dynamic-require` to get the `dynamic-require` function, and then
+   you can use that function to access provided values. */
 
 ZUO_EXPORT zuo_ext_t *zuo_ext_eval_module(zuo_ext_t *as_module_path, const char *content, long long len);
 
@@ -105,7 +116,9 @@ ZUO_EXPORT zuo_ext_t *zuo_ext_stash_pop();
 
 #endif
 
-/* Here's a simple example embedding application: */
+/* ======================================================================== */
+/* Here's a simple example embedding application that makes an extra
+   primitive `random-five` available: */
 #if 0
 
 #include <stdio.h>
@@ -143,6 +156,57 @@ int main() {
     printf("The answer was %d\n", (int)zuo_ext_integer_value(v));
   else
     printf("Something went wrong!\n");
+
+  return 0;
+}
+
+#endif
+
+/* ======================================================================== */
+/* Here's a example embedding application that doesn't need a new
+   primitive, but where the module is implemented with `#lang zuo`, so
+   we need to go through `dynamic-require` to get provided values: */
+#if 0
+
+#include <stdio.h>
+#include <string.h>
+#include "zuo.h"
+
+/* Link with a copy of "zuo.c" created by `zuo local/image.zuo` so
+   that the `zuo` module is available. */
+
+int main() {
+  const char *prog = "#lang zuo (provide main) (define (main) (+ 1 2))";
+  zuo_ext_t *ht, *dynamic_require, *main, *v;
+
+  /* Step 1 */
+  zuo_ext_primitive_init();
+
+  /* Step 2 */
+  zuo_ext_image_init(NULL);
+
+  /* Step 3 */
+  zuo_ext_runtime_init(zuo_ext_false(), zuo_ext_empty_hash());
+
+  /* Run `prog`: */
+  ht = zuo_ext_eval_module(zuo_ext_symbol("main-app"), prog, strlen(prog));
+
+  dynamic_require = zuo_ext_hash_ref(ht,
+                                     zuo_ext_symbol("dynamic-require"),
+                                     zuo_ext_false());
+
+  main = zuo_ext_apply(dynamic_require,
+                       zuo_ext_cons(zuo_ext_symbol("main-app"),
+                                    zuo_ext_cons(zuo_ext_symbol("main"),
+                                                 zuo_ext_null())));
+
+  v = zuo_ext_apply(main, zuo_ext_null());
+
+  printf("%s\n",
+         zuo_ext_string_ptr(zuo_ext_apply(zuo_ext_hash_ref(zuo_ext_kernel_env(),
+                                                           zuo_ext_symbol("~s"),
+                                                           zuo_ext_false()),
+                                          zuo_ext_cons(v, zuo_ext_null()))));
 
   return 0;
 }

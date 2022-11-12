@@ -19,14 +19,16 @@
       (kernel-eval (cons 'begin (cons '(void) body)))
       (hash 'macromod-provides outs
             'submodules submods
-            merge-bindings-export-key (make-export-merge-binds ctx (state-binds state))))))
+            merge-bindings-export-key (make-export-merge-binds ctx (state-binds state))
+            ;; for getting into this module world from the `zuo/kernel` module world:
+           'dynamic-require dynamic-require))))
 
 (hash
  ;; makes `#lang zuo/private/base[-hygienic] work:
  'read-and-eval (make-read-and-eval (lambda (ctx)
                                       (make-state (binds-create top-provides ctx)
                                                   (initial-nominals language-mod-path top-provides))))
- ;; makes `(require zuo/private/base[hygienic])` work:
+ ;; makes `(require zuo/private/base[-hygienic])` work:
  'macromod-provides top-provides
  ;; for making a new `#lang` with initial imports from `mod-path`:
  'make-language
@@ -42,4 +44,5 @@
               (merge-binds (make-state (binds-create provides ctx)
                                        (initial-nominals mod-path provides))
                            m-binds)))
-           'macromod-provides (hash-ref (module->hash mod-path) 'macromod-provides #f)))))
+           'macromod-provides (hash-ref (module->hash mod-path) 'macromod-provides #f)
+           'dynamic-require dynamic-require))))
