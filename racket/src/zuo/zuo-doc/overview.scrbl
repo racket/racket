@@ -330,7 +330,7 @@ specific choices about how to work with paths:
 
        The way that you start a Zuo script affects the script's
        operation in terms of absolute or relative paths. If you start
-       a Zuo script with a relative patch, such as @exec{zuo
+       a Zuo script with a relative path, such as @exec{zuo
        scripts/go.zuo}, the @racket[quote-module-path] form will
        report a relative path for the enclosing script. If you start
        it with an absolute path, such as @exec{zuo
