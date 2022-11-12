@@ -1843,14 +1843,18 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 
   if (ht && HAS_SUBSTRUCT(obj, ssQUICK)) {
     intptr_t val;
-    
+
     val = (intptr_t)scheme_hash_get(ht, obj);
-    
+
     if (val) {
       if (val != 1) {
 	if (compact) {
-	  print_escaped(pp, notdisplay, obj, ht, mt, 0);
-	  return 1;
+          if (SCHEME_CHAPERONE_STRUCTP(obj) && scheme_is_location(obj)) {
+            /* special case: srcloc is handled through symtab */
+          } else  {
+            print_escaped(pp, notdisplay, obj, ht, mt, 0);
+            return 1;
+          }
 	} else {
 	  if (val > 0) {
 	    sprintf(quick_buffer, "#%" PRIdPTR "=", (val - 3) >> 1);
@@ -2298,46 +2302,56 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       /* Support srclocs in marshaled form with special treatment
          of paths */
       int i;
-      Scheme_Object *src, *rel_src, *dir;
+      Scheme_Object *src, *rel_src, *dir, *idx;
+      
+      if (compact)
+	idx = get_symtab_idx(mt, obj);
+      else
+	idx = NULL;
 
-      src = scheme_struct_ref(obj, 0);
-      if (SCHEME_PATHP(src)) {
-        /* To make paths portable and to avoid full paths, check
-           whether the path can be made relative, in which case it is
-           turned into a list of byte strings. If not, convert to a
-           string using only the last couple of path elements. */
-        dir = scheme_get_param(scheme_current_config(),
-                               MZCONFIG_WRITE_DIRECTORY);
-        if (SCHEME_TRUEP(dir))
-          rel_src = scheme_extract_relative_to(src, dir, mt->path_cache);
-        else
-          rel_src = src;
-        if (SCHEME_PATHP(rel_src)) {
-          src = scheme_hash_get(mt->path_cache, scheme_box(rel_src));
-          if (!src) {
-            src = srcloc_path_to_string(rel_src);
-            scheme_hash_set(mt->path_cache, scheme_box(rel_src), src);
-          }
-        } else {
-          /* let the printer make it relative when recurring */
-        }
-      } else if (SCHEME_FALSEP(src)
-                 || SCHEME_CHAR_STRINGP(src)
-                 || SCHEME_BYTE_STRINGP(src)
-                 || SCHEME_SYMBOLP(src)
-                 || SCHEME_GENERAL_PATHP(src)) {
-        /* ok */
+      if (idx) {
+        print_symtab_ref(pp, idx);
       } else {
-        cannot_print(pp, notdisplay, obj, ht, compact);
-      }
+        src = scheme_struct_ref(obj, 0);
+        if (SCHEME_PATHP(src)) {
+          /* To make paths portable and to avoid full paths, check
+             whether the path can be made relative, in which case it is
+             turned into a list of byte strings. If not, convert to a
+             string using only the last couple of path elements. */
+          dir = scheme_get_param(scheme_current_config(),
+                                 MZCONFIG_WRITE_DIRECTORY);
+          if (SCHEME_TRUEP(dir))
+            rel_src = scheme_extract_relative_to(src, dir, mt->path_cache);
+          else
+            rel_src = src;
+          if (SCHEME_PATHP(rel_src)) {
+            src = scheme_hash_get(mt->path_cache, scheme_box(rel_src));
+            if (!src) {
+              src = srcloc_path_to_string(rel_src);
+              scheme_hash_set(mt->path_cache, scheme_box(rel_src), src);
+            }
+          } else {
+            /* let the printer make it relative when recurring */
+          }
+        } else if (SCHEME_FALSEP(src)
+                   || SCHEME_CHAR_STRINGP(src)
+                   || SCHEME_BYTE_STRINGP(src)
+                   || SCHEME_SYMBOLP(src)
+                   || SCHEME_GENERAL_PATHP(src)) {
+          /* ok */
+        } else {
+          cannot_print(pp, notdisplay, obj, ht, compact);
+        }
 
-      print_compact(pp, CPT_SRCLOC);
-      print(src, notdisplay, compact, ht, mt, pp);
-      for (i = 1; i < 5; i++) {
-        print(scheme_struct_ref(obj, i), notdisplay, compact, ht, mt, pp);
-      }
+        print_compact(pp, CPT_SRCLOC);
+        print(src, notdisplay, compact, ht, mt, pp);
+        for (i = 1; i < 5; i++) {
+          print(scheme_struct_ref(obj, i), notdisplay, compact, ht, mt, pp);
+        }
 
-      closed = 1;
+        closed = 1;
+        symtab_set(pp, mt, obj);
+      }
     }
   else if (SCHEME_CHAPERONE_STRUCTP(obj))
     {
