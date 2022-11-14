@@ -1941,6 +1941,12 @@ static zuo_t *zuo_in(const unsigned char *s, zuo_int_t *_o, zuo_t *where, int sk
       if (s[*_o] == ';') {
         while ((s[*_o] != '\n') && (s[*_o] != 0))
           (*_o)++;
+      } else if (s[*_o] == '#' && s[(*_o) + 1] == '!') {
+        while (((s[*_o] != '\n')
+                || (s[(*_o)-1] == '\\')
+                || ((s[(*_o)-2] == '\\') && (s[(*_o)-1] == '\r')))
+               && (s[*_o] != 0))
+          (*_o)++;
       } else if (s[*_o] == '#' && s[(*_o) + 1] == ';') {
         (*_o) += 2;
         stack = zuo_cons(zuo_cons(ZUO_IN_DISCARD_RECUR, z.o_null), stack);
