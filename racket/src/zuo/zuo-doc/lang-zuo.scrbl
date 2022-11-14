@@ -796,7 +796,7 @@ Returns a @tech{hash table} that maps each primitive and constant name
 available in the body of a @racketmodname[zuo/kernel] module to its value.}
 
 
-@section{void}
+@section{Void}
 
 @defproc[(void? [v any/c]) boolean?]{
 
@@ -816,7 +816,9 @@ value.}
 Reads all S-expressions in @racket[str], starting at index
 @racket[start] and returning a list of the S-expressions (in order as
 they appeared in the string). The @racket[where] argument, if not
-@racket[#f], is used to report the source of errors.}
+@racket[#f], is used to report the source of errors.
+
+See also @secref["reader"].}
 
 
 @deftogether[(
@@ -1224,7 +1226,7 @@ with only certain keys per platform:
        @racket['modify-time-nanoseconds], and
        @racket['change-time-nanoseconds]}
 
- @item{Windows: @racket['device-id], @indexed-racket['inode],
+ @item{Windows: @racket['dev<ice-id], @indexed-racket['inode],
        @racket['mode] (read and write bits only), @racket['type]
        (abbreviated), @racket['hardlink-count], @racket['size],
        @racket['access-time-seconds], @racket['modify-time-seconds],

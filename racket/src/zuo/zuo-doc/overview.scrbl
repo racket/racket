@@ -164,6 +164,9 @@ Notable omissions include floating-point numbers, characters, Unicode
 strings, and vectors. Paths are represented using byte strings (with
 an implied UTF-8 encoding for Windows wide-character paths).
 
+See @secref["reader"] for information on reading literal values as
+S-expression.
+
 
 @section{Zuo Implementation and Macros}
 
