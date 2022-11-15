@@ -4269,6 +4269,10 @@ static Scheme_Object *do_string_normalize_c (const char *who, int argc, Scheme_O
 	&& (scheme_combining_class(s[i+1]) < scheme_combining_class(s[i]))) {
       /* Need to reorder */
       break;
+    } else if ((s[i] >= MZ_JAMO_SYLLABLE_START)
+               && (s[i] <= MZ_JAMO_SYLLABLE_END)) {
+      /* Need Hangul decomposition */
+      break;
     } else if ((s[i] >= MZ_JAMO_INITIAL_CONSONANT_START)
 	       && (s[i] <= MZ_JAMO_INITIAL_CONSONANT_END)
 	       && (s[i+1] >= MZ_JAMO_VOWEL_START)
