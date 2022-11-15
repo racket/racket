@@ -957,11 +957,14 @@
   (define (raise-linking-failure why target-inst inst sym)
     (raise-arguments-error 'instantiate-linklet
                            (string-append "mismatch;\n"
-                                          " reference to a variable that " why ";\n"
-                                          " possibly, bytecode file needs re-compile because dependencies changed")
+                                          " reference to a variable that " why "")
                            "name" (unquoted-printing-string (symbol->string sym))
                            "exporting instance" (unquoted-printing-string (format "~a" (instance-name inst)))
-                           "importing instance" (unquoted-printing-string (format "~a" (instance-name target-inst)))))
+                           "importing instance" (unquoted-printing-string (format "~a" (instance-name target-inst)))
+                           "possible reason" (unquoted-printing-string
+                                              "modules need to be recompiled because dependencies changed")
+                           "possible solution" (unquoted-printing-string
+                                                "running `racket -y`, `raco make`, or `raco setup`")))
 
   (define (identify-module var)
     (cond

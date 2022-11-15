@@ -21,7 +21,9 @@
                                (if (path? n)
                                    (unquoted-printing-string
                                     (path->string n))
-                                   in))))
+                                   in))
+                        "possible solution"
+                        (unquoted-printing-string "running `racket -y`, `raco make`, or `raco setup`")))
     (define vm-len (min 63 (read-byte in)))
     (define vm (read-bytes vm-len in))
     (define as-correlated-linklet? (equal? vm correlated-linklet-vm-bytes))

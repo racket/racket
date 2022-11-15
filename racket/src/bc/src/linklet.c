@@ -1577,11 +1577,12 @@ static Scheme_Hash_Tree *push_prefix(Scheme_Linklet *linklet, Scheme_Instance *i
       
       if (!v) {
         scheme_signal_error("instantiate-linklet: mismatch;\n"
-                            " reference to a variable that %s;\n"
-                            " possibly, bytecode file needs re-compile because dependencies changed\n"
+                            " reference to a variable that %s\n"
                             "  name: %D\n"
                             "  exporting instance: %D\n"
-                            "  importing instance: %D",
+                            "  importing instance: %D\n"
+                            "  possible reason: modules need to be recompiled because dependencies changed\n"
+                            "  possible solution: running `racket -y`, `raco make`, or `raco setup`",
                             bad_reason,
                             SCHEME_VEC_ELS(SCHEME_VEC_ELS(linklet->importss)[j])[i],
                             instances[j]->name,
