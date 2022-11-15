@@ -1226,7 +1226,7 @@ with only certain keys per platform:
        @racket['modify-time-nanoseconds], and
        @racket['change-time-nanoseconds]}
 
- @item{Windows: @racket['dev<ice-id], @indexed-racket['inode],
+ @item{Windows: @racket['device-id], @indexed-racket['inode],
        @racket['mode] (read and write bits only), @racket['type]
        (abbreviated), @racket['hardlink-count], @racket['size],
        @racket['access-time-seconds], @racket['modify-time-seconds],
