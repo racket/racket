@@ -125,7 +125,9 @@
                        [(eq? key next-key) "|"]
                        [else " "])
                      " "
-                     (string-join flags ", ")))
+                     (string-join flags ", ")
+                     (if (null? (car spec)) "" " ")
+                     (string-join (car spec))))
       (let loop ([text text])
         (when (pair? text)
           (displayln (~a (cond
