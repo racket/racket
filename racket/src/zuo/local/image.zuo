@@ -19,6 +19,9 @@
 ;;
 ;;  * 'libs: list of module-path symbols; default is '(zuo)
 ;;
+;;  * 'image-file: an existing image, causing 'libs to be ignored;
+;;     default is #f
+;;
 ;;  * 'deps: a file to record files reda to create the image; presence
 ;;     along with non-#f 'output enables a potetial 'up-to-date result
 ;;
@@ -36,6 +39,8 @@
           (hash-set cmd 'libs (cons (string->symbol module-path)
                                     (hash-ref cmd 'libs '())))]
      :once-each
+     [cmd "--image" file "Use <file> instead of creating a new image"
+          (hash-set cmd 'image-file file)]
      [cmd "--deps" file "Write dependencies to <file>"
           (hash-set cmd 'deps file)]
      [cmd "--keep-collects" "Keep library collection path enabled"
@@ -72,38 +77,51 @@
 
   (define deps-file (hash-ref cmd 'deps #f))
   (define c-file (hash-ref cmd 'output #f))
-  
+  (define image-file (hash-ref cmd 'image-file #f))
+
+  (when (and image-file (pair? given-libs))
+    (error "Don't provide both libraries and an image file"))
+
   (when c-file
-    (displayln (~a "generating " c-file " embedding these libraries: " (string-join (map ~s libs)))))
+    (if image-file
+        (displayln (~a "generating " c-file " embedding " (~s image-file)))
+        (displayln (~a "generating " c-file " embedding these libraries: " (string-join (map ~s libs))))))
   (when deps-file
     (display-to-file "" deps-file :truncate))
   
   (define deps-h (and deps-file (cleanable-file deps-file)))
 
   (define image
-    (let ([ht (apply process
-                     (append
-                      (list (hash-ref (runtime-env) 'exe))
-                      (if deps-file
-                          (list "-M" deps-file)
-                          (list))
-                      (list "" (hash 'stdin 'pipe 'stdout 'pipe))))])
-      (define p (hash-ref ht 'process))
-      (define in (hash-ref ht 'stdin))
-      (define out (hash-ref ht 'stdout))
-      (fd-write in "#lang zuo/kernel\n")
-      (fd-write in "(begin\n")
-      (for-each (lambda (lib)
-                  (fd-write in (~a "(module->hash '" lib ")\n")))
-                libs)
-      (fd-write in "(dump-image-and-exit (fd-open-output 'stdout (hash))))\n")
-      (fd-close in)
-      (let ([image (fd-read out eof)])
-        (fd-close out)
-        (process-wait p)
-        (unless (= 0 (process-status p))
-          (error "image dump failed"))
-        image)))
+    (cond
+      [image-file
+       (define in (fd-open-input image-file))
+       (define image (fd-read in eof))
+       (fd-close in)
+       image]
+      [else
+       (let ([ht (apply process
+                        (append
+                         (list (hash-ref (runtime-env) 'exe))
+                         (if deps-file
+                             (list "-M" deps-file)
+                             (list))
+                         (list "" (hash 'stdin 'pipe 'stdout 'pipe))))])
+         (define p (hash-ref ht 'process))
+         (define in (hash-ref ht 'stdin))
+         (define out (hash-ref ht 'stdout))
+         (fd-write in "#lang zuo/kernel\n")
+         (fd-write in "(begin\n")
+         (for-each (lambda (lib)
+                     (fd-write in (~a "(module->hash '" lib ")\n")))
+                   libs)
+         (fd-write in "(dump-image-and-exit (fd-open-output 'stdout (hash))))\n")
+         (fd-close in)
+         (let ([image (fd-read out eof)])
+           (fd-close out)
+           (process-wait p)
+           (unless (= 0 (process-status p))
+             (error "image dump failed"))
+           image))]))
 
   (define zuo.c (fd-read (fd-open-input (at-source ".." "zuo.c")) eof))
   (define out (if c-file
