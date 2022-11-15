@@ -106,7 +106,9 @@ install}.
 You can use images without embedding. The @racket[dump-image-and-exit]
 Zuo kernel permitive creates an image containing all loaded modules,
 and a @Flag{B} or @DFlag{boot} command-line flag for Zuo uses the
-given boot image on startup.
+given boot image on startup. You can also embed an image created with
+@racket[dump-image-and-exit] by using @filepath{local/image.zuo} with
+the @DFlag{image} flag.
 
 A boot image is machine-independent, whether in a stand-alone file or
 embedded in @filepath{.c} source.
