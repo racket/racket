@@ -112,6 +112,7 @@
              (hash-ref accum 'flags-expr)
              (hash-ref accum 'finish (quote-syntax (lambda () (lambda (cmd) cmd))))
              (hash-ref accum 'finish-spec (quote-syntax '(() ())))
+             (hash-ref accum 'preamble #f)
              (hash-ref accum 'usage #f)
              (cons (quote-syntax list) (reverse (hash-ref accum 'help '()))))]
       [(identifier? (car stx))
@@ -150,6 +151,11 @@
             (syntax-error "command-line: bad syntax at `:usage`" all-stx))
           (check-already accum 'usage)
           (loop (cddr stx) #f #f (hash-set accum 'usage (list (quote-syntax check-usage) (cadr stx))))]
+         [(eq? head ':preamble)
+          (unless (pair? (cdr stx))
+            (syntax-error "command-line: bad syntax at `:preamble`" all-stx))
+          (check-already accum 'preamble)
+          (loop (cddr stx) #f #f (hash-set accum 'preamble (list (quote-syntax check-preamble) (cadr stx))))]
          [else (expected-mode stx)])]
       [(not mode)
        (expected-mode stx)]
@@ -170,3 +176,8 @@
   (unless (string? usage)
     (error "command-line: result for `:usage` is not a string" usage))
   usage)
+
+(define (check-preamble preamble)
+  (unless (string? preamble)
+    (error "command-line: result for `:preamble` is not a string" preamble))
+  preamble)

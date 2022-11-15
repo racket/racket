@@ -18,9 +18,10 @@ The @racketmodname[zuo] language includes libraries added to
 
 @defzuomodule[zuo/cmdline]
 
-@defform[#:literals(:program :usage :args-in :init :multi :once-each :once-any :args)
+@defform[#:literals(:program :preamble :usage :args-in :init :multi :once-each :once-any :args)
          (command-line flag-clause ... args-clause)
          #:grammar ([flag-clause (code:line :program expr)
+                                 (code:line :preamble expr)
                                  (code:line :usage expr)
                                  (code:line :args-in expr)
                                  (code:line :init expr)
@@ -46,8 +47,10 @@ One small difference is that @racket[:args-in] is used to specify a
 list of incoming arguments instead of @racket[#:argv] for an incoming
 vector of arguments. The default @racket[:args-in] uses
 @racket[(hash-ref (runtime-env) 'args '())]. Another difference is the
-addition of @racket[:usage], which supplies a usage-options string
-as an alternative to the one inferred from an @racket[:args] clause.
+addition of @racket[:preamble], which supplies a string to be
+shown before a ``usage'' line, and @racket[:usage], which supplies a
+usage-options string as an alternative to the one inferred from an
+@racket[:args] clause.
 
 A more significant difference is that @racketmodname[zuo] does not
 have mutable data structures, so an explicit accumulator must be
@@ -58,7 +61,9 @@ bound to the value accumulated so far, or its body produces a function
 to receive the accumulated value; either way, the result of the body
 or procedure is a new accumulated value. Finally, the body of an
 @racket[args-clause] must produce a function to receive the
-accumulated value.}
+accumulated value.
+
+@history[#:changed "1.3" @elem{Added @racket[:preamble].}]}
 
 @; ------------------------------------------------------------
 
