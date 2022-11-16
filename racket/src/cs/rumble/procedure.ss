@@ -649,7 +649,7 @@
                       ;; atomic with respect to Racket threads
                       (let ([name (wrapper-procedure-data p)])
                         (unless (#%box? name)
-                          (set-wrapper-procedure! p f)
+                          (set-wrapper-procedure-procedure! p f)
                           (set-wrapper-procedure-data! p (box name)))))
                      (apply p args)))
                  mask
