@@ -72,6 +72,7 @@
          rec
          with-tc-mutex
          with-values
+         $immediate?
          make-record-type
          type-descriptor
          csv7:record-field-accessor
@@ -765,6 +766,17 @@
 
 (define-syntax-rule (with-values prod con)
   (call-with-values (lambda () prod) con))
+
+(define ($immediate? v)
+  (or (eof-object? v)
+      (boolean? v)
+      (char? v)
+      (void? v)
+      (eof-object? v)
+      (null? v)
+      (bwp? v)
+      (black-hole? v)
+      ($unbound-object? v)))
 
 (define (s:vector-sort proc vec)
   (vector-sort vec proc))
