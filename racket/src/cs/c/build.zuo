@@ -669,18 +669,25 @@
                               [(not (equal? (lookup 'SCHEME_DIR) ""))
                                ;; use existing Scheme workarea to build boot files
                                (cons "bootquick"
-                                     (list "--host-workarea"
-                                           (at-dir (lookup 'SCHEME_DIR) host-m)
-                                           m))]
+                                     (append
+                                      (if xpatch? '("--xpatch") '())
+                                      (list "--host-workarea"
+                                            (at-dir (lookup 'SCHEME_DIR) host-m)
+                                            m)))]
                               [(not (equal? (lookup 'SCHEME) ""))
                                ;; use existing Scheme to build boot files; if it doesn't
                                ;; report the same version as we're trying to build, use it
                                ;; in "reboot" mode
                                (define exe (executable->path (lookup 'SCHEME) at-dir))
-                               (cons (if (same-scheme-version? exe)
+                               (define same? (same-scheme-version? exe))
+                               (when (and xpatch? (not same?))
+                                 (error "cross build needs Scheme with matching version"))
+                               (cons (if same?
                                          "bootquick"
                                          "reboot")
-                                     (list "--host-scheme" exe m))]
+                                     (append
+                                      (if xpatch? '("--xpatch") '())
+                                      (list "--host-scheme" exe m)))]
                               [else
                                ;; assuming auto Racket and/or Scheme is built before we get here
                                (cons "bootquick"

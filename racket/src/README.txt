@@ -447,7 +447,9 @@ allowed for non-cross builds, too:
    implementation used to create boot files to the build platform.
    Supplying Chez Scheme is a much more direct path. These executables
    do not need to match the versions being built, as there are
-   bootstrapping paths that can handle differences where needed.
+   bootstrapping paths that can handle differences where needed. If
+   you supply both Racket and Chez Scheme, then Racket is used
+   (despite being less direct).
 
  * For Racket BC, `--enable-racket=RACKET` selects a Racket for
    prepare C sources to cooperate with garbage collection. Its version
