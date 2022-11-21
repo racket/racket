@@ -300,14 +300,20 @@
 
       ;; Check results:
       (when check-stderr?
-        (unless (let ([s (get-output-bytes e)])
-                  (or (equal? #"" s)
-                      (ormap (lambda (p) (regexp-match? p s))
-                             ignore-stderr-patterns)
-                      (and ignore-stderr
-                           (regexp-match? ignore-stderr s))))
-          (parameterize ([error-print-width 16384])
-            (error test-exe-name "non-empty stderr: ~e" (get-output-bytes e)))))
+        (define s (get-output-bytes e))
+        (unless (or (equal? #"" s)
+                    (ormap (lambda (p) (regexp-match? p s))
+                           ignore-stderr-patterns)
+                    (and ignore-stderr
+                         (regexp-match? ignore-stderr s)))
+          (parameterize ([error-print-width #x4000])
+            (define tag #"non-empty stderr")
+            (define n
+              (let ([s (~.a s)] [tag (~a #"\n" tag)])
+                (if (string-contains? s tag)
+                    (for/first ([i (in-naturals)] #:unless (string-contains? s (~a tag i))) i)
+                    #"")))
+            (error test-exe-name "#<<~a~a\n~.a\n~a~a" tag n s tag n))))
       (unless (zero? result-code)
         (error test-exe-name "non-zero exit: ~e" result-code))
       (cond
