@@ -237,7 +237,8 @@ then @exnraise[exn:fail:filesystem:errno].
 @defproc[(open-input-output-file [path path-string?]
                            [#:mode mode-flag (or/c 'binary 'text) 'binary]
                            [#:exists exists-flag (or/c 'error 'append 'update 'can-update
-                                                       'replace 'truncate 'truncate/replace) 'error]
+                                                       'replace 'truncate 
+                                                       'must-truncate 'truncate/replace) 'error]
                            [#:permissions permissions (integer-in 0 65535) @#,default-permissions])
           (values input-port? output-port?)]{
 
@@ -272,8 +273,9 @@ when @racket[proc] returns.
 @defproc[(call-with-output-file [path path-string?]
                                 [proc (output-port? . -> . any)]
                                 [#:mode mode-flag (or/c 'binary 'text) 'binary]
-                                [#:exists exists-flag (or/c 'error 'append 'update
-                                                            'replace 'truncate 'truncate/replace) 'error]
+                                [#:exists exists-flag (or/c 'error 'append 'update 'can-update
+                                                            'replace 'truncate 
+                                                            'must-truncate 'truncate/replace) 'error]
                                 [#:permissions permissions (integer-in 0 65535) @#,default-permissions])
          any]{
 Analogous to @racket[call-with-input-file], but passing @racket[path],
@@ -303,8 +305,9 @@ return, a continuation application, or a prompt-based abort.}
 @defproc[(call-with-output-file* [path path-string?]
                                  [proc (output-port? . -> . any)]
                                  [#:mode mode-flag (or/c 'binary 'text) 'binary]
-                                 [#:exists exists-flag (or/c 'error 'append 'update
-                                                             'replace 'truncate 'truncate/replace) 'error]
+                                 [#:exists exists-flag (or/c 'error 'append 'update 'can-update
+                                                             'replace 'truncate
+                                                             'must-truncate 'truncate/replace) 'error]
                                  [#:permissions permissions (integer-in 0 65535) @#,default-permissions])
          any]{
 Like @racket[call-with-output-file], but the newly opened port is
@@ -333,8 +336,9 @@ the current input port (see @racket[current-input-port]) using
 @defproc[(with-output-to-file [path path-string?]
                               [thunk (-> any)]
                               [#:mode mode-flag (or/c 'binary 'text) 'binary]
-                              [#:exists exists-flag (or/c 'error 'append 'update
-                                                          'replace 'truncate 'truncate/replace) 'error]
+                              [#:exists exists-flag (or/c 'error 'append 'update 'can-update
+                                                          'replace 'truncate 
+                                                          'must-truncate 'truncate/replace) 'error]
                               [#:permissions permissions (integer-in 0 65535) @#,default-permissions])
          any]{
 Like @racket[call-with-output-file*], but instead of passing the newly
