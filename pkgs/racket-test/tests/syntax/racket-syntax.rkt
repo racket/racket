@@ -21,8 +21,18 @@
          (format-id #'here "ab~a" #'c)
         #'abc))
 
+(check free-identifier=?
+       (format-id #'here "sub~a" 1)
+       #'sub1)
+
+(check free-identifier=?
+       (format-id #'here "sub~a" #'1)
+       #'sub1)
+
 (check-equal? (format-symbol "~a?" 'null) 'null?)
 (check-equal? (format-symbol "~a?" "null") 'null?)
+(check-equal? (format-symbol "sub~a" 1) 'sub1)
+(check-equal? (format-symbol "sub~a" #'1) 'sub1)
 
 (check-exn
  exn:fail:contract?

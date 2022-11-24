@@ -16,7 +16,8 @@
 
 @defproc[(format-id [lctx (or/c syntax? #f)]
                     [fmt string?]
-                    [v (or/c string? symbol? identifier? keyword? char? number?)] ...
+                    [v (or/c string? symbol? keyword? char? number?
+                             (syntax/c (or/c string? symbol? keyword? char? number?)))] ...
                     [#:source src (or/c syntax? #f) #f]
                     [#:props props (or/c syntax? #f) #f]
                     [#:cert ignored (or/c syntax? #f) #f]
@@ -31,8 +32,9 @@ for the lexical context, @racket[src] for the source location, and
 @racket[props] for the properties. An argument supplied with
 @racket[#:cert] is ignored. (See @racket[datum->syntax].)
 
-The format string must use only @litchar{~a} placeholders. Identifiers
-in the argument list are automatically converted to symbols.
+The format string must use only @litchar{~a} placeholders.
+Syntax objects in the argument list are automatically unwrapped
+(e.g., identifiers will be automatically converted to symbols).
 
 @examples[#:eval the-eval
 (define-syntax (make-pred stx)
@@ -65,20 +67,27 @@ sub-range binder record. This property value overrides a
 ]
 
 @history[#:changed "7.4.0.5" @elem{Added the @racket[#:subs?] and
-@racket[#:subs-intro] arguments.}]
+@racket[#:subs-intro] arguments.}
+         #:changed "8.7.0.7" @elem{Allowed @racket[v] to be a syntax object
+wrapping a string, a keyword, a character, or a number.}]
 }
 
 @defproc[(format-symbol [fmt string?]
-                        [v (or/c string? symbol? identifier? keyword? char? number?)] ...)
+                        [v (or/c string? symbol? keyword? char? number?
+                                 (syntax/c (or/c string? symbol? keyword? char? number?)))] ...)
          symbol?]{
 
 Like @racket[format], but produces a symbol. The format string must
-use only @litchar{~a} placeholders. Identifiers in the argument list
-are automatically converted to symbols.
+use only @litchar{~a} placeholders.
+Syntax objects in the argument list are automatically unwrapped
+(e.g., identifiers will be automatically converted to symbols).
 
 @examples[#:eval the-eval
   (format-symbol "make-~a" 'triple)
 ]
+
+@history[#:changed "8.7.0.7" @elem{Allowed @racket[v] to be a syntax object
+wrapping a string, a keyword, a character, or a number.}]
 }
 
 

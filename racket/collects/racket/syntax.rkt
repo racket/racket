@@ -182,17 +182,20 @@
 (define (default-intro)
   (if (syntax-transforming?) syntax-local-introduce values))
 
-(define (->string x err)
-  (cond [(string? x) x]
-        [(symbol? x) (symbol->string x)]
-        [(identifier? x) (symbol->string (syntax-e x))]
-        [(keyword? x) (keyword->string x)]
-        [(number? x) (number->string x)]
-        [(char? x) (string x)]
-        [else (raise-argument-error err
-                                    "(or/c string? symbol? identifier? keyword? char? number?)"
-                                    x)]))
-
+(define (->string orig err)
+  (let loop ([x orig])
+    (cond
+      [(syntax? x) (loop (syntax-e x))]
+      [(string? x) x]
+      [(symbol? x) (symbol->string x)]
+      [(keyword? x) (keyword->string x)]
+      [(number? x) (number->string x)]
+      [(char? x) (string x)]
+      [else (raise-argument-error
+             err
+             (string-append "(or/c string? symbol? keyword? char? number?\n"
+                            "      (syntax/c (or/c string? symbol? keyword? char? number?)))")
+             orig)])))
 
 ;; == Error reporting ==
 
