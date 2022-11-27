@@ -696,7 +696,7 @@ extension.
 
 @defproc[(path-has-extension? [path (or/c path-string? path-for-some-system?)]
                               [ext (or/c bytes? string?)])
-         (or/c bytes? #f)]{
+         boolean?]{
 
 Determines whether the last element of @racket[path] ends with
 @racket[ext] but is not exactly the same as @racket[ext].
