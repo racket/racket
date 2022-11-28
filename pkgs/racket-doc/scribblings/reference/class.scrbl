@@ -1385,17 +1385,20 @@ This is the functional analogue of @racket[send*].
      (super-new)
      (init-field [x 0] [y 0])
      (define/public (move-x dx)
-       (new this% [x (+ x dx)]))
+       (new this% [x (+ x dx)] [y y]))
      (define/public (move-y dy)
-       (new this% [y (+ y dy)])))))
+       (new this% [y (+ y dy)] [x x]))
+     (define/public (get-pair)
+       (cons x y)))))
 
 (send+ (new point%)
        (move-x 5)
        (move-y 7)
-       (move-x 12))
+       (move-x 12)
+       (get-pair))
 ]}
 
-@defform[(with-method ((id (obj-expr method-id)) ...)
+@defform[(with-method ([id (obj-expr method-id)] ...)
            body ...+)]{
 
 Extracts methods from an object and binds a local name that can be
