@@ -417,4 +417,38 @@
       (check-equal? (port->bytes content-port) #"MONKEYS")))
 
   (ps:shutdown-server)
-  (es:shutdown-server))
+  (es:shutdown-server)
+
+  ;; crf: https://github.com/racket/racket/issues/4503
+  ;; net/http-client: http-conn-send! and http-conn-recv! use incorrect regexes to parse headers
+  (let ()
+    (local-require (prefix-in gs: "http-proxy/generic-server.rkt"))
+    (define (test-colon-field-lws response-raw)
+      (define-values (gs:port gs:thread gs:kill)
+        (gs:serve
+          (lambda (inp outp)
+            (void (read-request inp))
+            (display response-raw outp)
+            (flush-output outp)
+            ; returning will close outp and mask the hang
+            (sync))))
+
+      (define c (hc:http-conn-open "localhost" #:port gs:port #:ssl? #f))
+      (check-true (hc:http-conn-live? c))
+      (define-values (status-line _headers bodyp)
+        (hc:http-conn-sendrecv! c "" #:method #"GET" #:headers empty #:close? #t))
+      (check-equal? status-line #"HTTP/1.1 200 OK")
+      (sync
+        (thread (lambda () (check-equal? (port->bytes bodyp) #"MONKEYS")))
+        (handle-evt
+         (alarm-evt (+ (current-inexact-monotonic-milliseconds) 2000) #t)
+         (lambda (_) (fail "timed out"))))
+      (void))
+
+    (define cases (list #"HTTP/1.1 200 OK\r\nContent-Length:7\r\n\r\nMONKEYS"
+                        #"HTTP/1.1 200 OK\r\nContent-Length:\t\t7\r\n\r\nMONKEYS"
+                        #"HTTP/1.1 200 OK\r\nContent-Length:\t   \t        7\r\n\r\nMONKEYS"))
+
+    (for ([raw (in-list cases)])
+      (with-check-info (['response-raw raw])
+        (test-colon-field-lws raw)))))
