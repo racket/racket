@@ -1176,8 +1176,8 @@ Displays each element of @racket[lst] to @racket[path], adding
 @racket[open-output-file].}
 
 @defproc[(copy-directory/files [src path-string?] [dest path-string?]
-                               [#:keep-modify-seconds? keep-modify-seconds? #f]
-                               [#:preserve-links? preserve-links? #f])
+                               [#:keep-modify-seconds? keep-modify-seconds? any/c #f]
+                               [#:preserve-links? preserve-links? any/c #f])
          void?]{
 
 Copies the file or directory @racket[src] to @racket[dest], raising
@@ -1197,7 +1197,7 @@ the modification date of the original.
 
 
 @defproc[(delete-directory/files [path path-string?]
-                                 [#:must-exist? must-exist? #t])
+                                 [#:must-exist? must-exist? any/c #t])
          void?]{
 
 Deletes the file or directory specified by @racket[path], raising
@@ -1226,8 +1226,8 @@ than the file), then the file is deleted directly with
 
 @defproc[(find-files [predicate (path? . -> . any/c)]
                      [start-path (or/c path-string? #f) #f]
-                     [#:skip-filtered-directory? skip-filtered-directory? #f]
-                     [#:follow-links? follow-links? #f])
+                     [#:skip-filtered-directory? skip-filtered-directory? any/c #f]
+                     [#:follow-links? follow-links? any/c #f])
          (listof path?)]{
 
 Traverses the filesystem starting at @racket[start-path] and creates a
@@ -1558,15 +1558,15 @@ file path to be moved to @racket[path]. The
 @defproc[(get-preference [name symbol?]
                          [failure-thunk (-> any) (lambda () #f)]
                          [flush-mode any/c 'timestamp]
-                         [filename (or/c string-path? #f) #f]
+                         [filename (or/c path-string? #f) #f]
                          [#:use-lock? use-lock? any/c #t]
-                         [#:timeout-lock-there timeout-lock-there 
+                         [#:timeout-lock-there timeout-lock-there
                                                (or/c (path? . -> . any) #f)
                                                #f]
-                         [#:lock-there 
+                         [#:lock-there
                           lock-there
                           (or/c (path? . -> . any) #f)
-                          (make-handle-get-preference-locked 
+                          (make-handle-get-preference-locked
                            0.01 name failure-thunk flush-mode filename
                            #:lock-there timeout-lock-there)])
          any]{
