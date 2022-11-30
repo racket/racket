@@ -139,10 +139,11 @@ thread is blocked on a channel.}
 @defproc[(channel? [v any/c]) boolean?]
 @defproc[(channel-put [ch channel?] [v any/c]) channel?]
 @defproc[(channel-get [ch channel?]) any/c]
+@defproc[(channel-try-get [ch channel?]) any/c]
 )]{
 
 Analogous to @realracket*[thread thread? make-channel channel? channel-put
-channel-get] from @racketmodname[racket], but channels are
+channel-get channel-try-get] from @racketmodname[racket], but channels are
 asynchronous (with an unbounded queue) instead of synchronous.
 
 Except for @racket[thread?] and @racket[channel?], these procedures
@@ -152,7 +153,9 @@ only in the threading context where it was created.
 Beware that attempting to use these operations outside of a threading
 context will @emph{not} necessarily trigger an error, and may instead
 deliver an opaque threading request to the enclosing continuation
-prompt.}
+prompt.
+
+@history[#:changed "1.4" @elem{Added @racket[channel-try-get].}]}
 
 @defproc[(thread-process-wait [process handle?] ...) handle?]{
 

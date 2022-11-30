@@ -156,3 +156,9 @@
                (lambda ()
                  ((call/prompt (lambda () (call/cc (lambda (k) k)))) 0))))
             "main thread is stuck")
+
+(check (channel-try-get (channel)) #f)
+(check (let ([ch (channel)])
+         (channel-put ch "x")
+         (channel-try-get ch))
+       "x")

@@ -1,0 +1,19 @@
+#lang zuo
+
+(require "harness.zuo")
+
+(alert "build")
+
+(let ()
+  (define p (process (hash-ref (runtime-env) 'exe #f)
+                     (at-source "build-cycle.zuo")
+                     (hash 'stdin 'pipe 'stdout 'pipe 'stderr 'pipe)))
+  (fd-close (hash-ref p 'stdin))
+  (define out (fd-read (hash-ref p 'stdout) eof))
+  (define err (fd-read (hash-ref p 'stderr) eof))
+  (fd-close (hash-ref p 'stdout))
+  (fd-close (hash-ref p 'stderr))
+  (process-wait (hash-ref p 'process))
+
+  (check (glob-match? "*dependency cycle*" err) #t)
+  (check "" out))

@@ -234,7 +234,7 @@
     build-shell
 
     call-in-main-thread
-    thread? thread channel? channel channel-put channel-get
+    thread? thread channel? channel channel-put channel-get channel-try-get
     thread-process-wait
     config-file->hash
 

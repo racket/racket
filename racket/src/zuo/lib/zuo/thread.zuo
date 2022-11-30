@@ -8,6 +8,7 @@
          channel?
          channel-put
          channel-get
+         channel-try-get
          thread-process-wait)
 
 (struct thread (id))
@@ -155,7 +156,7 @@
                [else
                 (loop (ch-set-w-tl (ch-set-w-hd ch (reverse w-tl)) '()))]))])))))
 
-(define (raw-channel-get st chl k yield-k)
+(define (raw-channel-get st chl k yield-k [just-try? #f])
   (let* ([chs (state-channels st)]
          [ch (hash-ref chs (channel-id chl) #f)])
     (unless ch (error "channel-get: does not belong to the running thread group" ch))
@@ -170,13 +171,17 @@
            (let* ([tl (ch-tl ch)])
              (cond
                [(null? tl)
-                (call/cc
-                 (lambda (k)
-                   (yield-k (update-ch st (ch-set-w-tl ch (cons k (ch-w-tl ch)))))))]
+                (cond
+                  [just-try?
+                   (yield-k st)]
+                  [else
+                   (call/cc
+                    (lambda (k)
+                      (yield-k (update-ch st (ch-set-w-tl ch (cons k (ch-w-tl ch)))))))])]
                [else
                 (loop (ch-set-tl (ch-set-hd ch (reverse tl)) '()))]))])))))
 
-(define (channel-get chl)
+(define (do-channel-get who chl unavailable just-try?)
   (unless (channel? chl) (arg-error 'channel-get "channel" chl))
   (check-in-thread 'channel-get)
   (raw-channel-get (current-state) chl
@@ -185,7 +190,14 @@
                      v)
                    (lambda (st)
                      (current-state st)
-                     (yield))))
+                     (unavailable))
+                   just-try?))
+
+(define (channel-get chl)
+  (do-channel-get 'channel-get chl yield #f))
+
+(define (channel-try-get chl)
+  (do-channel-get 'channel-try-get chl (lambda () #f) #t))
 
 (define (thread-process-wait p . ps)
   (for-each (lambda (p)

@@ -24,6 +24,7 @@
 (require "config.zuo")
 (require "c.zuo")
 (require "cycle.zuo")
+(require "build.zuo")
 (require "form.zuo")
 (require "form-hygienic.zuo")
 (require "macro.zuo")

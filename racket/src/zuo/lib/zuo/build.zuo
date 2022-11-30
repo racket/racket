@@ -213,6 +213,8 @@
                      db            ; key -> (cons sha256 dep-sha256s) | #t [for db file itself]
                      time-cache    ; key -> (cons timestamp sha256)
                      saw-targets   ; key -> target [to detect multiple for same output]
+                     thread-count  ; channel to hold thread-scheduler state
+                     thread-seens  ; sym -> hash [to detect cycles when count goes to 0]
                      resourcer     ; build stat's resource manager
                      log?          ; logging enabled?
                      uni?))        ; just one job?
@@ -240,12 +242,13 @@
                                    ;; assume jobserver allows more than 1:
                                    2)
                               (default-jobs)))
-         (define ch (channel))
-         (define state (build-state ch
+         (define state (build-state (channel)
                                     (hash)
                                     (hash)
                                     (hash)
                                     (hash)
+                                    (hash)
+                                    1
                                     (hash)
                                     (or resourcer
                                         jobserver-resourcer
@@ -300,21 +303,30 @@
      (let ([state (ensure-consistent state t)])
        (define current (target-state state t))
        (cond
-         [(not current) (force-build t (build-input-or-unbuilt t state seen top?))]
-         [(channel? current) (force-build t state)]
+         [(not current) (force-build t (build-input-or-unbuilt t state seen top?) seen)]
+         [(channel? current) (force-build t state seen)]
          [else state]))]))
 
 ;; Blocks until an in-progress target completes
-(define (force-build t state)
+(define (force-build t state seen)
   (define current (target-state state t))
   (cond
     [(channel? current)
-     ;; Waiting on the channel might block, so relinquish state
-     (put-state (build-state-ch state) state "force")
-     (channel-get current)
-     ;; Put value back to potentially satisfy some other waiting thread:
-     (channel-put current 'still-done)
-     (get-state (build-state-ch state) "force")]
+     (define (ready-again)
+       ;; Put value back to potentially satisfy some other waiting thread:
+       (channel-put current 'still-done))
+     (cond
+       [(channel-try-get current)
+        (ready-again)
+        state]
+       [else
+        ;; Waiting on the channel might block, so relinquish state
+        (define th-key (string->uninterned-symbol "thread"))
+        (define new-state (check/add-blocking-dependency state seen t th-key))
+        (put-state (build-state-ch new-state) new-state "force")
+        (channel-get current)
+        (ready-again)
+        (remove-blocking-dependency (get-state (build-state-ch new-state) "force") th-key)])]
     [else state]))
 
 ;; Shortcut for plain inputs, otherwise starts a build
@@ -394,12 +406,13 @@
   (define rule-state (get-state (token-ch tok) "rule"))
 
   ;; trigger builds of dependencies, but don't want for them to complete
-  (for-each (make-fetch-dep rule-state new-seen dep-top?) deps)
+  (define fetch-state
+    (foldl (make-fetch-dep rule-state new-seen dep-top?) rule-state deps))
 
   ;; now that they're all potentially started, wait for completions
   (define new-state
     (foldl (lambda (dep state) (do-build dep state new-seen dep-top?))
-           rule-state
+           fetch-state
            deps))
 
   ;; extract results, assemble in a hash table: <rel-path> -> <sha256>
@@ -439,10 +452,11 @@
                '()
                (hash-keys prev-dep-sha256s))
         '()))
-  (for-each (make-fetch-dep new-state new-seen dep-top?) more-deps)
+  (define fetch-again-state
+    (foldl (make-fetch-dep new-state new-seen dep-top?) new-state more-deps))
   (define newer-state
     (foldl (lambda (dep state) (do-build dep state new-seen dep-top?))
-           new-state
+           fetch-again-state
            more-deps))
   (define all-dep-sha256s
     (foldl (lambda (dep dep-sha256s)
@@ -503,29 +517,31 @@
           (build-one (lambda (proc) (proc (get-state state-ch "build"))))]
          [else
           ;; run build in its own thread
-          (thread (lambda ()
-                    (acquire-resource newer-state path) ; limits process parallelism
-                    (build-one
-                     (lambda (proc)
-                       (release-resource newer-state path)
-                       (let* ([state (get-state state-ch "tbuild")]
-                              [state (proc state)])
-                         (put-state state-ch state "tbuild"))))))
-          newer-state]))]))
+          (thread* newer-state
+                   (lambda ()
+                     (acquire-resource newer-state path) ; limits process parallelism
+                     (build-one
+                      (lambda (proc)
+                        (release-resource newer-state path)
+                        (let* ([state (get-state state-ch "tbuild")]
+                               [state (proc state)])
+                          (put-state state-ch (thread-done state) "tbuild"))))))]))]))
 
 (define (make-fetch-dep state seen top?)
   (if (build-state-uni? state)
-      void
+      (lambda (dep state)
+        state)
       (let ([state-ch (build-state-ch state)])
-        (lambda (dep)
+        (lambda (dep state)
           ;; No one waits for the this thread's work, and it doesn't
           ;; actually use the build result. It just creates a demand for
           ;; the build result, so the demand exists concurrent to waiting
           ;; on dependencies.
-          (thread (lambda ()
-                    (let* ([state (get-state state-ch "fetch")]
-                           [state (do-build dep state seen top?)])
-                      (put-state state-ch state "fetch"))))))))
+          (thread* state
+                   (lambda ()
+                     (let* ([state (get-state state-ch "fetch")]
+                            [state (do-build dep state seen top?)])
+                       (put-state state-ch (thread-done state) "fetch"))))))))
 
 ;; Alternative entry point suitable for use from a script's `main`
 (define (build/command-line targets [opts (hash)])
@@ -787,6 +803,66 @@
         key)))
 
 ;; see also "private/build-db.zuo"
+
+;; ------------------------------------------------------------
+;; Cross-thread dependency-cycle checking
+
+;; Within a single thread, a `seen` table detects cycles, but that's
+;; not good enough for cycles across threads. To detect those cycles,
+;; record the `seen` chain plus `t` for a thread while it is blocking
+;; on `t`. If we run out of threads (i.e., deadlock), then we can
+;; construct a graph based on `seen` -> `t` dependendies and look for
+;; a cycle in the graph.
+
+(define (thread* state thunk)
+  (thread thunk)
+  (build-state-set-thread-count state (+ (build-state-thread-count state) 1)))
+
+(define (thread-done state)
+  (build-state-set-thread-count state (- (build-state-thread-count state) 1)))
+
+(define (check/add-blocking-dependency state seen t th-key)
+  (define new-seens (hash-set (build-state-thread-seens state) th-key (cons seen t)))
+  (define new-state (build-state-set-thread-seens state new-seens))
+  (define count (build-state-thread-count state))
+  (when (= count 1)
+    ;; potential deadlock, so look for cycle
+    (define edges
+      (foldl (lambda (k edges)
+               (define seen+t (hash-ref new-seens k))
+               (define t (cdr seen+t))
+               (foldl (lambda (k edges)
+                        (hash-set edges k (cons t (hash-ref edges k '()))))
+                      edges
+                      (hash-keys (car seen+t))))
+             (hash)
+             (hash-keys new-seens)))
+    (foldl (lambda (k done)
+             (foldl (lambda (t done)
+                      (let loop ([t t] [seen (hash)])
+                        (define t-k (target-key t))
+                        (cond
+                          [(hash-ref done t-k #f) done]
+                          [else
+                           (when (hash-ref seen t-k #f)
+                             (error "build: dependency cycle" (target-name t)))
+                           (define new-seen (hash-set seen (target-key t) #t))
+                           (define new-done
+                             (foldl (lambda (t done)
+                                      (loop t new-seen))
+                                    done
+                                    (hash-ref edges (target-key t) '())))
+                           ;; didn't detect cycle, so this token is ok
+                           (hash-set new-done t-k #t)])))
+                    done
+                    (hash-ref edges k)))
+           (hash)
+           (hash-keys edges)))
+  (build-state-set-thread-count new-state (- count 1)))
+
+(define (remove-blocking-dependency state th-key)
+  (build-state-set-thread-seens (build-state-set-thread-count state (+ (build-state-thread-count state) 1))
+                                (hash-remove (build-state-thread-seens state) th-key)))
 
 ;; ------------------------------------------------------------
 ;; Generic helpers
