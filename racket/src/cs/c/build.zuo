@@ -87,7 +87,11 @@
                                                            'schemify "f"
                                                            'CONFIGURE_RACKET_SO_COMPILE (lookup 'CONFIGURE_RACKET_SO_COMPILE)
                                                            'COMPRESS_COMP (lookup 'COMPRESS_COMP)
-                                                           'DISABLE_WPO (lookup 'DISABLE_WPO "f"))])
+                                                           'DISABLE_WPO (lookup 'DISABLE_WPO "f")
+                                                           'UNSAFE_COMP (or (hash-ref vars 'UNSAFE_COMP #f)
+                                                                            (if (equal? (lookup 'ENABLE_EXTRA_CHECKS "no") "yes")
+                                                                                "no"
+                                                                                "yes")))])
                                       (if (not xpatch?)
                                           vars
                                           (hash-set* vars
@@ -111,6 +115,13 @@
                'disablecurses (lookup 'DISABLE_CURSES "no")
                'disableiconv (lookup 'DISABLE_ICONV "no")
                'exePostStep (lookup 'POST_LINKER)))
+
+  (define (add-scheme-boot-config config)
+    (if (equal? (lookup 'ENABLE_EXTRA_CHECKS "no") "yes")
+        (hash-set* config
+                   'o "2"
+                   'd "1")
+        config))
 
   (define starter-targets (starter-targets-at at-dir config windows?))
   (define MzStart.exe (at-dir "MzStart.exe"))
@@ -638,8 +649,9 @@
                    (mkdir-p (at-dir CS m))
                    (display-to-file "" (at-dir CS m "Mf-config") :truncate)
                    (define m-targets (scheme-targets-at (make-at-dir (at-dir CS m))
-                                                        (hash-set* (add-scheme-kernel-config
-                                                                    (adjust-linking-config config))
+                                                        (hash-set* (add-scheme-boot-config
+                                                                    (add-scheme-kernel-config
+                                                                     (adjust-linking-config config)))
                                                                    'm m
                                                                    ;; these are for Windows:
                                                                    'runtimeAs "static"
@@ -662,8 +674,9 @@
                           (mkdir-p (at-dir CS m))
                           (display-to-file "" (at-dir CS m "Mf-config") :truncate)
                           (define host-m-targets (scheme-targets-at (make-at-dir (at-dir CS m))
-                                                                    (hash-set* config
-                                                                               'm host-m)))
+                                                                    (add-scheme-boot-config
+                                                                     (hash-set* config
+                                                                                'm host-m))))
                           (define target-name+args
                             (cond
                               [(not (equal? (lookup 'SCHEME_DIR) ""))
@@ -722,8 +735,9 @@
                           (mkdir-p (at-dir CS "pb/c"))
                           (display-to-file "" (at-dir CS "pb/Mf-config") :truncate)
                           (define pb-targets (scheme-targets-at (make-at-dir (at-dir CS "pb"))
-                                                                (hash-set* (add-scheme-kernel-config
-                                                                            (adjust-linking-config config))
+                                                                (hash-set* (add-scheme-boot-config
+                                                                            (add-scheme-kernel-config
+                                                                             (adjust-linking-config config)))
                                                                            'm "pb"
                                                                            'defaultm m)))
                           (build (find-target "reset" pb-targets) token)

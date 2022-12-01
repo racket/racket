@@ -632,6 +632,7 @@ INSTALL_SETUP_RACKET_FLAGS
 INSTALL_SETUP_FLAGS
 PBCHUNK_MODE
 SCHEME_LIBFFI
+ENABLE_EXTRA_CHECKS
 DISABLE_WPO
 CS_COMPILED_SUBDIR
 CS_INSTALLED
@@ -790,6 +791,7 @@ enable_mach
 enable_target
 enable_pb
 enable_pbchunk
+enable_check
 enable_portable
 enable_natipkg
 enable_sdk
@@ -1450,6 +1452,7 @@ Optional Features:
   --enable-target=<mach>  cross-build for Chez Scheme machine type <mach>
   --enable-pb             build for platform without native-code backend
   --enable-pbchunk        enable C chunks for pb boot (enabled by default)
+  --enable-check          enable extra safety checks for testing
   --enable-portable       prefer portable to host-specific
   --enable-natipkg        add "-natipkg" to library subpath
   --enable-sdk=<path>     use Mac OS 10.4 SDK directory
@@ -2651,6 +2654,11 @@ if test "${enable_pbchunk+set}" = set; then :
   enableval=$enable_pbchunk;
 fi
 
+# Check whether --enable-check was given.
+if test "${enable_check+set}" = set; then :
+  enableval=$enable_check;
+fi
+
 
 # Check whether --enable-portable was given.
 if test "${enable_portable+set}" = set; then :
@@ -2919,6 +2927,7 @@ show_explicitly_enabled "${enable_iconv}" "iconv"
 show_explicitly_disabled "${enable_iconv}" "iconv"
 show_explicitly_enabled "${enable_curses}" "curses"
 show_explicitly_disabled "${enable_curses}" "curses"
+show_explicitly_enabled "${enable_check}" "Extra checks"
 
 if test "${enable_bconly}" = "yes" ; then
    if test "${enable_csonly}" = "yes" ; then
@@ -3332,6 +3341,8 @@ PBCHUNK_MODE=plain
 if test "${CC_FOR_BUILD}" = ""; then
   CC_FOR_BUILD='$(CC) -O2'
 fi
+
+ENABLE_EXTRA_CHECKS=no
 
 ###### Autoconfigure #######
 
@@ -6009,6 +6020,12 @@ if test "${ac_cv_sizeof_void_p}" != "4" ; then
 fi
 
 
+############## etxra checks ################
+
+if test "${enable_check}" = "yes" ; then
+  ENABLE_EXTRA_CHECKS=yes
+fi
+
 ############## subconfigure ################
 
 # Before libtool setup
@@ -6136,6 +6153,7 @@ done
 
 
 RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
+
 
 
 
