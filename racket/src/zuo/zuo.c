@@ -1793,10 +1793,10 @@ static void zuo_stack_trace() {
   done_dump_name(showed_name, repeats);
 }
 
-static void zuo_clean_all(); /* a necessary forward reference */
+static void zuo_clean_all(int skip_suspend); /* a necessary forward reference */
 
 static void zuo_exit_int(int v) {
-  zuo_clean_all();
+  zuo_clean_all(0);
   exit(v);
 }
 
@@ -5412,13 +5412,14 @@ static zuo_t *zuo_resume_signal() {
   return z.o_void;
 }
 
-static void zuo_clean_all() {
+static void zuo_clean_all(int skip_suspend) {
   zuo_t *keys, *l, *open_fds;
 
   if (Z.o_cleanable_table == z.o_undefined)
     return; /* must be an error during startup */
 
-  zuo_suspend_signal();
+  if (!skip_suspend)
+    zuo_suspend_signal();
 
   keys = zuo_trie_keys(Z.o_cleanable_table, z.o_null);
 
@@ -5462,19 +5463,20 @@ static void zuo_clean_all() {
 
   Z.o_cleanable_table = z.o_empty_hash;
 
-  zuo_resume_signal();
+  if (!skip_suspend)
+    zuo_resume_signal();
 }
 
 #ifdef ZUO_UNIX
 static void zuo_signal_received() {
-  zuo_clean_all();
+  zuo_clean_all(0);
   _exit(1);
 }
 #endif
 #ifdef ZUO_WINDOWS
 static BOOL WINAPI zuo_signal_received(DWORD op) {
   if (InterlockedExchange(&zuo_handler_suspended, -1) == 0) {
-    zuo_clean_all();
+    zuo_clean_all(1);
     _exit(1);
   }
   return TRUE;
@@ -6011,7 +6013,7 @@ zuo_t *zuo_process(zuo_t *command_and_args)
     if (as_child)
       pid = fork();
     else {
-      zuo_clean_all();
+      zuo_clean_all(0);
       pid = 0;
     }
 
