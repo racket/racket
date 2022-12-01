@@ -3,7 +3,7 @@
    declarations. */
 
 #define ZUO_VERSION 1
-#define ZUO_MINOR_VERSION 4
+#define ZUO_MINOR_VERSION 5
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
 # define ZUO_WINDOWS
@@ -4221,7 +4221,7 @@ static zuo_t *zuo_drain(zuo_raw_handle_t fd, zuo_int_t amount) {
   ZUO_STRING_PTR(s)[offset] = 0;
   ZUO_STRING_LEN(s) = offset;
 
-  if ((offset == 0) && (amount > 0))
+  if ((offset == 0) && ((amount > 0) || (amount == -2)))
     return z.o_eof;
 
   return s;

@@ -998,14 +998,16 @@ Reads from the input file or input stream associated with
 that many bytes, @racket[eof] to read all content up to an
 end-of-file, or @racket['avail] where supported (on Unix) to read as
 many bytes as available in non-blocking mode. The result is
-@racket[eof] if @racket[amount] is not @racket[0], @racket[eof], or @racket['avail]
+@racket[eof] if @racket[amount] is not @racket[0] or @racket[eof]
 and if no bytes are available before an end-of-file; otherwise, it is a
 string containing the read bytes.
 
 The number of bytes in the returned string can be less than
 @racket[amount] if the number of currently available bytes is less
 than @racket[amount] but at least one byte. The result can be an empty
-string only if @racket[amount] is @racket[0] or @racket['avail].}
+string only if @racket[amount] is @racket[0] or @racket['avail].
+
+@history[#:changed "1.5" @elem{Report @racket[eof] when available in @racket['avail] mode.}]}
 
 @defproc[(fd-write [handle handle?] [str string?]) void?]{
 

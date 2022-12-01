@@ -40,6 +40,7 @@
 (let ([in (fd-open-input (build-path tmp-dir "handle1.txt"))])
   (check (fd-read in eof) "one")
   (check (fd-read in 1) eof)
+  (check (fd-read in 'avail) eof)
   (check (fd-read in eof) "")
   (check (void? (fd-close in))))
 
