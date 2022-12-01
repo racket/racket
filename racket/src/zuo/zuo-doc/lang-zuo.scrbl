@@ -1007,6 +1007,8 @@ The number of bytes in the returned string can be less than
 than @racket[amount] but at least one byte. The result can be an empty
 string only if @racket[amount] is @racket[0] or @racket['avail].
 
+On Windows, @racket['avail] mode is not supported for console input.
+
 @history[#:changed "1.5" @elem{Report @racket[eof] when available in @racket['avail] mode.}]}
 
 @defproc[(fd-write [handle handle?] [str string?]) void?]{

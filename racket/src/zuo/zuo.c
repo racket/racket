@@ -4148,9 +4148,10 @@ static zuo_t *zuo_fd_handle(zuo_raw_handle_t handle, zuo_handle_status_t status,
 
 static zuo_t *zuo_drain(zuo_raw_handle_t fd, zuo_int_t amount) {
   /* amount as -1 => read until EOF
-     amount as -2 => non-blocking read on Unix */
+     amount as -2 => non-blocking read */
   zuo_t *s;
   zuo_int_t sz = 256, offset = 0;
+  int nonblock = (amount == -2);
 
   if ((amount >= 0) && (sz > amount))
     sz = amount;
@@ -4162,7 +4163,7 @@ static zuo_t *zuo_drain(zuo_raw_handle_t fd, zuo_int_t amount) {
     if (amt > 4096) amt = 4096;
 #ifdef ZUO_UNIX
     {
-      int nonblock = (amount == -2), old_fl, r;
+      int old_fl, r;
 
       if (nonblock) {
         EINTR_RETRY(old_fl = fcntl(fd, F_GETFL, 0));
@@ -4186,6 +4187,24 @@ static zuo_t *zuo_drain(zuo_raw_handle_t fd, zuo_int_t amount) {
     }
 #endif
 #ifdef ZUO_WINDOWS
+    if (nonblock) {
+      DWORD type = GetFileType(fd);
+      if (type == FILE_TYPE_CHAR)
+        zuo_fail("non-blocking reads are not supported for a console");
+      if (type == FILE_TYPE_PIPE) {
+	DWORD avail;
+	ZUO_STRING_PTR(s)[offset] = 0;
+	ZUO_STRING_LEN(s) = offset;
+        if (!PeekNamedPipe(fd, NULL, 0, NULL, &avail, NULL)) {
+	  if (GetLastError() == ERROR_BROKEN_PIPE)
+	    return z.o_eof;
+          zuo_fail("error checking pipe");
+	}
+        if (avail == 0)
+	  return s;
+      }
+    }
+
     {
       DWORD dgot;
       if (!ReadFile(fd, ZUO_STRING_PTR(s) + offset, amt, &dgot, NULL)) {
@@ -4491,14 +4510,9 @@ static zuo_t *zuo_fd_read(zuo_t *fd_h, zuo_t *amount) {
     zuo_fail_arg(who, "open input file descriptor", fd_h);
   if (amount != z.o_eof) {
     if ((amount->tag == zuo_symbol_tag)
-        && (amount == zuo_symbol("avail"))) {
-#ifdef ZUO_UNIX
+        && (amount == zuo_symbol("avail")))
       amt = -2;
-#endif
-#ifdef ZUO_WINDOWS
-      zuo_fail1w(who, "non-blocking reads are not supported for file descriptor", fd_h);
-#endif
-    } else if ((amount->tag == zuo_integer_tag)
+    else if ((amount->tag == zuo_integer_tag)
              && (ZUO_INT_I(amount) >= 0))
       amt = ZUO_INT_I(amount);
     else
