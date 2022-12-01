@@ -3488,13 +3488,13 @@ int scheme_grapheme_cluster_step(mzchar c, int *_state) {
     if (prop == MZ_GRAPHBREAK_LF)
       *_state = 0;
     else
-      *_state = MZG_PROP_STATE();
+      *_state = MZG_NEXT_STATE();
     return 1;
   } else if (prop == MZ_GRAPHBREAK_CR) { /* some of GB3 and some of GB5 */
     *_state = MZG_PROP_STATE();
     return (old_state > 0);
   } else if ((prev == MZ_GRAPHBREAK_CONTROL) || (prev == MZ_GRAPHBREAK_LF)) { /* rest of GB4 */
-    *_state = MZG_PROP_STATE();
+    *_state = MZG_NEXT_STATE();
     return 1;
   } else if ((prop == MZ_GRAPHBREAK_CONTROL) || (prop == MZ_GRAPHBREAK_LF)) { /* rest of GB5 */
     if (old_state == 0)

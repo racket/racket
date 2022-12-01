@@ -1799,7 +1799,8 @@
 (err/rt-test (char-grapheme-step #\a (expt 2 100)))
 
 (let ()
-  ;; These sequences are from https://www.unicode.org/Public/13.0.0/ucd/auxiliary/GraphemeBreakTest.txt
+  ;; These sequences are from https://www.unicode.org/Public/13.0.0/ucd/auxiliary/GraphemeBreakTest.txt,
+  ;; but with one extra marked as "added"
   (define seqs
     '((#x0020 then #x0020)
       (#x0020 and #x0308 then #x0020)
@@ -1896,6 +1897,7 @@
       (#x000A then #xAC01)
       (#x000A then #x0308 then #xAC01)
       (#x000A then #x231A)
+      (#x231A then #x000A then #x231A) ; added
       (#x000A then #x0308 then #x231A)
       (#x000A then #x0300)
       (#x000A then #x0308 and #x0300)
