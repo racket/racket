@@ -1,0 +1,21 @@
+.search-result-wrapper {
+    display: none;
+    box-sizing: border-box;
+    cursor: help;
+}
+
+.search-result-wrapper-pkg-base {
+    background-color: red;
+    padding-right: 5px;
+}
+
+.search-result-wrapper-pkg-main-dist {
+    background-color: green;
+    padding-right: 5px;
+}
+
+.search-result-row {
+    margin: 0.1em 0em;
+    padding: 0.25em 1em;
+    cursor: default;
+}

@@ -7,7 +7,12 @@
           "private/notice.rkt"
           "config.rkt")
 
-@main-page['search #t]
+@main-page['search #t
+           #:extra-additions
+           (list (make-css-addition
+                  (collection-file-path
+                   "search.css"
+                   "scribblings/main/private")))]
 
 @global-notice
 @local-notice

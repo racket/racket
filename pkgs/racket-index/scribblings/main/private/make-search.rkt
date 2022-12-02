@@ -22,7 +22,8 @@
          (for-syntax racket/base)
          (for-syntax racket/runtime-path)
          (for-syntax compiler/cm-accomplice)
-         "index-scope.rkt")
+         "index-scope.rkt"
+         "pkg.rkt")
 
 (provide make-search)
 
@@ -177,10 +178,12 @@
              [else
               "\"module\""])]
           [else "false"]))
+      (define pre-pkg-name (tag->pkg tag))
+      (define pkg-name (if pre-pkg-name (quote-string pre-pkg-name) "false"))
       (and href
            (string-append "[" (quote-string text) ","
                           (quote-string href) ","
-                          html "," from-libs "]"))))
+                          html "," from-libs "," pkg-name "]"))))
   (define l (filter values l-all))
 
   (define user (if user-dir? "user_" ""))
@@ -223,7 +226,13 @@
                                  (string-append (quote-string (car x)) ": "
                                                 (number->string (cdr x))))
                                ms)])
-                 (add-between ms ",\n  "))};
+                 (add-between ms ",\n  "))
+          };
+          @||
+          // an array of (transitive) dependencies of main-distribution
+          var plt_main_dist_pkgs = [
+            @,@(add-between (map quote-string (get-main-dist-pkgs)) ",\n  ")
+          ];
           @||})))
 
   (for ([src (append (list search-script search-context-page)
