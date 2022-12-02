@@ -1041,7 +1041,7 @@ See also @racket[define-custom-hash-types].
 
 }
 
-@section{Passing keyword arguments in dictionaries}
+@section{Passing Keyword Arguments in Dictionaries}
 
 @defproc[
  (keyword-apply/dict [proc procedure?]
