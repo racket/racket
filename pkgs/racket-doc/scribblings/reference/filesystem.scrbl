@@ -644,7 +644,7 @@ link. Beware that directory links must be deleted using
 @history[#:changed "6.0.1.12" @elem{Added support for links on Windows.}]}
 
 
-@defparam[current-force-delete-permissions any/c boolean?]{
+@defboolparam[current-force-delete-permissions force? #:value #t]{
 
 A @tech{parameter} that determines on Windows whether
 @racket[delete-file] and @racket[delete-directory] attempt to change a
@@ -1512,9 +1512,9 @@ from generating a @racket[template] using the source location.
  ]}
 
 @defproc[(call-with-atomic-output-file [file path-string?] 
-                                       [proc ([port output-port?] [tmp-path path?]  . -> . any)]
+                                       [proc (output-port? path? . -> . any)]
                                        [#:security-guard security-guard (or/c #f security-guard?) #f]
-                                       [#:rename-fail-handler rename-fail-handler (or/c #f (exn:fail:filesystem? path> . -> . any)) #f])
+                                       [#:rename-fail-handler rename-fail-handler (or/c #f (exn:fail:filesystem? path? . -> . any)) #f])
          any]{
 
 Opens a temporary file for writing in the same directory as
@@ -1762,9 +1762,9 @@ in the sense of @racket[port-try-file-lock?].
     #:lock-file (make-lock-file-name filename))]
 
 
-@defproc*[([(make-lock-file-name [path (or path-string? path-for-some-system?)]) 
+@defproc*[([(make-lock-file-name [path (or/c path-string? path-for-some-system?)])
             path?]
-           [(make-lock-file-name [dir (or path-string? path-for-some-system?)] 
+           [(make-lock-file-name [dir (or/c path-string? path-for-some-system?)]
                                  [name path-element?]) 
             path?])]{
 
