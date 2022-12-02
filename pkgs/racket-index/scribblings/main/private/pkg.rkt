@@ -76,7 +76,6 @@
          (list 'tech (list path-string _ ...)))
 
      (match path-string
-       ;; remove /xxx.scrbl
        [(pregexp #px"^\\(lib (.*)\\)$" (list _ path))
         (module-path->path (list 'lib path))])]
 
