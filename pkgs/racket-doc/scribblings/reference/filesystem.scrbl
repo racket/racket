@@ -1512,7 +1512,7 @@ from generating a @racket[template] using the source location.
  ]}
 
 @defproc[(call-with-atomic-output-file [file path-string?] 
-                                       [proc (output-port? tmp-path . -> . any)]
+                                       [proc (output-port? path? . -> . any)]
                                        [#:security-guard security-guard (or/c #f security-guard?) #f]
                                        [#:rename-fail-handler rename-fail-handler (or/c #f (exn:fail:filesystem? path? . -> . any)) #f])
          any]{
