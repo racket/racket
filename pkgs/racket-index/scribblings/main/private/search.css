@@ -4,7 +4,9 @@
     cursor: help;
 }
 
-/* The following pair of colors are picked to account for color blindness  */
+/* The following pair of colors are picked to account for color blindness
+ * See https://davidmathlogic.com/colorblind/
+ */
 
 .search-result-wrapper-pkg-base {
     background-color: #005AB5;
