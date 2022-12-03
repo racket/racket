@@ -56,18 +56,28 @@
 ;; tag->pkg
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define cache-for-module-path->path (make-hash))
+(define cache-for-->pkg (make-hash))
 (define pkg-cache-for-path->pkg (make-hash))
 
 (define (module-path->path module-path)
-  (with-handlers ([exn:missing-module? (lambda (exn) #f)])
-    (resolved-module-path-name
-     (module-path-index-resolve
-      (module-path-index-join module-path #f)))))
+  (hash-ref!
+   cache-for-module-path->path
+   module-path
+   (λ ()
+     (with-handlers ([exn:missing-module? (lambda (exn) #f)])
+       (resolved-module-path-name
+        (module-path-index-resolve
+         (module-path-index-join module-path #f)))))))
 
 (define (->pkg path)
-  (cond
-    [(path->pkg path #:cache pkg-cache-for-path->pkg)]
-    [else (and (path->main-collects-relative path) "base")]))
+  (hash-ref!
+   cache-for-->pkg
+   path
+   (λ ()
+     (cond
+       [(path->pkg path #:cache pkg-cache-for-path->pkg)]
+       [else (and (path->main-collects-relative path) "base")]))))
 
 (define (->path tag)
   (match tag
