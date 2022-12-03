@@ -5,12 +5,12 @@
 }
 
 .search-result-wrapper-pkg-base {
-    background-color: red;
+    background-color: #0C7BDC;
     padding-right: 5px;
 }
 
 .search-result-wrapper-pkg-main-dist {
-    background-color: green;
+    background-color: #FFC20A;
     padding-right: 5px;
 }
 
