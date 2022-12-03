@@ -40,9 +40,11 @@
 ;; ideally we could just inform scribble/raco that they need
 ;; installing, and they would just do that when appropriate.
 (begin-for-syntax
+  (define-runtime-path search-style "search.css")
   (define-runtime-path search-script "search.js")
   (define-runtime-path search-merge-script "search-merge.js")
   (define-runtime-path search-context-page "search-context.html")
+  (register-external-file search-style)
   (register-external-file search-script)
   (register-external-file search-merge-script)
   (register-external-file search-context-page))
