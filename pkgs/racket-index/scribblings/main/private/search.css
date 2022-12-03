@@ -4,13 +4,15 @@
     cursor: help;
 }
 
+/* The following pair of colors are picked to account for color blindness  */
+
 .search-result-wrapper-pkg-base {
-    background-color: #0C7BDC;
+    background-color: #005AB5;
     padding-right: 5px;
 }
 
 .search-result-wrapper-pkg-main-dist {
-    background-color: #FFC20A;
+    background-color: #DC3220;
     padding-right: 5px;
 }
 
