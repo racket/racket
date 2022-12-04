@@ -106,7 +106,7 @@ both the @racket[#:splice] form and a @racket[#:when],
 @racket[#:unless], @racket[#:do], @racket[#:break], or
 @racket[#:final] form. The result of a @racket[#:splice] expansion can
 include more @racket[#:splice] forms to further interleave clause
-binding and expansion. Support for @racket[#:splicing] clauses is
+binding and expansion. Support for @racket[#:splice] clauses is
 intended less for direct use in source @racket[for] forms than for
 building new forms that expand to @racket[for].
 
@@ -844,15 +844,15 @@ returns its argument.
 
 @defform[(define-splicing-for-clause-syntax id proc-expr)]{
 
-Binds @racket[id] for reference via a @racket[#:splicing] clause in a
+Binds @racket[id] for reference via a @racket[#:splice] clause in a
 @racket[for] form. The @racket[proc-expr] expression is evaluated in
 @tech{phase level} 1, and it must produce a procedure that accepts a
 syntax object and returns a syntax object.
 
 The procedure's input is a syntax object that appears after
-@racket[#:splicing]. The result syntax object must be a parenthesized
+@racket[#:splice]. The result syntax object must be a parenthesized
 sequence of forms, and the forms are spliced in place of the
-@racket[#:splicing] clause in the enclosing @racket[for] form.
+@racket[#:splice] clause in the enclosing @racket[for] form.
 
 @mz-examples[#:eval for-eval
 (define-splicing-for-clause-syntax cross3
