@@ -115,7 +115,7 @@ The Unicode categories follow.
 [8 #px"ca{2,}t" "catcaat"]
 [9 #px"ca{,2}t" "caaatcat"]
 [10 #px"ca{1,2}t" "caaatcat"]
-[11 #rx"(c*)(a*)" "caat"]
+[11 #rx"(c<*)(a*)" "caat"]
 [12 #rx"[^ca]" "caat"]
 [13 #rx".(.)." "cat"]
 [14 #rx"^a|^c" "cat"]
@@ -141,6 +141,7 @@ The Unicode categories follow.
 [34 #rx"(?<!c)a." "cat nap"]
 [35 #rx"(?i:a)[tp]" "cAT nAp"]
 [36 #rx"(?(?<=c)a|b)+" "cabal"]
+[37 #rx"[^^]+" "^cat^"]
 ]
 
 @;------------------------------------------------------------------------
