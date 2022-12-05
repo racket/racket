@@ -272,6 +272,9 @@ static int mark_thread_hop_MARK(void *p, struct NewGC *gc) {
   Scheme_Thread_Custodian_Hop *hop = (Scheme_Thread_Custodian_Hop *)p;
 
   gcMARK2(hop->p, gc);
+  gcMARK2(hop->mref, gc);
+  gcMARK2(hop->extra_mrefs, gc);
+  gcMARK2(hop->dead_box, gc);
 
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
@@ -287,6 +290,9 @@ static int mark_thread_hop_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Thread_Custodian_Hop *hop = (Scheme_Thread_Custodian_Hop *)p;
 
   gcFIXUP2(hop->p, gc);
+  gcFIXUP2(hop->mref, gc);
+  gcFIXUP2(hop->extra_mrefs, gc);
+  gcFIXUP2(hop->dead_box, gc);
 
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
@@ -447,7 +453,7 @@ static int mark_syncing_MARK(void *p, struct NewGC *gc) {
   gcMARK2(w->wrapss, gc);
   gcMARK2(w->nackss, gc);
   gcMARK2(w->reposts, gc);
-  gcMARK2(w->accepts, gc);
+  gcMARK2(w->concludes, gc);
   gcMARK2(w->disable_break, gc);
   gcMARK2(w->thread, gc);
 
@@ -468,7 +474,7 @@ static int mark_syncing_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(w->wrapss, gc);
   gcFIXUP2(w->nackss, gc);
   gcFIXUP2(w->reposts, gc);
-  gcFIXUP2(w->accepts, gc);
+  gcFIXUP2(w->concludes, gc);
   gcFIXUP2(w->disable_break, gc);
   gcFIXUP2(w->thread, gc);
 

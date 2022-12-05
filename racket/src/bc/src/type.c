@@ -232,6 +232,7 @@ scheme_init_type ()
   set_name(scheme_thread_resume_type, "<thread-resume-evt>");
   set_name(scheme_thread_suspend_type, "<thread-suspend-evt>");
   set_name(scheme_thread_dead_type, "<thread-dead-evt>");
+  set_name(scheme_thread_running_type, "<thread-running-evt>");
 
   set_name(scheme_thread_set_type, "<thread-set>");
   set_name(scheme_thread_cell_type, "<thread-cell>");
@@ -616,7 +617,8 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_semaphore_repost_type, small_object);
   GC_REG_TRAV(scheme_thread_suspend_type, twoptr_obj);
   GC_REG_TRAV(scheme_thread_resume_type, twoptr_obj);
-  GC_REG_TRAV(scheme_thread_dead_type, small_object);
+  GC_REG_TRAV(scheme_thread_dead_type, twoptr_obj);
+  GC_REG_TRAV(scheme_thread_running_type, small_object);
   GC_REG_TRAV(scheme_hash_table_type, hash_table_val);
   GC_REG_TRAV(scheme_bucket_table_type, bucket_table_val);
   GC_REG_TRAV(scheme_env_type, env_val);

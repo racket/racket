@@ -790,8 +790,6 @@ thread_val {
   gcMARK2(pr->gmp_tls_data, gc);
   
   gcMARK2(pr->mr_hop, gc);
-  gcMARK2(pr->mref, gc);
-  gcMARK2(pr->extra_mrefs, gc);
 
   gcMARK2(pr->name, gc);
 
@@ -799,7 +797,6 @@ thread_val {
 
   gcMARK2(pr->suspended_box, gc);
   gcMARK2(pr->resumed_box, gc);
-  gcMARK2(pr->dead_box, gc);
   gcMARK2(pr->running_box, gc);
   gcMARK2(pr->sync_box, gc);
 
@@ -1740,6 +1737,9 @@ mark_thread_hop {
   Scheme_Thread_Custodian_Hop *hop = (Scheme_Thread_Custodian_Hop *)p;
 
   gcMARK2(hop->p, gc);
+  gcMARK2(hop->mref, gc);
+  gcMARK2(hop->extra_mrefs, gc);
+  gcMARK2(hop->dead_box, gc);
 
  size:
    gcBYTES_TO_WORDS(sizeof(Scheme_Thread_Custodian_Hop));
@@ -1785,7 +1785,7 @@ mark_syncing {
   gcMARK2(w->wrapss, gc);
   gcMARK2(w->nackss, gc);
   gcMARK2(w->reposts, gc);
-  gcMARK2(w->accepts, gc);
+  gcMARK2(w->concludes, gc);
   gcMARK2(w->disable_break, gc);
   gcMARK2(w->thread, gc);
 

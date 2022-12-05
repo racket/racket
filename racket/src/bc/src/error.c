@@ -4695,21 +4695,24 @@ log_reader_p(int argc, Scheme_Object *argv[])
           : scheme_false);
 }
 
-static Scheme_Object *dequeue_log(Scheme_Object *_lr)
+static Scheme_Object *dequeue_log(Scheme_Object *_lr, int accepted)
 {
-  Scheme_Log_Reader *lr = (Scheme_Log_Reader *)_lr;
+  if (accepted) {
+    Scheme_Log_Reader *lr = (Scheme_Log_Reader *)_lr;
 
-  if (lr->head) {
-    Scheme_Object *v;
-    v = SCHEME_CAR(lr->head);
-    lr->head = SCHEME_CDR(lr->head);
-    if (!lr->head)
-      lr->tail = NULL;
-    return v;
-  } else {
-    scheme_signal_error("empty log-reader queue!?");
+    if (lr->head) {
+      Scheme_Object *v;
+      v = SCHEME_CAR(lr->head);
+      lr->head = SCHEME_CDR(lr->head);
+      if (!lr->head)
+        lr->tail = NULL;
+      return v;
+    } else {
+      scheme_signal_error("empty log-reader queue!?");
+      return NULL;
+    }
+  } else
     return NULL;
-  }
 }
 
 static int log_reader_get(Scheme_Object *_lr, Scheme_Schedule_Info *sinfo)

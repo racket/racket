@@ -9,13 +9,15 @@
          "evt.rkt"
          "waiter.rkt"
          "semaphore.rkt"
+         (submod "semaphore.rkt" for-thread)
          "thread-group.rkt"
          "atomic.rkt"
          "schedule-info.rkt"
          "custodian.rkt"
          "custodian-object.rkt"
          "exit.rkt"
-         "error.rkt")
+         "error.rkt"
+         "sink.rkt")
 
 (provide (rename-out [make-thread thread])
          thread/suspend-to-kill
@@ -116,7 +118,6 @@
                      [descheduled? #:mutable]
                      [interrupt-callback #:mutable] ; non-#f => wake up on kill
                      
-                     [dead-sema #:mutable] ; created on demand
                      [dead-evt #:mutable] ; created on demand
                      [suspended-box #:mutable] ; created on demand; box contains thread if suspended
                      [suspended-evt #:mutable]
@@ -188,7 +189,6 @@
                     #f ; descheduled
                     #f ; interrupt-callback
                     
-                    #f ; dead-sema
                     #f ; dead-evt
                     #f ; suspended-box
                     #f ; suspended-evt
@@ -264,8 +264,19 @@
   (assert-atomic-mode)
   (set-thread-engine! t 'done)
   (run-interrupt-callback t)
-  (when (thread-dead-sema t)
-    (semaphore-post-all (thread-dead-sema t)))
+  (let ([dead-evt (thread-dead-evt t)])
+    (when dead-evt
+      (semaphore-post-all dead-evt)
+      (when (dead-evt? dead-evt)
+        (for ([cr (in-list (dead-evt-custodian-references dead-evt))])
+          (unsafe-custodian-unregister dead-evt cr))
+        (set-dead-evt-custodian-references! dead-evt null))))
+  (let ([suspended-evt (thread-suspended-evt t)])
+    (when (suspend-evt? suspended-evt)
+      (define sema (suspend-resume-evt-sema suspended-evt))
+      (when (suspend-semaphore? sema)
+        (for ([cr (in-list (suspend-semaphore-custodian-references sema))])
+          (unsafe-custodian-unregister sema cr)))))
   (unless (thread-descheduled? t)
     (thread-group-remove! (thread-parent t) t)
     (thread-unscheduled-for-work-tracking! t))
@@ -332,6 +343,26 @@
       [else
        (do-kill-thread t)])))
 
+;; Called in atomic mode:
+(define (remove-dead-evt-custodian evt c)
+  (assert-atomic-mode)
+  (define new-crs (for/list ([cref (in-list (dead-evt-custodian-references evt))]
+                             #:unless (custodian-manages-reference? c cref))
+                    cref))
+  (set-dead-evt-custodian-references! evt new-crs)
+  (when (null? new-crs)
+    (semaphore-post-all evt)))
+
+;; Called in atomic mode:
+(define (remove-suspend-semaphore-custodian sema c)
+  (assert-atomic-mode)
+  (define new-crs (for/list ([cref (in-list (suspend-semaphore-custodian-references sema))]
+                             #:unless (custodian-manages-reference? c cref))
+                    cref))
+  (set-suspend-semaphore-custodian-references! sema new-crs)
+  (when (null? new-crs)
+    (semaphore-post-all sema)))
+
 (define (check-current-custodian-manages who t)
   (define c (current-custodian))
   (unless (for/and ([cr (in-list (thread-custodian-references t))])
@@ -374,15 +405,25 @@
 
 (define/who (thread-wait t)
   (check who thread? t)
-  (semaphore-wait (get-thread-dead-sema t)))
+  (cond
+    [(eq? t (current-thread))
+     ;; as a special case, enable GC of this thread if not otherwise referenced,
+     ;; since the thread obviously can't continue after it is terminated
+     (semaphore-wait (make-semaphore))]
+    [else
+     (semaphore-wait (get-thread-dead-evt t))]))
 
-(struct dead-evt (sema)
-        #:property prop:evt (lambda (tde) (wrap-evt (dead-evt-sema tde)
-                                               (lambda (s) tde)))
-        #:reflection-name 'thread-dead-evt)
+(struct dead-evt custodian-accessible-semaphore ([custodian-references #:mutable])
+  #:authentic
+  #:reflection-name 'thread-dead-evt)
+
+(struct dead-evt/suspend-to-kill semaphore ()
+  #:authentic
+  #:reflection-name 'thread-dead-evt)
 
 (define (thread-dead-evt? v)
-  (dead-evt? v))
+  (or (dead-evt? v)
+      (dead-evt/suspend-to-kill? v)))
 
 (define get-thread-dead-evt
   (let ([thread-dead-evt
@@ -390,17 +431,20 @@
            (check 'thread-dead-evt thread? t)
            (atomically
             (unless (thread-dead-evt t)
-              (set-thread-dead-evt! t (dead-evt (get-thread-dead-sema t)))))
+              (define evt (if (thread-suspend-to-kill? t)
+                              (dead-evt/suspend-to-kill #f #f 0)
+                              (dead-evt #f #f 0 null)))
+              (set-thread-dead-evt! t evt)
+              (cond
+                [(eq? 'done (thread-engine t))
+                 (semaphore-post-all evt)]
+                [(dead-evt? evt)
+                 (define refs (thread-custodian-references t))
+                 (set-dead-evt-custodian-references! evt refs)
+                 (for ([cr (in-list refs)])
+                   (custodian-register-also cr evt remove-dead-evt-custodian #f #t))])))
            (thread-dead-evt t))])
     thread-dead-evt))
-
-(define (get-thread-dead-sema t)
-  (atomically
-   (unless (thread-dead-sema t)
-     (set-thread-dead-sema! t (make-semaphore 0))
-     (when (eq? 'done (thread-engine t))
-       (semaphore-post-all (thread-dead-sema t)))))
-  (thread-dead-sema t))
 
 ;; ----------------------------------------
 ;; Thread suspend and resume
@@ -581,13 +625,24 @@
              [accum null])
     (cond
       [(null? crs)
-       (define cr (unsafe-custodian-register c t remove-thread-custodian #f #t))
+       (define cr (custodian-register-thread c t remove-thread-custodian))
        (cond
          [(not cr)
           ;; add failed due to shut-down custodian
           #f]
          [else
-          (set-thread-custodian-references! t (cons cr accum))
+          (define refs (cons cr accum))
+          (set-thread-custodian-references! t refs)
+          (let ([evt (thread-dead-evt t)])
+            (when (dead-evt? evt)
+              (custodian-register-also cr evt remove-dead-evt-custodian #f #t)
+              (set-dead-evt-custodian-references! evt refs)))
+          (let ([suspended-evt (thread-suspended-evt t)])
+            (when (suspend-evt? suspended-evt)
+              (define sema (suspend-resume-evt-sema suspended-evt))
+              (when (suspend-semaphore? sema)
+                (custodian-register-also cr sema remove-suspend-semaphore-custodian #f #t)
+                (set-suspend-semaphore-custodian-references! sema refs))))
           (do-resume-transitive-resumes t c)
           #t])]
       [else
@@ -685,6 +740,9 @@
 (struct resume-evt suspend-resume-evt ()
   #:reflection-name 'thread-resume-evt)
 
+(struct suspend-semaphore custodian-accessible-semaphore ([custodian-references #:mutable])
+  #:authentic)
+
 (define/who (thread-resume-evt t)
   (check who thread? t)
   (atomically
@@ -709,7 +767,19 @@
       (suspend-evt always-evt t)]
      [else
       (or (thread-suspended-evt t)
-          (let ([s (suspend-evt (make-semaphore) #f)])
+          (let* ([sema
+                  (cond
+                    [(thread-suspend-to-kill? t)
+                     (define refs (thread-custodian-references t))
+                     (define sema (suspend-semaphore #f #f 0 refs))
+                     (for ([cr (in-list refs)])
+                       (custodian-register-also cr sema remove-suspend-semaphore-custodian #f #t))
+                     sema]
+                    [else (make-semaphore)])]
+                 [s (suspend-evt sema (and (thread-suspend-to-kill? t)
+                                           ;; eagerly record thread, since we will need it
+                                           ;; if the thread is suspend via a custodian
+                                           t))])
             (set-thread-suspended-evt! t s)
             s))])))
 

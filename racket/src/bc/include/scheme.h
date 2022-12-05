@@ -1172,7 +1172,7 @@ typedef struct Scheme_Thread {
   int running;
   Scheme_Object *suspended_box; /* contains pointer to thread when it's suspended */
   Scheme_Object *resumed_box;   /* contains pointer to thread when it's resumed */
-  Scheme_Object *dead_box;      /* contains non-zero when the thread is dead */
+  /* Scheme_Object *dead_box; */ /* in mr_hop: contains non-zero when the thread is dead */
   Scheme_Object *running_box;   /* contains pointer to thread when it's running */
   Scheme_Object *sync_box;      /* semaphore used for NACK events */
 
@@ -1260,8 +1260,8 @@ typedef struct Scheme_Thread {
   intptr_t current_start_process_msec;
 
   struct Scheme_Thread_Custodian_Hop *mr_hop;
-  Scheme_Custodian_Reference *mref;
-  Scheme_Object *extra_mrefs; /* More owning custodians */
+  /* Scheme_Custodian_Reference *mref; */ /* In mr_hop: owning custodian */
+  /* Scheme_Object *extra_mrefs; */ /* In mr_hop: more owning custodians */
   Scheme_Object *transitive_resumes; /* A hash table of running-boxes */
 
   Scheme_Object *name;

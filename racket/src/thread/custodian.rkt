@@ -34,6 +34,7 @@
          unsafe-custodian-unregister
          custodian-register-thread
          custodian-register-place
+         custodian-register-also
          custodian-shutdown-root-at-exit
          raise-custodian-is-shut-down
          unsafe-add-post-custodian-shutdown
@@ -171,6 +172,12 @@
 
 (define (custodian-register-place cust obj callback)
   (do-custodian-register cust obj callback #:weak? #t #:gc-root? #t))
+
+(define (custodian-register-also cref obj callback at-exit? weak?)
+  (assert-atomic-mode)
+  (define c (custodian-reference->custodian cref))
+  (unless (hash-ref (custodian-children c) obj #f)
+    (unsafe-custodian-register c obj callback at-exit? weak?)))
 
 (define (unsafe-custodian-unregister obj cref)
   (when cref

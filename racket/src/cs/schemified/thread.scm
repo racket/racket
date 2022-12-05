@@ -1826,7 +1826,7 @@
   (lambda () (|#%app| (sandman-do-any-sleepers? the-sandman))))
 (define sandman-sleepers-external-events
   (lambda () (|#%app| (sandman-do-sleepers-external-events the-sandman))))
-(define cell.1$8 (unsafe-make-place-local '()))
+(define cell.1$9 (unsafe-make-place-local '()))
 (define cell.2$5 (unsafe-make-place-local '()))
 (define cell.3$1 (unsafe-make-place-local #f))
 (define min*
@@ -4008,7 +4008,40 @@
 (define set-semaphore-count!
   (|#%name| set-semaphore-count! (record-mutator struct:semaphore 0)))
 (define count-field-pos 2)
-(define finish_2301
+(define finish_2060
+  (make-struct-type-install-properties
+   '(custodian-accessible-semaphore)
+   0
+   0
+   struct:semaphore
+   (list (cons prop:authentic #t))
+   (current-inspector)
+   #f
+   '()
+   #f
+   'custodian-accessible-semaphore))
+(define struct:custodian-accessible-semaphore
+  (make-record-type-descriptor
+   'custodian-accessible-semaphore
+   struct:semaphore
+   (|#%nongenerative-uid| custodian-accessible-semaphore)
+   #f
+   #f
+   '(0 . 0)))
+(define effect_2665 (finish_2060 struct:custodian-accessible-semaphore))
+(define custodian-accessible-semaphore2.1
+  (|#%name|
+   custodian-accessible-semaphore
+   (record-constructor
+    (make-record-constructor-descriptor
+     struct:custodian-accessible-semaphore
+     #f
+     #f))))
+(define custodian-accessible-semaphore?
+  (|#%name|
+   custodian-accessible-semaphore?
+   (record-predicate struct:custodian-accessible-semaphore)))
+(define finish_2448
   (make-struct-type-install-properties
    '(semaphore-peek-evt)
    1
@@ -4019,8 +4052,8 @@
      1/prop:evt
      (poller2.1
       (lambda (sp_0 poll-ctx_0)
-        (let ((temp18_0 (semaphore-peek-evt-sema sp_0)))
-          (semaphore-wait/poll.1 #t sp_0 temp18_0 sp_0 poll-ctx_0))))))
+        (let ((temp20_0 (semaphore-peek-evt-sema sp_0)))
+          (semaphore-wait/poll.1 #t sp_0 temp20_0 sp_0 poll-ctx_0))))))
    (current-inspector)
    #f
    '(0)
@@ -4034,8 +4067,8 @@
    #f
    #f
    '(1 . 0)))
-(define effect_2414 (finish_2301 struct:semaphore-peek-evt))
-(define semaphore-peek-evt2.1
+(define effect_2414 (finish_2448 struct:semaphore-peek-evt))
+(define semaphore-peek-evt3.1
   (|#%name|
    semaphore-peek-evt
    (record-constructor
@@ -4090,7 +4123,7 @@
    #f
    '(0 . 0)))
 (define effect_2387 (finish_2668 struct:semaphore-peek-select-waiter))
-(define semaphore-peek-select-waiter3.1
+(define semaphore-peek-select-waiter4.1
   (|#%name|
    semaphore-peek-select-waiter
    (record-constructor
@@ -4116,23 +4149,23 @@
   (let ((make-semaphore_0
          (|#%name|
           make-semaphore
-          (lambda (init4_0)
+          (lambda (init5_0)
             (begin
               (begin
-                (if (exact-nonnegative-integer? init4_0)
+                (if (exact-nonnegative-integer? init5_0)
                   (void)
                   (raise-argument-error
                    'make-semaphore
                    "exact-nonnegative-integer?"
-                   init4_0))
-                (if (fixnum? init4_0)
+                   init5_0))
+                (if (fixnum? init5_0)
                   (void)
                   (raise
                    (let ((app_0
                           (let ((msg_0
                                  (string-append
                                   "starting value "
-                                  (number->string init4_0)
+                                  (number->string init5_0)
                                   " is too large")))
                             (begin-unsafe
                              (error-message->adjusted-string
@@ -4141,12 +4174,35 @@
                               msg_0
                               'racket/primitive)))))
                      (|#%app| exn:fail app_0 (current-continuation-marks)))))
-                (semaphore1.1 #f #f init4_0)))))))
+                (semaphore1.1 #f #f init5_0)))))))
     (|#%name|
      make-semaphore
      (case-lambda
       (() (begin (make-semaphore_0 0)))
-      ((init4_0) (make-semaphore_0 init4_0))))))
+      ((init5_0) (make-semaphore_0 init5_0))))))
+(define cell.1$8 (unsafe-make-place-local (hasheq)))
+(define ready-nonempty-queue
+  (lambda (s_0)
+    (if (begin-unsafe (not (queue-start s_0)))
+      (begin
+        (set-semaphore-count! s_0 -1)
+        (if (custodian-accessible-semaphore? s_0)
+          (unsafe-place-local-set!
+           cell.1$8
+           (hash-set (unsafe-place-local-ref cell.1$8) s_0 #t))
+          (void)))
+      (void))))
+(define ready-empty-queue
+  (lambda (s_0)
+    (if (begin-unsafe (not (queue-start s_0)))
+      (begin
+        (set-semaphore-count! s_0 0)
+        (if (custodian-accessible-semaphore? s_0)
+          (unsafe-place-local-set!
+           cell.1$8
+           (hash-remove (unsafe-place-local-ref cell.1$8) s_0))
+          (void)))
+      (void))))
 (define 1/semaphore-post
   (|#%name|
    semaphore-post
@@ -4181,9 +4237,7 @@
                 (begin
                   (begin-unsafe
                    (|#%app| (waiter-methods-resume (waiter-ref w_0)) w_0 s_0))
-                  (if (begin-unsafe (not (queue-start s_0)))
-                    (set-semaphore-count! s_0 0)
-                    (void))
+                  (ready-empty-queue s_0)
                   (if (semaphore-peek-select-waiter? w_0)
                     (loop_0)
                     (void))))))))))
@@ -4196,7 +4250,12 @@
        s_0
        (lambda (w_0)
          (begin-unsafe
-          (|#%app| (waiter-methods-resume (waiter-ref w_0)) w_0 s_0)))))))
+          (|#%app| (waiter-methods-resume (waiter-ref w_0)) w_0 s_0))))
+      (if (custodian-accessible-semaphore? s_0)
+        (unsafe-place-local-set!
+         cell.1$8
+         (hash-remove (unsafe-place-local-ref cell.1$8) s_0))
+        (void)))))
 (define semaphore-post-all
   (lambda (s_0)
     (begin (start-atomic) (semaphore-post-all/atomic s_0) (end-atomic))))
@@ -4246,17 +4305,15 @@
              (let ((c_1 (semaphore-count s_0)))
                (if (positive? c_1)
                  (begin (set-semaphore-count! s_0 (sub1 c_1)) void)
-                 (let ((w_0 (current-thread/in-atomic)))
-                   (let ((n_0 (queue-add! s_0 w_0)))
-                     (begin
-                       (set-semaphore-count! s_0 -1)
+                 (begin
+                   (ready-nonempty-queue s_0)
+                   (let ((w_0 (current-thread/in-atomic)))
+                     (let ((n_0 (queue-add! s_0 w_0)))
                        (let ((interrupt-cb_0
                               (lambda ()
                                 (begin
                                   (queue-remove-node! s_0 n_0)
-                                  (if (begin-unsafe (not (queue-start s_0)))
-                                    (set-semaphore-count! s_0 0)
-                                    (void))
+                                  (ready-empty-queue s_0)
                                   (lambda () (unsafe-semaphore-wait s_0))))))
                          (begin-unsafe
                           (|#%app|
@@ -4267,25 +4324,25 @@
 (define semaphore-wait/poll.1
   (|#%name|
    semaphore-wait/poll
-   (lambda (peek?5_0 result6_0 s9_0 self10_0 poll-ctx11_0)
+   (lambda (peek?6_0 result7_0 s10_0 self11_0 poll-ctx12_0)
      (begin
-       (let ((result_0 (if (eq? result6_0 unsafe-undefined) s9_0 result6_0)))
-         (let ((c_0 (semaphore-count s9_0)))
+       (let ((result_0 (if (eq? result7_0 unsafe-undefined) s10_0 result7_0)))
+         (let ((c_0 (semaphore-count s10_0)))
            (if (positive? c_0)
              (begin
-               (if peek?5_0 (void) (set-semaphore-count! s9_0 (sub1 c_0)))
+               (if peek?6_0 (void) (set-semaphore-count! s10_0 (sub1 c_0)))
                (values (list result_0) #f))
-             (if (poll-ctx-poll? poll-ctx11_0)
-               (values #f self10_0)
-               (let ((w_0
-                      (if peek?5_0
-                        (semaphore-peek-select-waiter3.1
-                         (poll-ctx-select-proc poll-ctx11_0))
-                        (select-waiter7.1
-                         (poll-ctx-select-proc poll-ctx11_0)))))
-                 (let ((n_0 (queue-add! s9_0 w_0)))
-                   (begin
-                     (set-semaphore-count! s9_0 -1)
+             (if (poll-ctx-poll? poll-ctx12_0)
+               (values #f self11_0)
+               (begin
+                 (ready-nonempty-queue s10_0)
+                 (let ((w_0
+                        (if peek?6_0
+                          (semaphore-peek-select-waiter4.1
+                           (poll-ctx-select-proc poll-ctx12_0))
+                          (select-waiter7.1
+                           (poll-ctx-select-proc poll-ctx12_0)))))
+                   (let ((n_0 (queue-add! s10_0 w_0)))
                      (values
                       #f
                       (control-state-evt9.1
@@ -4293,22 +4350,20 @@
                        (lambda (v_0) result_0)
                        (lambda ()
                          (begin
-                           (queue-remove-node! s9_0 n_0)
-                           (if (begin-unsafe (not (queue-start s9_0)))
-                             (set-semaphore-count! s9_0 0)
-                             (void))))
+                           (queue-remove-node! s10_0 n_0)
+                           (ready-empty-queue s10_0)))
                        void
                        (lambda ()
-                         (let ((c_1 (semaphore-count s9_0)))
+                         (let ((c_1 (semaphore-count s10_0)))
                            (if (positive? c_1)
                              (begin
-                               (if peek?5_0
+                               (if peek?6_0
                                  (void)
-                                 (set-semaphore-count! s9_0 (sub1 c_1)))
+                                 (set-semaphore-count! s10_0 (sub1 c_1)))
                                (values result_0 #t))
                              (begin
-                               (set! n_0 (queue-add! s9_0 w_0))
-                               (set-semaphore-count! s9_0 -1)
+                               (ready-nonempty-queue s10_0)
+                               (set! n_0 (queue-add! s10_0 w_0))
                                (values #f #f))))))))))))))))))
 (define semaphore-wait/atomic
   (lambda (s_0)
@@ -4457,7 +4512,7 @@
       (let ((was-empty?_0 (not t_0)))
         (let ((n_0 (begin-unsafe child_0)))
           (begin
-            (let ((n_1 n_0)) (begin-unsafe (void)))
+            (begin-unsafe (void))
             (set-node-next! n_0 t_0)
             (set-node-prev! n_0 #f)
             (if t_0
@@ -5335,6 +5390,17 @@
 (define custodian-register-place
   (lambda (cust_0 obj_0 callback_0)
     (do-custodian-register.1 #f #f #t #f #t cust_0 obj_0 callback_0)))
+(define custodian-register-also
+  (lambda (cref_0 obj_0 callback_0 at-exit?_0 weak?_0)
+    (let ((c_0 (custodian-reference->custodian cref_0)))
+      (if (hash-ref (custodian-children c_0) obj_0 #f)
+        (void)
+        (1/unsafe-custodian-register
+         c_0
+         obj_0
+         callback_0
+         at-exit?_0
+         weak?_0)))))
 (define 1/unsafe-custodian-unregister
   (|#%name|
    unsafe-custodian-unregister
@@ -6467,10 +6533,10 @@
                   (void)))
               (void)))))))
      (loop_0 mref_0))))
-(define finish_2610
+(define finish_2131
   (make-struct-type-install-properties
    '(thread)
-   24
+   23
    0
    struct:node
    (let ((app_0 (cons prop:sealed #t)))
@@ -6486,13 +6552,13 @@
            (let ((app_4
                   (cons
                    prop:waiter
-                   (let ((temp28_0
+                   (let ((temp30_0
                           (lambda (t_0 i-cb_0)
                             (thread-deschedule! t_0 #f i-cb_0))))
-                     (let ((temp29_0
+                     (let ((temp31_0
                             (lambda (t_0 v_0)
                               (begin (thread-reschedule! t_0) v_0))))
-                       (make-waiter-methods.1 temp29_0 temp28_0))))))
+                       (make-waiter-methods.1 temp31_0 temp30_0))))))
              (list
               app_0
               app_1
@@ -6512,8 +6578,8 @@
    (|#%nongenerative-uid| thread)
    #t
    #f
-   '(24 . 16777082)))
-(define effect_2668 (finish_2610 struct:thread))
+   '(23 . 8388474)))
+(define effect_2668 (finish_2131 struct:thread))
 (define thread1.1
   (|#%name|
    thread
@@ -6543,30 +6609,28 @@
   (|#%name| thread-descheduled? (record-accessor struct:thread 10)))
 (define thread-interrupt-callback
   (|#%name| thread-interrupt-callback (record-accessor struct:thread 11)))
-(define thread-dead-sema
-  (|#%name| thread-dead-sema (record-accessor struct:thread 12)))
 (define 1/thread-dead-evt
-  (|#%name| thread-dead-evt (record-accessor struct:thread 13)))
+  (|#%name| thread-dead-evt (record-accessor struct:thread 12)))
 (define thread-suspended-box
-  (|#%name| thread-suspended-box (record-accessor struct:thread 14)))
+  (|#%name| thread-suspended-box (record-accessor struct:thread 13)))
 (define thread-suspended-evt
-  (|#%name| thread-suspended-evt (record-accessor struct:thread 15)))
+  (|#%name| thread-suspended-evt (record-accessor struct:thread 14)))
 (define thread-resumed-evt
-  (|#%name| thread-resumed-evt (record-accessor struct:thread 16)))
+  (|#%name| thread-resumed-evt (record-accessor struct:thread 15)))
 (define thread-pending-break
-  (|#%name| thread-pending-break (record-accessor struct:thread 17)))
+  (|#%name| thread-pending-break (record-accessor struct:thread 16)))
 (define thread-ignore-break-cells
-  (|#%name| thread-ignore-break-cells (record-accessor struct:thread 18)))
+  (|#%name| thread-ignore-break-cells (record-accessor struct:thread 17)))
 (define thread-forward-break-to
-  (|#%name| thread-forward-break-to (record-accessor struct:thread 19)))
+  (|#%name| thread-forward-break-to (record-accessor struct:thread 18)))
 (define thread-mailbox
-  (|#%name| thread-mailbox (record-accessor struct:thread 20)))
+  (|#%name| thread-mailbox (record-accessor struct:thread 19)))
 (define thread-mailbox-wakeup
-  (|#%name| thread-mailbox-wakeup (record-accessor struct:thread 21)))
+  (|#%name| thread-mailbox-wakeup (record-accessor struct:thread 20)))
 (define thread-cpu-time
-  (|#%name| thread-cpu-time (record-accessor struct:thread 22)))
+  (|#%name| thread-cpu-time (record-accessor struct:thread 21)))
 (define thread-future
-  (|#%name| thread-future (record-accessor struct:thread 23)))
+  (|#%name| thread-future (record-accessor struct:thread 22)))
 (define set-thread-engine!
   (|#%name| set-thread-engine! (record-mutator struct:thread 1)))
 (define set-thread-sleeping!
@@ -6587,30 +6651,28 @@
   (|#%name| set-thread-descheduled?! (record-mutator struct:thread 10)))
 (define set-thread-interrupt-callback!
   (|#%name| set-thread-interrupt-callback! (record-mutator struct:thread 11)))
-(define set-thread-dead-sema!
-  (|#%name| set-thread-dead-sema! (record-mutator struct:thread 12)))
 (define set-thread-dead-evt!
-  (|#%name| set-thread-dead-evt! (record-mutator struct:thread 13)))
+  (|#%name| set-thread-dead-evt! (record-mutator struct:thread 12)))
 (define set-thread-suspended-box!
-  (|#%name| set-thread-suspended-box! (record-mutator struct:thread 14)))
+  (|#%name| set-thread-suspended-box! (record-mutator struct:thread 13)))
 (define set-thread-suspended-evt!
-  (|#%name| set-thread-suspended-evt! (record-mutator struct:thread 15)))
+  (|#%name| set-thread-suspended-evt! (record-mutator struct:thread 14)))
 (define set-thread-resumed-evt!
-  (|#%name| set-thread-resumed-evt! (record-mutator struct:thread 16)))
+  (|#%name| set-thread-resumed-evt! (record-mutator struct:thread 15)))
 (define set-thread-pending-break!
-  (|#%name| set-thread-pending-break! (record-mutator struct:thread 17)))
+  (|#%name| set-thread-pending-break! (record-mutator struct:thread 16)))
 (define set-thread-ignore-break-cells!
-  (|#%name| set-thread-ignore-break-cells! (record-mutator struct:thread 18)))
+  (|#%name| set-thread-ignore-break-cells! (record-mutator struct:thread 17)))
 (define set-thread-forward-break-to!
-  (|#%name| set-thread-forward-break-to! (record-mutator struct:thread 19)))
+  (|#%name| set-thread-forward-break-to! (record-mutator struct:thread 18)))
 (define set-thread-mailbox!
-  (|#%name| set-thread-mailbox! (record-mutator struct:thread 20)))
+  (|#%name| set-thread-mailbox! (record-mutator struct:thread 19)))
 (define set-thread-mailbox-wakeup!
-  (|#%name| set-thread-mailbox-wakeup! (record-mutator struct:thread 21)))
+  (|#%name| set-thread-mailbox-wakeup! (record-mutator struct:thread 20)))
 (define set-thread-cpu-time!
-  (|#%name| set-thread-cpu-time! (record-mutator struct:thread 22)))
+  (|#%name| set-thread-cpu-time! (record-mutator struct:thread 21)))
 (define set-thread-future!
-  (|#%name| set-thread-future! (record-mutator struct:thread 23)))
+  (|#%name| set-thread-future! (record-mutator struct:thread 22)))
 (define cell.1$1 (unsafe-make-place-local #f))
 (define 1/current-thread
   (|#%name|
@@ -6668,7 +6730,6 @@
                          suspend-to-kill?5_0
                          null
                          null
-                         #f
                          #f
                          #f
                          #f
@@ -6737,10 +6798,10 @@
    unsafe-thread-at-root
    (lambda (proc_0)
      (begin
-       (let ((root-custodian41_0 (unsafe-place-local-ref cell.1$6)))
+       (let ((root-custodian43_0 (unsafe-place-local-ref cell.1$6)))
          (do-make-thread.1
           #t
-          root-custodian41_0
+          root-custodian43_0
           #f
           #f
           'unsafe-thread-at-root
@@ -6785,9 +6846,58 @@
     (begin
       (set-thread-engine! t_0 'done)
       (run-interrupt-callback t_0)
-      (if (thread-dead-sema t_0)
-        (semaphore-post-all (thread-dead-sema t_0))
-        (void))
+      (let ((dead-evt_0 (1/thread-dead-evt t_0)))
+        (if dead-evt_0
+          (begin
+            (semaphore-post-all dead-evt_0)
+            (if (dead-evt? dead-evt_0)
+              (begin
+                (let ((lst_0 (dead-evt-custodian-references dead-evt_0)))
+                  (begin
+                    (letrec*
+                     ((for-loop_0
+                       (|#%name|
+                        for-loop
+                        (lambda (lst_1)
+                          (begin
+                            (if (pair? lst_1)
+                              (let ((cr_0 (unsafe-car lst_1)))
+                                (let ((rest_0 (unsafe-cdr lst_1)))
+                                  (begin
+                                    (1/unsafe-custodian-unregister
+                                     dead-evt_0
+                                     cr_0)
+                                    (for-loop_0 rest_0))))
+                              (values)))))))
+                     (for-loop_0 lst_0))))
+                (void)
+                (set-dead-evt-custodian-references! dead-evt_0 null))
+              (void)))
+          (void)))
+      (let ((suspended-evt_0 (thread-suspended-evt t_0)))
+        (if (suspend-evt? suspended-evt_0)
+          (let ((sema_0 (suspend-resume-evt-sema suspended-evt_0)))
+            (if (suspend-semaphore? sema_0)
+              (begin
+                (let ((lst_0 (suspend-semaphore-custodian-references sema_0)))
+                  (begin
+                    (letrec*
+                     ((for-loop_0
+                       (|#%name|
+                        for-loop
+                        (lambda (lst_1)
+                          (begin
+                            (if (pair? lst_1)
+                              (let ((cr_0 (unsafe-car lst_1)))
+                                (let ((rest_0 (unsafe-cdr lst_1)))
+                                  (begin
+                                    (1/unsafe-custodian-unregister sema_0 cr_0)
+                                    (for-loop_0 rest_0))))
+                              (values)))))))
+                     (for-loop_0 lst_0))))
+                (void))
+              (void)))
+          (void)))
       (if (thread-descheduled? t_0)
         (void)
         (begin
@@ -6891,6 +7001,64 @@
             (do-thread-suspend t_0)
             (do-kill-thread t_0))
           (void))))))
+(define remove-dead-evt-custodian
+  (lambda (evt_0 c_0)
+    (let ((new-crs_0
+           (reverse$1
+            (let ((lst_0 (dead-evt-custodian-references evt_0)))
+              (begin
+                (letrec*
+                 ((for-loop_0
+                   (|#%name|
+                    for-loop
+                    (lambda (fold-var_0 lst_1)
+                      (begin
+                        (if (pair? lst_1)
+                          (let ((cref_0 (unsafe-car lst_1)))
+                            (let ((rest_0 (unsafe-cdr lst_1)))
+                              (let ((fold-var_1
+                                     (if (custodian-manages-reference?
+                                          c_0
+                                          cref_0)
+                                       fold-var_0
+                                       (let ((fold-var_1
+                                              (cons cref_0 fold-var_0)))
+                                         (values fold-var_1)))))
+                                (for-loop_0 fold-var_1 rest_0))))
+                          fold-var_0))))))
+                 (for-loop_0 null lst_0)))))))
+      (begin
+        (set-dead-evt-custodian-references! evt_0 new-crs_0)
+        (if (null? new-crs_0) (semaphore-post-all evt_0) (void))))))
+(define remove-suspend-semaphore-custodian
+  (lambda (sema_0 c_0)
+    (let ((new-crs_0
+           (reverse$1
+            (let ((lst_0 (suspend-semaphore-custodian-references sema_0)))
+              (begin
+                (letrec*
+                 ((for-loop_0
+                   (|#%name|
+                    for-loop
+                    (lambda (fold-var_0 lst_1)
+                      (begin
+                        (if (pair? lst_1)
+                          (let ((cref_0 (unsafe-car lst_1)))
+                            (let ((rest_0 (unsafe-cdr lst_1)))
+                              (let ((fold-var_1
+                                     (if (custodian-manages-reference?
+                                          c_0
+                                          cref_0)
+                                       fold-var_0
+                                       (let ((fold-var_1
+                                              (cons cref_0 fold-var_0)))
+                                         (values fold-var_1)))))
+                                (for-loop_0 fold-var_1 rest_0))))
+                          fold-var_0))))))
+                 (for-loop_0 null lst_0)))))))
+      (begin
+        (set-suspend-semaphore-custodian-references! sema_0 new-crs_0)
+        (if (null? new-crs_0) (semaphore-post-all sema_0) (void))))))
 (define check-current-custodian-manages
   (lambda (who_0 t_0)
     (let ((c_0 (1/current-custodian)))
@@ -6981,58 +7149,82 @@
          (if (1/thread? t_0)
            (void)
            (raise-argument-error 'thread-wait "thread?" t_0))
-         (1/semaphore-wait (get-thread-dead-sema t_0)))))))
-(define finish_3191
+         (if (eq? t_0 (1/current-thread))
+           (1/semaphore-wait (1/make-semaphore))
+           (1/semaphore-wait (get-thread-dead-evt t_0))))))))
+(define finish_2598
   (make-struct-type-install-properties
    '(thread-dead-evt)
    1
    0
-   #f
-   (list
-    (cons
-     1/prop:evt
-     (lambda (tde_0)
-       (wrap-evt7.1 (dead-evt-sema tde_0) (lambda (s_0) tde_0)))))
+   struct:custodian-accessible-semaphore
+   (list (cons prop:authentic #t))
    (current-inspector)
    #f
-   '(0)
+   '()
    #f
    'dead-evt))
 (define struct:dead-evt
   (make-record-type-descriptor
    'thread-dead-evt
-   #f
+   struct:custodian-accessible-semaphore
    (|#%nongenerative-uid| thread-dead-evt)
    #f
    #f
-   '(1 . 0)))
-(define effect_2691 (finish_3191 struct:dead-evt))
+   '(1 . 1)))
+(define effect_2691 (finish_2598 struct:dead-evt))
 (define dead-evt13.1
   (|#%name|
    dead-evt
    (record-constructor
     (make-record-constructor-descriptor struct:dead-evt #f #f))))
-(define dead-evt?_2047
-  (|#%name| thread-dead-evt? (record-predicate struct:dead-evt)))
 (define dead-evt?
+  (|#%name| thread-dead-evt? (record-predicate struct:dead-evt)))
+(define dead-evt-custodian-references
+  (|#%name|
+   thread-dead-evt-custodian-references
+   (record-accessor struct:dead-evt 0)))
+(define set-dead-evt-custodian-references!
+  (|#%name|
+   set-thread-dead-evt-custodian-references!
+   (record-mutator struct:dead-evt 0)))
+(define finish_3414
+  (make-struct-type-install-properties
+   '(thread-dead-evt)
+   0
+   0
+   struct:semaphore
+   (list (cons prop:authentic #t))
+   (current-inspector)
+   #f
+   '()
+   #f
+   'dead-evt/suspend-to-kill))
+(define struct:dead-evt/suspend-to-kill
+  (make-record-type-descriptor
+   'thread-dead-evt
+   struct:semaphore
+   (|#%nongenerative-uid| thread-dead-evt)
+   #f
+   #f
+   '(0 . 0)))
+(define effect_2565 (finish_3414 struct:dead-evt/suspend-to-kill))
+(define dead-evt/suspend-to-kill14.1
+  (|#%name|
+   dead-evt/suspend-to-kill
+   (record-constructor
+    (make-record-constructor-descriptor
+     struct:dead-evt/suspend-to-kill
+     #f
+     #f))))
+(define dead-evt/suspend-to-kill?
   (|#%name|
    thread-dead-evt?
-   (lambda (v)
-     (if (dead-evt?_2047 v)
-       #t
-       ($value
-        (if (impersonator? v) (dead-evt?_2047 (impersonator-val v)) #f))))))
-(define dead-evt-sema_2516
-  (|#%name| thread-dead-evt-sema (record-accessor struct:dead-evt 0)))
-(define dead-evt-sema
-  (|#%name|
-   thread-dead-evt-sema
-   (lambda (s)
-     (if (dead-evt?_2047 s)
-       (dead-evt-sema_2516 s)
-       ($value
-        (impersonate-ref dead-evt-sema_2516 struct:dead-evt 0 s 'sema))))))
-(define thread-dead-evt? (lambda (v_0) (dead-evt? v_0)))
+   (record-predicate struct:dead-evt/suspend-to-kill)))
+(define thread-dead-evt?
+  (lambda (v_0)
+    (let ((or-part_0 (dead-evt? v_0)))
+      (if or-part_0 or-part_0 (dead-evt/suspend-to-kill? v_0)))))
 (define get-thread-dead-evt
   (|#%name|
    thread-dead-evt
@@ -7046,25 +7238,42 @@
          (begin0
            (if (1/thread-dead-evt t_0)
              (void)
-             (set-thread-dead-evt!
-              t_0
-              (dead-evt13.1 (get-thread-dead-sema t_0))))
+             (let ((evt_0
+                    (if (thread-suspend-to-kill? t_0)
+                      (dead-evt/suspend-to-kill14.1 #f #f 0)
+                      (dead-evt13.1 #f #f 0 null))))
+               (begin
+                 (set-thread-dead-evt! t_0 evt_0)
+                 (if (eq? 'done (thread-engine t_0))
+                   (semaphore-post-all evt_0)
+                   (if (dead-evt? evt_0)
+                     (let ((refs_0 (thread-custodian-references t_0)))
+                       (begin
+                         (set-dead-evt-custodian-references! evt_0 refs_0)
+                         (begin
+                           (letrec*
+                            ((for-loop_0
+                              (|#%name|
+                               for-loop
+                               (lambda (lst_0)
+                                 (begin
+                                   (if (pair? lst_0)
+                                     (let ((cr_0 (unsafe-car lst_0)))
+                                       (let ((rest_0 (unsafe-cdr lst_0)))
+                                         (begin
+                                           (custodian-register-also
+                                            cr_0
+                                            evt_0
+                                            remove-dead-evt-custodian
+                                            #f
+                                            #t)
+                                           (for-loop_0 rest_0))))
+                                     (values)))))))
+                            (for-loop_0 refs_0)))
+                         (void)))
+                     (void))))))
            (end-atomic))
          (1/thread-dead-evt t_0))))))
-(define get-thread-dead-sema
-  (lambda (t_0)
-    (begin
-      (start-atomic)
-      (begin0
-        (if (thread-dead-sema t_0)
-          (void)
-          (begin
-            (set-thread-dead-sema! t_0 (1/make-semaphore 0))
-            (if (eq? 'done (thread-engine t_0))
-              (semaphore-post-all (thread-dead-sema t_0))
-              (void))))
-        (end-atomic))
-      (thread-dead-sema t_0))))
 (define remove-from-sleeping-threads!
   (lambda (t_0)
     (let ((sleeping_0 (thread-sleeping t_0)))
@@ -7198,28 +7407,28 @@
   (let ((thread-resume_0
          (|#%name|
           thread-resume
-          (lambda (t15_0 benefactor14_0)
+          (lambda (t16_0 benefactor15_0)
             (begin
               (begin
-                (if (1/thread? t15_0)
+                (if (1/thread? t16_0)
                   (void)
-                  (raise-argument-error 'thread-resume "thread?" t15_0))
-                (if (let ((or-part_0 (not benefactor14_0)))
+                  (raise-argument-error 'thread-resume "thread?" t16_0))
+                (if (let ((or-part_0 (not benefactor15_0)))
                       (if or-part_0
                         or-part_0
-                        (let ((or-part_1 (1/thread? benefactor14_0)))
+                        (let ((or-part_1 (1/thread? benefactor15_0)))
                           (if or-part_1
                             or-part_1
-                            (1/custodian? benefactor14_0)))))
+                            (1/custodian? benefactor15_0)))))
                   (void)
                   (raise-argument-error
                    'thread-resume
                    "(or/c #f thread? custodian?)"
-                   benefactor14_0))
+                   benefactor15_0))
                 (if (begin
                       (start-atomic)
                       (begin0
-                        (do-thread-resume t15_0 benefactor14_0)
+                        (do-thread-resume t16_0 benefactor15_0)
                         (end-atomic)))
                   (void)
                   (begin-unsafe
@@ -7227,12 +7436,12 @@
                     'thread-resume
                     "the custodian has been shut down"
                     "custodian"
-                    benefactor14_0)))))))))
+                    benefactor15_0)))))))))
     (|#%name|
      thread-resume
      (case-lambda
       ((t_0) (begin (thread-resume_0 t_0 #f)))
-      ((t_0 benefactor14_0) (thread-resume_0 t_0 benefactor14_0))))))
+      ((t_0 benefactor15_0) (thread-resume_0 t_0 benefactor15_0))))))
 (define do-thread-resume
   (lambda (t_0 benefactor_0)
     (if (1/thread-dead? t_0)
@@ -7296,18 +7505,45 @@
           (begin
             (if (null? crs_0)
               (let ((cr_0
-                     (1/unsafe-custodian-register
+                     (custodian-register-thread
                       c_0
                       t_0
-                      remove-thread-custodian
-                      #f
-                      #t)))
+                      remove-thread-custodian)))
                 (if (not cr_0)
                   #f
-                  (begin
-                    (set-thread-custodian-references! t_0 (cons cr_0 accum_0))
-                    (do-resume-transitive-resumes t_0 c_0)
-                    #t)))
+                  (let ((refs_0 (cons cr_0 accum_0)))
+                    (begin
+                      (set-thread-custodian-references! t_0 refs_0)
+                      (let ((evt_0 (1/thread-dead-evt t_0)))
+                        (if (dead-evt? evt_0)
+                          (begin
+                            (custodian-register-also
+                             cr_0
+                             evt_0
+                             remove-dead-evt-custodian
+                             #f
+                             #t)
+                            (set-dead-evt-custodian-references! evt_0 refs_0))
+                          (void)))
+                      (let ((suspended-evt_0 (thread-suspended-evt t_0)))
+                        (if (suspend-evt? suspended-evt_0)
+                          (let ((sema_0
+                                 (suspend-resume-evt-sema suspended-evt_0)))
+                            (if (suspend-semaphore? sema_0)
+                              (begin
+                                (custodian-register-also
+                                 cr_0
+                                 sema_0
+                                 remove-suspend-semaphore-custodian
+                                 #f
+                                 #t)
+                                (set-suspend-semaphore-custodian-references!
+                                 sema_0
+                                 refs_0))
+                              (void)))
+                          (void)))
+                      (do-resume-transitive-resumes t_0 c_0)
+                      #t))))
               (let ((old-c_0 (custodian-reference->custodian (car crs_0))))
                 (if (let ((or-part_0 (eq? c_0 old-c_0)))
                       (if or-part_0
@@ -7340,7 +7576,7 @@
    #f
    '(2 . 0)))
 (define effect_3100 (finish_2826 struct:transitive-resume))
-(define transitive-resume16.1
+(define transitive-resume17.1
   (|#%name|
    transitive-resume
    (record-constructor
@@ -7369,7 +7605,7 @@
                        (set-thread-suspended?! b-t_0 (thread-suspended? b-t_0))
                        (list
                         (let ((app_0 (make-weak-box b-t_0)))
-                          (transitive-resume16.1
+                          (transitive-resume17.1
                            app_0
                            (thread-suspended-box b-t_0)))))
                      (let ((o-t_0
@@ -7476,7 +7712,7 @@
    #f
    '(2 . 2)))
 (define effect_2478 (finish_2360 struct:suspend-resume-evt))
-(define suspend-resume-evt17.1
+(define suspend-resume-evt18.1
   (|#%name|
    suspend-resume-evt
    (record-constructor
@@ -7567,7 +7803,7 @@
    #f
    '(0 . 0)))
 (define effect_2442 (finish_2344 struct:suspend-evt))
-(define suspend-evt18.1
+(define suspend-evt19.1
   (|#%name|
    suspend-evt
    (record-constructor
@@ -7603,7 +7839,7 @@
    #f
    '(0 . 0)))
 (define effect_2874 (finish_2494 struct:resume-evt))
-(define resume-evt19.1
+(define resume-evt20.1
   (|#%name|
    resume-evt
    (record-constructor
@@ -7618,6 +7854,42 @@
        #t
        ($value
         (if (impersonator? v) (resume-evt?_2037 (impersonator-val v)) #f))))))
+(define finish_2484
+  (make-struct-type-install-properties
+   '(suspend-semaphore)
+   1
+   0
+   struct:custodian-accessible-semaphore
+   (list (cons prop:authentic #t))
+   (current-inspector)
+   #f
+   '()
+   #f
+   'suspend-semaphore))
+(define struct:suspend-semaphore
+  (make-record-type-descriptor
+   'suspend-semaphore
+   struct:custodian-accessible-semaphore
+   (|#%nongenerative-uid| suspend-semaphore)
+   #f
+   #f
+   '(1 . 1)))
+(define effect_3021 (finish_2484 struct:suspend-semaphore))
+(define suspend-semaphore21.1
+  (|#%name|
+   suspend-semaphore
+   (record-constructor
+    (make-record-constructor-descriptor struct:suspend-semaphore #f #f))))
+(define suspend-semaphore?
+  (|#%name| suspend-semaphore? (record-predicate struct:suspend-semaphore)))
+(define suspend-semaphore-custodian-references
+  (|#%name|
+   suspend-semaphore-custodian-references
+   (record-accessor struct:suspend-semaphore 0)))
+(define set-suspend-semaphore-custodian-references!
+  (|#%name|
+   set-suspend-semaphore-custodian-references!
+   (record-mutator struct:suspend-semaphore 0)))
 (define 1/thread-resume-evt
   (|#%name|
    thread-resume-evt
@@ -7630,14 +7902,14 @@
          (start-atomic)
          (begin0
            (if (1/thread-dead? t_0)
-             (resume-evt19.1 the-never-evt #f)
+             (resume-evt20.1 the-never-evt #f)
              (if (thread-suspended? t_0)
                (let ((or-part_0 (thread-resumed-evt t_0)))
                  (if or-part_0
                    or-part_0
-                   (let ((r_0 (resume-evt19.1 (1/make-semaphore) #f)))
+                   (let ((r_0 (resume-evt20.1 (1/make-semaphore) #f)))
                      (begin (set-thread-resumed-evt! t_0 r_0) r_0))))
-               (resume-evt19.1 the-always-evt t_0)))
+               (resume-evt20.1 the-always-evt t_0)))
            (end-atomic)))))))
 (define 1/thread-suspend-evt
   (|#%name|
@@ -7651,14 +7923,47 @@
          (start-atomic)
          (begin0
            (if (1/thread-dead? t_0)
-             (suspend-evt18.1 the-never-evt #f)
+             (suspend-evt19.1 the-never-evt #f)
              (if (thread-suspended? t_0)
-               (suspend-evt18.1 the-always-evt t_0)
+               (suspend-evt19.1 the-always-evt t_0)
                (let ((or-part_0 (thread-suspended-evt t_0)))
                  (if or-part_0
                    or-part_0
-                   (let ((s_0 (suspend-evt18.1 (1/make-semaphore) #f)))
-                     (begin (set-thread-suspended-evt! t_0 s_0) s_0))))))
+                   (let ((sema_0
+                          (if (thread-suspend-to-kill? t_0)
+                            (let ((refs_0 (thread-custodian-references t_0)))
+                              (let ((sema_0
+                                     (suspend-semaphore21.1 #f #f 0 refs_0)))
+                                (begin
+                                  (begin
+                                    (letrec*
+                                     ((for-loop_0
+                                       (|#%name|
+                                        for-loop
+                                        (lambda (lst_0)
+                                          (begin
+                                            (if (pair? lst_0)
+                                              (let ((cr_0 (unsafe-car lst_0)))
+                                                (let ((rest_0
+                                                       (unsafe-cdr lst_0)))
+                                                  (begin
+                                                    (custodian-register-also
+                                                     cr_0
+                                                     sema_0
+                                                     remove-suspend-semaphore-custodian
+                                                     #f
+                                                     #t)
+                                                    (for-loop_0 rest_0))))
+                                              (values)))))))
+                                     (for-loop_0 refs_0)))
+                                  (void)
+                                  sema_0)))
+                            (1/make-semaphore))))
+                     (let ((s_0
+                            (suspend-evt19.1
+                             sema_0
+                             (if (thread-suspend-to-kill? t_0) t_0 #f))))
+                       (begin (set-thread-suspended-evt! t_0 s_0) s_0)))))))
            (end-atomic)))))))
 (define thread-yield
   (lambda (sched-info_0)
@@ -7679,16 +7984,16 @@
   (let ((sleep_0
          (|#%name|
           sleep
-          (lambda (secs20_0)
+          (lambda (secs22_0)
             (begin
               (begin
-                (if (if (real? secs20_0) (>= secs20_0 0) #f)
+                (if (if (real? secs22_0) (>= secs22_0 0) #f)
                   (void)
-                  (raise-argument-error 'sleep "(>=/c 0)" secs20_0))
-                (if (if (zero? secs20_0) (zero? (current-atomic)) #f)
+                  (raise-argument-error 'sleep "(>=/c 0)" secs22_0))
+                (if (if (zero? secs22_0) (zero? (current-atomic)) #f)
                   (thread-yield #f)
                   (let ((until-msecs_0
-                         (let ((app_0 (* secs20_0 1000.0)))
+                         (let ((app_0 (* secs22_0 1000.0)))
                            (+
                             app_0
                             (current-inexact-monotonic-milliseconds)))))
@@ -7706,7 +8011,7 @@
                      (loop_0))))))))))
     (|#%name|
      sleep
-     (case-lambda (() (begin (sleep_0 0))) ((secs20_0) (sleep_0 secs20_0))))))
+     (case-lambda (() (begin (sleep_0 0))) ((secs22_0) (sleep_0 secs22_0))))))
 (define cell.2$1 (unsafe-make-place-local hash2610))
 (define thread-poll-done!
   (lambda (t_0)
@@ -7804,31 +8109,31 @@
   (let ((break-thread_0
          (|#%name|
           break-thread
-          (lambda (t22_0 kind21_0)
+          (lambda (t24_0 kind23_0)
             (begin
               (begin
-                (if (1/thread? t22_0)
+                (if (1/thread? t24_0)
                   (void)
-                  (raise-argument-error 'break-thread "thread?" t22_0))
-                (if (let ((or-part_0 (not kind21_0)))
+                  (raise-argument-error 'break-thread "thread?" t24_0))
+                (if (let ((or-part_0 (not kind23_0)))
                       (if or-part_0
                         or-part_0
-                        (let ((or-part_1 (eq? kind21_0 'hang-up)))
-                          (if or-part_1 or-part_1 (eq? kind21_0 'terminate)))))
+                        (let ((or-part_1 (eq? kind23_0 'hang-up)))
+                          (if or-part_1 or-part_1 (eq? kind23_0 'terminate)))))
                   (void)
                   (raise-argument-error
                    'break-thread
                    "(or/c #f 'hang-up 'terminate)"
-                   kind21_0))
+                   kind23_0))
                 (do-break-thread
-                 t22_0
-                 (if kind21_0 kind21_0 'break)
+                 t24_0
+                 (if kind23_0 kind23_0 'break)
                  (1/current-thread))))))))
     (|#%name|
      break-thread
      (case-lambda
       ((t_0) (begin (break-thread_0 t_0 #f)))
-      ((t_0 kind21_0) (break-thread_0 t_0 kind21_0))))))
+      ((t_0 kind23_0) (break-thread_0 t_0 kind23_0))))))
 (define do-break-thread
   (lambda (t_0 kind_0 check-t_0)
     (begin
@@ -7935,10 +8240,10 @@
   (let ((thread-send_0
          (|#%name|
           thread-send
-          (lambda (thd24_0 v25_0 fail-thunk23_0)
+          (lambda (thd26_0 v27_0 fail-thunk25_0)
             (begin
               (let ((fail-thunk_0
-                     (if (eq? fail-thunk23_0 unsafe-undefined)
+                     (if (eq? fail-thunk25_0 unsafe-undefined)
                        (|#%name|
                         fail-thunk
                         (lambda ()
@@ -7946,11 +8251,11 @@
                             (raise-arguments-error
                              'thread-send
                              "target thread is not running"))))
-                       fail-thunk23_0)))
+                       fail-thunk25_0)))
                 (begin
-                  (if (1/thread? thd24_0)
+                  (if (1/thread? thd26_0)
                     (void)
-                    (raise-argument-error 'thread-send "thread?" thd24_0))
+                    (raise-argument-error 'thread-send "thread?" thd26_0))
                   (if (let ((or-part_0 (not fail-thunk_0)))
                         (if or-part_0
                           or-part_0
@@ -7966,13 +8271,13 @@
                    (begin
                      (start-atomic)
                      (begin0
-                       (if (not (1/thread-dead? thd24_0))
+                       (if (not (1/thread-dead? thd26_0))
                          (begin
                            (begin-unsafe
-                            (queue-add! (thread-mailbox thd24_0) v25_0))
-                           (let ((wakeup_0 (thread-mailbox-wakeup thd24_0)))
+                            (queue-add! (thread-mailbox thd26_0) v27_0))
+                           (let ((wakeup_0 (thread-mailbox-wakeup thd26_0)))
                              (begin
-                               (set-thread-mailbox-wakeup! thd24_0 void)
+                               (set-thread-mailbox-wakeup! thd26_0 void)
                                (|#%app| wakeup_0)
                                void)))
                          (if fail-thunk_0 fail-thunk_0 (lambda () #f)))
@@ -7981,7 +8286,7 @@
      thread-send
      (case-lambda
       ((thd_0 v_0) (begin (thread-send_0 thd_0 v_0 unsafe-undefined)))
-      ((thd_0 v_0 fail-thunk23_0) (thread-send_0 thd_0 v_0 fail-thunk23_0))))))
+      ((thd_0 v_0 fail-thunk25_0) (thread-send_0 thd_0 v_0 fail-thunk25_0))))))
 (define 1/thread-receive
   (|#%name|
    thread-receive
@@ -8103,7 +8408,7 @@
    #f
    '(0 . 0)))
 (define effect_2506 (finish_2918 struct:thread-receiver-evt))
-(define thread-receiver-evt26.1
+(define thread-receiver-evt28.1
   (|#%name|
    thread-receiver-evt
    (record-constructor
@@ -8121,7 +8426,7 @@
           (thread-receiver-evt?_2591 (impersonator-val v))
           #f))))))
 (define 1/thread-receive-evt
-  (|#%name| thread-receive-evt (lambda () (begin (thread-receiver-evt26.1)))))
+  (|#%name| thread-receive-evt (lambda () (begin (thread-receiver-evt28.1)))))
 (define effect_2329
   (begin
     (void
@@ -13005,7 +13310,7 @@
                   (let ((v_0
                          (|#%app|
                           proc_0
-                          (1/wrap-evt (semaphore-peek-evt2.1 s_0) void))))
+                          (1/wrap-evt (semaphore-peek-evt3.1 s_0) void))))
                     (if (1/evt? v_0)
                       v_0
                       (1/wrap-evt the-always-evt (lambda () v_0))))))
@@ -13022,7 +13327,7 @@
          (if (1/semaphore? s_0)
            (void)
            (raise-argument-error 'semaphore-peek-evt "semaphore?" s_0))
-         (semaphore-peek-evt2.1 s_0))))))
+         (semaphore-peek-evt3.1 s_0))))))
 (define 1/semaphore-wait/enable-break
   (|#%name|
    semaphore-wait/enable-break
@@ -13125,7 +13430,7 @@
        (begin (call-with-semaphore/enable-break_0 s_0 proc_0 #f null)))
       ((s_0 proc_0 try-fail12_0 . args_0)
        (call-with-semaphore/enable-break_0 s_0 proc_0 try-fail12_0 args_0))))))
-(define finish_2234
+(define finish_2875
   (make-struct-type-install-properties
    '(will-executor)
    2
@@ -13137,7 +13442,7 @@
      1/prop:evt
      (lambda (we_0)
        (wrap-evt7.1
-        (semaphore-peek-evt2.1 (will-executor-sema we_0))
+        (semaphore-peek-evt3.1 (will-executor-sema we_0))
         (lambda (v_0) we_0))))
     (cons host:prop:unsafe-authentic-override #t))
    (current-inspector)
@@ -13153,7 +13458,7 @@
    #f
    #f
    '(2 . 0)))
-(define effect_2170 (finish_2234 struct:will-executor))
+(define effect_2170 (finish_2875 struct:will-executor))
 (define will-executor1.1
   (|#%name|
    will-executor
@@ -13319,7 +13624,7 @@
    'semaphore-wait
    1/semaphore-wait
    'semaphore-peek-evt
-   semaphore-peek-evt2.1
+   semaphore-peek-evt3.1
    'make-channel
    1/make-channel
    'channel-put-evt

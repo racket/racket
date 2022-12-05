@@ -363,6 +363,7 @@ typedef struct Thread_Local_Variables {
   void *on_atomic_timeout_data_;
   int atomic_timeout_auto_suspend_;
   int atomic_timeout_atomic_level_;
+  struct Scheme_Hash_Table *accessible_dead_events_;
   struct Scheme_Object *configuration_callback_cache_[CONFIG_CALLBACK_CACHE_LEN];
   struct FFI_Orig_Place_Call *cached_orig_place_todo_;
   struct Scheme_Hash_Table *ffi_lock_ht_;
@@ -751,6 +752,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define on_atomic_timeout_data XOA (scheme_get_thread_local_variables()->on_atomic_timeout_data_)
 #define atomic_timeout_auto_suspend XOA (scheme_get_thread_local_variables()->atomic_timeout_auto_suspend_)
 #define atomic_timeout_atomic_level XOA (scheme_get_thread_local_variables()->atomic_timeout_atomic_level_)
+#define accessible_dead_events XOA (scheme_get_thread_local_variables()->accessible_dead_events_)
 #define configuration_callback_cache XOA (scheme_get_thread_local_variables()->configuration_callback_cache_)
 #define cached_orig_place_todo XOA (scheme_get_thread_local_variables()->cached_orig_place_todo_)
 #define ffi_lock_ht XOA (scheme_get_thread_local_variables()->ffi_lock_ht_)

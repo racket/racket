@@ -133,6 +133,8 @@ THREAD_LOCAL_DECL(static Scheme_Hash_Table *late_will_executors_with_pending = N
 
 THREAD_LOCAL_DECL(Scheme_Config *initial_config);
 
+THREAD_LOCAL_DECL(Scheme_Hash_Table *accessible_dead_events = NULL);
+
 #ifndef MZ_PRECISE_GC
 static int cust_box_count, cust_box_alloc;
 static Scheme_Custodian_Box **cust_boxes;
@@ -425,8 +427,10 @@ static void get_outof_or_into_lines(Syncing *syncing, int get_out);
 static void remove_thread(Scheme_Thread *r);
 static void exit_or_escape(Scheme_Thread *p);
 
-static int resume_suspend_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
+static int resume_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
+static int suspend_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
 static int dead_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
+static int running_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
 static int cust_box_ready(Scheme_Object *o);
 
 static int can_break_param(Scheme_Thread *p);
@@ -454,11 +458,6 @@ enum {
   CONFIG_DIRECT,
   CONFIG_INDIRECT
 };
-
-typedef struct Scheme_Thread_Custodian_Hop {
-  Scheme_Object so;
-  Scheme_Thread *p; /* really an indirection with precise gc */
-} Scheme_Thread_Custodian_Hop;
 
 SHARED_OK static Scheme_Custodian_Extractor *extractors;
 
@@ -542,9 +541,10 @@ void scheme_init_thread(Scheme_Startup_Env *env)
   ADD_PRIM_W_ARITY("thread-dead-evt"       , make_thread_dead   , 1, 1, env);
 
   register_thread_sync();
-  scheme_add_evt(scheme_thread_suspend_type, (Scheme_Ready_Fun)resume_suspend_ready, NULL, NULL, 1);
-  scheme_add_evt(scheme_thread_resume_type, (Scheme_Ready_Fun)resume_suspend_ready, NULL, NULL, 1);
+  scheme_add_evt(scheme_thread_suspend_type, (Scheme_Ready_Fun)suspend_ready, NULL, NULL, 1);
+  scheme_add_evt(scheme_thread_resume_type, (Scheme_Ready_Fun)resume_ready, NULL, NULL, 1);
   scheme_add_evt(scheme_thread_dead_type, (Scheme_Ready_Fun)dead_ready, NULL, NULL, 1);
+  scheme_add_evt(scheme_thread_running_type, (Scheme_Ready_Fun)running_ready, NULL, NULL, 1);
   scheme_add_evt(scheme_cust_box_type, cust_box_ready, NULL, NULL, 0);
 
 
@@ -1456,6 +1456,7 @@ Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_F
   Scheme_Custodian *c, *start, *next_m;
   int i, is_thread;
   Scheme_Thread *the_thread;
+  Scheme_Thread_Custodian_Hop *the_thread_hop;
   Scheme_Object *o;
   Scheme_Close_Custodian_Client *f;
   void *data;
@@ -1493,10 +1494,12 @@ Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_F
 	if (o && !cf && (SAME_TYPE(SCHEME_TYPE(o), scheme_thread_hop_type))) {
 	  /* We've added an indirection and made it weak. See mr_hop note above. */
 	  is_thread = 1;
-	  the_thread = (Scheme_Thread *)WEAKIFIED(((Scheme_Thread_Custodian_Hop *)o)->p);
+          the_thread_hop = (Scheme_Thread_Custodian_Hop *)o;
+	  the_thread = (Scheme_Thread *)WEAKIFIED(the_thread_hop->p);
 	} else {
 	  is_thread = 0;
 	  the_thread = NULL;
+          the_thread_hop = NULL;
 	}
 
 	xCUSTODIAN_FAM(m->boxes[i]) = NULL;
@@ -1508,38 +1511,45 @@ Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_F
 
         if (!o) {
           /* weak link disappeared */
-        } else if (is_thread && !the_thread) {
-	  /* Thread is already collected, so skip */
+        } else if (is_thread && !the_thread_hop) {
+	  /* Thread (and dead evt) is already collected, so skip */
 	} else if (cf) {
 	  cf(o, f, data);
 	} else {
 	  if (is_thread) {
-	    if (the_thread) {
+	    if (the_thread_hop) {
 	      /* Only kill the thread if it has no other custodians */
-	      if (SCHEME_NULLP(the_thread->extra_mrefs)) {
-		if (do_kill_thread(the_thread))
-		  kill_self = the_thread;
+	      if (SCHEME_NULLP(the_thread_hop->extra_mrefs)) {
+                if (the_thread) {
+                  if (do_kill_thread(the_thread))
+                    kill_self = the_thread;
+                } else if (the_thread_hop->dead_box) {
+                  Scheme_Object *sema;
+                  sema = SCHEME_PTR1_VAL(the_thread_hop->dead_box);
+                  scheme_post_sema_all(sema);
+                }
 	      } else {
 		Scheme_Custodian_Reference *mref;
 
 		mref = m->mrefs[i];
-		if (mref == the_thread->mref) {
+		if (mref == the_thread_hop->mref) {
 		  /* Designate a new main custodian for the thread */
-		  mref = (Scheme_Custodian_Reference *)SCHEME_CAR(the_thread->extra_mrefs);
-		  the_thread->mref = mref;
-		  the_thread->extra_mrefs = SCHEME_CDR(the_thread->extra_mrefs);
+		  mref = (Scheme_Custodian_Reference *)SCHEME_CAR(the_thread_hop->extra_mrefs);
+		  the_thread_hop->mref = mref;
+		  the_thread_hop->extra_mrefs = SCHEME_CDR(the_thread_hop->extra_mrefs);
 #ifdef MZ_PRECISE_GC
-		  GC_register_thread(the_thread, CUSTODIAN_FAM(mref));
+                  if (the_thread)
+                    GC_register_thread(the_thread, CUSTODIAN_FAM(mref));
 #endif
 		} else {
 		  /* Just remove mref from the list of extras */
 		  Scheme_Object *l, *prev = NULL;
-		  for (l = the_thread->extra_mrefs; 1; l = SCHEME_CDR(l)) {
+		  for (l = the_thread_hop->extra_mrefs; 1; l = SCHEME_CDR(l)) {
 		    if (SAME_OBJ(SCHEME_CAR(l), (Scheme_Object *)mref)) {
 		      if (prev)
 			SCHEME_CDR(prev) = SCHEME_CDR(l);
 		      else
-			the_thread->extra_mrefs = SCHEME_CDR(l);
+			the_thread_hop->extra_mrefs = SCHEME_CDR(l);
 		      break;
 		    }
 		    prev = l;
@@ -2093,7 +2103,7 @@ static void check_current_custodian_allows(const char *who, Scheme_Thread *p)
   /* Check management of the thread: */
   current = (Scheme_Custodian *)scheme_get_param(scheme_current_config(), MZCONFIG_CUSTODIAN);
 
-  for (l = p->extra_mrefs; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+  for (l = p->mr_hop->extra_mrefs; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
     mref = (Scheme_Custodian_Reference *)SCHEME_CAR(l);
     m = CUSTODIAN_FAM(mref);
     while (NOT_SAME_OBJ(m, current)) {
@@ -2103,7 +2113,7 @@ static void check_current_custodian_allows(const char *who, Scheme_Thread *p)
     }
   }
 
-  mref = p->mref;
+  mref = p->mr_hop->mref;
   if (!mref)
     return;
   m = CUSTODIAN_FAM(mref);
@@ -2660,11 +2670,6 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
   process->mbox_last = NULL;
   process->mbox_sema = NULL;
 
-  process->mref = NULL;
-  process->extra_mrefs = NULL;
-
-    
-
   /* A thread points to a lot of stuff, so it's bad to put a finalization
      on it, which is what registering with a custodian does. Instead, we
      register a weak indirection with the custodian. That way, the thread
@@ -2672,7 +2677,10 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
 
      It's possible that the thread will be collected before the indirection
      record, so when we use the indirection (e.g., in custodian traversals),
-     we'll need to check for NULL. */
+     we'll need to check for NULL.
+
+     We also keep room in the hop for a thread-termination event, though,
+     because we may need that even if the thread becomes unreachable. */
   {
     Scheme_Thread_Custodian_Hop *hop;
     Scheme_Custodian_Reference *mref;
@@ -2686,8 +2694,9 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
     }
 
     mref = scheme_add_managed(mgr, (Scheme_Object *)hop, NULL, NULL, 0);
-    process->mref = mref;
-    process->extra_mrefs = scheme_null;
+    process->mr_hop->mref = mref;
+    process->mr_hop->extra_mrefs = scheme_null;
+    process->mr_hop->dead_box = NULL;
 
 #ifndef MZ_PRECISE_GC
     scheme_weak_reference((void **)(void *)&hop->p);
@@ -3173,9 +3182,9 @@ static void select_thread()
 
 static void thread_is_dead(Scheme_Thread *r)
 {
-  if (r->dead_box) {
+  if (r->mr_hop->dead_box) {
     Scheme_Object *o;
-    o = SCHEME_PTR_VAL(r->dead_box);
+    o = SCHEME_PTR1_VAL(r->mr_hop->dead_box);
     scheme_post_sema_all(o);
   }
   if (r->sync_box) {
@@ -3294,11 +3303,11 @@ static void remove_thread(Scheme_Thread *r)
   } else
     RESETJMP(r);
 
-  scheme_remove_managed(r->mref, (Scheme_Object *)r->mr_hop);
-  for (l = r->extra_mrefs; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+  scheme_remove_managed(r->mr_hop->mref, (Scheme_Object *)r->mr_hop);
+  for (l = r->mr_hop->extra_mrefs; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
     scheme_remove_managed((Scheme_Custodian_Reference *)SCHEME_CAR(l), (Scheme_Object *)r->mr_hop);
   }
-  r->extra_mrefs = scheme_null;
+  r->mr_hop->extra_mrefs = scheme_null;
 }
 
 void scheme_end_current_thread(void)
@@ -3554,12 +3563,19 @@ static int thread_wait_done(Scheme_Object *p, Scheme_Schedule_Info *sinfo)
 {
   int running = ((Scheme_Thread *)p)->running;
   if (MZTHREAD_STILL_RUNNING(running)) {
-    /* Replace the direct thread reference with an event, so that
-       the blocking thread can be dequeued: */
-    Scheme_Object *evt;
-    evt = scheme_get_thread_dead((Scheme_Thread *)p);
-    scheme_set_sync_target(sinfo, evt, p, NULL, 0, 0, NULL);
-    return 0;
+    if (SAME_OBJ(p, (Scheme_Object *)scheme_current_thread)) {
+      /* As a special case, enable GC of this thread if not otherwise referenced,
+         since the thread obviously can't continue after it is terminated. */
+      scheme_set_sync_target(sinfo, scheme_make_sema(0), p, NULL, 0, 0, NULL);
+      return 0;
+    } else {
+      /* Replace the direct thread reference with an event, so that
+         the blocking thread can be dequeued: */
+      Scheme_Object *evt;
+      evt = scheme_get_thread_dead((Scheme_Thread *)p);
+      scheme_set_sync_target(sinfo, evt, p, NULL, 0, 0, NULL);
+      return 0;
+    }
   } else
     return 1;
 }
@@ -3831,8 +3847,9 @@ Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], voi
       hop->p = wp;
     }
     mref = scheme_add_managed(mgr, (Scheme_Object *)hop, NULL, NULL, 0);
-    np->mref = mref;
-    np->extra_mrefs = scheme_null;
+    np->mr_hop->mref = mref;
+    np->mr_hop->extra_mrefs = scheme_null;
+    np->mr_hop->dead_box = NULL;
 #ifndef MZ_PRECISE_GC
     scheme_weak_reference((void **)(void *)&hop->p);
 #endif
@@ -3872,15 +3889,15 @@ Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], voi
     failure = 0;
   }
 
-  scheme_remove_managed(np->mref, (Scheme_Object *)np->mr_hop);
+  scheme_remove_managed(np->mr_hop->mref, (Scheme_Object *)np->mr_hop);
   {
     Scheme_Object *l;
-    for (l = np->extra_mrefs; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+    for (l = np->mr_hop->extra_mrefs; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
       scheme_remove_managed((Scheme_Custodian_Reference *)SCHEME_CAR(l), 
 			    (Scheme_Object *)np->mr_hop);
     }
   }
-  np->extra_mrefs = scheme_null;
+  np->mr_hop->extra_mrefs = scheme_null;
 #ifdef MZ_PRECISE_GC
   WEAKIFIED(np->mr_hop->p) = NULL;
 #else
@@ -5662,10 +5679,10 @@ static int do_kill_thread(Scheme_Thread *p)
   if (p->on_kill)
     p->on_kill(p);
 
-  scheme_remove_managed(p->mref, (Scheme_Object *)p->mr_hop);
+  scheme_remove_managed(p->mr_hop->mref, (Scheme_Object *)p->mr_hop);
   {
     Scheme_Object *l;
-    for (l = p->extra_mrefs; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+    for (l = p->mr_hop->extra_mrefs; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
       scheme_remove_managed((Scheme_Custodian_Reference *)SCHEME_CAR(l), 
 			    (Scheme_Object *)p->mr_hop);
     }
@@ -5850,8 +5867,8 @@ static void add_transitive_resume(Scheme_Thread *promote_to, Scheme_Thread *p)
       wb = (Scheme_Object *)p;
     else
       wb = scheme_make_weak_box((Scheme_Object *)p);
-    b = scheme_alloc_small_object();
-    b->type = scheme_thread_dead_type;
+    b = scheme_alloc_object();
+    b->type = scheme_thread_running_type;
     SCHEME_PTR_VAL(b) = (Scheme_Object *)wb;
     p->running_box = b;
   }
@@ -6009,11 +6026,11 @@ static void promote_thread(Scheme_Thread *p, Scheme_Custodian *to_c)
      target for p always has at least the custodians of p, so if we don't
      add a custodian to p, we don't need to check the rest. */
   
-  if (!p->mref || !CUSTODIAN_FAM(p->mref)) {
+  if (!p->mr_hop->mref || !CUSTODIAN_FAM(p->mr_hop->mref)) {
     /* The thread has no running custodian, so fall through to
        just use to_c */
   } else {
-    c = CUSTODIAN_FAM(p->mref);
+    c = CUSTODIAN_FAM(p->mr_hop->mref);
 
     /* Check whether c is an ancestor of to_c (in which case we do nothing) */
     for (cx = to_c; cx && NOT_SAME_OBJ(cx, c); ) {
@@ -6023,7 +6040,7 @@ static void promote_thread(Scheme_Thread *p, Scheme_Custodian *to_c)
 
     /* Check whether any of the extras are super to to_c. 
        If so, do nothing. */
-    for (l = p->extra_mrefs; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+    for (l = p->mr_hop->extra_mrefs; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
       mref = (Scheme_Custodian_Reference *)SCHEME_CAR(l);
       c = CUSTODIAN_FAM(mref);
       
@@ -6043,7 +6060,7 @@ static void promote_thread(Scheme_Thread *p, Scheme_Custodian *to_c)
        unrelated. */
     if (!cx) {
       /* Check whether any of the extras should be replaced by to_c */
-      for (l = p->extra_mrefs; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+      for (l = p->mr_hop->extra_mrefs; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
 	/* Is to_c super of c? */
 	for (cx = c; cx && NOT_SAME_OBJ(cx, to_c); ) {
 	  cx = CUSTODIAN_FAM(cx->parent);
@@ -6080,8 +6097,8 @@ static void promote_thread(Scheme_Thread *p, Scheme_Custodian *to_c)
       /* Otherwise, this is custodian is unrelated to the existing ones.
 	 Add it as an extra custodian. */
       mref = scheme_add_managed(to_c, (Scheme_Object *)p->mr_hop, NULL, NULL, 0);
-      l = scheme_make_raw_pair((Scheme_Object *)mref, p->extra_mrefs);
-      p->extra_mrefs = l;
+      l = scheme_make_raw_pair((Scheme_Object *)mref, p->mr_hop->extra_mrefs);
+      p->mr_hop->extra_mrefs = l;
 
       transitive_promote(p, to_c);
       return;
@@ -6089,9 +6106,9 @@ static void promote_thread(Scheme_Thread *p, Scheme_Custodian *to_c)
   }
 
   /* Replace p's main custodian (if any) with to_c */
-  scheme_remove_managed(p->mref, (Scheme_Object *)p->mr_hop);
+  scheme_remove_managed(p->mr_hop->mref, (Scheme_Object *)p->mr_hop);
   mref = scheme_add_managed(to_c, (Scheme_Object *)p->mr_hop, NULL, NULL, 0);
-  p->mref = mref;
+  p->mr_hop->mref = mref;
 #ifdef MZ_PRECISE_GC
   GC_register_thread(p, to_c);
 #endif
@@ -6132,10 +6149,10 @@ static Scheme_Object *thread_resume(int argc, Scheme_Object *argv[])
 
     /* If promote_to doesn't have a working custodian, there's
        nothing to donate */
-    if (promote_to->mref && CUSTODIAN_FAM(promote_to->mref)) {
-      promote_thread(p, CUSTODIAN_FAM(promote_to->mref));
+    if (promote_to->mr_hop->mref && CUSTODIAN_FAM(promote_to->mr_hop->mref)) {
+      promote_thread(p, CUSTODIAN_FAM(promote_to->mr_hop->mref));
       
-      for (l = p->extra_mrefs; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+      for (l = p->mr_hop->extra_mrefs; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
 	mref = (Scheme_Custodian_Reference *)SCHEME_CAR(l);
 	promote_thread(p, CUSTODIAN_FAM(mref));
       }
@@ -6154,8 +6171,8 @@ static Scheme_Object *thread_resume(int argc, Scheme_Object *argv[])
   {
     Scheme_Custodian *c;
     
-    if (p->mref)
-      c = CUSTODIAN_FAM(p->mref);
+    if (p->mr_hop->mref)
+      c = CUSTODIAN_FAM(p->mr_hop->mref);
     else
       c = NULL;
 
@@ -6212,6 +6229,12 @@ Scheme_Object *scheme_get_thread_suspend(Scheme_Thread *p)
       Scheme_Object *sema;
       sema = scheme_make_sema(0);
       SCHEME_PTR1_VAL(b) = sema;
+      if (p->suspend_to_kill) {
+        /* retain thread, because it might get suspended via a custodian */
+        Scheme_Object *bx;
+        bx = scheme_box((Scheme_Object *)p);
+        SCHEME_PTR2_VAL(b) = bx;
+      }
     }
     p->suspended_box = b;
   }
@@ -6245,7 +6268,7 @@ static Scheme_Object *make_thread_resume(int argc, Scheme_Object *argv[])
   return p->resumed_box;
 }
 
-static int resume_suspend_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
+static int resume_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
 {
   Scheme_Object *t;
 
@@ -6259,6 +6282,47 @@ static int resume_suspend_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
   return 0;
 }
 
+static void register_accessible_waiting(Scheme_Object *o) {
+  Scheme_Object *n;
+  
+  if (!accessible_dead_events) {
+    REGISTER_SO(accessible_dead_events);
+    accessible_dead_events = scheme_make_hash_table(SCHEME_hash_ptr);
+  }
+  
+  n = scheme_hash_get(accessible_dead_events, o);
+  scheme_hash_set(accessible_dead_events, o, n ? scheme_make_integer(SCHEME_INT_VAL(n)+1) : scheme_make_integer(1));
+}
+
+static Scheme_Object *finish_accessible_ready(Scheme_Object *o, int accepted) {
+  Scheme_Object *n;
+  n = scheme_hash_get(accessible_dead_events, o);
+  if (SAME_OBJ(n, scheme_make_integer(1)))
+    scheme_hash_set(accessible_dead_events, o, NULL);
+  else
+    scheme_hash_set(accessible_dead_events, o, scheme_make_integer(SCHEME_INT_VAL(n)-1));
+  return o;
+}
+
+static int suspend_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
+{
+  Scheme_Object *t;
+
+  t = SCHEME_PTR2_VAL(o);
+  if (t && !SCHEME_BOXP(t)) {
+    scheme_set_sync_target(sinfo, o, t, NULL, 0, 0, NULL);
+    return 1;
+  }
+
+  if (t) { /* => box */
+    register_accessible_waiting(o);
+    scheme_set_sync_target(sinfo, SCHEME_PTR1_VAL(o), o, NULL, 0, 1, finish_accessible_ready);
+  } else
+    scheme_set_sync_target(sinfo, SCHEME_PTR1_VAL(o), o, NULL, 0, 1, NULL);
+  
+  return 0;
+}
+
 static Scheme_Object *make_thread_dead(int argc, Scheme_Object *argv[])
 {
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_thread_type))
@@ -6269,24 +6333,42 @@ static Scheme_Object *make_thread_dead(int argc, Scheme_Object *argv[])
 
 Scheme_Object *scheme_get_thread_dead(Scheme_Thread *p)
 {
-  if (!p->dead_box) {
+  if (!p->mr_hop->dead_box) {
     Scheme_Object *b;
     Scheme_Object *sema;
 
-    b = scheme_alloc_small_object();
+    b = scheme_alloc_object();
     b->type = scheme_thread_dead_type;
     sema = scheme_make_sema(0);
-    SCHEME_PTR_VAL(b) = sema;
+    SCHEME_PTR1_VAL(b) = sema;
+    if (p->suspend_to_kill)
+      SCHEME_PTR2_VAL(b) = scheme_false;
+    else
+      SCHEME_PTR2_VAL(b) = p->mr_hop; /* retains when thread blocks on evt */
     if (!MZTHREAD_STILL_RUNNING(p->running))
       scheme_post_sema_all(sema);
 
-    p->dead_box = b;
+    p->mr_hop->dead_box = b;
   }
 
-  return p->dead_box;
+  return p->mr_hop->dead_box;
 }
 
 static int dead_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
+{
+  if (SAME_OBJ(SCHEME_PTR2_VAL(o), scheme_false)) {
+    scheme_set_sync_target(sinfo, SCHEME_PTR1_VAL(o), o, NULL, 0, 1, NULL);
+  } else {
+    /* make sure the thread is retained strongly while waiting */
+    register_accessible_waiting(o);
+    
+    scheme_set_sync_target(sinfo, SCHEME_PTR1_VAL(o), o, NULL, 0, 1, finish_accessible_ready);
+  }
+
+  return 0;
+}
+
+static int running_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
 {
   scheme_set_sync_target(sinfo, SCHEME_PTR_VAL(o), o, NULL, 0, 1, NULL);
   return 0;
@@ -6496,7 +6578,7 @@ static void *splice_ptr_array(void **a, int al, void **b, int bl, int i)
 
 static void set_sync_target(Syncing *syncing, int i, Scheme_Object *target, 
 			    Scheme_Object *wrap, Scheme_Object *nack, 
-			    int repost, int retry, Scheme_Accept_Sync accept)
+			    int repost, int retry, Scheme_Conclude_Sync conclude)
 /* Not ready, deferred to target. */
 {
   Evt_Set *evt_set = syncing->set;
@@ -6535,14 +6617,14 @@ static void set_sync_target(Syncing *syncing, int i, Scheme_Object *target,
     syncing->reposts[i] = 1;
   }
 
-  if (accept) {
-    if (!syncing->accepts) {
-      Scheme_Accept_Sync *s;
-      s = (Scheme_Accept_Sync *)scheme_malloc_atomic(sizeof(Scheme_Accept_Sync) * evt_set->argc);
-      memset(s, 0, evt_set->argc * sizeof(Scheme_Accept_Sync));
-      syncing->accepts = s;
+  if (conclude) {
+    if (!syncing->concludes) {
+      Scheme_Conclude_Sync *s;
+      s = (Scheme_Conclude_Sync *)scheme_malloc_atomic(sizeof(Scheme_Conclude_Sync) * evt_set->argc);
+      memset(s, 0, evt_set->argc * sizeof(Scheme_Conclude_Sync));
+      syncing->concludes = s;
     }
-    syncing->accepts[i] = accept;
+    syncing->concludes[i] = conclude;
   }
 
   if (SCHEME_EVTSETP(target) && retry) {
@@ -6611,18 +6693,18 @@ static void set_sync_target(Syncing *syncing, int i, Scheme_Object *target,
 	memcpy(s + i + wts->argc, syncing->reposts + i + 1, evt_set->argc - i - 1);
 	syncing->reposts = s;
       }
-      if (syncing->accepts) {
-	Scheme_Accept_Sync *s;
+      if (syncing->concludes) {
+	Scheme_Conclude_Sync *s;
 	int len;
 	
 	len = evt_set->argc + wts->argc - 1;
 	
-	s = (Scheme_Accept_Sync *)scheme_malloc_atomic(len * sizeof(Scheme_Accept_Sync));
-	memset(s, 0, len * sizeof(Scheme_Accept_Sync));
+	s = (Scheme_Conclude_Sync *)scheme_malloc_atomic(len * sizeof(Scheme_Conclude_Sync));
+	memset(s, 0, len * sizeof(Scheme_Conclude_Sync));
 	
-	memcpy(s, syncing->accepts, i * sizeof(Scheme_Accept_Sync));
-	memcpy(s + i + wts->argc, syncing->accepts + i + 1, (evt_set->argc - i - 1) * sizeof(Scheme_Accept_Sync));
-	syncing->accepts = s;
+	memcpy(s, syncing->concludes, i * sizeof(Scheme_Conclude_Sync));
+	memcpy(s + i + wts->argc, syncing->concludes + i + 1, (evt_set->argc - i - 1) * sizeof(Scheme_Conclude_Sync));
+	syncing->concludes = s;
       }
 
       evt_set->argc += (wts->argc - 1);
@@ -6647,10 +6729,10 @@ static void set_sync_target(Syncing *syncing, int i, Scheme_Object *target,
 
 void scheme_set_sync_target(Scheme_Schedule_Info *sinfo, Scheme_Object *target, 
 			    Scheme_Object *wrap, Scheme_Object *nack, 
-			    int repost, int retry, Scheme_Accept_Sync accept)
+			    int repost, int retry, Scheme_Conclude_Sync conclude)
 {
   set_sync_target((Syncing *)sinfo->current_syncing, sinfo->w_i,
-		  target, wrap, nack, repost, retry, accept);
+		  target, wrap, nack, repost, retry, conclude);
   if (retry) {
     /* Rewind one step to try new ones (or continue
        if the set was empty). */
@@ -6745,8 +6827,7 @@ int scheme_syncing_ready(Syncing *syncing, Scheme_Schedule_Info *sinfo, int can_
 	    syncing->disable_break->suspend_break++;
 	  if (syncing->reposts && syncing->reposts[i])
 	    scheme_post_sema(o);
-          if (syncing->accepts && syncing->accepts[i])
-            scheme_accept_sync(syncing, i);
+          scheme_conclude_sync(syncing, i);
 	  scheme_post_syncing_nacks(syncing);
 	  result = 1;
 	  goto set_sleep_end_and_return;
@@ -6809,23 +6890,58 @@ static int syncing_ready(Syncing *syncing, Scheme_Schedule_Info *sinfo)
   return scheme_syncing_ready(syncing, sinfo, 1);
 }
 
-void scheme_accept_sync(Syncing *syncing, int i)
+void scheme_conclude_sync(Syncing *syncing, int choose_i)
 {
-  /* run atomic accept action to revise the wrap */
-  Scheme_Accept_Sync accept;
-  Scheme_Object *v, *pr;
-  
-  accept = syncing->accepts[i];
-  syncing->accepts[i] = NULL;
-  pr = syncing->wrapss[i];
-  
-  v = SCHEME_CAR(pr);
-  pr = SCHEME_CDR(pr);
-  
-  v = accept(v);
-  
-  pr = scheme_make_pair(v, pr);
-  syncing->wrapss[i] = pr;
+  /* run atomic conclude action to revise the wrap */
+  Scheme_Conclude_Sync conclude;
+  Scheme_Object *v, *pr, *syncs = scheme_null;
+  int i;
+
+  do {
+    i = choose_i;
+    conclude = (i >= 0 ? (syncing->concludes ? syncing->concludes[i] : NULL) : NULL);
+    if (conclude) {
+      syncing->concludes[i] = NULL;
+      pr = syncing->wrapss[i];
+    
+      v = SCHEME_CAR(pr);
+      pr = SCHEME_CDR(pr);
+    
+      v = conclude(v, 1);
+    
+      pr = scheme_make_pair(v, pr);
+      syncing->wrapss[i] = pr;
+    }
+    
+    if (syncing->set) {
+      if (syncing->concludes) {
+        for (i = syncing->set->argc; i--; ) {
+          conclude = syncing->concludes[i];
+          if (conclude) {
+            syncing->concludes[i] = NULL;
+            conclude(SCHEME_CAR(syncing->wrapss[i]), 0);
+          }
+        }
+      }
+
+      for (i = syncing->set->argc; i--; ) {
+        if (SAME_TYPE(SCHEME_TYPE(syncing->set->argv[i]), scheme_active_replace_evt_type)) {
+          Syncing *next;
+          next = scheme_replace_evt_get(syncing->set->argv[i]);
+          if (next)
+            syncs = scheme_make_raw_pair((Scheme_Object *)next, syncs);
+        }
+      }
+    }
+
+    if (syncs == scheme_null)
+      syncing = NULL;
+    else {
+      syncing = (Syncing *)SCHEME_CAR(syncs);
+      syncs = SCHEME_CDR(syncs);
+      choose_i = -1;
+    }
+  } while (syncing);
 }
 
 void scheme_syncing_needs_wakeup(Syncing *s, void *fds)
@@ -7135,6 +7251,7 @@ void scheme_post_syncing_nacks(Syncing *syncing)
 
 void scheme_escape_during_sync(Syncing *syncing)
 {
+  scheme_conclude_sync(syncing, -1);
   post_syncing_nacks(syncing, 1);
 }
 
@@ -7338,8 +7455,10 @@ static Scheme_Object *do_sync(const char *name, int argc, Scheme_Object *argv[],
 		     (Scheme_Object *)syncing, timeout);
   END_ESCAPEABLE();
 
-  if (!syncing->result)
+  if (!syncing->result) {
+    scheme_conclude_sync(syncing, -1);
     scheme_post_syncing_nacks(syncing);
+  }
 
   if (with_break) {
     scheme_pop_break_enable(&cframe, 0);

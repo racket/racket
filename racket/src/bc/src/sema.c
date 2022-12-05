@@ -310,14 +310,13 @@ void did_post_sema(Scheme_Sema *t)
         w->syncing->result = w->syncing_i + 1;
         if (w->syncing->disable_break)
           w->syncing->disable_break->suspend_break++;
+        scheme_conclude_sync(w->syncing, w->syncing_i);
         scheme_post_syncing_nacks(w->syncing);
         if (!w->syncing->reposts || !w->syncing->reposts[w->syncing_i]) {
           t->value -= 1;
           consumed = 1;
         } else
           consumed = 0;
-        if (w->syncing->accepts && w->syncing->accepts[w->syncing_i])
-          scheme_accept_sync(w->syncing, w->syncing_i);
       } else {
         /* In this case, we will remove the syncer from line, but
            someone else might grab the post. This is unfair, but it
@@ -699,8 +698,7 @@ int scheme_wait_semas_chs(int n, Scheme_Object **o, int just_try, Syncing *synci
               --semas[i]->value;
             if (syncing) {
 	      syncing->result = i + 1;
-	      if (syncing->accepts && syncing->accepts[i])
-		scheme_accept_sync(syncing, i);
+              scheme_conclude_sync(syncing, i);
 	    }
             break;
           }
@@ -895,8 +893,7 @@ int scheme_wait_semas_chs(int n, Scheme_Object **o, int just_try, Syncing *synci
 		--semas[i]->value;
               if (syncing) {
                 syncing->result = i + 1;
-                if (syncing->accepts && syncing->accepts[i])
-                  scheme_accept_sync(syncing, i);
+                scheme_conclude_sync(syncing, i);
               }
 	      break;
 	    }

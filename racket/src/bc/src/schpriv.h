@@ -909,6 +909,14 @@ Scheme_Custodian *scheme_get_current_custodian(void);
 void scheme_run_atexit_closers_on_all(Scheme_Exit_Closer_Func alt);
 void scheme_run_atexit_closers(Scheme_Object *o, Scheme_Close_Custodian_Client *f, void *data);
 
+typedef struct Scheme_Thread_Custodian_Hop {
+  Scheme_Object so;
+  Scheme_Thread *p; /* really an indirection with precise gc */
+  Scheme_Custodian_Reference *mref;
+  Scheme_Object *extra_mrefs; /* More owning custodians */
+  Scheme_Object *dead_box;
+} Scheme_Thread_Custodian_Hop;
+
 typedef struct Scheme_Security_Guard {
   Scheme_Object so;
   struct Scheme_Security_Guard *parent;
@@ -928,13 +936,13 @@ typedef struct {
   Scheme_Object *replace_chain; /* turns non-tail replace_evt recursion into a loop */
 } Scheme_Schedule_Info;
 
-typedef Scheme_Object *(*Scheme_Accept_Sync)(Scheme_Object *wrap);
+typedef Scheme_Object *(*Scheme_Conclude_Sync)(Scheme_Object *wrap, int accept);
 
 void scheme_set_sync_target(Scheme_Schedule_Info *sinfo, Scheme_Object *target,
 			    Scheme_Object *wrap, Scheme_Object *nack,
-			    int repost, int retry, Scheme_Accept_Sync accept);
+			    int repost, int retry, Scheme_Conclude_Sync conclude);
 struct Syncing;
-void scheme_accept_sync(struct Syncing *syncing, int i);
+void scheme_conclude_sync(struct Syncing *syncing, int i);
 
 struct Syncing *scheme_make_syncing(int argc, Scheme_Object **argv);
 int scheme_syncing_ready(struct Syncing *s, Scheme_Schedule_Info *sinfo, int can_suspend);
@@ -2148,7 +2156,7 @@ typedef struct Syncing {
   Scheme_Object **wrapss;
   Scheme_Object **nackss;
   char *reposts;
-  Scheme_Accept_Sync *accepts;
+  Scheme_Conclude_Sync *concludes;
 
   Scheme_Thread *disable_break; /* when result is set */
   Scheme_Thread *thread; /* set when syncing to allow in flight place message cleanup */
