@@ -738,7 +738,7 @@ The client sends this information via the TLS
 extension, which was created to allow @hyperlink["http://en.wikipedia.org/wiki/Virtual_hosting"]{virtual hosting}
 for secure servers.
 
-The suggested use it to prepare the appropriate server contexts,
+The suggested use is to prepare the appropriate server contexts,
 define a single callback which can dispatch between them, and then
 apply it to all the contexts before sealing them. A minimal example:
 
