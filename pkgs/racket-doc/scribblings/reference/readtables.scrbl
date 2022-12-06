@@ -48,7 +48,7 @@ a character that is mapped to the default behavior of @litchar{;}, the
 readtable is ignored until the comment's terminating newline is
 discovered. Similarly, the readtable does not affect string parsing
 until a closing double-quote is found.  Meanwhile, if a character is
-mapped to the default behavior of @litchar{(}, then it starts sequence
+mapped to the default behavior of @litchar{(}, then it starts a sequence
 that is closed by any character that is mapped to a closing parenthesis
 @litchar{)}. An apparent exception is that the default parsing of
 @litchar{|} quotes a symbol until a matching character is found, but
