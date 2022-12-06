@@ -3,11 +3,13 @@
          racket/format
          racket/string
          racket/file
+         racket/path
          racket/runtime-path
          "cmdline.rkt")
 
 (define skip-unpack? #f)
 (define skip-config? #f)
+(define parallel-spec (make-parameter ""))
 
 (define package-name
   (build-command-line
@@ -15,7 +17,8 @@
    [("--skip-unpack") "Skip `unpack` step"
     (set! skip-unpack? #t)]
    [("--skip-config") "Skip `configure` step"
-    (set! skip-config? #t)]
+                      (set! skip-config? #t)]
+   [("-j") N "Run make with `-j N`" (parallel-spec (~a " -j " N))]
    #:args (package-name)
    package-name))
 
@@ -93,9 +96,11 @@
                          (find-package package-name #f)))
      (define dir (find-package package-name #t #t))
      (when dir
-       (printf "Removing ~a" dir)
+       (printf "Removing ~a\n" dir)
        (delete-directory/files dir))
-     (system/show (~a "tar zxf " archive))]))
+     (define zip-flag (cond [(equal? #".xz" (path-get-extension archive)) "J"]
+                            [else "z"]))
+     (system/show (format "tar ~axf ~a" zip-flag archive))]))
 
 (define package-dir (find-package package-name #t))
 
@@ -371,7 +376,7 @@
                 #:env [env null]
                 #:configure-exe [exe #f]
                 #:configure [args null]
-                #:make [make "make"]
+                #:make [make (~a "make" (parallel-spec))]
                 #:make-install [make-install (~a make " install")]
                 #:setup [setup null]
                 #:patches [patches null]
@@ -723,14 +728,14 @@
     [("jpeg") (config)]
     [("poppler") (config #:env (append path-flags
                                        cxx-env)
-                         #:patches (list nonochecknew-patch
-                                         poppler-no-volatile-patch)
+                         #:patches (list #;nonochecknew-patch
+                                         #;poppler-no-volatile-patch)
                          #:post-patches (if win?
                                             (list libtool-link-patch)
                                             null)
-                         #:configure '("--enable-zlib"
-				       "--disable-splash-output"
-				       "--disable-poppler-cpp"))]
+                         #:depends '("freetype")
+                         #:configure-exe (find-executable-path "cmake")
+                         #:configure (cons "." #f))]
     [else (error 'build "unrecognized package: ~a" package-name)]))
 
 ;; --------------------------------------------------
@@ -784,9 +789,10 @@
            (or configure-exe "./configure")
            (let loop ([extra-args extra-args])
              (cond
-              [(null? extra-args) (make-all-args use-cross-file)]
-              [(not (car extra-args)) (append (make-all-args use-cross-file) (cdr extra-args))]
-              [else (cons (car extra-args) (loop (cdr extra-args)))])))
+               [(not extra-args) null]
+               [(null? extra-args) (make-all-args use-cross-file)]
+               [(not (car extra-args)) (append (make-all-args use-cross-file) (cdr extra-args))]
+               [else (cons (car extra-args) (loop (cdr extra-args)))])))
     (for ([p (in-list post-patches)])
       (system/show (~a "patch -p2 < " p))))
   (remove-libtool-flat-namespace)
