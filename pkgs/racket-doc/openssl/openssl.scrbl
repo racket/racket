@@ -806,7 +806,7 @@ propagation settings.
 Debugging is the typical use case for this functionality.  The owner
 of a context can use it to write key material to a file to be consumed
 by tools such as Wireshark.  In the following example, anyone with
-access to "keylogfile.txt" is able to decrypt connections made via
+access to @filepath{keylogfile.txt} is able to decrypt connections made via
 @racket[ctx]:
 
 @racketblock[
@@ -833,7 +833,7 @@ access to "keylogfile.txt" is able to decrypt connections made via
   (ssl-set-keylogger! ctx logger)
 ]
 
-@history[#:added "8.7.0.7"]}
+@history[#:added "8.7.0.8"]}
 
 @; ----------------------------------------------------------------------
 @section[#:tag "peer-verif"]{Peer Verification}
