@@ -738,7 +738,7 @@ The client sends this information via the TLS
 extension, which was created to allow @hyperlink["http://en.wikipedia.org/wiki/Virtual_hosting"]{virtual hosting}
 for secure servers.
 
-The suggested use it to prepare the appropriate server contexts, 
+The suggested use is to prepare the appropriate server contexts,
 define a single callback which can dispatch between them, and then
 apply it to all the contexts before sealing them. A minimal example:
 
@@ -789,11 +789,57 @@ connection is refused.
 
 @history[#:added "8.4.0.5"]}
 
+@defproc[(ssl-set-keylogger! [context (or/c ssl-server-context? ssl-client-context?)]
+                             [logger (or/c #f logger?)]) void?]{
+
+Instructs the @racket[context] to log a message to @racket[logger]
+whenever TLS key material is generated or received.  The message is
+logged with its level set to @racket['debug], its topic set to
+@racket['openssl-keylogger], and its associated data is a byte string
+representing the key material.  When @racket[logger] is @racket[#f],
+the context is instructed to stop logging this information.
+
+@bold{Warning:} if @racket[logger] has any ancestors, then this
+information may also be available to them, depending on the logger's
+propagation settings.
+
+Debugging is the typical use case for this functionality.  The owner
+of a context can use it to write key material to a file to be consumed
+by tools such as Wireshark.  In the following example, anyone with
+access to @filepath{keylogfile.txt} is able to decrypt connections made via
+@racket[ctx]:
+
+@racketblock[
+  (define out
+    (open-output-file
+     #:exists 'append
+     "keylogfile.txt"))
+  (define logger
+    (make-logger))
+  (void
+   (thread
+    (lambda ()
+      (define receiver
+        (make-log-receiver logger 'debug 'openssl-keylogger))
+      (let loop ()
+        (match-define (vector _ _ key-data _)
+          (sync receiver))
+        (write-bytes key-data out)
+        (newline out)
+        (flush-output out)
+        (loop)))))
+
+  (define ctx (ssl-make-client-context 'auto))
+  (ssl-set-keylogger! ctx logger)
+]
+
+@history[#:added "8.7.0.8"]}
+
 @; ----------------------------------------------------------------------
 @section[#:tag "peer-verif"]{Peer Verification}
 
 @defproc[(ssl-set-verify! [clp (or/c ssl-client-context? ssl-server-context?
-                                     ssl-listener? ssl-port?)] 
+                                     ssl-listener? ssl-port?)]
                           [on? any/c])
          void?]{
 
