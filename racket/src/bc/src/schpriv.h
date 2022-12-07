@@ -1900,6 +1900,7 @@ typedef struct Scheme_Stack_State {
 typedef struct Scheme_Dynamic_Wind {
   MZTAG_IF_REQUIRED
   int depth;
+  int actual_len; /* not counting fake D-W records for prompts */
   void *id; /* generated as needed */
   void *data;
   Scheme_Object *prompt_tag; /* If not NULL, indicates a fake D-W record for prompt boundary */
@@ -1961,6 +1962,7 @@ typedef struct Scheme_Cont {
   char empty_to_next_mc;
   struct Scheme_Cont *use_next_cont; /* more meta-continuation return */
   int common_dw_depth; /* id for common dw record */
+  int skip_winds; /* number of non-common dw records to skip exit and re-entry */
   Scheme_Dynamic_Wind *common_dw; /* shared part with source cont */
   int common_next_meta; /* for common_dw */
   Scheme_Object *extra_marks; /* vector of extra keys and marks to add to meta-cont */

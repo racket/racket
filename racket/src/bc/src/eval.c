@@ -1068,17 +1068,19 @@ static Scheme_Object *do_eval_stack_overflow(Scheme_Object *obj, int num_rands, 
 }
 
 static Scheme_Dynamic_Wind *intersect_dw(Scheme_Dynamic_Wind *a, Scheme_Dynamic_Wind *b, 
-                                         Scheme_Object *prompt_tag, int b_has_tag, int *_common_depth)
+                                         Scheme_Object *prompt_tag, int b_has_tag, int *_common_depth,
+                                         int *_skip_winds)
 {
   int alen = 0, blen = 0;
-  int a_has_tag = 0, a_prompt_delta = 0, b_prompt_delta = 0;
-  Scheme_Dynamic_Wind *dw, *match_a, *match_b;
+  int a_has_tag = 0, a_prompt_delta = 0, a_prompt_len = 0, b_prompt_delta = 0;
+  Scheme_Dynamic_Wind *dw, *match_a, *match_b, *start_a = a, *start_b = b, *common;
 
   for (dw = a; dw && (dw->prompt_tag != prompt_tag); dw = dw->prev) {
   }
   if (dw) {
     /* Cut off `a' below the prompt dw. */
     a_prompt_delta = dw->depth;
+    a_prompt_len = dw->actual_len;
     a_has_tag = 1;
   }
 
@@ -1096,40 +1098,96 @@ static Scheme_Dynamic_Wind *intersect_dw(Scheme_Dynamic_Wind *a, Scheme_Dynamic_
   }
   if (!alen) {
     *_common_depth = b_prompt_delta - 1;
-    return a;
-  }
-  while (blen > alen) {
-    --blen;
-    b = b->prev;
-  }
-
-  /* At this point, we have chains that are the same length. */
-  match_a = NULL;
-  match_b = NULL;
-  while (blen) {
-    if (SAME_OBJ(a->id ? a->id : (Scheme_Object *)a, 
-                 b->id ? b->id : (Scheme_Object *)b)) {
-      if (!match_a) {
-        match_a = a;
-        match_b = b;
-      }
-    } else {
-      match_a = NULL;
-      match_b = NULL;
+    common = a;
+  } else {
+    while (blen > alen) {
+      --blen;
+      b = b->prev;
     }
+
+    /* At this point, we have chains that are the same length. */
+    match_a = NULL;
+    match_b = NULL;
+    while (blen) {
+      if (SAME_OBJ(a->id ? a->id : (Scheme_Object *)a,
+                   b->id ? b->id : (Scheme_Object *)b)) {
+        if (!match_a) {
+          match_a = a;
+          match_b = b;
+        }
+      } else {
+        match_a = NULL;
+        match_b = NULL;
+      }
+      a = a->prev;
+      b = b->prev;
+      blen--;
+    }
+
+    if (!match_a) {
+      match_a = a;
+      match_b = b;
+    }
+
+    *_common_depth = (match_b ? match_b->depth : -1);
+
+    common = match_a;
+  }
+
+  /* We've found the exact-common tail, but maybe we'd find more
+     commonality if we ignore fake prompt D-W records. If so, return a
+     non-0 value for `_skip_winds`. */
+
+  a = start_a;
+  b = start_b;
+  alen = ((a ? a->actual_len : 0) - a_prompt_len);
+  blen = (b ? b->actual_len : 0);
+
+  while (alen > blen) {
     a = a->prev;
-    b = b->prev;
-    blen--;
+    alen = (a ? a->actual_len : 0);
+  }
+  if (!alen) {
+    *_skip_winds = 0;
+  } else {
+    while (blen > alen) {
+      b = b->prev;
+      blen = (b ? b->actual_len : 0);
+    }
+
+    /* At this point, we have chains that are the same length in terms
+       of actual (non-prompt) wind actions. */
+    match_a = NULL;
+    match_b = NULL;
+    while (blen && a) {
+      if (a->prompt_tag) {
+        a = a->prev;
+      } else if (b->prompt_tag) {
+        b = b->prev;
+      } else {
+        if (SAME_OBJ(a->id ? a->id : (Scheme_Object *)a,
+                     b->id ? b->id : (Scheme_Object *)b)) {
+          if (!match_a) {
+            match_a = a;
+            match_b = b;
+          }
+        } else {
+          match_a = NULL;
+          match_b = NULL;
+        }
+        a = a->prev;
+        b = b->prev;
+        blen--;
+      }
+    }
+
+    if (!match_a)
+      *_skip_winds = 0;
+    else
+      *_skip_winds = (match_a->actual_len - common->actual_len);
   }
 
-  if (!match_a) {
-    match_a = a;
-    match_b = b;
-  }
-
-  *_common_depth = (match_b ? match_b->depth : -1);
-
-  return match_a;
+  return common;
 }
 
 static Scheme_Prompt *lookup_cont_prompt(Scheme_Cont *c, 
@@ -1207,8 +1265,8 @@ void scheme_recheck_prompt_and_barrier(Scheme_Cont *c)
   check_barrier(prompt, prompt_cont, prompt_pos, c);
 }
 
-static int exec_dyn_wind_posts(Scheme_Dynamic_Wind *common, Scheme_Cont *c, int common_depth,
-                               Scheme_Dynamic_Wind **_common)
+static Scheme_Dynamic_Wind *exec_dyn_wind_posts(Scheme_Dynamic_Wind *common, Scheme_Cont *c,
+                                                int *_common_depth, int *_skip_winds)
 {
   int meta_depth;
   Scheme_Thread *p = scheme_current_thread;
@@ -1216,15 +1274,15 @@ static int exec_dyn_wind_posts(Scheme_Dynamic_Wind *common, Scheme_Cont *c, int 
   int old_cac = scheme_continuation_application_count;
   Scheme_Object *pt;
 
-  *_common = common;
-
   for (dw = p->dw; 
        (common ? dw->depth != common->depth : dw != common);  /* not id, which may be duplicated */
        ) {
+    int skip_winds = *_skip_winds;
     meta_depth = p->next_meta;
     p->next_meta += dw->next_meta;
     p->dw = dw->prev;
-    if (dw->post) {
+    if (dw->post && ((skip_winds <= 0)
+                     || (dw->actual_len > (skip_winds + (common ? common->actual_len : 0))))) {
       if (meta_depth > 0) {
         scheme_apply_dw_in_meta(dw, 1, meta_depth, c);
       } else {
@@ -1254,13 +1312,13 @@ static int exec_dyn_wind_posts(Scheme_Dynamic_Wind *common, Scheme_Cont *c, int 
         if (SCHEME_NP_CHAPERONEP(pt))
           pt = SCHEME_CHAPERONE_VAL(pt);
 
-        common = intersect_dw(p->dw, c->dw, pt, c->has_prompt_dw, &common_depth);
-        *_common = common;
+        common = intersect_dw(p->dw, c->dw, pt, c->has_prompt_dw, _common_depth, _skip_winds);
       }
     } else
       dw = dw->prev;
   }
-  return common_depth;
+
+  return common;
 }
 
 Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Scheme_Object **rands, 
@@ -1273,7 +1331,7 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
   Scheme_Meta_Continuation *prompt_mc;
   MZ_MARK_POS_TYPE prompt_pos;
   Scheme_Prompt *prompt, *barrier_prompt;
-  int common_depth;
+  int common_depth, skip_winds;
 
   /* Since scheme_escape_continuation_ok() may allocate... */
   if (rands == p->tail_buffer)
@@ -1340,11 +1398,11 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
     /* Find `common', the intersection of dynamic-wind chain for 
        the current continuation and the given continuation, looking
        no further back in the current continuation than a prompt. */
-    common = intersect_dw(p->dw, c->dw, pt, c->has_prompt_dw, &common_depth);
+    common = intersect_dw(p->dw, c->dw, pt, c->has_prompt_dw, &common_depth, &skip_winds);
 
     /* For dynamic-winds after `common' in this
        continuation, execute the post-thunks */
-    common_depth = exec_dyn_wind_posts(common, c, common_depth, &new_common);
+    new_common = exec_dyn_wind_posts(common, c, &common_depth, &skip_winds);
     p = scheme_current_thread;
 
     if (orig_cac != scheme_continuation_application_count) {
@@ -1356,6 +1414,7 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
     }
 
     c->common_dw_depth = common_depth;
+    c->skip_winds = skip_winds;
       
     /* in case we need it (since no allocation allowed later): */
     thread_end_oflow = scheme_get_thread_end_overflow();

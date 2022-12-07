@@ -131,6 +131,78 @@
             (loop))))))))
 
 ;; ----------------------------------------
+;; Check that winder chains are detected independent of
+;; whether extra prompts show up between the winders.
+
+(let ()
+  (define-syntax-rule (% tag-val expr)
+    (call-with-continuation-prompt
+     (λ () expr)
+     tag-val
+     (lambda (v) v)))
+
+  (letrec ((tag-1 (make-continuation-prompt-tag 'one))
+           (tag-2 (make-continuation-prompt-tag 'two))
+           (tag-3 (make-continuation-prompt-tag 'three))
+           (tag-4 (make-continuation-prompt-tag 'four))
+           (tag-5 (make-continuation-prompt-tag 'five)))
+
+    (define (check-dw capture-wrap apply-wrap)
+      (define output '())
+      (define counter 0)
+      (let ([k
+             ;; `k` is a composable continuation that
+             ;; calls a function within a DW frame
+             (% tag-1
+                (dynamic-wind
+                 (λ ()
+                   (set! counter (add1 counter))
+                   (set! output (append output (list counter))))
+                  (λ ()
+                    ((call-with-composable-continuation
+                      (λ (k)
+                        (abort-current-continuation tag-1 k))
+                      tag-1)))
+                  (λ ()
+                    (set! output (append output (list 'out))))))])
+        ;; at least one of the `values` is needed below
+        (let ([k2
+               ;; `k2` is a non-composable continuation that has
+               ;; the `k` DW frame
+               (% tag-2
+                  (capture-wrap
+                   (lambda ()
+                     (k (λ ()
+                          (call/cc (λ (k2)
+                                     (abort-current-continuation tag-2 k2))
+                                   tag-2))))))])
+          (% tag-2
+             (apply-wrap
+              (lambda ()
+                (k (λ ()
+                     (k2 'ignored))))))))
+
+      ;; if winder sharing is confused by extra prompts, then
+      ;; a 4th entry and exit may show up in `output`
+      (test '(1 out 2 out 3 out) values output))
+
+    (check-dw (lambda (f) (f)) (lambda (f) (f)))
+
+    ;; composable continuations in non-tail positoins involve an implement prompt
+    (check-dw (lambda (f) (values (f))) (lambda (f) (f)))
+    (check-dw (lambda (f) (f)) (lambda (f) (values (f))))
+    (check-dw (lambda (f) (values (f))) (lambda (f) (values (f))))
+
+    (check-dw (lambda (f) (% tag-3 (f))) (lambda (f) (f)))
+    (check-dw (lambda (f) (% tag-3 (f))) (lambda (f) (values (f))))
+    (check-dw (lambda (f) (f)) (lambda (f) (% tag-3 (f))))
+    (check-dw (lambda (f) (values (f))) (lambda (f) (% tag-3 (f))))
+
+    (check-dw (lambda (f) (% tag-3 (f))) (lambda (f) (% tag-3 (f))))
+    (check-dw (lambda (f) (% tag-4 (f))) (lambda (f) (% tag-5 (% tag-3 (f)))))
+    (void)))
+
+;; ----------------------------------------
 ;; Check that a constant-space loop doesn't
 ;; accumulate memory (test by Nicolas Oury)
 
