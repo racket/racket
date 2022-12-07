@@ -12,6 +12,7 @@
 
 (require syntax/readerr
          racket/list
+         racket/symbol
          ;; racket/contract must come before provide
          racket/contract)
 
@@ -179,7 +180,7 @@
                (format/write-indent layer)
                ;; use a string encoding so we get the same deal with
                ;; `rx-to-encode'
-               (write-json-string (symbol->string k))
+               (write-json-string (symbol->immutable-string k))
                (write-bytes #":" o)
                (if (hash? v)
                    (begin
