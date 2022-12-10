@@ -33,6 +33,7 @@
          rm*
          cp*
 
+         :no-replace-mode
          :error :truncate :must-truncate :append :update :can-update
 
          display
@@ -280,22 +281,25 @@
                  (ls p))
        (rmdir p)])))
 
-(define (cp* src dest)
+(define (cp* src dest [options (hash)])
   (unless (path-string? src) (arg-error 'cp* "path string" src))
   (unless (path-string? dest) (arg-error 'cp* "path string" dest))
+  (unless (hash? options) (arg-error 'cp* "hash table" options))
   (define info (stat src #f))
   (when info
     (define type (hash-ref info 'type))
     (cond
-      [(eq? type 'file) (cp src dest)]
+      [(eq? type 'file) (cp src dest options)]
       [(eq? type 'link)
        (when (stat dest #f) (rm dest))
        (symlink (readlink src) dest)]
       [else
        (unless (directory-exists? dest) (mkdir dest))
        (for-each (lambda (e)
-                   (cp* (build-path src e) (build-path dest e)))
+                   (cp* (build-path src e) (build-path dest e) options))
                  (ls src))])))
+
+(define :no-replace-mode (hash 'replace-mode #false))
 
 (define :error (hash 'exists 'error))
 (define :truncate (hash 'exists 'truncate))

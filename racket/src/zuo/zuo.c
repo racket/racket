@@ -3,7 +3,7 @@
    declarations. */
 
 #define ZUO_VERSION 1
-#define ZUO_MINOR_VERSION 5
+#define ZUO_MINOR_VERSION 6
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
 # define ZUO_WINDOWS
@@ -5284,53 +5284,75 @@ static zuo_t *zuo_ln(zuo_t *target_path, zuo_t *link_path) {
   return z.o_undefined;
 }
 
-static zuo_t *zuo_cp(zuo_t *src_path, zuo_t *dest_path) {
+static zuo_t *zuo_cp(zuo_t *src_path, zuo_t *dest_path, zuo_t *options) {
   const char *who = "cp";
+  int replace_perms;
+  zuo_t *perms, *replace_mode;
   check_path_string(who, src_path);
   check_path_string(who, dest_path);
-#ifdef ZUO_UNIX
-  int src_fd, dest_fd;
-  struct stat st_buf;
-  zuo_int_t len, amt;
-  char *buf;
 
-  EINTR_RETRY(src_fd = open(ZUO_STRING_PTR(src_path), O_RDONLY));
-  if (src_fd == -1)
-    zuo_fail1w_errno(who, "source open failed", src_path);
+  if (options == z.o_undefined) options = z.o_empty_hash;
+  check_hash(who, options);
 
-  if (fstat(src_fd, &st_buf) != 0)
-    zuo_fail1w_errno(who, "source stat failed", src_path);
-
-  /* Permissions may be reduced by umask, but the intent here is to
-     make sure the file doesn't have more permissions than it will end
-     up with: */
-  EINTR_RETRY(dest_fd = open(ZUO_STRING_PTR(dest_path), O_WRONLY | O_CREAT | O_TRUNC, st_buf.st_mode));
-
-  if (dest_fd == -1)
-    zuo_fail1w_errno(who, "destination open failed", dest_path);
-
-  buf = malloc(4096);
-
-  while (1) {
-    EINTR_RETRY(amt = read(src_fd, buf, 4096));
-    if (amt == 0)
-      break;
-    if (amt < 0)
-      zuo_fail1w_errno(who, "source read failed", src_path);
-    while (amt > 0) {
-      EINTR_RETRY(len = write(dest_fd, buf, amt));
-      if (len < 0)
-        zuo_fail1w_errno(who, "destination write failed", dest_path);
-      amt -= len;
-    }
+  perms = zuo_consume_option(&options, "mode");
+  if (perms != z.o_undefined) {
+    if ((perms->tag != zuo_integer_tag)
+        || (ZUO_INT_I(perms) < 0)
+        || (ZUO_INT_I(perms) > 65535))
+      zuo_fail1w(who, "not an integer in 0 to 65535", perms);
   }
 
-  EINTR_RETRY(close(src_fd));
+  replace_mode = zuo_consume_option(&options, "replace-mode");
+  replace_perms = ((replace_mode != z.o_undefined)
+                   || (replace_mode != z.o_false));
 
-  if (fchmod(dest_fd, st_buf.st_mode) != 0)
-    zuo_fail1w_errno(who, "destination permissions update failed", dest_path);
+  check_options_consumed(who, options);
 
-  EINTR_RETRY(close(dest_fd));
+#ifdef ZUO_UNIX
+  {
+    int src_fd, dest_fd;
+    struct stat st_buf;
+    zuo_int_t len, amt;
+    char *buf;
+
+    EINTR_RETRY(src_fd = open(ZUO_STRING_PTR(src_path), O_RDONLY));
+    if (src_fd == -1)
+      zuo_fail1w_errno(who, "source open failed", src_path);
+
+    if (perms == z.o_undefined) {
+      if (fstat(src_fd, &st_buf) != 0)
+        zuo_fail1w_errno(who, "source stat failed", src_path);
+    } else
+      st_buf.st_mode = ZUO_INT_I(perms);
+
+    EINTR_RETRY(dest_fd = open(ZUO_STRING_PTR(dest_path), O_WRONLY | O_CREAT | O_TRUNC, st_buf.st_mode));
+
+    if (dest_fd == -1)
+      zuo_fail1w_errno(who, "destination open failed", dest_path);
+
+    if (replace_perms)
+      if (fchmod(dest_fd, st_buf.st_mode) != 0)
+        zuo_fail1w_errno(who, "destination permissions update failed", dest_path);
+
+    buf = malloc(4096);
+
+    while (1) {
+      EINTR_RETRY(amt = read(src_fd, buf, 4096));
+      if (amt == 0)
+        break;
+      if (amt < 0)
+        zuo_fail1w_errno(who, "source read failed", src_path);
+      while (amt > 0) {
+        EINTR_RETRY(len = write(dest_fd, buf, amt));
+        if (len < 0)
+          zuo_fail1w_errno(who, "destination write failed", dest_path);
+        amt -= len;
+      }
+    }
+
+    EINTR_RETRY(close(src_fd));
+    EINTR_RETRY(close(dest_fd));
+  }
 #endif
 #ifdef ZUO_WINDOWS
   {
@@ -5338,6 +5360,27 @@ static zuo_t *zuo_cp(zuo_t *src_path, zuo_t *dest_path) {
     wchar_t *dest_w = zuo_to_wide(ZUO_STRING_PTR(dest_path));
     if (!CopyFileW(src_w, dest_w, 0))
       zuo_fail1w(who, "copy failed to destination", dest_path);
+
+    if (perms != z.o_undefined) {
+      int read_only = !(ZUO_INT_I(perms) & 2);
+      int ok;
+      DWORD attrs = GetFileAttributesW(dest_w);
+      if (attrs != INVALID_FILE_ATTRIBUTES) {
+        if (!(attrs & FILE_ATTRIBUTE_READONLY) != !read_only) {
+          if (read_only)
+            attrs -= FILE_ATTRIBUTE_READONLY;
+          else
+            attrs |= FILE_ATTRIBUTE_READONLY;
+          ok = SetFileAttributesW(dest_w, attrs);
+        } else
+          ok = 1;
+      } else
+        ok = 0;
+
+      if (!ok)
+        zuo_fail1w(who, "failed making destination read-only", dest_path);
+    }
+
     free(src_w);
     free(dest_w);
   }
@@ -7140,7 +7183,7 @@ static void zuo_primitive_init(int will_load_image) {
   ZUO_TOP_ENV_SET_PRIMITIVE1("ls", zuo_ls);
   ZUO_TOP_ENV_SET_PRIMITIVE2("symlink", zuo_ln);
   ZUO_TOP_ENV_SET_PRIMITIVE1("readlink", zuo_readlink);
-  ZUO_TOP_ENV_SET_PRIMITIVE2("cp", zuo_cp);
+  ZUO_TOP_ENV_SET_PRIMITIVEc("cp", zuo_cp);
   ZUO_TOP_ENV_SET_PRIMITIVE0("current-time", zuo_current_time);
 
   ZUO_TOP_ENV_SET_PRIMITIVEN("process", zuo_process, -2);

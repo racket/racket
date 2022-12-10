@@ -155,3 +155,15 @@
 (check-arg-fail (symlink "a" 10) not-path)
 
 (rm* sub-dir)
+
+(check (cp exists.txt exists2.txt) (void))
+(check (equal? (hash-ref (stat exists.txt) 'mode)
+               (hash-ref (stat exists2.txt) 'mode)))
+(check (file-exists? exists.txt))
+(check (file-exists? exists2.txt))
+(check (cp exists.txt exists2.txt (hash 'replace-mode #f)) (void))
+(check (cp exists.txt exists2.txt :no-replace-mode) (void))
+
+(check-arg-fail (cp "exists.txt" "exists2.txt" 'oops) "not a hash")
+(check-arg-fail (cp "exists.txt" "exists2.txt" (hash 'mode 'oops)) "not an integer")
+(check-arg-fail (cp "exists.txt" "exists2.txt" (hash 'other 0)) "unrecognized or unused option")

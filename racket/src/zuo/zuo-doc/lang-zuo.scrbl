@@ -1292,18 +1292,43 @@ function is not supported on Windows.}
 Gets the content of a link @racket[name]. This function is not
 supported on Windows.}
 
-@defproc[(cp [source path-string?] [destination path-string?]) void?]{
+@deftogether[(
+@defproc[(cp [source path-string?] [destination path-string?] [options hash? (hash)]) void?]
+@defthing[:no-replace-mode hash?]
+)]{
 
-Copies the file at @racket[source] to @racket[destination],
-preserving permissions and replacing (or attempting to replace)
-@racket[destination] if it exists.}
+Copies the file at @racket[source] to @racket[destination], replacing
+(or attempting to replace) @racket[destination] if it exists.
 
-@defproc[(cp* [source path-string?] [destination path-string?]) void?]{
+On Unix, if @racket[destination] does not exist, it is created with
+the mode (i.e., permissions) specified by @racket['mode] in
+@racket[options], which must be an integer between 0 and 65535
+inclusive; if @racket['mode] is not provided, the mode of
+@racket[source] is used. The creation-time mode can be modified by
+the process's umask, but unless @racket[options] maps
+@racket['replace-mode] to @racket[#false], the mode is explicitly applied again
+to @racket[destination]---whether @racket[destination] was just
+created or exists already, and ignoring the process's umask. On
+Windows, the attributes of @racket[source] are always copied to
+@racket[destination], and if @racket['mode] is provided, then the file
+is made read only if and only if the @scheme[bitwise-and] of the mode
+value and @racket[2] is @racket[0].
+
+The @racket[:no-replace-mode] hash table maps
+@racket['no-replace-mode] to @racket[#true].
+
+@history[#:changed "1.6" @elem{Added the @racket[options] argument and
+                               @racket[:no-replace-mode].}]}
+
+@defproc[(cp* [source path-string?] [destination path-string?] [options hash? (hash)]) void?]{
 
 Copies the file, directory, or link @racket[source] to a corresponding
 new file, directory, or link @racket[destination], including the
 directory content if @racket[source] refers to a directory (and not to
-a link to a directory),.}
+a link to a directory). The @racket[options] argument is passed
+along to individual file-copy operations.
+
+@history[#:changed "1.6" @elem{Added the @racket[options] argument.}]}
 
 @deftogether[(
 @defproc[(file-exists? [name path-string?]) booelan?]
