@@ -3230,6 +3230,8 @@
   (begin-unsafe (hash-ref rktio-table 'rktio_filesystem_roots)))
 (define rktio_copy_file_start
   (begin-unsafe (hash-ref rktio-table 'rktio_copy_file_start)))
+(define rktio_copy_file_start_permissions
+  (begin-unsafe (hash-ref rktio-table 'rktio_copy_file_start_permissions)))
 (define rktio_copy_file_is_done
   (begin-unsafe (hash-ref rktio-table 'rktio_copy_file_is_done)))
 (define rktio_copy_file_step
@@ -30014,110 +30016,145 @@
   (let ((copy-file_0
          (|#%name|
           copy-file
-          (lambda (src16_0 dest17_0 exists-ok?15_0)
+          (lambda (src18_0
+                   dest19_0
+                   exists-ok?15_0
+                   permissions16_0
+                   override-create-permissions?17_0)
             (begin
               (begin
-                (if (path-string? src16_0)
+                (if (path-string? src18_0)
                   (void)
-                  (raise-argument-error 'copy-file "path-string?" src16_0))
+                  (raise-argument-error 'copy-file "path-string?" src18_0))
                 (begin
-                  (if (path-string? dest17_0)
+                  (if (path-string? dest19_0)
                     (void)
-                    (raise-argument-error 'copy-file "path-string?" dest17_0))
-                  (let ((src-host_0 (->host src16_0 'copy-file '(read))))
-                    (let ((dest-host_0
-                           (->host dest17_0 'copy-file '(write delete))))
-                      (let ((report-error_0
-                             (|#%name|
-                              report-error
-                              (lambda (r_0)
-                                (begin
-                                  (raise-filesystem-error
-                                   'copy-file
-                                   r_0
-                                   (let ((app_0
-                                          (string-append
-                                           "~a\n"
-                                           "  source path: ~a\n"
-                                           "  destination path: ~a")))
-                                     (let ((app_1 (copy-file-step-string r_0)))
-                                       (let ((app_2 (host-> src-host_0)))
-                                         (1/format
-                                          app_0
-                                          app_1
-                                          app_2
-                                          (host-> dest-host_0)))))))))))
-                        (begin
-                          (unsafe-start-atomic)
-                          (let ((cp_0
-                                 (|#%app|
-                                  rktio_copy_file_start
-                                  (unsafe-place-local-ref cell.1)
-                                  dest-host_0
-                                  src-host_0
-                                  exists-ok?15_0)))
-                            (if (vector? cp_0)
-                              (begin (unsafe-end-atomic) (report-error_0 cp_0))
-                              (begin
-                                (|#%app|
-                                 thread-push-kill-callback!
-                                 (lambda ()
+                    (raise-argument-error 'copy-file "path-string?" dest19_0))
+                  (begin
+                    (if (let ((or-part_0 (not permissions16_0)))
+                          (if or-part_0
+                            or-part_0
+                            (if (exact-integer? permissions16_0)
+                              (<= 0 permissions16_0 65535)
+                              #f)))
+                      (void)
+                      (raise-argument-error
+                       'copy-file
+                       "(or/c #f (integer-in 0 65535))"
+                       permissions16_0))
+                    (let ((src-host_0 (->host src18_0 'copy-file '(read))))
+                      (let ((dest-host_0
+                             (->host dest19_0 'copy-file '(write delete))))
+                        (let ((report-error_0
+                               (|#%name|
+                                report-error
+                                (lambda (r_0)
+                                  (begin
+                                    (raise-filesystem-error
+                                     'copy-file
+                                     r_0
+                                     (let ((app_0
+                                            (string-append
+                                             "~a\n"
+                                             "  source path: ~a\n"
+                                             "  destination path: ~a")))
+                                       (let ((app_1
+                                              (copy-file-step-string r_0)))
+                                         (let ((app_2 (host-> src-host_0)))
+                                           (1/format
+                                            app_0
+                                            app_1
+                                            app_2
+                                            (host-> dest-host_0)))))))))))
+                          (begin
+                            (unsafe-start-atomic)
+                            (let ((cp_0
                                    (|#%app|
-                                    rktio_copy_file_stop
+                                    rktio_copy_file_start_permissions
                                     (unsafe-place-local-ref cell.1)
-                                    cp_0)))
-                                (dynamic-wind
-                                 void
-                                 (lambda ()
-                                   (begin
-                                     (unsafe-end-atomic)
-                                     (letrec*
-                                      ((loop_0
-                                        (|#%name|
-                                         loop
-                                         (lambda ()
-                                           (begin
-                                             (if (|#%app|
-                                                  rktio_copy_file_is_done
-                                                  (unsafe-place-local-ref
-                                                   cell.1)
-                                                  cp_0)
-                                               (let ((r_0
-                                                      (|#%app|
-                                                       rktio_copy_file_finish_permissions
-                                                       (unsafe-place-local-ref
-                                                        cell.1)
-                                                       cp_0)))
-                                                 (if (vector? r_0)
-                                                   (report-error_0 r_0)
-                                                   (void)))
-                                               (let ((r_0
-                                                      (|#%app|
-                                                       rktio_copy_file_step
-                                                       (unsafe-place-local-ref
-                                                        cell.1)
-                                                       cp_0)))
-                                                 (begin
-                                                   (if (vector? r_0)
-                                                     (report-error_0 r_0)
-                                                     (void))
-                                                   (loop_0)))))))))
-                                      (loop_0))))
-                                 (lambda ()
-                                   (begin
-                                     (unsafe-start-atomic)
+                                    dest-host_0
+                                    src-host_0
+                                    exists-ok?15_0
+                                    permissions16_0
+                                    (if permissions16_0 permissions16_0 0)
+                                    override-create-permissions?17_0)))
+                              (if (vector? cp_0)
+                                (begin
+                                  (unsafe-end-atomic)
+                                  (report-error_0 cp_0))
+                                (begin
+                                  (|#%app|
+                                   thread-push-kill-callback!
+                                   (lambda ()
                                      (|#%app|
                                       rktio_copy_file_stop
                                       (unsafe-place-local-ref cell.1)
-                                      cp_0)
-                                     (|#%app| thread-pop-kill-callback!)
-                                     (unsafe-end-atomic))))))))))))))))))
+                                      cp_0)))
+                                  (dynamic-wind
+                                   void
+                                   (lambda ()
+                                     (begin
+                                       (unsafe-end-atomic)
+                                       (letrec*
+                                        ((loop_0
+                                          (|#%name|
+                                           loop
+                                           (lambda ()
+                                             (begin
+                                               (if (|#%app|
+                                                    rktio_copy_file_is_done
+                                                    (unsafe-place-local-ref
+                                                     cell.1)
+                                                    cp_0)
+                                                 (let ((r_0
+                                                        (|#%app|
+                                                         rktio_copy_file_finish_permissions
+                                                         (unsafe-place-local-ref
+                                                          cell.1)
+                                                         cp_0)))
+                                                   (if (vector? r_0)
+                                                     (report-error_0 r_0)
+                                                     (void)))
+                                                 (let ((r_0
+                                                        (|#%app|
+                                                         rktio_copy_file_step
+                                                         (unsafe-place-local-ref
+                                                          cell.1)
+                                                         cp_0)))
+                                                   (begin
+                                                     (if (vector? r_0)
+                                                       (report-error_0 r_0)
+                                                       (void))
+                                                     (loop_0)))))))))
+                                        (loop_0))))
+                                   (lambda ()
+                                     (begin
+                                       (unsafe-start-atomic)
+                                       (|#%app|
+                                        rktio_copy_file_stop
+                                        (unsafe-place-local-ref cell.1)
+                                        cp_0)
+                                       (|#%app| thread-pop-kill-callback!)
+                                       (unsafe-end-atomic)))))))))))))))))))
     (|#%name|
      copy-file
      (case-lambda
-      ((src_0 dest_0) (begin (copy-file_0 src_0 dest_0 #f)))
+      ((src_0 dest_0) (begin (copy-file_0 src_0 dest_0 #f #f #t)))
+      ((src_0
+        dest_0
+        exists-ok?_0
+        permissions_0
+        override-create-permissions?17_0)
+       (copy-file_0
+        src_0
+        dest_0
+        exists-ok?_0
+        permissions_0
+        override-create-permissions?17_0))
+      ((src_0 dest_0 exists-ok?_0 permissions16_0)
+       (copy-file_0 src_0 dest_0 exists-ok?_0 permissions16_0 #t))
       ((src_0 dest_0 exists-ok?15_0)
-       (copy-file_0 src_0 dest_0 exists-ok?15_0))))))
+       (copy-file_0 src_0 dest_0 exists-ok?15_0 #f #t))))))
 (define 1/make-file-or-directory-link
   (|#%name|
    make-file-or-directory-link
@@ -34797,11 +34834,11 @@
                 'subprocess
                 "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                 stderr_0))
-             (let ((lr1404 unsafe-undefined)
+             (let ((lr1405 unsafe-undefined)
                    (group_0 unsafe-undefined)
                    (command_0 unsafe-undefined)
                    (exact/args_0 unsafe-undefined))
-               (set! lr1404
+               (set! lr1405
                  (call-with-values
                   (lambda ()
                     (if (path-string? group/command_0)
@@ -34856,9 +34893,9 @@
                    ((group_1 command_1 exact/args_1)
                     (vector group_1 command_1 exact/args_1))
                    (args (raise-binding-result-arity-error 3 args)))))
-               (set! group_0 (unsafe-vector*-ref lr1404 0))
-               (set! command_0 (unsafe-vector*-ref lr1404 1))
-               (set! exact/args_0 (unsafe-vector*-ref lr1404 2))
+               (set! group_0 (unsafe-vector*-ref lr1405 0))
+               (set! command_0 (unsafe-vector*-ref lr1405 1))
+               (set! exact/args_0 (unsafe-vector*-ref lr1405 2))
                (call-with-values
                 (lambda ()
                   (if (if (pair? exact/args_0)

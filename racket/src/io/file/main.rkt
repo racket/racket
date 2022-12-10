@@ -373,9 +373,15 @@
                                      (host-> host-path)))]
     [else r]))
 
-(define/who (copy-file src dest [exists-ok? #f])
+(define/who (copy-file src dest [exists-ok? #f] [permissions #f] [override-create-permissions? #t])
   (check who path-string? src)
   (check who path-string? dest)
+  (check who (lambda (m)
+               (or (not m)
+                   (and (exact-integer? m)
+                        (<= 0 m 65535))))
+         #:contract "(or/c #f (integer-in 0 65535))"
+         permissions)
   (define src-host (->host src who '(read)))
   (define dest-host (->host dest who '(write delete)))
   (define (report-error r)
@@ -389,7 +395,9 @@
                                     (host-> src-host)
                                     (host-> dest-host))))
   (start-atomic)
-  (let ([cp (rktio_copy_file_start rktio dest-host src-host exists-ok?)])
+  (let ([cp (rktio_copy_file_start_permissions rktio dest-host src-host exists-ok?
+                                               permissions (or permissions 0)
+                                               override-create-permissions?)])
     (cond
       [(rktio-error? cp)
        (end-atomic)

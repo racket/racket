@@ -155,6 +155,7 @@ Sforeign_symbol("rktio_directory_list_step", (void *)rktio_directory_list_step);
 Sforeign_symbol("rktio_directory_list_stop", (void *)rktio_directory_list_stop);
 Sforeign_symbol("rktio_filesystem_roots", (void *)rktio_filesystem_roots);
 Sforeign_symbol("rktio_copy_file_start", (void *)rktio_copy_file_start);
+Sforeign_symbol("rktio_copy_file_start_permissions", (void *)rktio_copy_file_start_permissions);
 Sforeign_symbol("rktio_copy_file_is_done", (void *)rktio_copy_file_is_done);
 Sforeign_symbol("rktio_copy_file_step", (void *)rktio_copy_file_step);
 Sforeign_symbol("rktio_copy_file_finish_permissions", (void *)rktio_copy_file_finish_permissions);

@@ -15,7 +15,8 @@
            call-with-input-file*
            call-with-output-file*
            (rename-out
-            [directory-list -directory-list]))
+            [directory-list -directory-list]
+            [copy-file -copy-file]))
 
   (define exists-syms
     '(error append update can-update replace truncate must-truncate truncate/replace))
@@ -163,6 +164,25 @@
         (if build?
             (map (lambda (i) (build-path dir i)) content)
             content))))
+
+  (define-values (copy-file)
+    (let ([not-supplied exists-syms])
+      (lambda (src dest [exists-ok? not-supplied]
+                   #:exists-ok? [exists-ok?/kw not-supplied]
+                   #:permissions [perms #f]
+                   #:replace-permissions? [replace-permissions? #t])
+        (unless (or (eq? exists-ok? not-supplied)
+                    (eq? exists-ok?/kw not-supplied))
+          (raise-arguments-error 'copy-file "cannot supply both non-keyword and keyword `exists-ok?` argument"
+                                 "by-position argument" exists-ok?
+                                 "keyword argument" exists-ok?/kw))
+        (k:copy-file src dest
+                     (if (eq? exists-ok? not-supplied)
+                         (if (eq? exists-ok?/kw not-supplied)
+                             #f
+                             exists-ok?/kw)
+                         exists-ok?)
+                     perms replace-permissions?))))
 
   (define (raise-syntax-error given-name message
                               [expr #f] [sub-expr #f]

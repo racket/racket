@@ -952,6 +952,17 @@ RKTIO_EXTERN_STEP rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, rktio
    whole copy, or it may just get started. Can report
    `RKTIO_ERROR_EXISTS`, and sets an error step as listed further below. */
 
+RKTIO_EXTERN_STEP rktio_file_copy_t *rktio_copy_file_start_permissions(rktio_t *rktio, rktio_const_string_t dest, rktio_const_string_t src,
+                                                                       rktio_bool_t exists_ok,
+                                                                       rktio_bool_t use_perm_bits, int perm_bits,
+                                                                       rktio_bool_t override_create_perms);
+/* Like `rktio_copy_file_start`, but accepts optional permissions to
+   apply to the copy, which are used only if `use_perm_bits` is set
+   (otherwise the source file's permissions are kept) and whether on
+   Unix to for the destination file's permissions as possibly modified
+   by `umask` on file create (whether supplied or taken from the `src`
+   file) or because the file already exists. */
+
 RKTIO_EXTERN rktio_bool_t rktio_copy_file_is_done(rktio_t *rktio, rktio_file_copy_t *fc);
 RKTIO_EXTERN_STEP rktio_ok_t rktio_copy_file_step(rktio_t *rktio, rktio_file_copy_t *fc);
 /* As long as the copy isn't done, call `rktio_copy_file_step` to make

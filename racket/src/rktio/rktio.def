@@ -155,6 +155,7 @@ rktio_directory_list_step
 rktio_directory_list_stop
 rktio_filesystem_roots
 rktio_copy_file_start
+rktio_copy_file_start_permissions
 rktio_copy_file_is_done
 rktio_copy_file_step
 rktio_copy_file_finish_permissions

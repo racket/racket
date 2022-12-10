@@ -1704,11 +1704,28 @@ struct rktio_file_copy_t {
   int done;
   rktio_fd_t *src_fd, *dest_fd;
 #ifdef RKTIO_SYSTEM_UNIX
+  int override_create_perms;
   intptr_t mode;
+#endif
+#ifdef RKTIO_SYSTEM_WINDOWS
+  wchar_t *dest_w;
+  int read_only;
 #endif
 };
 
-rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, const char *dest, const char *src, int exists_ok)
+rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, const char *dest, const char *src,
+                                         int exists_ok)
+{
+  return rktio_copy_file_start_permissions(rktio, dest, src,
+                                           exists_ok,
+                                           0, 0,
+                                           1);
+}
+
+rktio_file_copy_t *rktio_copy_file_start_permissions(rktio_t *rktio, const char *dest, const char *src,
+                                                     int exists_ok,
+                                                     rktio_bool_t use_perm_bits, int perm_bits,
+                                                     rktio_bool_t override_create_perms)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   {
@@ -1737,13 +1754,17 @@ rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, const char *dest, const
       return NULL;
     }
 
+    if (!use_perm_bits)
+      perm_bits = buf.st_mode;
+
     dest_fd = rktio_open_with_create_permissions(rktio, dest, (RKTIO_OPEN_WRITE
                                                                | (exists_ok ? RKTIO_OPEN_TRUNCATE : 0)),
-                                                 /* Permissions may be reduced by umask, but the
-                                                    intent here is to make sure the file doesn't have
-                                                    more permissions than it will end up with. We
+                                                 /* Permissions may be reduced by umask, but even if
+                                                    `override_create_perms`, the intent here is to make
+                                                    sure the file doesn't have more permissions than
+                                                    it will end up with. If `override_create_perms`, we
                                                     install final permissions after the copy. */
-                                                 buf.st_mode);
+                                                 perm_bits);
     if (!dest_fd) {
       rktio_close(rktio, src_fd);
       rktio_set_last_error_step(rktio, RKTIO_COPY_STEP_OPEN_DEST);
@@ -1758,7 +1779,8 @@ rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, const char *dest, const
       fc->done = 0;
       fc->src_fd = src_fd;
       fc->dest_fd = dest_fd;
-      fc->mode = buf.st_mode;
+      fc->override_create_perms = override_create_perms;
+      fc->mode = perm_bits;
 
       return fc;
     }
@@ -1774,18 +1796,29 @@ rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, const char *dest, const
     rktio_set_last_error_step(rktio, RKTIO_COPY_STEP_OPEN_SRC);
     return NULL;
   }
-  dest_w = WIDE_PATH_temp(dest);
+  if (use_perm_bits)
+    dest_w = WIDE_PATH_copy(dest);
+  else
+    dest_w = WIDE_PATH_temp(dest);
   if (!dest_w) {
     rktio_set_last_error_step(rktio, RKTIO_COPY_STEP_OPEN_DEST);
     return NULL;
   }
 
+  /* Note: if the requested permission is read-only and the source
+     is writable, the destination will be temporarily writable; even
+     if the destination file exists, though, we impose a requested
+     read-only mode after copying.*/
+
   if (CopyFileW(src_w, dest_w, !exists_ok)) {
     rktio_file_copy_t *fc;
     free(src_w);
+
     /* Return a pointer to indicate success: */
     fc = malloc(sizeof(rktio_file_copy_t));
     fc->done = 1;
+    fc->dest_w = (use_perm_bits ? (wchar_t *)dest_w : NULL);
+    fc->read_only = !(perm_bits & RKTIO_PERMISSION_WRITE);
     return fc;
   }
   
@@ -1798,6 +1831,8 @@ rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, const char *dest, const
   rktio_set_last_error_step(rktio, RKTIO_COPY_STEP_UNKNOWN);
 
   free(src_w);
+  if (use_perm_bits)
+    free((void *)dest_w);
 
   return NULL;
 #endif
@@ -1846,22 +1881,53 @@ rktio_ok_t rktio_copy_file_step(rktio_t *rktio, rktio_file_copy_t *fc)
 rktio_ok_t rktio_copy_file_finish_permissions(rktio_t *rktio, rktio_file_copy_t *fc)
 {
 #ifdef RKTIO_SYSTEM_UNIX
-  int err;
+  if (fc->override_create_perms) {
+    int err;
 
-  do {
-    /* We could skip this step if we know that the creation mode
-       wasn't reduced by umask, but getting umask without setting it
-       is another problem (because the obvious get-and-set trick is no
-       good for a process-wide value in a multithreaded context). */
-    err = fchmod(rktio_fd_system_fd(rktio, fc->dest_fd), fc->mode);
-  } while ((err == -1) && (errno != EINTR));
+    do {
+      /* We could skip this step if we know that the creation mode
+         wasn't reduced by umask, that the file didn't already exist,
+         and that the mode wasn't changed while the copy is in
+         progress. Instead of trying to get umask (without setting it,
+         but the obvious get-and-set trick is no good for a
+         process-wide value in a multithreaded context) or getting the
+         current mode (although it turns out that creating `dest_fd`
+         already used `fstat`, but the mode is forgotten by here), we
+         just always set it. */
+      err = fchmod(rktio_fd_system_fd(rktio, fc->dest_fd), fc->mode);
+    } while ((err == -1) && (errno != EINTR));
 
-  if (err) {
-    get_posix_error();
-    rktio_set_last_error_step(rktio, RKTIO_COPY_STEP_WRITE_DEST_METADATA);
-    return 0;
+    if (err) {
+      get_posix_error();
+      rktio_set_last_error_step(rktio, RKTIO_COPY_STEP_WRITE_DEST_METADATA);
+      return 0;
+    }
   }
 #endif
+#ifdef RKTIO_SYSTEM_WINDOWS
+  if (fc->dest_w) {
+    int ok;
+    DWORD attrs = GetFileAttributesW(fc->dest_w);
+    if (attrs != INVALID_FILE_ATTRIBUTES) {
+      if (!!(attrs & FILE_ATTRIBUTE_READONLY) != fc->read_only) {
+        if (fc->read_only)
+          attrs |= FILE_ATTRIBUTE_READONLY;
+        else
+          attrs -= FILE_ATTRIBUTE_READONLY;
+        ok = SetFileAttributesW(fc->dest_w, attrs);
+      } else
+        ok = 1;
+    } else
+      ok = 0;
+
+    if (!ok) {
+      get_windows_error();
+      rktio_set_last_error_step(rktio, RKTIO_COPY_STEP_WRITE_DEST_METADATA);
+      return 0;
+    }
+  }
+#endif
+  
   return 1;
 }
 
@@ -1870,6 +1936,9 @@ void rktio_copy_file_stop(rktio_t *rktio, rktio_file_copy_t *fc)
 #ifdef RKTIO_SYSTEM_UNIX
   rktio_close(rktio, fc->src_fd);
   rktio_close(rktio, fc->dest_fd);
+#endif
+#ifdef RKTIO_SYSTEM_WINDOWS
+  if (fc->dest_w) free(fc->dest_w);
 #endif
   free(fc);
 }

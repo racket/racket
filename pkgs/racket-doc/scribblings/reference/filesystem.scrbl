@@ -606,18 +606,55 @@ OS, this size excludes the resource-fork size. On error (e.g., if no
 such file exists), the @exnraise[exn:fail:filesystem].}
 
 
-@defproc[(copy-file [src path-string?] [dest path-string?] [exists-ok? any/c #f]) void?]{
+@defproc[(copy-file [src path-string?] 
+                    [dest path-string?]
+                    [exists-ok?/pos any/c #f]
+                    [#:exists-ok? exists-ok? any/c exists-ok?/pos]
+                    [#:permissions permissions (or/c #f (integer-in 0 65535)) #f]
+                    [#:replace-permissions? replace-permissions? any/c #t])
+         void?]{
 
 Creates the file @racket[dest] as a copy of @racket[src], if
 @racket[dest] does not already exist. If @racket[dest] already exists
-and @racket[exists-ok?] is @racket[#f], the copy fails with
+and @racket[exists-ok?] is @racket[#f], the copy fails and the
 @exnraise[exn:fail:filesystem:exists?]; otherwise, if @racket[dest]
-exists, its content is replaced with the content of @racket[src]. File
-permissions are transferred from @racket[src] to @racket[dest]; on Windows,
-the modification time of @racket[src] is also transferred to @racket[dest]. If
-@racket[src] refers to a link, the target of the link is copied,
-rather than the link itself; if @racket[dest] refers to a link and
-@racket[exists-ok?] is true, the target of the link is updated.}
+exists, its content is replaced with the content of @racket[src]. 
+
+If @racket[src] refers to a link, the target of the link is copied,
+rather than the link itself. If @racket[dest] refers to a link and
+@racket[exists-ok?] is true, the target of the link is updated.
+
+File permissions are transferred from @racket[src] to @racket[dest],
+unless @racket[permissions] is supplied as non-@racket[#f] on Unix and
+Mac OS, in which case @racket[permissions] is used for @racket[dest].
+Beware that permissions are transferred without regard for the
+process's umask setting by default, but see
+@racket[replace-permissions?] below. On Windows, the modification time
+of @racket[src] is also transferred to @racket[dest]; if
+@racket[permissions] is supplied as non-@racket[#f], then after
+copying, @racket[dest] is set to read-only or not depending on whether
+the @racketvalfont{#o2} bit is present in @racket[permissions].
+
+The @racket[replace-permissions?] argument is used only on Unix and
+Mac OS. When @racket[dest]s is created, it is created with
+@racket[permissions] or the permissions of @racket[src]; however, the
+process's umask may unset bits in the requested permissions. When
+@racket[dest] already exists (and @racket[exists-ok?] is true), then
+the permissions of @racket[dest] are initially left as-is. Finally,
+when @racket[replace-permissions?] is a true value, then the
+permissions of @racket[dest] are set after the file content is copied
+to @racket[permissions] or the permissions of @racket[src], without
+modification by umask.
+
+The @racket[exists-ok?/pos] by-position argument is for backward
+compatibility. That by-position argument can be supplied, or the
+@racket[exists-ok?] keyword argument can be supplied, but the
+@exnraise[exn:fail:contract] if both are supplied.
+
+@history[#:changed "8.7.0.9" @elem{Added @racket[#:exists-ok?],
+                                   @racket[#:permissions], and
+                                   @racket[#:replace-permissions?]
+                                   arguments.}]}
 
 
 @defproc[(make-file-or-directory-link [to path-string?] [path path-string?]) 

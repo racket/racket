@@ -1195,6 +1195,18 @@
   (rktio_const_string_t dest)
   (rktio_const_string_t src)
   (rktio_bool_t exists_ok)))
+(define-function/errno+step
+ NULL
+ ()
+ (ref rktio_file_copy_t)
+ rktio_copy_file_start_permissions
+ (((ref rktio_t) rktio)
+  (rktio_const_string_t dest)
+  (rktio_const_string_t src)
+  (rktio_bool_t exists_ok)
+  (rktio_bool_t use_perm_bits)
+  (int perm_bits)
+  (rktio_bool_t override_create_perms)))
 (define-function
  ()
  rktio_bool_t

@@ -196,6 +196,33 @@
 (err/rt-test (copy-file "no-such-tmp5" "tmp5y") (lambda (x) (not (exn:fail:filesystem:exists? x))))
 (delete-file "tmp5y")
 
+(define (copy-file* src dest [exists-ok? #f] [permissions #f] [replace-perms? #t])
+  (if (zero? (random 2))
+      (copy-file src dest
+                 exists-ok? ; by-position argument
+                 #:permissions permissions
+                 #:replace-permissions? replace-perms?)
+      (copy-file src dest
+                 #:exists-ok? exists-ok?
+                 #:permissions permissions
+                 #:replace-permissions? replace-perms?)))
+
+(define copy-file*/tf (make-/tf copy-file* exn:fail:filesystem?))
+(test #t copy-file*/tf "tmp5" "tmp5y")
+(test #t copy-file*/tf "tmp5" "tmp5y" #t)
+(test (file-or-directory-permissions "tmp5") file-or-directory-permissions "tmp5y")
+(test #t copy-file*/tf "tmp5" "tmp5y" #t #o111)
+(test (if (eq? 'windows (system-type)) #o555 #o111) file-or-directory-permissions "tmp5y" 'bits)
+(delete-file "tmp5y")
+(test #t copy-file*/tf "tmp5" "tmp5y" #f #o666)
+(test (if (eq? 'windows (system-type)) #o777 #o666) file-or-directory-permissions "tmp5y" 'bits)
+(unless (eq? 'windows (system-type))
+  (test #t copy-file*/tf "tmp5" "tmp5y" #t #f #f) ; don't replace existing file's permissions
+  (test #o666 file-or-directory-permissions "tmp5y" 'bits))
+(delete-file "tmp5y")
+(err/rt-test (copy-file "tmp5" "tmp5y" #t #:exists-ok? #t) exn:fail? "both")
+(err/rt-test (copy-file "tmp5" "tmp5y" #f #:exists-ok? #f) exn:fail? "both")
+
 (test #t rename-file-or-directory/tf "tmp5" "tmp5x")
 (test #f rename-file-or-directory/tf "tmp5" "tmp5x")
 (close-output-port (open-output-file "tmp5"))

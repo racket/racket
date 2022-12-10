@@ -348,7 +348,7 @@ void scheme_init_file(Scheme_Startup_Env *env)
   scheme_addto_prim_instance("copy-file", 
 			     scheme_make_prim_w_arity(copy_file, 
 						      "copy-file", 
-						      2, 3), 
+						      2, 5), 
 			     env);
   scheme_addto_prim_instance("build-path", 
 			     scheme_make_immed_prim(scheme_build_path,
@@ -3400,7 +3400,7 @@ static void escape_during_copy(rktio_file_copy_t *cf)
 static Scheme_Object *copy_file(int argc, Scheme_Object **argv)
 {
   char *src, *dest;
-  int exists_ok = 0;
+  int exists_ok = 0, use_perms = 0, perm_bits = 0, override_create_perms = 1;
   Scheme_Object *bss, *bsd;
   rktio_file_copy_t *cf;
 
@@ -3412,6 +3412,19 @@ static Scheme_Object *copy_file(int argc, Scheme_Object **argv)
   bss = argv[0];
   bsd = argv[1];
   exists_ok = ((argc > 2) && SCHEME_TRUEP(argv[2]));
+  if (argc > 3) {
+    if (!SCHEME_FALSEP(argv[3])) {
+      if (SCHEME_INTP(argv[3])
+          && (SCHEME_INT_VAL(argv[3]) >= 0)
+          && (SCHEME_INT_VAL(argv[3]) <= 65535)) {
+        perm_bits = SCHEME_INT_VAL(argv[3]);
+        use_perms = 1;
+      } else
+        scheme_wrong_contract("copy-file", "(or/c #f (integer-in 0 65535))", 1, argc, argv);
+    }
+    if (argc > 4)
+      override_create_perms = SCHEME_TRUEP(argv[4]);
+  }
 
   src = scheme_expand_string_filename(bss,
                                       "copy-file",
@@ -3423,7 +3436,8 @@ static Scheme_Object *copy_file(int argc, Scheme_Object **argv)
                                        NULL, 
                                        SCHEME_GUARD_FILE_WRITE | SCHEME_GUARD_FILE_DELETE);
 
-  cf = rktio_copy_file_start(scheme_rktio, dest, src, exists_ok);
+  cf = rktio_copy_file_start_permissions(scheme_rktio, dest, src, exists_ok,
+                                         use_perms, perm_bits, override_create_perms);
   if (cf) {
     int ok = 1;
     while (!rktio_copy_file_is_done(scheme_rktio, cf)) {
@@ -4655,7 +4669,7 @@ static Scheme_Object *make_directory(int argc, Scheme_Object *argv[])
         && (SCHEME_INT_VAL(argv[1]) <= 65535)) {
       perms = SCHEME_INT_VAL(argv[1]);
     } else
-      scheme_wrong_contract("make-directory", "(or/c symbol? (integer-in 0 65535))", 1, argc, argv);
+      scheme_wrong_contract("make-directory", "(integer-in 0 65535)", 1, argc, argv);
   }
 
   filename = scheme_expand_string_filename(argv[0],
