@@ -772,7 +772,6 @@
       (boolean? v)
       (char? v)
       (void? v)
-      (eof-object? v)
       (null? v)
       (bwp? v)
       (black-hole? v)
