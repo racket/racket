@@ -222,7 +222,8 @@ The @exec{raco test} command accepts several flags:
          #:changed "1.5" @elem{Added @DPFlag{ignore-stderr}.}
          #:changed "1.6" @elem{Added @DPFlag{arg} and @DPFlag{args}.}
          #:changed "1.8" @elem{Added @DFlag{output} and @Flag{o}.}
-         #:changed "1.11" @elem{Added @DFlag{output} and @DFlag{make}/@Flag{y}.}]
+         #:changed "1.11" @elem{Added @DFlag{make}/@Flag{y}.}
+         #:changed "1.12" @elem{Added @DFlag{errortrace}.}]
 
 @section[#:tag "test-config"]{Test Configuration by Submodule}
 
