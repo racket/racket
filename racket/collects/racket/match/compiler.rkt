@@ -58,16 +58,17 @@
                            (predicate-stx x)
                            (quasisyntax/loc predicate-stx
                              (#,predicate-stx #,x)))]
-                  [rhs (compile* (cons x xs)
-                                 (map (lambda (row)
-                                        (define-values (p ps)
-                                          (Row-split-pats row))
-                                        (make-Row (cons (make-Dummy #f) ps)
-                                                  (Row-rhs row)
-                                                  (Row-unmatch row)
-                                                  (Row-vars-seen row)))
-                                      rows)
-                                 esc)])
+                  [rhs (compile**
+                        (cons x xs)
+                        (map (lambda (row)
+                               (define-values (p ps)
+                                 (Row-split-pats row))
+                               (make-Row (cons (make-Dummy #f) ps)
+                                         (Row-rhs row)
+                                         (Row-unmatch row)
+                                         (Row-vars-seen row)))
+                             rows)
+                        esc)])
       #'[lhs rhs]))
   (define (compile-con-pat accs pred pat-acc)
     ;; eliminate accessors for columns where every pat is a Dummy
@@ -86,7 +87,7 @@
                      [question (if (procedure? pred)
                                    (pred x)
                                    #`(#,pred #,x))]
-                     [body (compile*
+                     [body (compile**
                             (append (syntax->list #'(tmps ...)) xs)
                             (map (lambda (row)
                                    (define-values (p1 ps) (Row-split-pats row))
@@ -129,7 +130,7 @@
                              pat))
                          (with-syntax ([(tmps ...) (generate-temporaries ns)])
                            (with-syntax ([body
-                                          (compile*
+                                          (compile**
                                            (append (syntax->list #'(tmps ...)) xs)
                                            (map (lambda (row)
                                                   (define-values (p1 ps)
@@ -184,14 +185,15 @@
                        ht
                        (lambda (k v)
                          #`[(equal? #,x '#,k)
-                            #,(compile* xs
-                                        (map (lambda (row)
-                                               (make-Row (cdr (Row-pats row))
-                                                         (Row-rhs row)
-                                                         (Row-unmatch row)
-                                                         (Row-vars-seen row)))
-                                             v)
-                                        esc)]))])
+                            #,(compile**
+                               xs
+                               (map (lambda (row)
+                                      (make-Row (cdr (Row-pats row))
+                                                (Row-rhs row)
+                                                (Row-unmatch row)
+                                                (Row-vars-seen row)))
+                                    v)
+                               esc)]))])
          #`(cond clauses ... [else (#,esc)])))]
     ;; the Var rule
     [(Var? first)
@@ -239,7 +241,7 @@
                                   (Row-unmatch row)
                                   (cons (cons v x) (Row-vars-seen row))))]))])
        ;; compile the transformed block
-       (compile* xs (map transform block) esc))]
+       (compile** xs (map transform block) esc))]
     ;; the Constructor rule
     [(CPat? first)
      (let ;; put all the rows in the hash, indexed by their constructor
@@ -271,24 +273,26 @@
          ;; variables
          #`(let ([esc* (lambda () (values #f #,@(for/list ([v vars]) #'#f)))])
              (let-values ([(success? var ...)
-                           #,(compile* (list x)
-                                       (map (lambda (q)
-                                              (make-Row (list q)
-                                                        #'(values #t var ...)
-                                                        #f
-                                                        seen))
-                                            qs)
-                                       #'esc*
-                                       #f)])
+                           #,(compile**
+                              (list x)
+                              (map (lambda (q)
+                                     (make-Row (list q)
+                                               #'(values #t var ...)
+                                               #f
+                                               seen))
+                                   qs)
+                              #'esc*
+                              #f)])
                ;; then compile the rest of the row
                (if success?
-                   #,(compile* xs
-                               (list (make-Row (cdr pats)
-                                               (Row-rhs row)
-                                               (Row-unmatch row)
-                                               (append (map cons vars vars) seen)))
-                               esc
-                               #f)
+                   #,(compile**
+                      xs
+                      (list (make-Row (cdr pats)
+                                      (Row-rhs row)
+                                      (Row-unmatch row)
+                                      (append (map cons vars vars) seen)))
+                      esc
+                      #f)
                    (#,esc))))))]
     ;; the App rule
     [(App? first)
@@ -306,12 +310,13 @@
                                (app-expr x)
                                (quasisyntax/loc app-expr
                                  (#,app-expr #,x)))])
-             #,(compile* (append (syntax->list #'(t ...)) xs)
-                         (list (make-Row (append app-pats (cdr pats))
-                                         (Row-rhs row)
-                                         (Row-unmatch row)
-                                         (Row-vars-seen row)))
-                         esc))))]
+             #,(compile**
+                (append (syntax->list #'(t ...)) xs)
+                (list (make-Row (append app-pats (cdr pats))
+                                (Row-rhs row)
+                                (Row-unmatch row)
+                                (Row-vars-seen row)))
+                esc))))]
     ;; the And rule
     [(And? first)
      ;; we only handle 1-row Ands
@@ -322,14 +327,15 @@
      (define pats (Row-pats row))
      ;; all the patterns
      (define qs (And-ps (car pats)))
-     (compile* (append (map (lambda _ x) qs) xs)
-               (list (make-Row (append qs (cdr pats))
-                               (Row-rhs row)
-                               (Row-unmatch row)
-                               (Row-vars-seen row)))
-               esc
-               ;; don't re-order OrderedAnd patterns
-               (not (OrderedAnd? first)))]
+     (compile**
+      (append (map (lambda _ x) qs) xs)
+      (list (make-Row (append qs (cdr pats))
+                      (Row-rhs row)
+                      (Row-unmatch row)
+                      (Row-vars-seen row)))
+      esc
+      ;; don't re-order OrderedAnd patterns
+      (not (OrderedAnd? first)))]
     ;; the Not rule
     [(Not? first)
      ;; we only handle 1-row Nots atm - this is all the mixture rule should
@@ -343,20 +349,22 @@
        (with-syntax ([(f) (generate-temporaries #'(f))])
          #`(let ;; if q fails, we jump to here
                 ([f (lambda ()
-                      #,(compile* xs
-                                  (list (make-Row (cdr pats)
-                                                  (Row-rhs row)
-                                                  (Row-unmatch row)
-                                                  (Row-vars-seen row)))
-                                  esc))])
-             #,(compile* (list x)
-                         ;; if q doesn't fail, we jump to esc and fail the not
-                         ;; pattern
-                         (list (make-Row (list q)
-                                         #`(#,esc)
+                      #,(compile**
+                         xs
+                         (list (make-Row (cdr pats)
+                                         (Row-rhs row)
                                          (Row-unmatch row)
                                          (Row-vars-seen row)))
-                         #'f))))]
+                         esc))])
+               #,(compile**
+                  (list x)
+                  ;; if q doesn't fail, we jump to esc and fail the not
+                  ;; pattern
+                  (list (make-Row (list q)
+                                  #`(#,esc)
+                                  (Row-unmatch row)
+                                  (Row-vars-seen row)))
+                  #'f))))]
     [(Pred? first)
      ;; put all the rows in the hash, indexed by their Pred pattern
      ;; we use the pattern so that it can have a custom equal+hash
@@ -435,7 +443,7 @@
                                 [else
                                  (let ([hid hid-rhs] ... ...
                                        [fail-tail fail])
-                                   #,(compile*
+                                   #,(compile**
                                       (cdr vars)
                                       (list (make-Row rest-pats k
                                                       (Row-unmatch (car block))
@@ -460,27 +468,45 @@
                                 [hid-arg null] ... ...
                                 [rep 0] ...
                                 [failkv #,esc])
-                 #,(compile* (list #'x)
-                             (append
-                              (map (lambda (pats rhs)
-                                     (make-Row pats
-                                               rhs
-                                               (Row-unmatch (car block))
-                                               (Row-vars-seen
-                                                (car block))))
-                                   (map list heads)
-                                   (syntax->list #'(rhs ...)))
-                              (list (make-Row (list tail)
-                                              #`tail-rhs
-                                              (Row-unmatch (car block))
-                                              (append
-                                               heads-seen
-                                               (Row-vars-seen
-                                                (car block))))))
-                             #'failkv))))))]
+                 #,(compile**
+                    (list #'x)
+                    (append
+                     (map (lambda (pats rhs)
+                            (make-Row pats
+                                      rhs
+                                      (Row-unmatch (car block))
+                                      (Row-vars-seen
+                                       (car block))))
+                          (map list heads)
+                          (syntax->list #'(rhs ...)))
+                     (list (make-Row (list tail)
+                                     #`tail-rhs
+                                     (Row-unmatch (car block))
+                                     (append
+                                      heads-seen
+                                      (Row-vars-seen
+                                       (car block))))))
+                    #'failkv))))))]
     [else (error 'compile "unsupported pattern: ~a\n" first)]))
 
-(define (compile* vars rows esc [reorder? (can-reorder?)])
+(define (generate-block esc rhs unmatch)
+  ;; compile the block, with jumps to the previous esc
+  (with-syntax ([rhs #`(syntax-parameterize
+                           ([fail (make-rename-transformer
+                                   (quote-syntax #,esc))])
+                         #,rhs)])
+    (if unmatch
+        (quasisyntax/loc unmatch
+          (call-with-continuation-prompt
+           (lambda () (let ([#,unmatch
+                             (lambda ()
+                               (abort-current-continuation match-prompt-tag))])
+                        rhs))
+           match-prompt-tag
+           (lambda () (#,esc))))
+        #'rhs)))
+
+(define (compile** vars rows esc [reorder? (can-reorder?)])
   (define (let/wrap clauses body)
     (if (stx-null? clauses)
       body
@@ -499,22 +525,7 @@
                  (with-syntax
                   (;; f is the name this block will have
                    [(f) (generate-temporaries #'(f))]
-                   ;; compile the block, with jumps to the previous esc
-                   [c (with-syntax ([rhs #`(syntax-parameterize
-                                            ([fail (make-rename-transformer
-                                                    (quote-syntax #,esc))])
-                                            #,(Row-rhs (car blocks)))])
-                                   (define unmatch (Row-unmatch (car blocks)))
-                                   (if unmatch
-                                       (quasisyntax/loc unmatch
-                                         (call-with-continuation-prompt
-                                          (lambda () (let ([#,unmatch
-                                                            (lambda ()
-                                                              (abort-current-continuation match-prompt-tag))])
-                                                       rhs))
-                                          match-prompt-tag
-                                          (lambda () (#,esc))))
-                                       #'rhs))])
+                   [c (generate-block esc (Row-rhs (car blocks)) (Row-unmatch (car blocks)))])
                   ;; then compile the rest, with our name as the esc
                   (loop (cdr blocks) #'f (cons #'[f (lambda () c)] acc)))))])
       (with-syntax ([(fns ... [_ (lambda () body)]) fns])
@@ -551,5 +562,167 @@
       (with-syntax ([(fns ... [_ (lambda () body)]) fns])
         (let/wrap #'(fns ...) #'body)))]))
 
+;; flatten-Or :: (pattern? -> boolean?), pattern? -> (or/c #f (listof pattern?))
+(define (flatten-Or proc e)
+  (let loop ([e e] [acc '()])
+    (cond
+      [(Or? e)
+       (let loop2 ([ps (Or-ps e)] [acc2 acc])
+         (cond
+           [(null? ps) acc2]
+           [else
+            (cond
+              [(loop (car ps) acc2) => (λ (result) (loop2 (cdr ps) result))]
+              [else #f])]))]
+      [(proc e) (cons e acc)]
+      [else #f])))
+
+;; flatten-Or-Exact :: pattern? -> (or/c #f (listof pattern?))
+(define (flatten-Or-Exact v)
+  ;; technically we don't need to reverse it, but let's try to preserve
+  ;; the search order
+  (cond
+    [(flatten-Or Exact? v) => reverse]
+    [else #f]))
+
+;; pats :: (listof literal)
+;; rhs :: Expr
+;; unmatch :: (or/c #f identifier?)
+(struct CaseRow (pats rhs unmatch) #:transparent)
+
+;; generate-case+match :: identifier? identifier? CaseRow? Row? -> syntax?
+(define (generate-case+match var esc case-rows match-rows)
+  (with-syntax ([(next) (generate-temporaries #'(next))])
+    (define compiled-case
+      (for/list ([row (in-list case-rows)])
+        (with-syntax ([(lit ...) (CaseRow-pats row)]
+                      [block (generate-block #'next
+                                             (CaseRow-rhs row)
+                                             (CaseRow-unmatch row))])
+          #'[(lit ...) block])))
+    (with-syntax ([var var]
+                  [match-expr (compile** (list var) match-rows esc)]
+                  [(case-clause ...) compiled-case])
+
+      ;; Since next is shared across all generated blocks, technically we can
+      ;; syntax-parameterize fail just once at the top. But for now,
+      ;; let's reuse generate-block (which syntax-parameterizes in each block)
+      #`(let ([next #,(syntax-property
+                       #'(λ () match-expr)
+                       'typechecker:called-in-tail-position #t)])
+          (case var
+            case-clause ...
+            [else (next)])))))
+
+(define (compile* vars rows esc)
+  (define seen (make-hash))
+
+  ;; Attempt to use `case` when it is possible.
+  ;;
+  ;; (match id [case-pattern rhs] ... [other-pattern rhs*] ...)
+  ;;
+  ;; is compiled to:
+  ;;
+  ;; (let ([next (λ () (match id [other-pattern rhs*] ...))])
+  ;;   (case id
+  ;;     [(case-pattern)
+  ;;      (syntax-parameterize ([fail (make-rename-transformer #'next)])
+  ;;        rhs)] ...
+  ;;     [else (next)]))
+  ;;
+  ;; The syntax-parameterization is done to support (failure-cont).
+  ;; In match, failure-cont would yield to the next clause.
+  ;; In our scheme, however, all case-pattern clauses will be disjoint,
+  ;; so we can skip to the else clause (next) right away.
+  ;;
+  ;; Disjointness across clauses is therefore very important:
+  ;;
+  ;; (match 1 [1 (failure-cont)] [1 (displayln 'hello)])
+  ;;
+  ;; should print "hello". A compilation that doesn't take disjointness into
+  ;; account, such as:
+  ;;
+  ;; (let ([next (λ () (match id))])
+  ;;   (case id
+  ;;     [(1)
+  ;;      (syntax-parameterize ([fail (make-rename-transformer #'next)])
+  ;;        (fail))]
+  ;;     [(1)
+  ;;      (syntax-parameterize ([fail (make-rename-transformer #'next)])
+  ;;        (displayln 'hello))]
+  ;;     [else (next)]))
+  ;;
+  ;; would be incorrect.
+  ;;
+  ;; (=> exit-id) is handled regularly, but with the target being the else clause
+  ;; due to the same reason as above.
+  ;;
+  (cond
+    ;; |vars| = 1
+    [(and (pair? vars) (null? (cdr vars)))
+     (define var (car vars))
+
+     ;; Exact values are those parsed by parse-literal.
+     ;; They all can be handled by `case`.
+     ;;
+     ;; Note that `case` can handle stuff like list, vector, and hash literals too,
+     ;; but match parsing doesn't retain enough information to make
+     ;; the compilation easy, so we'll skip them (at least for now).
+     (let loop ([rows rows] [case-rows '()] [match-rows '()])
+       (cond
+         [(null? rows)
+          (generate-case+match var esc (reverse case-rows) (reverse match-rows))]
+         [else
+          (define row (car rows))
+          (define next-rows (cdr rows))
+          (cond
+            ;; |(Row-pats row)| = |vars| = 1, so we can call Row-first-pat.
+            [(flatten-Or-Exact (Row-first-pat row))
+             =>
+             (λ (exact-list)
+               (define literal-list (map Exact-v exact-list))
+               (define seen-any?
+                 (for/or ([literal (in-list literal-list)])
+                   (hash-ref seen literal #f)))
+
+               ;; We want to unconditionally iterate the whole list to mark
+               ;; all terms as seen.
+               ;;
+               ;; Consider:
+               ;;
+               ;; [1 ...]
+               ;; [(or 1 2) ...]
+               ;; [(or 2 3) ...]
+               ;;
+               ;; In this case,
+               ;; - 1 can be case-dispatched.
+               ;; - (or 1 2) can't because of duplicate 1, so it must be matched
+               ;; - (or 2 3) also can't because we just moved (or 1 2)
+               ;;   to the else clause. Since matching on 2 should reach
+               ;;   (or 1 2), not (or 2 3), (or 2 3) must be moved to the else
+               ;;   clause too.
+
+               (for ([literal (in-list literal-list)])
+                 (hash-set! seen literal #t))
+
+               (cond
+                 [seen-any?
+                  (loop next-rows case-rows (cons row match-rows))]
+                 [else
+                  (loop next-rows
+                             (cons (CaseRow literal-list (Row-rhs row) (Row-unmatch row))
+                                   case-rows)
+                             match-rows)]))]
+            [else
+             ;; in general, non-Exact pattern can have a side-effect.
+             ;; E.g. (match 1 [(? println) 2]). So we disregard the rest.
+             (generate-case+match var
+                                  esc
+                                  (reverse case-rows)
+                                  ;; append and reverse can be fused,
+                                  ;; but let's not optimize prematurely
+                                  (append (reverse match-rows) rows))])]))]
+    [else (compile** vars rows esc)]))
+
 ;; (require mzlib/trace)
-;; (trace compile* compile-one)
+;; (trace compile** compile-one)
