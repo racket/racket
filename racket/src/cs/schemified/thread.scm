@@ -6503,36 +6503,38 @@
     (void)))
 (define custodian-check-immediate-limit
   (lambda (mref_0 n_0)
-    (letrec*
-     ((loop_0
-       (|#%name|
-        loop
-        (lambda (mref_1)
-          (begin
-            (if mref_1
-              (let ((c_0 (custodian-reference->custodian mref_1)))
-                (if c_0
-                  (let ((limit_0 (custodian-immediate-limit c_0)))
-                    (begin
-                      (if (if limit_0 (>= n_0 limit_0) #f)
-                        (raise
-                         (let ((app_0
-                                (let ((msg_0 "out of memory"))
-                                  (begin-unsafe
-                                   (error-message->adjusted-string
-                                    #f
-                                    'racket/primitive
-                                    msg_0
-                                    'racket/primitive)))))
-                           (|#%app|
-                            exn:fail:out-of-memory
-                            app_0
-                            (current-continuation-marks))))
-                        (void))
-                      (loop_0 (custodian-parent-reference c_0))))
-                  (void)))
-              (void)))))))
-     (loop_0 mref_0))))
+    (if (in-atomic-mode?)
+      (void)
+      (letrec*
+       ((loop_0
+         (|#%name|
+          loop
+          (lambda (mref_1)
+            (begin
+              (if mref_1
+                (let ((c_0 (custodian-reference->custodian mref_1)))
+                  (if c_0
+                    (let ((limit_0 (custodian-immediate-limit c_0)))
+                      (begin
+                        (if (if limit_0 (>= n_0 limit_0) #f)
+                          (raise
+                           (let ((app_0
+                                  (let ((msg_0 "out of memory"))
+                                    (begin-unsafe
+                                     (error-message->adjusted-string
+                                      #f
+                                      'racket/primitive
+                                      msg_0
+                                      'racket/primitive)))))
+                             (|#%app|
+                              exn:fail:out-of-memory
+                              app_0
+                              (current-continuation-marks))))
+                          (void))
+                        (loop_0 (custodian-parent-reference c_0))))
+                    (void)))
+                (void)))))))
+       (loop_0 mref_0)))))
 (define finish_2131
   (make-struct-type-install-properties
    '(thread)

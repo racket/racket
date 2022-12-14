@@ -654,13 +654,14 @@
             (custodian-memory-use c)]))))
 
 (define (custodian-check-immediate-limit mref n)
-  (let loop ([mref mref])
-    (when mref
-      (define c (custodian-reference->custodian mref))
-      (when c
-        (define limit (custodian-immediate-limit c))
-        (when (and limit (n . >= . limit))
-          (raise (exn:fail:out-of-memory
-                  (error-message->string #f "out of memory")
-                  (current-continuation-marks))))
-        (loop (custodian-parent-reference c))))))
+  (unless (in-atomic-mode?)
+    (let loop ([mref mref])
+      (when mref
+        (define c (custodian-reference->custodian mref))
+        (when c
+          (define limit (custodian-immediate-limit c))
+          (when (and limit (n . >= . limit))
+            (raise (exn:fail:out-of-memory
+                    (error-message->string #f "out of memory")
+                    (current-continuation-marks))))
+          (loop (custodian-parent-reference c)))))))
