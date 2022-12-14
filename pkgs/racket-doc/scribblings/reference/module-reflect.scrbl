@@ -665,7 +665,7 @@ more than the namespace's @tech{base phase}.}
          boolean?]{
 
 Returns @racket[#t] if the module indicated by @racket[mod] is
-declared (but not necessarily @tech{instantiate}d or @tech{visit}ed)
+@tech{declare}d (but not necessarily @tech{instantiate}d or @tech{visit}ed)
 in the current namespace, @racket[#f] otherwise.
 
 If @racket[load?] is @racket[#t] and @racket[mod] is not a

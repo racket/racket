@@ -25,8 +25,8 @@ a thunk, or to the current directory otherwise.
 
 When @racket[module-path-v] refers to a module using a
 collection-based path, resolution invokes the current @tech[#:doc
-refman]{module name resolver} and loads the module if it is not
-declared. Beware that concurrent resolution in namespaces that share a
+refman]{module name resolver}, but without loading the module even if it is not
+@tech[#:doc refman]{declare}d. Beware that concurrent resolution in namespaces that share a
 module registry can create race conditions when loading modules; see
 also @racket[namespace-call-with-registry-lock].}
 
