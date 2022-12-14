@@ -574,7 +574,7 @@
               (remove-extra-directory-layer pkg-dir)]
              [#"zip"
               (unzip pkg-path (make-filesystem-entry-reader #:dest pkg-dir)
-                     #:preserve-timestamps? #t
+                     #:preserve-attributes? #t
                      #:utc-timestamps? #t)
               (remove-extra-directory-layer pkg-dir)]
              [#"plt"
