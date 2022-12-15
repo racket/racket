@@ -66,7 +66,7 @@
       (displayln "Initializing license (Apache-2.0 OR MIT). You are free to change the license.")
       (with-output-to-file "LICENSE-MIT"
         (lambda () (expand/display #<<EOS
-<<name>> 
+<<name>>
 
 MIT License
 
