@@ -254,7 +254,7 @@ static void force_close_input_port(Scheme_Object *port);
 ROSYM static Scheme_Object *text_symbol, *binary_symbol, *module_symbol;
 ROSYM static Scheme_Object *append_symbol, *error_symbol, *update_symbol, *can_update_symbol;
 ROSYM static Scheme_Object *replace_symbol, *truncate_symbol, *truncate_replace_symbol;
-ROSYM static Scheme_Object *must_truncate_symbol;
+ROSYM static Scheme_Object *must_truncate_symbol, *replace_permissions_symbol;
 
 ROSYM Scheme_Object *scheme_none_symbol, *scheme_line_symbol, *scheme_block_symbol;
 
@@ -294,6 +294,7 @@ scheme_init_port (Scheme_Startup_Env *env)
   REGISTER_SO(update_symbol);
   REGISTER_SO(can_update_symbol);
   REGISTER_SO(must_truncate_symbol);
+  REGISTER_SO(replace_permissions_symbol);
 
   text_symbol = scheme_intern_symbol("text");
   binary_symbol = scheme_intern_symbol("binary");
@@ -306,6 +307,7 @@ scheme_init_port (Scheme_Startup_Env *env)
   update_symbol = scheme_intern_symbol("update");
   can_update_symbol = scheme_intern_symbol("can-update");
   must_truncate_symbol = scheme_intern_symbol("must-truncate");
+  replace_permissions_symbol = scheme_intern_symbol("replace-permissions");
 
   REGISTER_SO(scheme_none_symbol);
   REGISTER_SO(scheme_line_symbol);
@@ -3789,8 +3791,8 @@ Scheme_Object *
 scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv[], int and_read, 
                            int internal)
 {
-  int e_set = 0, m_set = 0, i;
-  int open_flags = 0, try_replace = 0;
+  int e_set = 0, m_set = 0, r_set =0, i;
+  int open_flags = 0, replace_flags = 0, try_replace = 0;
   char *filename;
   char mode[4];
   int typepos;
@@ -3813,8 +3815,8 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
         && (SCHEME_INT_VAL(argv[i]) <= 65535)) {
       perms = SCHEME_INT_VAL(argv[i]);
     } else {
-      if (!SCHEME_SYMBOLP(argv[i]))
-        scheme_wrong_contract(name, "(or/c symbol? (integer-in 0 65535))", i, argc, argv);
+      if (!SCHEME_FALSEP(argv[i]) && !SCHEME_SYMBOLP(argv[i]))
+        scheme_wrong_contract(name, "(or/c symbol? (integer-in 0 65535) #f)", i, argc, argv);
 
       if (SAME_OBJ(argv[i], append_symbol)) {
         mode[0] = 'a';
@@ -3860,6 +3862,11 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
       } else if (SAME_OBJ(argv[i], binary_symbol)) {
         /* This is the default */
         m_set++;
+      } else if (SAME_OBJ(argv[i], replace_permissions_symbol)) {
+        replace_flags |= RKTIO_OPEN_REPLACE_PERMS;
+        r_set++;
+      } else if (SCHEME_FALSEP(argv[i])) {
+        /* skip */
       } else {
         char *astr;
         intptr_t alen;
@@ -3872,7 +3879,7 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
                          astr, alen);
       }
 
-      if (m_set > 1 || e_set > 1) {
+      if (m_set > 1 || e_set > 1 || r_set > 1) {
         char *astr;
         intptr_t alen;
 
@@ -3912,7 +3919,8 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
                                             (RKTIO_OPEN_WRITE
                                              | open_flags
                                              | (and_read ? RKTIO_OPEN_READ : 0)
-                                             | ((mode[1] == 't') ? RKTIO_OPEN_TEXT : 0)),
+                                             | ((mode[1] == 't') ? RKTIO_OPEN_TEXT : 0)
+                                             | replace_flags),
                                             perms);
     
     if (!fd

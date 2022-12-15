@@ -15,6 +15,7 @@
 (define-constant RKTIO_OPEN_NOT_DIR (<< 1 12))
 (define-constant RKTIO_OPEN_INIT (<< 1 13))
 (define-constant RKTIO_OPEN_OWN (<< 1 14))
+(define-constant RKTIO_OPEN_REPLACE_PERMS (<< 1 15))
 (define-constant RKTIO_DEFAULT_PERM_BITS 438)
 (define-constant RKTIO_STDIN 0)
 (define-constant RKTIO_STDOUT 1)

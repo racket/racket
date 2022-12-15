@@ -188,6 +188,9 @@ typedef struct rktio_fd_t rktio_fd_t;
 #define RKTIO_OPEN_OWN         (1<<14)
 /* Make `rtkio_system_fd` record a socket for reliable clean up on pre-NT Windows. */
 
+/* Used for `rktio_open` with `RKTIO_OPEN_WRITE`: */
+#define RKTIO_OPEN_REPLACE_PERMS (1<<15)
+
 RKTIO_EXTERN rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes);
 /* A socket (as opposed to other file descriptors) registered this way
    should include include `RKTIO_OPEN_SOCKET` and be non-blocking or

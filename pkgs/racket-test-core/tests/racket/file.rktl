@@ -2671,37 +2671,48 @@
   (define file (build-path dir "f"))
 
   (define (check open)
-    (open file #o444)
-    (if (eq? 'windows (system-type))
-        (test #f memq 'write (file-or-directory-permissions file))
-        ;; umask might drop additional bits from mode #o444
-        (test 0 bitwise-and (bitwise-not #o444) (file-or-directory-permissions file 'bits)))
-    (delete-file file))
+    (for ([replace? (in-list '(#f #t))]
+          [mode (in-list '(#o444 #o666))])
+      (open file mode replace?)
+      (if (eq? 'windows (system-type))
+          (test (and (positive? (bitwise-and mode #x2)) '(write read))
+                memq 'write (file-or-directory-permissions file))
+          (if replace?
+              (test mode bitwise-and #o777 (file-or-directory-permissions file 'bits))
+              ;; umask might drop additional bits from mode #o444
+              (test 0 bitwise-and (bitwise-not mode) (file-or-directory-permissions file 'bits))))
+      (delete-file file)))
 
-  (check (lambda (file perms)
-           (close-output-port (open-output-file file #:exists 'truncate #:permissions perms))))
-  (check (lambda (file perms)
+  (check (lambda (file perms replace?)
+           (close-output-port (open-output-file file #:exists 'truncate #:permissions perms
+                                                #:replace-permissions? replace?))))
+  (check (lambda (file perms replace?)
            (close-output-port (open-output-file file #:exists 'truncate #:permissions perms))
-           (close-output-port (open-output-file file #:exists 'replace #:permissions perms))))
-  (check (lambda (file perms)
+           (close-output-port (open-output-file file #:exists 'replace #:permissions perms
+                                                #:replace-permissions? replace?))))
+  (check (lambda (file perms replace?)
            (define-values (i o)
-             (open-input-output-file file #:exists 'truncate #:permissions perms))
+             (open-input-output-file file #:exists 'truncate #:permissions perms
+                                     #:replace-permissions? replace?))
            (close-input-port i)
            (close-output-port o)))
-  (check (lambda (file perms)
+  (check (lambda (file perms replace?)
            (with-output-to-file file
              #:permissions perms
              #:exists 'truncate
+             #:replace-permissions? replace?
              void)))
-  (check (lambda (file perms)
+  (check (lambda (file perms replace?)
            (call-with-output-file file
              #:permissions perms
              #:exists 'truncate
+             #:replace-permissions? replace?
              void)))
-  (check (lambda (file perms)
+  (check (lambda (file perms replace?)
            (call-with-output-file* file
              #:permissions perms
              #:exists 'truncate
+             #:replace-permissions? replace?
              void)))
 
   (delete-directory dir))

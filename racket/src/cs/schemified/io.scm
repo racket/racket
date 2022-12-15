@@ -2849,6 +2849,7 @@
 (define RKTIO_OPEN_NOT_DIR 4096)
 (define RKTIO_OPEN_INIT 8192)
 (define RKTIO_OPEN_OWN 16384)
+(define RKTIO_OPEN_REPLACE_PERMS 32768)
 (define RKTIO_STDIN 0)
 (define RKTIO_STDOUT 1)
 (define RKTIO_STDERR 2)
@@ -26219,12 +26220,12 @@
                                        (1/format app_0 (host-> host-path_0)))))
                                   (void))
                                 (let ((p_0
-                                       (let ((temp38_0 (host-> host-path_0)))
+                                       (let ((temp43_0 (host-> host-path_0)))
                                          (open-input-fd.1
                                           unsafe-undefined
                                           unsafe-undefined
                                           fd_0
-                                          temp38_0))))
+                                          temp43_0))))
                                   (begin
                                     (unsafe-end-atomic)
                                     (if (1/port-count-lines-enabled)
@@ -26242,7 +26243,13 @@
 (define do-open-output-file.1
   (|#%name|
    do-open-output-file
-   (lambda (plus-input?4_0 who6_0 path7_0 mode18_0 mode29_0 perms10_0)
+   (lambda (plus-input?4_0
+            who6_0
+            path7_0
+            mode18_0
+            mode29_0
+            perms10_0
+            replace-perms?11_0)
      (begin
        (begin
          (if (path-string? path7_0)
@@ -26310,7 +26317,8 @@
                                2
                                (if plus-input?4_0 1 0)
                                app_0
-                               (mode->flags_0 mode29_0)))))
+                               (mode->flags_0 mode29_0)
+                               (if replace-perms?11_0 32768 0)))))
                        (let ((fd0_0
                               (|#%app|
                                rktio_open_with_create_permissions
@@ -26415,21 +26423,22 @@
   (let ((open-output-file_0
          (|#%name|
           open-output-file
-          (lambda (path15_0 mode112_0 mode213_0 perms14_0)
+          (lambda (path17_0 mode113_0 mode214_0 perms15_0 replace-perms?16_0)
             (begin
               (let ((mode1_0
-                     (if (eq? mode112_0 unsafe-undefined) none$1 mode112_0)))
+                     (if (eq? mode113_0 unsafe-undefined) none$1 mode113_0)))
                 (let ((mode2_0
-                       (if (eq? mode213_0 unsafe-undefined) none$1 mode213_0)))
+                       (if (eq? mode214_0 unsafe-undefined) none$1 mode214_0)))
                   (let ((perms_0
-                         (if (eq? perms14_0 unsafe-undefined) 438 perms14_0)))
+                         (if (eq? perms15_0 unsafe-undefined) 438 perms15_0)))
                     (do-open-output-file.1
                      #f
                      'open-output-file
-                     path15_0
+                     path17_0
                      mode1_0
                      mode2_0
-                     perms_0)))))))))
+                     perms_0
+                     replace-perms?16_0)))))))))
     (|#%name|
      open-output-file
      (case-lambda
@@ -26439,36 +26448,41 @@
           path_0
           unsafe-undefined
           unsafe-undefined
-          unsafe-undefined)))
-      ((path_0 mode1_0 mode2_0 perms14_0)
-       (open-output-file_0 path_0 mode1_0 mode2_0 perms14_0))
-      ((path_0 mode1_0 mode213_0)
-       (open-output-file_0 path_0 mode1_0 mode213_0 unsafe-undefined))
-      ((path_0 mode112_0)
+          unsafe-undefined
+          #f)))
+      ((path_0 mode1_0 mode2_0 perms_0 replace-perms?16_0)
+       (open-output-file_0 path_0 mode1_0 mode2_0 perms_0 replace-perms?16_0))
+      ((path_0 mode1_0 mode2_0 perms15_0)
+       (open-output-file_0 path_0 mode1_0 mode2_0 perms15_0 #f))
+      ((path_0 mode1_0 mode214_0)
+       (open-output-file_0 path_0 mode1_0 mode214_0 unsafe-undefined #f))
+      ((path_0 mode113_0)
        (open-output-file_0
         path_0
-        mode112_0
+        mode113_0
         unsafe-undefined
-        unsafe-undefined))))))
+        unsafe-undefined
+        #f))))))
 (define 1/open-input-output-file
   (let ((open-input-output-file_0
          (|#%name|
           open-input-output-file
-          (lambda (path19_0 mode116_0 mode217_0 perms18_0)
+          (lambda (path22_0 mode118_0 mode219_0 perms20_0 replace-perms?21_0)
             (begin
               (let ((mode1_0
-                     (if (eq? mode116_0 unsafe-undefined) none$1 mode116_0)))
+                     (if (eq? mode118_0 unsafe-undefined) none$1 mode118_0)))
                 (let ((mode2_0
-                       (if (eq? mode217_0 unsafe-undefined) none$1 mode217_0)))
+                       (if (eq? mode219_0 unsafe-undefined) none$1 mode219_0)))
                   (let ((perms_0
-                         (if (eq? perms18_0 unsafe-undefined) 438 perms18_0)))
+                         (if (eq? perms20_0 unsafe-undefined) 438 perms20_0)))
                     (do-open-output-file.1
                      #t
                      'open-input-output-file
-                     path19_0
+                     path22_0
                      mode1_0
                      mode2_0
-                     perms_0)))))))))
+                     perms_0
+                     replace-perms?21_0)))))))))
     (|#%name|
      open-input-output-file
      (case-lambda
@@ -26478,80 +26492,94 @@
           path_0
           unsafe-undefined
           unsafe-undefined
-          unsafe-undefined)))
-      ((path_0 mode1_0 mode2_0 perms18_0)
-       (open-input-output-file_0 path_0 mode1_0 mode2_0 perms18_0))
-      ((path_0 mode1_0 mode217_0)
-       (open-input-output-file_0 path_0 mode1_0 mode217_0 unsafe-undefined))
-      ((path_0 mode116_0)
+          unsafe-undefined
+          #f)))
+      ((path_0 mode1_0 mode2_0 perms_0 replace-perms?21_0)
        (open-input-output-file_0
         path_0
-        mode116_0
+        mode1_0
+        mode2_0
+        perms_0
+        replace-perms?21_0))
+      ((path_0 mode1_0 mode2_0 perms20_0)
+       (open-input-output-file_0 path_0 mode1_0 mode2_0 perms20_0 #f))
+      ((path_0 mode1_0 mode219_0)
+       (open-input-output-file_0 path_0 mode1_0 mode219_0 unsafe-undefined #f))
+      ((path_0 mode118_0)
+       (open-input-output-file_0
+        path_0
+        mode118_0
         unsafe-undefined
-        unsafe-undefined))))))
+        unsafe-undefined
+        #f))))))
 (define 1/call-with-input-file
   (let ((call-with-input-file_0
          (|#%name|
           call-with-input-file
-          (lambda (path21_0 proc22_0 mode20_0)
+          (lambda (path24_0 proc25_0 mode23_0)
             (begin
               (let ((mode_0
-                     (if (eq? mode20_0 unsafe-undefined) none$1 mode20_0)))
+                     (if (eq? mode23_0 unsafe-undefined) none$1 mode23_0)))
                 (begin
-                  (if (path-string? path21_0)
+                  (if (path-string? path24_0)
                     (void)
                     (raise-argument-error
                      'call-with-input-file
                      "path-string?"
-                     path21_0))
+                     path24_0))
                   (begin
-                    (if (if (procedure? proc22_0)
-                          (procedure-arity-includes? proc22_0 1)
+                    (if (if (procedure? proc25_0)
+                          (procedure-arity-includes? proc25_0 1)
                           #f)
                       (void)
                       (raise-argument-error
                        'call-with-input-file
                        "(procedure-arity-includes/c 1)"
-                       proc22_0))
-                    (let ((i_0 (1/open-input-file path21_0 mode_0)))
+                       proc25_0))
+                    (let ((i_0 (1/open-input-file path24_0 mode_0)))
                       (begin0
-                        (|#%app| proc22_0 i_0)
+                        (|#%app| proc25_0 i_0)
                         (1/close-input-port i_0)))))))))))
     (|#%name|
      call-with-input-file
      (case-lambda
       ((path_0 proc_0)
        (begin (call-with-input-file_0 path_0 proc_0 unsafe-undefined)))
-      ((path_0 proc_0 mode20_0)
-       (call-with-input-file_0 path_0 proc_0 mode20_0))))))
+      ((path_0 proc_0 mode23_0)
+       (call-with-input-file_0 path_0 proc_0 mode23_0))))))
 (define 1/call-with-output-file
   (let ((call-with-output-file_0
          (|#%name|
           call-with-output-file
-          (lambda (path26_0 proc27_0 mode123_0 mode224_0 perms25_0)
+          (lambda (path30_0
+                   proc31_0
+                   mode126_0
+                   mode227_0
+                   perms28_0
+                   replace-perms?29_0)
             (begin
               (let ((mode1_0
-                     (if (eq? mode123_0 unsafe-undefined) none$1 mode123_0)))
+                     (if (eq? mode126_0 unsafe-undefined) none$1 mode126_0)))
                 (let ((mode2_0
-                       (if (eq? mode224_0 unsafe-undefined) none$1 mode224_0)))
+                       (if (eq? mode227_0 unsafe-undefined) none$1 mode227_0)))
                   (let ((perms_0
-                         (if (eq? perms25_0 unsafe-undefined) 438 perms25_0)))
+                         (if (eq? perms28_0 unsafe-undefined) 438 perms28_0)))
                     (begin
-                      (if (path-string? path26_0)
+                      (if (path-string? path30_0)
                         (void)
                         (raise-argument-error
                          'call-with-output-file
                          "path-string?"
-                         path26_0))
+                         path30_0))
                       (begin
-                        (if (if (procedure? proc27_0)
-                              (procedure-arity-includes? proc27_0 1)
+                        (if (if (procedure? proc31_0)
+                              (procedure-arity-includes? proc31_0 1)
                               #f)
                           (void)
                           (raise-argument-error
                            'call-with-output-file
                            "(procedure-arity-includes/c 1)"
-                           proc27_0))
+                           proc31_0))
                         (begin
                           (if (permissions? perms_0)
                             (void)
@@ -26561,12 +26589,13 @@
                              perms_0))
                           (let ((o_0
                                  (1/open-output-file
-                                  path26_0
+                                  path30_0
                                   mode1_0
                                   mode2_0
-                                  perms_0)))
+                                  perms_0
+                                  replace-perms?29_0)))
                             (begin0
-                              (|#%app| proc27_0 o_0)
+                              (|#%app| proc31_0 o_0)
                               (1/close-output-port o_0))))))))))))))
     (|#%name|
      call-with-output-file
@@ -26578,48 +26607,59 @@
           proc_0
           unsafe-undefined
           unsafe-undefined
-          unsafe-undefined)))
-      ((path_0 proc_0 mode1_0 mode2_0 perms25_0)
-       (call-with-output-file_0 path_0 proc_0 mode1_0 mode2_0 perms25_0))
-      ((path_0 proc_0 mode1_0 mode224_0)
+          unsafe-undefined
+          #f)))
+      ((path_0 proc_0 mode1_0 mode2_0 perms_0 replace-perms?29_0)
        (call-with-output-file_0
         path_0
         proc_0
         mode1_0
-        mode224_0
-        unsafe-undefined))
-      ((path_0 proc_0 mode123_0)
+        mode2_0
+        perms_0
+        replace-perms?29_0))
+      ((path_0 proc_0 mode1_0 mode2_0 perms28_0)
+       (call-with-output-file_0 path_0 proc_0 mode1_0 mode2_0 perms28_0 #f))
+      ((path_0 proc_0 mode1_0 mode227_0)
        (call-with-output-file_0
         path_0
         proc_0
-        mode123_0
+        mode1_0
+        mode227_0
         unsafe-undefined
-        unsafe-undefined))))))
+        #f))
+      ((path_0 proc_0 mode126_0)
+       (call-with-output-file_0
+        path_0
+        proc_0
+        mode126_0
+        unsafe-undefined
+        unsafe-undefined
+        #f))))))
 (define 1/with-input-from-file
   (let ((with-input-from-file_0
          (|#%name|
           with-input-from-file
-          (lambda (path29_0 proc30_0 mode28_0)
+          (lambda (path33_0 proc34_0 mode32_0)
             (begin
               (let ((mode_0
-                     (if (eq? mode28_0 unsafe-undefined) none$1 mode28_0)))
+                     (if (eq? mode32_0 unsafe-undefined) none$1 mode32_0)))
                 (begin
-                  (if (path-string? path29_0)
+                  (if (path-string? path33_0)
                     (void)
                     (raise-argument-error
                      'with-input-from-file
                      "path-string?"
-                     path29_0))
+                     path33_0))
                   (begin
-                    (if (if (procedure? proc30_0)
-                          (procedure-arity-includes? proc30_0 0)
+                    (if (if (procedure? proc34_0)
+                          (procedure-arity-includes? proc34_0 0)
                           #f)
                       (void)
                       (raise-argument-error
                        'with-input-from-file
                        "(procedure-arity-includes/c 0)"
-                       proc30_0))
-                    (let ((i_0 (1/open-input-file path29_0 mode_0)))
+                       proc34_0))
+                    (let ((i_0 (1/open-input-file path33_0 mode_0)))
                       (with-continuation-mark*
                        authentic
                        parameterization-key
@@ -26629,43 +26669,48 @@
                         i_0)
                        (dynamic-wind
                         void
-                        proc30_0
+                        proc34_0
                         (lambda () (1/close-input-port i_0)))))))))))))
     (|#%name|
      with-input-from-file
      (case-lambda
       ((path_0 proc_0)
        (begin (with-input-from-file_0 path_0 proc_0 unsafe-undefined)))
-      ((path_0 proc_0 mode28_0)
-       (with-input-from-file_0 path_0 proc_0 mode28_0))))))
+      ((path_0 proc_0 mode32_0)
+       (with-input-from-file_0 path_0 proc_0 mode32_0))))))
 (define 1/with-output-to-file
   (let ((with-output-to-file_0
          (|#%name|
           with-output-to-file
-          (lambda (path34_0 proc35_0 mode131_0 mode232_0 perms33_0)
+          (lambda (path39_0
+                   proc40_0
+                   mode135_0
+                   mode236_0
+                   perms37_0
+                   replace-perms?38_0)
             (begin
               (let ((mode1_0
-                     (if (eq? mode131_0 unsafe-undefined) none$1 mode131_0)))
+                     (if (eq? mode135_0 unsafe-undefined) none$1 mode135_0)))
                 (let ((mode2_0
-                       (if (eq? mode232_0 unsafe-undefined) none$1 mode232_0)))
+                       (if (eq? mode236_0 unsafe-undefined) none$1 mode236_0)))
                   (let ((perms_0
-                         (if (eq? perms33_0 unsafe-undefined) 438 perms33_0)))
+                         (if (eq? perms37_0 unsafe-undefined) 438 perms37_0)))
                     (begin
-                      (if (path-string? path34_0)
+                      (if (path-string? path39_0)
                         (void)
                         (raise-argument-error
                          'with-output-to-file
                          "path-string?"
-                         path34_0))
+                         path39_0))
                       (begin
-                        (if (if (procedure? proc35_0)
-                              (procedure-arity-includes? proc35_0 0)
+                        (if (if (procedure? proc40_0)
+                              (procedure-arity-includes? proc40_0 0)
                               #f)
                           (void)
                           (raise-argument-error
                            'with-output-to-file
                            "(procedure-arity-includes/c 0)"
-                           proc35_0))
+                           proc40_0))
                         (begin
                           (if (permissions? perms_0)
                             (void)
@@ -26675,10 +26720,11 @@
                              perms_0))
                           (let ((o_0
                                  (1/open-output-file
-                                  path34_0
+                                  path39_0
                                   mode1_0
                                   mode2_0
-                                  perms_0)))
+                                  perms_0
+                                  replace-perms?38_0)))
                             (with-continuation-mark*
                              authentic
                              parameterization-key
@@ -26690,7 +26736,7 @@
                               o_0)
                              (dynamic-wind
                               void
-                              proc35_0
+                              proc40_0
                               (lambda ()
                                 (1/close-output-port o_0))))))))))))))))
     (|#%name|
@@ -26703,23 +26749,34 @@
           proc_0
           unsafe-undefined
           unsafe-undefined
-          unsafe-undefined)))
-      ((path_0 proc_0 mode1_0 mode2_0 perms33_0)
-       (with-output-to-file_0 path_0 proc_0 mode1_0 mode2_0 perms33_0))
-      ((path_0 proc_0 mode1_0 mode232_0)
+          unsafe-undefined
+          #f)))
+      ((path_0 proc_0 mode1_0 mode2_0 perms_0 replace-perms?38_0)
        (with-output-to-file_0
         path_0
         proc_0
         mode1_0
-        mode232_0
-        unsafe-undefined))
-      ((path_0 proc_0 mode131_0)
+        mode2_0
+        perms_0
+        replace-perms?38_0))
+      ((path_0 proc_0 mode1_0 mode2_0 perms37_0)
+       (with-output-to-file_0 path_0 proc_0 mode1_0 mode2_0 perms37_0 #f))
+      ((path_0 proc_0 mode1_0 mode236_0)
        (with-output-to-file_0
         path_0
         proc_0
-        mode131_0
+        mode1_0
+        mode236_0
         unsafe-undefined
-        unsafe-undefined))))))
+        #f))
+      ((path_0 proc_0 mode135_0)
+       (with-output-to-file_0
+        path_0
+        proc_0
+        mode135_0
+        unsafe-undefined
+        unsafe-undefined
+        #f))))))
 (define path-or-fd-identity.1
   (|#%name|
    path-or-fd-identity
