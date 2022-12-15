@@ -74,10 +74,10 @@
                          (substring s offset (string-length s)))]))))))
 
 (define (make-field-start-regexp field)
-  (regexp (format "(^|[\r][\n])(~a: *)" (regexp-quote field #f))))
+  (regexp (format "(^|[\r][\n])(~a:[ \t]*)" (regexp-quote field #f))))
 
 (define (make-field-start-regexp/bytes field)
-  (byte-regexp (bytes-append #"(^|[\r][\n])("(regexp-quote field #f) #": *)")))
+  (byte-regexp (bytes-append #"(^|[\r][\n])("(regexp-quote field #f) #":[ \t]*)")))
 
 (define (extract-field field header)
   (if (bytes? header)
