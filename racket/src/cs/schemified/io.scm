@@ -2953,6 +2953,7 @@
 (define RKTIO_ERROR_CONVERT_NOT_ENOUGH_SPACE 28)
 (define RKTIO_ERROR_CONVERT_BAD_SEQUENCE 29)
 (define RKTIO_ERROR_CONVERT_PREMATURE_END 30)
+(define RKTIO_ERROR_CONVERT_OTHER 31)
 (define rktio_init (begin-unsafe (hash-ref rktio-table 'rktio_init)))
 (define rktio_destroy (begin-unsafe (hash-ref rktio-table 'rktio_destroy)))
 (define rktio_free (begin-unsafe (hash-ref rktio-table 'rktio_free)))
@@ -16597,7 +16598,9 @@
                                     'aborts
                                     (if (eqv? err_0 28)
                                       'continues
-                                      'complete)))))))))
+                                      (if (eqv? err_0 31)
+                                        'error
+                                        'complete))))))))))
                       (args (raise-binding-result-arity-error 3 args)))))))))
              (loop_0
               use-dest-bstr_0

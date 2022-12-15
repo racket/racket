@@ -1207,10 +1207,10 @@ intptr_t rktio_convert(rktio_t *rktio,
    increments `*out` and decrements `*out_left`. In case of an error,
    the result is `RKTIO_CONVERT_ERROR` and the last error is set to
    one of `RKTIO_ERROR_CONVERT_NOT_ENOUGH_SPACE`,
-   `RKTIO_ERROR_CONVERT_BAD_SEQUENCE`, or `RKTIO_ERROR_CONVERT_OTHER`
-   --- but an error indicates something within `in` or `out`,
-   and some bytes may have been successfully converted even if an
-   error is reported. */
+   `RKTIO_ERROR_CONVERT_BAD_SEQUENCE`, `RKTIO_ERROR_CONVERT_PREMATURE_END`,
+   or `RKTIO_ERROR_CONVERT_OTHER` --- but an error indicates something within
+   `in` or `out`, and some bytes may have been successfully converted even if
+   an error is reported. */
 
 #define RKTIO_CONVERT_ERROR (-1)
 

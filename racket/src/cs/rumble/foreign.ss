@@ -1995,14 +1995,16 @@
 ;; function is called with interrupts disabled
 (define get-errno
   (cond
-   [(not (#%memq (machine-type) '(a6nt ta6nt i3nt ti3nt)))
+   [(not (#%memq (machine-type) '(a6nt ta6nt i3nt ti3nt arm64nt tarm64nt)))
     (foreign-procedure "(cs)s_errno" () int)]
    [else
     ;; On Windows, `errno` could be a different one from
     ;; `_errno` in MSVCRT. Therefore fallback to the foreign function.
     ;; See `save_errno_values` in `foreign.c` from Racket BC for more
     ;; information.
-    (load-shared-object "msvcrt.dll")
+    (load-shared-object (if (#%memq (machine-type) '(arm64nt tarm64nt))
+			    "API-MS-WIN-CRT-RUNTIME-L1-1-1.0.DLL"
+			    "msvcrt.dll"))
     (let ([get-&errno (foreign-procedure "_errno" () void*)])
       (lambda ()
         (foreign-ref 'int (get-&errno) 0)))]))

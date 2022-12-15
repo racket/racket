@@ -220,6 +220,7 @@
                  [(eqv? err RKTIO_ERROR_CONVERT_BAD_SEQUENCE) 'error]
                  [(eqv? err RKTIO_ERROR_CONVERT_PREMATURE_END) 'aborts]
                  [(eqv? err RKTIO_ERROR_CONVERT_NOT_ENOUGH_SPACE) 'continues]
+                 [(eqv? err RKTIO_ERROR_CONVERT_OTHER) 'error] ; should not happen
                  [else 'complete]))])))
 
 ;; in atomic mode
