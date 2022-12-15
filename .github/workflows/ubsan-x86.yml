@@ -10,7 +10,7 @@ jobs:
 # Build jobs
 # These jobs build Racket using undefined behaviour sanitizers and gathers the results into a final log
   racket3m-ubsan:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     container: racket/racket-ci:latest
 
     steps:
@@ -92,7 +92,7 @@ jobs:
         path: runtime-errors_git${{ github.sha }}.log
 
   racketcs-ubsan:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     container: racket/racket-ci:latest
 
     steps:

@@ -9,7 +9,7 @@ jobs:
 # component finishes building.
 
   build-racketcgc:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     container:
       image: racket/racket-ci:latest
 
@@ -60,7 +60,7 @@ jobs:
         path: /tmp/racketcgc-debian10-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
 
   build-racket3m:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     container:
       image: racket/racket-ci:latest
                 
@@ -147,7 +147,7 @@ jobs:
         path: /tmp/racket3m-debian10-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}.tar.bz2
 
   build-racketcs:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     container:
       image: racket/racket-ci:latest
 
@@ -204,7 +204,7 @@ jobs:
   # Note: the reason we cannot transform this into a matrix
   # build is because we cannot use variables in the needs keyword.
   test-cgc:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     container:
       image: racket/racket-ci:latest
       options: --init
@@ -275,7 +275,7 @@ jobs:
         run: raco test -c tests/syntax
 
   test-3m:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     container:
       image: racket/racket-ci:latest
       options: --init
@@ -358,7 +358,7 @@ jobs:
         run: raco test -c tests/syntax
 
   test-cs:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     container:
       image: racket/racket-ci:latest
       options: --init
