@@ -85,7 +85,9 @@ To embed Racket CS in a program, follow these steps:
   offset of each boot image in the file.
 
   See @secref["segment-ideas"] for advice on embedding files like
-  @filepath{petite.boot} in an executable.}
+  @filepath{petite.boot} in an executable, or consider using
+  @cpp{racket_get_self_exe_path} and @cpp{racket_path_replace_filename}
+  to build paths that are relative to the executable.}
 
  @item{Configure the main thread's namespace by adding module
   declarations. The initial namespace contains declarations only for a

@@ -138,7 +138,8 @@
            (at-source "boot.h")
            (at-dir "cs_config.h")
            (at-source "../../start/config.inc")
-           (at-source "../../start/self_exe.inc"))
+           (at-source "../../start/self_exe.inc")
+           (at-source "path_replace.inc"))
      (if windows?
          (list
           (at-source "../../start/embedded_dll.inc")
@@ -615,6 +616,8 @@
 
        [:target ,boot.o (,(at-source "boot.c")
                          ,(at-source "../../rktio/rktio.inc")
+                         ,(at-source "../../start/self_exe.inc")
+                         ,(at-source "path_replace.inc")
                          ,(at-source "boot.h")
                          ,rktio_config.h)
                 ,(lambda (boot.o token)

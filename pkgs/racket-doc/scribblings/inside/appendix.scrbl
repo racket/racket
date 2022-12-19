@@ -175,25 +175,6 @@ sections:
 
 #include "run.c"
 
-static char *get_self_path()
-{
-  ssize_t len, blen = 256;
-  char *s = malloc(blen);
-
-  while (1) {
-    len = readlink("/proc/self/exe", s, blen-1);
-    if (len == (blen-1)) {
-      free(s);
-      blen *= 2;
-      s = malloc(blen);
-    } else if (len < 0) {
-      fprintf(stderr, "failed to get self (%d)\n", errno);
-      exit(1);
-    } else
-      return s;
-  }
-}
-
 static long find_section(const char *exe, const char *sectname)
 {
   int fd, i;
@@ -234,7 +215,7 @@ int main(int argc, char *argv[])
 
   memset(&ba, 0, sizeof(ba));
 
-  ba.boot1_path = get_self_path();
+  ba.boot1_path = racket_get_self_exe_path(argv[0]);
   ba.boot2_path = ba.boot1_path;
   ba.boot3_path = ba.boot1_path;
 
@@ -293,22 +274,6 @@ then the executable can access is own path using
 #include <mach-o/dyld.h>
 #include <mach-o/getsect.h>
 
-static char *get_self_path()
-{
-  char *s;
-  uint32_t size = 0;
-  int r;
-
-  r = _NSGetExecutablePath(NULL, &size);
-  s = malloc(size+1);
-  r = _NSGetExecutablePath(s, &size);
-  if (!r)
-    return s;
-
-  fprintf(stderr, "could not get executable path\n");
-  exit(1);
-}
-
 static long find_section(char *segname, char *sectname)
 {
   const struct section_64 *s = getsectbyname(segname, sectname);
@@ -328,7 +293,7 @@ int main(int argc, char **argv)
 
   memset(&ba, 0, sizeof(ba));
 
-  ba.boot1_path = get_self_path();
+  ba.boot1_path = racket_get_self_exe_path(argv[0]);
   ba.boot2_path = ba.boot1_path;
   ba.boot3_path = ba.boot1_path;
 

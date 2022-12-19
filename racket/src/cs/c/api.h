@@ -28,4 +28,7 @@ RACKET_API_EXTERN void *racket_cpointer_address(ptr cptr);
 RACKET_API_EXTERN void *racket_cpointer_base_address(ptr cptr);
 RACKET_API_EXTERN iptr racket_cpointer_offset(ptr cptr);
 
+RACKET_API_EXTERN char *racket_get_self_exe_path(const char *argv0);
+RACKET_API_EXTERN char *racket_path_replace_filename(const char *path, const char *new_filename);
+
 #endif
