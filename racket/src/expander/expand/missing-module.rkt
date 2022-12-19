@@ -57,7 +57,7 @@
       (raise
        (exn:fail:syntax:missing-module
         (format (string-append "~a: cannot open module file\n"
-                               "  module path: ~a\n"
+                               "  module path: ~s\n"
                                "  path: ~a~a~a~a\n"
                                "  system error: ~a")
                 (if (syntax-srcloc path)
@@ -72,7 +72,7 @@
     (raise
        (exn:fail:filesystem:missing-module
         (format (string-append "~a: cannot open module file\n"
-                               "  module path: ~a\n"
+                               "  module path: ~s\n"
                                "  path: ~a~a~a~a\n"
                                "  system error: ~a")
                 name
