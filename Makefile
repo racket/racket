@@ -103,7 +103,7 @@ CFLAGS_FOR_BUILD =
 
 # This branch name must be changed each time the pb boot files are
 # updated:
-PB_BRANCH = circa-8.7.0.7-1
+PB_BRANCH = v9.9.9-pre-release.14
 PB_REPO = https://github.com/racket/pb
 
 # Set to empty for Git before v1.7.10:

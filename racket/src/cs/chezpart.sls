@@ -29,9 +29,9 @@
                            dynamic-wind
                            call-with-current-continuation
                            call-in-continuation
-                           with-continuation-mark current-continuation-marks continuation-mark-set?
-                           call-with-immediate-continuation-mark continuation-mark-set-first
-                           continuation-mark-set->list continuation-mark-set->iterator
+                           with-continuation-mark current-continuation-marks continuation-marks?
+                           call-with-immediate-continuation-mark continuation-marks-first
+                           continuation-marks->list continuation-marks->iterator
                            make-engine engine-block engine-return
                            current-eval load
                            sleep thread? buffer-mode?
