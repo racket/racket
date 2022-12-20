@@ -172,7 +172,7 @@ static long find_mach_o_segment(const char *name, long *_len)
 #endif
 
 #ifdef DOS_FILE_SYSTEM
-wchar_t *get_self_path(const char *exec_file) XFORM_SKIP_PROC
+self_exe_t get_self_path(const char *exec_file) XFORM_SKIP_PROC
 {
   wchar_t *path;
   DWORD r, sz = 1024;

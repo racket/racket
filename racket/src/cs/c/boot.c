@@ -24,6 +24,9 @@
 #define SELF_EXE_WINDOWS_AS_UTF8
 #define SELF_EXE_NO_EXTRAS
 #define XFORM_SKIP_PROC /* empty */
+#ifdef WIN32
+# define DOS_FILE_SYSTEM
+#endif
 #include "../../start/self_exe.inc"
 #include "path_replace.inc"
 
@@ -112,7 +115,7 @@ static void run_cross_server(char **argv)
   (void)Scall1(c, a);
 }
 
-static void init_foreign()
+static void init_foreign(void)
 {
 # include "rktio.inc"
 }
