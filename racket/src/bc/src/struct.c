@@ -4761,6 +4761,28 @@ Scheme_Object *scheme_rename_struct_proc(Scheme_Object *p, Scheme_Object *sym, S
   return NULL;
 }
 
+static void format_name(char *name, int lp, int lp1, int lp2,
+                        const char *pre, const char *tn, int ltn, int xltn,
+                        const char *post1, const char *fn, int lfn, int xlfn,
+                        const char *post2) {
+  int total;
+
+  memcpy(name, pre, lp);
+  total = lp;
+  if (xltn)
+    memcpy(name + total, (ltn < 0) ? SCHEME_SYM_VAL((Scheme_Object *)tn) : tn, xltn);
+  total += xltn;
+  memcpy(name + total, post1, lp1);
+  total += lp1;
+  if (xlfn)
+    memcpy(name + total, (lfn < 0) ? SCHEME_SYM_VAL((Scheme_Object *)fn) : fn, xlfn);
+  total += xlfn;
+  memcpy(name + total, post2, lp2);
+  total += lp2;
+
+  name[total] = 0;
+}
+
 static Scheme_Object *make_name(const char *pre, const char *tn, int ltn,
 				const char *post1, const char *fn, int lfn,
 				const char *post2, int sym)
@@ -4784,30 +4806,21 @@ static Scheme_Object *make_name(const char *pre, const char *tn, int ltn,
   total += xlfn;
   total += (lp2 = strlen(post2));
 
-  if (sym && (total < 256))
+  if (sym && (total < 256)) {
     name = buffer;
-  else
-    name = (char *)scheme_malloc_atomic(sizeof(char)*(total + 1));
-  
-  memcpy(name, pre, lp);
-  total = lp;
-  if (xltn)
-    memcpy(name + total, (ltn < 0) ? SCHEME_SYM_VAL((Scheme_Object *)tn) : tn, xltn);
-  total += xltn;
-  memcpy(name + total, post1, lp1);
-  total += lp1;
-  if (xlfn)
-    memcpy(name + total, (lfn < 0) ? SCHEME_SYM_VAL((Scheme_Object *)fn) : fn, xlfn);
-  total += xlfn;
-  memcpy(name + total, post2, lp2);
-  total += lp2;
-
-  name[total] = 0;
-
-  if (sym)
+    format_name(name, lp, lp1, lp2,
+                pre, tn, ltn, xltn,
+                post1, fn, lfn, xlfn,
+                post2);
     return scheme_intern_exact_symbol(name, total);
-  else
+  } else {
+    name = (char *)scheme_malloc_atomic(sizeof(char)*(total + 1));
+    format_name(name, lp, lp1, lp2,
+                pre, tn, ltn, xltn,
+                post1, fn, lfn, xlfn,
+                post2);
     return (Scheme_Object *)name;
+  }
 }
 
 /*========================================================================*/
