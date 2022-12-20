@@ -21,9 +21,15 @@
 (define-virtual-register current-in-uninterrupted #f)
 (define-virtual-register pending-interrupt-callback #f)
 
-(define-syntax CHECK-uninterrupted
-  (syntax-rules ()
-    [(_ e ...) (void) #;(begin e ...)]))
+(meta-cond
+ [(= (optimize-level) 3)
+  (define-syntax CHECK-uninterrupted
+    (syntax-rules ()
+      [(_ e ...) (void)]))]
+ [else
+  (define-syntax CHECK-uninterrupted
+    (syntax-rules ()
+      [(_ e ...) (begin e ...)]))])
 
 (define (start-uninterrupted who)
   (CHECK-uninterrupted
@@ -42,15 +48,15 @@
        (pending-interrupt-callback #f)
        (callback)))))
 
-(define (assert-in-uninterrupted)
+(define (assert-in-uninterrupted who)
   (CHECK-uninterrupted
    (unless (current-in-uninterrupted)
-     (internal-error 'assert-in-uninterrupted "assertion failed"))))
+     (internal-error 'assert-in-uninterrupted (format "~a: assertion failed" who)))))
 
-(define (assert-not-in-uninterrupted)
+(define (assert-not-in-uninterrupted who)
   (CHECK-uninterrupted
    (when (current-in-uninterrupted)
-     (internal-error 'assert-not-in-uninterrupted "assertion failed"))))
+     (internal-error 'assert-not-in-uninterrupted (format "~a: assertion failed" who)))))
 
 ;; An implicit context is when a relevant interrupt can't happen, but
 ;; `assert-in-uninterrupted` might be called.
@@ -58,13 +64,15 @@
 (define (start-implicit-uninterrupted who)
   (CHECK-uninterrupted
    (when (current-in-uninterrupted)
-     (internal-error 'start-implicit-uninterrupted "already started"))
+     (internal-error 'start-implicit-uninterrupted (format "~a: already started" who)))
+   (unless (fx= 0 (set-timer 0))
+     (internal-error 'start-implicit-uninterrupted (format "~a: timer is running" who)))
    (current-in-uninterrupted #t)))
 
 (define (end-implicit-uninterrupted who)
   (CHECK-uninterrupted
    (unless (current-in-uninterrupted)
-     (internal-error 'end-implicit-uninterrupted "not started"))
+     (internal-error 'end-implicit-uninterrupted (format "~a: not started" who)))
    (current-in-uninterrupted #f)))
 
 (define (internal-error who s)
