@@ -265,6 +265,41 @@ static int executable_exists(const char *path) XFORM_SKIP_PROC
   return (access(path, X_OK) == 0);
 }
 
+static char *get_current_directory() XFORM_SKIP_PROC
+{
+  char *dir;
+
+  dir = getcwd(NULL, 0);
+
+  if (dir == NULL) {
+    /* Probably an old system where you have to allocate space yourself */
+    char *s;
+    int len = 256;
+
+    s = malloc(len);
+    while (1) {
+      dir = getcwd(s, len);
+      if (dir != NULL)
+        break;
+      if (errno == ERANGE) {
+        free(s);
+        len *= 2;
+        s = malloc(len);
+      } else
+        break;
+    }
+
+    if (dir == NULL) {
+      /* Still failed, so give up with "." as the path */
+      s[0] = '.';
+      s[1] = 0;
+      dir = s;
+    }
+  }
+
+  return dir;
+}
+
 static char *lookup_exe_via_path(const char *exec_file) XFORM_SKIP_PROC
 {
   if (exec_file[0] == '/') {
@@ -273,7 +308,7 @@ static char *lookup_exe_via_path(const char *exec_file) XFORM_SKIP_PROC
   } else if (has_slash(exec_file)) {
     /* Relative path with a directory: */
     char *dir, *r;
-    dir = getcwd(NULL, 0);
+    dir = get_current_directory();
     r = path_append(dir, exec_file);
     free(dir);
     return r;
@@ -303,7 +338,7 @@ static char *lookup_exe_via_path(const char *exec_file) XFORM_SKIP_PROC
       if (executable_exists(m)) {
 	if (m[0] != '/') {
           char *old_m = m;
-	  m = path_append(getcwd(NULL, 0), m);
+	  m = path_append(get_current_directory(), m);
           free(old_m);
         }
         free(path);
