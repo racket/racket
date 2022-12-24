@@ -1,5 +1,10 @@
 #lang racket/base
 
+(module test racket/base
+  ;; This example is obsolete, because modern crypt libraries do not
+  ;; provide `setkey`, and libcrypt itself is obsolete.
+  (void))
+
 (require ffi/unsafe)
 
 (define libcrypt (ffi-lib "libcrypt"))
