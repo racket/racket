@@ -144,6 +144,11 @@
                          (list a b)])
                       '(4 6))
 
+        (check-equal? (match (hash 1 2 3 4 5 6)
+                        [(hash-table (3 a) (5 b) (_ _) ...)
+                         (list a b)])
+                      '(4 6))
+
         ;; Duplicate keys are fine
         (check-equal? (match (hash 1 2 3 4 5 6)
                         [(hash-table (3 a) (3 b) _ ...)

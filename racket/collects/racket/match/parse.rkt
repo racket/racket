@@ -66,7 +66,9 @@
 
 (define default-val (gensym))
 
-;; ht-trans :: syntax? (listof syntax?) (or/c #f (cons #'_ #'..0))
+;; ht-trans :: syntax? stx-list? (or/c #f cons?)
+;; precondition: dd's car is either #'_ or #'(_ _) and
+;;               dd's cdr is either #'... or #'..0
 (define (ht-trans stx ps dd)
   ;; do-literal-keys :: list? list? stx-list?
   (define (do-literal-keys keys preds vs)
@@ -171,20 +173,25 @@
     ;; HASH TABLE
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    ;; x ..k is used and k >= 1, so we use the fallback method
+    ;; x ..k is used and k >= 1; use the fallback method
     [(hash-table p ... x dd)
      (let ([ddk-size (ddk? #'dd)]) (and (number? ddk-size) (>= ddk-size 1)))
      (ht-trans-fallback stx #'(p ...) (cons #'x #'dd))]
 
-    ;; x ..0 is used and x is not underscore, so we use the fallback method
-    [(hash-table p ... x dd)
-     (and (ddk? #'dd) (not (underscore? #'x)))
-     (ht-trans-fallback stx #'(p ...) (cons #'x #'dd))]
-
     ;; _ ..0
     [(hash-table p ... x dd)
-     (ddk? #'dd)
+     (and (ddk? #'dd) (underscore? #'x))
      (ht-trans stx #'(p ...) (cons #'x #'dd))]
+
+    ;; (_ _) ..0
+    [(hash-table p ... (x y) dd)
+     (and (ddk? #'dd) (underscore? #'x) (underscore? #'y))
+     (ht-trans stx #'(p ...) (cons #'(x y) #'dd))]
+
+    ;; x ..0; use the fallback method
+    [(hash-table p ... x dd)
+     (ddk? #'dd)
+     (ht-trans-fallback stx #'(p ...) (cons #'x #'dd))]
 
     ;; malformed ..k
     [(hash-table p ...)
