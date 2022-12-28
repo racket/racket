@@ -12,6 +12,8 @@ When a thread is created, it is placed into the management of the
 @tech{current custodian} and added to the current @tech{thread
 group}. A thread can have any number of custodian managers added
 through @racket[thread-resume].
+The allocation made by a thread is accounted to the thread's custodian managers.
+See @racket[custodian-limit-memory] for examples.
 
 A thread that has not terminated can be garbage collected (see
 @secref["gc-model"]) if it is unreachable and suspended or if it is
