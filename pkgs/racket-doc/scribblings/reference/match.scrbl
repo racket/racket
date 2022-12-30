@@ -95,12 +95,19 @@ In more detail, patterns match as follows:
        @racket[_k]) @margin-note{Unlike in @racket[cond] and @racket[case],
        @racket[else] is not a keyword in @racket[match].} or @racket[(var _id)]
        --- matches anything, and binds @racket[_id] to the
-       matching values. If an @racket[_id] is used multiple times
+       matching values.
+
+       If an @racket[_id] is used multiple times
        within a pattern, the corresponding matches must be the same
        according to @racket[(match-equality-test)], except that
        instances of an @racket[_id] in different @racketidfont{or} and
        @racketidfont{not} sub-patterns are independent. The binding for @racket[_id] is
        not available in other parts of the same pattern.
+
+       If @racket[_id] is used multiple times, but the first
+       use is in the scope of a @racketidfont{...} pattern
+       that doesn't encompass all uses, a syntax error is
+       raised.
 
        @examples[
        #:eval match-eval

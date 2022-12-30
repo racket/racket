@@ -5,6 +5,7 @@
          "legacy-match-tests.rkt"
          "examples.rkt"
          rackunit rackunit/text-ui
+         syntax/macro-testing
          (only-in racket/base local-require))
 
 (require mzlib/plt-match)
@@ -242,6 +243,20 @@
                 (check = 5 (match '((3) (3)) [(list a a) a] [_ 5]))))
    (test-case "Nonlinear patterns use equal?"
               (check equal? '(3) (match '((3) (3)) [(list a a) a] [_ 5])))
+   (test-case "Nonlinear pattern reference in id ..."
+     (check-equal? (match '(1 1 1 1)
+                     [(list x x ...) x])
+                   1)
+     (check-false (match '(1 1 2 1)
+                    [(list x x ...) x]
+                    [_ #f]))
+     (check-false (match '(1 2 2 2)
+                    [(list x x ...) x]
+                    [_ #f])))
+   (test-case "Nonlinear patterns and list-no-order"
+     (check-equal? (match '(2 1 2 3)
+                     [(cons a (list-no-order a rst ...)) (list a rst)])
+                   '(2 (1 3))))
    (test-case "Nonlinear patterns under ellipses"
      (check-equal? (match '((1 1) (2 2) (3 3))
                      [(list (list a a) ...) a]
@@ -252,7 +267,31 @@
                     [_ #f]))
      (check-equal? (match '((1 1 2 3) (2 1 2 3) (3 1 2 3))
                      [(list (cons a (list pre ... a post ...)) ...) (list a pre post)])
-                   '((1 2 3) (() (1) (1 2)) ((2 3) (3) ()))))))
+                   '((1 2 3) (() (1) (1 2)) ((2 3) (3) ())))
+     (check-equal? (match '((1 1 2 3) (2 1 2 3) (3 1 2 3))
+                     [(list (cons a (list-no-order a rst ...)) ...) (list a rst)])
+                   '((1 2 3) ((2 3) (1 3) (1 2)))))
+    (test-case "Invalid nonlinear pattern declarations under ellipses"
+      (check-exn #rx"^a: non-linear pattern used in `match` with ...$"
+                 (lambda ()
+                   (convert-syntax-error
+                    (match '(1 2 3 4)
+                      [(list a ... a) a]))))
+      (check-exn #rx"^a: non-linear pattern used in `match` with ...$"
+                 (lambda ()
+                   (convert-syntax-error
+                    (match '((1 2 3) (1 2 3))
+                      [(list (list a ...) a) a]))))
+      (check-exn #rx"^a: non-linear pattern used in `match` with ...$"
+                 (lambda ()
+                   (convert-syntax-error
+                    (match '((1 2 3 4) (1 2 3))
+                      [(list (list a ... _) a) a]))))
+      (check-exn #rx"^x: non-linear pattern used in `match` with ...$"
+                 (lambda ()
+                   (convert-syntax-error
+                    (match '((1 2 3 4) (1 2 3 4))
+                      [(list (list x ...) (list x ...)) x])))))))
 
 
 (define doc-tests

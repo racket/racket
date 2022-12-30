@@ -198,7 +198,6 @@
      (let ([transform
             (lambda (row)
               (define-values (p ps) (Row-split-pats row))
-              (define v (Var-v p))
               (define seen (Row-vars-seen row))
               ;; a new row with the rest of the patterns
               (cond
@@ -207,37 +206,29 @@
                                       (Row-rhs row)
                                       (Row-unmatch row)
                                       (Row-vars-seen row))]
-                ;; if we've seen this variable before, check that it's equal to
-                ;; the one we saw
-                [(for/or ([e (in-list seen)])
-                   (let ([v* (car e)] [id (cdr e)])
-                     (and (bound-identifier=? v v*) (or id (list v v*)))))
-                 =>
-                 (lambda (id)
-                   (if (identifier? id)
-                       (make-Row ps
-                                 #`(if ((match-equality-test) #,x #,id)
-                                       #,(Row-rhs row)
-                                       (fail))
-                                 (Row-unmatch row)
-                                 seen)
-                       (begin
-                         (log-error "non-linear pattern used in `match` with ... at ~a and ~a"
-                                    (car id) (cadr id)) 
-                         (let ([v* (free-identifier-mapping-get
-                                    (current-renaming) v (lambda () v))])
-                           (make-Row ps
-                                     #`(let ([#,v* #,x]) #,(Row-rhs row))
-                                     (Row-unmatch row)
-                                     (cons (cons v x) (Row-vars-seen row)))))))]
-                ;; otherwise, bind the matched variable to x, and add it to the
-                ;; list of vars we've seen
-                [else (let ([v* (free-identifier-mapping-get
-                                 (current-renaming) v (lambda () v))])
-                        (make-Row ps
-                                  #`(let ([#,v* #,x]) #,(Row-rhs row))
-                                  (Row-unmatch row)
-                                  (cons (cons v x) (Row-vars-seen row))))]))])
+                [else
+                 (define v (Var-v p))
+                 (define v*
+                   (free-identifier-mapping-get
+                    (current-renaming) v (lambda () v)))
+                 (cond
+                   ;; if we've seen this variable before, check that it's equal to
+                   ;; the one we saw
+                   [(find-seen v seen)
+                    =>
+                    (lambda (id)
+                      (make-Row ps
+                                #`(if #,(nonlinear-reference id x (get-depth v))
+                                      #,(Row-rhs row)
+                                      (fail))
+                                (Row-unmatch row)
+                                seen))]
+                   ;; otherwise, bind the matched variable to x, and add it to the
+                   ;; list of vars we've seen
+                   [else (make-Row ps
+                                   #`(let ([#,v* #,x]) #,(Row-rhs row))
+                                   (Row-unmatch row)
+                                   (append (Row-vars-seen row) (list (cons v x))))])]))])
        ;; compile the transformed block
        (compile* xs (map transform block) esc))]
     ;; the Constructor rule
@@ -261,11 +252,13 @@
             [qs (Or-ps (car pats))]
             ;; the variables bound by this pattern - they're the same for the
             ;; whole list
-            [vars
-             (for/list ([bv (bound-vars (car qs))]
+            [vars/orig
+             (for/list ([bv (bound-vars/orig (car qs))]
                         #:when (for/and ([seen-var seen])
                                         (not (free-identifier=? bv (car seen-var)))))
-               bv)])
+               bv)]
+            [vars (rename-vars vars/orig)]
+            [pat-seen (map cons vars/orig vars/orig)])
        (with-syntax ([(esc* success? var ...) (append (generate-temporaries '(esc* success?)) vars)])
          ;; do the or matching, and bind the results to the appropriate
          ;; variables
@@ -286,7 +279,7 @@
                                (list (make-Row (cdr pats)
                                                (Row-rhs row)
                                                (Row-unmatch row)
-                                               (append (map cons vars vars) seen)))
+                                               (append seen pat-seen)))
                                esc
                                #f)
                    (#,esc))))))]
@@ -378,6 +371,7 @@
             [mutable? (GSeq-mutable? first)]
             [make-Pair (if mutable? make-MPair make-Pair)]
             [k (Row-rhs (car block))]
+            [prev-seen (Row-vars-seen (car block))]
             [xvar (car (generate-temporaries (list #'x)))]
             [complete-heads-pattern
              (lambda (ps)
@@ -389,23 +383,31 @@
             [heads
              (for/list ([ps headss])
                (complete-heads-pattern ps))]
-            [head-idss
+            [head-idss/orig
              (for/list ([heads headss])
-               (apply append (map bound-vars heads)))]
+               (apply append (map bound-vars/orig heads)))]
+            [head-idss
+             (map rename-vars head-idss/orig)]
+            [head-idss/depth
+             (for/list ([head-ids head-idss] [once? onces?])
+               (if once? head-ids (map depth+1 head-ids)))]
             [heads-seen
-             (map (lambda (x) (cons x #f))
-                  (apply append (map bound-vars heads)))]
+             (for/list ([head heads] [once? onces?]
+                        #:when #t
+                        [v (bound-vars/orig head)])
+               (define v* (if once? v (depth+1 v)))
+               (if (zero? (get-depth v*)) (cons v* v*) (cons v* #f)))]
             [tail-seen
              (map (lambda (x) (cons x x))
-                  (bound-vars tail))]
+                  (bound-vars/orig tail))]
             [hid-argss (map generate-temporaries head-idss)]
-            [head-idss* (map generate-temporaries head-idss)]
+            [head-idss* (map (generate-temporaries/seen prev-seen) head-idss/orig)]
             [hid-args (apply append hid-argss)]
             [reps (generate-temporaries (for/list ([head heads]) 'rep))])
        (with-syntax ([x xvar]
                      [var0 (car vars)]
-                     [((hid ...) ...) head-idss]
                      [((hid* ...) ...) head-idss*]
+                     [((hid/depth ...) ...) head-idss/depth]
                      [((hid-arg ...) ...) hid-argss]
                      [(rep ...) reps]
                      [(maxrepconstraint ...)
@@ -433,22 +435,23 @@
                        [tail-rhs
                         #`(cond minrepclause ...
                                 [else
-                                 (let ([hid hid-rhs] ... ...
+                                 (let ([hid/depth hid-rhs] ... ...
                                        [fail-tail fail])
                                    #,(compile*
                                       (cdr vars)
                                       (list (make-Row rest-pats k
                                                       (Row-unmatch (car block))
                                                       (append
+                                                       prev-seen
                                                        heads-seen
-                                                       tail-seen
-                                                       (Row-vars-seen
-                                                        (car block)))))
+                                                       tail-seen)))
                                       #'fail-tail))])])
            (parameterize ([current-renaming
                            (for/fold ([ht (copy-mapping (current-renaming))])
-                               ([id (apply append head-idss)]
-                                [id* (apply append head-idss*)])
+                               ([id (apply append head-idss/orig)]
+                                [id* (apply append head-idss*)]
+                                #:unless
+                                (member id (map car prev-seen) free-identifier=?))
                              (free-identifier-mapping-put! ht id id*)
                              (free-identifier-mapping-for-each
                               ht
@@ -474,9 +477,8 @@
                                               #`tail-rhs
                                               (Row-unmatch (car block))
                                               (append
-                                               heads-seen
-                                               (Row-vars-seen
-                                                (car block))))))
+                                               prev-seen
+                                               heads-seen))))
                              #'failkv))))))]
     [else (error 'compile "unsupported pattern: ~a\n" first)]))
 
@@ -550,6 +552,35 @@
                               acc)))))])
       (with-syntax ([(fns ... [_ (lambda () body)]) fns])
         (let/wrap #'(fns ...) #'body)))]))
+
+;; find-seen : Id (Listof (Pairof Id (U #f Id))) -> (U #f Id)
+(define (find-seen v seen)
+  (define e (assoc v seen bound-identifier=?))
+  (and
+   e
+   (let ([v* (car e)] [id (cdr e)])
+     (if (and (identifier? id) (zero? (get-depth v*)))
+         id
+         (raise-syntax-error #f
+           "non-linear pattern used in `match` with ..."
+           v v* (list v))))))
+
+;; generate-temporaries/seen :
+;; (Listof (Pairof Id (U #f Id))) -> (Listof Id) -> (Listof Id)
+(define ((generate-temporaries/seen seen) vs)
+  (for/list ([v (in-list vs)])
+    (or (find-seen v seen) (generate-temporary v))))
+
+;; nonlinear-reference : Identifier Identifier Natural -> Syntax
+(define (nonlinear-reference decl ref ref-depth)
+  (cond
+    [(zero? ref-depth) #`((match-equality-test) #,ref #,decl)]
+    [else 
+     (define good? #`(curryr (match-equality-test) #,decl))
+     (let loop ([depth ref-depth] [good? good?])
+       (cond
+         [(= 1 depth) #`(andmap #,good? #,ref)]
+         [else (loop (sub1 depth) #`(curry andmap #,good?))]))]))
 
 ;; (require mzlib/trace)
 ;; (trace compile* compile-one)

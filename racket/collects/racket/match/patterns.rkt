@@ -149,52 +149,94 @@
                     (set! in-order (cons id in-order))
                     (module-identifier-mapping-put! m id #t)))
                 (reverse in-order))]))
-;; bound-vars : Pat -> listof identifiers
+
+;; bound-vars : Pat -> (Listof Identifier)
 (define (bound-vars p)
+  (rename-vars (bound-vars/orig p)))
+
+;; bound-vars/orig : Pat -> (Listof Identifier)
+(define (bound-vars/orig p)
   (cond
     [(Dummy? p) null]
     [(Pred? p) null]
     [(Var? p)
-     (let ([v (Var-v p)])
-       (list (free-identifier-mapping-get (current-renaming) v (lambda () v))))]
+     (list (Var-v p))]
     [(Or? p)
-     (bound-vars (car (Or-ps p)))]
+     (bound-vars/orig (car (Or-ps p)))]
     [(Box? p)
-     (bound-vars (Box-p p))]
+     (bound-vars/orig (Box-p p))]
     [(Null? p) null]
     [(Pair? p)
-     (merge (list (bound-vars (Pair-a p)) (bound-vars (Pair-d p))))]
+     (merge (list (bound-vars/orig (Pair-a p)) (bound-vars/orig (Pair-d p))))]
     [(MPair? p)
-     (merge (list (bound-vars (MPair-a p)) (bound-vars (MPair-d p))))]
+     (merge (list (bound-vars/orig (MPair-a p)) (bound-vars/orig (MPair-d p))))]
     [(GSeq? p)
-     (merge (cons (bound-vars (GSeq-tail p))
-                  (for/list ([pats (GSeq-headss p)])
-                    (merge (for/list ([pat pats])
-                             (bound-vars pat))))))]
+     (merge (cons (bound-vars/orig (GSeq-tail p))
+                  (for/list ([pats (GSeq-headss p)]
+                             [once? (GSeq-onces? p)])
+                    (define vs
+                      (merge (for/list ([pat pats])
+                               (bound-vars/orig pat))))
+                    (if once? vs (map depth+1 vs)))))]
     [(Vector? p)
-     (merge (map bound-vars (Vector-ps p)))]
+     (merge (map bound-vars/orig (Vector-ps p)))]
     [(Struct? p)
-     (merge (map bound-vars (Struct-ps p)))]
+     (merge (map bound-vars/orig (Struct-ps p)))]
     [(App? p)
-     (merge (map bound-vars (App-ps p)))]
+     (merge (map bound-vars/orig (App-ps p)))]
     [(Not? p) null]
     [(And? p)
-     (merge (map bound-vars (And-ps p)))]
+     (merge (map bound-vars/orig (And-ps p)))]
     [(Exact? p) null]
     [else (error 'match "bad pattern: ~a" p)]))
 
-(define (pats->bound-vars parse-id pats)
+(define (pats->bound-vars/orig parse-id pats)
   (remove-duplicates
-   (foldr (λ (pat vars) (append (bound-vars (parse-id pat)) vars)) '() pats)
+   (foldr (λ (pat vars) (append (bound-vars/orig (parse-id pat)) vars)) '() pats)
    bound-identifier=?))
 
+(define (pats->bound-vars parse-id pats)
+  (rename-vars (pats->bound-vars/orig parse-id pats)))
+
 (define current-renaming (make-parameter (make-free-identifier-mapping) #f 'current-renaming))
+
+;; rename-vars : (Listof Identifier) -> (Listof Identifier)
+(define (rename-vars vs)
+  (for/list ([v (in-list vs)])
+    (set-depth
+     (free-identifier-mapping-get (current-renaming) v (lambda () v))
+     (get-depth v))))
 
 (define (copy-mapping ht)
   (define new-ht (make-free-identifier-mapping))
   (free-identifier-mapping-for-each
    ht (lambda (k v) (free-identifier-mapping-put! new-ht k v)))
   new-ht)
+
+;; get-depth : Identifier -> Natural
+;; Gets the 'match-ellipsis-depth property, default 0
+(define (get-depth x)
+  ;; Repeatedly take the car as long as its a pair
+  (define (ca*r v) (if (pair? v) (ca*r (car v)) v))
+  (define v (ca*r (syntax-property x 'match-ellipsis-depth)))
+  (if (exact-nonnegative-integer? v) v 0))
+
+;; set-depth : Identifier Natural -> Identifier
+(define (set-depth x d)
+  (syntax-property x 'match-ellipsis-depth d))
+
+;; depth+1 : Identifier -> Identifier
+;; Increments the 'match-ellipsis-depth property
+;; (get-depth (depth+1 x)) = (add1 (get-depth x))
+(define (depth+1 x) (set-depth x (add1 (get-depth x))))
+
+;; VarDummy-depth+1 : Var -> Var, Dummy -> Dummy
+(define (VarDummy-depth+1 p)
+  (cond
+    [(Dummy? p) (Dummy (depth+1 (Var-v p)))]
+    [(Var? p) (Var (depth+1 (Var-v p)))]
+    [else (error 'match "bad pattern: ~a" p)]))
+
 
 #|
 ;; EXAMPLES
