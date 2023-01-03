@@ -39,7 +39,7 @@
          #:null any/c ;; (json-null)
          #:encode (or/c 'control 'all) ;; 'control
          #:indent (or/c #f #\tab natural-number/c)) ;; #f
-        void?)]
+        any)] ;; void?
   [read-json
    (->* ()
         (input-port? #:null any/c) ;; (json-null)
@@ -49,13 +49,13 @@
         (#:null any/c ;; (json-null)
          #:encode (or/c 'control 'all) ;; 'control
          #:indent (or/c #f #\tab natural-number/c)) ;; #f
-        string?)]
+        any)] ;; string?
   [jsexpr->bytes
    (->* (any/c) ;; jsexpr? but dependent on #:null arg
         (#:null any/c ;; (json-null)
          #:encode (or/c 'control 'all) ;; 'control
          #:indent (or/c #f #\tab natural-number/c)) ;; #f
-        bytes?)]
+        any)] ;; bytes?
   [string->jsexpr
    (->* (string?)
         (#:null any/c) ;; (json-null)
