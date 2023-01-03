@@ -11,7 +11,6 @@
 ;; DEPENDENCIES
 
 (require syntax/readerr
-         racket/list
          racket/symbol
          ;; racket/contract must come before provide
          racket/contract)
