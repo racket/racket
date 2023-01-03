@@ -514,9 +514,9 @@
        (if top?
            eof
            (bad-input))]
-      [(eqv? ch #\t) (read-literal #"true")  #t]
+      [(eqv? ch #\t) (read-literal #"true") #t]
       [(eqv? ch #\f) (read-literal #"false") #f]
-      [(eqv? ch #\n) (read-literal #"null")  jsnull]
+      [(eqv? ch #\n) (read-literal #"null") jsnull]
       [(or (and ((char->integer ch) . <= . (char->integer #\9))
                 ((char->integer ch) . >= . (char->integer #\0)))
            (eqv? ch #\-))

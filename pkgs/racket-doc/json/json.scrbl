@@ -81,13 +81,10 @@ the @rfc for more information about JSON.
   the range of @tt{U+10000} and above are encoded as two @tt{\uHHHH}
   escapes, see Section 2.5 of the @|rfc|.
 
-  @racket[indent] is used to indicate format style. If it is
-
-  @itemize[
-     @item{@racket[#f], the converted JSON won't be formatted.}
-     @item{@racket[#\tab], it is used as white space for indenting.}
-     @item{a natural number, it indicates the number of whitespaces to
-             use as white space for indenting.}]
+  If @racket[indent] is provided and is not @racket[#f], each array element or object key--value pair
+  is written on a new line, and the value of @racket[indent] specifies the whitespace to be added
+  for each level of nesting: either a @racket[#\tab] character or, if @racket[indent] is a number,
+  the corresponding number of @racket[#\space] characters.
 
 @examples[#:eval ev
   (with-output-to-string
