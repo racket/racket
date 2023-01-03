@@ -180,24 +180,24 @@
              (format/write-indented-newline))
            (write-bytes #"]" o)]
           [(hash? x)
-           (define first? #t)
            (define write-hash-kv
-             (λ (k v)
-               (unless (symbol? k)
-                 (raise-type-error who "legal JSON key value" k))
-               (if first? (set! first? #f) (write-bytes #"," o))
-               (format/write-indented-newline)
-               (format/write-indent-bytes)
-               ;; use a string encoding so we get the same deal with
-               ;; `rx-to-encode'
-               (write-json-string (symbol->immutable-string k))
-               (write-bytes #":" o)
-               (if (hash? v)
-                   (begin
-                     (format/write-indented-newline)
-                     (format/write-indent-bytes))
-                   (format/write-whitespace))
-               (write-jsval v (add1 layer))))
+             (let ([first? #t])
+               (λ (k v)
+                 (unless (symbol? k)
+                   (raise-type-error who "legal JSON key value" k))
+                 (if first? (set! first? #f) (write-bytes #"," o))
+                 (format/write-indented-newline)
+                 (format/write-indent-bytes)
+                 ;; use a string encoding so we get the same deal with
+                 ;; `rx-to-encode'
+                 (write-json-string (symbol->immutable-string k))
+                 (write-bytes #":" o)
+                 (if (hash? v)
+                     (begin
+                       (format/write-indented-newline)
+                       (format/write-indent-bytes))
+                     (format/write-whitespace))
+                 (write-jsval v (add1 layer)))))
            (write-bytes #"{" o)
            (hash-for-each x write-hash-kv #t)
            (format/write-indented-newline)
