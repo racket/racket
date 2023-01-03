@@ -136,18 +136,32 @@
     (write-bytes #"\"" o)
     (write-string (regexp-replace* rx-to-encode str escape) o)
     (write-bytes #"\"" o))
-  (define format/write-whitespace
-    (if indent (λ () (write-bytes #" " o)) void))
-  (define format/write-newline
-    (if indent (λ () (write-bytes #"\n" o)) void))
-  (define format/write-indent
+  (define-values (indent-byte indent-count)
     (cond
-      [(eq? #\tab indent)
-       (λ (layer) (write-bytes (make-bytes layer #x9) o))]
+      [(eqv? #\tab indent)
+       (values #x9 1)]
       [(exact-nonnegative-integer? indent)
-       (λ (layer) (write-bytes (make-bytes (* layer indent) #x20) o))]
-      [else void]))
+       (values #x20 indent)]
+      [else
+       (values #f #f)]))
+  (define format/write-indent-bytes
+    (if indent
+        (λ ()
+          (for ([i (in-range indent-count)])
+            (write-byte indent-byte o)))
+        void))
+  (define format/write-whitespace
+    (if indent
+        (λ () (write-byte #x20 o))
+        void))
   (let write-jsval ([x x] [layer 0])
+    (define format/write-indented-newline
+      (if indent
+          (λ ()
+            (newline o)
+            (for ([i (in-range (* indent-count layer))])
+              (write-byte indent-byte o)))
+          void))
     (cond [(or (exact-integer? x) (inexact-rational? x)) (write x o)]
           [(eq? x #f)     (write-bytes #"false" o)]
           [(eq? x #t)     (write-bytes #"true" o)]
@@ -156,46 +170,37 @@
           [(list? x)
            (write-bytes #"[" o)
            (when (pair? x)
-             (let ([layer (add1 layer)])
-               (let ([x (car x)])
-                 (format/write-newline)
-                 (format/write-indent layer)
-                 (write-jsval x layer))
-               (for ([x (in-list (cdr x))])
-                 (write-bytes #"," o)
-                 (format/write-newline)
-                 (format/write-indent layer)
-                 (write-jsval x layer)))
-             (format/write-newline)
-             (format/write-indent layer))
+             (for/fold ([first? #t])
+                       ([x (in-list x)])
+               (unless first? (write-bytes #"," o))
+               (format/write-indented-newline)
+               (format/write-indent-bytes)
+               (write-jsval x (add1 layer))
+               #f)
+             (format/write-indented-newline))
            (write-bytes #"]" o)]
           [(hash? x)
            (define first? #t)
-           (define (write-hash-kv layer)
+           (define write-hash-kv
              (λ (k v)
                (unless (symbol? k)
                  (raise-type-error who "legal JSON key value" k))
                (if first? (set! first? #f) (write-bytes #"," o))
-               (format/write-newline)
-               (format/write-indent layer)
+               (format/write-indented-newline)
+               (format/write-indent-bytes)
                ;; use a string encoding so we get the same deal with
                ;; `rx-to-encode'
                (write-json-string (symbol->immutable-string k))
                (write-bytes #":" o)
                (if (hash? v)
                    (begin
-                     (format/write-newline)
-                     (format/write-indent layer))
+                     (format/write-indented-newline)
+                     (format/write-indent-bytes))
                    (format/write-whitespace))
-               (write-jsval v layer)))
-
+               (write-jsval v (add1 layer))))
            (write-bytes #"{" o)
-           (let ([layer (add1 layer)])
-             (hash-for-each x (write-hash-kv layer)
-                            ;; order output
-                            #t))
-           (format/write-newline)
-           (format/write-indent layer)
+           (hash-for-each x write-hash-kv #t)
+           (format/write-indented-newline)
            (write-bytes #"}" o)]
           [else (raise-type-error who "legal JSON value" x)]))
   (void))
