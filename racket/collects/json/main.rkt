@@ -156,10 +156,11 @@
   (let write-jsval ([x x] [layer 0])
     (define format/write-indented-newline
       (if indent
-          (λ ()
-            (newline o)
-            (for ([i (in-range (* indent-count layer))])
-              (write-byte indent-byte o)))
+          (let ([n (* indent-count layer)])
+            (λ ()
+              (newline o)
+              (for ([i (in-range n)])
+                (write-byte indent-byte o))))
           void))
     (cond [(or (exact-integer? x) (inexact-rational? x)) (write x o)]
           [(eq? x #f)     (write-bytes #"false" o)]
