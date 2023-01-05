@@ -851,6 +851,11 @@
 
 (test #f module-declared? '(submod no-such-collection/x nested) #t)
 
+;; don't call the resolver in this case:
+(err/rt-test (module-path-index-resolve (module-path-index-join #f #f))
+             exn:fail:contract?
+             #rx"^module-path-index-resolve")
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; provide a source-location syntax object to `module-path-index-resolve`
 

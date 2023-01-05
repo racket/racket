@@ -314,6 +314,11 @@ Beware that concurrent resolution in namespaces that share a module
 registry can create race conditions when loading modules. See also
 @racket[namespace-call-with-registry-lock].
 
+If @racket[mpi] represents a ``self'' (see above) module path that was
+not created by the expander as already resolved, then
+@racket[module-path-index-resolve] raises @racket[exn:fail:contract]
+without calling the module name resolver.
+
 See also @racket[resolve-module-path-index].
 
 @history[#:changed "6.90.0.16" @elem{Added the @racket[load?] optional argument.}

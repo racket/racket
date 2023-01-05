@@ -215,21 +215,27 @@
 (define/who (module-path-index-resolve mpi [load? #f] [stx #f])
   (check who module-path-index? mpi)
   (or (module-path-index-resolved mpi)
-      (let ([mod-name (performance-region
-                       ['eval 'resolver]
-                       ((current-module-name-resolver)
-                        (module-path-index-path mpi)
-                        (module-path-index-resolve/maybe
-                         (module-path-index-base mpi)
-                         load?)
-                        stx
-                        load?))])
-        (unless (resolved-module-path? mod-name)
-          (raise-arguments-error 'module-path-index-resolve
-                                 "current module name resolver's result is not a resolved module path"
-                                 "result" mod-name))
-        (set-module-path-index-resolved! mpi mod-name)
-        mod-name)))
+      (cond
+        [(module-path-index-path mpi)
+         (let ([mod-name (performance-region
+                          ['eval 'resolver]
+                          ((current-module-name-resolver)
+                           (module-path-index-path mpi)
+                           (module-path-index-resolve/maybe
+                            (module-path-index-base mpi)
+                            load?)
+                           stx
+                           load?))])
+           (unless (resolved-module-path? mod-name)
+             (raise-arguments-error 'module-path-index-resolve
+                                    "current module name resolver's result is not a resolved module path"
+                                    "result" mod-name))
+           (set-module-path-index-resolved! mpi mod-name)
+           mod-name)]
+        [else
+         (raise-arguments-error who
+                                "\"self\" index has no resolution"
+                                "module path index" mpi)])))
 
 (define (module-path-index-fresh mpi)
   (define-values (path base) (module-path-index-split mpi))
