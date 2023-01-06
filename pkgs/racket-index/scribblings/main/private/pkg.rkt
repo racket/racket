@@ -65,10 +65,17 @@
    cache-for-module-path->path
    module-path
    (λ ()
-     (with-handlers ([exn:missing-module? (lambda (exn) #f)])
-       (resolved-module-path-name
-        (module-path-index-resolve
-         (module-path-index-join module-path #f)))))))
+     (match module-path
+       [(? module-path?)
+        (with-handlers ([exn:missing-module? (lambda (exn) #f)])
+          (resolved-module-path-name
+           (module-path-index-resolve
+            (module-path-index-join module-path #f))))]
+       [#f #f]
+       [(list 'collects _ ...) #f]
+       [_
+        (log-debug "search script: not a module-path: ~s" module-path)
+        #f]))))
 
 (define (->pkg path)
   (hash-ref!
