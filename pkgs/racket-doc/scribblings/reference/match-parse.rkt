@@ -29,6 +29,8 @@
     => (fixup s (fixup-sexp 'qp))]
    [(regexp-match-positions #rx"lvp" s)
     => (fixup s (fixup-sexp 'lvp))]
+   [(regexp-match-positions #rx"kvp" s)
+    => (fixup s (fixup-sexp 'kvp))]
    [(regexp-match-positions #rx"struct-id" s)
     => (fixup s (fixup-sexp 'struct-id))]
    [(regexp-match-positions #rx"pred-expr" s)
@@ -64,7 +66,7 @@
            (cdr (map fixup-sexp (vector->list (struct->vector s)))))]
    [(symbol? s)
     (case s
-      [(lvp pat qp literal ooo datum struct-id
+      [(lvp kvp pat qp literal ooo datum struct-id
             string bytes number character expr id
             rx-expr px-expr pred-expr
             derived-pattern)
