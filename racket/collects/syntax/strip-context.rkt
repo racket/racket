@@ -1,5 +1,4 @@
 #lang racket/base
-(require racket/struct)
 
 (provide strip-context
          replace-context)
@@ -24,7 +23,7 @@
     => (lambda (k)
          (apply make-prefab-struct
                 k
-                (replace-context ctx (struct->list e))))]
+                (replace-context ctx (cdr (vector->list (struct->vector e))))))]
    [(hash? e)
     (hash-map/copy e
                    (lambda (k v)
