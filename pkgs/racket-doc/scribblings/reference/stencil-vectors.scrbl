@@ -29,7 +29,7 @@ effect on access or mutation via @racket[stencil-vector-ref] and
 @racket[stencil-vector-set!]. For example, such a stencil vector has a
 mask @racket[25], which could also be written @racketvalfont{#b11001};
 reading from low bit to high, that mask represents values present at
-the first, fourth, and fifth virtual slots. If that stencil vector's
+the virtual slots 0, 3, and 4. If that stencil vector's
 elements are @racket['a], @racket['b], and @racket['c], then
 @racket['a] is at virtual slot 0 and accessed with index @racket[0],
 @racket['b] is at virtual slot 3 and accessed with index @racket[1],
