@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require syntax/boundmap
+         syntax/parse
          "unit-syntax.rkt")
 (require (for-syntax racket/base))
 (require (for-template racket/base
@@ -23,7 +24,9 @@
          process-spec
          make-relative-introducer
          bind-at
-         build-init-depend-property)
+         build-init-depend-property
+
+         signature-id)
 
 (define-syntax (apply-mac stx)
   (syntax-case stx ()
@@ -73,7 +76,7 @@
 ;; - (listof (cons symbol siginfo) (cons symbol identifier) sig)
 
 ;; A siginfo is
-;; - (make-siginfo (listof symbol) (listof symbol) (listof identifier) (hash-tableof symbol bool))
+;; - (make-siginfo (listof identifier) (listof identifier) (listof identifier) (hash-tableof symbol bool))
 ;; where the car of each list represents the signature, and the cdr represents
 ;; its super signatures.  All lists are non-empty and the same length.
 (define-struct siginfo (names ctime-ids rtime-ids super-table))
@@ -155,6 +158,26 @@
     (unless (signature? s)
       (raise-stx-err "not a signature" id))
     s))
+
+(define-syntax-class (static/extract predicate description)
+  #:description description
+  #:attributes [value]
+  #:commit
+  (pattern {~var x (static values #f)}
+    #:attr value (set!-trans-extract (attribute x.value))
+    #:fail-unless (predicate (attribute value)) #f))
+
+(define-syntax-class signature-id
+  #:description #f
+  #:attributes [value
+                info info.id {info.super-id 1} {info.ctime-id 1} {info.rtime-id 1}]
+  #:commit
+  (pattern {~var || (static/extract signature? "identifier bound to a signature")}
+    #:attr info (signature-siginfo (attribute value))
+    #:attr info.id (car (siginfo-names (attribute info)))
+    #:attr {info.super-id 1} (cdr (siginfo-names (attribute info)))
+    #:attr {info.ctime-id 1} (siginfo-ctime-ids (attribute info))
+    #:attr {info.rtime-id 1} (siginfo-rtime-ids (attribute info))))
 
 (define (set!-trans-extract x)
   (if (set!-transformer? x)

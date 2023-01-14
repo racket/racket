@@ -3,6 +3,8 @@
 ;; Library for first-class components with recursive linking
 
 (require (for-syntax racket/base
+                     racket/list
+                     racket/syntax
                      syntax/boundmap
                      syntax/context
                      syntax/kerncase
@@ -22,6 +24,7 @@
          racket/contract/region
          racket/stxparam
          syntax/location
+         syntax/parse/define
          "private/unit-contract.rkt"
          "private/unit-keywords.rkt"
          "private/unit-runtime.rkt"
@@ -548,7 +551,7 @@
                          (build-struct-names #'name (syntax->list #'(field ...))
                                              #f (not mutable?)
                                              #:constructor-name def-cname))]
-                 [cpairs (cons 'contracted
+                 [cpairs (cons #'contracted
                                (cond
                                 [no-ctr? (cddr names)]
                                 [else (cdr names)]))]
@@ -684,181 +687,162 @@
   (cons (map syntax-local-introduce (car d))
         (syntax-local-introduce (cdr d))))
 
-;; build-define-syntax : identifier (or/c identifier #f) syntax-object -> syntax-object
-(define-for-syntax (build-define-signature sigid super-sigid sig-exprs)
-  (unless (or (stx-null? sig-exprs) (stx-pair? sig-exprs))
-    (raise-stx-err "expected syntax matching (sig-expr ...)" sig-exprs))
-  (let ([ses (checked-syntax->list sig-exprs)])
-    (define-values (super-names super-ctimes super-rtimes)
-      (if super-sigid
-          (let* ([super-sig (lookup-signature super-sigid)]
-                 [super-siginfo (signature-siginfo super-sig)])
-            (values (siginfo-names super-siginfo)
-                    (siginfo-ctime-ids super-siginfo)
-                    (map syntax-local-introduce
-                         (siginfo-rtime-ids super-siginfo))))
-          (values '() '() '())))
-    ;; For historical reasons, signature forms are backwards:
-    ;; they're non-hygenic by default, and they accept an optional
-    ;; introducer to mark introduced pieces --- but the end result
-    ;; is flipped around, because we apply `intro` to the whole
-    ;; signature, for the same reason as described below at
-    ;; "INTRODUCED FORMS AND MACROS".
-    (define intro (make-syntax-introducer))
-    (let loop ((sig-exprs (if super-sigid
-                              (cons #`(open #,super-sigid) ses)
-                              ses))
-               (bindings null)
-               (val-defs null)
-               (stx-defs null)
-               (post-val-defs null)
-               (ctcs null))
-      (cond
-        ((null? sig-exprs)
-         (let* ([all-bindings (reverse bindings)]
-                [all-val-defs (reverse val-defs)]
-                [all-stx-defs (reverse stx-defs)]
-                [all-post-val-defs (reverse post-val-defs)]
-                [all-ctcs (reverse ctcs)]
-                [dup
-                 (check-duplicate-identifier
-                  (append all-bindings
-                          (apply append (map car all-val-defs))
-                          (apply append (map car all-stx-defs))))])
-           (when dup
-             (raise-stx-err "duplicate identifier" dup))
-           (with-syntax (((super-rtime ...) super-rtimes)
-                         ((super-name ...) super-names)
-                         ((var ...) all-bindings)
-                         ((ctc ...) all-ctcs)
-                         ((((vid ...) . vbody) ...) all-val-defs)
-                         ((((sid ...) . sbody) ...) all-stx-defs)
-                         ((((pvid ...) . pvbody) ...) all-post-val-defs))
-             #`(begin
-                 (define signature-tag (gensym))
-                 (define-syntax #,sigid
-                   (make-set!-transformer
-                    #,(intro
-                     #`(make-signature
-                     (make-siginfo (list #'#,sigid #'super-name ...)
-                                   (list (quote-syntax signature-tag)
-                                         #'super-rtime
-                                         ...))
-                     (list (quote-syntax var) ...)
-                     (list (cons (list (quote-syntax vid) ...)
-                                 (quote-syntax vbody))
-                           ...)
-                     (list (cons (list (quote-syntax sid) ...)
-                                 (quote-syntax sbody))
-                           ...)
-                     (list (cons (list (quote-syntax pvid) ...)
-                                 (quote-syntax pvbody))
-                           ...)
-                     (list #,@(map (lambda (c) 
-                                     (if c
-                                         #`(quote-syntax #,c)
-                                         #'#f))
-                                   all-ctcs))
-                     (quote-syntax #,sigid)))))
-                 (define-values ()
-                   (begin
-                     (λ (var ...)
-                       (letrec-syntaxes+values
-                           ([(sid ...) sbody] ...) ([(vid ...) vbody] ...)
-                         ctc ...
-                         (void)))
-                     (values)))))))
-        (else
-         (syntax-case (car sig-exprs) (define-values define-syntaxes contracted)
-           (x
-            (identifier? #'x)
-            (loop (cdr sig-exprs) (cons #'x bindings) val-defs stx-defs post-val-defs (cons #f ctcs)))
-           ((contracted (y z) ...)
-            (andmap identifier? (syntax->list #'(y ...)))
-            (loop (cdr sig-exprs)
-                  (append (reverse (syntax->list #'(y ...))) bindings)
-                  val-defs
-                  stx-defs
-                  post-val-defs
-                  (append (reverse (syntax->list #'(z ...))) ctcs)))
-           ((contracted . z)
-            (raise-syntax-error 
-             'define-signature
-             "expected a list of [id contract] pairs after the contracted keyword"
-             (car sig-exprs)))
-           ((x . y)
-            (and (identifier? #'x)
-                 (or (free-identifier=? #'x #'define-values)
-                     (free-identifier=? #'x #'define-syntaxes)
-                     (free-identifier=? #'x #'define-values-for-export)))
-            (begin
-              (check-def-syntax (car sig-exprs))
-              (syntax-case #'y ()
-                (((name ...) body)
-                 (begin
-                   (for-each (lambda (id) (check-id id))
-                             (syntax->list #'(name ...)))
-                   (let ((b #'body))
-                     (loop (cdr sig-exprs)
-                           bindings
-                           (if (free-identifier=? #'x #'define-values)
-                               (cons (cons (syntax->list #'(name ...)) b)
-                                     val-defs)
-                               val-defs)
-                           (if (free-identifier=? #'x #'define-syntaxes)
-                               (cons (cons (syntax->list #'(name ...)) b)
-                                     stx-defs)
-                               stx-defs)
-                           (if (free-identifier=? #'x #'define-values-for-export)
-                               (cons (cons (syntax->list #'(name ...)) b)
-                                     post-val-defs)
-                               post-val-defs)
-                           ctcs)))))))
-           ((x . y)
-            (let ((trans 
-                   (set!-trans-extract
-                    (syntax-local-value
-                     ;; redirect struct~ to struct~r
-                     (if (free-identifier=? #'x #'struct~)
-                         #'struct~r
-                         (syntax-local-introduce #'x))
-                     (lambda ()
-                       (raise-stx-err "unknown signature form" #'x))))))
-              (unless (signature-form? trans)
-                (raise-stx-err "not a signature form" #'x))
-              (let ((results ((signature-form-f trans) (car sig-exprs) intro)))
-                (unless (list? results)
-                  (raise-stx-err
-                   (format "expected list of results from signature form, got ~e" results)
-                   (car sig-exprs)))
-                (loop (append results (cdr sig-exprs))
-                      bindings
-                      val-defs
-                      stx-defs
-                      post-val-defs
-                      ctcs))))
-           (x (raise-stx-err 
-               "expected either an identifier or signature form"
-               #'x))))))))
+(begin-for-syntax
+  (define-syntax-class (signature-element intro-proc)
+    #:description "signature element"
+    #:attributes [{var-id 1} {ctc 1}
+                  {val-def-id 2} {val-def-rhs 1}
+                  {post-val-def-id 2} {post-val-def-rhs 1}
+                  {stx-def-id 2} {stx-def-rhs 1}]
+    #:commit
+    #:literals [contracted define-values define-values-for-export define-syntaxes]
 
+    (pattern id:id
+      #:attr {var-id 1} (list #'id)
+      #:attr {ctc 1} (list #f)
+      #:attr {val-def-id 2} '()
+      #:attr {val-def-rhs 1} '()
+      #:attr {post-val-def-id 2} '()
+      #:attr {post-val-def-rhs 1} '()
+      #:attr {stx-def-id 2} '()
+      #:attr {stx-def-rhs 1} '())
 
-(define-syntax/err-param (define-signature stx)
-  (syntax-case stx (extends)
-    ((_ sig-name sig-exprs)
-     (begin
-       (check-id #'sig-name)
-       (build-define-signature #'sig-name #f #'sig-exprs)))
-    ((_ sig-name extends super-name sig-exprs)
-     (begin
-       (check-id #'sig-name)
-       (check-id #'super-name)
-       (build-define-signature #'sig-name #'super-name #'sig-exprs)))
-    (_
-     (begin
-       (checked-syntax->list stx)
-       (raise-stx-err
-        (format "expected syntax matching (~a identifier (sig-expr ...)) or (~a identifier extends identifier (sig-expr ...))"
-                (syntax-e (stx-car stx)) (syntax-e (stx-car stx))))))))
+    (pattern (contracted ~! {~describe "[id contract] pair" [var-id:id ctc:expr]} ...)
+      #:attr {val-def-id 2} '()
+      #:attr {val-def-rhs 1} '()
+      #:attr {post-val-def-id 2} '()
+      #:attr {post-val-def-rhs 1} '()
+      #:attr {stx-def-id 2} '()
+      #:attr {stx-def-rhs 1} '())
+
+    (pattern (define-values ~! (id:id ...) rhs:expr)
+      #:attr {var-id 1} '()
+      #:attr {ctc 1} '()
+      #:attr {val-def-id 2} (list (attribute id))
+      #:attr {val-def-rhs 1} (list (attribute rhs))
+      #:attr {post-val-def-id 2} '()
+      #:attr {post-val-def-rhs 1} '()
+      #:attr {stx-def-id 2} '()
+      #:attr {stx-def-rhs 1} '())
+
+    (pattern (define-values-for-export ~! (id:id ...) rhs:expr)
+      #:attr {var-id 1} '()
+      #:attr {ctc 1} '()
+      #:attr {val-def-id 2} '()
+      #:attr {val-def-rhs 1} '()
+      #:attr {post-val-def-id 2} (list (attribute id))
+      #:attr {post-val-def-rhs 1} (list (attribute rhs))
+      #:attr {stx-def-id 2} '()
+      #:attr {stx-def-rhs 1} '())
+
+    (pattern (define-syntaxes ~! (id:id ...) rhs:expr)
+      #:attr {var-id 1} '()
+      #:attr {ctc 1} '()
+      #:attr {val-def-id 2} '()
+      #:attr {val-def-rhs 1} '()
+      #:attr {post-val-def-id 2} '()
+      #:attr {post-val-def-rhs 1} '()
+      #:attr {stx-def-id 2} (list (attribute id))
+      #:attr {stx-def-rhs 1} (list (attribute rhs)))
+
+    (pattern {~describe "signature form" (form:id . _)}
+      #:do [(define trans (set!-trans-extract
+                           (syntax-local-value
+                            ;; redirect struct~ to struct~r
+                            (if (free-identifier=? #'form #'struct~)
+                                #'struct~r
+                                (syntax-local-introduce #'form))
+                            (λ () #f))))]
+      #:fail-when (and (not (signature-form? trans)) #'form) "not a signature form"
+      #:and ~!
+      #:do [(syntax-parse-state-cons! 'literals #'form)
+            (define results ((signature-form-f trans) this-syntax intro-proc))
+            (unless (list? results)
+              (wrong-syntax this-syntax
+                            "expected list of results from signature form, got ~e"
+                            results))]
+      #:with {~var || (signature-elements intro-proc)} results))
+
+  (define-syntax-class (signature-elements intro-proc)
+    #:description "signature elements"
+    #:attributes [{var-id 1} {ctc 1}
+                  {val-def-id 2} {val-def-rhs 1}
+                  {post-val-def-id 2} {post-val-def-rhs 1}
+                  {stx-def-id 2} {stx-def-rhs 1}]
+    #:commit
+    (pattern [{~var elem (signature-element intro-proc)} ...]
+      #:attr {var-id 1} (append* (attribute elem.var-id))
+      #:attr {ctc 1} (append* (attribute elem.ctc))
+      #:attr {val-def-id 2} (append* (attribute elem.val-def-id))
+      #:attr {val-def-rhs 1} (append* (attribute elem.val-def-rhs))
+      #:attr {post-val-def-id 2} (append* (attribute elem.post-val-def-id))
+      #:attr {post-val-def-rhs 1} (append* (attribute elem.post-val-def-rhs))
+      #:attr {stx-def-id 2} (append* (attribute elem.stx-def-id))
+      #:attr {stx-def-rhs 1} (append* (attribute elem.stx-def-rhs)))))
+
+(define-syntax (define-signature stx)
+  ;; For historical reasons, signature forms are backwards:
+  ;; they're non-hygenic by default, and they accept an optional
+  ;; introducer to mark introduced pieces --- but the end result
+  ;; is flipped around, because we apply `intro` to the whole
+  ;; signature, for the same reason as described below at
+  ;; "INTRODUCED FORMS AND MACROS".
+  (define intro (make-syntax-introducer))
+  (syntax-parse stx
+    #:track-literals
+    #:literals [extends]
+    [(_ sig-id:id
+        {~optional {~seq extends ~! super-id:signature-id}}
+        {~describe "signature elements" [given-elem ...]})
+     #:with {~var elems (signature-elements intro)}
+            (if (attribute super-id)
+                #'[(open super-id) given-elem ...]
+                #'[given-elem ...])
+     #:fail-when (check-duplicate-identifier
+                  (flatten (list (attribute elems.var-id)
+                                 (attribute elems.val-def-id)
+                                 (attribute elems.stx-def-id)
+                                 ; Why not also `elem.post-val-def-id`? I’m not quite
+                                 ; sure, but it breaks `struct` in signature forms if
+                                 ; those identifiers are included in this check.
+                                 ; Something to look into.
+                                 )))
+                 "duplicate identifier"
+     #:with signature-tag-id (generate-temporary 'signature-tag)
+     #`(begin
+         (define signature-tag-id (gensym))
+         (define-syntax sig-id
+           (make-set!-transformer
+            #,(intro
+               #'(make-signature
+                  (make-siginfo (list (quote-syntax sig-id)
+                                      {~? {~@ (quote-syntax super-id.info.id)
+                                              (quote-syntax super-id.info.super-id) ...}})
+                                (list (quote-syntax signature-tag-id)
+                                      {~? {~@ (quote-syntax super-id.info.rtime-id) ...}}))
+                  (list (quote-syntax elems.var-id) ...)
+                  (list (cons (list (quote-syntax elems.val-def-id) ...)
+                              (quote-syntax elems.val-def-rhs))
+                        ...)
+                  (list (cons (list (quote-syntax elems.stx-def-id) ...)
+                              (quote-syntax elems.stx-def-rhs))
+                        ...)
+                  (list (cons (list (quote-syntax elems.post-val-def-id) ...)
+                              (quote-syntax elems.post-val-def-rhs))
+                        ...)
+                  (list {~? (quote-syntax elems.ctc) #f} ...)
+                  (quote-syntax sig-id)))))
+         ;; dummy expression for Check Syntax:
+         (define-values ()
+           (begin
+             (λ (elems.var-id ...)
+               (letrec-syntaxes+values
+                   ([(elems.stx-def-id ...) elems.stx-def-rhs] ...)
+                   ([(elems.val-def-id ...) elems.val-def-rhs] ...
+                    [(elems.post-val-def-id ...) elems.post-val-def-rhs] ...)
+                 {~? elems.ctc} ...
+                 (void)))
+             (values))))]))
 
 (define-for-syntax (signature->identifiers sigids)
   (define provide-tagged-sigs (map process-tagged-import sigids))
