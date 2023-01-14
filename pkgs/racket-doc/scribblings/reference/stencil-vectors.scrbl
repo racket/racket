@@ -144,7 +144,7 @@ slot is position @racket[0], and the last slot is one less than
 @defproc[(stencil-vector-set! [vec stencil-vector?]
                               [pos exact-nonnegative-integer?]
                               [v any/c])
-         avoid?]{
+         void?]{
 
 Updates the slot @racket[pos] of @racket[vec] to contain @racket[v].
 
