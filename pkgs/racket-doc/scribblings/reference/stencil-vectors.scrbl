@@ -45,7 +45,7 @@ mask. For example, starting with the stencil vector whose mask is
 @racket['c], adding new elements @racket['d] and @racket['e] using the
 addition mask @racketvalfont{#b100100} produces a stencil vector whose
 mask is @racketvalfont{#b111101} and whose elements in order are
-@racket['a], @racket['b], @racket['d], @racket['c], and @racket['e].
+@racket['a], @racket['d], @racket['b], @racket['c], and @racket['e].
 
 The maximum size of a stencil vector is 58 elements on a 64-bit
 platform and 26 elements on a 32-bit platform. This limited size
