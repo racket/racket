@@ -948,11 +948,11 @@
        ;; everywhere.
        (define intro (make-syntax-introducer #t))
        
-       (with-syntax ((((dept . depr) ...)
+       (with-syntax (((dep-key ...)
                       (map
                        (lambda (tinfo)
-                         (cons (car tinfo)
-                               (syntax-local-introduce (car (siginfo-rtime-ids (cdr tinfo))))))
+                         (build-key (car tinfo)
+                                    (syntax-local-introduce (car (siginfo-rtime-ids (cdr tinfo))))))
                        dep-tagged-siginfos))
                      [((renames (mac ...) (val ...)) ...)
                       (map (build-val+macro-defs intro) import-sigs)]
@@ -988,7 +988,7 @@
                                      (vector-immutable import-key import-super-keys ...)) ...)
              (vector-immutable (cons 'export-name 
                                      (vector-immutable export-key ...)) ...)
-             (list (cons 'dept depr) ...)
+             (list dep-key ...)
              (syntax-parameterize ([current-contract-region (lambda (stx) #'(quote (unit name)))])
                (lambda ()
                  (let ([eloc (box unsafe-undefined)] ... ...)
@@ -1364,11 +1364,11 @@
          (define-values (orig-esig orig-tagged-export-sigs orig-export-tagged-infos 
                                    orig-export-tagged-sigids orig-export-sigs)
            (process-unit-import #'(orig-e ...)))
-         (with-syntax ((((dept . depr) ...)
+         (with-syntax (((dep-key ...)
                         (map
                          (lambda (tinfo)
-                           (cons (car tinfo)
-                                 (syntax-local-introduce (car (siginfo-rtime-ids (cdr tinfo))))))
+                           (build-key (car tinfo)
+                                      (syntax-local-introduce (car (siginfo-rtime-ids (cdr tinfo))))))
                          dep-tagged-siginfos))
                        [((import-key ...) ...)
                         (map tagged-info->keys import-tagged-infos)]
@@ -1411,7 +1411,7 @@
                                          (vector-immutable import-key ...)) ...)
                  (vector-immutable (cons 'export-name 
                                          (vector-immutable export-key ...)) ...)
-                 (list (cons 'dept depr) ...)
+                 (list dep-key ...)
                  (syntax-parameterize ([current-contract-region (lambda (stx) #'(quote (unit name)))])
                    (lambda ()
                      (let-values ([(unit-fn export-table) ((unit-go unit-tmp))])
@@ -1618,22 +1618,16 @@
                        ([in-link-id (in-list in-link-ids)]
                         [in-binding (in-list in-bindings)]
                         [in-tag (in-list in-tags)])
-               ;; TODO: It would be nice to use the result of link-id-binding->key-exprs
-               ;; here, but we can’t, because `unit-deps` uses a different format of the
-               ;; form (cons/c signature-id? (or/c tag? #f)), rather than the usual
-               ;; signature-key? format used everywhere else. It would be nice to fix this.
-               (define siginfo (link-id-binding-siginfo in-binding))
-               (define dep-key-exprs (map (λ (id) #`(cons '#,in-tag #,id)) (siginfo-rtime-ids siginfo)))
-
                (cond
                  [(link-id-binding-import? in-binding)
-                  (values (append dep-key-exprs import-deps)
+                  (values (append (link-id-binding->key-exprs in-binding in-tag)
+                                  import-deps)
                           forward-deps)]
                  [(>= (link-id-binding-order-index in-binding) order-index)
                   (values import-deps
                           (for/fold ([forward-deps forward-deps])
-                                    ([dep-key-expr (in-list dep-key-exprs)]
-                                     [sig-name (in-list (siginfo-names siginfo))])
+                                    ([dep-key-expr (in-list (link-id-binding->key-exprs in-binding in-tag))]
+                                     [sig-name (in-list (siginfo-names (link-id-binding-siginfo in-binding)))])
                             (cons (cons dep-key-expr #`(cons '#,sig-name '#,in-link-id))
                                   forward-deps)))]
                  [else

@@ -138,23 +138,21 @@
               (current-continuation-marks))))))
       (loop (sub1 i)))))
 
-;; check-deps : (hash-tableof (cons symbol (or symbol #f)) (cons symbol symbol)) unit symbol ->
-;; The hash table keys are the tag and runtime signature id
-;; The values are the name of the signature and the linkage
+;; check-deps : (hash/c signature-key? (cons/c symbol? symbol?)) unit? symbol? -> void?
+;; The hash table keys are signature keys (see Note [Signature runtime representation]).
+;; The values are the name of the signature and the link-id.
 (define (check-deps dep-table unit name)
-  (for-each
-   (λ (dep)
-     (let ([r (hash-ref dep-table dep #f)])
-       (when r
-         (raise
-          (make-exn:fail:contract
-           (if (car dep)
-               (format "~a: initialization dependent signature ~a with tag ~a is supplied from a later unit with link ~a"
-                       name (car r) (car dep) (cdr r))
-               (format "~a: untagged initialization dependent signature ~a is supplied from a later unit with link ~a"
-                       name (car r) (cdr r)))
-           (current-continuation-marks))))))
-   (unit-deps unit)))
+  (for ([dep-key (in-list (unit-deps unit))])
+    (define r (hash-ref dep-table dep-key #f))
+    (when r
+      (raise
+       (make-exn:fail:contract
+        (if (pair? dep-key)
+            (format "~a: initialization dependent signature ~a with tag ~a is supplied from a later unit with link ~a"
+                    name (car r) (car dep-key) (cdr r))
+            (format "~a: untagged initialization dependent signature ~a is supplied from a later unit with link ~a"
+                    name (car r) (cdr r)))
+        (current-continuation-marks))))))
 
 ;; check-no-imports : unit symbol ->
 ;; ensures that the unit has no imports

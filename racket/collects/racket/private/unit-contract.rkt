@@ -137,11 +137,11 @@
                  (syntax->list #'((e.x ...) ...))
                  (syntax->list #'((e.c ...) ...)))
        
-       (with-syntax ([((dept . depr) ...)
+       (with-syntax ([(dep-key ...)
                       (map
                        (lambda (tinfo)
-                         (cons (car tinfo)
-                               (syntax-local-introduce (car (siginfo-rtime-ids (cdr tinfo))))))
+                         (build-key (car tinfo)
+                                    (syntax-local-introduce (car (siginfo-rtime-ids (cdr tinfo))))))
                        dep-tagged-siginfos)]
                      [(isig ...) isig]
                      [(esig ...) esig]
@@ -186,7 +186,7 @@
                    (vector-immutable 
                     (cons 'export-name 
                           (vector-immutable export-key ...)) ...)
-                   (list (cons 'dept depr) ...)
+                   (list dep-key ...)
                    blame)
                   (make-unit
                    '#,name
@@ -194,7 +194,7 @@
                                            (vector-immutable import-key ...)) ...)
                    (vector-immutable (cons 'export-name 
                                            (vector-immutable export-key ...)) ...)
-                   (list (cons 'dept depr) ...)
+                   (list dep-key ...)
                    (λ ()
                      (let-values ([(unit-fn export-table) ((unit-go unit-tmp))])
                        (values (lambda (import-table)
@@ -223,7 +223,7 @@
                  (vector-immutable 
                   (cons 'export-name 
                         (vector-immutable export-key ...)) ...)
-                 (list (cons 'dept depr) ...)
+                 (list dep-key ...)
                  #f)))))))]))
 
 (define-syntax/err-param (unit/c stx)
@@ -273,17 +273,10 @@
     ;; dependencies specified by the contract. Ensures that the given dependencies
     ;; are a subset of the expected dependencies otherwise raises a contract error.
     (define (check-dependencies expected given imports)
-      (define (lookup dep lst)
-        (member dep lst (lambda (p1 p2)
-                          (and (eq? (car p1) (car p2))
-                               (eq? (cdr p1) (cdr p2))))))
-      ;; Normalize dependencies to be symbols or pairs of tags and symbols
-      (define (normalize-deps deps)
-        (map (lambda (dep) (if (car dep) dep (cdr dep))) deps))
       (define t (for*/hash ([i (in-vector imports)]
                             [v (in-value (cdr i))]
                             [im (in-value (vector-ref v 0))]
-                            #:when (member im (normalize-deps expected))
+                            #:when (member im expected)
                             [vj (in-vector v)])
                   (values vj #t)))
       ;; use the imports to get the name and tag of dependency
@@ -295,7 +288,7 @@
             (define tag (if (pair? v) (cdr v) v))
             (values tag name)))
         (hash-ref tag-table dep-tag #f))
-     (for ([dep (in-list (normalize-deps given))])
+     (for ([dep (in-list given)])
        (unless (hash-ref t dep #f)
          (define tag (and (pair? dep) (car dep)))
          (define sig-tag (or (and (pair? dep) (cdr dep)) dep))
