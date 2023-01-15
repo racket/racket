@@ -3219,5 +3219,24 @@
  #rx"deadbeef-x: identifier used out of context")
 
 ;; ----------------------------------------
+;; regression test for local-expand and out-of-context variables
+
+(err/rt-test
+ (eval
+  '(module m racket/base
+     (require (for-syntax racket/base))
+     (define-syntax (foo stx)
+       (define id (datum->syntax #f 'id))
+       (local-expand
+        #`(let ([#,id "ok"])
+            (let-syntax ([other #,id])
+              'done))
+        'expression
+        '()))
+     (foo)))
+ exn:fail:syntax?
+ #rx"id: identifier used out of context")
+
+;; ----------------------------------------
 
 (report-errs)
