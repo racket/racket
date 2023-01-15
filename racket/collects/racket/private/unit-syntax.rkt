@@ -1,17 +1,20 @@
 #lang racket/base
 
-(require syntax/stx)
+(require racket/syntax
+         syntax/stx)
 (require (for-template "unit-keywords.rkt"))
   
-(provide (all-defined-out))
+(provide (all-defined-out)
+         (rename-out
+          ;; for mzlib/a-signature
+          [current-syntax-context error-syntax]))
 
 (define bind-at #f)
 
-(define error-syntax (make-parameter #f #f 'error-syntax))
 (define raise-stx-err
   (case-lambda
-    ((msg) (raise-syntax-error #f msg (error-syntax)))
-    ((msg stx) (raise-syntax-error #f msg (error-syntax) stx))))
+    ((msg) (raise-syntax-error #f msg (current-syntax-context)))
+    ((msg stx) (raise-syntax-error #f msg (current-syntax-context) stx))))
 
 ;; check-id: syntax-object -> identifier
 (define (check-id id)

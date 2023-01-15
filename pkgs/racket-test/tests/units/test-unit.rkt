@@ -1,12 +1,13 @@
 #lang racket/load
 
-(require (for-syntax racket/private/unit-compiletime
+(require (for-syntax racket/syntax
+                     racket/private/unit-compiletime
                      racket/private/unit-syntax))
 (require "test-harness.rkt"
          racket/unit)
 
 (define-syntax (lookup-sig-mac stx)
-  (parameterize ((error-syntax stx))
+  (parameterize ((current-syntax-context stx))
     (syntax-case stx ()
       ((_ id)
        #`#'#,(let ((s (lookup-signature #'id)))

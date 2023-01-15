@@ -1,6 +1,8 @@
 #lang racket/base
 
-(require (for-syntax "unit-syntax.rkt" racket/base))
+(require (for-syntax racket/base
+                     racket/syntax
+                     "unit-syntax.rkt"))
 (provide define-syntax/err-param
          (rename-out [make-a-unit make-unit]) unit-import-sigs unit-export-sigs unit-go unit? unit-deps
          check-unit check-no-imports check-sigs check-deps check-helper)
@@ -9,7 +11,7 @@
   (syntax-rules ()
     ((_ (name arg) body ...)
      (define-syntax (name arg)
-       (parameterize ((error-syntax arg))
+       (parameterize ((current-syntax-context arg))
          body ...)))))
 
 ;; for named structures

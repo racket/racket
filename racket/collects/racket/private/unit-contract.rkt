@@ -1,10 +1,10 @@
 #lang racket/base
 
 (require (for-syntax racket/base
+                     racket/syntax
                      syntax/boundmap
                      syntax/name
                      syntax/parse
-                     (only-in racket/syntax generate-temporary)
                      "unit-compiletime.rkt"
                      "unit-contract-syntax.rkt"
                      "unit-syntax.rkt")
@@ -80,6 +80,7 @@
 
 (define-for-syntax (unit/c/core name stx)
   (syntax-parse stx
+    #:context (current-syntax-context)
     [(:import-clause/c
       :export-clause/c
       (~optional d:dep-clause #:defaults ([(d.s 1) null]))

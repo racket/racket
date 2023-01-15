@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require syntax/boundmap
+(require racket/syntax
+         syntax/boundmap
          syntax/parse
          "unit-syntax.rkt")
 (require (for-syntax racket/base))
@@ -121,13 +122,13 @@
 ;;                 identifier)
 (define-struct/proc signature (siginfo vars val-defs stx-defs post-val-defs ctcs orig-binder)
   (lambda (_ stx)
-    (parameterize ((error-syntax stx))
+    (parameterize ((current-syntax-context stx))
       (raise-stx-err "illegal use of signature name"))))
 
 ;; (make-signature-form (syntax-object -> any))
 (define-struct/proc signature-form (f)
   (lambda (_ stx)
-    (parameterize ((error-syntax stx))
+    (parameterize ((current-syntax-context stx))
       (raise-stx-err "illegal use of signature form"))))
 
 ;; (make-unit-info identifier (listof (cons symbol identifier)) (listof (cons symbol identifier)) identifier boolean)

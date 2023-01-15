@@ -91,7 +91,7 @@
   (provide (protect-out struct) struct/ctc)
 
   (define-signature-form (struct stx)
-    (parameterize ((error-syntax stx))
+    (parameterize ((current-syntax-context stx))
       (syntax-case stx ()
         ((_ name (field ...) . omissions)
          (let ([omit-selectors #f]
@@ -334,7 +334,7 @@
   (do-struct~ stx #f))
 
 (define-signature-form (struct/ctc stx)
-  (parameterize ((error-syntax stx))
+  (parameterize ((current-syntax-context stx))
     (syntax-case stx ()
       ((_ name ([field ctc] ...) . omissions)
        (let ([omit-selectors #f]
@@ -659,7 +659,7 @@
                (car p)))
          ps
          cs))
-  (parameterize ([error-syntax stx])
+  (parameterize ([current-syntax-context stx])
     (syntax-case stx ()
       ((_ export-spec)
        (let ([sig (process-spec #'export-spec)])
@@ -888,7 +888,7 @@
 (define-for-syntax (make-import-make-unboxing var renamings loc ctc)
   (if ctc
       (with-syntax ([ctc-stx (syntax-property ctc 'inferred-name var)])
-        (quasisyntax/loc (error-syntax)
+        (quasisyntax/loc (current-syntax-context)
           (lambda (stx)
             (with-syntax ([app (datum->syntax (quote-syntax here)
                                               (list (quote-syntax #,loc))
@@ -900,7 +900,7 @@
                                       (quote #,var) (quote-srcloc #,var))
                             (error 'unit "contracted import ~a used before definition"
                                    (quote #,(syntax->datum var))))))))))
-      (quasisyntax/loc (error-syntax)
+      (quasisyntax/loc (current-syntax-context)
         (lambda (stx)
           (datum->syntax (quote-syntax here)
                          (list (quote-syntax #,loc))
@@ -974,14 +974,14 @@
                      [(export-name ...)
                       (map (lambda (tag/info) (car (siginfo-names (cdr tag/info))))
                            export-tagged-infos)]
-                     [name (syntax-local-infer-name (error-syntax))]
+                     [name (syntax-local-infer-name (current-syntax-context))]
                      [(icount ...) (map
                                     (lambda (import) (length (car import)))
                                     import-sigs)])
          (values
           (syntax-protect
           (intro
-           (quasisyntax/loc (error-syntax)
+           (quasisyntax/loc (current-syntax-context)
             (make-unit
              'name
              (vector-immutable (cons 'import-name
@@ -1005,7 +1005,7 @@
                                                                               (quote-syntax #,iv))))
                                                                         (syntax->list e-ivs)
                                                                         (syntax->list ivs))])
-                                                      (quasisyntax/loc (error-syntax)
+                                                      (quasisyntax/loc (current-syntax-context)
                                                         [#,ivs
                                                          (make-id-mappers
                                                           #,@(map (lambda (iv l c)
@@ -1020,7 +1020,7 @@
                                          (letrec-syntaxes+values (renames ...
                                                                   mac ... ...)
                                            (val ... ...)
-                                           (unit-body #,(error-syntax)
+                                           (unit-body #,(current-syntax-context)
                                                       (int-ivar ... ...)
                                                       (int-evar ... ...)
                                                       (eloc ... ...)
@@ -1046,7 +1046,7 @@
 (define-syntax (unit-body stx)
   (syntax-case stx ()
     ((_ err-stx ivars evars elocs ectcs body ...)
-     (parameterize ((error-syntax #'err-stx))
+     (parameterize ((current-syntax-context #'err-stx))
        (let* ([expand-context (generate-expand-context)]
               [def-ctx (syntax-local-make-definition-context)]
               [stop-list
@@ -1076,7 +1076,7 @@
                            [(id . _) (syntax-track-origin e defn-or-expr #'id)]))
                        (syntax-case defn-or-expr (begin define-values define-syntaxes)
                          [(begin . l)
-                          (let ([l (parameterize ((error-syntax defn-or-expr))
+                          (let ([l (parameterize ((current-syntax-context defn-or-expr))
                                      (checked-syntax->list #'l))])
                             (expand-all (map track l)))]
                          [(define-syntaxes (id ...) rhs)
@@ -1390,11 +1390,11 @@
                        [(orig-export-name ...)
                         (map (lambda (tag/info) (car (siginfo-names (cdr tag/info))))
                              orig-export-tagged-infos)]
-                       [name (syntax-local-infer-name (error-syntax))]
-                       [form (syntax-e (stx-car (error-syntax)))])
+                       [name (syntax-local-infer-name (current-syntax-context))]
+                       [form (syntax-e (stx-car (current-syntax-context)))])
            (values
             (syntax-protect
-            (quasisyntax/loc (error-syntax)
+            (quasisyntax/loc (current-syntax-context)
               (let ([unit-tmp unit-exp])
                 (check-unit unit-tmp 'form)
                 (check-sigs unit-tmp
@@ -1494,10 +1494,10 @@
   ;; identifiers of the compound-unit's import and export signatures, plus
   ;; identifiers for initialization dependencies.
   (define (build-compound-unit stx [static-dep-info '()])
-    (define/syntax-parse who:id (syntax-e (stx-car (error-syntax))))
+    (define/syntax-parse who:id (syntax-e (stx-car (current-syntax-context))))
     (define link-id-ctx (syntax-local-make-definition-context))
     (syntax-parse (internal-definition-context-add-scopes link-id-ctx stx)
-      #:context (error-syntax)
+      #:context (current-syntax-context)
       #:literals [import export link]
       [({~alt {~once (import in:link-binding ...)
                      #:too-few "missing import clause"
@@ -1713,11 +1713,10 @@
                static-exports
                static-dep-info)])))
 
-(define-syntax/err-param (compound-unit stx)
-  (syntax-parse stx
-    [(_ . body)
-     (define-values [expr imports exports deps] (build-compound-unit #'body))
-     expr]))
+(define-syntax-parser compound-unit
+  [(_ . body)
+   (define-values [expr imports exports deps] (build-compound-unit #'body))
+   expr])
 
 (define (invoke-unit/core unit)
   (check-unit unit 'invoke-unit)
@@ -1883,14 +1882,14 @@
       ((_ name . rest)
        (begin
          (check-id #'name)
-         (let-values (((exp i e d) (parameterize ([error-syntax (syntax-property (error-syntax) 'inferred-name (syntax-e #'name))])
+         (let-values (((exp i e d) (parameterize ([current-syntax-context (syntax-property (current-syntax-context) 'inferred-name (syntax-e #'name))])
                                      (build #'rest))))
            (with-syntax ((((itag . isig) ...) i)
                          (((etag . esig) ...) e)
                          (((deptag . depsig) ...) d)
                          (contracted? contracted?))
              (syntax-protect
-              (quasisyntax/loc (error-syntax)
+              (quasisyntax/loc (current-syntax-context)
                 (begin
                   (define u #,exp)
                   (define-syntax name
@@ -1934,7 +1933,7 @@
                       (map check-helper tagged-import-infos))
                      (((export-name . (export-keys ...)) ...)
                       (map check-helper tagged-export-infos))
-                     (form (stx-car (error-syntax))))
+                     (form (stx-car (current-syntax-context))))
          (values
           (syntax-protect
            #`(let ([unit-tmp unit-exp])
@@ -1984,6 +1983,7 @@
 (define-for-syntax no-invoke-contract (gensym))
 (define-for-syntax (build-unit/contract stx)
   (syntax-parse stx
+    #:context (current-syntax-context)
                 [(:import-clause/contract :export-clause/contract dep:dep-clause :body-clause/contract . bexps)
                  (define splicing-body-contract
                    (if (eq? (syntax-e #'b) no-invoke-contract) #'() #'(b)))
@@ -1992,7 +1992,7 @@
                                 (check-unit-syntax
                                  (syntax/loc stx
                                    ((import i.s ...) (export e.s ...) dep . bexps))))])
-                   (with-syntax ([name (syntax-local-infer-name (error-syntax))]
+                   (with-syntax ([name (syntax-local-infer-name (current-syntax-context))]
                                  [(import-tagged-sig-id ...)
                                   (map (λ (i s)
                                          (if (identifier? i) #`(tag #,i #,s) s))
@@ -2399,8 +2399,8 @@
                          [(isig ...) isig])
              (syntax-protect
               (if define?
-                  (syntax/loc (error-syntax) (define-values/invoke-unit u (import isig ...) (export esig ...)))
-                  (syntax/loc (error-syntax) (invoke-unit u (import isig ...)))))))]
+                  (syntax/loc (current-syntax-context) (define-values/invoke-unit u (import isig ...) (export esig ...)))
+                  (syntax/loc (current-syntax-context) (invoke-unit u (import isig ...)))))))]
         [(list? units)
          (let-values ([(isig esig) (imps/exps-from-units units exports)])
            (with-syntax ([(new-unit) (generate-temporaries '(new-unit))]
@@ -2416,10 +2416,10 @@
                                 u)])
                (syntax-protect
                 (if define?
-                    (syntax/loc (error-syntax)
+                    (syntax/loc (current-syntax-context)
                       (define-values/invoke-unit u
                         (import isig ...) (export esig ...)))
-                    (syntax/loc (error-syntax)
+                    (syntax/loc (current-syntax-context)
                       (invoke-unit u
                                    (import isig ...))))))))]
         ;; just for error handling
