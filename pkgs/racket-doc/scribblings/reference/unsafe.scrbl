@@ -479,7 +479,7 @@ Unsafe versions of @racket[u16vector-ref] and
 @defproc[(unsafe-stencil-vector-set! [vec stencil-vector?]
                                      [pos exact-nonnegative-integer?]
                                      [v any/c])
-         avoid?]
+         void?]
 @defproc[(unsafe-stencil-vector-update [vec stencil-vector?]
                                        [remove-mask (integer-in 0 (sub1 (expt 2 (stencil-vector-mask-width))))]
                                        [add-mask (integer-in 0 (sub1 (expt 2 (stencil-vector-mask-width))))]
