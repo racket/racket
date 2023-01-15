@@ -331,31 +331,31 @@
 
 ;; compound-unit syntax errors (without sub-signatures)
 (test-syntax-error 
- "compound-unit: expected syntax matching (<identifier> : <identifier>) or (<identifier> : (tag <identifier> <identifier>))"
+ "compound-unit: expected the literal symbol `:'"
  (compound-unit (import (a empty-sig)) (export) (link)))
 (test-syntax-error 
- "compound-unit: expected syntax matching (<identifier> : <identifier>) or (<identifier> : (tag <identifier> <identifier>))"
+ "compound-unit: expected identifier"
  (compound-unit (import (1 : empty-sig)) (export) (link)))
 (test-syntax-error 
- "compound-unit: unknown signature"
+ "compound-unit: expected identifier bound to a signature"
  (compound-unit (import (a : empty-si)) (export) (link)))
 (test-syntax-error 
- "compound-unit: not an identifier"
+ "compound-unit: expected tagged link identifier"
  (compound-unit (import) (export a 1 b) (link)))
 (test-syntax-error 
- "compound-unit: not an identifier"
+ "compound-unit: expected tagged link identifier"
  (compound-unit (import) (export) (link (((a : empty-sig)) b 1))))
 (test-syntax-error 
- "compound-unit: not an identifier"
+ "compound-unit: expected identifier or expected more terms"
  (compound-unit (import (a : ())) (export) (link)))
 (test-syntax-error 
- "compound-unit: not an identifier"
+ "compound-unit: expected tagged signature identifier"
  (compound-unit (import) (export) (link (((a : "")) b))))
 (test-syntax-error 
- "compound-unit: expected syntax matching (<identifier> : <identifier>) or (<identifier> : (tag <identifier> <identifier>))"
+ "compound-unit: expected the literal symbol `:'"
  (compound-unit (import) (export) (link (((a empty-sig)) b))))
 (test-syntax-error 
- "compound-unit: unknown signature"
+ "compound-unit: expected identifier bound to a signature"
  (compound-unit (import) (export) (link (((a : b)) b))))
 (test-syntax-error 
  "compound-unit: duplicate linking identifier definition"
@@ -376,7 +376,7 @@
  "compound-unit: cannot directly export an import"
  (compound-unit (import (S : x-sig)) (export S) (link)))
 (test-syntax-error 
- "compound-unit: expected syntax matching (<identifier> : <identifier>) or (<identifier> : (tag <identifier> <identifier>))"
+ "compound-unit: expected the literal symbol `:'"
  (compound-unit (import (tag s (S : x-sig)))  (export (tag t S)) (link)))
 (test-syntax-error 
  "compound-unit: the signature of X1 extends this signature"
@@ -1117,7 +1117,7 @@
 (let ()
   (define u (unit (import) (export x-sub) (define x 1) (define xx 1)))
   (test-syntax-error 
-   "compound-unit: unknown signature"
+   "compound-unit: expected identifier bound to a signature"
    (compound-unit (import) (export l1 l2)
                   (link (((l1 : s1)) u)
                         (((l2 : s2)) u)))))

@@ -26,7 +26,7 @@
          bind-at
          build-init-depend-property
 
-         signature-id)
+         signature-id tagged-signature-id)
 
 (define-syntax (apply-mac stx)
   (syntax-case stx ()
@@ -75,11 +75,20 @@
 ;; - (listof (cons #f siginfo) (cons #f identifier) sig)
 ;; - (listof (cons symbol siginfo) (cons symbol identifier) sig)
 
-;; A siginfo is
-;; - (make-siginfo (listof identifier) (listof identifier) (listof identifier) (hash-tableof symbol bool))
-;; where the car of each list represents the signature, and the cdr represents
-;; its super signatures.  All lists are non-empty and the same length.
-(define-struct siginfo (names ctime-ids rtime-ids super-table))
+;; A siginfo contains information about the identity of a signature
+;; and its super-signatures. Each of the three list fields are always
+;; non-empty and the same length; the first element of each list
+;; corresponds to the child signature, and each subsequent element
+;; corresponds to the next super-signature in the inheritance chain.
+(define-struct siginfo
+  (names         ; (listof identifier?) - the identifiers bound by `define-signature`
+   ctime-ids     ; (listof symbol?) - gensyms that uniquely identify the signature
+                 ;   in the transformer environment
+   rtime-ids     ; (listof identifier?) - identifiers bound to a gensym that
+                 ;   uniquely identifies the signature at runtime; see
+                 ;   Note [Signature runtime representation] in "unit-runtime.rkt"
+   super-table)) ; (hash/c symbol? #t) - a hash that maps the elements of ctime-ids,
+                 ;   to #t, used for efficient subtyping checks
 
 ;; build-siginfo : (listof symbol) (listof symbol) (listof identifier) -> siginfo
 (define (build-siginfo names rtime-ids)
@@ -178,6 +187,18 @@
     #:attr {info.super-id 1} (cdr (siginfo-names (attribute info)))
     #:attr {info.ctime-id 1} (siginfo-ctime-ids (attribute info))
     #:attr {info.rtime-id 1} (siginfo-rtime-ids (attribute info))))
+
+(define-syntax-class tagged-signature-id
+  #:description "tagged signature identifier"
+  #:attributes [tag-id tag-sym sig-id value
+                info info.id {info.super-id 1} {info.ctime-id 1} {info.rtime-id 1}]
+  #:commit
+  #:literals [tag]
+  (pattern (tag ~! tag-id:id {~and sig-id :signature-id})
+    #:attr tag-sym (syntax-e #'tag-id))
+  (pattern {~and sig-id :signature-id}
+    #:attr tag-id #f
+    #:attr tag-sym #f))
 
 (define (set!-trans-extract x)
   (if (set!-transformer? x)
