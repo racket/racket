@@ -123,9 +123,10 @@ the @rfc for more information about JSON.
   remains. Like @racket[read], the function leaves all remaining
   characters in the port so that a second call can retrieve the
   remaining JSON input(s). If the JSON inputs aren't delimited per se
-  (true, false, null), they  must be separated by whitespace from the
-  following JSON input. 
-  
+  (true, false, null), they must be separated by whitespace from the
+  following JSON input. Raises @racket[exn:fail:read] if @racket[in] is not
+  at EOF and starts with malformed JSON (that is, no initial sequence of bytes
+  in @racket[in] can be parsed as JSON); see below for examples.
 
 @examples[#:eval ev
   (with-input-from-string
@@ -157,10 +158,19 @@ the @rfc for more information about JSON.
       "sandwich sandwich" (code:comment "invalid JSON")
       (λ () (read-json))))
 
+  (with-input-from-string
+    "false sandwich" (code:comment "valid JSON prefix, invalid remainder is not (immediately) problematic")
+    (λ () (read-json)))
+
   (eval:error
     (with-input-from-string
       "false42" (code:comment "invalid JSON text sequence")
       (λ () (read-json))))
+
+  (with-input-from-string
+    "false 42" (code:comment "valid JSON text sequence (notice the space)")
+    (λ () (list (read-json) (read-json))))
+
 ]
 
 @history[#:changed "8.1.0.2" @list{Adjusted the whitespace handling to reject whitespace that isn't either
@@ -172,6 +182,7 @@ the @rfc for more information about JSON.
   Parses a recognizable prefix of the string @racket[str] as an immutable @tech{jsexpr}.
   If the prefix isn't delimited per se (true, false, null), it
   must be separated by whitespace from the remaining characters.
+  Raises @racket[exn:fail:read] if the string is malformed JSON.
 
 
 @examples[#:eval ev
@@ -183,7 +194,8 @@ the @rfc for more information about JSON.
          jsexpr?]{
   Parses a recognizable prefix of the string @racket[str] as an immutable @tech{jsexpr}.
   If the prefix isn't delimited per se (true, false, null), it
-  must be separated by whitespace from the remaining bytes.
+  must be separated by whitespace from the remaining bytes. Raises
+  @racket[exn:fail:read] if the byte string is malformed JSON.
 
 
 @examples[#:eval ev
