@@ -6,7 +6,6 @@
                      racket/list
                      racket/syntax
                      syntax/boundmap
-                     syntax/id-set
                      syntax/context
                      syntax/kerncase
                      syntax/name
