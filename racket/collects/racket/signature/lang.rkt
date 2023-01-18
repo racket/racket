@@ -4,6 +4,7 @@
          racket/contract
          (submod racket/unit compat)
          (for-syntax racket/base
+                     racket/syntax
                      racket/private/unit-compiletime
                      racket/private/unit-syntax))
 
@@ -25,7 +26,7 @@
   (split-requires* (list #'require #'#%require)))
 
 (define-syntax (module-begin stx)
-  (parameterize ((error-syntax stx))
+  (parameterize ((current-syntax-context stx))
     (with-syntax ((name (datum->syntax stx
                                        (make-name (syntax-property stx 'enclosing-module-name)))))
       (syntax-case stx ()

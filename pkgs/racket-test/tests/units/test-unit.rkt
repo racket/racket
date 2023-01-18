@@ -1,12 +1,13 @@
 #lang racket/load
 
-(require (for-syntax racket/private/unit-compiletime
+(require (for-syntax racket/syntax
+                     racket/private/unit-compiletime
                      racket/private/unit-syntax))
 (require "test-harness.rkt"
          racket/unit)
 
 (define-syntax (lookup-sig-mac stx)
-  (parameterize ((error-syntax stx))
+  (parameterize ((current-syntax-context stx))
     (syntax-case stx ()
       ((_ id)
        #`#'#,(let ((s (lookup-signature #'id)))
@@ -107,34 +108,34 @@
 
 ;; define-signature syntax-errors
 (test-syntax-error 
- "expected syntax matching" 
+ "expected more terms" 
  (define-signature))
 (test-syntax-error 
- "expected syntax matching"
+ "expected more terms"
  (define-signature x))
 (test-syntax-error 
- "expected syntax matching"
+ "unexpected term"
  (define-signature x (a b) 1))
 (test-syntax-error 
- "not an identifier"
+ "expected identifier"
  (define-signature 1 (a b)))
 (test-syntax-error 
- "not an identifier"
+ "expected identifier"
  (define-signature x extends 1 (a b)))
 (test-syntax-error 
- "unknown signature"
+ "expected identifier bound to a signature"
  (define-signature x extends y12 (a b)))
 (test-syntax-error 
- "unknown signature"
+ "expected identifier bound to a signature"
  (let () (define-signature x extends x (a b))))
 (test-syntax-error 
- "not an identifier"
+ "expected identifier"
  (define-signature (a . b) (a b)))
 (test-syntax-error 
- "expected syntax matching"
+ "expected signature elements or expected the identifier `extends'"
  (define-signature b . (a b)))
 (test-syntax-error 
- "bad syntax (illegal use of `.')"
+ "expected the literal ()"
  (define-signature b (a b) . 2))
 (test-syntax-error 
  "set!: illegal use of signature name"
@@ -142,23 +143,23 @@
    (define-signature a (a))
    (set! a 1)))
 (test-syntax-error 
- "expected syntax matching"
+ "expected signature elements or expected the identifier `extends'"
  (define-signature x y))
 (test-syntax-error 
- "define-signature: expected either an identifier or signature form"
+ "define-signature: expected signature element"
  (define-signature x (1)))
 
 (test-syntax-error 
- "define-signature: bad syntax (illegal use of `.')"
+ "define-signature: expected signature element"
  (define-signature x (a . b)))
 (test-syntax-error 
- "define-signature: unknown signature form"
+ "define-signature: not a signature form"
  (define-signature x ((a))))
 (test-syntax-error 
  "define-signature: not a signature form"
  (define-signature x ((define-signature))))
 (test-syntax-error 
- "define-values: bad variable list"
+ "define-signature: expected signature element"
  (define-signature x ((define-values 1 2))))
 (test-syntax-error 
  "define-signature: expected list of results from signature form, got 1"
@@ -166,7 +167,7 @@
    (define-signature-form (a b) 1)
    (define-signature x ((a 1)))))
 (test-syntax-error 
- "define-signature: unknown signature form"
+ "define-signature: not a signature form"
  (let ()
    (define-signature-form a (lambda (b) (list #'(c d))))
    (define-signature x ((a 1)))
@@ -331,31 +332,31 @@
 
 ;; compound-unit syntax errors (without sub-signatures)
 (test-syntax-error 
- "compound-unit: expected syntax matching (<identifier> : <identifier>) or (<identifier> : (tag <identifier> <identifier>))"
+ "compound-unit: expected the literal symbol `:'"
  (compound-unit (import (a empty-sig)) (export) (link)))
 (test-syntax-error 
- "compound-unit: expected syntax matching (<identifier> : <identifier>) or (<identifier> : (tag <identifier> <identifier>))"
+ "compound-unit: expected identifier"
  (compound-unit (import (1 : empty-sig)) (export) (link)))
 (test-syntax-error 
- "compound-unit: unknown signature"
+ "compound-unit: expected identifier bound to a signature"
  (compound-unit (import (a : empty-si)) (export) (link)))
 (test-syntax-error 
- "compound-unit: not an identifier"
+ "compound-unit: expected tagged link identifier"
  (compound-unit (import) (export a 1 b) (link)))
 (test-syntax-error 
- "compound-unit: not an identifier"
+ "compound-unit: expected tagged link identifier"
  (compound-unit (import) (export) (link (((a : empty-sig)) b 1))))
 (test-syntax-error 
- "compound-unit: not an identifier"
+ "compound-unit: expected identifier or expected more terms"
  (compound-unit (import (a : ())) (export) (link)))
 (test-syntax-error 
- "compound-unit: not an identifier"
+ "compound-unit: expected tagged signature identifier"
  (compound-unit (import) (export) (link (((a : "")) b))))
 (test-syntax-error 
- "compound-unit: expected syntax matching (<identifier> : <identifier>) or (<identifier> : (tag <identifier> <identifier>))"
+ "compound-unit: expected the literal symbol `:'"
  (compound-unit (import) (export) (link (((a empty-sig)) b))))
 (test-syntax-error 
- "compound-unit: unknown signature"
+ "compound-unit: expected identifier bound to a signature"
  (compound-unit (import) (export) (link (((a : b)) b))))
 (test-syntax-error 
  "compound-unit: duplicate linking identifier definition"
@@ -376,7 +377,7 @@
  "compound-unit: cannot directly export an import"
  (compound-unit (import (S : x-sig)) (export S) (link)))
 (test-syntax-error 
- "compound-unit: expected syntax matching (<identifier> : <identifier>) or (<identifier> : (tag <identifier> <identifier>))"
+ "compound-unit: expected the literal symbol `:'"
  (compound-unit (import (tag s (S : x-sig)))  (export (tag t S)) (link)))
 (test-syntax-error 
  "compound-unit: the signature of X1 extends this signature"
@@ -1117,7 +1118,7 @@
 (let ()
   (define u (unit (import) (export x-sub) (define x 1) (define xx 1)))
   (test-syntax-error 
-   "compound-unit: unknown signature"
+   "compound-unit: expected identifier bound to a signature"
    (compound-unit (import) (export l1 l2)
                   (link (((l1 : s1)) u)
                         (((l2 : s2)) u)))))

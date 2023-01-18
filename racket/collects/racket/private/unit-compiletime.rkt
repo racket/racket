@@ -1,6 +1,8 @@
 #lang racket/base
 
-(require syntax/boundmap
+(require racket/syntax
+         syntax/boundmap
+         syntax/parse
          "unit-syntax.rkt")
 (require (for-syntax racket/base))
 (require (for-template racket/base
@@ -23,7 +25,9 @@
          process-spec
          make-relative-introducer
          bind-at
-         build-init-depend-property)
+         build-init-depend-property
+
+         signature-id tagged-signature-id)
 
 (define-syntax (apply-mac stx)
   (syntax-case stx ()
@@ -72,11 +76,20 @@
 ;; - (listof (cons #f siginfo) (cons #f identifier) sig)
 ;; - (listof (cons symbol siginfo) (cons symbol identifier) sig)
 
-;; A siginfo is
-;; - (make-siginfo (listof symbol) (listof symbol) (listof identifier) (hash-tableof symbol bool))
-;; where the car of each list represents the signature, and the cdr represents
-;; its super signatures.  All lists are non-empty and the same length.
-(define-struct siginfo (names ctime-ids rtime-ids super-table))
+;; A siginfo contains information about the identity of a signature
+;; and its super-signatures. Each of the three list fields are always
+;; non-empty and the same length; the first element of each list
+;; corresponds to the child signature, and each subsequent element
+;; corresponds to the next super-signature in the inheritance chain.
+(define-struct siginfo
+  (names         ; (listof identifier?) - the identifiers bound by `define-signature`
+   ctime-ids     ; (listof symbol?) - gensyms that uniquely identify the signature
+                 ;   in the transformer environment
+   rtime-ids     ; (listof identifier?) - identifiers bound to a gensym that
+                 ;   uniquely identifies the signature at runtime; see
+                 ;   Note [Signature runtime representation] in "unit-runtime.rkt"
+   super-table)) ; (hash/c symbol? #t) - a hash that maps the elements of ctime-ids,
+                 ;   to #t, used for efficient subtyping checks
 
 ;; build-siginfo : (listof symbol) (listof symbol) (listof identifier) -> siginfo
 (define (build-siginfo names rtime-ids)
@@ -109,13 +122,13 @@
 ;;                 identifier)
 (define-struct/proc signature (siginfo vars val-defs stx-defs post-val-defs ctcs orig-binder)
   (lambda (_ stx)
-    (parameterize ((error-syntax stx))
+    (parameterize ((current-syntax-context stx))
       (raise-stx-err "illegal use of signature name"))))
 
 ;; (make-signature-form (syntax-object -> any))
 (define-struct/proc signature-form (f)
   (lambda (_ stx)
-    (parameterize ((error-syntax stx))
+    (parameterize ((current-syntax-context stx))
       (raise-stx-err "illegal use of signature form"))))
 
 ;; (make-unit-info identifier (listof (cons symbol identifier)) (listof (cons symbol identifier)) identifier boolean)
@@ -155,6 +168,38 @@
     (unless (signature? s)
       (raise-stx-err "not a signature" id))
     s))
+
+(define-syntax-class (static/extract predicate description)
+  #:description description
+  #:attributes [value]
+  #:commit
+  (pattern {~var x (static values #f)}
+    #:attr value (set!-trans-extract (attribute x.value))
+    #:fail-unless (predicate (attribute value)) #f))
+
+(define-syntax-class signature-id
+  #:description #f
+  #:attributes [value
+                info info.id {info.super-id 1} {info.ctime-id 1} {info.rtime-id 1}]
+  #:commit
+  (pattern {~var || (static/extract signature? "identifier bound to a signature")}
+    #:attr info (signature-siginfo (attribute value))
+    #:attr info.id (car (siginfo-names (attribute info)))
+    #:attr {info.super-id 1} (cdr (siginfo-names (attribute info)))
+    #:attr {info.ctime-id 1} (siginfo-ctime-ids (attribute info))
+    #:attr {info.rtime-id 1} (siginfo-rtime-ids (attribute info))))
+
+(define-syntax-class tagged-signature-id
+  #:description "tagged signature identifier"
+  #:attributes [tag-id tag-sym sig-id value
+                info info.id {info.super-id 1} {info.ctime-id 1} {info.rtime-id 1}]
+  #:commit
+  #:literals [tag]
+  (pattern (tag ~! tag-id:id {~and sig-id :signature-id})
+    #:attr tag-sym (syntax-e #'tag-id))
+  (pattern {~and sig-id :signature-id}
+    #:attr tag-id #f
+    #:attr tag-sym #f))
 
 (define (set!-trans-extract x)
   (if (set!-transformer? x)

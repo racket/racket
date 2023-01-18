@@ -1,23 +1,62 @@
 #lang racket/base
 
-(require (for-syntax "unit-syntax.rkt" racket/base))
+(require (for-syntax racket/base
+                     racket/syntax
+                     "unit-syntax.rkt"))
 (provide define-syntax/err-param
          (rename-out [make-a-unit make-unit]) unit-import-sigs unit-export-sigs unit-go unit? unit-deps
          check-unit check-no-imports check-sigs check-deps check-helper)
   
 (define-syntax define-syntax/err-param
   (syntax-rules ()
-    ((_ (name arg) body)
+    ((_ (name arg) body ...)
      (define-syntax (name arg)
-       (parameterize ((error-syntax arg))
-         body)))))
+       (parameterize ((current-syntax-context arg))
+         body ...)))))
 
 ;; for named structures
 (define insp (current-inspector))
 
-;; (make-unit (listof (cons symbol symbol)) (listof (cons symbol symbol)) (listof nat) thunk)
+;; Note [Signature runtime representation]
+;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;; At runtime, signatures largely do not exist: they are quite
+;; second-class. But we do need a unique value to identify each
+;; signature by, as the linker needs to be able to match up linkages
+;; by their signature. No other information is necessary, so a gensym
+;; per signature will do; we call this gensym the *signature id*.
+;;
+;; However, two things complicate the story slightly:
+;;
+;;   1. Multiple linkages for the same signature can be distinguished
+;;      using tags.
+;;
+;;   2. Signatures support inheritance, which allows an import linkage
+;;      to be satisfied by an export linkage of a sub-signature.
+;;
+;; The first point is managed easily by possibly combining each
+;; signature gensym with a tag symbol, yielding the definition of a
+;; *signature key*:
+;;
+;;     signature-id?  = (and/c symbol? symbol-uninterned?)
+;;     tag-symbol?    = (and/c symbol? symbol-interned?)
+;;     signature-key? = (or/c signature-id?
+;;                            (cons/c tag-symbol? signature-key?))
+;;
+;; The second point is somewhat more subtle, but our solution is
+;; simple: each signature is associated with a *list* of signature ids,
+;; and a sub-signature includes the signature ids of all of its super-
+;; signatures. Each signature id uniquely identifies the new bindings
+;; introduced by *that particular* signature, and those bindings can
+;; be stored in separate vectors and linked largely independently.
+
 ;; Runtime representation of a unit
-(define-struct unit (import-sigs export-sigs deps go))
+(define-struct unit
+  ;; Note: the additional symbols in `import-sigs` and `export-sigs`
+  ;; are the symbolic names of the signatures, for error reporting.
+  (import-sigs ; (vectorof (cons/c symbol? (vectorof signature-key?)))
+   export-sigs ; (vectorof (cons/c symbol? (vectorof signature-key?)))
+   deps        ; (listof signature-key?)
+   go))        ; (-> (values (-> import-table any) export-table ...))
 
 ;; For units with inferred names, generate a struct that prints using the name:
 (define (make-naming-constructor type name)
@@ -99,23 +138,21 @@
               (current-continuation-marks))))))
       (loop (sub1 i)))))
 
-;; check-deps : (hash-tableof (cons symbol (or symbol #f)) (cons symbol symbol)) unit symbol ->
-;; The hash table keys are the tag and runtime signature id
-;; The values are the name of the signature and the linkage
+;; check-deps : (hash/c signature-key? (cons/c symbol? symbol?)) unit? symbol? -> void?
+;; The hash table keys are signature keys (see Note [Signature runtime representation]).
+;; The values are the name of the signature and the link-id.
 (define (check-deps dep-table unit name)
-  (for-each
-   (λ (dep)
-     (let ([r (hash-ref dep-table dep #f)])
-       (when r
-         (raise
-          (make-exn:fail:contract
-           (if (car dep)
-               (format "~a: initialization dependent signature ~a with tag ~a is supplied from a later unit with link ~a"
-                       name (car r) (car dep) (cdr r))
-               (format "~a: untagged initialization dependent signature ~a is supplied from a later unit with link ~a"
-                       name (car r) (cdr r)))
-           (current-continuation-marks))))))
-   (unit-deps unit)))
+  (for ([dep-key (in-list (unit-deps unit))])
+    (define r (hash-ref dep-table dep-key #f))
+    (when r
+      (raise
+       (make-exn:fail:contract
+        (if (pair? dep-key)
+            (format "~a: initialization dependent signature ~a with tag ~a is supplied from a later unit with link ~a"
+                    name (car r) (car dep-key) (cdr r))
+            (format "~a: untagged initialization dependent signature ~a is supplied from a later unit with link ~a"
+                    name (car r) (cdr r)))
+        (current-continuation-marks))))))
 
 ;; check-no-imports : unit symbol ->
 ;; ensures that the unit has no imports
