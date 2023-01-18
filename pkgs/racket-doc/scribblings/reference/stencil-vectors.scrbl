@@ -29,7 +29,7 @@ effect on access or mutation via @racket[stencil-vector-ref] and
 @racket[stencil-vector-set!]. For example, such a stencil vector has a
 mask @racket[25], which could also be written @racketvalfont{#b11001};
 reading from low bit to high, that mask represents values present at
-the first, fourth, and fifth virtual slots. If that stencil vector's
+the virtual slots 0, 3, and 4. If that stencil vector's
 elements are @racket['a], @racket['b], and @racket['c], then
 @racket['a] is at virtual slot 0 and accessed with index @racket[0],
 @racket['b] is at virtual slot 3 and accessed with index @racket[1],
@@ -45,7 +45,7 @@ mask. For example, starting with the stencil vector whose mask is
 @racket['c], adding new elements @racket['d] and @racket['e] using the
 addition mask @racketvalfont{#b100100} produces a stencil vector whose
 mask is @racketvalfont{#b111101} and whose elements in order are
-@racket['a], @racket['b], @racket['d], @racket['c], and @racket['e].
+@racket['a], @racket['d], @racket['b], @racket['c], and @racket['e].
 
 The maximum size of a stencil vector is 58 elements on a 64-bit
 platform and 26 elements on a 32-bit platform. This limited size
@@ -144,7 +144,7 @@ slot is position @racket[0], and the last slot is one less than
 @defproc[(stencil-vector-set! [vec stencil-vector?]
                               [pos exact-nonnegative-integer?]
                               [v any/c])
-         avoid?]{
+         void?]{
 
 Updates the slot @racket[pos] of @racket[vec] to contain @racket[v].
 
