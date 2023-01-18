@@ -1,6 +1,8 @@
-Version 8.8
+Version 8.8, January 2023
 Add `#:param` option to `->i`
+Extend `copy-file` with permission-management arguments
 Fix CS `[:word:]` regexp pattern to include ASCII digits
+Other bug repairs and other changes noted in the documentation
 
 Version 8.7, October 2022
 Use Unicode 14.0 for character and string operations
