@@ -359,21 +359,30 @@
 
 (define blue-fish (instantiate color-fish% () (color 'blue) (size 10)))
 (define red-fish (instantiate color-fish% () (size 1)))
+(define dynamic-blue-fish (dynamic-instantiate color-fish% '() '([color . blue] [size . 10])))
+(define dynamic-red-fish (dynamic-instantiate color-fish% '() '([size . 1])))
 
 (define color-fish-color (class-field-accessor color-fish% color))
 
-(test 'red color-fish-color red-fish)
-(test 'blue color-fish-color blue-fish)
+(let ()
+  (define (go red-fish blue-fish)
+    (test 'red color-fish-color red-fish)
+    (test 'blue color-fish-color blue-fish)
+    (test 'red color-fish-color red-fish)
+    (test 'blue color-fish-color blue-fish)
 
-(test 1 'fr (send red-fish get-size))
-(test 10 'fb (send blue-fish get-size))
+    (test 1 'fr (send red-fish get-size))
+    (test 10 'fb (send blue-fish get-size))
 
-(send red-fish grow 30)
+    (send red-fish grow 30)
 
-(test 31 'fr (send red-fish get-size))
+    (test 31 'fr (send red-fish get-size))
 
-(test (void) 'fv (send blue-fish die))
-(test 'black color-fish-color blue-fish)
+    (test (void) 'fv (send blue-fish die))
+    (test 'black color-fish-color blue-fish))
+
+  (go red-fish blue-fish)
+  (go dynamic-red-fish dynamic-blue-fish))
 
 (let ([exn (with-handlers ([exn:fail? (lambda (exn) exn)])
 	     (send red-fish get-size 10))])
@@ -443,9 +452,13 @@
 (test #f is-a? 11 eater<%>)
 
 (err/rt-test (instantiate fish% () (bad-size 10)) exn:fail:object?)
+(err/rt-test (dynamic-instantiate fish% '() '([bad-size . 10])) exn:fail:object?)
 (err/rt-test (instantiate fish% () (size 10) (size 12)) exn:fail:object?)
+(err/rt-test (dynamic-instantiate fish% '() '([size . 10] [size . 12])) exn:fail:object?)
 (err/rt-test (instantiate fish% (10) (size 12)) exn:fail:object?)
+(err/rt-test (dynamic-instantiate fish% '(10) '([size . 12])) exn:fail:object?)
 (err/rt-test (instantiate picky-fish% () (size 17)) exn:fail:object?)
+(err/rt-test (dynamic-instantiate picky-fish% '() '([size . 17])) exn:fail:object?)
 
 (err/rt-test (color-fish-color picky))
 (err/rt-test (color-fish-color 6))
@@ -617,9 +630,13 @@
 
 (define rest-fish-0 (instantiate rest-arg-fish% () (-first-name "Gil") (last-name "Finn")))
 (test "Gil Finn, a.k.a.: ()" 'osf (send rest-fish-0 greeting))
+(define rest-fish-0 (dynamic-instantiate rest-arg-fish% '() '([-first-name . "Gil"] [last-name . "Finn"])))
+(test "Gil Finn, a.k.a.: ()" 'osf (send rest-fish-0 greeting))
 
 ;; Keyword order doesn't matter:
 (define rest-fish-0.5 (instantiate rest-arg-fish% () (last-name "Finn") (-first-name "Gil")))
+(test "Gil Finn, a.k.a.: ()" 'osf (send rest-fish-0.5 greeting))
+(define rest-fish-0.5 (dynamic-instantiate rest-arg-fish% '() '([last-name . "Finn"] [-first-name . "Gil"])))
 (test "Gil Finn, a.k.a.: ()" 'osf (send rest-fish-0.5 greeting))
 
 (err/rt-test (instantiate rest-arg-fish% () 
@@ -629,6 +646,16 @@
 (err/rt-test (instantiate rest-arg-fish% () 
 			  (-first-name "Gil") (last-name "Finn") 
 			  (anything "Slick"))
+	     exn:fail:object?)
+(err/rt-test (dynamic-instantiate rest-arg-fish% '() 
+                                  '([-first-name . "Gil"]
+                                    [last-name . "Finn"] 
+                                    [-nicknames . "Slick"]))
+	     exn:fail:object?)
+(err/rt-test (dynamic-instantiate rest-arg-fish% '()
+                                  '([-first-name . "Gil"]
+                                    [last-name . "Finn"] 
+                                    [anything . "Slick"]))
 	     exn:fail:object?)
 
 ;; Redundant by-pos:
@@ -654,6 +681,8 @@
 
 (define no-rest-0 (instantiate no-rest-fish% ("Gil" "Finn")))
 (test 12 'norest (send no-rest-0 get-size))
+(define no-rest-0 (dynamic-instantiate no-rest-fish% '("Gil" "Finn") '()))
+(test 12 'norest (send no-rest-0 get-size))
 
 (define allow-rest-fish%
   (class fish%
@@ -672,6 +701,8 @@
 	     exn:fail:object?)
 
 (define no-rest-0 (instantiate allow-rest-fish% ("Gil" "Finn" 18)))
+(test 18 'allowrest (send no-rest-0 get-size))
+(define no-rest-0 (dynamic-instantiate allow-rest-fish% '("Gil" "Finn" 18) '()))
 (test 18 'allowrest (send no-rest-0 get-size))
 
 

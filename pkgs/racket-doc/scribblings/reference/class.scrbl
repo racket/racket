@@ -1252,6 +1252,26 @@ provided as by-position initialization arguments. In addition,
 the value of each @racket[by-name-expr] is provided as a by-name
 argument for the corresponding @racket[id].}
 
+@defproc[(dynamic-instantiate [cls class?]
+                              [pos-vs list?]
+                              [named-vs (listof (cons/c symbol? any/c))])
+         object?]{
+
+Like @racket[(apply make-object cls pos-vs)], but @racket[named-vs]
+supplies named arguments in addition to the by-position arguments
+supplied by @racket[pos-vs].
+
+@(examples
+  #:eval class-eval
+  (define point% (class object%
+                   (super-new)
+                   (init-field x y)))
+  (define p (dynamic-instantiate point% '(1) '([y . 2])))
+  (eval:check (get-field x p) 1)
+  (eval:check (get-field y p) 2))
+
+@history[#:added "8.8.0.1"]}
+
 @defidform[super-make-object]{
 
 Produces a procedure that takes by-position arguments an invokes

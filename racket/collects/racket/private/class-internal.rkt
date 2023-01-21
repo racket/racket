@@ -20,6 +20,7 @@
                      syntax/flatten-begin
                      syntax/private/boundmap
                      syntax/parse
+                     syntax/transformer
                      "classidmap.rkt"
                      "intdef-util.rkt"))
 
@@ -43,7 +44,7 @@
               interface interface* interface?
               object% object? externalizable<%> printable<%> writable<%> equal<%>
               object=? object-or-false=? object=-hash-code
-              new make-object instantiate
+              new make-object instantiate dynamic-instantiate
               send send/apply send/keyword-apply send* send+ dynamic-send
               class-field-accessor class-field-mutator with-method
               get-field set-field! field-bound? field-names
@@ -3436,6 +3437,20 @@ An example
                        kwarg)]))
                  (syntax->list (syntax (kwarg ...))))])))
 
+(define-syntax dynamic-instantiate
+  (make-variable-like-transformer #'(make-dynamic-instantiate (current-contract-region))))
+(define ((make-dynamic-instantiate blame) class pos-args named-args)
+  (unless (class? class)
+    (raise-argument-error 'dynamic-instantiate "class?" class))
+  (unless (list? pos-args)
+    (raise-argument-error 'dynamic-instantiate "list?" pos-args))
+  (unless (and (list? named-args)
+               (for/and ([named-arg (in-list named-args)])
+                 (and (pair? named-arg)
+                      (symbol? (car named-arg)))))
+    (raise-argument-error 'dynamic-instantiate "(listof (cons/c symbol? any/c))" named-args))
+  (do-make-object blame class pos-args named-args))
+
 (define (alist->sexp alist)
   (map (lambda (pair) (list (car pair) (cdr pair))) alist))
 
@@ -4912,7 +4927,7 @@ An example
          (rename-out [_interface interface]) interface* interface?
          object% object? object=? object-or-false=? object=-hash-code
          externalizable<%> printable<%> writable<%> equal<%>
-         new make-object instantiate
+         new make-object instantiate dynamic-instantiate
          get-field set-field! field-bound? field-names
          dynamic-get-field dynamic-set-field!
          send send/apply send/keyword-apply send* send+ dynamic-send
