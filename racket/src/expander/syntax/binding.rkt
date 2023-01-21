@@ -28,6 +28,7 @@
  identifier-binding
  identifier-binding-symbol
  identifier-distinct-binding
+ identifier-binding-uses-scope?
  
  maybe-install-free=id!
  binding-set-free=id
@@ -127,6 +128,10 @@
      (define other-scs (syntax-scope-set other-id phase))
      (and (not (subset? scs other-scs))
           (identifier-binding id phase))]))
+
+(define (identifier-binding-uses-scope? id scope phase)
+  (define scs (resolve id phase #:get-scopes? #t))
+  (and scs (set-member? scs scope)))
 
 ;; ----------------------------------------
 

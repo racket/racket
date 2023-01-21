@@ -517,6 +517,18 @@
 
   (void))
 
+;; make sure `provide` isn't confused by a rename transformer
+
+(module should-be-an-ok-provide-for-space racket/base
+  (require (for-syntax racket/base))
+  (define-syntax (go stx)
+    #`(begin
+        (provide (for-space example_space x))
+        (define x 'ok)
+        (define-syntax #,((make-interned-syntax-introducer 'example_space) #'x)
+          (make-rename-transformer (quote-syntax x)))))
+  (go))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test proper bindings for `#%module-begin'
 
