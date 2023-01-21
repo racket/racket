@@ -120,14 +120,14 @@
     'lexical]
    [else #f]))
 
-(define (identifier-distinct-binding id other-id phase)
+(define (identifier-distinct-binding id other-id phase [top-level-symbol? #f])
   (define scs (resolve id phase #:get-scopes? #t))
   (cond
     [(not scs) #f]
     [else
      (define other-scs (syntax-scope-set other-id phase))
      (and (not (subset? scs other-scs))
-          (identifier-binding id phase))]))
+          (identifier-binding id phase top-level-symbol?))]))
 
 (define (identifier-binding-uses-scope? id scope phase)
   (define scs (resolve id phase #:get-scopes? #t))

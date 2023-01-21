@@ -269,7 +269,8 @@ Same as @racket[(identifier-binding id-stx #f)].
 @defproc[(identifier-distinct-binding [id-stx identifier?]
                                       [wrt-id-stx identifier?]
                                       [phase-level (or/c exact-integer? #f)
-                                                   (syntax-local-phase-level)])
+                                                   (syntax-local-phase-level)]
+                                      [top-level-symbol? any/c #f])
          (or/c 'lexical
                #f
                (list/c module-path-index?
@@ -281,14 +282,15 @@ Same as @racket[(identifier-binding id-stx #f)].
                        phase+space?)
                (list/c symbol?))]{
 
-Like @racket[(identifier-binding id-stx phase-level)], but the result
+Like @racket[(identifier-binding id-stx phase-level top-level-symbol?)], but the result
 is @racket[#f] if the binding for @racket[id-stx] has scopes that are
 a subset of the scopes for @racket[wrt-id-stx]. That is, if
 @racket[id-stx] and @racket[wrt-id-stx] have the same symbolic name, a
 binding for @racket[id-stx] is returned only if the binding does not
 also apply to @racket[wrt-id-stx].
 
-@history[#:added "8.3.0.8"]}
+@history[#:added "8.3.0.8"
+         #:changed "8.8.0.2" @elem{Added the @racket[top-level-symbol?] argument.}]}
 
 
 @defproc[(identifier-binding-symbol [id-stx identifier?]

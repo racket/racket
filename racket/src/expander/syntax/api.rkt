@@ -217,11 +217,11 @@
   (check who phase? #:contract phase?-string phase)
   (raw:identifier-binding-symbol id phase))
 
-(define/who (identifier-distinct-binding id other-id [phase (syntax-local-phase-level)])
+(define/who (identifier-distinct-binding id other-id [phase (syntax-local-phase-level)] [top-level-symbol? #f])
   (check who identifier? id)
   (check who identifier? other-id)
   (check who phase? #:contract phase?-string phase)
-  (raw:identifier-distinct-binding id other-id phase))
+  (raw:identifier-distinct-binding id other-id phase top-level-symbol?))
 
 (define/who (identifier-binding-portal-syntax id [phase (syntax-local-phase-level)])
   (check who identifier? id)
