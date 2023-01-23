@@ -529,6 +529,12 @@
           (make-rename-transformer (quote-syntax x)))))
   (go))
 
+;; make sure `for-space #f` works
+
+(module should-be-an-ok-provide-for-default-space racket/base
+  (provide (for-space #f x))
+  (define x "ok"))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test proper bindings for `#%module-begin'
 

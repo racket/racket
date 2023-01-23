@@ -249,7 +249,7 @@
                   "space must be #f or an identifier"
                   stx
                   mode))
-               (cons 0 base-mode)))])
+               (phase+space 0 base-mode)))])
       (make-for-mode extract-space)))
   
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
