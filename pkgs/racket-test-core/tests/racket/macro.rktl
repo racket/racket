@@ -845,6 +845,18 @@
     (lift)
     (void)))
 
+;; make sure top-level portals with distinct scopes are distinct
+(parameterize ([current-namespace (make-base-namespace)])
+  (define intro (make-syntax-introducer))
+  (define id (namespace-syntax-introduce (datum->syntax #f 'alpha)))
+  (eval #`(#%require (portal #,id 1)))
+  (eval #`(#%require (portal #,(intro id) 2)))
+  (define (extract s)
+    (syntax-case s ()
+      [v (syntax-e #'v)]))
+  (test 1 extract (identifier-binding-portal-syntax id))
+  (test 2 extract (identifier-binding-portal-syntax (intro id))))
+
 ;; ----------------------------------------
 
 (module distinct-binding-tests racket/base

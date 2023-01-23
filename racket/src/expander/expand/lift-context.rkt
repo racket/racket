@@ -193,9 +193,9 @@
   (box-clear! (require-lift-context-requires require-lifts)))
 
 (define (add-lifted-require! require-lifts s phase)
-  ((require-lift-context-do-require require-lifts) s phase)
+  (define r ((require-lift-context-do-require require-lifts) s phase))
   (box-cons! (require-lift-context-requires require-lifts)
-             s))
+             r))
 
 ;; ----------------------------------------
 

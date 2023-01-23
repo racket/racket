@@ -103,6 +103,7 @@
    (define-match m s '(#%require req ...))
    (define sc (new-scope 'macro)) ; to hide bindings
    (define ns (expand-context-namespace ctx))
+   (define generated-syms (box null)) ; support portal symbol recording
    ;; Check the `#%require` form syntax and trigger compile-time
    ;; instanations
    (parse-and-perform-requires! (for/list ([req (in-list (m 'req))])
@@ -116,10 +117,10 @@
                                 #:who 'require
                                 ;; We don't need to check for conflicts:
                                 #:initial-require? #t
-                                #:add-defined-portal (make-top-add-defined-portal ns ctx))
+                                #:add-defined-portal (make-top-add-defined-portal ns ctx generated-syms))
    ;; Nothing to expand
    (if (expand-context-to-parsed? ctx)
-       (parsed-require s)
+       (parsed-require s (reverse (unbox generated-syms)))
        s)))
 
 (add-core-form!

@@ -162,7 +162,8 @@
                                                                       #:serializable? serializable?)))]
    [else
     (define new-s
-      (wrap-lifts-as-begin (append require-lifts lifts)
+      (wrap-lifts-as-begin (append (map parsed-s require-lifts)
+                                   lifts)
                            exp-s
                            (namespace-phase ns)))
     (log-expand ctx 'lift-loop new-s)
@@ -184,7 +185,8 @@
   (cond
    [(and (null? require-lifts) (null? lifts)) exp-s]
    [else
-    (wrap-lifts-as-begin (append require-lifts lifts)
+    (wrap-lifts-as-begin (append (map parsed-s require-lifts)
+                                 lifts)
                          exp-s
                          (namespace-phase ns))]))
 
@@ -231,7 +233,8 @@
     (cond
      [(or (pair? require-lifts) (pair? lifts))
       ;; Fold in lifted definitions and try again
-      (define new-s (wrap-lifts-as-begin (append require-lifts lifts)
+      (define new-s (wrap-lifts-as-begin (append (map parsed-s require-lifts)
+                                                 lifts)
                                          exp-s
                                          phase))
       (log-expand tl-ctx 'lift-loop new-s)
@@ -335,19 +338,20 @@
     ;; a top-level `#%require`, because it's already
     ;; hidden in the sense of having an extra scope
     (define-match m s '(#%require req))
+    (define syms (box null))
     (parse-and-perform-requires! (list (m 'req)) s
                                  ns phase #:run-phase phase
                                  (make-requires+provides #f)
-                                 #:add-defined-portal (make-top-add-defined-portal ns ctx)
-                                 #:who 'require)))
+                                 #:add-defined-portal (make-top-add-defined-portal ns ctx syms)
+                                 #:who 'require)
+    (parsed-require s (reverse (unbox syms)))))
 
 (define (wrap-lifts-as-lifted-parsed-begin require-lifts
                                            lifts
                                            exp-s rebuild-s
                                            #:adjust-form adjust-form)
   (lifted-parsed-begin (append
-                        (for/list ([req (in-list require-lifts)])
-                          (parsed-require req))
+                        require-lifts
                         (for/list ([ids+syms+rhs (in-list (get-lifts-as-lists lifts))])
                           (define exp-rhs (adjust-form (caddr ids+syms+rhs)))
                           (define just-rhs (if (lifted-parsed-begin? exp-rhs)
@@ -368,7 +372,8 @@
   (log-expand...
    ctx
    (lambda (obs)
-     (define new-s (wrap-lifts-as-begin (append require-lifts lifts)
+     (define new-s (wrap-lifts-as-begin (map parsed-s require-lifts)
+                                        lifts
                                         exp-s
                                         (namespace-phase ns)))
      (define-match m new-s '(begin e ...))

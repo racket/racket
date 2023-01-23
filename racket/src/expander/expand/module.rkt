@@ -1518,7 +1518,8 @@
                                  #:declared-submodule-names declared-submodule-names
                                  #:add-defined-portal add-defined-portal
                                  #:who 'require)
-    (set-requires+provides-all-bindings-simple?! requires+provides #f)))
+    (set-requires+provides-all-bindings-simple?! requires+provides #f)
+    s))
 
 ;; ----------------------------------------
 
