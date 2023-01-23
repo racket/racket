@@ -6,7 +6,7 @@
          racket/contract
          (for-template "unit-keywords.rkt" racket/base racket/contract))
 
-(provide import-clause/contract export-clause/contract body-clause/contract dep-clause
+(provide import-clause/contract export-clause/contract body-clause/contract dep-clause optional-dep-clause
          import-clause/c export-clause/c body-clause/c)
 
 (define-syntax-class sig-spec #:literals (prefix rename only except)
@@ -29,17 +29,11 @@
            #:with i #f)
   (pattern (tag i:identifier s:sig-spec)))
 
-(define-syntax-class tagged-sig-id #:literals (tag)
-  #:attributes ()
-  #:transparent
-  (pattern s:identifier)
-  (pattern (tag i:identifier s)))
-
 (define-syntax-class unit/c-clause
   #:auto-nested-attributes
   #:transparent
-  (pattern (s:tagged-sig-id [x:identifier c:expr] ...))
-  (pattern s:tagged-sig-id ;; allow a non-wrapped sig, which is the same as (sig)
+  (pattern (s:tagged-signature-id [x:identifier c:expr] ...))
+  (pattern s:tagged-signature-id ;; allow a non-wrapped sig, which is the same as (sig)
            #:with (x ...) null
            #:with (c ...) null))
 (define-syntax-class import-clause/c #:literals (import)
@@ -125,7 +119,15 @@
 (define-syntax-class dep-clause #:literals (init-depend)
   #:auto-nested-attributes
   #:transparent
-  (pattern (init-depend s:tagged-sig-id ...)))
+  (pattern (init-depend s:tagged-signature-id ...)))
+(define-splicing-syntax-class optional-dep-clause #:literals (init-depend)
+  #:auto-nested-attributes
+  #:transparent
+  #:commit
+  (pattern (init-depend ~! s:tagged-signature-id ...))
+  ;; Handling the optionality this way rather than wrapping the
+  ;; pattern with ~optional avoids having to deal with #f attributes.
+  (pattern {~seq} #:with :dep-clause #'(init-depend)))
 (define-splicing-syntax-class body-clause/contract
   #:auto-nested-attributes
   #:transparent

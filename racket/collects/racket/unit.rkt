@@ -583,61 +583,56 @@
 (define-signature-form (struct~r/ctc stx)
   (do-struct~/ctc stx #f))
 
-;; build-val+macro-defs : sig -> (list syntax-object^3)
+;; build-val+macro-defs : signature-id? -> (list/c syntax? syntax? syntax?)
 (define-for-syntax ((build-val+macro-defs intro) sig)
-  (if (and (null? (cadr sig))
-           (null? (caddr sig)))
-      ;; No renames needed; this shortcut avoids
-      ;; an explosion of renamings, especially with chains
-      ;; of `open':
-      (list #'(() (values)) #'() #'())
-      ;; Renames and macros needed:
-      (with-syntax ([(((int-ivar . ext-ivar) ...)
-                      ((((int-vid . ext-vid) ...) . vbody) ...)
-                      ((((int-sid . ext-sid) ...) . sbody) ...)
-                      _
-                      _)
-                     (map-sig (lambda (x) x)
-                              (let ([i (make-syntax-introducer)])
-                                (lambda (x)
-                                  (intro (i x))))
-                              sig)])
-        (list
-         #'((ext-ivar ... ext-vid ... ... ext-sid ... ...)
-            (make-rename-transformers
-             (quote-syntax
-              (int-ivar ...
-                        int-vid ... ...
-                        int-sid ... ...))))
-         #'(((int-sid ...) sbody) ...)
-         #'(((int-vid ...) vbody) ...)))))
+  (cond
+    [(and (null? (signature-val-defs sig))
+          (null? (signature-stx-defs sig)))
+     ;; No renames needed; this shortcut avoids
+     ;; an explosion of renamings, especially with chains
+     ;; of `open':
+     (list #'(() (values)) #'() #'())]
+    [else
+     ;; Renames and macros needed:
+     (define intro* (make-syntax-introducer))
+     (define introduced-sig (map-signature-ie values (λ (id) (intro (intro* id))) sig))
+     (define/syntax-parse ([int-ivar . ext-ivar] ...) (signature-vars introduced-sig))
+     (define/syntax-parse ([([int-vid . ext-vid] ...) . vbody] ...) (signature-val-defs introduced-sig))
+     (define/syntax-parse ([([int-sid . ext-sid] ...) . sbody] ...) (signature-stx-defs introduced-sig))
+     (list #'((ext-ivar ... ext-vid ... ... ext-sid ... ...)
+              (make-rename-transformers
+               (quote-syntax
+                (int-ivar ...
+                 int-vid ... ...
+                 int-sid ... ...))))
+           #'(((int-sid ...) sbody) ...)
+           #'(((int-vid ...) vbody) ...))]))
 
 ;; build-post-val-defs+ctcs : sig -> (list/c stx-list? (listof syntax?))
 (define-for-syntax (build-post-val-defs+ctcs sig)
-  (define introduced-sig (map-sig (lambda (x) x)
-                                  (make-syntax-introducer)
-                                  sig))
-  (with-syntax ([(((int-ivar . ext-ivar) ...)
-                  ((((int-vid . ext-vid) ...) . _) ...)
-                  ((((int-sid . ext-sid) ...) . _) ...)
-                  _
-                  (((post-id ...) . post-rhs) ...))
-                 introduced-sig])
-    (with-syntax ([post-renames
-                   #'((ext-ivar ... ext-vid ... ... ext-sid ... ...)
-                      (make-rename-transformers
-                       (quote-syntax
-                        (int-ivar ...
-                         int-vid ... ...
-                         int-sid ... ...))))])
-      (list
-       #'((let-syntaxes (post-renames) post-rhs) ...)
-       ; Absence of a contract is represented by #f, but a contract can be present
-       ; and be #'f, so we have to be extra careful not to coerce to syntax objects
-       ; too early. After wrapping in (contract . _), converting to syntax is okay.
-       (map (λ (ctc)
-              (and ctc (cons 'contract #`(let-syntaxes (post-renames) #,ctc))))
-            (cadddr introduced-sig))))))
+  (define introduced-sig (map-signature-ie values
+                                           (make-syntax-introducer)
+                                           sig))
+  (define/syntax-parse ([int-ivar . ext-ivar] ...) (signature-vars introduced-sig))
+  (define/syntax-parse ([([int-vid . ext-vid] ...) . _] ...) (signature-val-defs introduced-sig))
+  (define/syntax-parse ([([int-sid . ext-sid] ...) . _] ...) (signature-stx-defs introduced-sig))
+  (define/syntax-parse [post-rhs ...] (map cdr (signature-post-val-defs introduced-sig)))
+
+  (define/syntax-parse post-renames
+    #'((ext-ivar ... ext-vid ... ... ext-sid ... ...)
+       (make-rename-transformers
+        (quote-syntax
+         (int-ivar ...
+          int-vid ... ...
+          int-sid ... ...)))))
+
+  (list
+   #'((let-syntaxes (post-renames) post-rhs) ...)
+   (for/list ([ctc (in-list (signature-ctcs introduced-sig))])
+     ; Absence of a contract is represented by #f, but a contract can be present
+     ; and be #'f, so we have to be extra careful not to coerce to syntax objects
+     ; too early. After wrapping in (contract . _), converting to syntax is okay.
+     (and ctc (cons 'contract #`(let-syntaxes (post-renames) #,ctc))))))
 
 ;; Using `make-rename-transformers' helps improve sharing in
 ;; a syntax-quoted list of identifiers, although it risks
@@ -658,28 +653,19 @@
                (car p)))
          ps
          cs))
-  (parameterize ([current-syntax-context stx])
-    (syntax-case stx ()
-      ((_ export-spec)
-       (let ([sig (process-spec #'export-spec)])
-         (with-syntax ([(renames
-                         (((mac-name ...) mac-body) ...) 
-                         (((val-name ...) val-body) ...))
-                        ((build-val+macro-defs enclosing-intro) sig)]
-                       [(((e-post-id ...) . _) ...) (list-ref sig 4)]
-                       [((e-post-rhs ...) (e-ctc ...)) (build-post-val-defs+ctcs sig)])
-           (with-syntax ([(sig-elem ...)
-                          (build-sig-elems (car sig) (syntax->list #'(e-ctc ...)))])
-             (syntax->list
-              #'(sig-elem ...
-                 (define-syntaxes . renames)
-                 (define-syntaxes (mac-name ...) mac-body) ...
-                 (define-values (val-name ...) val-body) ...
-                 (define-values-for-export (e-post-id ...) e-post-rhs)
-                 ...))))))
-      (_
-       (raise-stx-err (format "must match (~a export-spec)"
-                              (syntax-e (stx-car stx))))))))
+  (syntax-parse stx
+    [(_ spec:export-spec)
+     (define sig (attribute spec.value))
+     (define/syntax-parse [rename-bind [stx-bind ...] [val-bind ...]] ((build-val+macro-defs enclosing-intro) sig))
+     (define/syntax-parse ([post-rhs ...] [ctc ...]) (build-post-val-defs+ctcs sig))
+     (define/syntax-parse [sig-elem ...] (build-sig-elems (signature-vars sig) (attribute ctc)))
+     (define/syntax-parse (post-ids ...) (map car (signature-post-val-defs sig)))
+     (syntax->list
+      #'(sig-elem ...
+         (define-syntaxes . rename-bind)
+         (define-syntaxes . stx-bind) ...
+         (define-values . val-bind) ...
+         (define-values-for-export post-ids post-rhs) ...))]))
 
 (define-signature-form (define-values-for-export stx)
   (raise-syntax-error #f "internal error" stx))
@@ -817,8 +803,7 @@
             #,(intro
                #'(make-signature
                   (make-siginfo (list (quote-syntax sig-id)
-                                      {~? {~@ (quote-syntax super-id.info.id)
-                                              (quote-syntax super-id.info.super-id) ...}})
+                                      {~? {~@ (quote-syntax super-id.info.id) ...}})
                                 (list (quote-syntax signature-tag-id)
                                       {~? {~@ (quote-syntax super-id.info.rtime-id) ...}}))
                   (list (quote-syntax elems.var-id) ...)
@@ -845,34 +830,30 @@
                  (void)))
              (values))))]))
 
-(define-for-syntax (signature->identifiers sigids)
-  (define provide-tagged-sigs (map process-tagged-import sigids))
-  (define provide-sigs (map caddr provide-tagged-sigs))
-  (map sig-int-names provide-sigs))
+(define-syntax (provide-signature-elements stx)
+  (syntax-parse stx
+    ((_ spec:import-spec ...)
+     (define nameses (map signature-ie-int-names (attribute spec.value)))
+     ;; Export only the names that would be visible to uses
+     ;;  with the same lexical context as p. Otherwise, we
+     ;;  can end up with collisions with renamings that are
+     ;;  symbolically the same, such as those introduced by
+     ;;  `open'.
+     (define names
+       (append* (for/list ([sig-stx (in-list (attribute spec))]
+                           [names (in-list nameses)])
+                  (filter (lambda (name)
+                            (bound-identifier=?
+                             name
+                             (datum->syntax sig-stx (syntax-e name))))
+                          names))))
 
-(define-syntax/err-param (provide-signature-elements stx)
-  (syntax-case stx ()
-    ((_ . p)
-     (let* ((sigs (checked-syntax->list #'p))
-            (nameses (signature->identifiers sigs))
-            ;; Export only the names that would be visible to uses
-            ;;  with the same lexical context as p. Otherwise, we
-            ;;  can end up with collisions with renamings that are
-            ;;  symbolically the same, such as those introduced by
-            ;;  `open'.
-            (nameses (map (lambda (sig names)
-                            (filter (lambda (name)
-                                      (bound-identifier=?
-                                       name
-                                       (datum->syntax sig (syntax-e name))))
-                                    names))
-                          sigs nameses))
-            (names (apply append nameses))
-            (dup (check-duplicate-identifier names)))
-       (when dup
-         (raise-stx-err (format "duplicate binding for ~.s" (syntax-e dup))))
-       (quasisyntax/loc stx
-         (provide #,@names))))))
+     (define dup (check-duplicate-identifier names))
+     (when dup
+       (raise-stx-err (format "duplicate binding for ~.s" (syntax-e dup))))
+
+     (quasisyntax/loc stx
+       (provide #,@names)))))
 
 ;; A unit is 
 ;; - (unit (import import-spec ...) (export export-spec ...) unit-body-expr ...)
@@ -912,128 +893,90 @@
 ;; The two additional values are the identifiers of the unit's import and export
 ;; signatures
 (define-for-syntax (build-unit stx)
-  (syntax-case stx (import export init-depend)
-    (((import i ...)
-      (export e ...)
-      (init-depend id ...)
-      . body)
-     
-     (let* ([d (syntax->list #'(id ...))]
-            [dep-tagged-sigids (map check-tagged-id d)]
-            [dep-tagged-siginfos 
-             (map tagged-sigid->tagged-siginfo dep-tagged-sigids)])
-       
-       (define-values (isig tagged-import-sigs import-tagged-infos 
-                            import-tagged-sigids import-sigs)
-         (process-unit-import #'(i ...)))
-       
-       (define-values (esig tagged-export-sigs export-tagged-infos 
-                            export-tagged-sigids export-sigs)
-         (process-unit-export #'(e ...)))
-       
-       (check-duplicate-sigs import-tagged-infos isig dep-tagged-siginfos d)
-       
-       (check-duplicate-subs export-tagged-infos esig)
-       
-       (check-unit-ie-sigs import-sigs export-sigs)
+  (syntax-parse stx
+    #:context (current-syntax-context)
+    #:literals [import export init-depend]
+    [[(import in:tagged-import-spec ...)
+      (export out:tagged-export-spec ...)
+      {~optional (init-depend ~! dep:tagged-signature-id ...)}
+      . body]
 
-       ;; INTRODUCED FORMS AND MACROS:
-       ;; We need to distinguish the original body from any
-       ;; forms that are introduced from signatures 
-       ;; (via `define-values`, etc., in a signature body).
-       ;; The `intro` mark should be added to everything except
-       ;; the introduced parts, which we implement by adding the
-       ;; mark to the introduced parts and then flipping it
-       ;; everywhere.
-       (define intro (make-syntax-introducer #t))
-       
-       (with-syntax (((dep-key ...)
-                      (map
-                       (lambda (tinfo)
-                         (build-key (car tinfo)
-                                    (syntax-local-introduce (car (siginfo-rtime-ids (cdr tinfo))))))
-                       dep-tagged-siginfos))
-                     [((renames (mac ...) (val ...)) ...)
-                      (map (build-val+macro-defs intro) import-sigs)]
-                     [(((int-ivar . ext-ivar) ...) ...) (map car import-sigs)]
-                     [(((int-evar . ext-evar) ...) ...) (map car export-sigs)]
-                     [((((e-post-id ...) . _) ...) ...) (map (lambda (s) (list-ref s 4)) export-sigs)]
-                     [(((e-post-rhs ...) (e-ctc ...)) ...) (map build-post-val-defs+ctcs export-sigs)]
-                     [((iloc ...) ...)
-                      (map (lambda (x) (generate-temporaries (car x))) import-sigs)]
-                     [((eloc ...) ...)
-                      (map (lambda (x) (generate-temporaries (car x))) export-sigs)]
-                     [((import-key import-super-keys ...) ...)
-                      (map tagged-info->keys import-tagged-infos)]
-                     [((export-key ...) ...)
-                      (map tagged-info->keys export-tagged-infos)]
-                     [(import-name ...)
-                      (map (lambda (tag/info) (car (siginfo-names (cdr tag/info))))
-                           import-tagged-infos)]
-                     [(export-name ...)
-                      (map (lambda (tag/info) (car (siginfo-names (cdr tag/info))))
-                           export-tagged-infos)]
-                     [name (syntax-local-infer-name (current-syntax-context))]
-                     [(icount ...) (map
-                                    (lambda (import) (length (car import)))
-                                    import-sigs)])
-         (values
-          (syntax-protect
-          (intro
-           (quasisyntax/loc (current-syntax-context)
-            (make-unit
-             'name
-             (vector-immutable (cons 'import-name
-                                     (vector-immutable import-key import-super-keys ...)) ...)
-             (vector-immutable (cons 'export-name 
-                                     (vector-immutable export-key ...)) ...)
-             (list dep-key ...)
-             (syntax-parameterize ([current-contract-region (lambda (stx) #'(quote (unit name)))])
-               (lambda ()
-                 (let ([eloc (box unsafe-undefined)] ... ...)
-                   (values 
-                    (lambda (import-table)
-                      (let-values ([(iloc ...)
-                                    (vector->values (hash-ref import-table import-key) 0 icount)]
-                                   ...)
-                        (letrec-syntaxes (#,@(map (lambda (ivs e-ivs ils ics)
-                                                    (with-syntax ([renamings 
-                                                                   (map (λ (ev iv)
-                                                                          #`(#,ev 
-                                                                             (make-rename-transformer
-                                                                              (quote-syntax #,iv))))
-                                                                        (syntax->list e-ivs)
-                                                                        (syntax->list ivs))])
-                                                      (quasisyntax/loc (current-syntax-context)
-                                                        [#,ivs
-                                                         (make-id-mappers
-                                                          #,@(map (lambda (iv l c)
-                                                                    (make-import-make-unboxing iv #'renamings l c))
-                                                                  (syntax->list ivs)
-                                                                  (syntax->list ils)
-                                                                  ics))])))
-                                                  (syntax->list #'((int-ivar ...) ...))
-                                                  (syntax->list #'((ext-ivar ...) ...))
-                                                  (syntax->list #'((iloc ...) ...))
-                                                  (map cadddr import-sigs)))
-                                         (letrec-syntaxes+values (renames ...
-                                                                  mac ... ...)
-                                           (val ... ...)
-                                           (unit-body #,(current-syntax-context)
-                                                      (int-ivar ... ...)
-                                                      (int-evar ... ...)
-                                                      (eloc ... ...)
-                                                      (e-ctc ... ...)
-                                                      (begin . body)
-                                                      (define-values (e-post-id ...)
-                                                        e-post-rhs) ... ...)))))
-                    (unit-export ((export-key ...)
-                                  (vector-immutable (λ () (check-not-unsafe-undefined (unbox eloc) 'int-evar))
-                                                    ...))
-                                 ...)))))))))
-          import-tagged-sigids
-          export-tagged-sigids
-          dep-tagged-sigids))))))
+     (check-duplicate-sigs (map cons (attribute in.tag-sym) (attribute in.info))
+                           (attribute in)
+                           (map cons (attribute dep.tag-sym) (attribute dep.info))
+                           (attribute dep))
+     (check-duplicate-subs (map cons (attribute out.tag-sym) (attribute out.info))
+                           (attribute out))
+     (check-unit-ie-sigs (attribute in.value) (attribute out.value))
+
+     ;; INTRODUCED FORMS AND MACROS:
+     ;; We need to distinguish the original body from any
+     ;; forms that are introduced from signatures 
+     ;; (via `define-values`, etc., in a signature body).
+     ;; The `intro` mark should be added to everything except
+     ;; the introduced parts, which we implement by adding the
+     ;; mark to the introduced parts and then flipping it
+     ;; everywhere.
+     (define intro (make-syntax-introducer #t))
+
+     (define/syntax-parse name (syntax-local-infer-name (current-syntax-context)))
+     (define/syntax-parse ([in-loc ...] ...) (map generate-temporaries (attribute in.var.int-id)))
+     (define/syntax-parse ([out-loc ...] ...) (map generate-temporaries (attribute out.var.int-id)))
+     (define/syntax-parse [in-count ...] (for/list ([vars (in-list (attribute in.var.int-id))])
+                                           (length vars)))
+
+     (define/syntax-parse [in-var-mapper-bind ...]
+       (for/list ([int-vars (in-list (attribute in.var.int-id))]
+                  [ext-vars (in-list (attribute in.var.ext-id))]
+                  [ctcs (in-list (attribute in.ctc))]
+                  [locs (in-list (attribute in-loc))])
+         (define renamings (for/list ([ext-var (in-list ext-vars)]
+                                      [int-var (in-list int-vars)])
+                             #`[#,ext-var (make-rename-transformer (quote-syntax #,int-var))]))
+         #`[#,int-vars
+            (make-id-mappers
+             #,@(for/list ([int-var (in-list int-vars)]
+                           [ctc (in-list ctcs)]
+                           [loc (in-list locs)])
+                  (make-import-make-unboxing int-var renamings loc ctc)))]))
+
+     (define/syntax-parse ([rename-bind [stx-bind ...] [val-bind ...]] ...)
+       (map (build-val+macro-defs intro) (attribute in.value)))
+     (define/syntax-parse ([[post-rhs ...] [ctc ...]] ...)
+       (map build-post-val-defs+ctcs (attribute out.value)))
+
+     (define unit-expr
+       (quasisyntax/loc (current-syntax-context)
+         (make-unit
+          'name
+          (vector-immutable (cons 'in.info.self-id (vector-immutable in.key ...)) ...)
+          (vector-immutable (cons 'out.info.self-id (vector-immutable out.key ...)) ...)
+          (list dep.self-key ...)
+          (syntax-parameterize ([current-contract-region (lambda (stx) #'(quote (unit name)))])
+            (lambda ()
+              (let ([out-loc (box unsafe-undefined)] ... ...)
+                (values
+                 (lambda (import-table)
+                   (let-values ([(in-loc ...) (vector->values (hash-ref import-table in.self-key) 0 'in-count)] ...)
+                     (letrec-syntaxes (in-var-mapper-bind ...)
+                       (letrec-syntaxes+values (rename-bind ... stx-bind ... ...)
+                                               (val-bind ... ...)
+                         (unit-body #,(current-syntax-context)
+                                    [in.var.int-id ... ...]
+                                    [out.var.int-id ... ...]
+                                    [out-loc ... ...]
+                                    [ctc ... ...]
+                                    (begin . body)
+                                    (define-values [out.post-def.id ...] post-rhs) ... ...)))))
+                 (unit-export ([out.key ...]
+                               (vector-immutable (λ () (check-not-unsafe-undefined (unbox out-loc) 'out.var.ext-id))
+                                                 ...))
+                              ...))))))))
+
+     (values (syntax-parse-track-literals (syntax-protect (intro unit-expr)))
+             (map cons (attribute in.tag-sym) (attribute in.sig-id))
+             (map cons (attribute out.tag-sym) (attribute out.sig-id))
+             (map cons (attribute dep.tag-sym) (attribute dep.sig-id)))]))
 
 (define-syntax/err-param (:unit stx)
   (syntax-case stx ()
@@ -1237,83 +1180,73 @@
                             ctc-expr ... ...))))))))))))
 
 (define-for-syntax (redirect-imports/exports import?)
-  (lambda (table-stx
-           import-tagged-infos
-           import-sigs
-           target-import-tagged-infos
-           target-import-sigs)
+  (lambda (table-stx sigs tags target-sigs target-tags)
     (define def-table (make-bound-identifier-mapping))
     (define ctc-table (make-bound-identifier-mapping))
     (define sig-table (make-bound-identifier-mapping))
-    (for-each
-     (lambda (tagged-info sig)
-       (define v
-         #`(hash-ref #,table-stx #,(car (tagged-info->keys tagged-info))))
-       (for-each
-        (lambda (int/ext-name index ctc)
-          (bound-identifier-mapping-put! def-table
-                                         (car int/ext-name)
-                                         #`(check-not-unsafe-undefined (vector-ref #,v #,index)
-                                                                       '#,(car int/ext-name)))
-          (bound-identifier-mapping-put! ctc-table
-                                         (car int/ext-name)
-                                         ctc)
-          (bound-identifier-mapping-put! sig-table
-                                         (car int/ext-name)
-                                         sig))
-        (car sig)
-        (iota (length (car sig)))
-        (cadddr sig)))
-     import-tagged-infos
-     import-sigs)
-    (with-syntax ((((eloc ...) ...) 
-                   (map
-                    (lambda (target-sig)
-                      (map
-                       (lambda (target-int/ext-name target-ctc)
-                         (let* ([var (car target-int/ext-name)]
-                                [vref
-                                 (bound-identifier-mapping-get
-                                  def-table
-                                  var
-                                  (lambda ()
-                                    (raise-stx-err
-                                     (format (if import?
-                                                 "identifier ~a is not present in new imports"
-                                                 "identifier ~a is not present in old exports")
-                                             (syntax-e (car target-int/ext-name))))))]
-                                [ctc (bound-identifier-mapping-get ctc-table var)]
-                                [rename-bindings (get-member-bindings def-table
-                                                                      (bound-identifier-mapping-get sig-table var)
-                                                                      #'(current-contract-region)
-                                                                      #t)])
-                           (with-syntax ([ctc-stx (if ctc (syntax-property
-                                                           #`(letrec-syntax #,rename-bindings #,ctc)
-                                                           'inferred-name var)
-                                                      ctc)])
-                             (if target-ctc
-                                 #`(λ ()
-                                     (cons #,(if ctc
-                                                 #`(let ([old-v/c (#,vref)])
-                                                     (contract ctc-stx (car old-v/c) 
-                                                               (cdr old-v/c) (current-contract-region)
-                                                               (quote #,var) (quote-srcloc #,var)))
-                                                 #`(#,vref))
-                                           (current-contract-region)))
-                                 (if ctc
-                                     #`(λ ()
-                                         (let ([old-v/c (#,vref)])
-                                           (contract ctc-stx (car old-v/c) 
-                                                     (cdr old-v/c) (current-contract-region)
-                                                     (quote #,var) (quote-srcloc #,var))))
-                                     vref)))))
-                       (car target-sig)
-                       (cadddr target-sig)))
-                    target-import-sigs))
-                  (((export-keys ...) ...) 
-                   (map tagged-info->keys target-import-tagged-infos)))
-      #`(unit-export ((export-keys ...)
-                      (vector-immutable eloc ...)) ...))))
+
+    (for ([sig (in-list sigs)]
+          [tag (in-list tags)])
+      (for ([index (in-naturals)]
+            [int/ext-name (in-list (signature-vars sig))]
+            [ctc (in-list (signature-ctcs sig))])
+        (define int-name (car int/ext-name))
+        (define v #`(hash-ref #,table-stx #,(siginfo->key-expr (signature-siginfo sig) tag)))
+        (bound-identifier-mapping-put! def-table
+                                       int-name
+                                       #`(check-not-unsafe-undefined (vector-ref #,v #,index)
+                                                                     '#,int-name))
+        (bound-identifier-mapping-put! ctc-table int-name ctc)
+        (bound-identifier-mapping-put! sig-table int-name sig)))
+
+    (define/syntax-parse ([eloc ...] ...)
+      (for/list ([target-sig (in-list target-sigs)])
+        (for/list ([target-int/ext-name (in-list (signature-vars target-sig))]
+                   [target-ctc (in-list (signature-ctcs target-sig))])
+          (define var (car target-int/ext-name))
+          (define vref (bound-identifier-mapping-get
+                        def-table
+                        var
+                        (lambda ()
+                          (raise-stx-err
+                           (format (if import?
+                                       "identifier ~a is not present in new imports"
+                                       "identifier ~a is not present in old exports")
+                                   (syntax-e (car target-int/ext-name)))))))
+          (define ctc (bound-identifier-mapping-get ctc-table var))
+          (define rename-bindings (get-member-bindings def-table
+                                                       (bound-identifier-mapping-get sig-table var)
+                                                       #'(current-contract-region)
+                                                       #t))
+          (define/syntax-parse ctc-stx (if ctc (syntax-property
+                                                #`(letrec-syntax #,rename-bindings #,ctc)
+                                                'inferred-name var)
+                                           ctc))
+          (if target-ctc
+              #`(λ ()
+                  (cons #,(if ctc
+                              #`(let ([old-v/c (#,vref)])
+                                  (contract ctc-stx (car old-v/c) 
+                                            (cdr old-v/c) (current-contract-region)
+                                            (quote #,var) (quote-srcloc #,var)))
+                              #`(#,vref))
+                        (current-contract-region)))
+              (if ctc
+                  #`(λ ()
+                      (let ([old-v/c (#,vref)])
+                        (contract ctc-stx (car old-v/c) 
+                                  (cdr old-v/c) (current-contract-region)
+                                  (quote #,var) (quote-srcloc #,var))))
+                  vref)))))
+
+    (define/syntax-parse ([export-keys ...] ...)
+      (for/list ([target-sig (in-list target-sigs)]
+                 [target-tag (in-list target-tags)])
+        (siginfo->key-exprs (signature-siginfo target-sig) target-tag)))
+
+    #'(unit-export ((export-keys ...)
+                    (vector-immutable eloc ...))
+                   ...)))
 
 (define-for-syntax redirect-imports (redirect-imports/exports #t))
 (define-for-syntax redirect-exports (redirect-imports/exports #f))
@@ -1326,108 +1259,60 @@
 ;; The two additional values are the identifiers of the unit's import and export
 ;; signatures
 (define-for-syntax (build-unit/new-import-export stx)
-  (syntax-case stx (import export init-depend)
-    (((import i ...)
-      (export e ...)
-      (init-depend id ...)
-      . body)
-     
-     (let* ([d (syntax->list #'(id ...))]
-            [dep-tagged-sigids (map check-tagged-id d)]
-            [dep-tagged-siginfos 
-             (map tagged-sigid->tagged-siginfo dep-tagged-sigids)])
-       (define-values (isig tagged-import-sigs import-tagged-infos 
-                            import-tagged-sigids import-sigs)
-         (process-unit-import #'(i ...)))
-       
-       (define-values (esig tagged-export-sigs export-tagged-infos 
-                            export-tagged-sigids export-sigs)
-         (process-unit-export #'(e ...)))
-       
-       (check-duplicate-sigs import-tagged-infos isig dep-tagged-siginfos d)
-       
-       (check-duplicate-subs export-tagged-infos esig)
-       
-       (check-unit-ie-sigs import-sigs export-sigs)
-       
-       (syntax-case #'body ()
-         ((b) (check-link-line-syntax #'b))
-         (() (raise-stx-err "missing unit specification"))
-         (_ (raise-stx-err "expects a single unit specification")))
-       
-       (with-syntax (((((orig-e ...) unit-exp orig-i ...)) #'body))
-         (define-values (orig-isig orig-tagged-import-sigs orig-import-tagged-infos 
-                                   orig-import-tagged-sigids orig-import-sigs)
-           (process-unit-export #'(orig-i ...)))
-         
-         (define-values (orig-esig orig-tagged-export-sigs orig-export-tagged-infos 
-                                   orig-export-tagged-sigids orig-export-sigs)
-           (process-unit-import #'(orig-e ...)))
-         (with-syntax (((dep-key ...)
-                        (map
-                         (lambda (tinfo)
-                           (build-key (car tinfo)
-                                      (syntax-local-introduce (car (siginfo-rtime-ids (cdr tinfo))))))
-                         dep-tagged-siginfos))
-                       [((import-key ...) ...)
-                        (map tagged-info->keys import-tagged-infos)]
-                       [((export-key ...) ...)
-                        (map tagged-info->keys export-tagged-infos)]
-                       [((orig-import-key ...) ...)
-                        (map tagged-info->keys orig-import-tagged-infos)]
-                       [((orig-export-key ...) ...)
-                        (map tagged-info->keys orig-export-tagged-infos)]
-                       [(import-name ...)
-                        (map (lambda (tag/info) (car (siginfo-names (cdr tag/info))))
-                             import-tagged-infos)]
-                       [(export-name ...)
-                        (map (lambda (tag/info) (car (siginfo-names (cdr tag/info))))
-                             export-tagged-infos)]
-                       [(orig-import-name ...)
-                        (map (lambda (tag/info) (car (siginfo-names (cdr tag/info))))
-                             orig-import-tagged-infos)]
-                       [(orig-export-name ...)
-                        (map (lambda (tag/info) (car (siginfo-names (cdr tag/info))))
-                             orig-export-tagged-infos)]
-                       [name (syntax-local-infer-name (current-syntax-context))]
-                       [form (syntax-e (stx-car (current-syntax-context)))])
-           (values
-            (syntax-protect
-            (quasisyntax/loc (current-syntax-context)
-              (let ([unit-tmp unit-exp])
-                (check-unit unit-tmp 'form)
-                (check-sigs unit-tmp
-                            (vector-immutable
-                             (cons 'orig-import-name
-                                   (vector-immutable orig-import-key ...)) ...)
-                            (vector-immutable 
-                             (cons 'orig-export-name 
-                                   (vector-immutable orig-export-key ...)) ...)
-                            'form)
-                (make-unit
-                 'name
-                 (vector-immutable (cons 'import-name
-                                         (vector-immutable import-key ...)) ...)
-                 (vector-immutable (cons 'export-name 
-                                         (vector-immutable export-key ...)) ...)
-                 (list dep-key ...)
-                 (syntax-parameterize ([current-contract-region (lambda (stx) #'(quote (unit name)))])
-                   (lambda ()
-                     (let-values ([(unit-fn export-table) ((unit-go unit-tmp))])
-                       (values (lambda (import-table)
-                                 (unit-fn #,(redirect-imports #'import-table
-                                                              import-tagged-infos
-                                                              import-sigs
-                                                              orig-import-tagged-infos
-                                                              orig-import-sigs)))
-                               #,(redirect-exports #'export-table
-                                                   orig-export-tagged-infos
-                                                   orig-export-sigs
-                                                   export-tagged-infos
-                                                   export-sigs)))))))))
-            import-tagged-sigids
-            export-tagged-sigids
-            dep-tagged-sigids)))))))
+  (define/syntax-parse who (stx-car (current-syntax-context)))
+  (syntax-parse stx
+    #:context (current-syntax-context)
+    #:literals [import export init-depend]
+    [[(import in:tagged-import-spec ...)
+      (export out:tagged-export-spec ...)
+      {~optional (init-depend ~! dep:tagged-signature-id ...)}
+      {~describe "unit specification"
+                 ([sub-out:tagged-import-spec ...]
+                  sub-expr:expr
+                  sub-in:tagged-export-spec ...)}]
+
+     (check-duplicate-sigs (map cons (attribute in.tag-sym) (attribute in.info))
+                           (attribute in)
+                           (map cons (attribute dep.tag-sym) (attribute dep.info))
+                           (attribute dep))
+     (check-duplicate-subs (map cons (attribute out.tag-sym) (attribute out.info))
+                           (attribute out))
+     (check-unit-ie-sigs (attribute in.value) (attribute out.value))
+
+     (define/syntax-parse name (syntax-local-infer-name (current-syntax-context)))
+     (define unit-expr
+       (quasisyntax/loc (current-syntax-context)
+         (let ([sub-tmp sub-expr])
+           (check-unit sub-tmp 'who)
+           (check-sigs
+            sub-tmp
+            (vector-immutable (cons 'sub-in.info.self-id (vector-immutable sub-in.key ...)) ...)
+            (vector-immutable (cons 'sub-out.info.self-id (vector-immutable sub-out.key ...)) ...)
+            'who)
+           (make-unit
+            'name
+            (vector-immutable (cons 'in.info.self-id (vector-immutable in.key ...)) ...)
+            (vector-immutable (cons 'out.info.self-id (vector-immutable out.key ...)) ...)
+            (list dep.self-key ...)
+            (syntax-parameterize ([current-contract-region (lambda (stx) #'(quote (unit name)))])
+              (lambda ()
+                (let-values ([(sub-fn export-table) ((unit-go sub-tmp))])
+                  (values (lambda (import-table)
+                            (sub-fn #,(redirect-imports #'import-table
+                                                        (attribute in.value)
+                                                        (attribute in.tag-sym)
+                                                        (attribute sub-in.value)
+                                                        (attribute sub-in.tag-sym))))
+                          #,(redirect-exports #'export-table
+                                              (attribute sub-out.value)
+                                              (attribute sub-out.tag-sym)
+                                              (attribute out.value)
+                                              (attribute out.tag-sym))))))))))
+
+     (values (syntax-parse-track-literals (syntax-protect unit-expr))
+             (map cons (attribute in.tag-sym) (attribute in.sig-id))
+             (map cons (attribute out.tag-sym) (attribute out.sig-id))
+             (map cons (attribute dep.tag-sym) (attribute dep.sig-id)))]))
 
 
 (define-syntax/err-param (unit/new-import-export stx)
@@ -1479,8 +1364,7 @@
     (zero? (link-id-binding-order-index binding)))
 
   (define (link-id-binding->key-exprs binding tag)
-    (for/list ([rtime-id (in-list (siginfo-rtime-ids (link-id-binding-siginfo binding)))])
-      (build-key tag rtime-id)))
+    (siginfo->key-exprs (link-id-binding-siginfo binding) tag))
 
   ;; build-compound-unit : (->* [syntax?] [static-dep-info]
   ;;                            (values syntax?
@@ -1717,95 +1601,73 @@
   (let-values ([(f exports) ((unit-go unit))])
     (f #f)))
 
-(define-syntax/err-param (define-values/invoke-unit/core stx)
-  (syntax-case stx ()
-    ((_ unit-expr . unit-out)
-     (let* ((unit-out (checked-syntax->list #'unit-out))
-            (tagged-out (map process-tagged-import unit-out))
-            (out-tags (map car tagged-out))
-            (out-sigs (map caddr tagged-out))
-            (dup (check-duplicate-identifier (apply append (map sig-int-names out-sigs))))
-            (out-vec (generate-temporaries out-sigs))
-            (tmarker (make-syntax-introducer))
-            (tmp-bindings (map (λ (s) (map tmarker (map car (car s)))) out-sigs))
-            (def-table (make-bound-identifier-mapping)))
-       (when dup
-         (raise-stx-err (format "duplicate binding for ~.s" (syntax-e dup))))
-       (for-each
-        (λ (sig new-xs)
-          (for-each 
-           (λ (old new)
-             (bound-identifier-mapping-put! def-table old new))
-           (map car (car sig))
-           new-xs))
-        out-sigs
-        tmp-bindings)
-       (with-syntax ((((key1 key ...) ...) (map tagged-info->keys out-tags))
-                     ((((int-binding . ext-binding) ...) ...) (map car out-sigs))
-                     ((out-vec ...) out-vec)
-                     (((renames
-                        (((mac-name ...) mac-body) ...) 
-                        (((val-name ...) val-body) ...))
-                       ...)
-                      (map (build-val+macro-defs values) out-sigs))
-                     ((out-names ...)
-                      (map (lambda (info) (car (siginfo-names (cdr info))))
-                           out-tags))
-                     (((tmp-binding ...) ...) tmp-bindings)
-                     (((out-code ...) ...)
-                      (map 
-                       (lambda (os ov)
-                         (map 
-                          (lambda (i)
-                            #`(vector-ref #,ov #,i))
-                          (iota (length (car os)))))
-                       out-sigs
-                       out-vec))
-                     (((wrap-code ...) ...)
-                      (map (λ (os ov tbs)
-                             (define rename-bindings 
-                               (get-member-bindings def-table os #'(quote-module-name) #t))
-                             (map (λ (tb i v c)
-                                    (if c
-                                        (with-syntax ([ctc-stx
-                                                       (syntax-property
-                                                        #`(letrec-syntax #,rename-bindings #,c)
-                                                        'inferred-name v)])
-                                          #`(let ([v/c (#,tb)])
-                                              (contract ctc-stx (car v/c) (cdr v/c)
-                                                        (current-contract-region)
-                                                        (quote #,v) (quote-srcloc #,v))))
-                                        #`(#,tb)))
-                                  tbs
-                                  (iota (length (car os)))
-                                  (map car (car os))
-                                  (cadddr os)))
-                           out-sigs
-                           out-vec
-                           tmp-bindings)))
-         (quasisyntax/loc stx
-           (begin
-             (define-values (tmp-binding ... ...)
-               #,(syntax/loc #'unit-expr
-                   (let ((unit-tmp unit-expr))
-                     (check-unit unit-tmp 'define-values/invoke-unit)
-                     (check-sigs unit-tmp
-                                 (vector-immutable)
-                                 (vector-immutable (cons 'out-names
-                                                         (vector-immutable key1 key ...)) ...)
-                                 'define-values/invoke-unit)
-                     (let-values (((unit-fn export-table)
-                                   ((unit-go unit-tmp))))
-                       (let ([out-vec (hash-ref export-table key1)] ...)
-                         (unit-fn #f)
-                         (values out-code ... ...))))))
-             (define-values (int-binding ... ...)
-               (values wrap-code ... ...))
-             (define-syntaxes . renames) ...
-             (define-syntaxes (mac-name ...) mac-body) ... ...
-             (define-values (val-name ...) val-body) ... ...)))))
-    ((_)
-     (raise-stx-err "missing unit expression"))))
+(define-syntax-parser define-values/invoke-unit/core
+  #:track-literals
+  [(_ unit-expr:expr out:tagged-import-spec ...)
+   (let ([dup-id (check-duplicate-identifier (append-map signature-ie-int-names (attribute out.value)))])
+     (when dup-id
+       (raise-stx-err (format "duplicate binding for ~.s" (syntax-e dup-id)))))
+
+   (define tmarker (make-syntax-introducer))
+   (define tmp-bindings (map (λ (s) (map tmarker (map car (signature-vars s)))) (attribute out.value)))
+   (define def-table (make-bound-identifier-mapping))
+   (for ([sig (in-list (attribute out.value))]
+         [new-xs (in-list tmp-bindings)])
+     (for ([old (in-list (map car (signature-vars sig)))]
+           [new (in-list new-xs)])
+       (bound-identifier-mapping-put! def-table old new)))
+
+   (define/syntax-parse ([tmp-binding ...] ...) tmp-bindings)
+   (define/syntax-parse [out-vec ...] (generate-temporaries (attribute out)))
+   (define/syntax-parse ([rename-bind [stx-bind ...] [val-bind ...]] ...)
+     (map (build-val+macro-defs values) (attribute out.value)))
+
+   (define/syntax-parse ([out-code ...] ...)
+     (for/list ([os (in-list (attribute out.value))]
+                [ov (in-list (attribute out-vec))])
+       (for/list ([i (in-range (length (signature-vars os)))])
+         #`(vector-ref #,ov #,i))))
+
+   (define/syntax-parse ((wrap-code ...) ...)
+     (for/list ([os (in-list (attribute out.value))]
+                [ov (in-list (attribute out-vec))]
+                [tbs (in-list (attribute tmp-binding))])
+       (define rename-bindings 
+         (get-member-bindings def-table os #'(quote-module-name) #t))
+       (for/list ([tb (in-list tbs)]
+                  [i (in-naturals)]
+                  [v (in-list (map car (signature-vars os)))]
+                  [c (in-list (signature-ctcs os))])
+         (if c
+             (with-syntax ([ctc-stx
+                            (syntax-property
+                             #`(letrec-syntax #,rename-bindings #,c)
+                             'inferred-name v)])
+               #`(let ([v/c (#,tb)])
+                   (contract ctc-stx (car v/c) (cdr v/c)
+                             (current-contract-region)
+                             (quote #,v) (quote-srcloc #,v))))
+             #`(#,tb)))))
+   
+   #`(begin
+       (define-values (tmp-binding ... ...)
+         #,(syntax/loc #'unit-expr
+             (let ((unit-tmp unit-expr))
+               (check-unit unit-tmp 'define-values/invoke-unit)
+               (check-sigs unit-tmp
+                           (vector-immutable)
+                           (vector-immutable (cons 'out.info.self-id
+                                                   (vector-immutable out.key ...)) ...)
+                           'define-values/invoke-unit)
+               (let-values ([(unit-fn export-table) ((unit-go unit-tmp))])
+                 (let ([out-vec (hash-ref export-table out.self-key)] ...)
+                   (unit-fn #f)
+                   (values out-code ... ...))))))
+       (define-values (out.var.int-id ... ...)
+         (values wrap-code ... ...))
+       (define-syntaxes . rename-bind) ...
+       (define-syntaxes . stx-bind) ... ...
+       (define-values . val-bind) ... ...)])
 
 ;; build-unit-from-context : syntax-object -> 
 ;;                           (values syntax-object (listof identifier) (listof identifier))
@@ -1814,42 +1676,38 @@
 ;; The two additional values are the identifiers of the unit's import and export
 ;; signatures
 (define-for-syntax (build-unit-from-context stx)
-  (syntax-case stx ()
-    ((export-spec)
-     (let* ((tagged-export-sig (process-tagged-export #'export-spec))
-            (export-sig (caddr tagged-export-sig))
-            (int+ext-ids
-             (let ([int+ext-ids (car export-sig)]
-                   [post-ids (apply append (map car (list-ref export-sig 4)))])
-               ;; Remove any bindings that will be generated via post- definitions
-               (if (null? post-ids)
-                   int+ext-ids
-                   (let ([ht (make-bound-identifier-mapping)])
-                     (for ([post-id (in-list post-ids)])
-                       (bound-identifier-mapping-put! ht post-id #t))
-                     (for/list ([int+ext-id (in-list int+ext-ids)]
-                                #:unless (bound-identifier-mapping-get
-                                          ht
-                                          (car int+ext-id)
-                                          (lambda () #f)))
-                       int+ext-id))))))
-       (define (push-rename-in spec renames)
-         (syntax-case spec (bind-at tag)
-           [(bind-at u spec)
-            #`(bind-at u #,(push-rename-in #'spec renames))]
-           [(tag t spec)
-            #`(tag t #,(push-rename-in #'spec renames))]
-           [_ #`(rename #,spec . #,renames)]))
-       (with-syntax ((((int-id . ext-id) ...) int+ext-ids)
-                     ((def-name ...) (generate-temporaries (map car int+ext-ids))))
-         (values
-          (syntax-protect
-           #`(:unit (import) (export #,(push-rename-in #'export-spec #'((def-name int-id) ...)))
-                    (define def-name int-id)
-                    ...))
-          null
-          (list (cadr tagged-export-sig))
-          '()))))))
+  (syntax-parse stx
+    #:context (current-syntax-context)
+    [(out:tagged-export-spec)
+     ;; Remove any bindings that will be generated via post- definitions
+     (define int+ext-ids
+       (let ([ht (make-bound-identifier-mapping)])
+         (for* ([post-ids (in-list (attribute out.post-def.id))]
+                [post-id (in-list post-ids)])
+           (bound-identifier-mapping-put! ht post-id #t))
+         (for/list ([int-id (in-list (attribute out.var.int-id))]
+                    [ext-id (in-list (attribute out.var.int-id))]
+                    #:unless (bound-identifier-mapping-get ht int-id (λ () #f)))
+           (cons int-id ext-id))))
+
+     (define (push-rename-in spec renames)
+       (syntax-case spec (bind-at tag)
+         [(bind-at u spec)
+          #`(bind-at u #,(push-rename-in #'spec renames))]
+         [(tag t spec)
+          #`(tag t #,(push-rename-in #'spec renames))]
+         [_ #`(rename #,spec . #,renames)]))
+
+     (define/syntax-parse ([int-id . ext-id] ...) int+ext-ids)
+     (define/syntax-parse [def-name ...] (generate-temporaries (map car int+ext-ids)))
+     (values
+      (syntax-protect
+       #`(:unit (import) (export #,(push-rename-in #'out #'((def-name int-id) ...)))
+                (define def-name int-id)
+                ...))
+      '()
+      (list (cons (attribute out.tag-sym) (attribute out.sig-id)))
+      '())]))
 
 (define-for-syntax (check-ufc-syntax stx)
   (syntax-case stx ()
@@ -2048,32 +1906,28 @@
                        #`(bind-at #,at #,i)
                        i))])))
 
-(define-syntax/err-param (define-values/invoke-unit stx)
-  (syntax-case stx (import export)
+(define-syntax (define-values/invoke-unit stx)
+  (syntax-parse stx
+    #:track-literals
+    #:literals [import export]
     ((_ u (import) (export e ...))
      (quasisyntax/loc stx
        (define-values/invoke-unit/core u e ...)))
-    ((_ u (import i ...) (export e ...))
+    ((_ u (import i:tagged-import-spec ...) (export e:tagged-export-spec ...))
      (with-syntax ((((EU EUl e) ...) (map temp-id-with-tags
                                           (generate-temporaries #'(e ...))
                                           (syntax->list #'(e ...))))
                    (((IU IUl i) ...) (map temp-id-with-tags
                                           (generate-temporaries #'(i ...))
                                           (syntax->list #'(i ...))))
-                   ((iu ...) (generate-temporaries #'(i ...)))
-                   ((i-id ...) (map (lambda (p) (unprocess-tagged-id (cadr p)))
-                                    (map process-tagged-import
-                                         (syntax->list #'(i ...)))))
-                   ((e-id ...) (map (lambda (p) (unprocess-tagged-id (cadr p)))
-                                    (map process-tagged-export
-                                         (syntax->list #'(e ...))))))
+                   ((iu ...) (generate-temporaries #'(i ...))))
        (quasisyntax/loc stx
          (begin
            (define-unit-from-context iu i)
            ...
            (define-compound-unit u2 (import)
              (export EUl ...)
-             (link [((IU : i-id)) iu] ... [((EU : e-id) ...) u IUl ...]))
+             (link [((IU : i.tagged-sig-id)) iu] ... [((EU : e.tagged-sig-id) ...) u IUl ...]))
            (define-values/invoke-unit/core u2 e ...)))))
     ((_)
      (raise-stx-err "missing unit" stx))
@@ -2311,112 +2165,123 @@
 (define-syntax/err-param (define-compound-unit/infer stx)
   (do-define-compound-unit/infer stx))
 
+(begin-for-syntax
+  (struct tagged-ie-spec (stx tag sig-id siginfo) #:transparent)
+
+  (define (parse-tagged-import-spec stx)
+    (syntax-parse stx
+      #:context (current-syntax-context)
+      [spec:tagged-import-spec
+       (tagged-ie-spec stx
+                       (attribute spec.tag-sym)
+                       (attribute spec.sig-id)
+                       (attribute spec.info))]))
+
+  (define (parse-tagged-export-spec stx)
+    (syntax-parse stx
+      #:context (current-syntax-context)
+      [spec:tagged-export-spec
+       (tagged-ie-spec stx
+                       (attribute spec.tag-sym)
+                       (attribute spec.sig-id)
+                       (attribute spec.info))]))
+
+  (define (tagged-ie-spec-subsumes? a b)
+    (and (eq? (tagged-ie-spec-tag a) (tagged-ie-spec-tag b))
+         (siginfo-subtype (tagged-ie-spec-siginfo a) (tagged-ie-spec-siginfo b))))
+
+  (define (any-tagged-ie-spec-subsumes? as b)
+    (ormap (λ (a) (tagged-ie-spec-subsumes? a b)) as)))
+
 ;; (syntax or listof[syntax]) boolean (boolean or listof[syntax]) -> syntax
 (define-for-syntax (build-invoke-unit/infer units define? exports)
-  (define (imps/exps-from-unit u)      
-    (let* ([ui (lookup-def-unit u)]
-           [unprocess (lambda (p)
-                        #`(bind-at #,u #,(unprocess-tagged-id p)))]
-           [isigs (map unprocess (unit-info-import-sig-ids ui))]
-           [esigs (map (if exports unprocess-tagged-id unprocess) (unit-info-export-sig-ids ui))])
-      (values isigs esigs)))
-  (define (drop-from-other-list exp-tagged imp-tagged imp-sources)
-    (let loop ([ts imp-tagged] [ss imp-sources])
-      (cond
-        [(null? ts) null]
-        [(ormap (lambda (tinfo2)
-                  (and (eq? (car (car ts)) (car tinfo2))
-                       (siginfo-subtype (cdr tinfo2) (cdr (car ts)))))
-                exp-tagged)
-         (loop (cdr ts) (cdr ss))]
-        [else (cons (car ss) (loop (cdr ts) (cdr ss)))])))
-  
-  (define (drop-duplicates tagged-siginfos sources)
-    (let loop ([ts tagged-siginfos] [ss sources] [res-t null] [res-s null])
-      (cond
-        [(null? ts) (values res-t res-s)]
-        [(ormap (lambda (tinfo2)
-                  (and (eq? (car (car ts)) (car tinfo2))
-                       (siginfo-subtype (cdr tinfo2) (cdr (car ts)))))
-                (cdr ts))
-         (loop (cdr ts) (cdr ss) res-t res-s)]
-        [else (loop (cdr ts) (cdr ss) (cons (car ts) res-t) (cons (car ss) res-s))])))
+  (define (imps/exps-from-unit u)
+    (define ui (lookup-def-unit u))
+    (define (unprocess p)
+      #`(bind-at #,u #,(unprocess-tagged-id p)))
+    (define unprocess-export (if exports unprocess-tagged-id unprocess))
+    (values (for/list ([id (in-list (unit-info-import-sig-ids ui))])
+              (parse-tagged-import-spec (unprocess id)))
+            (for/list ([id (in-list (unit-info-export-sig-ids ui))])
+              (parse-tagged-export-spec (unprocess-export id)))))
   
   (define (imps/exps-from-units units exports)
-    (define-values (isigs esigs)
-      (let loop ([units units] [imps null] [exps null])
-        (if (null? units)
-            (values imps exps)
-            (let-values ([(i e) (imps/exps-from-unit (car units))])
-              (loop (cdr units) (append i imps) (append e exps))))))
-    (define-values (isig tagged-import-sigs import-tagged-infos 
-                         import-tagged-sigids import-sigs)
-      (process-unit-import (datum->syntax #f isigs)))
-    
-    (define-values (esig tagged-export-sigs export-tagged-infos 
-                         export-tagged-sigids export-sigs)
-      (process-unit-export (datum->syntax #f esigs)))
-    (check-duplicate-subs export-tagged-infos esig)
-    (let-values ([(itagged isources) (drop-duplicates import-tagged-infos isig)])
-      (values (drop-from-other-list export-tagged-infos itagged isources) 
-              (cond
-                [(list? exports)
-                 (let-values ([(spec-esig spec-tagged-export-sigs spec-export-tagged-infos 
-                                          spec-export-tagged-sigids spec-export-sigs)
-                               (process-unit-export (datum->syntax #f exports))])
-                   (restrict-exports export-tagged-infos
-                                     spec-esig spec-export-tagged-infos))]
-                [else esig]))))
-  
-  (define (restrict-exports unit-tagged-exports spec-exports spec-tagged-exports)
-    (for-each (lambda (se ste)
-                (unless (ormap (lambda (ute)
-                                 (and (eq? (car ute) (car ste))
-                                      (siginfo-subtype (cdr ute) (cdr ste))))
-                               unit-tagged-exports)
-                  (raise-stx-err (format "no subunit exports signature ~a"
-                                         (syntax->datum se))
-                                 se)))
-              spec-exports
-              spec-tagged-exports)
-    spec-exports)
+    (define-values [ispecs especs]
+      (for/fold ([ispecs '()] [especs '()])
+                ([unit (in-list units)])
+        (define-values [is es] (imps/exps-from-unit unit))
+        (values (append is ispecs) (append es especs))))
+
+    (define kept-imports
+      (let loop ([left ispecs]
+                 [kept '()])
+        (cond
+          [(null? left)
+           kept]
+          [else
+           (define ispec (car left))
+           (define left* (cdr left))
+           (if (or (any-tagged-ie-spec-subsumes? left* ispec)
+                   (any-tagged-ie-spec-subsumes? especs ispec))
+               (loop left* kept)
+               (loop left* (cons (tagged-ie-spec-stx ispec) kept)))])))
+
+    (define kept-exports
+      (cond
+        [(list? exports)
+         (define given-especs (map parse-tagged-export-spec exports))
+         (for ([export (in-list exports)])
+           (define given-espec (parse-tagged-export-spec export))
+           (unless (any-tagged-ie-spec-subsumes? especs given-espec)
+             (wrong-syntax (tagged-ie-spec-sig-id given-espec) "no subunit exports signature")))
+         exports]
+        [else
+         (map tagged-ie-spec-stx especs)]))
+
+    (values kept-imports kept-exports))
+
   (when (and (not define?) exports)
     (error 'build-invoke-unit/infer 
            "internal error: exports for invoke-unit/infer"))
   (when (null? units)
     (raise-stx-err "no units in link clause"))
-  (cond [(identifier? units)
-         (let-values ([(isig esig) (imps/exps-from-units (list units) exports)])
-           (with-syntax ([u units]
-                         [(esig ...) esig]
-                         [(isig ...) isig])
-             (syntax-protect
-              (if define?
-                  (syntax/loc (current-syntax-context) (define-values/invoke-unit u (import isig ...) (export esig ...)))
-                  (syntax/loc (current-syntax-context) (invoke-unit u (import isig ...)))))))]
-        [(list? units)
-         (let-values ([(isig esig) (imps/exps-from-units units exports)])
-           (with-syntax ([(new-unit) (generate-temporaries '(new-unit))]
-                         [(unit ...) units]
-                         [(esig ...) esig]
-                         [(isig ...) isig])
-             (with-syntax ([u (let-values ([(u i e d)
-                                            (build-compound-unit/infer
-                                             (check-compound/infer-syntax
-                                              #'((import isig ...)
-                                                 (export esig ...)
-                                                 (link unit ...))))])
-                                u)])
-               (syntax-protect
-                (if define?
-                    (syntax/loc (current-syntax-context)
-                      (define-values/invoke-unit u
-                        (import isig ...) (export esig ...)))
-                    (syntax/loc (current-syntax-context)
-                      (invoke-unit u
-                                   (import isig ...))))))))]
-        ;; just for error handling
-        [else (lookup-def-unit units)]))
+
+  (cond
+    [(identifier? units)
+     (let-values ([(isig esig) (imps/exps-from-units (list units) exports)])
+       (with-syntax ([u units]
+                     [(esig ...) esig]
+                     [(isig ...) isig])
+         (syntax-protect
+          (if define?
+              (syntax/loc (current-syntax-context) (define-values/invoke-unit u (import isig ...) (export esig ...)))
+              (syntax/loc (current-syntax-context) (invoke-unit u (import isig ...)))))))]
+
+    [(list? units)
+     (let-values ([(isig esig) (imps/exps-from-units units exports)])
+       (with-syntax ([(new-unit) (generate-temporaries '(new-unit))]
+                     [(unit ...) units]
+                     [(esig ...) esig]
+                     [(isig ...) isig])
+         (with-syntax ([u (let-values ([(u i e d)
+                                        (build-compound-unit/infer
+                                         (check-compound/infer-syntax
+                                          #'((import isig ...)
+                                             (export esig ...)
+                                             (link unit ...))))])
+                            u)])
+           (syntax-protect
+            (if define?
+                (syntax/loc (current-syntax-context)
+                  (define-values/invoke-unit u
+                    (import isig ...) (export esig ...)))
+                (syntax/loc (current-syntax-context)
+                  (invoke-unit u
+                               (import isig ...))))))))]
+
+    ;; just for error handling
+    [else
+     (lookup-def-unit units)]))
 
 (define-syntax/err-param (define-values/invoke-unit/infer stx)
   (syntax-case stx (export link)
@@ -2435,30 +2300,26 @@
       (format "expected syntax matching (~a [(export <define-signature-identifier>)] <define-unit-identifier>) or (~a  [(export <define-signature-identifier>)] (link <define-unit-identifier> ...))"
               (syntax-e (stx-car stx)) (syntax-e (stx-car stx))))]))
 
-(define-syntax/err-param (invoke-unit stx)
-  (syntax-case stx (import)
-    ((_ unit)
+(define-syntax (invoke-unit stx)
+  (syntax-parse stx
+    #:track-literals
+    #:literals [import]
+    [(_ unit:expr)
      (syntax/loc stx
-       (invoke-unit/core unit)))
-    ((_ unit (import isig ...))
-     (with-syntax (((u ...) (generate-temporaries (syntax->list #'(isig ...))))
-                   (((U Ul isig) ...) (map temp-id-with-tags
-                                           (generate-temporaries #'(isig ...))
-                                           (syntax->list #'(isig ...))))
-                   ((isig-id ...) (map cdadr
-                                       (map process-tagged-import
-                                            (syntax->list #'(isig ...))))))
-       (syntax/loc stx
-         (let ()
-           (define-unit-from-context u isig)
-           ...
-           (define-compound-unit u2 (import) (export)
-             (link [((U : isig-id)) u] ... [() unit Ul ...]))
-           (invoke-unit/core u2)))))
-    (_ (raise-stx-err (format
-                       "expected (~a <expr>) or (~a <expr> (import <sig-expr> ...))"
-                       (syntax-e (stx-car stx))
-                       (syntax-e (stx-car stx)))))))
+       (invoke-unit/core unit))]
+    [(_ unit:expr (import in:tagged-import-spec ...))
+     (define/syntax-parse [u ...] (generate-temporaries (attribute in)))
+     (define/syntax-parse ([U Ul isig] ...) (map temp-id-with-tags
+                                                 (generate-temporaries (attribute in))
+                                                 (attribute in)))
+     
+     (syntax/loc stx
+       (let ()
+         (define-unit-from-context u in)
+         ...
+         (define-compound-unit u2 (import) (export)
+           (link [((U : in.sig-id)) u] ... [() unit Ul ...]))
+         (invoke-unit/core u2)))]))
 
 (define-syntax/err-param (invoke-unit/infer stx)
   (syntax-case stx ()

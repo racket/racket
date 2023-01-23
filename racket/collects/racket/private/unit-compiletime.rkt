@@ -3,8 +3,11 @@
 (require racket/syntax
          syntax/boundmap
          syntax/parse
+         syntax/parse/experimental/specialize
          "unit-syntax.rkt")
-(require (for-syntax racket/base))
+(require (for-syntax racket/base
+                     racket/syntax
+                     syntax/parse))
 (require (for-template racket/base
                        "unit-keywords.rkt"
                        "unit-runtime.rkt"))
@@ -19,15 +22,15 @@
          siginfo-names siginfo-ctime-ids siginfo-rtime-ids siginfo-subtype
          unprocess-link-record-bind unprocess-link-record-use
          set!-trans-extract
-         process-tagged-import process-tagged-export
-         lookup-signature lookup-def-unit make-id-mapper make-id-mappers sig-names sig-int-names sig-ext-names
-         map-sig split-requires split-requires* apply-mac complete-exports complete-imports check-duplicate-subs
-         process-spec
+         lookup-signature lookup-def-unit make-id-mapper make-id-mappers signature-ie-names signature-ie-int-names signature-ie-ext-names
+         map-signature-ie split-requires split-requires* apply-mac complete-exports complete-imports check-duplicate-subs
          make-relative-introducer
-         bind-at
+         (for-template bind-at)
          build-init-depend-property
 
-         signature-id tagged-signature-id)
+         build-key siginfo->key-expr siginfo->key-exprs
+         signature-id tagged-signature-id
+         import-spec export-spec tagged-import-spec tagged-export-spec)
 
 (define-syntax (apply-mac stx)
   (syntax-case stx ()
@@ -62,6 +65,37 @@
   (syntax-rules ()
     ((_ name (field ...) p)
      (define-struct name (field ...) #:property prop:procedure p))))
+
+(begin-for-syntax
+  (define (empty-id? id)
+    (eq? (syntax-e id) '||))
+
+  (define (dotted-id base-id sub-id)
+    ;; Behave like `~var` when the base identifier is the empty
+    ;; identifier: don’t do any prefixing, but still alter the
+    ;; result’s lexical context.
+    (if (empty-id? base-id)
+        (datum->syntax base-id (syntax-e sub-id) base-id base-id)
+        (format-id base-id "~a.~a" base-id sub-id #:subs? #t))))
+
+;; Like `~bind`, but binds all the attributes as nested attributes of
+;; a given base identifier.
+(define-syntax ~bind/nested
+  (pattern-expander
+   (λ (stx)
+     (define-syntax-class attr-decl
+       #:attributes [id depth]
+       #:commit
+       (pattern id:id
+         #:attr depth #'0)
+       (pattern {id:id depth:nat}))
+
+     (syntax-parse stx
+       [(_ base-id:id [attr-d:attr-decl attr-e:expr] ...)
+        (define/syntax-parse [attr-id ...]
+          (for/list ([sub-id (in-list (attribute attr-d.id))])
+            (dotted-id #'base-id sub-id)))
+        #'{~bind [{attr-id attr-d.depth} attr-e] ...}]))))
 
 ;; An int/ext is
 ;; - (cons identifier identifier)
@@ -111,16 +145,18 @@
             (car (siginfo-ctime-ids s2))
             (λ () #f)))
 
-
-;; A signature is 
-;; (make-signature siginfo
-;;                 (listof identifier)
-;;                 (listof (cons (listof identifier) syntax-object))
-;;                 (listof (cons (listof identifier) syntax-object))
-;;                 (listof (cons (listof identifier) syntax-object))
-;;                 (listof (U syntax-object #f))
-;;                 identifier)
-(define-struct/proc signature (siginfo vars val-defs stx-defs post-val-defs ctcs orig-binder)
+;; The compile-time value of a signature binding.
+;; Note that a slightly modified variant of this structure is
+;; sometimes used when processing imports and exports in a unit body,
+;; see Note [Parsed signature imports and exports] for details.
+(define-struct/proc signature
+  (siginfo       ; siginfo?
+   vars          ; (listof identifier?)
+   val-defs      ; (listof (cons/c (listof identifier?) syntax?))
+   stx-defs      ; (listof (cons/c (listof identifier?) syntax?))
+   post-val-defs ; (listof (cons/c (listof identifier?) syntax?))
+   ctcs          ; (listof (or/c syntax? #f))
+   orig-binder)  ; identifier?
   (lambda (_ stx)
     (parameterize ((current-syntax-context stx))
       (raise-stx-err "illegal use of signature name"))))
@@ -169,6 +205,98 @@
       (raise-stx-err "not a signature" id))
     s))
 
+;; build-key : (or/c symbol? #f) identifier? -> signature-key?
+(define (build-key tag i)
+  (if tag
+      #`(cons '#,tag #,i)
+      i))
+
+;; siginfo->key-expr : siginfo? (or/c symbol? #f) -> syntax?
+;; Builds an expression that evaluates to this signature’s runtime key;
+;; see Note [Signature runtime representation] in "unit-runtime.rkt".
+(define (siginfo->key-expr info tag)
+  (build-key tag (car (siginfo-rtime-ids info))))
+
+;; siginfo->key-exprs : siginfo? (or/c symbol? #f) -> (listof syntax?)
+;; Builds a list of expressions that evaluate to runtime keys for this
+;; signature and each of its super-signatures; see Note [Signature
+;; runtime representation] in "unit-runtime.rkt".
+(define (siginfo->key-exprs info tag)
+  (map (λ (id) (build-key tag id)) (siginfo-rtime-ids info)))
+
+;; Helper for bulk-binding attributes for siginfo values.
+(define-syntax ~bind-siginfo
+  (pattern-expander
+   (syntax-parser
+     [(_ x:id e:expr)
+      #`{~and
+         {~do (define tmp e)}
+         #,@(if (empty-id? #'x) '()
+                (list #'{~bind [x tmp]}))
+         {~bind/nested
+          x
+          [{id 1} (siginfo-names tmp)]
+          [self-id (car (siginfo-names tmp))]
+          [{super-id 1} (cdr (siginfo-names tmp))]
+          [{ctime-id 1} (siginfo-ctime-ids tmp)]
+          [{rtime-id 1} (siginfo-rtime-ids tmp)]}}])))
+
+(define (get-int-ids defs)
+  (map (λ (def) (map car (car def))) defs))
+(define (get-ext-ids defs)
+  (map (λ (def) (map car (car def))) defs))
+
+;; Helpers for bulk-binding attributes for signature and signature-ie values.
+(define-syntaxes [~bind-signature ~bind-signature-ie]
+  (let ()
+    (define (make ie?)
+      (pattern-expander
+       (syntax-parser
+         [(_ x:id e:expr)
+          #:with x-info (dotted-id #'x #'info)
+          #`{~and
+             {~do (define tmp e)}
+             #,@(if (empty-id? #'x) '()
+                    (list #'{~bind [x tmp]}))
+             {~bind/nested
+              x
+              [{post-def.id 2} (map car (signature-post-val-defs tmp))]
+              [{post-def.rhs 1} (map cdr (signature-post-val-defs tmp))]
+              [{ctc 1} (signature-ctcs tmp)]
+              #,@(if ie?
+
+                     #'([{var.int-id 1} (map car (signature-vars tmp))]
+                        [{var.ext-id 1} (map cdr (signature-vars tmp))]
+                        [{val-def.int-id 2} (get-int-ids (signature-val-defs tmp))]
+                        [{val-def.ext-id 2} (get-ext-ids (signature-val-defs tmp))]
+                        [{val-def.rhs 1} (map cdr (signature-val-defs tmp))]
+                        [{stx-def.int-id 2} (get-int-ids (signature-stx-defs tmp))]
+                        [{stx-def.ext-id 2} (get-ext-ids (signature-stx-defs tmp))]
+                        [{stx-def.rhs 1} (map cdr (signature-stx-defs tmp))])
+
+                     #'([{var-id 1} (signature-vars tmp)]
+                        [{val-def.id 2} (map car (signature-val-defs tmp))]
+                        [{val-def.rhs 1} (map cdr (signature-val-defs tmp))]
+                        [{stx-def.id 2} (map car (signature-stx-defs tmp))]
+                        [{stx-def.rhs 1} (map cdr (signature-stx-defs tmp))]))}
+
+             {~bind-siginfo #,(dotted-id #'x #'info) (signature-siginfo tmp)}}])))
+
+    (values (make #f) (make #t))))
+
+;; Helper for bulk-binding attributes for signature key expressions.
+(define-syntax ~bind-keys
+  (pattern-expander
+   (syntax-parser
+     [(_ x:id tag-e:expr info-e:expr)
+      #`{~and
+         {~do (define keys (siginfo->key-exprs info-e tag-e))}
+         {~bind/nested
+          x
+          [{key 1} keys]
+          [self-key (car keys)]
+          [{super-key 1} (cdr keys)]}}])))
+
 (define-syntax-class (static/extract predicate description)
   #:description description
   #:attributes [value]
@@ -179,27 +307,40 @@
 
 (define-syntax-class signature-id
   #:description #f
-  #:attributes [value
-                info info.id {info.super-id 1} {info.ctime-id 1} {info.rtime-id 1}]
+  #:attributes [value info
+                {info.id 1} info.self-id {info.super-id 1}
+                {info.ctime-id 1}
+                {info.rtime-id 1}
+                {var-id 1}
+                {val-def.id 2} {val-def.rhs 1}
+                {stx-def.id 2} {stx-def.rhs 1}
+                {post-def.id 2} {post-def.rhs 1}
+                {ctc 1}]
   #:commit
   (pattern {~var || (static/extract signature? "identifier bound to a signature")}
-    #:attr info (signature-siginfo (attribute value))
-    #:attr info.id (car (siginfo-names (attribute info)))
-    #:attr {info.super-id 1} (cdr (siginfo-names (attribute info)))
-    #:attr {info.ctime-id 1} (siginfo-ctime-ids (attribute info))
-    #:attr {info.rtime-id 1} (siginfo-rtime-ids (attribute info))))
+    #:and {~bind-signature || (attribute value)}))
 
 (define-syntax-class tagged-signature-id
   #:description "tagged signature identifier"
-  #:attributes [tag-id tag-sym sig-id value
-                info info.id {info.super-id 1} {info.ctime-id 1} {info.rtime-id 1}]
+  #:attributes [tag-id tag-sym sig-id value info
+                {info.id 1} info.self-id {info.super-id 1}
+                {info.ctime-id 1}
+                {info.rtime-id 1}
+                {var-id 1}
+                {val-def.id 2} {val-def.rhs 1}
+                {stx-def.id 2} {stx-def.rhs 1}
+                {post-def.id 2} {post-def.rhs 1}
+                {ctc 1}
+                {key 1} self-key {super-key 1}]
   #:commit
   #:literals [tag]
   (pattern (tag ~! tag-id:id {~and sig-id :signature-id})
-    #:attr tag-sym (syntax-e #'tag-id))
+    #:attr tag-sym (syntax-e #'tag-id)
+    #:and {~bind-keys || (attribute tag-sym) (attribute info)})
   (pattern {~and sig-id :signature-id}
     #:attr tag-id #f
-    #:attr tag-sym #f))
+    #:attr tag-sym #f
+    #:and {~bind-keys || (attribute tag-sym) (attribute info)}))
 
 (define (set!-trans-extract x)
   (if (set!-transformer? x)
@@ -231,7 +372,7 @@
 ;; ensures that each x above is an identifier
 (define (do-rename sig internals externals)
   (check-bound-id-subset (syntax->list externals)
-                         (sig-int-names sig))
+                         (signature-ie-int-names sig))
   (let ((ht (make-bound-identifier-mapping)))
     (for-each
      (lambda (int ext)
@@ -241,7 +382,7 @@
        (bound-identifier-mapping-put! ht ext int))
      (syntax->list internals)
      (syntax->list externals))
-    (map-sig
+    (map-signature-ie
      (lambda (id)
        (bound-identifier-mapping-get ht id (lambda () id)))
      (lambda (x) x)
@@ -261,12 +402,12 @@
 ;; ensures that only-ids are identifiers and are mentioned in the signature
 (define (do-only/except sig only/except-ids put get)
   (check-bound-id-subset only/except-ids
-                         (sig-int-names sig))
+                         (signature-ie-int-names sig))
   (let ((ht (make-bound-identifier-mapping)))
     (for-each (lambda (id)
                 (bound-identifier-mapping-put! ht id (put id)))
               only/except-ids)
-    (map-sig
+    (map-signature-ie
      (lambda (id)
        (bound-identifier-mapping-get ht id
                                      (lambda () 
@@ -282,185 +423,245 @@
                     id
                     id))))
 
-;; do-identifier : identifier syntax-object (box (cons identifier siginfo)) -> sig
-(define (do-identifier spec spec-bind res bind? add-prefix)
-  (let* ((sig (lookup-signature spec))
-         (vars (signature-vars sig))
-         (vals (signature-val-defs sig))
-         (stxs (signature-stx-defs sig))
-         (p-vals (signature-post-val-defs sig))
-         (ctcs  (signature-ctcs sig))
-         (delta-introduce (if bind?
-                              (make-relative-introducer spec-bind
-                                                        (car (siginfo-names (signature-siginfo sig))))
-                              (lambda (id)
-                                (syntax-local-introduce id)))))
-    (set-box! res (cons spec (signature-siginfo sig)))
-    (map-sig (lambda (id)
-               (add-prefix
-                (delta-introduce id)))
-             syntax-local-introduce
-             (list (map cons vars vars)
-                   (map 
-                    (λ (val)
-                      (cons (map (λ (id) (cons id id))
-                                 (car val))
-                            (cdr val)))
-                    vals)
-                   (map 
-                    (λ (stx)
-                      (cons (map (λ (id) (cons id id))
-                                 (car stx))
-                            (cdr stx)))
-                    stxs)
-                   ctcs
-                   p-vals))))
+;; Note [Parsed signature imports and exports]
+;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;; When we parse a signature import or export in a unit body, we
+;; return a `signature?` value, but we adjust the shape of some of
+;; its fields:
+;;
+;;     int/ext? = (cons/c identifier? identifier?)
+;;     vars     : (listof int/ext?)
+;;     val-defs : (listof (listof (cons/c (listof int/ext?) syntax?))
+;;     stx-defs : (listof (listof (cons/c (listof int/ext?) syntax?))
+;;
+;; These split `int/ext?` identifier pairs track both the internal and
+;; external name of each binding, since they may be renamed in the
+;; unit body using the `rename` or `prefix` forms. Additionally, we
+;; adjust the scopes on some of the fields.
+;;
+;; In comments, we refer to these modified signature structures using
+;; the pseudo-contract `signature-ie?` instead of just `signature?` to
+;; avoid potential confusion.
 
-(define (sig-names sig)
-  (append (car sig)
-          (apply append (map car (cadr sig)))
-          (apply append (map car (caddr sig)))))
+;; lookup-signature-ie : identifier? syntax? -> signature-ie?
+;; See Note [Parsed signature imports and exports].
+(define (lookup-signature-ie sig-id
+                             #:bind-lctx bind-lctx
+                             #:add-prefix add-prefix)
+  (define sig (lookup-signature sig-id))
+  (define delta-introduce (make-relative-introducer bind-lctx
+                                                    (car (siginfo-names (signature-siginfo sig)))))
 
+  (define (split-id id)
+    (cons id id))
+  (define (split-def def)
+    (cons (map split-id (car def)) (cdr def)))
 
-(define (sig-int-names sig)
-  (map car (sig-names sig)))
+  (map-signature-ie
+   (lambda (id) (add-prefix (delta-introduce id)))
+   syntax-local-introduce
+   (make-signature
+    (signature-siginfo sig)
+    (map split-id (signature-vars sig))
+    (map split-def (signature-val-defs sig))
+    (map split-def (signature-stx-defs sig))
+    (signature-post-val-defs sig)
+    (signature-ctcs sig)
+    (signature-orig-binder sig))))
 
-(define (sig-ext-names sig)
-  (map cdr (sig-names sig)))
+(define (signature-ie-names sig)
+  (append (signature-vars sig)
+          (apply append (map car (signature-val-defs sig)))
+          (apply append (map car (signature-stx-defs sig)))))
 
-;; map-def : (identifier -> identifier) (syntax-object -> syntax-object) def -> def
-(define (map-def f g def)
-  (cons (map (lambda (x)
-               (cons (f (car x)) (g (cdr x))))
-             (car def))
-        (g (cdr def))))
+(define (signature-ie-int-names sig)
+  (map car (signature-ie-names sig)))
+(define (signature-ie-ext-names sig)
+  (map cdr (signature-ie-names sig)))
 
-;; map-ctc : (identifier -> identifier) (syntax-object -> syntax-object) ctc -> ctc
-(define (map-ctc f g ctc)
-  (if ctc
-      (g ctc)
-      ctc))
-
-;; map-sig : (identifier -> identifier) (sytnax-object -> syntax-object)  sig -> sig
+;; map-signature-ie : (identifier? -> identifier?) (syntax? -> syntax?) signature-ie? -> signature-ie?
 ;; applies f to the internal parts, and g to the external parts.
-(define (map-sig f g sig)
-  (list (map (lambda (x) (cons (f (car x)) (g (cdr x)))) (car sig))
-        (map (lambda (x) (map-def f g x)) (cadr sig))
-        (map (lambda (x) (map-def f g x)) (caddr sig))
-        (map (lambda (x) (map-ctc f g x)) (cadddr sig))
-        (map (lambda (x) (cons (map f (car x))
-                               (g (cdr x))))
-             (list-ref sig 4))))
+(define (map-signature-ie f g sig)
+  (define (map-def f g def)
+    (cons (map (lambda (x)
+                 (cons (f (car x)) (g (cdr x))))
+               (car def))
+          (g (cdr def))))
 
-;; An import-spec is one of
-;; - signature-name
-;; - (only import-spec identifier ...)
-;; - (except import-spec identifier ...)
-;; - (prefix prefix-identifier import-spec)
-;; - (rename import-spec (local-identifier signature-identifier) ...)  
+  (make-signature
+   (signature-siginfo sig)
+   (map (lambda (x) (cons (f (car x)) (g (cdr x)))) (signature-vars sig))
+   (map (lambda (x) (map-def f g x)) (signature-val-defs sig))
+   (map (lambda (x) (map-def f g x)) (signature-stx-defs sig))
+   (map (lambda (x) (cons (map f (car x)) (g (cdr x)))) (signature-post-val-defs sig))
+   (map (lambda (x) (if x (g x) x)) (signature-ctcs sig))
+   (signature-orig-binder sig)))
 
-;; An export-spec is one of
-;; - signature-name
-;; - (prefix prefix-identifier export-spec)
-;; - (rename export-spec (local-identifier signature-identifier) ...)
-
-;; A tagged-import-spec is one of
-;; - import-spec
-;; - (tag symbol import-spec)
-;; - (bind-at id tagged-import-spec)
-
-;; A tagged-export-spec is one of
-;; - export-spec
-;; - (tag symbol export-spec)
-;; - (bind-at id tagged-export-spec)
-
-;; process-tagged-import/export : syntax-object boolean -> tagged-sig
-(define (process-tagged-import/export spec import? bind?)
-  (define res (box #f))
-  (let loop ([spec spec] [spec-bind #f])
-    (syntax-case spec (bind-at)
-      ((bind-at id spec)
-       (loop #'spec #'id))
-      (_
-       (begin
-         (check-tagged-spec-syntax spec import? identifier?)
-         (syntax-case spec (tag)
-           ((tag sym spec)
-            (let ([s (process-import/export #'spec spec-bind res bind? values)])
-              (list (cons (syntax-e #'sym) (cdr (unbox res)))
-                    (cons (syntax-e #'sym) (car (unbox res)))
-                    s)))
-           ((tag . _)
-            (raise-stx-err "expected (tag symbol <import/export-spec>)" spec))
-           (_ (let ([s (process-import/export spec spec-bind res bind? values)])
-                (list (cons #f (cdr (unbox res)))
-                      (cons #f (car (unbox res)))
-                      s)))))))))
+(define (signature-ie->list sig)
+  (list (signature-vars sig)
+        (signature-val-defs sig)
+        (signature-stx-defs sig)
+        (signature-ctcs sig)
+        (signature-post-val-defs sig)))
 
 (define (add-prefixes add-prefix l)
   (map add-prefix (syntax->list l)))
 
+(define-syntax-class (import/export import?
+                                    #:bind-lctx bind-lctx
+                                    #:add-prefix add-prefix)
+  #:description (format "~a spec" (if import? "import" "export"))
+  #:attributes [sig-id value]
+  #:commit
+  #:literals [only except prefix rename bind-at]
+
+  (pattern sig-id:id
+    #:attr value (lookup-signature-ie #'sig-id
+                                      #:bind-lctx (or bind-lctx #'sig-id)
+                                      #:add-prefix add-prefix))
+
+  (pattern (bind-at ~! bind-lctx {~var || (import/export import?
+                                                         #:bind-lctx #'bind-lctx
+                                                         #:add-prefix add-prefix)}))
+
+  (pattern (only ~! sub-spec id:id ...)
+    #:declare sub-spec (import/export import?
+                                      #:bind-lctx bind-lctx
+                                      #:add-prefix add-prefix)
+    #:fail-unless import? "bad export-spec keyword"
+    #:attr sig-id (attribute sub-spec.sig-id)
+    #:attr value (do-only/except (attribute sub-spec.value)
+                                 (add-prefixes add-prefix #'(id ...))
+                                 (lambda (id) id)
+                                 (lambda (id)
+                                   (car (generate-temporaries #`(#,id))))))
+
+  (pattern (except ~! sub-spec id:id ...)
+    #:declare sub-spec (import/export import?
+                                      #:bind-lctx bind-lctx
+                                      #:add-prefix add-prefix)
+    #:fail-unless import? "bad export-spec keyword"
+    #:attr sig-id (attribute sub-spec.sig-id)
+    #:attr value (do-only/except (attribute sub-spec.value)
+                                 (add-prefixes add-prefix #'(id ...))
+                                 (lambda (id)
+                                   (car (generate-temporaries #`(#,id))))
+                                 (lambda (id) id)))
+
+  (pattern (prefix ~! pid:id
+                   {~var || (import/export import?
+                                           #:bind-lctx bind-lctx
+                                           #:add-prefix (λ (id) (add-prefix (do-prefix id #'pid))))}))
+
+  (pattern (rename ~! sub-spec [internal:id external:id] ...)
+    #:declare sub-spec (import/export import? #:bind-lctx bind-lctx #:add-prefix add-prefix)
+    #:attr sig-id (attribute sub-spec.sig-id)
+    #:attr value (do-rename (attribute sub-spec.value)
+                            #'(internal ...)
+                            (datum->syntax #f (add-prefixes add-prefix #'(external ...))))
+    #:fail-when (check-duplicate-identifier (signature-ie-int-names (attribute value)))
+                "rename created duplicate identifier"))
+
+;; Defined as a wrapper around `import/export` so the clauses of `import/export`
+;; don’t have to bother with binding all the attributes.
+(define-syntax-class (import/export* import?
+                                     #:bind-lctx bind-lctx
+                                     #:add-prefix add-prefix)
+  #:description #f
+  #:attributes [sig-id value info
+                {info.id 1} info.self-id {info.super-id 1}
+                {info.ctime-id 1}
+                {info.rtime-id 1}
+                {var.int-id 1} {var.ext-id 1}
+                {val-def.int-id 2} {val-def.ext-id 2} {val-def.rhs 1}
+                {stx-def.int-id 2} {stx-def.ext-id 2} {stx-def.rhs 1}
+                {post-def.id 2} {post-def.rhs 1}
+                {ctc 1}]
+  #:commit
+  (pattern {~var || (import/export import?
+                                   #:bind-lctx bind-lctx
+                                   #:add-prefix add-prefix)}
+    #:and {~bind-signature-ie || (attribute value)}))
+
+(define-syntax-class (tagged-import/export import? #:bind-lctx bind-lctx)
+  #:description (format "tagged ~a spec" (if import? "import" "export"))
+  #:attributes [tag-id tag-sym sig-id tagged-sig-id value info
+                {info.id 1} info.self-id {info.super-id 1}
+                {info.ctime-id 1}
+                {info.rtime-id 1}
+                {var.int-id 1} {var.ext-id 1}
+                {val-def.int-id 2} {val-def.ext-id 2} {val-def.rhs 1}
+                {stx-def.int-id 2} {stx-def.ext-id 2} {stx-def.rhs 1}
+                {post-def.id 2} {post-def.rhs 1}
+                {ctc 1}
+                {key 1} self-key {super-key 1}]
+  #:commit
+  #:literals [bind-at tag]
+  (pattern (bind-at ~! bind-lctx {~var || (tagged-import/export import? #:bind-lctx #'bind-lctx)}))
+
+  (pattern (tag ~! tag-id:id {~var || (import/export* import?
+                                                      #:bind-lctx bind-lctx
+                                                      #:add-prefix values)})
+    #:attr tag-sym (syntax-e #'tag-id)
+    #:attr tagged-sig-id (syntax/loc this-syntax
+                           (tag tag-id sig-id))
+    #:and {~bind-keys || (attribute tag-sym) (attribute info)})
+
+  (pattern {~var || (import/export* import?
+                                    #:bind-lctx bind-lctx
+                                    #:add-prefix values)}
+    #:attr tag-id #f
+    #:attr tag-sym #f
+    #:attr tagged-sig-id #'sig-id
+    #:and {~bind-keys || (attribute tag-sym) (attribute info)}))
+
 ;; process-import/export : syntax-object syntax-object (box (cons identifier) siginfo) -> sig
-(define (process-import/export spec spec-bind res bind? add-prefix)
+(define (process-import/export spec spec-bind bind? add-prefix)
   (syntax-case spec (only except prefix rename bind-at)
     (_
      (identifier? spec)
-     (do-identifier spec (or spec-bind spec) res bind? add-prefix))
+     (lookup-signature-ie spec #:bind-lctx (or spec-bind spec) #:add-prefix add-prefix))
     ((bind-at spec-bind spec)
-     (process-import/export #'spec #'spec-bind res bind? add-prefix))
+     (process-import/export #'spec #'spec-bind bind? add-prefix))
     ((only sub-spec id ...)
-     (do-only/except (process-import/export #'sub-spec spec-bind res bind? add-prefix)
+     (do-only/except (process-import/export #'sub-spec spec-bind bind? add-prefix)
                      (add-prefixes add-prefix #'(id ...))
                      (lambda (id) id)
                      (lambda (id)
                        (car (generate-temporaries #`(#,id))))))
     ((except sub-spec id ...)
-     (do-only/except (process-import/export #'sub-spec spec-bind res bind? add-prefix)
+     (do-only/except (process-import/export #'sub-spec spec-bind bind? add-prefix)
                      (add-prefixes add-prefix #'(id ...))
                      (lambda (id)
                        (car (generate-temporaries #`(#,id))))
                      (lambda (id) id)))
     ((prefix pid sub-spec)
-     (process-import/export #'sub-spec spec-bind res bind?
+     (process-import/export #'sub-spec spec-bind bind?
                             (lambda (id)
                               (add-prefix (do-prefix id #'pid)))))
     ((rename sub-spec (internal external) ...)
      (let* ((sig-res
-             (do-rename (process-import/export #'sub-spec spec-bind res bind? add-prefix)
+             (do-rename (process-import/export #'sub-spec spec-bind bind? add-prefix)
                         #'(internal ...)
                         (datum->syntax #f (add-prefixes add-prefix #'(external ...)))))
-            (dup (check-duplicate-identifier (sig-int-names sig-res))))
+            (dup (check-duplicate-identifier (signature-ie-int-names sig-res))))
        (when dup
          (raise-stx-err
           (format "rename created duplicate identifier ~a" (syntax-e dup))
           spec))
        sig-res))))
 
-(define (process-tagged-import spec)
-  (process-tagged-import/export spec #t #t))
-(define (process-tagged-export spec)
-  (process-tagged-import/export spec #f #t))
+;; Used by `provide-signature-elements`.
+(define-syntax-class/specialize import-spec
+  (import/export* #t #:bind-lctx #f #:add-prefix values))
+;; Used by `open`.
+(define-syntax-class/specialize export-spec
+  (import/export* #f #:bind-lctx #f #:add-prefix values))
 
-;; process-spec : syntax-object -> sig
-(define (process-spec spec)
-  (check-tagged-spec-syntax spec #f identifier?)
-  (process-import/export spec spec (box #f) #t values))
-
-
-;  ;; extract-siginfo : (union import-spec export-spec) -> ???
-;  ;; extracts the identifier that refers to the signature
-;  (define (extract-siginfo spec)
-;    (syntax-case spec (only except prefix rename)
-;      ((only sub-spec . x)
-;       (extract-siginfo #'sub-spec))
-;      ((except sub-spec . x)
-;       (extract-siginfo #'sub-spec))
-;      ((prefix pid sub-spec)
-;       (extract-siginfo #'sub-spec))
-;      ((rename sub-spec . x)
-;       (extract-siginfo #'sub-spec))
-;      (_ spec)))
-
+(define-syntax-class/specialize tagged-import-spec
+  (tagged-import/export #t #:bind-lctx #f))
+(define-syntax-class/specialize tagged-export-spec
+  (tagged-import/export #f #:bind-lctx #f))
 
 
 ;; check-duplicate-subs : (listof (cons symbol siginfo)) (listof syntax-object) ->

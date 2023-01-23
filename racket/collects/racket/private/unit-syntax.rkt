@@ -9,8 +9,6 @@
           ;; for mzlib/a-signature
           [current-syntax-context error-syntax]))
 
-(define bind-at #f)
-
 (define raise-stx-err
   (case-lambda
     ((msg) (raise-syntax-error #f msg (current-syntax-context)))

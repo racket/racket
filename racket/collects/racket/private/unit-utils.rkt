@@ -1,17 +1,15 @@
 #lang racket/base
 
 (require (for-syntax racket/base
+                     racket/list
                      syntax/boundmap
                      "unit-compiletime.rkt"
                      "unit-syntax.rkt")
          racket/contract/base)
 
-(provide (for-syntax build-key
-                     check-duplicate-sigs
+(provide (for-syntax check-duplicate-sigs
                      check-unit-ie-sigs
                      iota
-                     process-unit-import
-                     process-unit-export
                      tagged-info->keys
                      get-member-bindings))
 
@@ -28,35 +26,37 @@
 (define-syntax-rule (equal-hash-table [k v] ...)
   (make-immutable-hash (list (cons k v) ...)))
 
+;; get-member-bindings : bound-identifier-mapping? signature-ie? syntax? any/c -> (listof syntax?)
 (define-for-syntax (get-member-bindings member-table sig pos bind?)
-  (for/list ([i (in-list (map car (car sig)))]
-             [ix (in-list (map cdr (car sig)))]
-             [c (in-list (cadddr sig))])
-    (let ([add-ctc
-             (λ (v stx)
-                 (if c
-                     (with-syntax ([c-stx (syntax-property c 'inferred-name v)])
-                       #`(let ([v/c (#,stx)])
-                           (contract c-stx (car v/c) (cdr v/c) #,pos
-                                     (quote #,v) (quote-syntax #,v))))
-                     #`(#,stx)))])
-      #`[#,(if bind? ix i)
-         (make-set!-transformer
-          (λ (stx)
-            (syntax-case stx (set!)
-              [x
-               (identifier? #'x)
-               (quote-syntax
-                #,(add-ctc i (bound-identifier-mapping-get
-                              member-table
-                              i)))]
-              [(x . y)
-               (quasisyntax
-                (#,(quote-syntax
-                    #,(add-ctc i (bound-identifier-mapping-get
-                                  member-table
-                                  i)))
-                 . y))])))])))
+  (for/list ([int-id (in-list (map car (signature-vars sig)))]
+             [ext-id (in-list (map cdr (signature-vars sig)))]
+             [ctc (in-list (signature-ctcs sig))])
+
+    (define (add-ctc name-id val-expr)
+      (if ctc
+          (with-syntax ([ctc* (syntax-property ctc 'inferred-name name-id)])
+            #`(let ([v/c (#,val-expr)])
+                (contract ctc* (car v/c) (cdr v/c) #,pos
+                          (quote #,name-id) (quote-syntax #,name-id))))
+          #`(#,val-expr)))
+
+    #`[#,(if bind? ext-id int-id)
+       (make-set!-transformer
+        (λ (stx)
+          (syntax-case stx (set!)
+            [x
+             (identifier? #'x)
+             (quote-syntax
+              #,(add-ctc int-id (bound-identifier-mapping-get
+                                 member-table
+                                 int-id)))]
+            [(x . y)
+             (quasisyntax
+              (#,(quote-syntax
+                  #,(add-ctc int-id (bound-identifier-mapping-get
+                                     member-table
+                                     int-id)))
+               . y))])))]))
 
 (define-syntax (unit-export stx)
   (syntax-case stx ()
@@ -95,42 +95,22 @@
    dsources))
   
 (define-for-syntax (check-unit-ie-sigs import-sigs export-sigs)
-  (let ([dup (check-duplicate-identifier
-              (apply append (map sig-int-names import-sigs)))])
+  (define import-names (append-map signature-ie-int-names import-sigs))
+  (define export-names (append-map signature-ie-int-names export-sigs))
+
+  (let ([dup (check-duplicate-identifier import-names)])
     (when dup
-      (raise-stx-err 
+      (raise-stx-err
        (format "~a is imported by multiple signatures" (syntax-e dup)))))
   
-  (let ([dup (check-duplicate-identifier
-              (apply append (map sig-int-names export-sigs)))])
+  (let ([dup (check-duplicate-identifier export-names)])
     (when dup
       (raise-stx-err (format "~a is exported by multiple signatures"
                              (syntax-e dup)))))
   
-  (let ([dup (check-duplicate-identifier 
-              (append
-               (apply append (map sig-int-names import-sigs))
-               (apply append (map sig-int-names export-sigs))))])
+  (let ([dup (check-duplicate-identifier  (append import-names export-names))])
     (when dup
       (raise-stx-err (format "import ~a is exported" (syntax-e dup))))))
-
-(define-for-syntax (process-unit-import/export process)
-  (lambda (s)
-    (define x1 (syntax->list s))
-    (define x2 (map process x1))
-    (values x1 x2 (map car x2) (map cadr x2) (map caddr x2))))
-
-(define-for-syntax process-unit-import
-  (process-unit-import/export process-tagged-import))
-
-(define-for-syntax process-unit-export
-  (process-unit-import/export process-tagged-export))
-  
-;; build-key : (or symbol #f) identifier -> syntax-object
-(define-for-syntax (build-key tag i)
-  (if tag
-      #`(cons '#,tag #,i)
-      i))
 
 ;; tagged-info->keys : (cons (or symbol #f) siginfo) -> (listof syntax-object)
 (define-for-syntax (tagged-info->keys tagged-info)
