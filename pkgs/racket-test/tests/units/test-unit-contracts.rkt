@@ -634,7 +634,7 @@
   (unit/c (import)
           (export (sig1 [x string?] [x number?]))))
 (test-syntax-error
- "unit/c: unknown signature"
+ "unit/c: expected identifier bound to a signature"
   (unit/c (import faux^) (export)))
 
 (test-contract-error "(definition bad-export@)" "bad-export@" "unit must export signature sig1"
@@ -1057,15 +1057,15 @@
      (unit/c (import) (export) (init-depend a^))))
 
   (test-syntax-error
-   "unit/c: unknown signature"
+   "unit/c: expected identifier bound to a signature"
    (unit/c (import x^) (export) (init-depend)))
 
   (test-syntax-error
-   "unit/c: unknown signature"
+   "unit/c: expected identifier bound to a signature"
    (unit/c (import) (export) (init-depend x^)))
 
   (test-syntax-error
-   "unit/c: unknown signature"
+   "unit/c: expected identifier bound to a signature"
    (unit/c (import) (export x^) (init-depend)))
 
   (void))

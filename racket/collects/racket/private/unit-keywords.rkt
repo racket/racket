@@ -1,7 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base))
 
-(provide only except prefix rename tag
+(provide only except bind-at prefix rename tag
          import export init-depend link
          extends contracted)
 
@@ -18,6 +18,8 @@
   "misuse of unit import keyword")
 (define-syntax-for-error except
   "misuse of unit import keyword")
+(define-syntax-for-error bind-at
+  "misuse of unit import and export keyword")
 (define-syntax-for-error prefix
   "misuse of unit import and export keyword")
 (define-syntax-for-error rename

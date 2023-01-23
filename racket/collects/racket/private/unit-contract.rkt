@@ -17,7 +17,7 @@
 (provide (for-syntax unit/c/core) unit/c)
 
 (define-for-syntax (contract-imports/exports import?)
-  (λ (table-stx import-tagged-infos import-sigs ctc-table blame-id)
+  (λ (table-stx sigs tags ctc-table blame-id)
     (define def-tables (make-hasheq)) ; tag (or #f) =>  bound-identifier-mapping
     
     (define (convert-reference var vref ctc sig-ctc rename-bindings)
@@ -46,185 +46,154 @@
                               (blame-negative #,blame-id))
                       (wrap-with-proj ctc #`(#,vref))))
             vref)))
-    (for ([tagged-info (in-list import-tagged-infos)]
-          [sig         (in-list import-sigs)])
-         (define def-table (hash-ref! def-tables (car tagged-info) make-bound-identifier-mapping))
-         (let ([v #`(hash-ref #,table-stx #,(car (tagged-info->keys tagged-info)))])
-           (for ([int/ext-name (in-list (car sig))]
-                 [index        (in-list (build-list (length (car sig)) values))])
-             (bound-identifier-mapping-put! def-table (car int/ext-name)
-                                            #`(vector-ref #,v #,index)))))
+    (for ([sig (in-list sigs)]
+          [tag (in-list tags)])
+      (define def-table (hash-ref! def-tables tag make-bound-identifier-mapping))
+      (define v #`(hash-ref #,table-stx #,(siginfo->key-expr (signature-siginfo sig) tag)))
+      (for ([(int/ext-name index) (in-indexed (in-list (signature-vars sig)))])
+        (bound-identifier-mapping-put! def-table (car int/ext-name)
+                                       #`(vector-ref #,v #,index))))
     (with-syntax ((((eloc ...) ...)
-                   (for/list ([tagged-info (in-list import-tagged-infos)]
-                              [target-sig (in-list import-sigs)])
-                     (define def-table (hash-ref def-tables (car tagged-info)))
+                   (for/list ([target-sig (in-list sigs)]
+                              [target-tag (in-list tags)])
+                     (define def-table (hash-ref def-tables target-tag))
                      (let ([rename-bindings (get-member-bindings def-table target-sig #`(blame-positive #,blame-id) #f)])
-                       (for/list ([target-int/ext-name (in-list (car target-sig))]
-                                  [sig-ctc (in-list (cadddr target-sig))])
+                       (for/list ([target-int/ext-name (in-list (signature-vars target-sig))]
+                                  [sig-ctc (in-list (signature-ctcs target-sig))])
                          (let* ([var (car target-int/ext-name)]
                                 [vref (bound-identifier-mapping-get def-table var)]
                                 [ctc (bound-identifier-mapping-get ctc-table var (λ () #f))])
                            (convert-reference var vref ctc sig-ctc rename-bindings))))))
-                  (((export-keys ...) ...) 
-                   (map tagged-info->keys import-tagged-infos)))
+                  (((export-keys ...) ...)
+                   (for/list ([sig (in-list sigs)]
+                              [tag (in-list tags)])
+                     (siginfo->key-exprs (signature-siginfo sig) tag))))
       #'(unit-export ((export-keys ...)
                       (vector-immutable eloc ...)) ...))))
 
 (define-for-syntax contract-imports (contract-imports/exports #t))
 (define-for-syntax contract-exports (contract-imports/exports #f))
-;; This is copied from the unit implementation, but can't be required
-;; from there since unit.rkt also requires this file
-(define-for-syntax (tagged-sigid->tagged-siginfo x)
-  (cons (car x)
-        (signature-siginfo (lookup-signature (cdr x)))))
 
 (define-for-syntax (unit/c/core name stx)
   (syntax-parse stx
     #:context (current-syntax-context)
     [(:import-clause/c
       :export-clause/c
-      (~optional d:dep-clause #:defaults ([(d.s 1) null]))
+      d:optional-dep-clause
       b:body-clause/c)
-     (begin
-       (define-values (isig tagged-import-sigs import-tagged-infos 
-                            import-tagged-sigids import-sigs)
-         (process-unit-import #'(i.s ...)))
-       
-       (define-values (esig tagged-export-sigs export-tagged-infos 
-                            export-tagged-sigids export-sigs)
-         (process-unit-export #'(e.s ...)))
 
-       (define deps (syntax->list #'(d.s ...)))
-       (define dep-tagged-siginfos
-         (map tagged-sigid->tagged-siginfo
-              (map check-tagged-id deps)))
+     ;; The input syntax is restricted to `tagged-signature-id`, since
+     ;; `unit/c` doesn’t allow the full grammar of imports and exports.
+     ;; However, we still want to reparse each signature as an
+     ;; import/export spec so that we split the signature’s variables
+     ;; into internal/external pairs (see Note [Parsed signature
+     ;; imports and exports] for details).
+     ;;
+     ;; Even though the internal/external ids will always have the same
+     ;; symbolic names, doing this split is still important because the
+     ;; internal ids are given the local lexical context, and we need
+     ;; to be able to match them up with the provided contract
+     ;; specifications using `bound-identifier=?`.
+     (define/syntax-parse [in:tagged-import-spec ...] #'[i.s ...])
+     (define/syntax-parse [out:tagged-export-spec ...] #'[e.s ...])
 
-       (define apply-body-contract (attribute b.apply-invoke-ctcs))
-       (define make-define-ctcs/blame (attribute b.make-define-ctcs/blame))
+     (define apply-body-contract (attribute b.apply-invoke-ctcs))
+     (define make-define-ctcs/blame (attribute b.make-define-ctcs/blame))
 
-       (define contract-table
-         (make-bound-identifier-mapping))
+     (define contract-table
+       (make-bound-identifier-mapping))
        
-       (define (process-sig name sig xs cs)
-         (define xs-list (syntax->list xs))
-         (let ([dup (check-duplicate-identifier xs-list)])
-           (when dup
-             (raise-stx-err (format "duplicate identifier found for signature ~a"
-                                    (syntax->datum name))
-                            dup)))
-         (let ([ids (map car (car sig))])
-           (for-each (λ (id)
-                       (unless (memf (λ (i) (bound-identifier=? id i)) ids)
-                         (raise-stx-err (format "identifier not member of signature ~a" 
-                                                (syntax-e name))
-                                        id)))
-                     xs-list))
-         (for ([x (in-list xs-list)]
-               [c (in-list (syntax->list cs))])
-              (bound-identifier-mapping-put! contract-table x c)))
+     (define (process-sig sig-stx sig-var-ids xs cs)
+       (let ([dup (check-duplicate-identifier xs)])
+         (when dup
+           (raise-stx-err (format "duplicate identifier found for signature ~a"
+                                  (syntax->datum sig-stx))
+                          dup)))
+       (for ([x (in-list xs)]
+             [c (in-list cs)])
+         (unless (memf (λ (i) (bound-identifier=? x i)) sig-var-ids)
+           (raise-stx-err (format "identifier not member of signature ~a" 
+                                  (syntax-e sig-stx))
+                          x))
+         (bound-identifier-mapping-put! contract-table x c)))
+
+     (check-duplicate-sigs (map cons (attribute i.s.tag-sym) (attribute i.s.info))
+                           (attribute i.s)
+                           (map cons (attribute d.s.tag-sym) (attribute d.s.info))
+                           (attribute d.s))
+     (check-duplicate-subs (map cons (attribute e.s.tag-sym) (attribute e.s.info))
+                           (attribute e.s))
        
-       (check-duplicate-sigs import-tagged-infos isig dep-tagged-siginfos deps)
-       (check-duplicate-subs export-tagged-infos esig)
+     (for-each process-sig
+               (attribute i.s)
+               (attribute in.var.int-id)
+               (attribute i.x)
+               (attribute i.c))
+     (for-each process-sig
+               (attribute e.s)
+               (attribute out.var.int-id)
+               (attribute e.x)
+               (attribute e.c))
+
+     (define/syntax-parse [imports/exports/deps ...]
+       #'[(vector-immutable (cons 'i.s.info.self-id (vector-immutable i.s.key ...)) ...)
+          (vector-immutable (cons 'e.s.info.self-id (vector-immutable e.s.key ...)) ...)
+          (list d.s.self-key ...)])
+
+     (define/syntax-parse ctcs/blame (generate-temporary 'ctcs/blame))
        
-       (for-each process-sig
-                 isig
-                 import-sigs
-                 (syntax->list #'((i.x ...) ...))
-                 (syntax->list #'((i.c ...) ...)))
-       (for-each process-sig
-                 esig
-                 export-sigs
-                 (syntax->list #'((e.x ...) ...))
-                 (syntax->list #'((e.c ...) ...)))
-       
-       (with-syntax ([(dep-key ...)
-                      (map
-                       (lambda (tinfo)
-                         (build-key (car tinfo)
-                                    (syntax-local-introduce (car (siginfo-rtime-ids (cdr tinfo))))))
-                       dep-tagged-siginfos)]
-                     [(isig ...) isig]
-                     [(esig ...) esig]
-                     [((import-key ...) ...)
-                      (map tagged-info->keys import-tagged-infos)]
-                     [((export-key ...) ...)
-                      (map tagged-info->keys export-tagged-infos)]
-                     [(import-name ...)
-                      (map (lambda (tag/info) (car (siginfo-names (cdr tag/info))))
-                           import-tagged-infos)]
-                     [(export-name ...)
-                      (map (lambda (tag/info) (car (siginfo-names (cdr tag/info))))
-                           export-tagged-infos)]
-                     [ctcs/blame (generate-temporary 'ctcs/blame)])
-         (quasisyntax/loc stx
-           (begin
-             (make-contract
-              #:name
-              (list 'unit/c
-                    (cons 'import 
-                          (list (cons 'isig
-                                      (map list (list 'i.x ...) 
-                                           (build-compound-type-name 'i.c ...)))
-                                ...))
-                    (cons 'export 
-                          (list (cons 'esig
-                                      (map list (list 'e.x ...)
-                                           (build-compound-type-name 'e.c ...)))
-                                ...))
-                    (cons 'init-depend
-                          (list 'd.s ...))
-                    #,@(attribute b.name))
-              #:projection
-              (λ (blame)
-                #,@(make-define-ctcs/blame #'ctcs/blame #'blame)
-                (λ (unit-tmp)
-                  (unit/c-first-order-check 
-                   unit-tmp
-                   (vector-immutable
-                    (cons 'import-name
-                          (vector-immutable import-key ...)) ...)
-                   (vector-immutable 
-                    (cons 'export-name 
-                          (vector-immutable export-key ...)) ...)
-                   (list dep-key ...)
-                   blame)
-                  (make-unit
-                   '#,name
-                   (vector-immutable (cons 'import-name
-                                           (vector-immutable import-key ...)) ...)
-                   (vector-immutable (cons 'export-name 
-                                           (vector-immutable export-key ...)) ...)
-                   (list dep-key ...)
-                   (λ ()
-                     (let-values ([(unit-fn export-table) ((unit-go unit-tmp))])
-                       (values (lambda (import-table)
-                                 #,(apply-body-contract
-                                    #`(unit-fn #,(contract-imports
-                                                  #'import-table
-                                                  import-tagged-infos
-                                                  import-sigs
-                                                  contract-table
-                                                  #'blame))
-                                    #'blame
-                                   #'ctcs/blame))
-                               #,(contract-exports 
-                                  #'export-table
-                                  export-tagged-infos
-                                  export-sigs
-                                  contract-table
-                                  #'blame)))))))
-              #:first-order
-              (λ (v)
-                (unit/c-first-order-check 
-                 v
-                 (vector-immutable
-                  (cons 'import-name
-                        (vector-immutable import-key ...)) ...)
-                 (vector-immutable 
-                  (cons 'export-name 
-                        (vector-immutable export-key ...)) ...)
-                 (list dep-key ...)
-                 #f)))))))]))
+     (quasisyntax/loc stx
+       (make-contract
+        #:name
+        (list 'unit/c
+              (cons 'import 
+                    (list (cons 'i.s
+                                (map list (list 'i.x ...) 
+                                     (build-compound-type-name 'i.c ...)))
+                          ...))
+              (cons 'export 
+                    (list (cons 'e.s
+                                (map list (list 'e.x ...)
+                                     (build-compound-type-name 'e.c ...)))
+                          ...))
+              (cons 'init-depend
+                    (list 'd.s ...))
+              #,@(attribute b.name))
+        #:projection
+        (λ (blame)
+          #,@(make-define-ctcs/blame #'ctcs/blame #'blame)
+          (λ (unit-tmp)
+            (unit/c-first-order-check 
+             unit-tmp
+             imports/exports/deps ...
+             blame)
+            (make-unit
+             '#,name
+             imports/exports/deps ...
+             (λ ()
+               (let-values ([(unit-fn export-table) ((unit-go unit-tmp))])
+                 (values (lambda (import-table)
+                           #,(apply-body-contract
+                              #`(unit-fn #,(contract-imports
+                                            #'import-table
+                                            (attribute in.value)
+                                            (attribute in.tag-sym)
+                                            contract-table
+                                            #'blame))
+                              #'blame
+                              #'ctcs/blame))
+                         #,(contract-exports 
+                            #'export-table
+                            (attribute out.value)
+                            (attribute out.tag-sym)
+                            contract-table
+                            #'blame)))))))
+        #:first-order
+        (λ (v)
+          (unit/c-first-order-check 
+           v
+           imports/exports/deps ...
+           #f))))]))
 
 (define-syntax/err-param (unit/c stx)
   (syntax-case stx ()

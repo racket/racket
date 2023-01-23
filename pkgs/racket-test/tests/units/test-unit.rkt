@@ -251,10 +251,10 @@
 
 ;; unit syntax errors (without sub-signatures)
 (test-syntax-error 
- "unit: bad import spec"
+ "unit: expected tagged import spec"
  (unit (import 1) (export)))
 (test-syntax-error 
- "unit: bad export spec"
+ "unit: expected tagged export spec"
  (unit (import) (export 1)))
 (test-syntax-error 
  "unit: unknown signature"
@@ -263,10 +263,10 @@
  "unit: unknown signature"
  (unit (import) (export a)))
 (test-syntax-error 
- "unit: tag must be a symbol"
+ "unit: expected identifier"
  (unit (import (tag 1 empty-sig)) (export)))
 (test-syntax-error 
- "unit: tag must be a symbol"
+ "unit: expected identifier"
  (unit (import) (export (tag 'a empty-sig))))
 (test-syntax-error 
  "define-values: bad syntax (has 0 parts after keyword)"
@@ -1243,7 +1243,7 @@
  "unit-from-context: nothing is permitted after export-spec"
  (unit-from-context s1 . s2))
 (test-syntax-error 
- "unit-from-context: bad export spec"
+ "unit-from-context: expected tagged export spec"
  (unit-from-context 1))
 
 (test-syntax-error 
@@ -1262,7 +1262,7 @@
  "define-unit-from-context: nothing is permitted after export-spec"
  (define-unit-from-context n s1 . s2))
 (test-syntax-error 
- "define-unit-from-context: bad export spec"
+ "define-unit-from-context: expected tagged export spec"
  (define-unit-from-context n 1))
 
 
@@ -1585,7 +1585,7 @@
   (define-values/invoke-unit/infer (export x-sig) v)
   x)
 (test-syntax-error 
- "define-values/invoke-unit/infer: no subunit exports signature y-sig"
+ "define-values/invoke-unit/infer: no subunit exports signature\n  at: y-sig"
  (define-values/invoke-unit/infer (export y-sig) (link u v)))
 
 (test-runtime-error exn? "x: undefined"
@@ -1593,7 +1593,7 @@
                       (define-values/invoke-unit/infer (export) (link u v))
                       x))
 (test-syntax-error 
- "define-values/invoke-unit/infer: no subunit exports signature y-sig"
+ "define-values/invoke-unit/infer: no subunit exports signature\n  at: y-sig"
  (define-values/invoke-unit/infer (export y-sig) v))
 (test-runtime-error exn?
                     "x: undefined"
@@ -2233,3 +2233,24 @@
   (define a1 1)
   (define a2 2)
   (test 1 (invoke-unit v (import a2^))))
+
+;; Test `invoke-unit` that imports a signature containing `struct` form
+(let ()
+  (define-signature point-struct^
+    [(struct point (x y))])
+  (define-signature point-ops^
+    [points-add])
+
+  (define-unit point-ops@
+    (import point-struct^)
+    (export point-ops^)
+    (define (points-add a b)
+      (point (+ (point-x a) (point-x b))
+             (+ (point-y a) (point-y b)))))
+
+  (let ()
+    (struct point (x y) #:transparent)
+    (define-values/invoke-unit point-ops@
+      (import point-struct^)
+      (export point-ops^))
+    (test (point 4 6) (points-add (point 1 2) (point 3 4)))))
