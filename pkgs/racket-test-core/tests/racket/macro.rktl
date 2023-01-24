@@ -3250,5 +3250,27 @@
  #rx"id: identifier used out of context")
 
 ;; ----------------------------------------
+;; check for `syntax-original?` of `module+`
+
+(for ([stx (list #'(module m racket/base (module+ m))
+                 #'(module m racket/base (module+ m) 0)
+                 #'(module m racket/base (module+ m 1))
+                 #'(module m racket/base (module+ m 1) (module+ m 2))
+                 #'(module m racket/base (module+ m 1) (module+ m 2) 0))])
+  (test #t 'module+original?
+        (let loop ([stx (expand stx)])
+          (cond
+            [(pair? stx)
+             (or (loop (car stx))
+                 (loop (cdr stx)))]
+            [(identifier? stx)
+             (and (syntax-original? stx)
+                  (eq? (syntax-e stx) 'module+))]
+            [(syntax? stx)
+             (or (loop (syntax-e stx))
+                 (loop (syntax-property stx 'origin)))]
+            [else #f]))))
+
+;; ----------------------------------------
 
 (report-errs)
