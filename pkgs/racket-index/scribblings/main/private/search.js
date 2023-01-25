@@ -244,7 +244,9 @@ function InitializeSearch() {
 
 function makeProtoSearchResult() {
   var proto_search_result = document.createElement('div');
-  proto_search_result.classList.add('search-result-wrapper');
+  proto_search_result.style.display = 'none';
+  proto_search_result.style.margin = '0.1em 0em';
+  proto_search_result.style.padding = '0.25em 1em';
   return proto_search_result;
 }
 
@@ -550,22 +552,6 @@ function MakeShowProgress() {
   };
 }
 
-function packageCompare(a, b) {
-  var a_is_base = a[4] === 'base';
-  var b_is_base = b[4] === 'base';
-  if (a_is_base && b_is_base) return 0;
-  if (a_is_base) return -1;
-  if (b_is_base) return 1;
-
-  var a_in_main = plt_main_dist_pkgs.indexOf(a[4]) >= 0;
-  var b_in_main = plt_main_dist_pkgs.indexOf(b[4]) >= 0;
-  if (a_in_main && b_in_main) return 0;
-  if (a_in_main) return -1;
-  if (b_in_main) return 1;
-
-  return 0;
-}
-
 function Search(data, term, is_pre, K) {
   // `K' is a continuation if this run is supposed to happen in a "thread"
   // false otherwise
@@ -603,11 +589,6 @@ function Search(data, term, is_pre, K) {
     }
     if (i<data.length) t = setTimeout(DoChunk,5);
     else {
-      i = 0;
-      for (i = 0; i < matches.length; i++) {
-        matches[i].sort(packageCompare);
-      }
-
       r = [matches[0].length, [].concat.apply([],matches)];
       if (K) K(r); else return r;
     }
@@ -777,28 +758,11 @@ function UpdateResults() {
         else
           href = href + link_args;
       }
-
       result_links[i].innerHTML =
-        '<div title="" class="search-result-row"><a href="' + href
-        + '" class="indexlink" tabIndex="2">'
-        + UncompactHtml(res[2]) + '</a>' + (note || "") + '</div>';
-      result_links[i].classList.remove(
-        'search-result-wrapper-pkg-base',
-        'search-result-wrapper-pkg-main-dist'
-      );
-      if (res[4] === 'base') {
-        result_links[i].classList.add('search-result-wrapper-pkg-base');
-        result_links[i].title = "from official Racket (base)";
-      } else if (plt_main_dist_pkgs.indexOf(res[4]) >= 0) {
-        result_links[i].classList.add('search-result-wrapper-pkg-main-dist');
-        result_links[i].title = "from official Racket (main-distribution)";
-      } else {
-        result_links[i].title = '';
-      }
-
-      result_links[i].firstChild.style.backgroundColor =
+        '<a href="' + href + '" class="indexlink" tabIndex="2">'
+        + UncompactHtml(res[2]) + '</a>' + (note || "");
+      result_links[i].style.backgroundColor =
         (n < exact_results_num) ? highlight_color : background_color;
-
       result_links[i].style.display = "block";
     } else {
       result_links[i].style.display = "none";
