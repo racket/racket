@@ -743,6 +743,7 @@
           unsafe-struct*-ref
           unsafe-struct*-set!
           unsafe-struct*-cas!
+          unsafe-struct*-type
           unsafe-struct?        ; not exported to racket
           unsafe-sealed-struct? ; not exported to racket
           unsafe-struct         ; not exported to racket

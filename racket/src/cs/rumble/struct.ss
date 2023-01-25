@@ -1221,6 +1221,8 @@
   (#3%record? v r))
 (define (unsafe-sealed-struct? v r)
   (#3%$sealed-record? v r))
+(define (unsafe-struct*-type s)
+  (#%$record-type-descriptor s))
 
 ;; internal use only, so doesn't need to have 'unsafe-struct as it's name, etc.:
 (define unsafe-struct #%$record)

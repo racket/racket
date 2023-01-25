@@ -514,6 +514,16 @@ is analogous to @racket[box-cas!] to perform an atomic compare-and-set.
 
 @history[#:changed "6.11.0.2" @elem{Added @racket[unsafe-struct*-cas!].}]}
 
+
+@defproc[(unsafe-struct*-type [v any/c]) struct-type?]{
+
+Similar to @racket[struct-info], but without an inspector check,
+returning only the first result, and without support for
+@tech{impersonators}.
+
+@history[#:added "8.8.0.3"]}
+
+
 @deftogether[(
 @defproc[(unsafe-mutable-hash-iterate-first
           [hash (and/c hash? (not/c immutable?) hash-strong?)])

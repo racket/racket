@@ -86,18 +86,21 @@
   (define (test-un result proc x
                    #:pre [pre void]
                    #:post [post identity]
-                   #:branch? [branch? #f])
+                   #:branch? [branch? #f]
+                   #:literal-ok? [lit-ok? #t])
     (pre)
     (test result (compose post (eval proc)) x)
     (pre)
     (test result (compose post (eval `(lambda (x) (,proc x)))) x)
-    (pre)
-    (test result (compose post (eval `(lambda () (,proc ',x)))))
+    (when lit-ok?
+      (pre)
+      (test result (compose post (eval `(lambda () (,proc ',x))))))
     (when branch?
       (pre)
       (test (if result 'y 'n) (compose post (eval `(lambda (x) (if (,proc x) 'y 'n)))) x)
-      (pre)
-      (test (if result 'y 'n) (compose post (eval `(lambda () (if (,proc ',x) 'y 'n)))))))
+      (when lit-ok?
+        (pre)
+        (test (if result 'y 'n) (compose post (eval `(lambda () (if (,proc ',x) 'y 'n))))))))
   (define (test-zero result proc
                      #:pre [pre void]
                      #:post [post identity])
@@ -722,7 +725,9 @@
                   '(lambda (p ov nv) (unsafe-struct*-cas! p 1 ov nv)) p 199 202
                   #:pre (lambda () (unsafe-struct*-set! p 1 200))
                   #:post (lambda (x) (list x (unsafe-struct*-ref p 1)))
-                  #:literal-ok? #f)))
+                  #:literal-ok? #f))
+      (let ([p (make-posn 100 200 300)])
+        (test-un struct:posn 'unsafe-struct*-type p #:literal-ok? #f)))
     (define-values (prop:nothing nothing? nothing-ref) (make-struct-type-property 'nothing))
     (try-struct prop:nothing 5)
     (try-struct prop:procedure (lambda (s) 'hi!)))

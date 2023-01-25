@@ -184,6 +184,7 @@
   [unsafe-struct*-cas! (known-procedure 16)]
   [unsafe-struct*-ref (known-procedure/succeeds 4)]
   [unsafe-struct*-set! (known-procedure/succeeds 8)]
+  [unsafe-struct*-type (known-procedure/succeeds 2)]
   [unsafe-struct-ref (known-procedure/succeeds 4)]
   [unsafe-struct-set! (known-procedure/succeeds 8)]
   [unsafe-thread-at-root (known-procedure 2)]
