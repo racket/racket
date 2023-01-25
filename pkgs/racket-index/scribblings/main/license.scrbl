@@ -132,6 +132,16 @@ The following are used in all Racket executables:
   The expression editor, like the rest of Chez Scheme, is licensed
   under the Apache License, version 2.0.
  }
+  @item{
+  Startup path support from LLVM @(linebreak)
+  The implementation of the C API function
+  @seclink[#:indirect? #t #:doc '(lib "scribblings/inside/inside.scrbl") "cs-self-exe"]{
+   @racketplainfont{racket_get_self_exe_path}} in Racket CS and related internal
+  functions in Racket BC includes code from the LLVM Project, which is licensed
+  under the Apache License, version 2.0, with
+  @hyperlink["https://spdx.org/licenses/LLVM-exception.html"]{LLVM exceptions}.
+  @when-repo{Code adapted from the LLVM Project can be found in @src-filepath{start/self_exe.inc}.}
+ }
  ]
 
 The following are used in all Racket executables for Windows:
@@ -291,7 +301,7 @@ with each package for information about the applicable licenses.
 @(if (eq? 'root mode)
      @list{
  Finally, this Git repository also contains (in the @racket["racket-benchmarks"]
- package) the following benchmarks based third-party code which are not part of
+ package) the following benchmarks based on third-party code which are not part of
  the standard Racket distribution:
 
  @itemlist[

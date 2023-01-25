@@ -56,6 +56,13 @@ The following are used in all Racket executables:
   editor, like the rest of Chez Scheme, is licensed under the Apache
   License, version 2.0.
 
+* Startup path support from LLVM
+  The implementation of the C API function racket_get_self_exe_path in
+  Racket CS and related internal functions in Racket BC includes code
+  from the LLVM Project, which is licensed under the Apache License,
+  version 2.0, with LLVM exceptions. Code adapted from the LLVM Project
+  can be found in "start/self_exe.inc".
+
 The following are used in all Racket executables for Windows:
 
 * MemoryModule
