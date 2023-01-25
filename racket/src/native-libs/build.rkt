@@ -155,6 +155,9 @@
 ;; Detect oblique before italic on Mac OS
 (define-runtime-path pango-preferoblique-patch "patches/pango-preferoblique.patch")
 
+;; Add `-lusp10` before `-lgdi32` to preserve support for Windows 7
+(define-runtime-path pango-usp10-patch "patches/pango-usp10.patch")
+
 ;; Needed when building with old GCC, such as 4.0:
 (define-runtime-path gmp-weak-patch "patches/gmp-weak.patch")
 
@@ -689,6 +692,9 @@
                                       null)
                                   (if (or mac? win?)
                                       (list pango-emoji-patch)
+                                      null)
+                                  (if (and win? (not aarch64?))
+                                      (list pango-usp10-patch)
                                       null)))]
     [("gmp") (config #:patches (cond
                                  [gcc-4.0?
