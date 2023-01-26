@@ -276,7 +276,7 @@
                                    [def-ctx-scopes #f]
                                    [post-expansion #:parent root-expand-context #f]))
   ;; Helper to expand and wrap the ending expressions in `begin`, if needed:
-  (define (finish-bodys)
+  (define (finish-bodys finish-ctx)
     (define last-i (sub1 (length done-bodys)))
     (log-expand body-ctx 'enter-list done-bodys)
     (define exp-bodys
@@ -295,7 +295,7 @@
          (null? disappeared-transformer-bindings))
     ;; No definitions, so just return the body list
     (log-expand finish-ctx 'block->list)
-    (finish-bodys)]
+    (finish-bodys finish-ctx)]
    [else
     (log-expand finish-ctx 'block->letrec val-idss val-rhss done-bodys)
     ;; Roughly, finish expanding the right-hand sides, finish the body
@@ -332,15 +332,16 @@
   (define phase (expand-context-phase ctx))
   (let loop ([idss idss] [keyss keyss] [rhss rhss] [track-stxs track-stxs]
              [accum-idss null] [accum-keyss null] [accum-rhss null] [accum-track-stxs null]
+             [ctx ctx]
              [track? track?] [get-list? #f])
     (cond
      [(null? idss)
       (cond
        [(and (null? accum-idss)
              get-list?)
-        (get-body)]
+        (get-body ctx)]
        [else
-        (define exp-body (get-body))
+        (define exp-body (get-body ctx))
         (define result-s
           (if (expand-context-to-parsed? ctx)
               (if (null? accum-idss)
@@ -372,11 +373,13 @@
        [(and (not local-or-forward-references?)
              split?)
         (unless (null? accum-idss) (error "internal error: accumulated ids not empty"))
-        (define exp-rest (loop (cdr idss) (cdr keyss) (cdr rhss) (cdr track-stxs)
+        (define-values (next-idss next-ctx) (create-binding-layer (cdr idss) (cdr keyss) ctx))
+        (define exp-rest (loop next-idss (cdr keyss) (cdr rhss) (cdr track-stxs)
                                null null null null
+                               next-ctx
                                #f #t))
         (define result-s
-          (if (expand-context-to-parsed? ctx)
+          (if (expand-context-to-parsed? next-ctx)
              (parsed-let-values (keep-properties-only s)
                                 (list ids)
                                 (list (list (car keyss) expanded-rhs))
@@ -390,11 +393,13 @@
         (if get-list? (list result-s) result-s)]
        [(and (not forward-references?)
              (or split? (null? (cdr idss))))
-        (define exp-rest (loop (cdr idss) (cdr keyss) (cdr rhss) (cdr track-stxs)
+        (define-values (next-idss next-ctx) (create-binding-layer (cdr idss) (cdr keyss) ctx))
+        (define exp-rest (loop next-idss (cdr keyss) (cdr rhss) (cdr track-stxs)
                                null null null null
+                               next-ctx
                                #f #t))
         (define result-s
-         (if (expand-context-to-parsed? ctx)
+         (if (expand-context-to-parsed? next-ctx)
              (parsed-letrec-values (keep-properties-only s)
                                    (reverse (cons ids accum-idss))
                                    (reverse
@@ -414,7 +419,37 @@
         (loop (cdr idss) (cdr keyss) (cdr rhss) (cdr track-stxs)
               (cons ids accum-idss) (cons (car keyss) accum-keyss)
               (cons expanded-rhs accum-rhss) (cons track-stx accum-track-stxs)
+              ctx
               track? get-list?)])])))
+
+(define (create-binding-layer idss keyss ctx)
+  (cond
+    [(or (expand-context-to-parsed? ctx)
+         (null? idss))
+     (values idss ctx)]
+    [else
+     ;; In case of expansion to a syntax object, we need to create a
+     ;; scope to reflect a new `let[rec]-values` context, otherwise
+     ;; re-expansion can lead to ambiguous bindings. The scope is
+     ;; added to the binding of subsequent identifiers in the expanded
+     ;; form, and we want the extra scope to show up on the expanded
+     ;; form of a reference to those variables; so, update the
+     ;; environment's mapping for the local-binding key to have the
+     ;; identifier with extra scopes.
+     (define sc (new-scope 'local))
+     (define new-idss (for/list ([ids (in-list idss)])
+                        (for/list ([id (in-list ids)])
+                          (add-scope id sc))))
+     (define env (expand-context-env ctx))
+     (define new-env (for/fold ([env env]) ([new-ids (in-list new-idss)]
+                                            [keys (in-list keyss)]
+                                            #:when #t
+                                            [new-id (in-list new-ids)]
+                                            [key (in-list keys)])
+                       (env-extend env key (local-variable new-id))))
+     (values new-idss
+             (struct*-copy expand-context ctx
+                           [env new-env]))]))
 
 (define (build-clauses accum-idss accum-rhss accum-track-stxs)
   (map build-clause

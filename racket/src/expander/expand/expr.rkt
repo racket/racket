@@ -308,7 +308,7 @@
                                   (datum->syntax #f (syntax-e val-id) val-id val-id)))
                               val-idss))
 
-    (define (get-body)
+    (define (get-body rec-ctx)
       (cond
         [(expand-context-parsing-expanded? ctx)
          (for/list ([body (in-list bodys)])
@@ -332,7 +332,7 @@
              (if (expand-context-to-parsed? ctx)
                  (list keys exp-rhs)
                  (datum->syntax #f `[,ids ,exp-rhs] clause clause))))
-         (define exp-body (get-body))
+         (define exp-body (get-body rec-ctx))
          (when frame-id
            (reference-record-clear! frame-id))
          (if (expand-context-to-parsed? ctx)
@@ -764,11 +764,14 @@
             (check-top-binding-is-variable ctx binding var-id s)]))
        (define (substitute-vr-rename)
          (cond
-           [from-rename?
+           [(or from-rename?
+                (local-variable? t))
             (define vr-id (if (id-m)
                               (id-m '#%variable-reference)
                               (top-m '#%variable-reference)))
-            (datum->syntax s (list vr-id var-id) s s)]
+            (define s-var-id (substitute-variable var-id t #:no-stops? (free-id-set-empty-or-just-module*?
+                                                                        (expand-context-stops ctx))))
+            (datum->syntax s (list vr-id s-var-id) s s)]
            [else s]))
        (cond
          [(expand-context-to-parsed? ctx)

@@ -3271,6 +3271,62 @@
                  (loop (syntax-property stx 'origin)))]
             [else #f]))))
 
+
+;; ----------------------------------------
+;; check that conversion of `defines` to nested `let-synatx`
+;; re-expands correctly
+
+(module reexpand-should-not-be-confused-by-internal-definition-to-nested-lets racket/base
+  (require (for-syntax racket/base))
+
+  (define-syntax (re-expand stx)
+    (syntax-case stx ()
+      [(_ e)
+       (local-expand #'e 'expression null)]))
+
+  (#%expression
+   (re-expand
+    (let ()
+      (define-syntax-rule (m y)
+        (begin
+          (define x 'a)
+          (define y 'b)
+          (println x)))
+      (m x)
+      (println x)))))
+
+(module reexpand-should-not-be-confused-by-internal-definition-to-nested-letrec racket/base
+  (require (for-syntax racket/base))
+
+  (define-syntax (re-expand stx)
+    (syntax-case stx ()
+      [(_ e)
+       (local-expand #'e 'expression null)]))
+
+  (#%expression
+   (re-expand
+    (let ()
+      (define (call) 'ok)
+      (define (step) (return))
+      (define (return) 'done)
+      step))))
+
+(module reexpand-should-not-be-confused-by-keyword-arguments-either racket/base
+  (require (for-syntax racket/base))
+
+  (define-syntax (re-expand stx)
+    (syntax-case stx ()
+      [(_ e)
+       (local-expand #'e 'expression null)]))
+
+  (#%expression
+   (re-expand
+    (let ()
+      (define (call) 'ok)
+      (define (step) (return #:arg 1))
+      (define (return #:arg x) 'done)
+      step))))
+
 ;; ----------------------------------------
 
 (report-errs)
