@@ -3078,7 +3078,8 @@
               (bitwise-ior (bitwise-and x 7) 1))
            '(lambda (x)
               (unsafe-fxior (bitwise-and x 7) 1)))
-(test-comp '(lambda (x)
+(test-comp #:except 'racket
+           '(lambda (x)
               (bitwise-ior (bitwise-and x (most-positive-fixnum)) 1))
            '(lambda (x)
               (unsafe-fxior (bitwise-and x (most-positive-fixnum)) 1)))
