@@ -414,5 +414,28 @@
 (err/rt-test (fl->fx -4.611686018427389e+18))
 
 ;; ----------------------------------------
+;; Regression tests related to `bitwise-and` and `bitwise-ior` return-type
+;; optimization for `fixnum?`
+
+(test #t
+      (lambda (a) (fixnum? (bitwise-and a 7)))
+      (- (random 1) 1))
+(test #t
+      (lambda (a) (fixnum? (bitwise-and a (most-positive-fixnum))))
+      (- (random 1) 1))
+(test #f
+      (lambda (a) (fixnum? (bitwise-and a (add1 (most-positive-fixnum)))))
+      (- (random 1) 1))
+(test #t
+      (lambda (a) (fixnum? (bitwise-ior -7 a)))
+      (random 1))
+(test #t
+      (lambda (a) (fixnum? (bitwise-ior (most-negative-fixnum) a)))
+      (random 1))
+(test #f
+      (lambda (a) (fixnum? (bitwise-ior (sub1 (most-negative-fixnum)) a)))
+      (random 1))
+
+;; ----------------------------------------
 
 (report-errs)
