@@ -3072,26 +3072,50 @@
            #f)
 
 ;; Make sure that `bitwise-and` is known to return a fixnum for non-negative
-;; fixnum arguments but not for a negative one
+;; fixnum arguments but not for a negative one or a large positive big-integer
 
 (test-comp '(lambda (x)
               (bitwise-ior (bitwise-and x 7) 1))
            '(lambda (x)
               (unsafe-fxior (bitwise-and x 7) 1)))
+(test-comp #:except 'racket
+           '(lambda (x)
+              (bitwise-ior (bitwise-and x (most-positive-fixnum)) 1))
+           '(lambda (x)
+              (unsafe-fxior (bitwise-and x (most-positive-fixnum)) 1)))
 (test-comp '(lambda (x)
               (bitwise-ior (bitwise-and x -7) 1))
            '(lambda (x)
               (unsafe-fxior (bitwise-and x -7) 1))
            #f)
+(test-comp '(lambda (x)
+              (bitwise-ior (bitwise-and x (add1 (most-positive-fixnum))) 1))
+           '(lambda (x)
+              (unsafe-fxior (bitwise-and x (add1 (most-positive-fixnum))) 1))
+           #f)
+
+;; Make sure `bitwise-ior` is known to return a fixnum for negative fixnum
+;; arguments but not for a zero or positive one, or large negative big-integer
+
 (test-comp #:except 'racket
            '(lambda (x)
               (bitwise-ior (bitwise-ior x -7) 1))
            '(lambda (x)
               (unsafe-fxior (bitwise-ior x -7) 1)))
+(test-comp #:except 'racket
+           '(lambda (x)
+              (bitwise-ior (bitwise-ior x (most-negative-fixnum)) 1))
+           '(lambda (x)
+              (unsafe-fxior (bitwise-ior x (most-negative-fixnum)) 1)))
 (test-comp '(lambda (x)
               (bitwise-ior (bitwise-ior x 7) 1))
            '(lambda (x)
               (unsafe-fxior (bitwise-ior x 7) 1))
+           #f)
+(test-comp '(lambda (x)
+              (bitwise-ior (bitwise-ior x (sub1 (most-negative-fixnum))) 1))
+           '(lambda (x)
+              (unsafe-fxior (bitwise-ior x (sub1 (most-negative-fixnum))) 1))
            #f)
 
 (test-comp `(lambda (x)
