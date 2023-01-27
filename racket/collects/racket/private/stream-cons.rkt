@@ -22,10 +22,13 @@
 (require (prefix-in for: racket/private/for))
 
 (provide stream-null stream-cons stream? stream-null? stream-pair?
-         stream-car stream-cdr stream-lambda stream-lazy stream-force)
+         stream-car stream-cdr stream-lambda stream-lazy stream-force
+         unpack-multivalue thunk->multivalue)
+
+(struct multivalue (content))
 
 ;; An eagerly constructed stream has a lazy first element, and
-;; normaly its rest is a lazily constructed stream.
+;; normally its rest is a lazily constructed stream.
 (define-struct eagerly-created-stream ([first-forced? #:mutable] [first #:mutable] rest)
   #:reflection-name 'stream
   #:property for:prop:stream (vector
@@ -100,18 +103,30 @@
     [(for:stream? s) s]
     [else (raise-argument-error 'stream-force "stream?" s)]))
 
-;; Forces the first element of an eagerly consttructed stream
+(define (unpack-multivalue v)
+  (cond
+    [(multivalue? v) (apply values (multivalue-content v))]
+    [else v]))
+
+(define (thunk->multivalue thk)
+  (call-with-values
+   thk
+   (case-lambda
+     [(v) v]
+     [vs (multivalue vs)])))
+
+;; Forces the first element of an eagerly constructed stream
 (define (stream-force-first p)
   (cond
     [(eagerly-created-stream-first-forced? p)
-     (eagerly-created-stream-first p)]
+     (unpack-multivalue (eagerly-created-stream-first p))]
     [else
      (define thunk (eagerly-created-stream-first p))
      (set-eagerly-created-stream-first! p reentrant-error)
-     (define v (thunk))
+     (define v (thunk->multivalue thunk))
      (set-eagerly-created-stream-first! p v)
      (set-eagerly-created-stream-first-forced?! p #t)
-     v]))
+     (unpack-multivalue v)]))
 
 (define-syntax stream-lambda
  (syntax-rules ()
@@ -130,13 +145,13 @@
      (eagerly-created-stream #f (lambda () obj)
                              (lazily-created-stream #t (lambda () strm))))
     ((stream-cons #:eager obj strm)
-     (eagerly-created-stream #t obj
+     (eagerly-created-stream #t (thunk->multivalue (lambda () obj))
                              (lazily-created-stream #t (lambda () strm))))
     ((stream-cons obj #:eager strm)
      (eagerly-created-stream #f (lambda () obj)
                              (stream-assert strm)))
     ((stream-cons #:eager obj #:eager strm)
-     (eagerly-created-stream #t obj
+     (eagerly-created-stream #t (thunk->multivalue (lambda () obj))
                              (stream-assert strm)))))
 
 (define (stream-assert v)

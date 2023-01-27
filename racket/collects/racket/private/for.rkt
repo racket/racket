@@ -1345,7 +1345,7 @@
 
   (define (sequence->stream s)
     (unless (sequence? s)
-      (raise-argument-error 'sequence-generate "sequence?" s))
+      (raise-argument-error 'sequence->stream "sequence?" s))
     (cond
       [(stream? s) s]
       [else
