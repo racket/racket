@@ -5,6 +5,20 @@
          racket/set
          rackunit)
 
+(test-case "equal-hash-code reshuffle"
+  ;; [A, B] != [B, A]
+  (check-not-equal? (equal-hash-code (hash 0 1))
+                    (equal-hash-code (hash 1 0)))
+  ;; {[A, B], C} != {[A, C], B}
+  ;; {{A: B}, {C: D}} != {{A: D}, {C: B}}
+  (check-not-equal? (equal-hash-code (hash (hash 0 2) #true (hash 1 3) #true))
+                    (equal-hash-code (hash (hash 0 3) #true (hash 1 2) #true)))
+  (check-not-equal? (equal-hash-code (set (hash 0 2) (hash 1 3)))
+                    (equal-hash-code (set (hash 0 3) (hash 1 2))))
+  ;; [A, [B]] != [B, [A]]
+  (check-not-equal? (equal-hash-code (list 1 (list 2)))
+                    (equal-hash-code (list 2 (list 1)))))
+
 (test-case "unary hash-code-combine, aka 'mix-hash-code'"
   (check-equal? (hash-code-combine (equal-hash-code 'A))
                 (hash-code-combine (equal-hash-code 'A)))
