@@ -1,6 +1,7 @@
 #lang scribble/manual
 @(require (only-in scribblings/style/shared compare0)
-          "mz.rkt")
+          "mz.rkt"
+          (for-label racket/hash-code))
 
 
 @title{Equality}
@@ -632,3 +633,180 @@ and only access mutable data when the mode is true:
           (rec (mcell-value self))))])
 ]
 ]
+
+@section{Combining Hash Codes}
+
+@note-lib-only[racket/hash-code]
+
+@defproc[(hash-code-combine [hc exact-integer?] ...) fixnum?]{
+  Combines the @racket[hc]s into a @tech{hash code} that
+  depends on the order of the inputs.
+  Useful for combining the hash codes of different fields in
+  a structure.
+
+  @examples[
+    (require racket/hash-code)
+    (struct ordered-triple (fst snd thd)
+      #:methods gen:equal+hash
+      [(define (equal-proc self other rec)
+         (and (rec (ordered-triple-fst self) (ordered-triple-fst other))
+              (rec (ordered-triple-snd self) (ordered-triple-snd other))
+              (rec (ordered-triple-thd self) (ordered-triple-thd other))))
+       (define (hash-proc self rec)
+         (hash-code-combine (eq-hash-code struct:ordered-triple)
+                            (rec (ordered-triple-fst self))
+                            (rec (ordered-triple-snd self))
+                            (rec (ordered-triple-thd self))))
+       (define (hash2-proc self rec)
+         (hash-code-combine (eq-hash-code struct:ordered-triple)
+                            (rec (ordered-triple-fst self))
+                            (rec (ordered-triple-snd self))
+                            (rec (ordered-triple-thd self))))])
+    (equal? (ordered-triple 'A 'B 'C) (ordered-triple 'A 'B 'C))
+    (= (equal-hash-code (ordered-triple 'A 'B 'C))
+       (equal-hash-code (ordered-triple 'A 'B 'C)))
+    (equal? (ordered-triple 'A 'B 'C) (ordered-triple 'C 'B 'A))
+    (= (equal-hash-code (ordered-triple 'A 'B 'C))
+       (equal-hash-code (ordered-triple 'C 'B 'A)))
+    (equal? (ordered-triple 'A 'B 'C) (ordered-triple 'C 'A 'B))
+    (= (equal-hash-code (ordered-triple 'A 'B 'C))
+       (equal-hash-code (ordered-triple 'C 'A 'B)))
+  ]
+
+  With one argument, @racket[(hash-code-combine hc)] mixes
+  the hash code so that it isn't just @racket[hc].
+
+  @examples[
+    (require racket/hash-code)
+    (struct wrap (value)
+      #:methods gen:equal+hash
+      [(define (equal-proc self other rec)
+         (rec (wrap-value self) (wrap-value other)))
+       (define (hash-proc self rec)
+         (code:comment "demonstrates `hash-code-combine` with only one argument")
+         (code:comment "but it's good to combine `(eq-hash-code struct:wrap)` too")
+         (hash-code-combine (rec (wrap-value self))))
+       (define (hash2-proc self rec)
+         (hash-code-combine (rec (wrap-value self))))])
+    (equal? (wrap 'A) (wrap 'A))
+    (= (equal-hash-code (wrap 'A))
+       (equal-hash-code (wrap 'A)))
+    (equal? (wrap 'A) 'A)
+    (= (equal-hash-code (wrap 'A))
+       (equal-hash-code 'A))
+  ]
+}
+
+@defproc[(hash-code-combine-unordered [hc exact-integer?] ...) fixnum?]{
+  Combines the @racket[hc]s into a @tech{hash code} that
+  @emph{does not} depend on the order of the inputs.
+  Useful for combining the hash codes of elements of an
+  unordered set.
+
+  @examples[
+    (require racket/hash-code)
+    (struct flip-triple (left mid right)
+      #:methods gen:equal+hash
+      [(define (equal-proc self other rec)
+         (and (rec (flip-triple-mid self) (flip-triple-mid other))
+              (or
+               (and (rec (flip-triple-left self) (flip-triple-left other))
+                    (rec (flip-triple-right self) (flip-triple-right other)))
+               (and (rec (flip-triple-left self) (flip-triple-right other))
+                    (rec (flip-triple-right self) (flip-triple-left other))))))
+       (define (hash-proc self rec)
+         (hash-code-combine (eq-hash-code struct:flip-triple)
+                            (rec (flip-triple-mid self))
+                            (hash-code-combine-unordered
+                             (rec (flip-triple-left self))
+                             (rec (flip-triple-right self)))))
+       (define (hash2-proc self rec)
+         (hash-code-combine (eq-hash-code struct:flip-triple)
+                            (rec (flip-triple-mid self))
+                            (hash-code-combine-unordered
+                             (rec (flip-triple-left self))
+                             (rec (flip-triple-right self)))))])
+    (equal? (flip-triple 'A 'B 'C) (flip-triple 'A 'B 'C))
+    (= (equal-hash-code (flip-triple 'A 'B 'C))
+       (equal-hash-code (flip-triple 'A 'B 'C)))
+    (equal? (flip-triple 'A 'B 'C) (flip-triple 'C 'B 'A))
+    (= (equal-hash-code (flip-triple 'A 'B 'C))
+       (equal-hash-code (flip-triple 'C 'B 'A)))
+    (equal? (flip-triple 'A 'B 'C) (flip-triple 'C 'A 'B))
+    (= (equal-hash-code (flip-triple 'A 'B 'C))
+       (equal-hash-code (flip-triple 'C 'A 'B)))
+    (struct rotate-triple (rock paper scissors)
+      #:methods gen:equal+hash
+      [(define (equal-proc self other rec)
+         (or
+          (and (rec (rotate-triple-rock self) (rotate-triple-rock other))
+               (rec (rotate-triple-paper self) (rotate-triple-paper other))
+               (rec (rotate-triple-scissors self) (rotate-triple-scissors other)))
+          (and (rec (rotate-triple-rock self) (rotate-triple-paper other))
+               (rec (rotate-triple-paper self) (rotate-triple-scissors other))
+               (rec (rotate-triple-scissors self) (rotate-triple-rock other)))
+          (and (rec (rotate-triple-rock self) (rotate-triple-scissors other))
+               (rec (rotate-triple-paper self) (rotate-triple-rock other))
+               (rec (rotate-triple-scissors self) (rotate-triple-paper other)))))
+       (define (hash-proc self rec)
+         (define r (rec (rotate-triple-rock self)))
+         (define p (rec (rotate-triple-paper self)))
+         (define s (rec (rotate-triple-scissors self)))
+         (hash-code-combine
+          (eq-hash-code struct:rotate-triple)
+          (hash-code-combine-unordered
+           (hash-code-combine r p)
+           (hash-code-combine p s)
+           (hash-code-combine s r))))
+       (define (hash2-proc self rec)
+         (define r (rec (rotate-triple-rock self)))
+         (define p (rec (rotate-triple-paper self)))
+         (define s (rec (rotate-triple-scissors self)))
+         (hash-code-combine
+          (eq-hash-code struct:rotate-triple)
+          (hash-code-combine-unordered
+           (hash-code-combine r p)
+           (hash-code-combine p s)
+           (hash-code-combine s r))))])
+    (equal? (rotate-triple 'A 'B 'C) (rotate-triple 'A 'B 'C))
+    (= (equal-hash-code (rotate-triple 'A 'B 'C))
+       (equal-hash-code (rotate-triple 'A 'B 'C)))
+    (equal? (rotate-triple 'A 'B 'C) (rotate-triple 'C 'B 'A))
+    (= (equal-hash-code (rotate-triple 'A 'B 'C))
+       (equal-hash-code (rotate-triple 'C 'B 'A)))
+    (equal? (rotate-triple 'A 'B 'C) (rotate-triple 'C 'A 'B))
+    (= (equal-hash-code (rotate-triple 'A 'B 'C))
+       (equal-hash-code (rotate-triple 'C 'A 'B)))
+  ]
+}
+
+@defproc[(hash-code-combine* [hc exact-integer?] ...
+                             [hcs (listof exact-integer?)])
+         fixnum?]{
+  @; Note: this is exactly the same description as append* and string-append*
+
+  Like @racket[hash-code-combine], but the last argument is
+  used as a list of arguments for @racket[hash-code-combine],
+  so @racket[(hash-code-combine* hc ... hcs)] is the same as
+  @racket[(apply hash-code-combine hc ... hcs)].
+  In other words, the relationship between
+  @racket[hash-code-combine] and @racket[hash-code-combine*]
+  is similar to the one between @racket[list] and
+  @racket[list*].
+}
+
+@defproc[(hash-code-combine-unordered* [hc exact-integer?] ...
+                                       [hcs (listof exact-integer?)])
+         fixnum?]{
+  @; Note: this is exactly the same description as append* and string-append*
+
+  Like @racket[hash-code-combine-unordered], but the last
+  argument is used as a list of arguments for
+  @racket[hash-code-combine-unordered], so
+  @racket[(hash-code-combine-unordered* hc ... hcs)] is the same
+  as @racket[(apply hash-code-combine-unordered hc ... hcs)].
+  In other words, the relationship between
+  @racket[hash-code-combine-unordered] and
+  @racket[hash-code-combine-unordered*] is similar to the
+  one between @racket[list] and @racket[list*].
+}
