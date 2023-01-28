@@ -473,6 +473,27 @@
       (match vec
         [(vector a _ ..7) (if (equal? (s:mutable-set 0) touched-indices) 'ok 'fail)])))
 
+   (comp
+    '(12 14 24 26)
+    (let ()
+      (define vec (vector 12 14 16 18 20 22 24 26))
+      (match vec
+        [(vector a b _ ... c d) (list a b c d)])))
+
+   (comp
+    '(12 14)
+    (let ()
+      (define vec (vector 12 14 16 18 20 22 24 26))
+      (match vec
+        [(vector a b _ ...) (list a b)])))
+
+   (comp
+    '(24 26)
+    (let ()
+      (define vec (vector 12 14 16 18 20 22 24 26))
+      (match vec
+        [(vector _ ... c d) (list c d)])))
+
    (comp 1
          (match #&1
            [(box a) a]
