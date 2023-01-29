@@ -5,8 +5,7 @@
          (submod racket/unit compat)
          (for-syntax racket/base
                      racket/syntax
-                     racket/private/unit-compiletime
-                     racket/private/unit-syntax))
+                     racket/private/unit/exptime/util))
 
 (provide (rename-out [module-begin #%module-begin]
                      [struct~s struct])

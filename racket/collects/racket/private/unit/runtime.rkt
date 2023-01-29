@@ -2,17 +2,9 @@
 
 (require (for-syntax racket/base
                      racket/syntax
-                     "unit-syntax.rkt"))
-(provide define-syntax/err-param
-         (rename-out [make-a-unit make-unit]) unit-import-sigs unit-export-sigs unit-go unit? unit-deps
-         check-unit check-no-imports check-sigs check-deps check-helper)
-  
-(define-syntax define-syntax/err-param
-  (syntax-rules ()
-    ((_ (name arg) body ...)
-     (define-syntax (name arg)
-       (parameterize ((current-syntax-context arg))
-         body ...)))))
+                     "exptime/syntax.rkt"))
+(provide (rename-out [make-a-unit make-unit]) unit? unit-import-sigs unit-export-sigs unit-go unit-deps
+         unit-export check-unit check-no-imports check-sigs check-deps check-helper)
 
 ;; for named structures
 (define insp (current-inspector))
@@ -72,6 +64,20 @@
         (string->symbol (format "unit:~a" name)))
        make-unit)
    num-imports exports deps go))
+
+;; Helper for building the export table
+(define-syntax (unit-export stx)
+  (syntax-case stx ()
+    [(_ ((esig ...) elocs) ...)
+     (with-syntax (((((k . v) ...) ...)
+                    (map 
+                     (lambda (esigs eloc)
+                       (map
+                        (lambda (esig) (cons esig eloc))
+                        (syntax->list esigs)))
+                     (syntax->list #'((esig ...) ...))
+                     (syntax->list #'(elocs ...)))))
+       #'(make-immutable-hash (list (cons k v) ... ...)))]))
 
 ;; check-unit : X symbol -> 
 ;; ensure that u is a unit value

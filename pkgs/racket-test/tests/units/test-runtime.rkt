@@ -1,7 +1,7 @@
 #lang racket/load
 
 (require "test-harness.rkt"
-         racket/private/unit-runtime)
+         racket/private/unit/runtime)
 
 ;; check-unit
 (test-runtime-error exn:fail:contract?
