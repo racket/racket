@@ -55,7 +55,13 @@ whose positions are initialized with the given @racket[char]s.
 @defproc[(string->immutable-string [str string?]) (and/c string? immutable?)]{
 Returns an immutable string with the same content as
  @racket[str], returning @racket[str] itself if @racket[str] is
- immutable.}
+ immutable.
+
+@mz-examples[
+(immutable? (string #\H #\e #\l #\l #\o #\R #\a #\c #\k #\e #\t))
+(immutable? (string->immutable-string (string #\H #\e #\l #\l #\o #\R #\a #\c #\k #\e #\t)))
+]
+}
 
 
 @defproc[(string-length [str string?]) exact-nonnegative-integer?]{
@@ -353,16 +359,36 @@ _i)] is the character produced by @racket[(proc _i)].
 string that is the Unicode normalized form D of @racket[string]. If
 the given string is already in the corresponding Unicode normal form,
 the string may be returned directly as the result (instead of a newly
-allocated string).}
+allocated string).
+
+@mz-examples[
+(equal? (string-normalize-nfd "Ç") "C\u0327")
+]
+}
 
 @defproc[(string-normalize-nfkd [string string?]) string?]{ Like
- @racket[string-normalize-nfd], but for normalized form KD.}
+ @racket[string-normalize-nfd], but for normalized form KD.
+
+@mz-examples[
+(equal? (string-normalize-nfkd "ℌ") "H")
+]
+}
 
 @defproc[(string-normalize-nfc [string string?]) string?]{ Like
- @racket[string-normalize-nfd], but for normalized form C.}
+ @racket[string-normalize-nfd], but for normalized form C.
+
+@mz-examples[
+(equal? (string-normalize-nfc "C\u0327") "Ç")
+]
+}
 
 @defproc[(string-normalize-nfkc [string string?]) string?]{ Like
- @racket[string-normalize-nfd], but for normalized form KC.}
+ @racket[string-normalize-nfd], but for normalized form KC.
+
+@mz-examples[
+(equal? (string-normalize-nfkc "ℋ̧") "Ḩ")
+]
+}
 
 @; ----------------------------------------
 @section{Locale-Specific String Operations}
