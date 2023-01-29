@@ -692,6 +692,8 @@
 
 # define USE_UNDERSCORE_SETJMP
 
+# define LIMIT_POLL_FREQUENCY_BY_MONOTONIC_TIME
+
 #ifndef XONX
 # define MACOS_UNICODE_SUPPORT
 #endif
@@ -1202,6 +1204,10 @@
  /* FFI_CALLBACK_NEED_INT_CLEAR indiates thet libffi callback results
     that are smaller than an `int' should clear `int'-sized space
     in the result area. */
+
+ /* LIMIT_POLL_FREQUENCY_BY_MONOTONIC_TIME indicates that getting
+    monotonic time is much faster than polling, so it makes sense
+    to check monotonic time to limit polling frequency. */
 
 #endif  /* FLAGS_ALREADY_SET */
 

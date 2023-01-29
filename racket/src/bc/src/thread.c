@@ -25,6 +25,7 @@
 #ifdef USE_STACKAVAIL
 # include <malloc.h>
 #endif
+#include <math.h>
 
 #ifndef SIGNMZTHREAD
 # define SIGMZTHREAD SIGUSR2
@@ -109,6 +110,8 @@ THREAD_LOCAL_DECL(static intptr_t max_gc_pre_used_bytes);
 THREAD_LOCAL_DECL(static int num_major_garbage_collections);
 THREAD_LOCAL_DECL(static int num_minor_garbage_collections);
 THREAD_LOCAL_DECL(static intptr_t max_code_page_total);
+
+THREAD_LOCAL_DECL(static double last_sema_poll_msecs);
 
 #ifndef MZ_PRECISE_GC
 static intptr_t gc_pre_used_bytes;
@@ -4075,9 +4078,18 @@ static int check_fd_semaphores()
   int did = 0;
   void *p;
   Scheme_Object *sema;
+  double now_msecs;
 
   if (!scheme_semaphore_fd_set)
     return 0;
+
+#ifdef LIMIT_POLL_FREQUENCY_BY_MONOTONIC_TIME
+  /* limit how frequently we poll */
+  now_msecs = rktio_get_inexact_monotonic_milliseconds(scheme_rktio);
+  if (now_msecs <= ceil(last_sema_poll_msecs))
+    return 0;
+  last_sema_poll_msecs = now_msecs;
+#endif
 
   rktio_ltps_poll(scheme_rktio, scheme_semaphore_fd_set);
   

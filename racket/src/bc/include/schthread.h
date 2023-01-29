@@ -194,6 +194,7 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Object *scheme_orig_stderr_port_;
   struct Scheme_Object *scheme_orig_stdin_port_;
   struct rktio_ltps_t *scheme_semaphore_fd_set_;
+  double last_sema_poll_msecs_;
   struct Scheme_Object *fs_change_props_;
   struct Scheme_Custodian *new_port_cust_;
   char *read_string_byte_buffer_;
@@ -582,6 +583,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define scheme_orig_stderr_port XOA (scheme_get_thread_local_variables()->scheme_orig_stderr_port_)
 #define scheme_orig_stdin_port XOA (scheme_get_thread_local_variables()->scheme_orig_stdin_port_)
 #define scheme_semaphore_fd_set XOA (scheme_get_thread_local_variables()->scheme_semaphore_fd_set_)
+#define last_sema_poll_msecs XOA (scheme_get_thread_local_variables()->last_sema_poll_msecs_)
 #define fs_change_props XOA (scheme_get_thread_local_variables()->fs_change_props_)
 #define new_port_cust XOA (scheme_get_thread_local_variables()->new_port_cust_)
 #define read_string_byte_buffer XOA (scheme_get_thread_local_variables()->read_string_byte_buffer_)
