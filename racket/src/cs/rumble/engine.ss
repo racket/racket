@@ -141,7 +141,7 @@
     (let ([complete-or-expire (current-engine-complete-or-expire)]
           [cell-state (current-engine-cell-state)]
           [remain-ticks (let ([n (set-timer 0)])
-                          (if timeout? n 0))])
+                          (if timeout? 0 n))])
       (unless complete-or-expire
         (error 'engine-block "not currently running an engine"))
       (start-implicit-uninterrupted 'engine-block)
