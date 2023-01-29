@@ -1,8 +1,9 @@
 #lang racket/base
 
 (require racket/syntax
-         "private/unit-syntax.rkt"
-         "private/unit-compiletime.rkt")
+         "private/unit/exptime/signature.rkt"
+         "private/unit/exptime/unit-infer.rkt"
+         "private/unit/exptime/util.rkt")
 
 (provide unit-static-signatures
          unit-static-init-dependencies

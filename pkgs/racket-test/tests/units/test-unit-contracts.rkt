@@ -27,6 +27,11 @@
     [else (error 'test-contract-error
                  (format "no specific error in message: \"~a\"" msg))]))
 
+(define-syntax (with-inferred-name stx)
+  (syntax-case stx ()
+    [(_ name expr)
+     (syntax-property #'expr 'inferred-name (syntax-e #'name))]))
+
 (define-syntax-rule (test-contract-error blame obj err expr)
   (test-contract-error/regexp
    (regexp-quote blame) (regexp-quote obj) (regexp-quote err)
@@ -41,7 +46,7 @@
                          (and (match-blame blame msg)
                               (match-obj obj msg)
                               (regexp-match? err msg)))))
-                (λ () expr)))))
+                (λ () (with-inferred-name contract-test expr))))))
 
 (define-signature sig1
   ((contracted [x number?])))
@@ -227,7 +232,7 @@
 (let ()
   (define x 0)
   (define f (lambda (x) #t))
-  (test-contract-error "(unit u)" "f" "number?"
+  (test-contract-error "(unit contract-test)" "f" "number?"
     (invoke-unit unit10 (import sig1 sig2))))
 
 (let ()

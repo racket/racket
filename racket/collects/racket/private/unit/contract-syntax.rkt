@@ -1,10 +1,10 @@
 #lang racket/base
 
 (require syntax/parse
-         "unit-compiletime.rkt"
-         "unit-keywords.rkt"
-         racket/contract
-         (for-template "unit-keywords.rkt" racket/base racket/contract))
+         "exptime/signature.rkt"
+         (for-template "keywords.rkt"
+                       racket/base
+                       racket/contract))
 
 (provide import-clause/contract export-clause/contract body-clause/contract dep-clause optional-dep-clause
          import-clause/c export-clause/c body-clause/c)

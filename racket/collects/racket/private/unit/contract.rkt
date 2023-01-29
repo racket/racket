@@ -2,17 +2,17 @@
 
 (require (for-syntax racket/base
                      racket/syntax
-                     syntax/boundmap
+                     syntax/id-table
                      syntax/name
                      syntax/parse
-                     "unit-compiletime.rkt"
-                     "unit-contract-syntax.rkt"
-                     "unit-syntax.rkt")
+                     "exptime/import-export.rkt"
+                     "exptime/signature.rkt"
+                     "contract-syntax.rkt")
          (for-meta 2 racket/base)
          racket/contract/base
          racket/contract/combinator
-         "unit-utils.rkt"
-         "unit-runtime.rkt")
+         "runtime.rkt"
+         "util.rkt")
 
 (provide (for-syntax unit/c/core) unit/c)
 
@@ -48,11 +48,10 @@
             vref)))
     (for ([sig (in-list sigs)]
           [tag (in-list tags)])
-      (define def-table (hash-ref! def-tables tag make-bound-identifier-mapping))
+      (define def-table (hash-ref! def-tables tag make-bound-id-table))
       (define v #`(hash-ref #,table-stx #,(siginfo->key-expr (signature-siginfo sig) tag)))
       (for ([(int/ext-name index) (in-indexed (in-list (signature-vars sig)))])
-        (bound-identifier-mapping-put! def-table (car int/ext-name)
-                                       #`(vector-ref #,v #,index))))
+        (bound-id-table-set! def-table (car int/ext-name) #`(vector-ref #,v #,index))))
     (with-syntax ((((eloc ...) ...)
                    (for/list ([target-sig (in-list sigs)]
                               [target-tag (in-list tags)])
@@ -61,8 +60,8 @@
                        (for/list ([target-int/ext-name (in-list (signature-vars target-sig))]
                                   [sig-ctc (in-list (signature-ctcs target-sig))])
                          (let* ([var (car target-int/ext-name)]
-                                [vref (bound-identifier-mapping-get def-table var)]
-                                [ctc (bound-identifier-mapping-get ctc-table var (λ () #f))])
+                                [vref (bound-id-table-ref def-table var)]
+                                [ctc (bound-id-table-ref ctc-table var #f)])
                            (convert-reference var vref ctc sig-ctc rename-bindings))))))
                   (((export-keys ...) ...)
                    (for/list ([sig (in-list sigs)]
@@ -100,8 +99,7 @@
      (define apply-body-contract (attribute b.apply-invoke-ctcs))
      (define make-define-ctcs/blame (attribute b.make-define-ctcs/blame))
 
-     (define contract-table
-       (make-bound-identifier-mapping))
+     (define contract-table (make-bound-id-table))
        
      (define (process-sig sig-stx sig-var-ids xs cs)
        (let ([dup (check-duplicate-identifier xs)])
@@ -115,7 +113,7 @@
            (raise-stx-err (format "identifier not member of signature ~a" 
                                   (syntax-e sig-stx))
                           x))
-         (bound-identifier-mapping-put! contract-table x c)))
+         (bound-id-table-set! contract-table x c)))
 
      (check-duplicate-sigs (map cons (attribute i.s.tag-sym) (attribute i.s.info))
                            (attribute i.s)

@@ -1,8 +1,8 @@
 #lang racket/load
 
 (require (for-syntax racket/syntax
-                     racket/private/unit-compiletime
-                     racket/private/unit-syntax))
+                     racket/private/unit/exptime/signature
+                     racket/private/unit/exptime/syntax))
 (require "test-harness.rkt"
          racket/unit)
 
@@ -392,16 +392,16 @@
 
 ;; define-values/invoke-unit syntax errors
 (test-syntax-error 
- "define-values/invoke-unit: missing unit"
+ "define-values/invoke-unit: expected more terms"
  (define-values/invoke-unit))
 (test-syntax-error 
- "define-values/invoke-unit: expected syntax matching (define-values/invoke-unit <unit-expression> (import <sig-expr> ...) (export <sig-expr> ...))"
+ "define-values/invoke-unit: expected import clause\n  at: y"
  (define-values/invoke-unit x y . x))
 (test-syntax-error 
- "define-values/invoke-unit: expected syntax matching (define-values/invoke-unit <unit-expression> (import <sig-expr> ...) (export <sig-expr> ...))"
+ "define-values/invoke-unit: expected import clause\n  at: 1"
  (define-values/invoke-unit 1 1))
 (test-syntax-error 
- "define-values/invoke-unit: expected syntax matching (define-values/invoke-unit <unit-expression> (import <sig-expr> ...) (export <sig-expr> ...))"
+ "define-values/invoke-unit: expected import clause\n  at: x-sig"
  (define-values/invoke-unit (unit (import) (export (prefix x: x-sig) x-sig2)
                               (define x 1)
                               (define x:x 2))
@@ -1234,13 +1234,13 @@
 
 
 (test-syntax-error 
- "unit-from-context: missing export-spec"
+ "unit-from-context: expected more terms"
  (unit-from-context))
 (test-syntax-error 
- "unit-from-context: nothing is permitted after export-spec"
+ "unit-from-context: unexpected term\n  at: s2"
  (unit-from-context s1 s2))
 (test-syntax-error 
- "unit-from-context: nothing is permitted after export-spec"
+ "unit-from-context: expected the literal ()"
  (unit-from-context s1 . s2))
 (test-syntax-error 
  "unit-from-context: expected tagged export spec"
