@@ -285,7 +285,10 @@
 
     (test f f f2)
     (test f2 f2 f2)
-    (test f2 f f)))
+    (test f2 f f))
+
+  (close-input-port f)
+  (close-output-port f2))
 
 ;; system* ------------------------------------------------------
 
@@ -677,6 +680,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; check file-descriptor sharing
+
+;; This test includes the questionable action of creating a bad file
+;; descriptor and expecting the OS to tell us that it's bad (implicit
+;; in `read-char`). As of Mac OS 13.2 Ventura, the select() system
+;; call only complains about bad file descriptors up to number 24; if
+;; a bad 25 or up is supplied, it select() seems to ignore bad
+;; descriptors. So, take care that this test is not run with too many
+;; unclosed ports.
 
 (define (check-sharing keep-mode)
   (define fn (make-temporary-file))

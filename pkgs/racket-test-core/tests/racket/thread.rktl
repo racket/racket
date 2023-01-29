@@ -693,7 +693,7 @@
 
 (let ([s (make-semaphore)]
       [s-t (make-semaphore)]
-	    [l (tcp-listen 0 5 #t)])
+      [l (tcp-listen 0 5 #t)])
   (let ([t (thread
 	    (lambda ()
 	      (sync s-t)))]
@@ -709,8 +709,7 @@
 			 (set! v (wait #f s t l r)))))])
 	    (sync (system-idle-evt))
 	    (break-thread bt)
-            (sync (system-idle-evt))
-	    )
+            (sync (system-idle-evt)))
 	  (test 'break 'broken-wait v)))
 
       (define (try-all-blocked)
@@ -741,7 +740,6 @@
       (test t sync s t l r)
 
       (set! t (thread (lambda () (semaphore-wait (make-semaphore)))))
-
       (let-values ([(cr cw) (tcp-connect "localhost" portnum)])
 	(test l sync s t l r)
 	(test l sync s t l r)
@@ -805,7 +803,10 @@
 	  (test cr sync s t l sr cr)
 
 	  (close-output-port cw)
-	  (test sr sync s t l sr))))
+	  (test sr sync s t l sr)
+
+          (close-input-port sr)
+          (close-input-port cr))))
     (tcp-close l))))
 
 ;; Test limited pipe output waiting:

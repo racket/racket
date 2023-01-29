@@ -1149,7 +1149,8 @@
     (define pos (file-position ifile))
     (test "def" read-line ifile)
     (file-position ifile pos)
-    (test "def" read-line ifile))
+    (test "def" read-line ifile)
+    (close-input-port ifile))
 
   (let* ([bs (call-with-input-file path
 	       #:mode 'text 

@@ -1985,7 +1985,10 @@
   (sync t)
   
   (custodian-shutdown-all c)
-  (port-closed? i))
+  (test #t port-closed? i)
+  (tcp-close l)
+  (close-input-port ci)
+  (close-output-port co))
 
 ;;----------------------------------------------------------------------
 ;; Security guards:
@@ -2090,7 +2093,10 @@
                                             "           (find-system-path 'cache-dir)))")))
       (begin0
         (cadr (read i))
-        (subprocess-wait s))))
+        (subprocess-wait s)
+        (close-input-port i)
+        (close-output-port o)
+        (close-input-port e))))
   (define (touch f) (close-output-port (open-output-file f #:exists 'truncate)))
 
   (define dir-syms '(home-dir pref-dir pref-file init-dir init-file addon-dir cache-dir))
@@ -2263,6 +2269,9 @@
     (err/rt-test (udp-bind! early-udp "localhost" 40000)  (net-reject? 'udp-bind! "localhost" 40000 'server))
     (err/rt-test (udp-connect! early-udp "localhost" 40000)  (net-reject? 'udp-connect! "localhost" 40000 'client))
     (err/rt-test (udp-send-to early-udp "localhost" 40000 #"hi")  (net-reject? 'udp-send-to "localhost" 40000 'client))))
+
+(when early-udp
+  (udp-close early-udp))
 
 ;; Interaction with `system-type` - - - - - - - - - - - - - - - - - - -
 
