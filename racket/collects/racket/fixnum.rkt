@@ -12,7 +12,7 @@
          fx+/wraparound fx-/wraparound fx*/wraparound
          fxquotient fxremainder fxmodulo 
          fxand fxior fxxor
-         fxnot fxrshift fxlshift fxlshift/wraparound
+         fxnot fxrshift fxlshift fxlshift/wraparound fxrshift/logical
          fxpopcount fxpopcount32 fxpopcount16
          fx>= fx> fx= fx< fx<=
          fxmin fxmax

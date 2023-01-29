@@ -440,6 +440,7 @@
           fxrshift
           fxlshift
           fxlshift/wraparound
+          fxrshift/logical
           fl->fx
           ->fl
           fl->exact-integer

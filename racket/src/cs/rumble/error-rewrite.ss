@@ -58,6 +58,7 @@
                 fxarithmetic-shift-right fxrshift
                 fxarithmetic-shift-left fxlshift
                 fxsll/wraparound fxlshift/wraparound
+                fxsrl fxrshift/logical
                 real->flonum ->fl
                 time-utc->date seconds->date
                 make-record-type-descriptor* make-struct-type)
