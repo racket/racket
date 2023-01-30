@@ -543,7 +543,7 @@
    ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    ;; Assemble the `module` result
 
-   (define-values (requires provides) (extract-requires-and-provides requires+provides self self))
+   (define-values (requires recur-requires provides) (extract-requires-and-provides requires+provides self self))
 
    (define parsed-mb (if (expanded+parsed? expanded-mb)
                          (expanded+parsed-parsed expanded-mb)
@@ -557,6 +557,7 @@
                          (m 'id:module-name)
                          self
                          requires
+                         recur-requires
                          provides
                          (requires+provides-all-bindings-simple? requires+provides)
                          (root-expand-context-encode-for-module root-ctx self self)
@@ -1208,8 +1209,8 @@
                                       #:realm realm
                                       #:portal-syntaxes portal-syntaxes
                                       #:fill compiled-module-box)
-  
-  (define-values (requires provides) (extract-requires-and-provides requires+provides self self))
+
+  (define-values (requires recur-requires provides) (extract-requires-and-provides requires+provides self self))
 
   (define parsed-mod
     (parsed-module rebuild-s
@@ -1217,6 +1218,7 @@
                    module-name-id
                    self
                    requires
+                   recur-requires
                    provides
                    (requires+provides-all-bindings-simple? requires+provides)
                    (root-expand-context-encode-for-module root-ctx self self)

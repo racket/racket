@@ -312,13 +312,18 @@
          (add-required-module! requires+provides mpi (intern-phase+space-shift phase-shift space-level)
                                (module-cross-phase-persistent? m))
          mpi))
+   (define transitive-requires (and requires+provides
+                                    (requires+provides-transitive-requires requires+provides)))
    (when visit?
-     (namespace-module-visit! m-ns interned-mpi phase-shift #:visit-phase run-phase))
+     (namespace-module-visit! m-ns interned-mpi phase-shift #:visit-phase run-phase
+                              #:transitive-record transitive-requires))
    (when run?
-     (namespace-module-instantiate! m-ns interned-mpi phase-shift #:run-phase run-phase))
+     (namespace-module-instantiate! m-ns interned-mpi phase-shift #:run-phase run-phase
+                                    #:transitive-record transitive-requires))
    (when (not (or visit? run?))
      ;; make the module available:
-     (namespace-module-make-available! m-ns interned-mpi phase-shift #:visit-phase run-phase))
+     (namespace-module-make-available! m-ns interned-mpi phase-shift #:visit-phase run-phase
+                                       #:transitive-record transitive-requires))
    (define can-bulk-bind? (and (eq? space-level '#:none)
                                (or (not adjust)
                                    (adjust-prefix? adjust)

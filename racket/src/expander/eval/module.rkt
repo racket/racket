@@ -98,6 +98,7 @@
          #hasheqv()))
 
    (define requires (decl 'requires))
+   (define recur-requires (decl 'recur-requires))
    (define provides (decl 'provides))
    (define original-self (decl 'self-mpi))
    (define phase-to-link-modules (decl 'phase-to-link-modules))
@@ -135,6 +136,7 @@
        (define m (make-module #:source-name (current-module-declare-source)
                               #:self original-self
                               #:requires requires
+                              #:recur-requires recur-requires
                               #:provides provides
                               #:language-info language-info
                               #:realm realm
@@ -418,6 +420,7 @@
   (make-instance 'decl #f 'constant
                  'self-mpi (compiled-in-memory-original-self cim)
                  'requires (compiled-in-memory-requires cim)
+                 'recur-requires (compiled-in-memory-recur-requires cim)
                  'provides (compiled-in-memory-provides cim)
                  'phase-to-link-modules (compiled-in-memory-phase-to-link-module-uses cim)
                  'portal-stxes (compiled-in-memory-portal-stxes cim)))

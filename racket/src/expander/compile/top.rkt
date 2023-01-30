@@ -145,6 +145,7 @@
    (compiled-in-memory (hash->linklet-directory (hasheq #f bundle))
                        #f ; self
                        #f ; requires
+                       #f ; recur-requires
                        #f ; provides
                        phase-to-link-module-uses
                        (current-code-inspector)

@@ -111,8 +111,12 @@
         (hash-update! todo mod-name (lambda (ht) (hash-set ht phase m-ns)) #hasheqv())
 
         (unless already?
-          (for* ([phase+reqs (in-list (module-requires m))]
-                 [req (in-list (cdr phase+reqs))])
+          (for ([phase+reqs (in-list (module-requires m))]
+                [recurs (in-list (module-recur-requires m))]
+                #:when #t
+                [req (in-list (cdr phase+reqs))]
+                [recur? (in-list recurs)]
+                #:when recur?)
             (loop (module-path-index-shift req
                                            (module-self m)
                                            mpi)

@@ -91,14 +91,15 @@
                        [(#:hashalw) (hashalw)]
                        [(#:hasheq) (hasheq)]
                        [(#:hasheqv  #:hasheqv/phase+space) (hasheqv)]))
-          (for/fold ([ht ht] [r (cddr r)]) ([i (in-range (cadr r))])
-            (define-values (k k-rest) (loop r))
+          (for/fold ([ht ht] [r (cddr r)]) ([j (in-range (cadr r))])
+            (define-values (k k-rest)
+              (if (and (eq? i '#:hasheqv/phase+space)
+                       (pair? (car r)))
+                  (values (phase+space (caar r) (cdar r))
+                          (cdr r))
+                  (loop r)))
             (define-values (v v-rest) (loop k-rest))
-            (define use-k (if (and (eq? i '#:hasheqv/phase+space)
-                                   (pair? k))
-                              (phase+space (car k) (cdr k))
-                              k))
-            (values (hash-set ht use-k v) v-rest))]
+            (values (hash-set ht k v) v-rest))]
          [(#:provided)
           (define-values (bdg bdg-rest) (loop (cdr r)))
           (define-values (prot? prot?-rest) (loop bdg-rest))
@@ -115,7 +116,10 @@
                  (string? i)
                  (null? i)
                  (hash? i)
-                 (boolean? i))
+                 (boolean? i)
+                 (and (pair? i)
+                      (phase? (car i))
+                      (symbol? (cdr i))))
              (values i (cdr r))]
             [else
              (error 'deserialize "unsupported instruction: ~s" i)])])])))
@@ -145,7 +149,7 @@
 
 ;; ----------------------------------------
 
-;; Returns (values mpi-vector requires provides phase-to-link-modules)
+;; Returns (values mpi-vector requires recur-requires provides phase-to-link-modules)
 (define (deserialize-requires-and-provides l)
   (define ht (linkl-bundle-table l))
   (let ([data-l (hash-ref ht 'data #f)]  ; for module
@@ -173,6 +177,7 @@
                                                  data-i)))
        (values (instance-variable-value data-i '.mpi-vector)
                (instance-variable-value decl-i 'requires)
+               (instance-variable-value decl-i 'recur-requires)
                (instance-variable-value decl-i 'provides)
                (instance-variable-value decl-i 'phase-to-link-modules))]
       [link-l
@@ -181,6 +186,7 @@
                                                  (make-eager-instance))))
        (values (instance-variable-value link-i '.mpi-vector)
                '()
+               '()
                '#hasheqv()
                (instance-variable-value link-i 'phase-to-link-modules))]
-      [else (values '#() '() '#hasheqv() '#hasheqv())])))
+      [else (values '#() '() '() '#hasheqv() '#hasheqv())])))

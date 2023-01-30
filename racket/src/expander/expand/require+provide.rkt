@@ -27,6 +27,8 @@
 
          requires+provides-definitions-shadow-imports?
          disable-definitions-shadow-imports!
+
+         requires+provides-transitive-requires
          
          (struct-out required)
          add-required-space!
@@ -56,6 +58,7 @@
                            require-mpis ; intern table
                            require-mpis-in-order ; require-phase -> list of module-path-index
                            requires   ; mpi [interned] -> require-phase+space-shift -> sym -> list-ish of [bulk-]required
+                           transitive-requires ; resolved-module-path -> pahse-level -> #t ; used to prune instantiates in generate modules
                            provides   ; phase+space -> sym -> binding or protected
                            phase-to-defined-syms ; phase -> sym -> (or/c 'variable 'transformer)
                            also-required ; sym -> binding
@@ -93,6 +96,7 @@
                          (hash-copy (requires+provides-require-mpis-in-order copy-r+p))
                          (make-hasheqv))
                      (make-hasheq)  ; requires
+                     (make-hasheq)  ; transitive-requires
                      (make-hasheqv) ; provides
                      (make-hasheqv) ; phase-to-defined-syms
                      (make-hasheq)  ; also-required
@@ -106,6 +110,7 @@
   ;; Don't clear `require-mpis-in-order`, since we want to accumulate
   ;; all previously required modules
   (hash-clear! (requires+provides-requires r+p))
+  (hash-clear! (requires+provides-transitive-requires r+p)) ; conservative, and may reduce effectiveness
   (hash-clear! (requires+provides-provides r+p))
   (hash-clear! (requires+provides-phase-to-defined-syms r+p))
   (hash-clear! (requires+provides-also-required r+p))
@@ -602,20 +607,32 @@
 ;; ----------------------------------------
 
 (define (extract-requires-and-provides r+p old-self new-self)
-  (define (extract-requires)
+  (define (extract-requires #:recurs? [recurs? #f])
     ;; Extract from the in-order record, so that instantiation can use the original order
     (define phase-to-mpis-in-order (requires+provides-require-mpis-in-order r+p))
     (define phases-in-order (sort (hash-keys phase-to-mpis-in-order) phase<?))
+    ;; If a resolved module path is in `transitive-requires`, then it's required by
+    ;; one of the modules that is required, so we won't need to redundantly check
+    ;; instantiation at run time
+    (define transitive-requires (requires+provides-transitive-requires r+p))
     (for/list ([phase (in-list phases-in-order)])
-      (cons phase
-            (for/list ([mpi (in-list (reverse (hash-ref phase-to-mpis-in-order phase)))]
-                       #:unless (eq? mpi old-self))
-              (module-path-index-shift mpi old-self new-self)))))
+      (define elems (for/list ([mpi (in-list (reverse (hash-ref phase-to-mpis-in-order phase)))]
+                               #:unless (eq? mpi old-self))
+                      (if recurs?
+                          (not (hash-ref (hash-ref transitive-requires
+                                                   (module-path-index-resolved mpi)
+                                                   #hasheqv())
+                                         phase
+                                         #f))
+                          (module-path-index-shift mpi old-self new-self))))
+      (if recurs?
+          elems
+          (cons phase elems))))
   (define (extract-provides)
     (shift-provides-module-path-index (requires+provides-provides r+p)
                                       old-self
                                       new-self))
-  (values (extract-requires) (extract-provides)))
+  (values (extract-requires) (extract-requires #:recurs? #t) (extract-provides)))
 
 ;; ----------------------------------------
 

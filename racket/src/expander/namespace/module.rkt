@@ -30,6 +30,7 @@
          declare-module!
          module-self
          module-requires
+         module-recur-requires
          module-provides
          module-primitive?
          module-is-predefined?
@@ -65,6 +66,7 @@
 (struct module (source-name     ; #f, symbol, or complete path
                 self            ; module path index used for a self reference
                 requires        ; list of (cons phase list-of-module-path-index)
+                recur-requires  ; list of (list boolean ...) in parallel to `requires`
                 provides        ; phase-level -> sym -> binding or (provided binding bool bool); see [*] below
                 [access #:mutable] ; phase-level -> sym -> 'provided or 'protected; computed on demand from `provides`
                 language-info   ; #f or vector
@@ -106,6 +108,9 @@
 (define (make-module #:source-name [source-name #f]
                      #:self self
                      #:requires [requires null]
+                     #:recur-requires [recur-requires (for/list ([phase+mps (in-list requires)])
+                                                        (for/list ([mp (in-list (cdr phase+mps))])
+                                                          #t))]
                      #:provides provides
                      #:min-phase-level [min-phase-level 0]
                      #:max-phase-level [max-phase-level 0]
@@ -127,6 +132,7 @@
   (module source-name
           self
           (fresh-requires requires)
+          recur-requires
           provides
           #f ; access
           language-info
@@ -397,10 +403,13 @@
                                        #:otherwise-available? [otherwise-available? #t]
                                        #:seen [seen #hasheq()]
                                        #:seen-list [seen-list null]
-                                       #:minimum-inspector [minimum-inspector #f])
+                                       #:minimum-inspector [minimum-inspector #f]
+                                       #:transitive-record [transitive-modules #f])
   (unless (module-path-index? mpi)
     (error "not a module path index:" mpi))
   (define name (module-path-index-resolve mpi #t))
+  (when (and transitive-modules (pair? seen-list))
+    (hash-set! transitive-modules name (hash-set (hash-ref transitive-modules name #hasheqv()) instance-phase #t)))
   (define m (namespace->module ns name))
   (unless m (raise-unknown-module-error 'instantiate name))
   (define (instantiate! instance-phase run-phase ns)
@@ -412,7 +421,8 @@
                           #:otherwise-available? otherwise-available?
                           #:seen seen
                           #:seen-list seen-list
-                          #:minimum-inspector minimum-inspector))
+                          #:minimum-inspector minimum-inspector
+                          #:transitive-record transitive-modules))
   ;; If the module is cross-phase persistent, make sure it's instantiated
   ;; at phase 0 and registered in `ns` as phaseless; otherwise
   (cond
@@ -421,11 +431,15 @@
    [else
     (instantiate! instance-phase run-phase ns)]))
 
-(define (namespace-module-visit! ns mpi instance-phase #:visit-phase [visit-phase (namespace-phase ns)])
-  (namespace-module-instantiate! ns mpi instance-phase #:run-phase (add1 visit-phase)))
+(define (namespace-module-visit! ns mpi instance-phase #:visit-phase [visit-phase (namespace-phase ns)]
+                                 #:transitive-record [transitive-modules #f])
+  (namespace-module-instantiate! ns mpi instance-phase #:run-phase (add1 visit-phase)
+                                 #:transitive-record transitive-modules))
 
-(define (namespace-module-make-available! ns mpi instance-phase #:visit-phase [visit-phase (namespace-phase ns)])
-  (namespace-module-instantiate! ns mpi instance-phase #:run-phase (add1 visit-phase) #:skip-run? #t))
+(define (namespace-module-make-available! ns mpi instance-phase #:visit-phase [visit-phase (namespace-phase ns)]
+                                          #:transitive-record [transitive-modules #f])
+  (namespace-module-instantiate! ns mpi instance-phase #:run-phase (add1 visit-phase) #:skip-run? #t
+                                 #:transitive-record transitive-modules))
 
 (define (namespace-module-get-portal-syntax-lookup ns mpi phase-shift)
   (define name (module-path-index-resolve mpi #t))
@@ -474,7 +488,8 @@
                               #:otherwise-available? otherwise-available?
                               #:seen [seen #hasheq()]
                               #:seen-list [seen-list null]
-                              #:minimum-inspector [minimum-inspector #f])
+                              #:minimum-inspector [minimum-inspector #f]
+                              #:transitive-record [transitive-modules #f])
   (performance-region
    ['eval 'requires]
    ;; Nothing to do if we've run this phase already and made the
@@ -510,13 +525,20 @@
                      "  dependency chain:"
                      (module-instances->indented-module-names mi seen-list))))
 
-     ;; If we haven't shifted required mpis already, do that
+     ;; If we haven't shifted required mpis already, do that;
+     ;; the list of required mpis is pruned to the set that we
+     ;; need to explicitly instaniate, where others are presumed
+     ;; to be instantiated transitively and we should skip trying
+     ;; again for this module's direct require
      (unless (module-instance-shifted-requires mi)
        (set-module-instance-shifted-requires!
         mi
-        (for/list ([phase+mpis (in-list (module-requires m))])
+        (for/list ([phase+mpis (in-list (module-requires m))]
+                   [recurs (in-list (module-recur-requires m))])
           (cons (car phase+mpis)
-                (for/list ([req-mpi (in-list (cdr phase+mpis))])
+                (for/list ([req-mpi (in-list (cdr phase+mpis))]
+                           [recur? (in-list recurs)]
+                           #:when recur?)
                   (module-path-index-shift req-mpi
                                            (module-self m)
                                            mpi))))))
@@ -531,7 +553,8 @@
                                         #:otherwise-available? otherwise-available?
                                         #:seen (hash-set seen mi #t)
                                         #:seen-list (cons mi seen-list)
-                                        #:minimum-inspector inspector)))
+                                        #:minimum-inspector inspector
+                                        #:transitive-record transitive-modules)))
      
      ;; Run or make available phases of the module body:
      (unless (label-phase? instance-phase)

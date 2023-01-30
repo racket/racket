@@ -78,13 +78,13 @@
         (error 'compile/optimize "compiled content does not have expected shape: ~s"
                s-exp))
 
-      (define-values (mpi-vector requires provides phase-to-link-modules)
+      (define-values (mpi-vector requires recur-requires provides phase-to-link-modules)
           (deserialize-requires-and-provides bundle))
       (define link-modules (hash-ref phase-to-link-modules 0 '()))
 
       ;; Support cross-module inlining
       (define (bundle->keys+uses bundle)
-        (define-values (mpi-vector requires provides phase-to-link-modules)
+        (define-values (mpi-vector requires recur-requires provides phase-to-link-modules)
           (deserialize-requires-and-provides bundle))
         (define link-modules (hash-ref phase-to-link-modules 0 '()))
         (define keys (for/list ([r (in-list link-modules)])

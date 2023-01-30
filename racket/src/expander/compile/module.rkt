@@ -98,6 +98,7 @@
    (define enclosing-self (compile-context-module-self cctx))
    (define self (parsed-module-self p))
    (define requires (parsed-module-requires p))
+   (define recur-requires (parsed-module-recur-requires p))
    (define provides (parsed-module-provides p))
    (define encoded-root-expand-ctx-box (box (parsed-module-encoded-root-ctx p))) ; for `module->namespace`
    (define body-context-simple? (parsed-module-root-ctx-simple? p))
@@ -212,7 +213,7 @@
                  (performance-region
                   ['compile 'module 'linklet]
                   (compile-linklet s 'decl))))
-           (generate-module-declaration-linklet mpis self requires provides
+           (generate-module-declaration-linklet mpis self requires recur-requires provides
                                                 phase-to-link-module-uses-expr
                                                 portal-stxes))))
    
@@ -373,6 +374,7 @@
   (compiled-in-memory ld
                       self
                       requires
+                      recur-requires
                       provides
                       phase-to-link-module-uses
                       (current-code-inspector)

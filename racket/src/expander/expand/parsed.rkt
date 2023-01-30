@@ -42,6 +42,7 @@
                               name-id
                               self
                               requires
+                              recur-requires
                               provides
                               root-ctx-simple?
                               encoded-root-ctx
