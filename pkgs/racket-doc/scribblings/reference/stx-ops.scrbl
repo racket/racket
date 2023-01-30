@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "mz.rkt"
-          (for-label racket/syntax-srcloc))
+          (for-label racket/syntax-srcloc
+                     (only-in syntax/stx stx-list?)))
 
 @(define stx-eval (make-base-eval))
 @(stx-eval '(require (for-syntax racket/base)))
@@ -370,14 +371,13 @@ at @tech{phase level} 0 are shifted to the @tech{label phase level}.
 If @racket[shift] is @racket[0], then the result is @racket[stx].}
 
 
-@defproc[(generate-temporaries [stx-pair (or syntax? list?)]) 
+@defproc[(generate-temporaries [v stx-list?])
          (listof identifier?)]{
 
 Returns a list of identifiers that are distinct from all other
 identifiers. The list contains as many identifiers as
-@racket[stx-pair] contains elements. The @racket[stx-pair] argument
-must be a syntax pair that can be flattened into a list. The elements
-of @racket[stx-pair] can be anything, but string, symbol, keyword
+@racket[v] contains elements.
+The elements of @racket[v] can be anything, but string, symbol, keyword
 (possibly wrapped as syntax), and identifier elements will be embedded
 in the corresponding generated name, which is useful for debugging
 purposes.
