@@ -376,8 +376,7 @@ If @racket[shift] is @racket[0], then the result is @racket[stx].}
 
 Returns a list of identifiers that are distinct from all other
 identifiers. The list contains as many identifiers as
-@racket[v] contains elements. The @racket[v] argument
-must be a value that can be flattened into a list (satisfying @racket[stx-list?]).
+@racket[v] contains elements.
 The elements of @racket[v] can be anything, but string, symbol, keyword
 (possibly wrapped as syntax), and identifier elements will be embedded
 in the corresponding generated name, which is useful for debugging
