@@ -7,10 +7,7 @@
          (struct-out reified-syntax-class)
          (struct-out reified-splicing-syntax-class))
 
-#|
-A Reified is
-  (reified symbol ParserFunction nat (listof (list symbol nat)))
-|#
+;; A Reified is (reified Symbol ParserFunction Nat (Listof (list Symbol Nat)))
 (define-struct reified-base (name) #:transparent)
 (define-struct (reified reified-base) (parser arity signature))
 (define-struct (reified-syntax-class reified) ())

@@ -17,9 +17,9 @@
 
 ;; SinglePattern ::=
 ;; | (pat:any)
-;; | (pat:svar id)  -- "simple" var, no stxclass
-;; | (pat:var/p Id Id Arguments (Listof IAttr) Syntax SCOpts) -- var with parser
-;; | (pat:literal Id Syntax Syntax)
+;; | (pat:svar Id)  -- "simple" var, no stxclass
+;; | (pat:var/p Id/#f Expr Arguments (Listof IAttr) Expr[Role] SCOpts) -- var with parser
+;; | (pat:literal Id Expr Expr)
 ;; | (pat:datum Datum)
 ;; | (pat:action ActionPattern SinglePattern)
 ;; | (pat:head HeadPattern SinglePattern)
@@ -30,13 +30,13 @@
 ;; | (pat:vector SinglePattern)
 ;; | (pat:box SinglePattern)
 ;; | (pat:pstruct key SinglePattern)
-;; | (pat:describe SinglePattern Syntax Boolean Syntax)
+;; | (pat:describe SinglePattern Expr[String/#f] Boolean Expr[Role])
 ;; | (pat:delimit SinglePattern)
 ;; | (pat:commit SinglePattern)
-;; | (pat:reflect stx Arguments (listof SAttr) id (listof IAttr))
+;; | (pat:reflect Expr[RSC] Arguments (Listof SAttr) Id/#f (Listof IAttr))
 ;; | (pat:post SinglePattern)
-;; | (pat:integrated Id/#f Id String Syntax)
-;; | (pat:fixup Syntax Identifier/#f Identifier Identifier Arguments String Syntax/#f Id/#f)
+;; | (pat:integrated Id/#f Id String Expr[Role])
+;; | (pat:fixup Syntax Id/#f Id Id Arguments String Expr[Role] Id/#f)
 ;; | (pat:and/fixup Syntax (Listof (U {S,H,A}Pattern)))
 
 ;; ListPattern ::=
@@ -48,25 +48,25 @@
 
 ;; ActionPattern ::=
 ;; | (action:cut)
-;; | (action:fail Syntax Syntax)
-;; | (action:bind IAttr Syntax)
+;; | (action:fail Expr Expr)
+;; | (action:bind IAttr Expr)
 ;; | (action:and (Listof ActionPattern))
-;; | (action:parse SinglePattern Syntax)
-;; | (action:do (Listof Syntax))
-;; | (action:undo (Listof Syntax))
+;; | (action:parse SinglePattern Expr)
+;; | (action:do (Listof Def/Expr))
+;; | (action:undo (Listof Def/Expr))
 ;; | (action:post ActionPattern)
 
 ;; HeadPattern ::=
 ;; | (hpat:single SinglePattern)
-;; | (hpat:var/p Id Id Arguments (Listof IAttr) Syntax SCOpts)
+;; | (hpat:var/p Id/#f Expr Arguments (Listof IAttr) Expr[Role] SCOpts)
 ;; | (hpat:seq ListPattern)
 ;; | (hpat:action ActionPattern HeadPattern)
 ;; | (hpat:andu (Listof (U Headpattern ActionPattern))) -- at least one HeadPattern
 ;; | (hpat:or (Listof IAttr) (Listof HeadPattern) (Listof (Listof IAttr)))
-;; | (hpat:describe HeadPattern Syntax/#f Boolean Syntax)
+;; | (hpat:describe HeadPattern Expr[String/#f] Boolean Expr[Role])
 ;; | (hpat:delimit HeadPattern)
 ;; | (hpat:commit HeadPattern)
-;; | (hpat:reflect Syntax Arguments (Listof SAttr) Id (Listof IAttr))
+;; | (hpat:reflect Expr[RSC] Arguments (Listof SAttr) Id/#f (Listof IAttr))
 ;; | (hpat:post HeadPattern)
 ;; | (hpat:peek HeadPattern)
 ;; | (hpat:peek-not HeadPattern)
@@ -75,19 +75,19 @@
 ;; | (ehpat (Listof IAttr) HeadPattern RepConstraint Boolean)
 
 ;; RepConstraint ::=
-;; | (rep:once Syntax Syntax Syntax)
-;; | (rep:optional Syntax Syntax (Listof BindAction))
-;; | (rep:bounds Nat PosInt/+inf.0 Syntax Syntax Syntax)
+;; | (rep:once Expr Expr Expr)
+;; | (rep:optional Expr Expr (Listof BindAction))
+;; | (rep:bounds Nat PosInt/+inf.0 Expr Expr Expr)
 ;; | #f
 
-;; BindAction ::= (action:bind IAttr Syntax)
+;; BindAction ::= (action:bind IAttr Expr)
 ;; SideClause ::= ActionPattern
 
 ;; ------------------------------------------------------------
 ;; Stage 2: Parsing, pass 2
 
 ;; SinglePattern ::= ....
-;; X (pat:fixup Syntax Identifier/#f Identifier Identifier Arguments String Syntax/#f Id/#f)
+;; X (pat:fixup Syntax Id/#f Id Id Arguments String Expr[Role] Id/#f)
 ;; X (pat:and/fixup Syntax (Listof (U {S,H,A}Pattern)))
 
 ;; Note: pat:action can change to hpat:action; pat:andu cannot change.

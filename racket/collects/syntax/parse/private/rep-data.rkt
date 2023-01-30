@@ -22,18 +22,18 @@
 (define (stxclass/h? x)
   (and (stxclass? x) (stxclass-splicing? x)))
 
-;; An RHS is #s(rhs SAttrs Bool Stx/#f Variants Stxs Bool Bool)
+;; An RHS is (rhs SAttrs Bool Expr[String/#f] Variants (Listof Defn) Bool Bool)
 (define-struct rhs
-  (attrs        ;; (Listof Sattr)
+  (attrs        ;; (Listof SAttr)
    transparent? ;; Bool
-   description  ;; Syntax/#f
+   description  ;; Expr[String/#f]
    variants     ;; (Listof Variant)
-   definitions  ;; (Listof Stx), aux definitions from txlifts, local conventions?, etc
+   definitions  ;; (Listof Defn), aux definitions from txlifts, local conventions?, etc
    commit?      ;; Bool
    delimit-cut? ;; Bool
    ) #:prefab)
 
-;; A Variant is (variant Stx SAttrs Pattern Stxs)
+;; A Variant is (variant Stx SAttrs Pattern (Listof Defn))
 (define-struct variant
   (ostx         ;; Stx
    attrs        ;; (Listof SAttr)
@@ -49,7 +49,7 @@ DeclEnv =
                 (Listof ConventionRule))
 
 DeclEntry =
-- (den:lit Id Id Stx Stx)
+- (den:lit Id Id Expr Expr)
 - (den:datum-lit Id Symbol)
 - (den:class Id Id Arguments)
 - (den:magic-class Id Id Arguments Stx)

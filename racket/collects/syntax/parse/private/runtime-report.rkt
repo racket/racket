@@ -14,16 +14,12 @@
          invert-ps
          ps->stx+index)
 
-#|
-TODO: given (expect:thing _ D _ R) and (expect:thing _ D _ #f),
-  simplify to (expect:thing _ D _ #f)
-  thus, "expected D" rather than "expected D or D for R" (?)
-|#
+;; TODO: given (expect:thing _ D _ R) and (expect:thing _ D _ #f),
+;;   simplify to (expect:thing _ D _ #f)
+;;   thus, "expected D" rather than "expected D or D for R" (?)
 
-#|
-Note: there is a cyclic dependence between residual.rkt and this module,
-broken by a lazy-require of this module into residual.rkt
-|#
+;; Note: there is a cyclic dependence between residual.rkt and this module,
+;; broken by a lazy-require of this module into residual.rkt
 
 (define (call-current-failure-handler ctx fs)
   (call-with-values (lambda () ((current-failure-handler) ctx fs))
@@ -44,15 +40,13 @@ broken by a lazy-require of this module into residual.rkt
 ;; ============================================================
 ;; Processing failure sets
 
-#|
-We use progress to select the maximal failures and determine the syntax
-they're complaining about. After that, we no longer care about progress.
+;; We use progress to select the maximal failures and determine the syntax
+;; they're complaining about. After that, we no longer care about progress.
 
-Old versions of syntax-parse (through 6.4) grouped failures into
-progress-equivalence-classes and generated reports by class, but only showed
-one report. New syntax-parse just mixes all maximal failures together and
-deals with the fact that they might not be talking about the same terms.
-|#
+;; Old versions of syntax-parse (through 6.4) grouped failures into
+;; progress-equivalence-classes and generated reports by class, but only showed
+;; one report. New syntax-parse just mixes all maximal failures together and
+;; deals with the fact that they might not be talking about the same terms.
 
 ;; handle-failureset : (list Symbol/#f Syntax) FailureSet -> escapes
 (define (handle-failureset ctx fs)
@@ -99,7 +93,7 @@ deals with the fact that they might not be talking about the same terms.
 ;; ============================================================
 ;; Progress
 
-;; maximal-failures : (listof InvFailure) -> (listof (listof InvFailure))
+;; maximal-failures : (Listof InvFailure) -> (Listof (Listof InvFailure))
 (define (maximal-failures fs)
   (maximal/progress
    (for/list ([f (in-list fs)])
@@ -129,12 +123,12 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
 ;; An Inverted PS (IPS) is a PS inverted for easy comparison.
 ;; An IPS may not contain any 'opaque frames.
 
-;; invert-ps : PS -> IPS
+;; invert-ps : Progress -> IPS
 ;; Reverse and truncate at earliest 'opaque frame.
 (define (invert-ps ps)
   (reverse (ps-truncate-opaque ps)))
 
-;; ps-truncate-opaque : PS -> PS
+;; ps-truncate-opaque : Progress -> Progress
 ;; Returns maximal tail with no 'opaque frame.
 (define (ps-truncate-opaque ps)
   (let loop ([ps ps] [acc ps])
@@ -144,7 +138,7 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
            (loop (cdr ps) (cdr ps))]
           [else (loop (cdr ps) acc)])))
 
-;; maximal/progress : (listof (cons IPS A)) -> (listof (listof A))
+;; maximal/progress : (Listof (cons IPS A)) -> (Listof (Listof A))
 ;; Eliminates As with non-maximal progress, then groups As into
 ;; equivalence classes according to progress.
 (define (maximal/progress items)
@@ -161,7 +155,7 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
                  [else
                   (maximal/prf1 (append non-ORD non-ORD-items))]))]))
 
-;; maximal/prf1 : (Listof (Cons IPS A) -> (Listof (Listof A))
+;; maximal/prf1 : (Listof (cons IPS A) -> (Listof (Listof A))
 (define (maximal/prf1 items)
   (define-values (POST rest1)
     (partition (lambda (item) (eq? 'post (item-first-prf item))) items))
@@ -193,7 +187,7 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
                 (list (map cdr NULL))]
                [else null])]))
 
-;; maximal-prf1/ord : (NEListof (Cons IPS A)) -> (NEListof (Cons IPS A))
+;; maximal-prf1/ord : (NEListof (cons IPS A)) -> (NEListof (Cons IPS A))
 ;; PRE: each item has ORD first frame
 ;; Keep only maximal by first frame and pop first frame from each item.
 (define (maximal-prf1/ord items)
@@ -227,7 +221,7 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
                  [else
                   (loop (cdr xs) nmax r-keep)])])))
 
-;; item-first-prf : (cons IPS A) -> prframe/#f
+;; item-first-prf : (cons IPS A) -> ProgressFrame/#f
 (define (item-first-prf item)
   (define ips (car item))
   (and (pair? ips) (car ips)))
@@ -632,7 +626,7 @@ This suggests the following new algorithm based on (s):
                 (report (prose-for-expects (list frame-expect))
                         context frame-stx within-stx)])]))
 
-;; prose-for-expects : (listof Expect) -> string
+;; prose-for-expects : (Listof Expect) -> String
 (define (prose-for-expects expects)
   (define msgs (filter expect:message? expects))
   (define things (filter expect:thing? expects))
@@ -668,7 +662,7 @@ This suggests the following new algorithm based on (s):
 (define (prose-for-expects/pairs expects)
   (if (pair? expects) (list (prose-for-proper-pair-expects expects)) null))
 
-;; prose-for-expect : Expect -> string
+;; prose-for-expect : Expect -> String
 (define (prose-for-expect e)
   (match e
     [(expect:thing _ description transparent? role _)
@@ -686,7 +680,7 @@ This suggests the following new algorithm based on (s):
     [(expect:proper-pair '#f _)
      "expected more terms"]))
 
-;; prose-for-proper-pair-expects : (listof expect:proper-pair) -> string
+;; prose-for-proper-pair-expects : (Listof expect:proper-pair) -> String
 (define (prose-for-proper-pair-expects es)
   (define descs (remove-duplicates (map expect:proper-pair-first-desc es)))
   (cond [(for/or ([desc descs]) (equal? desc #f))
@@ -697,7 +691,7 @@ This suggests the following new algorithm based on (s):
                  (join-sep (map prose-for-first-desc descs)
                            "," "or"))]))
 
-;; prose-for-first-desc : FirstDesc -> string
+;; prose-for-first-desc : FirstDesc -> String
 (define (prose-for-first-desc desc)
   (match desc
     [(? string?) desc]
@@ -706,7 +700,7 @@ This suggests the following new algorithm based on (s):
     [(list 'datum (? symbol? s)) (format "the literal symbol `~s'" s)]
     [(list 'datum d) (format "the literal ~s" d)]))
 
-;; context-prose-for-expect : (U '... expect:thing) -> (listof string)
+;; context-prose-for-expect : (U '... expect:thing) -> (Listof String)
 (define (context-prose-for-expect e)
   (match e
     ['...
