@@ -110,6 +110,7 @@
   [unsafe-fxquotient (known-procedure/then-pure/folding-unsafe 4 'fxquotient)]
   [unsafe-fxremainder (known-procedure/then-pure/folding-unsafe 4 'fxremainder)]
   [unsafe-fxrshift (known-procedure/then-pure/folding-unsafe 4 'fxrshift)]
+  [unsafe-fxrshift/logical (known-procedure/then-pure/folding-unsafe 4 'fxrshift/logical)]
   [unsafe-fxvector-length (known-procedure/then-pure/folding-unsafe 2 'fxvector-length)]
   [unsafe-fxvector-ref (known-procedure 4)]
   [unsafe-fxvector-set! (known-procedure 8)]

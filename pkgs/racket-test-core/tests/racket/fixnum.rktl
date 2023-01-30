@@ -157,7 +157,8 @@
 
 (define binary/small-second-arg-table
   (list (list fxlshift unsafe-fxlshift)
-        (list fxrshift unsafe-fxrshift)))
+        (list fxrshift unsafe-fxrshift)
+        (list fxrshift/logical unsafe-fxrshift/logical)))
 
 (define table (append binary/small-second-arg-table binary-table unary-table 1nary-table 0nary-table))
   

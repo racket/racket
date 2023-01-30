@@ -568,6 +568,7 @@
           unsafe-fxxor
           unsafe-fxnot
           unsafe-fxrshift
+          unsafe-fxrshift/logical
           unsafe-fxlshift
           unsafe-fx+/wraparound
           unsafe-fx-/wraparound

@@ -117,25 +117,21 @@ value was produced by adding two positive fixnums.
 @history[#:added "7.9.0.6"]}
 
 @defproc[(fxrshift/logical [a fixnum?] [b fixnum?]) fixnum?]{
+
 Shifts the bits in @racket[a] to the right by @racket[b], filling in with zeros.
 With the sign bit treated as just another bit, a logical right-shift of a
 negative-signed fixnum can produce a large positive fixnum.
-For example, `(fxrshift/logical -1 1)` produces `(most-positive-fixnum)`,
-so logical right-shift results are platform-dependent.
+For example, @racket[(fxrshift/logical -1 1)] produces @racket[(most-positive-fixnum)],
+illustrating that logical right-shift results are platform-dependent.
 
 @mz-examples[
   #:eval flfx-eval
-  (fxrshift/logical 6 2)
-  (fxrshift/logical 9 2)
-  (fxrshift/logical 105 4)
-  (fxrshift/logical 150 4)
-  (fxrshift/logical -1 1)
-  (fxrshift/logical -1 10)
-  (fxrshift/logical -1 20)
-  (fxrshift/logical -1 50)
+  (fxrshift/logical 128 2)
+  (fxrshift/logical 255 4)
+  (= (fxrshift/logical -1 1) (most-positive-fixnum))
 ]
 
-@history[#:added "8.8.0.4"]}
+@history[#:added "8.8.0.5"]}
 
 
 @deftogether[(
