@@ -360,3 +360,36 @@
                     (hash-code-combine-unordered* a b '()))
       (check-equal? (hash-code-combine-unordered a b)
                     (hash-code-combine-unordered b a)))))
+
+(test-case "error messages"
+  (check-exn #rx"hash-code-combine:.*expected: exact-integer[?].*given: 0.0"
+             (λ () (hash-code-combine 0.0)))
+  (check-exn #rx"hash-code-combine:.*expected: exact-integer[?].*given: [+]nan.0"
+             (λ () (hash-code-combine +nan.0 1)))
+  (check-exn #rx"hash-code-combine:.*expected: exact-integer[?].*given: [+]inf.0"
+             (λ () (hash-code-combine 2 +inf.0)))
+  (check-exn
+   #rx"hash-code-combine-unordered:.*expected: exact-integer[?].*given: #f"
+   (λ () (hash-code-combine-unordered #f)))
+  (check-exn
+   #rx"hash-code-combine-unordered:.*expected: exact-integer[?].*given: '#s[(]E[)]"
+   (λ () (hash-code-combine-unordered '#s(E) 4)))
+  (check-exn
+   #rx"hash-code-combine-unordered:.*expected: exact-integer[?].*given: \"F\""
+   (λ () (hash-code-combine-unordered 5 "F")))
+
+  (check-exn #rx"hash-code-combine[*]:.*expected: exact-integer[?].*given: '#&6"
+             (λ () (hash-code-combine* '(#&6))))
+  (check-exn #rx"hash-code-combine[*]:.*expected: exact-integer[?].*given: '#()"
+             (λ () (hash-code-combine* '#() 7 '())))
+  (check-exn #rx"hash-code-combine[*]:.*expected: exact-integer[?].*given: '()"
+             (λ () (hash-code-combine* '() '(I))))
+  (check-exn
+   #rx"hash-code-combine-unordered[*]:.*expected: exact-integer[?].*given: #[\\]J"
+   (λ () (hash-code-combine-unordered* '(#\J))))
+  (check-exn
+   #rx"hash-code-combine-unordered[*]:.*expected: exact-integer[?].*given: #t"
+   (λ () (hash-code-combine-unordered* #t 10 '())))
+  (check-exn
+   #rx"hash-code-combine-unordered[*]:.*expected: exact-integer[?].*given: 'L"
+   (λ () (hash-code-combine-unordered* 11 '(L)))))

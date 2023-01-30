@@ -30,11 +30,11 @@
 ;; which is adapted from ChezScheme/s/newhash.ss
 
 ;; maps non-fixnum integers to positive fixnums
-(define (->fx v)
+(define (->fx v [who '->fx])
   (cond
     [(fixnum? v) v]
     [(exact-integer? v) (bitwise-and v (most-positive-fixnum))]
-    [else (raise-argument-error '->fx "exact-integer?" v)]))
+    [else (raise-argument-error who "exact-integer?" v)]))
 
 ;; Adapted from `mix-hash-code` in racket/src/cs/rumble/hash-code.ss
 ;; which is adapted from an `update` function in ChezScheme/s/newhash.ss
@@ -56,10 +56,12 @@
 (define hash-code-combine
   (case-lambda
     [() 0]
-    [(a) (fxmix-hash-code (->fx a))]
+    [(a) (fxmix-hash-code (->fx a 'hash-code-combine))]
     [(a b)
-     (let ([mxa (fxmix-hash-code (->fx a))])
-       (fx+/wraparound mxa (fxmix-hash-code (fx+/wraparound mxa (->fx b)))))]
+     (let ([mxa (fxmix-hash-code (->fx a 'hash-code-combine))])
+       (fx+/wraparound
+        mxa
+        (fxmix-hash-code (fx+/wraparound mxa (->fx b 'hash-code-combine)))))]
     [hcs (hash-codes-combine hcs)]))
 
 (define hash-code-combine*
@@ -69,7 +71,9 @@
 
 (define (hash-codes-combine hcs)
   (for/fold ([acc 0]) ([hc (in-list hcs)])
-    (fx+/wraparound acc (fxmix-hash-code (fx+/wraparound acc (->fx hc))))))
+    (fx+/wraparound
+     acc
+     (fxmix-hash-code (fx+/wraparound acc (->fx hc 'hash-code-combine*))))))
 
 ;; hash-code-combine-unordered is commutative and associative
 ;; (unordered) = 0
@@ -79,8 +83,10 @@
 (define hash-code-combine-unordered
   (case-lambda
     [() 0]
-    [(a) (->fx a)]
-    [(a b) (fx+/wraparound (->fx a) (->fx b))]
+    [(a) (->fx a 'hash-code-combine-unordered)]
+    [(a b)
+     (fx+/wraparound (->fx a 'hash-code-combine-unordered)
+                     (->fx b 'hash-code-combine-unordered))]
     [hcs (hash-codes-combine-unordered hcs)]))
 
 (define hash-code-combine-unordered*
@@ -90,4 +96,4 @@
 
 (define (hash-codes-combine-unordered hcs)
   (for/fold ([acc 0]) ([hc (in-list hcs)])
-    (fx+/wraparound acc (->fx hc))))
+    (fx+/wraparound acc (->fx hc 'hash-code-combine-unordered*))))
