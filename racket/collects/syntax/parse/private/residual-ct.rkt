@@ -32,7 +32,7 @@
 
 ;; == from rep-data.rkt
 
-;; A stxclass is #s(stxclass Symbol Arity SAttrs Id Bool scopts Id/#f)
+;; A Stxclass is (stxclass Symbol Arity SAttrs Id Bool SCOpts Id/#f)
 (define-struct stxclass
   (name         ;; Symbol
    arity        ;; Arity (defined in kws.rkt)
@@ -46,12 +46,12 @@
 (define-values [prop:syntax-class has-stxclass-prop? stxclass-prop-ref]
   (make-struct-type-property 'syntax-class))
 
-;; alt-stxclass-mapping : (boxof (listof (pair Identifier Stxclass)))
+;; alt-stxclass-mapping : (Boxof (Listof (cons Identifier Stxclass)))
 ;; Maps existing bindings (can't use syntax-local-value mechanism) to stxclasses.
 ;; Uses alist to avoid residual dependence on syntax/id-table.
 (define alt-stxclass-mapping (box null))
 
-;; A scopts is #s(scopts Nat Bool Bool String/#f)
+;; A SCOpts is (scopts Nat Bool Bool String/#f)
 ;; These are passed on to var patterns.
 (define-struct scopts
   (attr-count   ;; Nat
@@ -60,30 +60,20 @@
    desc         ;; String/#f, String = known constant description
    ) #:prefab)
 
-#|
-A Conventions is
-  (make-conventions id (-> (listof ConventionRule)))
-A ConventionRule is (list regexp DeclEntry)
-|#
+;; A Conventions is (conventions Id (-> (Listof ConventionRule)))
+;; A ConventionRule is (list Regexp DeclEntry)
 (define-struct conventions (get-procedures get-rules) #:transparent)
 
-#|
-A LiteralSet is
- (make-literalset (listof LiteralSetEntry))
-An LiteralSetEntry is one of
- - (make-lse:lit Symbol Id Stx)
- - (make-lse:datum-lit Symbol Symbol)
-|#
+;; A LiteralSet is (literalset (Listof LiteralSetEntry))
+;; An LiteralSetEntry is one of
+;; - (make-lse:lit Symbol Id Expr)
+;; - (make-lse:datum-lit Symbol Symbol)
 (define-struct literalset (literals) #:transparent)
 (define-struct lse:lit (internal external phase) #:transparent)
 (define-struct lse:datum-lit (internal external) #:transparent)
 
-#|
-An EH-alternative-set is
-  (eh-alternative-set (listof EH-alternative))
-An EH-alternative is
-  (eh-alternative RepetitionConstraint (listof SAttr) id)
-|#
+;; An EH-alternative-set is (eh-alternative-set (Listof EH-alternative))
+;; An EH-alternative is(eh-alternative RepConstraint (Listof SAttr) Id)
 (define-struct eh-alternative-set (alts))
 (define-struct eh-alternative (repc attrs parser))
 

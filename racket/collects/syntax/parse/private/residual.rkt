@@ -90,7 +90,7 @@
                  #'(quote #f)))
            #'(quote #f)))]))
 
-;; stx-list-take : stxish nat -> syntax
+;; stx-list-take : Stx Nat -> Syntax
 (define (stx-list-take stx n)
   (datum->syntax #f
                  (let loop ([stx stx] [n n])
@@ -99,7 +99,7 @@
                        (cons (stx-car stx)
                              (loop (stx-cdr stx) (sub1 n)))))))
 
-;; stx-list-drop/cx : stxish stx nat -> (values stxish stx)
+;; stx-list-drop/cx : Stx Syntax Nat -> (values Stx Syntax)
 (define (stx-list-drop/cx x cx n)
   (let loop ([x x] [cx cx] [n n])
     (if (zero? n)
@@ -133,7 +133,7 @@
           [else (bad 'syntax v)]))
   (depthloop depth0 v0))
 
-;; datum->syntax/with-clause : any -> syntax
+;; datum->syntax/with-clause : Any -> Syntax
 (define (datum->syntax/with-clause x)
   (cond [(syntax? x) x]
         [(2d-stx? x #:traverse-syntax? #f)
@@ -146,7 +146,7 @@
                  "  value: ~e")
                 x)]))
 
-;; check-literal* : id phase phase (listof phase) stx -> void
+;; check-literal* : Id Phase Phase (Listof Phase) Syntax -> Void
 (define (check-literal* id used-phase mod-phase ok-phases/ct-rel ctx)
   (unless (or (memv (and used-phase (- used-phase mod-phase))
                     ok-phases/ct-rel)

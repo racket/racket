@@ -40,15 +40,13 @@
 
 ;; == Failure ==
 
-#|
-A Failure is (failure PS ExpectStack)
+;; A Failure is (failure PS ExpectStack)
 
-A FailureSet is one of
-  - Failure
-  - (cons FailureSet FailureSet)
+;; A FailureSet is one of
+;; - Failure
+;; - (cons FailureSet FailureSet)
 
-A FailFunction = (FailureSet -> Answer)
-|#
+;; A FailFunction = (FailureSet -> Answer)
 (define-struct failure (progress expectstack) #:prefab)
 
 ;; failure* : PS ExpectStack/#f -> Failure/#t
@@ -56,35 +54,34 @@ A FailFunction = (FailureSet -> Answer)
 
 ;; == Progress ==
 
-#|
-Progress (PS) is a non-empty list of Progress Frames (PF).
+;; Progress (PS) is a non-empty list of ProgressFrames (PF).
 
-A Progress Frame (PF) is one of
-  - stx     ;; "Base" frame, or ~parse/#:with term
-  - 'car    ;; car of pair; also vector->list, unbox, struct->list, etc
-  - nat     ;; Represents that many repeated cdrs
-  - 'post   ;; late/post-traversal check
-  - #s(ord group index) ;; ~and subpattern, only comparable w/in group
-  - 'opaque
+;; A ProgressFrame (PF) is one of
+;; - stx     ;; "Base" frame, or ~parse/#:with term
+;; - 'car    ;; car of pair; also vector->list, unbox, struct->list, etc
+;; - nat     ;; Represents that many repeated cdrs
+;; - 'post   ;; late/post-traversal check
+;; - #s(ord group index) ;; ~and subpattern, only comparable w/in group
+;; - 'opaque
 
-The error-reporting context (ie, syntax-parse #:context arg) is always
-the final frame.
+;; The error-reporting context (ie, syntax-parse #:context arg) is always
+;; the final frame.
 
-All non-stx frames (eg car, cdr) interpreted as applying to nearest following
-stx frame.
+;; All non-stx frames (eg car, cdr) interpreted as applying to nearest following
+;; stx frame.
 
-A stx frame is introduced
-  - always at base (that is, by syntax-parse)
-    - if syntax-parse has #:context arg, then two stx frames at bottom:
-      (list to-match-stx context-stx)
-  - by #:with/~parse
-  - by #:fail-*/#:when/~fail & stx
+;; A stx frame is introduced
+;; - always at base (that is, by syntax-parse)
+;;   - if syntax-parse has #:context arg, then two stx frames at bottom:
+;;     (list to-match-stx context-stx)
+;; - by #:with/~parse
+;; - by #:fail-*/#:when/~fail & stx
 
-Interpretation: later frames are applied first.
- eg, (list 'car 1 stx)
-      means ( car of ( cdr once of stx ) )
-      NOT apply car, then apply cdr once, then stop
-|#
+;; Interpretation: later frames are applied first.
+;; eg, (list 'car 1 stx)
+;;     means ( car of ( cdr once of stx ) )
+;;     NOT apply car, then apply cdr once, then stop
+
 (define-struct ord (group index) #:prefab)
 
 (define (ps-empty stx ctx)
@@ -116,12 +113,12 @@ Interpretation: later frames are applied first.
 (define (ps-add-post parent)
   (cons 'post parent))
 
-;; ps-context-syntax : Progress -> syntax
+;; ps-context-syntax : Progress -> Syntax
 (define (ps-context-syntax ps)
   ;; Bottom frame is always syntax
   (last ps))
 
-;; ps-difference : PS PS -> nat
+;; ps-difference : Progress Progress -> Nat
 ;; Returns N s.t. B = (ps-add-cdr^N A)
 (define (ps-difference a b)
   (define-values (a-cdrs a-base)
@@ -138,7 +135,7 @@ Interpretation: later frames are applied first.
     (error 'ps-difference "INTERNAL ERROR: ~e does not extend ~e" b a))
   (- b-cdrs a-cdrs))
 
-;; ps-pop-opaque : PS -> PS
+;; ps-pop-opaque : Progress -> Progress
 ;; Used to continue with progress from opaque head pattern.
 (define (ps-pop-opaque ps)
   (match ps
@@ -148,7 +145,7 @@ Interpretation: later frames are applied first.
      ps*]
     [_ (error 'ps-pop-opaque "INTERNAL ERROR: opaque frame not found: ~e" ps)]))
 
-;; ps-pop-ord : PS -> PS
+;; ps-pop-ord : Progress -> Progress
 (define (ps-pop-ord ps)
   (match ps
     [(cons (? exact-positive-integer? n) (cons (? ord?) ps*))
@@ -157,7 +154,7 @@ Interpretation: later frames are applied first.
      ps*]
     [_ (error 'ps-pop-ord "INTERNAL ERROR: ord frame not found: ~e" ps)]))
 
-;; ps-pop-post : PS -> PS
+;; ps-pop-post : Progress -> Progress
 (define (ps-pop-post ps)
   (match ps
     [(cons (? exact-positive-integer? n) (cons 'post ps*))
@@ -169,51 +166,50 @@ Interpretation: later frames are applied first.
 
 ;; == Expectations ==
 
-#|
-There are multiple types that use the same structures, optimized for
-different purposes.
+;; There are multiple types that use the same structures, optimized for
+;; different purposes.
 
--- During parsing, the goal is to minimize/consolidate allocations.
+;; -- During parsing, the goal is to minimize/consolidate allocations.
 
-An ExpectStack (during parsing) is one of
-  - (expect:thing Progress String Boolean String/#f ExpectStack)
-  - (expect:thing Progress #f     #f      String/#f ExpectStack)
-  * (expect:message String ExpectStack)
-  * (expect:atom Datum ExpectStack)
-  * (expect:literal Identifier ExpectStack)
-  * (expect:proper-pair FirstDesc ExpectStack)
-  * #t
+;; An ExpectStack (during parsing) is one of
+;; - (expect:thing Progress String Boolean String/#f ExpectStack)
+;; - (expect:thing Progress #f     #f      String/#f ExpectStack)
+;; * (expect:message String ExpectStack)
+;; * (expect:atom Datum ExpectStack)
+;; * (expect:literal Identifier ExpectStack)
+;; * (expect:proper-pair FirstDesc ExpectStack)
+;; * #t
 
-The *-marked variants can only occur at the top of the stack (ie, not
-in the next field of another Expect). The top of the stack contains
-the most specific information.
+;; The *-marked variants can only occur at the top of the stack (ie, not
+;; in the next field of another Expect). The top of the stack contains
+;; the most specific information.
 
-An ExpectStack can also be #f, which means no failure tracking is
-requested (and thus no more ExpectStacks should be allocated).
+;; An ExpectStack can also be #f, which means no failure tracking is
+;; requested (and thus no more ExpectStacks should be allocated).
 
--- During reporting, the goal is ease of manipulation.
+;; -- During reporting, the goal is ease of manipulation.
 
-An ExpectList (during reporting) is (listof Expect).
+;; An ExpectList (during reporting) is (listof Expect).
 
-An Expect is one of
-  - (expect:thing #f String #t String/#f StxIdx)
-  * (expect:message String StxIdx)
-  * (expect:atom Datum StxIdx)
-  * (expect:literal Identifier StxIdx)
-  * (expect:proper-pair FirstDesc StxIdx)
-  * (expect:disj (NEListof Expect) StxIdx)
-  - '...
+;; An Expect is one of
+;; - (expect:thing #f String #t String/#f StxIdx)
+;; * (expect:message String StxIdx)
+;; * (expect:atom Datum StxIdx)
+;; * (expect:literal Identifier StxIdx)
+;; * (expect:proper-pair FirstDesc StxIdx)
+;; * (expect:disj (NEListof Expect) StxIdx)
+;; - '...
 
-A StxIdx is (cons Syntax Nat)
+;; A StxIdx is (cons Syntax Nat)
 
-That is, the next link is replaced with the syntax+index of the term
-being complained about. An expect:thing's progress is replaced with #f.
+;; That is, the next link is replaced with the syntax+index of the term
+;; being complained about. An expect:thing's progress is replaced with #f.
 
-An expect:disj never contains a '... or another expect:disj.
+;; An expect:disj never contains a '... or another expect:disj.
 
-We write ExpectList when the most specific information comes first and
-RExpectList when the most specific information comes last.
-|#
+;; We write ExpectList when the most specific information comes first and
+;; RExpectList when the most specific information comes last.
+
 (struct expect:thing (term description transparent? role next) #:prefab)
 (struct expect:message (message next) #:prefab)
 (struct expect:atom (atom next) #:prefab)
@@ -248,11 +244,9 @@ RExpectList when the most specific information comes last.
 (define (es-add-proper-pair first-desc next)
   (and next (expect:proper-pair first-desc next)))
 
-#|
-A FirstDesc is one of
- - #f                   -- unknown, multiple possible, etc
- - string               -- description
- - (list 'any)
- - (list 'literal symbol)
- - (list 'datum datum)
-|#
+;; A FirstDesc is one of
+;; - #f                   -- unknown, multiple possible, etc
+;; - string               -- description
+;; - (list 'any)
+;; - (list 'literal symbol)
+;; - (list 'datum datum)

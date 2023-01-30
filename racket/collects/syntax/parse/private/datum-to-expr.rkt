@@ -1,7 +1,7 @@
 #lang racket/base
 (provide datum->expression)
 
-;; datum->expression : Datum -> Syntax[Expr]
+;; datum->expression : Datum -> Expr
 ;; Produces code that evaluates (at same phase!) to an equivalent value.
 ;; (Note: to produce phase-0 expr from phase-1 value, this module would
 ;; need to require racket/base for-template.)

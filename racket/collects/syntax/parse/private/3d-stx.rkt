@@ -78,7 +78,7 @@ period.
 
 ;; ----
 
-;; 2d-stx? : any ... -> boolean
+;; 2d-stx? : Any -> Boolean
 ;; Would (write (compile `(quote-syntax ,x))) succeed?
 ;; If traverse-syntax? is #t, recurs into existing syntax
 ;; If traverse-syntax? is #f, assumes existing stxobjs are 2d, and only
@@ -96,7 +96,7 @@ period.
 
 ;; ----
 
-;; check-datum : any ... -> boolean
+;; check-datum : Any -> Boolean
 ;; where StxMode = (U 'atomic 'compound #f)
 ;; Returns nat if x is "good", #f if "bad"
 ;; If irritant-b is a box, the first bad subvalue found is put in the box.
@@ -120,7 +120,7 @@ period.
            ;; (eprintf "out of fuel, restarting\n")
            (and (run +inf.0 (make-hasheq)) #t)])))
 
-;; check* : any nat/+inf.0 StxMode boolean boolean boolean box -> nat/#f
+;; check* : Any Nat/+inf.0 StxMode Boolean Boolean Boolean Box -> Nat/#f
 ;; Returns #f if bad, positive nat if good, 0 if ran out of fuel
 ;; If bad, places bad subvalue in irritant-b, if box
 (define (check* x0 fuel0 visited-t
@@ -236,7 +236,7 @@ period.
          (bad)]))]))
   (loop x0 fuel0))
 
-;; mutable-prefab-key? : prefab-key -> boolean
+;; mutable-prefab-key? : prefab-key -> Boolean
 (define (mutable-prefab-key? key)
   ;; A prefab-key is either
   ;;  - symbol
