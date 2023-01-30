@@ -1,6 +1,5 @@
 #lang racket/base
 (require racket/contract/base
-         racket/private/dict
          syntax/private/id-table
          racket/syntax
          syntax/parse/private/residual-ct ;; keep abs. path
@@ -46,8 +45,8 @@
 
 #|
 DeclEnv =
-  (make-declenv immutable-bound-id-mapping[id => DeclEntry]
-                (listof ConventionRule))
+  (make-declenv immutable-bound-id-table[Id => DeclEntry]
+                (Listof ConventionRule))
 
 DeclEntry =
 - (den:lit Id Id Stx Stx)
@@ -146,7 +145,7 @@ expressions are duplicated, and may be evaluated in different scopes.
         (values acc (cons (list (car rule) val) newrules)))))
   (define-values (acc2 table2)
     (for/fold ([acc acc1] [table (make-immutable-bound-id-table)])
-        ([(k v) (in-dict (declenv-table env0))])
+        ([(k v) (in-bound-id-table (declenv-table env0))])
       (let-values ([(val acc) (f k v acc)])
         (values acc (bound-id-table-set table k val)))))
   (values (make-declenv table2 (reverse rules1))
@@ -156,7 +155,7 @@ expressions are duplicated, and may be evaluated in different scopes.
 (define (declenv-domain-difference env ids)
   (define idbm (make-bound-id-table))
   (for ([id (in-list ids)]) (bound-id-table-set! idbm id #t))
-  (for/list ([(k v) (in-dict (declenv-table env))]
+  (for/list ([(k v) (in-bound-id-table (declenv-table env))]
              #:when (or (den:class? v) (den:magic-class? v))
              #:unless (bound-id-table-ref idbm k #f))
     k))
