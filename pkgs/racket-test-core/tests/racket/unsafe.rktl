@@ -345,8 +345,12 @@
   (test-bin 8 'unsafe-fxlshift 8 0)
 
   (test-bin 2 'unsafe-fxrshift 32 4)
+  (test-bin -1 'unsafe-fxrshift -1 2)
   (test-bin 8 'unsafe-fxrshift 32 2)
   (test-bin 8 'unsafe-fxrshift 8 0)
+  (test-bin 2 'unsafe-fxrshift/logical 32 4)
+  (test-bin -1 'unsafe-fxrshift/logical -1 0)
+  (test-bin (most-positive-fixnum) 'unsafe-fxrshift/logical -1 1)
 
   (test-un 5 unsafe-fxabs 5)
   (test-un 5 unsafe-fxabs -5)

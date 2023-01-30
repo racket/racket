@@ -5655,27 +5655,29 @@ static Scheme_Object *fold_fixnum_bitwise_shift(int argc, Scheme_Object *argv[])
   }
 }
 
-#define UNSAFE_FX(name, op, fold, type, no_args)             \
+#define FIXNUM_AS_UNSIGNED(x) ((x) & ((MOST_POSITIVE_FIXNUM << 1) | 1))
+
+#define UNSAFE_FX(name, op, fold, init, type, no_args)       \
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
  {                                                           \
    type v;                                                   \
    int i;                                                    \
    if (!argc) return no_args;                                \
    if (scheme_current_thread->constant_folding) return fold(argc, argv);     \
-   v = (type)SCHEME_INT_VAL(argv[0]);                        \
+   v = init((type)SCHEME_INT_VAL(argv[0]));                  \
    for (i = 1; i < argc; i++) {                              \
      v = v op SCHEME_INT_VAL(argv[i]);                       \
    }                                                         \
    return scheme_make_integer(v);                            \
  }
 
-UNSAFE_FX(unsafe_fx_and, &, scheme_bitwise_and, intptr_t, scheme_make_integer(-1))
-UNSAFE_FX(unsafe_fx_or, |, bitwise_or, intptr_t, scheme_make_integer(0))
-UNSAFE_FX(unsafe_fx_xor, ^, bitwise_xor, intptr_t, scheme_make_integer(0))
-UNSAFE_FX(unsafe_fx_lshift, <<, fold_fixnum_bitwise_shift, uintptr_t, scheme_false)
-UNSAFE_FX(unsafe_fx_rshift, >>, neg_bitwise_shift, intptr_t, scheme_false)
-UNSAFE_FX(unsafe_fx_rshift_logical, >>, neg_bitwise_shift, uintptr_t, scheme_false)
-UNSAFE_FX(unsafe_fx_lshift_wrap, <<, fold_fixnum_bitwise_shift, uintptr_t, scheme_false)
+UNSAFE_FX(unsafe_fx_and, &, scheme_bitwise_and, GEN_IDENT, intptr_t, scheme_make_integer(-1))
+UNSAFE_FX(unsafe_fx_or, |, bitwise_or, GEN_IDENT, intptr_t, scheme_make_integer(0))
+UNSAFE_FX(unsafe_fx_xor, ^, bitwise_xor, GEN_IDENT, intptr_t, scheme_make_integer(0))
+UNSAFE_FX(unsafe_fx_lshift, <<, fold_fixnum_bitwise_shift, GEN_IDENT, uintptr_t, scheme_false)
+UNSAFE_FX(unsafe_fx_rshift, >>, neg_bitwise_shift, GEN_IDENT, intptr_t, scheme_false)
+UNSAFE_FX(unsafe_fx_rshift_logical, >>, bitwise_rshift_logical, FIXNUM_AS_UNSIGNED, uintptr_t, scheme_false)
+UNSAFE_FX(unsafe_fx_lshift_wrap, <<, fold_fixnum_bitwise_shift, GEN_IDENT, uintptr_t, scheme_false)
 
 static Scheme_Object *unsafe_fx_not (int argc, Scheme_Object *argv[])
 {
