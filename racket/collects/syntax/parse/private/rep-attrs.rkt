@@ -2,22 +2,17 @@
 (require syntax/parse/private/residual-ct ;; keep abs. path
          racket/contract/base
          syntax/private/id-table
-         racket/syntax
-         "make.rkt")
+         racket/syntax)
 
-#|
-An IAttr is (make-attr identifier number boolean)
-An SAttr is (make-attr symbol number boolean)
+;; An IAttr is (attr Id Nat Boolean)
+;; An SAttr is (attr Symbol Nat Boolean)
 
-The number is the ellipsis nesting depth. The boolean is true iff the
-attr is guaranteed to be bound to a value which is a syntax object (or
-a list^depth of syntax objects).
-|#
+;; The number is the ellipsis nesting depth. The boolean is true iff the
+;; attr is guaranteed to be bound to a value which is a syntax object (or
+;; a list^depth of syntax objects).
 
-#|
-SAttr lists are always stored in sorted order, to make comparison
-of signatures easier for reified syntax-classes.
-|#
+;; SAttr lists are always stored in sorted order, to make comparison
+;; of signatures easier for reified syntax-classes.
 
 (define (iattr? a)
   (and (attr? a) (identifier? (attr-name a))))
@@ -27,7 +22,7 @@ of signatures easier for reified syntax-classes.
 
 ;; increase-depth : Attr -> Attr
 (define (increase-depth x)
-  (make attr (attr-name x) (add1 (attr-depth x)) (attr-syntax? x)))
+  (attr (attr-name x) (add1 (attr-depth x)) (attr-syntax? x)))
 
 (provide/contract
  [iattr? (any/c . -> . boolean?)]
@@ -117,16 +112,16 @@ of signatures easier for reified syntax-classes.
       (wrong-syntax (and (syntax? aname) aname)
                     "attribute '~a' occurs with different nesting depth"
                     (if (syntax? aname) (syntax-e aname) aname)))
-    (make attr aname (attr-depth a) (and (attr-syntax? a) (attr-syntax? b)))))
+    (attr aname (attr-depth a) (and (attr-syntax? a) (attr-syntax? b)))))
 
 (define (attr-make-uncertain a)
-  (make attr (attr-name a) (attr-depth a) #f))
+  (attr (attr-name a) (attr-depth a) #f))
 
 (define (iattr->sattr a)
   (let ([name (attr-name a)]
         [depth (attr-depth a)]
         [syntax? (attr-syntax? a)])
-     (make attr (syntax-e name) depth syntax?)))
+     (attr (syntax-e name) depth syntax?)))
 
 (define (iattrs->sattrs as)
   (sort-sattrs (map iattr->sattr as)))

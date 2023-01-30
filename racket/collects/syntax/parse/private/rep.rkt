@@ -5,7 +5,6 @@
                        syntax/parse/private/runtime)
          racket/list
          racket/contract/base
-         "make.rkt"
          "minimatch.rkt"
          syntax/private/id-table
          syntax/stx
@@ -196,9 +195,9 @@
          (or attributes
              (filter (lambda (a) (symbol-interned? (attr-name a)))
                      (intersect-sattrss (map variant-attrs variants)))))
-       (make rhs sattrs transp? (or description #`(quote #,default-description)) variants
-             (append (get-txlifts-as-definitions) defs)
-             commit? delimit-cut?)))))
+       (rhs sattrs transp? (or description #`(quote #,default-description)) variants
+            (append (get-txlifts-as-definitions) defs)
+            commit? delimit-cut?)))))
 
 (define (parse-rhs/part1 stx splicing?)
   (define-values (chunks rest)
@@ -291,7 +290,7 @@
      (values entry null)]
     [(den:class name scname argu)
      (with-syntax ([parser (generate-temporary scname)])
-       (values (make den:delayed #'parser scname)
+       (values (den:delayed #'parser scname)
                (list #`(define-values (parser) (curried-stxclass-parser #,scname #,argu)))))]
     [(? den:delayed?)
      (values entry null)]))
@@ -317,10 +316,10 @@
                   [(lse:lit internal external lit-phase)
                    (let ([internal (get/check-id internal)]
                          [external (syntax-property external 'literal (gensym))])
-                     (make den:lit internal external input-phase lit-phase))]
+                     (den:lit internal external input-phase lit-phase))]
                   [(lse:datum-lit internal external)
                    (let ([internal (get/check-id internal)])
-                     (make den:datum-lit internal external))]))))]
+                     (den:datum-lit internal external))]))))]
          [lits*
           (for/list ([lit (in-list lits)])
             (check-id (den:lit-internal lit))
@@ -347,7 +346,7 @@
                        "unexpected terms after pattern directives"))
        (let* ([attrs (pattern-attrs pattern)]
               [sattrs (iattrs->sattrs attrs)])
-         (make variant stx sattrs pattern defs)))]))
+         (variant stx sattrs pattern defs)))]))
 
 ;; parse-EH-variant : Syntax DeclEnv Boolean
 ;;                 -> (Listof (list EllipsisHeadPattern Syntax/EH-Alternative))
@@ -831,7 +830,7 @@
 
 ;; prefix-attr : SAttr identifier -> IAttr
 (define (prefix-attr a prefix)
-  (make attr (prefix-attr-name prefix (attr-name a))
+  (attr (prefix-attr-name prefix (attr-name a))
         (attr-depth a)
         (attr-syntax? a)))
 
@@ -1122,7 +1121,7 @@
 (define (parse*-ehpat/optional stx decls)
   (define-values (head-stx head iattrs name too-many-msg defaults)
     (parse*-optional-pattern stx decls eh-optional-directive-table))
-  (list (create-ehpat head (make rep:optional name too-many-msg defaults) head-stx)
+  (list (create-ehpat head (rep:optional name too-many-msg defaults) head-stx)
         head-stx))
 
 ;; parse*-ehpat/once : stx DeclEnv -> (list EllipsisHeadPattern stx)
@@ -1142,7 +1141,7 @@
              (options-select-value chunks '#:too-many #:default #'#f)]
             [name
              (options-select-value chunks '#:name #:default #'#f)])
-       (list (create-ehpat head (make rep:once name too-few-msg too-many-msg) #'p)
+       (list (create-ehpat head (rep:once name too-few-msg too-many-msg) #'p)
              #'p))]))
 
 ;; parse*-ehpat/bounds : stx DeclEnv -> (list EllipsisHeadPattern stx)
@@ -1174,8 +1173,7 @@
               [name
                (options-select-value chunks '#:name #:default #'#f)])
          (list (create-ehpat head
-                             (make rep:bounds minN maxN
-                                   name too-few-msg too-many-msg)
+                             (rep:bounds minN maxN name too-few-msg too-many-msg)
                              #'p)
                #'p)))]))
 
@@ -1726,7 +1724,7 @@
   (define (go internal external phase)
     (txlift #`(check-literal #,external #,phase #,ctx))
     (let ([external (syntax-property external 'literal (gensym))])
-      (make den:lit internal external phase phase)))
+      (den:lit internal external phase phase)))
   (syntax-case stx ()
     [(internal external #:phase phase)
      (and (identifier? #'internal) (identifier? #'external))
@@ -1752,10 +1750,10 @@
   (syntax-case stx ()
     [(internal external)
      (and (identifier? #'internal) (identifier? #'external))
-     (make den:datum-lit #'internal (syntax-e #'external))]
+     (den:datum-lit #'internal (syntax-e #'external))]
     [id
      (identifier? #'id)
-     (make den:datum-lit #'id (syntax-e #'id))]
+     (den:datum-lit #'id (syntax-e #'id))]
     [_
      (raise-syntax-error #f "expected datum-literal entry" ctx stx)]))
 
@@ -1836,7 +1834,7 @@
                                ctx blame)]))
   (define (check-sc-expr x rx)
     (let ([x (check-stxclass-application x ctx)])
-      (make den:class rx (car x) (cdr x))))
+      (den:class rx (car x) (cdr x))))
   (syntax-case stx ()
     [(rx sc)
      (let ([name-pattern (check-conventions-pattern (syntax-e #'rx) #'rx)])
