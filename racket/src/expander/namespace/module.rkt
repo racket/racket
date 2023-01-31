@@ -509,7 +509,11 @@
    (unless (and (or skip-run?
                     (eq? 'started (small-hash-ref (module-instance-phase-level-to-state mi) run-phase-level #f)))
                 (or (not otherwise-available?)
-                    (module-instance-made-available? mi)))
+                    (module-instance-made-available? mi))
+                (or (not transitive-modules)
+                    ;; need to traverse cross-phase to get all transitive modules
+                    ;; registered, even though we won't have to do more than that
+                    (not (module-cross-phase-persistent? (module-instance-module mi)))))
      ;; Something to do...
      (define m (module-instance-module mi))
      (unless m
