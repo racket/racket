@@ -638,6 +638,8 @@ and only access mutable data when the mode is true:
 
 @note-lib-only[racket/hash-code]
 
+@history[#:added "8.8.0.5"]
+
 @defproc[(hash-code-combine [hc exact-integer?] ...) fixnum?]{
   Combines the @racket[hc]s into a @tech{hash code} that
   depends on the order of the inputs.
