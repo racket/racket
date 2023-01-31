@@ -148,12 +148,12 @@
      (equal-hash-loop (unbox x) (fx+ burn 1) (mix-hash-code (fx+/wraparound hc 1)) mode)]
     [(pair? x)
      (let-values ([(hc0 burn) (equal-hash-loop (car x) (fx+ burn 2) 0 mode)])
-       (let ([hc (fx+/wraparound hc hc0)]
+       (let ([hc (hash-code-combine hc hc0)]
              [r (cdr x)])
          (if (and (pair? r) (list? r))
              ;; If it continues as a list, don't count cdr direction as burn:
-             (equal-hash-loop r (fx- burn 2) (mix-hash-code hc) mode)
-             (equal-hash-loop r burn (mix-hash-code hc) mode))))]
+             (equal-hash-loop r (fx- burn 2) hc mode)
+             (equal-hash-loop r burn hc mode))))]
     [(and (vector? x) (or (eq? mode 'equal?) (immutable-vector? x)))
      (let ([len (vector-length x)])
        (cond
@@ -312,9 +312,12 @@
       [else (hash-code-combine (number-secondary-hash (real-part z))
                                (number-secondary-hash (imag-part z)))])))
 
+;; Example reshuffles to avoid collision:
+;; (unordered (combine A B) C) != (unordered (combine A C) B)
+;; (combine A (mix B)) != (combine B (mix A))
 (define (hash-code-combine hc v)
-  (fx+/wraparound (mix-hash-code (->fx hc))
-                  (->fx v)))
+  (let ([mxhc (mix-hash-code (->fx hc))])
+    (fx+/wraparound mxhc (mix-hash-code (fx+/wraparound mxhc (->fx v))))))
 
 ;; Required to be associative and commutative:
 (define (hash-code-combine-unordered a b)
