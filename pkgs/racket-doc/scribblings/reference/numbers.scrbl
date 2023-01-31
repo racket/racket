@@ -928,7 +928,7 @@ both in binary and as integers.
                     [max (integer-in (+ 1 min) (+ 4294967087 min))]
                     [rand-gen pseudo-random-generator?
                               (current-pseudo-random-generator)])
-            exact-nonnegative-integer?]
+            exact-integer?]
            [(random [rand-gen pseudo-random-generator?
                               (current-pseudo-random-generator)])
             (and/c real? inexact? (>/c 0) (</c 1))])]{
