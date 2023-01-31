@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Build
       run: make CPUS=$(nproc) PKGS="racket-test db-test unstable-flonum-lib net-test"
     - name: Test
@@ -45,7 +45,7 @@ jobs:
     runs-on: macos-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Build
       run: make CPUS=$(sysctl -n hw.physicalcpu) PKGS="racket-test db-test unstable-flonum-lib net-test"
     - name: Test
@@ -71,7 +71,7 @@ jobs:
         raco test -c tests/syntax
     - name: Tarball
       run: tar -cvjf racketcs-macos-x64_git${{ github.sha }}.tar.bz2 racket
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: racketcs-macos-x64_git${{ github.sha }}
         path: racketcs-macos-x64_git${{ github.sha }}.tar.bz2
@@ -80,8 +80,8 @@ jobs:
     runs-on: macos-latest
     needs: buildtest-macos
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/download-artifact@v2
+    - uses: actions/checkout@v3
+    - uses: actions/download-artifact@v3
       with:
         name: racketcs-macos-x64_git${{ github.sha }}
         path: ${{ github.workspace }}
