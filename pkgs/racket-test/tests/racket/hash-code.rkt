@@ -62,6 +62,17 @@
     (check-equal? (hash-code-combine -3) -36028797018961886)
     (check-equal? (hash-code-combine -536870911) -36028238144731103)))
 
+(test-case "avoid 10runs- mix collisions"
+  (define 10runs
+    (hash-code-combine-unordered
+     #b111111111100000000001111111111000000000011111111101111111111))
+  (define (10runs- n) (fx-/wraparound 10runs n))
+  (check-not-equal? (hash-code-combine (10runs- 0)) (hash-code-combine 0))
+  (for ([a (in-list (list 1 2 6 9 105 150 27030 38505))])
+    (define b (- a))
+    (check-not-equal? (hash-code-combine (10runs- a)) (hash-code-combine a))
+    (check-not-equal? (hash-code-combine (10runs- b)) (hash-code-combine b))))
+
 (test-case "one-mix-combine"
   ;; equivalent to the old `hash-code-combine` function from
   ;; racket/src/cs/rumble/hash-code.ss
