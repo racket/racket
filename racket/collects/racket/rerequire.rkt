@@ -42,13 +42,7 @@
              (not (and (pair? name)
                        (not (car name)))))
         ;; Module load:
-        (with-handlers ([(lambda (exn)
-                           (and (pair? name)
-                                (exn:get-module-code? exn)))
-                         (lambda (exn)
-                           ;; Load-handler protocol: quiet failure when a
-                           ;; submodule is not found
-                           (void))])
+        (let/ec escape
           (let* ([code (get-module-code
                         path (let ([l (use-compiled-file-paths)])
                                (if (pair? l) (car l) "compiled"))
@@ -56,7 +50,14 @@
                           (parameterize ([compile-enforce-module-constants #f])
                             (compile e)))
                         (lambda (ext loader?) (load-extension ext) #f)
-                        #:notify notify)]
+                        #:notify (if (pair? name)
+                                     (lambda (path)
+                                       ;; Load-handler protocol: quiet failure when a
+                                       ;; submodule is not found
+                                       (unless (file-exists? path)
+                                         (escape (void)))
+                                       (notify path))
+                                     notify))]
                  [dir  (or (current-load-relative-directory) (current-directory))]
                  [path (path->complete-path path dir)]
                  [path (normal-case-path (simplify-path path))])
