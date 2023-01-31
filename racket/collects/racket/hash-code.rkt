@@ -7,25 +7,6 @@
 
 (require racket/fixnum)
 
-;; fixnum shift-left logical with wraparound
-(define fxsll/wraparound fxlshift/wraparound)
-
-;; fixnum logical exclusive or
-(define fxlogxor fxxor)
-
-;; fixnum shift-right logical
-;; shifting negative fixnums can produce large positive fixnums
-(define (fxsrl a b)
-  (cond
-    [(and (fixnum? a) (negative? a) (positive? b))
-     (fx-/wraparound (fxrshift (bitwise-and a (most-positive-fixnum)) b)
-                     (fxrshift (most-negative-fixnum) b))]
-    ;                          ^ could be (bitwise-and a (most-negative-fixnum))
-    ; but when `a` is a negative fixnum, they're equivalent
-    ; because `a` and `(most-negative-fixnum)` have the same negative-sign-bits,
-    ; and everywhere else `a` might have 1s, `(most-negative-fixnum)` has 0s
-    [else (fxrshift a b)]))
-
 ;; Adapted from racket/src/cs/rumble/hash-code.ss
 ;; which is adapted from ChezScheme/s/newhash.ss
 
@@ -42,8 +23,8 @@
 ;; Bob Jenkins's expansion of his September 1997 Dr Dobbs article on Hash Functions
 ;; http://www.burtleburtle.net/bob/hash/doobs.html#one
 (define (fxmix-hash-code hc)
-  (let ([hc2 (fx+/wraparound hc (fxsll/wraparound (fx+/wraparound hc 1) 10))])
-    (fxlogxor hc2 (fxsrl hc2 6))))
+  (let ([hc2 (fx+/wraparound hc (fxlshift/wraparound (fx+/wraparound hc 1) 10))])
+    (fxxor hc2 (fxrshift/logical hc2 6))))
 
 ;; NOTE: this `hash-code-combine` function is NOT the same as the
 ;; `hash-code-combine` from racket/src/cs/rumble/hash-code.ss
