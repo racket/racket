@@ -15,7 +15,7 @@ jobs:
       ASAN_OPTIONS: 'halt_on_error=0,log_path=racket-asan'
     
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 100
     - name: Create logs directory
@@ -83,7 +83,7 @@ jobs:
     - name: Run db tests
       continue-on-error: true
       run: raco test -l tests/db/all-tests
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: asan-errors-cs_git${{ github.sha }}
         path: ./racket-asan.*

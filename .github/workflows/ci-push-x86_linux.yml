@@ -19,7 +19,7 @@ jobs:
         cify: [nocify]
     
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 100
     - name: Setup cify if enabled
@@ -54,7 +54,7 @@ jobs:
     - name: Tarballing
       working-directory: /usr/local
       run: tar -cvjf /tmp/racketcgc-debian10-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2 racketcgc
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: racketcgc-debian10-${{ matrix.cify }}-x64_git${{ github.sha }}
         path: /tmp/racketcgc-debian10-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
@@ -84,7 +84,7 @@ jobs:
             cc: gcc # clang has a problem with future tests timing out
   
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 100
     - name: Setup cify if enabled
@@ -105,7 +105,7 @@ jobs:
     - name: Setup efp if disabled
       if: matrix.efp == 'noefp'
       run: echo "EFP_OPTIONS=--disable-extflonums --disable-places --disable-futures" >> $GITHUB_ENV
-    - uses: actions/download-artifact@v2
+    - uses: actions/download-artifact@v3
       with:
         name: racketcgc-debian10-nocify-x64_git${{ github.sha }}
         path: /tmp
@@ -141,7 +141,7 @@ jobs:
     - name: Tarballing
       working-directory: /usr/local
       run: tar -cvjf /tmp/racket3m-debian10-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha}}.tar.bz2 racket3m
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: racket3m-debian10-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}
         path: /tmp/racket3m-debian10-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}.tar.bz2
@@ -158,10 +158,10 @@ jobs:
       matrix:
         cc: [gcc, clang]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 100
-    - uses: actions/download-artifact@v2
+    - uses: actions/download-artifact@v3
       with:
         name: racketcgc-debian10-nocify-x64_git${{ github.sha }}
         path: /tmp
@@ -193,7 +193,7 @@ jobs:
     - name: Tarballing
       working-directory: /usr/local
       run: tar -cvjf /tmp/racketcs-debian10-x64_git${{ github.sha}}.tar.bz2 racketcs
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: racketcs-debian10-x64_git${{ github.sha }}
         path: /tmp/racketcs-debian10-x64_git${{ github.sha }}.tar.bz2
@@ -217,8 +217,8 @@ jobs:
         cify: [nocify]
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v2
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
         with:
           name: racketcgc-debian10-${{ matrix.cify }}-x64_git${{ github.sha }}
           path: /tmp
@@ -300,8 +300,8 @@ jobs:
             cc: gcc
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v2
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
         with:
           name: racket3m-debian10-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}
           path: /tmp
@@ -366,8 +366,8 @@ jobs:
     needs: build-racketcs
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v2
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
         with:
           name: racketcs-debian10-x64_git${{ github.sha }}
           path: /tmp

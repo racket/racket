@@ -14,7 +14,7 @@ jobs:
     container: racket/racket-ci:latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 100
     - name: Create logs directory
@@ -86,7 +86,7 @@ jobs:
       run: |
         grep 'runtime error' logs/*.log > runtime-errors_git${{ github.sha }}.log || true
         test ! -s runtime-errors_git${{ github.sha }}.log
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: runtime-errors_git${{ github.sha }}
         path: runtime-errors_git${{ github.sha }}.log
@@ -96,7 +96,7 @@ jobs:
     container: racket/racket-ci:latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 100
     - name: Create logs directory
@@ -168,7 +168,7 @@ jobs:
       run: |
         grep 'runtime error' logs/*.log > runtime-errors-cs_git${{ github.sha }}.log || true
         test ! -s runtime-errors_git${{ github.sha }}.log
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       if: failure()
       with:
         name: runtime-errors-cs_git${{ github.sha }}
