@@ -67,6 +67,8 @@ jobs:
     container: pmatos/scan-build:12.0.1
 
     steps:
+    - name: Change Owner of Container Working Directory
+      run: chown root:root .
     - name: Install dependencies
       run: |
         apt-get update
@@ -127,6 +129,8 @@ jobs:
     container: pmatos/scan-build:12.0.1
 
     steps:
+    - name: Change Owner of Container Working Directory
+      run: chown root:root .
     - name: Install pkg dependencies
       run: |
         apt update
