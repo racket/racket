@@ -440,6 +440,7 @@
           fxrshift
           fxlshift
           fxlshift/wraparound
+          fxrshift/logical
           fl->fx
           ->fl
           fl->exact-integer
@@ -567,6 +568,7 @@
           unsafe-fxxor
           unsafe-fxnot
           unsafe-fxrshift
+          unsafe-fxrshift/logical
           unsafe-fxlshift
           unsafe-fx+/wraparound
           unsafe-fx-/wraparound

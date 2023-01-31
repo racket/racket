@@ -745,6 +745,11 @@
     (bin-exact 1 'fxrshift 2 1)
     (bin-exact 1 'fxrshift 2 1 #:bad-value -2 #:bad-as-second-only? #t)
     (bin-exact 1 'fxrshift 2 1 #:bad-value 100 #:bad-as-second-only? #t)
+    (bin-exact 1 'fxrshift/logical 2 1)
+    (bin-exact -1 'fxrshift/logical -1 0)
+    (bin-exact (most-positive-fixnum) 'fxrshift/logical -1 1)
+    (bin-exact 1 'fxrshift/logical 2 1 #:bad-value -2 #:bad-as-second-only? #t)
+    (bin-exact 1 'fxrshift/logical 2 1 #:bad-value 100 #:bad-as-second-only? #t)
 
     (bin-exact 4 'fxlshift/wraparound 2 1)
     (bin-exact 4 'fxlshift/wraparound 2 1 #:bad-value -2 #:bad-as-second-only? #t)

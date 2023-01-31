@@ -33,6 +33,7 @@
 (define unsafe-fxxor (unsafe-primitive fxxor))
 (define unsafe-fxnot (unsafe-primitive fxnot))
 (define unsafe-fxrshift (unsafe-primitive fxarithmetic-shift-right))
+(define unsafe-fxrshift/logical (unsafe-primitive fxsrl))
 (define unsafe-fxlshift (unsafe-primitive fxarithmetic-shift-left))
 (define unsafe-fxlshift/wraparound (unsafe-primitive fxsll/wraparound))
 (define unsafe-fxpopcount (unsafe-primitive fxpopcount))

@@ -64,6 +64,7 @@
   [fxquotient (known-procedure/folding/limited 4 'fixnum)]
   [fxremainder (known-procedure/folding/limited 4 'fixnum)]
   [fxrshift (known-procedure/has-unsafe/folding/limited 4 'unsafe-fxrshift 'fixnum)]
+  [fxrshift/logical (known-procedure/has-unsafe/folding/limited 4 'unsafe-fxrshift/logical 'fixnum)]
   [fxvector (known-procedure/single-valued -1)]
   [fxvector-length (known-procedure/folding/limited 2 'fixnum)]
   [fxvector-ref (known-procedure/folding/limited 4 'fixnum)]
