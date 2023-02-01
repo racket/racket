@@ -353,8 +353,7 @@ global port print handler is the same as the default write handler.}
 A @tech{parameter} that determines @deftech{global port print handler},
 which is called by the default port print handler (see
 @racket[port-print-handler]) to @racket[print] values into a port.
-The default value uses the built-in printer (see
-@secref["printing"]) in @racket[print] mode.
+The default value is equivalent to @racket[global-port-print-handler].
 
 A @tech{global port print handler} optionally accepts a third
 argument, which corresponds to the optional third argument to
@@ -362,3 +361,13 @@ argument, which corresponds to the optional third argument to
 @racket[global-port-print-handler] does not accept a third argument,
 it is wrapped with a procedure that discards the optional third
 argument.}
+
+@defproc[(default-global-port-print-handler [v any/c]
+                                            [out output-port?]
+                                            [print-depth (or/c 0 1) 0])
+         void?]{
+
+Prints @racket[v] to @racket[out] using the built-in printer (see
+@secref["printing"]) in @racket[print] mode.
+
+@history[#:added "8.8.0.6"]}

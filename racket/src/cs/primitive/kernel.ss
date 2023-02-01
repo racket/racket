@@ -278,6 +278,7 @@
   [datum->syntax (known-procedure/no-prompt 60)]
   [datum-intern-literal (known-procedure/no-prompt 2)]
   [default-continuation-prompt-tag (known-procedure/pure 1)]
+  [default-global-port-print-handler (known-procedure/single-valued 12)]
   [delete-directory (known-procedure/no-prompt 2)]
   [delete-file (known-procedure/no-prompt 2)]
   [denominator (known-procedure/folding 2)]

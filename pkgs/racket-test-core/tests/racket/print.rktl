@@ -899,6 +899,18 @@
   (test "#<procedure:other-name>" format "~a" f3)
   (test 'other-name object-name f3))
 
+;; ----------------------------------------
+
+(parameterize ([global-port-print-handler
+                (lambda (v o [depth 0])
+                  (display "<redacted>" o))])
+  (let ([o (open-output-string)])
+    (print '(hello) o)
+    (test "<redacted>" get-output-string o)
+    (default-global-port-print-handler '(hello) o)
+    (test "<redacted>'(hello)" get-output-string o)
+    (default-global-port-print-handler '(hello) o 1)
+    (test "<redacted>'(hello)(hello)" get-output-string o)))
 
 ;; ----------------------------------------
 

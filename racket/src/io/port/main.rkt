@@ -97,6 +97,7 @@
          port-print-handler
          install-reader!
          global-port-print-handler
+         default-global-port-print-handler
 
          prop:input-port
          prop:output-port

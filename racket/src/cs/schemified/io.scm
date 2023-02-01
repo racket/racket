@@ -63,6 +63,8 @@
                 (1/custom-print-quotable? custom-print-quotable?)
                 (1/custom-write-accessor custom-write-accessor)
                 (1/custom-write? custom-write?)
+                (1/default-global-port-print-handler
+                 default-global-port-print-handler)
                 (1/delete-directory delete-directory)
                 (1/delete-file delete-file)
                 (1/directory-exists? directory-exists?)
@@ -29085,7 +29087,7 @@
      ((v_0 o_0) (default-port-print-handler_0 v_0 o_0 0))
      ((v_0 o_0 quote-depth1_0)
       (default-port-print-handler_0 v_0 o_0 quote-depth1_0)))))
-(define default-global-port-print-handler
+(define 1/default-global-port-print-handler
   (let ((default-global-port-print-handler_0
          (|#%name|
           default-global-port-print-handler
@@ -29105,13 +29107,15 @@
                      "(or/c 0 1)"
                      quote-depth4_0))
                   (do-print 'print v5_0 co_0 quote-depth4_0))))))))
-    (case-lambda
-     ((v_0 o_0) (default-global-port-print-handler_0 v_0 o_0 0))
-     ((v_0 o_0 quote-depth4_0)
-      (default-global-port-print-handler_0 v_0 o_0 quote-depth4_0)))))
+    (|#%name|
+     default-global-port-print-handler
+     (case-lambda
+      ((v_0 o_0) (begin (default-global-port-print-handler_0 v_0 o_0 0)))
+      ((v_0 o_0 quote-depth4_0)
+       (default-global-port-print-handler_0 v_0 o_0 quote-depth4_0))))))
 (define 1/global-port-print-handler
   (make-parameter
-   default-global-port-print-handler
+   1/default-global-port-print-handler
    (lambda (p_0)
      (begin
        (if (if (procedure? p_0) (procedure-arity-includes? p_0 2) #f)
@@ -29136,12 +29140,12 @@
              ((v_0 o_0 quote-depth34_0)
               (.../io/port/handler.rkt:145:24_0 v_0 o_0 quote-depth34_0))))))))
    'global-port-print-handler))
-(define effect_2171
+(define effect_2350
   (begin
     (void
      (install-do-global-print!
       1/global-port-print-handler
-      default-global-port-print-handler))
+      1/default-global-port-print-handler))
     (void)))
 (define 1/byte-ready?
   (let ((byte-ready?_0

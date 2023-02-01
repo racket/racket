@@ -326,6 +326,7 @@ scheme_init_port_fun(Scheme_Startup_Env *env)
   REGISTER_SO(scheme_default_global_print_handler);
   scheme_default_global_print_handler
     = scheme_make_prim_w_arity(sch_default_global_port_print_handler, "default-global-port-print-handler", 2, 3);
+  scheme_addto_prim_instance("default-global-port-print-handler", scheme_default_global_print_handler, env);
 
   ADD_PRIM_W_ARITY("sha1-bytes",                  sha1_bytes,                    1, 3, env);
   ADD_PRIM_W_ARITY("sha224-bytes",                sha224_bytes,                  1, 3, env);
