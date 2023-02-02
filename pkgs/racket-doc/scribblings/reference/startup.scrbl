@@ -553,3 +553,62 @@ see @secref[#:doc raco-doc "exe"] in
 
 For information on defining a new @hash-lang[] language, see
 @racketmodname[syntax/module-reader].
+
+@; ----------------------------------------------------------------------
+
+@section[#:tag "configure-expand"]{Language Expand Configuration}
+
+A module @racket[_lang] can have a @racket[configure-expand] submodule
+that is @racket[dynamic-require]d before the expansion of another
+module that is implemented as @racket[(module _name _lang ....)]. The
+submodule is loaded in a @tech{root namespace}, the same as a
+reader module. The submodule should provide
+@racketidfont{enter-parameterization} and
+@racketidfont{exit-parameterization} as procedures that each take no
+arguments and return a @tech{parameterization}:
+
+@itemlist[
+
+ @item{@racketidfont{enter-parameterization} for @racket[_lang] is
+  called at the start of an expansion of a module @racket[(module
+  _name _lang ....)], and the parameterization wraps the module
+  expansion via @racket[call-with-parameterization].}
+
+ @item{@racketidfont{enter-parameterization} is called for
+   @racket[_lang] if the expansion of @racket[(module _name _lang
+   ....)] triggers expansion of other modules, typically because they
+   are @racket[require]d by the module being expanded. In that case,
+   @racketidfont{exit-parameterization} is called to obtain a
+   parameterization that is put in place around a call to
+   @racketidfont{enter-parameterization} for the language of the
+   module newly being expanded.}
+
+]
+
+The @racket[current-parameterization] procedure works as a default for
+both @racketidfont{enter-parameterization} and
+@racketidfont{exit-parameterization}.
+
+The parameterization produced by a
+@racketidfont{enter-parameterization} typically sets parameters that
+affect error reporting during expansion, such as
+@racket[error-syntax->string-handler]. The parameterization produced
+by @racketidfont{exit-parameterization} should generally revert any
+changes made by @racketidfont{enter-parameterization} while keeping
+other parameter values intact (such as
+@racket[current-load-relative-directory]). To communicate from a use
+of @racketidfont{enter-parameterization} to a nested use of
+@racketidfont{exit-parameterization}, use a private @tech{parameter}.
+
+The @racketidfont{enter-parameterization} and
+@racketidfont{exit-parameterization} procedures are expected to build
+on the current parameterization, but they should generally not mutate
+current parameters, since that mutation would extend beyond the use of
+the returned parameterization. Instead, use @racket[parameterize] to
+create a new parameterization with updated parameter values. The
+@racketidfont{enter-parameterization} and
+@racketidfont{exit-parameterization} should also not operate on the
+current @tech{namespace}, since that can interfere with module
+expansion.
+
+@history[#:added "8.8.0.6"]

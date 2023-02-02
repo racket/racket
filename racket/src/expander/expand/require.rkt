@@ -21,7 +21,8 @@
 (provide parse-and-perform-requires!
          perform-initial-require!
          perform-require!
-         require-spec-shift-for-syntax)
+         require-spec-shift-for-syntax
+         build-initial-require-mpi)
 
 (struct adjust-only (syms))
 (struct adjust-prefix (sym))
@@ -262,12 +263,15 @@
 
 ;; ----------------------------------------
 
-(define (perform-initial-require! mod-path self
+(define (build-initial-require-mpi mod-path self)
+  (module-path->mpi mod-path self))
+
+(define (perform-initial-require! mpi self
                                   in-stx m-ns
                                   requires+provides
                                   #:bind? bind?
                                   #:who who)
-  (perform-require! (module-path->mpi mod-path self) #f self
+  (perform-require! mpi #f self
                     in-stx m-ns
                     #:phase-shift 0
                     #:run-phase 0

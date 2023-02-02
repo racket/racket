@@ -63,6 +63,7 @@
             "++global-ok" "current-previously-unbound"
             "++global-ok" "keep-source-locations?"
             "++global-ok" "rx:path-list"
+            "++global-ok" "load-configure-expand"
             (if startup.inc?
                 `(;; generate BC "startup.inc"
                   "--local-rename"
