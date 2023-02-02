@@ -435,6 +435,11 @@ may evaluate expressions embedded in patterns such as @racket[(#,(racketidfont
 "app") expr pat)] in arbitrary order, or multiple times.  Therefore, such
 expressions must be safe to call multiple times, or in an order other than they
 appear in the original program.
+
+@history[
+  #:changed "8.7.0.11"
+  @elem{Adjusted the @racket[hash-table] pattern where the keys are all literals
+        to match against a full hash table value.}]
 }
 
 @; ----------------------------------------------------------------------

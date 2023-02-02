@@ -6,7 +6,8 @@
          "patterns.rkt"
          "parse-helper.rkt"
          "parse-quasi.rkt"
-         (for-template (only-in "runtime.rkt" matchable? mlist? mlist->list)
+         (for-template (only-in "runtime.rkt" matchable? mlist? mlist->list
+                                false-proc)
                        (only-in racket/unsafe/ops unsafe-vector-ref)
                        racket/base))
 
@@ -67,35 +68,31 @@
 (define default-val (gensym))
 
 ;; ht-trans :: syntax? stx-list? (or/c #f cons?)
-;; precondition: dd's car is either #'_ or #'(_ _) and
-;;               dd's cdr is either #'... or #'..0
+;; precondition:
+;;   If dd is a cons, then
+;;   dd's car is either #'_ or #'(_ _) and
+;;   dd's cdr is either #'... or #'..0
 (define (ht-trans stx ps dd)
-  ;; do-literal-keys :: list? list? stx-list?
-  (define (do-literal-keys keys preds vs)
-    (trans-match*
-     (append (list #'hash?)
-             preds
-             (for/list ([k (in-list keys)]) (λ (e) #`(hash-has-key? #,e '#,k))))
-     (for/list ([k (in-list keys)]) (λ (e) #`(hash-ref #,e '#,k)))
-     (map parse (syntax->list vs))))
-
   (syntax-case ps ()
     [((k v) ...)
      (andmap (λ (p) (and (literal-pat? p) (not (identifier? p)))) (syntax->list #'(k ...)))
      (let ([keys (map Exact-v (map literal-pat? (syntax->list #'(k ...))))])
-       (define preds
-         (cond
-           [dd '()]
-           [else (list (λ (e) #`(= (hash-count #,e) #,(length keys))))]))
        (cond
-         ;; There's a dd
-         [dd
-          (do-literal-keys keys preds #'(v ...))]
-         ;; There is no dd and there is no duplicate.
+         ;; there is no duplicate.
          [(eq? default-val (check-duplicates keys #:default default-val))
-          (do-literal-keys keys preds #'(v ...))]
-         ;; There is no dd, but there is a duplicate
-         [else (ht-trans-fallback stx ps dd)]))]
+          (trans-match*
+           (append (list #'hash?)
+                   (cond
+                     [dd '()]
+                     [else (list #`(λ (e) (= (hash-count e) #,(length keys))))])
+                   (for/list ([k (in-list keys)]) (λ (e) #`(hash-has-key? #,e '#,k))))
+           (for/list ([k (in-list keys)]) (λ (e) #`(hash-ref #,e '#,k)))
+           (map parse (syntax->list #'(v ...))))]
+         [else
+          ;; Duplicate keys will always fail, but we still write all `v`s out
+          ;; to bind ids, in order to prevent unbound ids in the body.
+          ;; Because keys are all literals, we can discard them.
+          (trans-match #'false-proc #'values (parse #'(and v ...)))]))]
     [_ (ht-trans-fallback stx ps dd)]))
 
 ;; parse : syntax -> Pat

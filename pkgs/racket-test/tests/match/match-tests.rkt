@@ -95,7 +95,21 @@
                         [(hash-table ("a" x) ("a" y))
                          (list x y)]
                         [(hash-table _ _) 42])
-                      42))
+                      42)
+
+        (check-equal? (match (hash "a" "b")
+                        [(hash-table ("a" x) ("a" y))
+                         (list x y)]
+                        [(hash-table _) 42])
+                      42)
+        (check-equal? (match (hash "a" "b")
+                        [(hash-table ("a" x) ("a" y))
+                         (list x y)]
+                        [(hash-table _) 42])
+                      (match (hash "a" "b")
+                        [(hash-table ((== "a") x) ("a" y))
+                         (list x y)]
+                        [(hash-table _) 42])))
 
       (test-case "non literal keys"
         (check-equal? (match (hash (list 1 2) 'b (list 3 4) 'd)
@@ -129,7 +143,12 @@
                         [(hash-table a b c) 3]
                         [(hash-table (p 'd) _) p]
                         [(hash-table a b) 4])
-                      (list 3 4)))))
+                      (list 3 4))
+
+        (check-equal? (match (hash 1 2)
+                        [(hash-table (a b) (c d)) 1]
+                        [_ 42])
+                      42))))
 
   (define hash-table-rep-tests
     (test-suite "hash-table patterns (with ..k)"
@@ -149,11 +168,25 @@
                          (list a b)])
                       '(4 6))
 
-        ;; Duplicate keys are fine
+        ;; Duplicate keys
         (check-equal? (match (hash 1 2 3 4 5 6)
                         [(hash-table (3 a) (3 b) _ ...)
-                         (list a b)])
-                      '(4 4))
+                         (list a b)]
+                        [_ 42])
+                      42)
+        (check-equal? (match (hash 1 2 3 4 5 6)
+                        [(hash-table (3 a) (3 b) _ ...)
+                         (list a b)]
+                        [_ 42])
+                      (match (hash 1 2 3 4 5 6)
+                        [(hash-table ((== 3) a) (3 b) _ ...)
+                         (list a b)]
+                        [_ 42]))
+        (check-equal? (match (hash 3 4)
+                        [(hash-table (3 a) (3 b) _ ...)
+                         (list a b)]
+                        [_ 42])
+                      42)
 
         (check-true (match (hash 1 2 3 4 5 6)
                       [(hash-table _ ...) #t]))

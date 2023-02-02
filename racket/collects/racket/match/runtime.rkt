@@ -10,7 +10,8 @@
          matchable?
          match-prompt-tag
          mlist? mlist->list
-         syntax-srclocs)
+         syntax-srclocs
+         false-proc)
 
 (define match-prompt-tag (make-continuation-prompt-tag 'match)) 
 
@@ -69,3 +70,5 @@
                 (syntax-column stx)
                 (syntax-position stx)
                 (syntax-span stx))))
+
+(define (false-proc x) #f)
