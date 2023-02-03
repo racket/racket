@@ -15,8 +15,8 @@ pat     ::= id                                @match anything, bind identifier
          |  (LIST-NO-ORDER pat ...)           @match pats in any order
          |  (LIST-NO-ORDER pat ... lvp)       @match pats in any order
          |  (VECTOR lvp ...)                  @match vector of pats
-         |  (HASH-TABLE kvp ...)              @match hash table
-         |  (HASH-TABLE kvp ...+ ooo)         @match hash table
+         |  (HASH-TABLE (pat pat) ...)        @match hash table
+         |  (HASH-TABLE (pat pat) ...+ ooo)   @match hash table
          |  (CONS pat pat)                    @match pair of pats
          |  (MCONS pat pat)                   @match mutable pair of pats
          |  (BOX pat)                         @match boxed pat
@@ -42,9 +42,6 @@ literal ::= #t                                @match true
          |  keyword                           @match equal% keyword
          |  regexp literal                    @match equal% regexp literal
          |  pregexp literal                   @match equal% pregexp literal
-kvp     ::= _                                 @match any hash table key-value pair
-         |  id                                @match hash table key-value pair (as a list)
-         |  (pat pat)                         @match hash table key-value pair
 lvp     ::= (code:line pat ooo)               @greedily match pat instances
          |  pat                               @match pat
 qp      ::= literal                           @match literal
