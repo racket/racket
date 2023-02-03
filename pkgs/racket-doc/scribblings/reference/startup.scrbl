@@ -574,7 +574,7 @@ arguments and return a @tech{parameterization}:
   _name _lang ....)], and the parameterization wraps the module
   expansion via @racket[call-with-parameterization].}
 
- @item{@racketidfont{enter-parameterization} is called for
+ @item{@racketidfont{exit-parameterization} is called for
    @racket[_lang] if the expansion of @racket[(module _name _lang
    ....)] triggers expansion of other modules, typically because they
    are @racket[require]d by the module being expanded. In that case,

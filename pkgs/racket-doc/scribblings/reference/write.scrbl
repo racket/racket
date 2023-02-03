@@ -353,7 +353,7 @@ global port print handler is the same as the default write handler.}
 A @tech{parameter} that determines @deftech{global port print handler},
 which is called by the default port print handler (see
 @racket[port-print-handler]) to @racket[print] values into a port.
-The default value is equivalent to @racket[global-port-print-handler].
+The default value is equivalent to @racket[default-global-port-print-handler].
 
 A @tech{global port print handler} optionally accepts a third
 argument, which corresponds to the optional third argument to
