@@ -223,7 +223,7 @@ In more detail, patterns match as follows:
          [(vector 1 (list a) ..3 5) a])
        ]}
 
- @item{@racket[(#,(match-kw "hash-table") _kvp ...)] ---
+ @item{@racket[(#,(match-kw "hash-table") (_pat _pat) ...)] ---
        similar to @racketidfont{list-no-order}, but matching against
        hash table's key--value pairs.
 
@@ -231,21 +231,14 @@ In more detail, patterns match as follows:
        #:eval match-eval
        (match #hash(("a" . 1) ("b" . 2))
          [(hash-table ("b" b) ("a" a)) (list b a)])
-       (match #hash(("a" . 1) ("b" . 2) ("c" . 3))
-         [(hash-table ("c" _) ("b" _) x) x])
-       (match #hash(("a" . 1) ("b" . 2))
-         [(hash-table ("b" b)) "not matched"]
-         [(hash-table ("b" b) _) "matched"])
        ]}
 
- @item{@racket[(#,(racketidfont "hash-table") _kvp ...+ _ooo)]
+ @item{@racket[(#,(racketidfont "hash-table") (_pat _pat) ...+ _ooo)]
        --- Generalizes @racketidfont{hash-table} to support a final
        repeating pattern.
 
        @examples[
        #:eval match-eval
-       (match #hash(("a" . 1) ("b" . 2))
-         [(hash-table ("b" b) _ ...) b])
        (match #hash(("a" . 1) ("b" . 2))
          [(hash-table (key val) ...) key])
        ]}

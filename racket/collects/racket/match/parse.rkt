@@ -52,52 +52,6 @@
           (rest suffix)
           (if (eq? ddk-size #t) 0 ddk-size)))
 
-;; ht-trans-fallback :: syntax? stx-list? (or/c #f cons?)
-(define (ht-trans-fallback stx ps dd)
-  (trans-match
-   #'hash?
-   #'(lambda (e) (hash-map e list))
-   (with-syntax ([(elems ...) (map ht-pat-transform (syntax->list ps))])
-     (parse (quasisyntax/loc stx
-              (list-no-order elems ...
-                             #,@(if dd
-                                    (list (ht-pat-transform (car dd)) (cdr dd))
-                                    '())))))))
-
-(define default-val (gensym))
-
-;; ht-trans :: syntax? stx-list? (or/c #f cons?)
-;; precondition: dd's car is either #'_ or #'(_ _) and
-;;               dd's cdr is either #'... or #'..0
-(define (ht-trans stx ps dd)
-  ;; do-literal-keys :: list? list? stx-list?
-  (define (do-literal-keys keys preds vs)
-    (trans-match*
-     (append (list #'hash?)
-             preds
-             (for/list ([k (in-list keys)]) (λ (e) #`(hash-has-key? #,e '#,k))))
-     (for/list ([k (in-list keys)]) (λ (e) #`(hash-ref #,e '#,k)))
-     (map parse (syntax->list vs))))
-
-  (syntax-case ps ()
-    [((k v) ...)
-     (andmap (λ (p) (and (literal-pat? p) (not (identifier? p)))) (syntax->list #'(k ...)))
-     (let ([keys (map Exact-v (map literal-pat? (syntax->list #'(k ...))))])
-       (define preds
-         (cond
-           [dd '()]
-           [else (list (λ (e) #`(= (hash-count #,e) #,(length keys))))]))
-       (cond
-         ;; There's a dd
-         [dd
-          (do-literal-keys keys preds #'(v ...))]
-         ;; There is no dd and there is no duplicate.
-         [(eq? default-val (check-duplicates keys #:default default-val))
-          (do-literal-keys keys preds #'(v ...))]
-         ;; There is no dd, but there is a duplicate
-         [else (ht-trans-fallback stx ps dd)]))]
-    [_ (ht-trans-fallback stx ps dd)]))
-
 ;; parse : syntax -> Pat
 ;; compile stx into a pattern, using the new syntax
 (define (parse stx)
@@ -168,46 +122,37 @@
                   (rearm+parse (syntax/loc stx (list es ...))))]
     [(vector es ...)
      (Vector (map rearm+parse (syntax->list #'(es ...))))]
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ;; HASH TABLE
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-    ;; x ..k is used and k >= 1; use the fallback method
-    [(hash-table p ... x dd)
-     (let ([ddk-size (ddk? #'dd)]) (and (number? ddk-size) (>= ddk-size 1)))
-     (ht-trans-fallback stx #'(p ...) (cons #'x #'dd))]
-
-    ;; _ ..0
-    [(hash-table p ... x dd)
-     (and (ddk? #'dd) (underscore? #'x))
-     (ht-trans stx #'(p ...) (cons #'x #'dd))]
-
-    ;; (_ _) ..0
-    [(hash-table p ... (x y) dd)
-     (and (ddk? #'dd) (underscore? #'x) (underscore? #'y))
-     (ht-trans stx #'(p ...) (cons #'(x y) #'dd))]
-
-    ;; x ..0; use the fallback method
-    [(hash-table p ... x dd)
+    [(hash-table p ... dd)
      (ddk? #'dd)
-     (ht-trans-fallback stx #'(p ...) (cons #'x #'dd))]
-
-    ;; malformed ..k
+     (trans-match
+      #'hash?
+      #'(lambda (e) (hash-map e list))
+      (with-syntax ([(elems ...)
+                     (map ht-pat-transform (syntax->list #'(p ...)))])
+        (rearm+parse (syntax/loc stx (list-no-order elems ... dd)))))]
     [(hash-table p ...)
      (ormap ddk? (syntax->list #'(p ...)))
      (raise-syntax-error
       'match "dot dot k can only appear at the end of hash-table patterns" stx
       (ormap (lambda (e) (and (ddk? e) e)) (syntax->list #'(p ...))))]
-
-    ;; ..k is not used
+    [(hash-table (k0 v0) (k1 v1) ...)
+     (andmap (λ (p) (and (literal-pat? p) (not (identifier? p)))) (syntax->list #'(k0 k1 ...)))
+     (with-syntax ([(k ...) #'(k0 k1 ...)]
+                   [(v ...) #'(v0 v1 ...)])
+       (let ([keys (map Exact-v (map literal-pat? (syntax->list #'(k ...))))])
+         (trans-match*
+          (cons #'hash? (for/list ([k (in-list keys)]) (λ (e) #`(hash-has-key? #,e '#,k))))
+          (for/list ([k (in-list keys)]) (λ (e) #`(hash-ref #,e '#,k)))
+          (map parse (syntax->list #'(v ...))))))]
     [(hash-table p ...)
-     (ht-trans stx #'(p ...) #f)]
-
-    ;; malformed hash-table
+     (trans-match #'hash?
+                  #'(lambda (e) (hash-map e list))
+                  (with-syntax ([(elems ...)
+                                 (map ht-pat-transform
+                                      (syntax->list #'(p ...)))])
+                    (rearm+parse (syntax/loc stx (list-no-order elems ...)))))]
     [(hash-table . _)
      (raise-syntax-error 'match "syntax error in hash-table pattern" stx)]
-
     [(list-no-order p ... lp dd)
      (ddk? #'dd)
      (let* ([count (ddk? #'dd)]
