@@ -136,9 +136,10 @@ the @rfc for more information about JSON.
   remains. Like @racket[read], the function leaves all remaining
   characters in the port so that a second call can retrieve the
   remaining JSON input(s). If the JSON inputs aren't delimited per se
-  (true, false, null), they  must be separated by whitespace from the
-  following JSON input.
-
+  (true, false, null), they must be separated by whitespace from the
+  following JSON input. Raises @racket[exn:fail:read] if @racket[in] is not
+  at EOF and starts with malformed JSON (that is, no initial sequence of bytes
+  in @racket[in] can be parsed as JSON); see below for examples.
 
 @examples[#:eval ev
   (with-input-from-string
