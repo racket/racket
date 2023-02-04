@@ -234,9 +234,9 @@
 (test 0 'when (when (< 1 2) (cons 1 2) 0))
 (test-values '(0 10) (lambda () (when (< 1 2) (values 0 10))))
 (syntax-test #'when)
-(syntax-test #'(when))
+(syntax-test #'(when) #rx"missing test expression and body")
 (syntax-test #'(when . 1))
-(syntax-test #'(when 1))
+(syntax-test #'(when 1) #rx"missing body")
 (syntax-test #'(when 1 . 2))
 (error-test #'(when (values 1 2) 0) arity?)
 
@@ -246,9 +246,9 @@
 (test 0 'unless (unless (> 1 2) (cons 1 2) 0))
 (test-values '(0 10) (lambda () (unless (> 1 2) (values 0 10))))
 (syntax-test #'unless)
-(syntax-test #'(unless))
+(syntax-test #'(unless) #rx"missing test expression and body")
 (syntax-test #'(unless . 1))
-(syntax-test #'(unless 1))
+(syntax-test #'(unless 1) #rx"missing body")
 (syntax-test #'(unless 1 . 2))
 (error-test #'(unless (values 1 2) 0) arity?)
 
