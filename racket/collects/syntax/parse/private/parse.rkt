@@ -30,9 +30,7 @@
          syntax-parser
          define/syntax-parse
          syntax-parser/template
-         parser/rhs
-         define-eh-alternative-set
-         (for-syntax rhs->parser))
+         define-eh-alternative-set)
 
 (begin-for-syntax
  ;; constant-desc : Syntax -> String/#f
