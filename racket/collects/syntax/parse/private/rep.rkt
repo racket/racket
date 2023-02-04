@@ -14,7 +14,7 @@
          "rep-attrs.rkt"
          "rep-data.rkt"
          "rep-patterns.rkt"
-         syntax/parse/private/residual-ct ;; keep abs. path
+         (submod syntax/parse/private/residual ct) ;; keep abs. path
          "kws.rkt")
 
 ;; Error reporting

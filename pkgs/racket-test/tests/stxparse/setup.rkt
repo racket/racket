@@ -3,7 +3,7 @@
          syntax/parse
          (only-in syntax/parse/private/residual
                   attribute-binding)
-         syntax/parse/private/residual-ct  ;; for attr functions
+         (submod syntax/parse/private/residual ct)  ;; for attr functions
          syntax/macro-testing
          (for-syntax racket/base))
 
