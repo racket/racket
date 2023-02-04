@@ -13,7 +13,7 @@
 (begin-for-syntax
   (require racket/contract/base
            syntax/parse/private/pattern-expander
-           syntax/parse/private/residual-ct)
+           (submod syntax/parse/private/residual ct))
   (provide pattern-expander?
            (contract-out
             [prop:syntax-class

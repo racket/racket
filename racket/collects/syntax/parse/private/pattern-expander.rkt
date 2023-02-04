@@ -1,5 +1,5 @@
 #lang racket/base
-(require "residual-ct.rkt")
+(require (submod "residual.rkt" ct))
 
 (provide pattern-expander)
 

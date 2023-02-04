@@ -1,6 +1,6 @@
 #lang racket/base
 (require "residual.rkt"
-         (only-in "residual-ct.rkt" attr-name attr-depth)
+         (only-in (submod "residual.rkt" ct) attr-name attr-depth)
          "kws.rkt")
 (provide reflect-parser
          (struct-out reified)

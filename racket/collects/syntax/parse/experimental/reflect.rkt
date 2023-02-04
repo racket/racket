@@ -2,7 +2,7 @@
 (require (for-syntax racket/base
                      racket/lazy-require
                      racket/syntax
-                     syntax/parse/private/residual-ct) ;; keep abs.path
+                     (submod syntax/parse/private/residual ct)) ;; keep abs.path
          racket/contract/base
          racket/contract/combinator
          "../private/minimatch.rkt"

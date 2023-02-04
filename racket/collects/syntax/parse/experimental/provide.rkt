@@ -6,7 +6,7 @@
                      racket/syntax
                      "../private/minimatch.rkt"
                      syntax/parse/pre
-                     syntax/parse/private/residual-ct ;; keep abs. path
+                     (submod syntax/parse/private/residual ct) ;; keep abs. path
                      "../private/kws.rkt"
                      syntax/contract))
 (provide provide-syntax-class/contract
