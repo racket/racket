@@ -351,6 +351,10 @@
 (test #f check-duplicates '(#t #f #f) #:default "no dups")
 (test "no dups" check-duplicates '(#t #f) #:default "no dups")
 (test "no dups" check-duplicates '(#t #f) #:default (lambda () "no dups"))
+(test (box 1) check-duplicates (list (box 1) (box 1)) equal?)
+(test #f check-duplicates (list (box 1) (box 1)) equal-always?)
+(let ([b (box 1)])
+  (test b check-duplicates (list b b) equal-always?))
 (err/rt-test (check-duplicates 'a))
 (err/rt-test (check-duplicates '(1) #f))
 (err/rt-test (check-duplicates '(1) #:key #f))
@@ -372,7 +376,11 @@
     (test long rd (append long (reverse long))) ; keeps first
     (test long rd (append* (map (lambda (x) (list x x)) long)))
     (test long rd (append long (map (lambda (x) (- x)) long)) #:key abs)
-    (test long rd (append long (map (lambda (x) (- x)) long)) = #:key abs)))
+    (test long rd (append long (map (lambda (x) (- x)) long)) = #:key abs))
+  (test (list (box 1)) rd (list (box 1) (box 1)) equal?)
+  (test (list (box 1) (box 1)) rd (list (box 1) (box 1)) equal-always?)
+  (let ([b (box 1)])
+    (test (list b) rd (list b b) equal-always?)))
 
 ;; ---------- filter and filter-not ----------
 (let ()
