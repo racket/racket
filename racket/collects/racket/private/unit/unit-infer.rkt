@@ -80,51 +80,29 @@
   (define (build-unit/contract stx)
     (syntax-parse stx
       #:context (current-syntax-context)
-      [(:import-clause/contract :export-clause/contract dep:dep-clause :body-clause/contract . bexps)
-       (define splicing-body-contract
-         (if (eq? (syntax-e #'b) no-invoke-contract) #'() #'(b)))
-       (let-values ([(exp isigs esigs deps) 
-                     (build-unit
-                      (check-unit-syntax
-                       (syntax/loc stx
-                         ((import i.s ...) (export e.s ...) dep . bexps))))])
-         (with-syntax ([name (syntax-local-infer-name (current-syntax-context))]
-                       [(import-tagged-sig-id ...)
-                        (map (λ (i s)
-                               (if (identifier? i) #`(tag #,i #,s) s))
-                             (syntax->list #'(i.s.i ...))
-                             (syntax->list #'(i.s.s.name ...)))]
-                       [(export-tagged-sig-id ...)
-                        (map (λ (i s)
-                               (if (identifier? i) #`(tag #,i #,s) s))
-                             (syntax->list #'(e.s.i ...))
-                             (syntax->list #'(e.s.s.name ...)))])
-           (with-syntax ([new-unit exp]
-                         [unit-contract
-                          (unit/c/core
-                           #'name
-                           (quasisyntax/loc stx
-                             ((import (import-tagged-sig-id [i.x i.c] ...) ...)
-                              (export (export-tagged-sig-id [e.x e.c] ...) ...)
-                              dep
-                              #,@splicing-body-contract)))])
-             (values
-              (syntax-protect
-               (syntax/loc stx
-                 (contract unit-contract new-unit '(unit name) (current-contract-region) (quote name) (quote-srcloc name))))
-              isigs esigs deps))))]
-      [(ic:import-clause/contract ec:export-clause/contract dep:dep-clause . bexps)
-       (build-unit/contract
-        (quasisyntax/loc stx
-          (ic ec dep #:invoke/contract #,no-invoke-contract . bexps)))]
-      [(ic:import-clause/contract ec:export-clause/contract bc:body-clause/contract . bexps)
-       (build-unit/contract
-        (quasisyntax/loc stx
-          (ic ec (init-depend) #,@(syntax->list #'bc) . bexps)))]
-      [(ic:import-clause/contract ec:export-clause/contract . bexps)
-       (build-unit/contract
-        (quasisyntax/loc stx
-          (ic ec (init-depend) #:invoke/contract #,no-invoke-contract . bexps)))])))
+      [(i:import-clause/c
+        e:export-clause/c
+        d:opt-init-depends
+        {~optional {~seq #:invoke/contract ~! b:body-clause/c}}
+        . bexps)
+
+       (define-values [exp isigs esigs deps]
+         (build-unit
+          (check-unit-syntax
+           (syntax/loc stx
+             ((import i.i.s ...) (export e.e.s ...) {~? {~@ . d}} . bexps)))))
+
+       (define/syntax-parse name (syntax-local-infer-name (current-syntax-context)))
+       (define/syntax-parse new-unit exp)
+       (define/syntax-parse unit-contract (unit/c/core
+                                           #'name
+                                           (quasisyntax/loc stx
+                                             (i e {~? {~@ . d}} {~? b}))))
+       (values
+        (syntax-protect
+         (syntax/loc stx
+           (contract unit-contract new-unit '(unit name) (current-contract-region) (quote name) (quote-srcloc name))))
+        isigs esigs deps)])))
 
 (define-for-syntax (build-define-unit-binding stx)
   (define (check-helper tagged-info)
@@ -512,7 +490,7 @@
     (ormap (λ (a) (tagged-ie-spec-subsumes? a b)) as)))
 
 ;; (syntax or listof[syntax]) boolean (boolean or listof[syntax]) -> syntax
-(define-for-syntax (build-invoke-unit/infer units define? exports)
+(define-for-syntax (build-invoke-unit/infer units define? exports values-clause)
   (define (imps/exps-from-unit u)
     (define ui (lookup-def-unit u))
     (define (unprocess p)
@@ -572,8 +550,13 @@
                      [(isig ...) isig])
          (syntax-protect
           (if define?
-              (syntax/loc (current-syntax-context) (define-values/invoke-unit u (import isig ...) (export esig ...)))
-              (syntax/loc (current-syntax-context) (invoke-unit u (import isig ...)))))))]
+              (quasisyntax/loc (current-syntax-context)
+                (define-values/invoke-unit u
+                  (import isig ...)
+                  (export esig ...)
+                  #,@(if values-clause (list values-clause) '())))
+              (syntax/loc (current-syntax-context)
+                (invoke-unit u (import isig ...)))))))]
 
     [(list? units)
      (let-values ([(isig esig) (imps/exps-from-units units exports)])
@@ -590,39 +573,52 @@
                             u)])
            (syntax-protect
             (if define?
-                (syntax/loc (current-syntax-context)
+                (quasisyntax/loc (current-syntax-context)
                   (define-values/invoke-unit u
-                    (import isig ...) (export esig ...)))
+                    (import isig ...)
+                    (export esig ...)
+                    #,@(if values-clause (list values-clause) '())))
                 (syntax/loc (current-syntax-context)
-                  (invoke-unit u
-                               (import isig ...))))))))]
+                  (invoke-unit u (import isig ...))))))))]
 
     ;; just for error handling
     [else
      (lookup-def-unit units)]))
 
-(define-syntax/err-param (define-values/invoke-unit/infer stx)
-  (syntax-case stx (export link)
-    [(_ (link unit ...))
-     (build-invoke-unit/infer (syntax->list #'(unit ...)) #t #f)]
-    [(_ (export e ...) (link unit ...))
-     (build-invoke-unit/infer (syntax->list #'(unit ...)) #t (syntax->list #'(e ...)))]
-    [(_ (export e ...) u) 
-     (build-invoke-unit/infer #'u #t (syntax->list #'(e ...)))]
-    [(_ u) 
-     (build-invoke-unit/infer #'u #t #f)]
-    [(_)
-     (raise-stx-err "missing unit" stx)]
-    [(_ . b)
-     (raise-stx-err
-      (format "expected syntax matching (~a [(export <define-signature-identifier>)] <define-unit-identifier>) or (~a  [(export <define-signature-identifier>)] (link <define-unit-identifier> ...))"
-              (syntax-e (stx-car stx)) (syntax-e (stx-car stx))))]))
+(begin-for-syntax
+  (define-syntax-class invoke-units-clause
+    #:description "unit clause"
+    #:attributes [{unit 1}]
+    #:commit
+    #:literals [link]
+    (pattern (link ~! unit:expr ...))
+    (pattern single:expr
+      #:attr {unit 1} (list #'single))))
+
+(define-syntax-parser define-values/invoke-unit/infer
+  #:track-literals
+  #:literals [export]
+  ;; We allow the export clause to appear before the unit
+  ;; clause for backward compatibility.
+  [(_ {~describe "export clause" (export ~! e ...)}
+      units:invoke-units-clause)
+   (build-invoke-unit/infer (attribute units.unit)
+                            #t
+                            (attribute e)
+                            #f)]
+  [(_ units:invoke-units-clause
+      {~optional {~describe "export clause" (export ~! e ...)}}
+      {~optional results:invoke-results-clause})
+   (build-invoke-unit/infer (attribute units.unit)
+                            #t
+                            (attribute e)
+                            (attribute results))])
 
 (define-syntax/err-param (invoke-unit/infer stx)
   (syntax-case stx ()
     [(_ (link unit ...))
-     (build-invoke-unit/infer (syntax->list #'(unit ...)) #f #f)]
-    [(_ u) (build-invoke-unit/infer #'u #f #f)]
+     (build-invoke-unit/infer (syntax->list #'(unit ...)) #f #f #f)]
+    [(_ u) (build-invoke-unit/infer #'u #f #f #f)]
     [(_)
      (raise-stx-err "missing unit" stx)]
     [(_ . b)
