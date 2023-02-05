@@ -655,6 +655,42 @@ and only access mutable data when the mode is true:
 ]
 ]
 
+Certain type-specific equality functions on mutable types,
+such as @racket[string=?], should also be avoided unless the
+struct is mutable or the mode is true.
+Type-specific equality functions on immutable types, such as
+@racket[symbol=?], are fine.
+
+@compare0[#:left "fine" #:right "bad"
+@racketblock0[
+  (struct thing (name)
+    (code:comment "symbols are immutable: no problem")
+    #:methods gen:equal+hash
+    [(define (equal-proc self other rec)
+       (symbol=? (thing-name self) (thing-name other)))
+     (define (hash-proc self rec)
+       (+ (eq-hash-code struct:thing)
+          (rec (thing-name self))))
+     (define (hash2-proc self rec)
+       (+ (eq-hash-code struct:thing)
+          (rec (thing-name self))))])
+]
+
+@racketblock0[
+  (struct thing (name)
+    (code:comment "strings can be mutable: wrongly accesses mutable data")
+    #:methods gen:equal+hash
+    [(define (equal-proc self other rec)
+       (string=? (thing-name self) (thing-name other)))
+     (define (hash-proc self rec mode)
+       (+ (eq-hash-code struct:mcell)
+          (rec (thing-name self))))
+     (define (hash2-proc self rec)
+       (+ (eq-hash-code struct:thing)
+          (rec (thing-name self))))])
+]
+]
+
 @section{Combining Hash Codes}
 
 @note-lib-only[racket/hash-code]
