@@ -531,6 +531,27 @@ and enables some cycle detection.
 ]
 ]
 
+Don't use the third argument to ``recur'' on counts of
+elements.
+When a data structure cares about discrete numbers, it can
+use @racket[=] on those, not @racket[equal?] or ``recur''.
+
+@compare0[
+@racketblock0[
+  (define (equal-proc self other rec)
+    (and (= (tuple-length self) (tuple-length other))
+         (for/and ([i (in-range (tuple-length self))])
+           (rec ((tuple-getter self) i) ((tuple-getter other) i)))))
+]
+
+@racketblock0[
+  (define (equal-proc self other rec)
+    (and (rec (tuple-length self) (tuple-length other))
+         (for/and ([i (in-range (tuple-length self))])
+           (rec ((tuple-getter self) i) ((tuple-getter other) i)))))
+]
+]
+
 The operations @racket[equal?] and @racket[equal-always?]
 should be symmetric, so @racket[_equal-proc] instances
 should not change their answer when the arguments swap:
