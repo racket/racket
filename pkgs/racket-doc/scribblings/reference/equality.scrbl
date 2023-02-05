@@ -663,31 +663,16 @@ Type-specific equality functions on immutable types, such as
 
 @compare0[#:left "fine" #:right "bad"
 @racketblock0[
-  (struct thing (name)
+  (define (equal-proc self other rec)
     (code:comment "symbols are immutable: no problem")
-    #:methods gen:equal+hash
-    [(define (equal-proc self other rec)
-       (symbol=? (thing-name self) (thing-name other)))
-     (define (hash-proc self rec)
-       (+ (eq-hash-code struct:thing)
-          (rec (thing-name self))))
-     (define (hash2-proc self rec)
-       (+ (eq-hash-code struct:thing)
-          (rec (thing-name self))))])
+    (symbol=? (thing-name self) (thing-name other)))
 ]
 
 @racketblock0[
-  (struct thing (name)
-    (code:comment "strings can be mutable: wrongly accesses mutable data")
-    #:methods gen:equal+hash
-    [(define (equal-proc self other rec)
-       (string=? (thing-name self) (thing-name other)))
-     (define (hash-proc self rec mode)
-       (+ (eq-hash-code struct:mcell)
-          (rec (thing-name self))))
-     (define (hash2-proc self rec)
-       (+ (eq-hash-code struct:thing)
-          (rec (thing-name self))))])
+  (define (equal-proc self other rec)
+    (code:comment "strings can be mutable: accesses mutable data")
+    (code:comment "wrong for an struct that's not declared mutable")
+    (string=? (thing-name self) (thing-name other)))
 ]
 ]
 
