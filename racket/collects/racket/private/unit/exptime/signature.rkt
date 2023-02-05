@@ -24,6 +24,7 @@
          ~bind-keys
 
          (struct-out signature)
+         make-signature-member-introducer
          lookup-signature
          ~bind-signature
          signature-id
@@ -125,12 +126,14 @@
    val-defs      ; (listof (cons/c (listof identifier?) syntax?))
    stx-defs      ; (listof (cons/c (listof identifier?) syntax?))
    post-val-defs ; (listof (cons/c (listof identifier?) syntax?))
-   ctcs          ; (listof (or/c syntax? #f))
-   orig-binder)  ; identifier?
+   ctcs)         ; (listof (or/c syntax? #f))
   #:property prop:procedure
   (lambda (_ stx)
     (parameterize ((current-syntax-context stx))
       (raise-stx-err "illegal use of signature name"))))
+
+(define (make-signature-member-introducer sig ref-stx)
+  (make-relative-introducer ref-stx (car (siginfo-names (signature-siginfo sig)))))
 
 #| Note [Generated export definitions]
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

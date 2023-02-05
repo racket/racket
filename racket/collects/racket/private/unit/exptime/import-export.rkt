@@ -101,8 +101,7 @@ parsed `signature-ie?` value. |#
                                  #:import? import?
                                  #:bind-lctx bind-lctx
                                  #:add-prefix add-prefix)
-  (define delta-introduce (make-relative-introducer bind-lctx
-                                                    (car (siginfo-names (signature-siginfo sig)))))
+  (define delta-introduce (make-signature-member-introducer sig bind-lctx))
   (define (split-id id)
     (cons id id))
   (define (split-def def)
@@ -172,6 +171,7 @@ parsed `signature-ie?` value. |#
          {~bind/nested
           [x tmp] tmp
           ([src-stx (signature-ie-src-stx tmp)]
+           [sig (signature-ie-sig tmp)]
            [sig-id (signature-ie-sig-id tmp)]
            [tag-id (signature-ie-tag-id tmp)]
            [tag-sym (signature-ie-tag-sym tmp)]
@@ -316,7 +316,7 @@ parsed `signature-ie?` value. |#
 ;; don’t have to bother with binding all the attributes.
 (define-syntax-class (ie-spec import? #:bind-lctx [bind-lctx #f])
   #:description #f
-  #:attributes [value sig-id info
+  #:attributes [value sig sig-id info
                 {info.id 1} info.self-id {info.super-id 1}
                 {info.ctime-id 1}
                 {info.rtime-id 1}
@@ -347,7 +347,7 @@ parsed `signature-ie?` value. |#
 ;; don’t have to bother with binding all the attributes.
 (define-syntax-class (tagged-ie-spec import?)
   #:description #f
-  #:attributes [value sig-id tag-id tag-sym tagged-sig-id info
+  #:attributes [value sig sig-id tag-id tag-sym tagged-sig-id info
                 {info.id 1} info.self-id {info.super-id 1}
                 {info.ctime-id 1}
                 {info.rtime-id 1}

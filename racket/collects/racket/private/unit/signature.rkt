@@ -181,8 +181,7 @@
                   (list (cons (list (quote-syntax elems.post-val-def-id) ...)
                               (quote-syntax elems.post-val-def-rhs))
                         ...)
-                  (list {~? (quote-syntax elems.ctc) #f} ...)
-                  (quote-syntax sig-id)))))
+                  (list {~? (quote-syntax elems.ctc) #f} ...)))))
          ;; dummy expression for Check Syntax:
          (define-values ()
            (begin
