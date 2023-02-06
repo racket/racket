@@ -58,8 +58,8 @@ Returns an immutable string with the same content as
  immutable.
 
 @mz-examples[
-(immutable? (string #\H #\e #\l #\l #\o #\R #\a #\c #\k #\e #\t))
-(immutable? (string->immutable-string (string #\H #\e #\l #\l #\o #\R #\a #\c #\k #\e #\t)))
+(immutable? (string #\H #\e #\l #\l #\o))
+(immutable? (string->immutable-string (string #\H #\e #\l #\l #\o)))
 ]
 }
 
