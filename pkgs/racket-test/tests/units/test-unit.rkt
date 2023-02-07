@@ -1540,7 +1540,7 @@
  "define-values/invoke-unit/infer: expected more terms"
  (define-values/invoke-unit/infer))
 (test-syntax-error 
- "define-values/invoke-unit/infer: not an identifier"
+ "define-values/invoke-unit/infer: expected export clause or expected unit clause\n  at: 1"
  (define-values/invoke-unit/infer 1))
 (test-syntax-error 
  "define-values/invoke-unit/infer: unknown unit definition"
@@ -1559,7 +1559,7 @@
 (test-syntax-error "define-values/invoke-unit/infer: no unit"
                    (define-values/invoke-unit/infer (link)))
 (test-syntax-error 
- "define-values/invoke-unit/infer: not an identifier"
+ "define-values/invoke-unit/infer: expected identifier"
  (define-values/invoke-unit/infer (link 1 u)))
 (test-syntax-error 
  "define-values/invoke-unit/infer: unknown unit definition"
@@ -2362,3 +2362,32 @@
   (test 1 (let ()
             (define-values/invoke-unit/infer (link b2@ a@))
             (get-x))))
+
+;; Test that `define-values/invoke-unit/infer` supports `only` in the exports clause.
+(let ()
+  (define-signature a^ [a b])
+  (define-signature b^ [x y])
+
+  (define-unit a@
+    (import)
+    (export a^)
+    (define a 1)
+    (define b 2))
+
+  (define-unit b@
+    (import a^)
+    (export b^)
+    (define x 3)
+    (define y (+ a b x)))
+
+  (let ()
+    (define-values/invoke-unit/infer a@
+      (export (only a^ a)))
+    (test 1 a))
+
+  (let ()
+    (define-values/invoke-unit/infer
+      (link a@ b@)
+      (export (only a^ b) (only b^ y)))
+    (test 2 b)
+    (test 6 y)))

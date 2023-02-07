@@ -462,32 +462,24 @@
 ;; `invoke-unit/infer`
 
 (begin-for-syntax
-  (struct tagged-ie-spec (stx tag sig-id siginfo) #:transparent)
-
   (define (parse-tagged-import-spec stx)
     (syntax-parse stx
       #:context (current-syntax-context)
       [spec:tagged-import-spec
-       (tagged-ie-spec stx
-                       (attribute spec.tag-sym)
-                       (attribute spec.sig-id)
-                       (attribute spec.info))]))
+       (attribute spec.value)]))
 
   (define (parse-tagged-export-spec stx)
     (syntax-parse stx
       #:context (current-syntax-context)
       [spec:tagged-export-spec
-       (tagged-ie-spec stx
-                       (attribute spec.tag-sym)
-                       (attribute spec.sig-id)
-                       (attribute spec.info))]))
+       (attribute spec.value)]))
 
-  (define (tagged-ie-spec-subsumes? a b)
-    (and (eq? (tagged-ie-spec-tag a) (tagged-ie-spec-tag b))
-         (siginfo-subtype (tagged-ie-spec-siginfo a) (tagged-ie-spec-siginfo b))))
+  (define (signature-ie-subsumes? a b)
+    (and (eq? (signature-ie-tag-sym a) (signature-ie-tag-sym b))
+         (siginfo-subtype (signature-ie-siginfo a) (signature-ie-siginfo b))))
 
-  (define (any-tagged-ie-spec-subsumes? as b)
-    (ormap (λ (a) (tagged-ie-spec-subsumes? a b)) as)))
+  (define (any-signature-ie-subsumes? as b)
+    (ormap (λ (a) (signature-ie-subsumes? a b)) as)))
 
 ;; (syntax or listof[syntax]) boolean (boolean or listof[syntax]) -> syntax
 (define-for-syntax (build-invoke-unit/infer units define? exports values-clause)
@@ -517,22 +509,22 @@
           [else
            (define ispec (car left))
            (define left* (cdr left))
-           (if (or (any-tagged-ie-spec-subsumes? left* ispec)
-                   (any-tagged-ie-spec-subsumes? especs ispec))
+           (if (or (any-signature-ie-subsumes? left* ispec)
+                   (any-signature-ie-subsumes? especs ispec))
                (loop left* kept)
-               (loop left* (cons (tagged-ie-spec-stx ispec) kept)))])))
+               (loop left* (cons ispec kept)))])))
 
     (define kept-exports
       (cond
         [(list? exports)
-         (define given-especs (map parse-tagged-export-spec exports))
+         (define given-especs (map parse-tagged-import-spec exports))
          (for ([export (in-list exports)])
-           (define given-espec (parse-tagged-export-spec export))
-           (unless (any-tagged-ie-spec-subsumes? especs given-espec)
-             (wrong-syntax (tagged-ie-spec-sig-id given-espec) "no subunit exports signature")))
-         exports]
+           (define given-espec (parse-tagged-import-spec export))
+           (unless (any-signature-ie-subsumes? especs given-espec)
+             (wrong-syntax (signature-ie-sig-id given-espec) "no subunit exports signature")))
+         given-especs]
         [else
-         (map tagged-ie-spec-stx especs)]))
+         especs]))
 
     (values kept-imports kept-exports))
 
@@ -544,26 +536,28 @@
 
   (cond
     [(identifier? units)
-     (let-values ([(isig esig) (imps/exps-from-units (list units) exports)])
+     (let-values ([(isigs esigs) (imps/exps-from-units (list units) exports)])
        (with-syntax ([u units]
-                     [(esig ...) esig]
-                     [(isig ...) isig])
+                     [(espec ...) (map signature-ie-src-stx esigs)]
+                     [(ispec ...) (map signature-ie-src-stx isigs)])
          (syntax-protect
           (if define?
               (quasisyntax/loc (current-syntax-context)
                 (define-values/invoke-unit u
-                  (import isig ...)
-                  (export esig ...)
+                  (import ispec ...)
+                  (export espec ...)
                   #,@(if values-clause (list values-clause) '())))
               (syntax/loc (current-syntax-context)
-                (invoke-unit u (import isig ...)))))))]
+                (invoke-unit u (import ispec ...)))))))]
 
     [(list? units)
-     (let-values ([(isig esig) (imps/exps-from-units units exports)])
+     (let-values ([(isigs esigs) (imps/exps-from-units units exports)])
        (with-syntax ([(new-unit) (generate-temporaries '(new-unit))]
                      [(unit ...) units]
-                     [(esig ...) esig]
-                     [(isig ...) isig])
+                     [(espec ...) (map signature-ie-src-stx esigs)]
+                     [(ispec ...) (map signature-ie-src-stx isigs)]
+                     [(esig ...) (map signature-ie->tagged-sig-id esigs)]
+                     [(isig ...) (map signature-ie->tagged-sig-id isigs)])
          (with-syntax ([u (let-values ([(u i e d)
                                         (build-compound-unit/infer
                                          (check-compound/infer-syntax
@@ -575,8 +569,8 @@
             (if define?
                 (quasisyntax/loc (current-syntax-context)
                   (define-values/invoke-unit u
-                    (import isig ...)
-                    (export esig ...)
+                    (import ispec ...)
+                    (export espec ...)
                     #,@(if values-clause (list values-clause) '())))
                 (syntax/loc (current-syntax-context)
                   (invoke-unit u (import isig ...))))))))]
@@ -588,12 +582,13 @@
 (begin-for-syntax
   (define-syntax-class invoke-units-clause
     #:description "unit clause"
-    #:attributes [{unit 1}]
+    #:attributes [units]
     #:commit
     #:literals [link]
-    (pattern (link ~! unit:expr ...))
-    (pattern single:expr
-      #:attr {unit 1} (list #'single))))
+    (pattern (link ~! unit:id ...)
+      #:attr units (attribute unit))
+    (pattern unit:id
+      #:attr units #'unit)))
 
 (define-syntax-parser define-values/invoke-unit/infer
   #:track-literals
@@ -602,14 +597,14 @@
   ;; clause for backward compatibility.
   [(_ {~describe "export clause" (export ~! e ...)}
       units:invoke-units-clause)
-   (build-invoke-unit/infer (attribute units.unit)
+   (build-invoke-unit/infer (attribute units.units)
                             #t
                             (attribute e)
                             #f)]
   [(_ units:invoke-units-clause
       {~optional {~describe "export clause" (export ~! e ...)}}
       {~optional results:invoke-results-clause})
-   (build-invoke-unit/infer (attribute units.unit)
+   (build-invoke-unit/infer (attribute units.units)
                             #t
                             (attribute e)
                             (attribute results))])
