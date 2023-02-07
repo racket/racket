@@ -531,6 +531,32 @@ and enables some cycle detection.
 ]
 ]
 
+Don't use the third argument to ``recur'' on counts of
+elements.
+When a data structure cares about discrete numbers, it can
+use @racket[=] on those, not @racket[equal?] or ``recur''.
+Using ``recur'' on counts is bad when a ``recur'' argument
+from @racket[equal?/recur] is too tolerant on numbers within
+some range of each other.
+
+@compare0[
+@racketblock0[
+  (define (equal-proc self other rec)
+    (and (= (tuple-length self) (tuple-length other))
+         (for/and ([i (in-range (tuple-length self))])
+           (rec ((tuple-getter self) i)
+                ((tuple-getter other) i)))))
+]
+
+@racketblock0[
+  (define (equal-proc self other rec)
+    (and (rec (tuple-length self) (tuple-length other))
+         (for/and ([i (in-range (tuple-length self))])
+           (rec ((tuple-getter self) i)
+                ((tuple-getter other) i)))))
+]
+]
+
 The operations @racket[equal?] and @racket[equal-always?]
 should be symmetric, so @racket[_equal-proc] instances
 should not change their answer when the arguments swap:
@@ -564,14 +590,33 @@ pieces in the same order they came in:
 ]
 ]
 
-Mutable structs will only use the custom equality for
-@racket[equal?] and @racket[impersonator-of?], so that
-@racket[equal-always?] and @racket[chaperone-of?] don't
-change on mutation. Structs that represent mutable data
-should either be declared mutable, or use
-@racket[_equal-mode-proc] from @racket[gen:equal-mode+hash]
-instead of @racket[_equal-proc] from @racket[gen:equal+hash],
-and only access mutable data when the mode is true:
+The operations @racket[equal-always?] and
+@racket[chaperone-of?] shouldn't change on mutation, so
+@racket[_equal-proc] instances should not access
+potentially-mutable data.
+This includes avoiding @racket[string=?], since strings can
+be mutable.
+Type-specific equality functions for immutable types, such
+as @racket[symbol=?], are fine.
+
+@compare0[#:left "fine" #:right "bad"
+@racketblock0[
+  (define (equal-proc self other rec)
+    (code:comment "symbols are immutable: no problem")
+    (symbol=? (thing-name self) (thing-name other)))
+]
+
+@racketblock0[
+  (define (equal-proc self other rec)
+    (code:comment "strings can be mutable: accesses mutable data")
+    (string=? (thing-name self) (thing-name other)))
+]
+]
+
+Declaring a struct as mutable makes @racket[equal-always?]
+and @racket[chaperone-of?] avoid using @racket[_equal-proc],
+so @racket[_equal-proc] instances are free to access mutable
+data if the struct is declared mutable:
 
 @compare0[
 @racketblock0[
@@ -604,6 +649,13 @@ and only access mutable data when the mode is true:
           (rec (unbox (mcell-value self)))))])
 ]
 ]
+
+Another way for a struct to control access to mutable data
+is by implementing @racket[gen:equal-mode+hash] instead of
+@racket[gen:equal+hash].
+When the mode is true, @racket[_equal-mode-proc] instances
+are free to access mutable data, and when the mode is false,
+they shouldn't:
 
 @compare0[#:left "also good" #:right "still bad"
 @racketblock0[
