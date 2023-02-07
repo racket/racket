@@ -397,6 +397,7 @@
                   [(<= len 40) #f]
                   [(eq? =? eq?) (make-hasheq)]
                   [(eq? =? equal?) (make-hash)]
+                  [(eq? =? equal-always?) (make-hashalw)]
                   [else #f])])
     (case h
       [(#t) l]
@@ -405,7 +406,7 @@
        ;; and for equalities other than `eq?' or `equal?'  The length threshold
        ;; above (40) was determined by trying it out with lists of length n
        ;; holding (random n) numbers.
-       (let ([key (or key (λ(x) x))])
+       (let ([key (or key (λ (x) x))])
          (let-syntax ([loop (syntax-rules ()
                               [(_ search)
                                (let loop ([l l] [seen null])
@@ -418,6 +419,7 @@
            (cond [(eq? =? equal?) (loop member)]
                  [(eq? =? eq?)    (loop memq)]
                  [(eq? =? eqv?)   (loop memv)]
+                 [(eq? =? equal-always?) (loop memw)]
                  [else (loop (λ(x seen) (ormap (λ(y) (=? x y)) seen)))])))]
       [else
        ;; Use a hash for long lists with simple hash tables.
@@ -454,6 +456,8 @@
            (check-duplicates/t items key (make-hasheq) fail-k)]
           [(eq? same? eqv?)
            (check-duplicates/t items key (make-hasheqv) fail-k)]
+          [(eq? same? equal-always?)
+           (check-duplicates/t items key (make-hashalw) fail-k)]
           [else
            (unless (and (procedure? same?)
                         (procedure-arity-includes? same? 2))

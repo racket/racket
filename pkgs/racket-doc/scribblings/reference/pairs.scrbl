@@ -1305,8 +1305,8 @@ result:
 ]
 
 The @racket[same?] argument should be an equivalence predicate such as
-@racket[equal?] or @racket[eqv?] or a dictionary.
-The procedures @racket[equal?], @racket[eqv?], and @racket[eq?] automatically
+@racket[equal?] or @racket[eqv?].
+The procedures @racket[equal?], @racket[eqv?], @racket[eq?], and @racket[equal-always?] automatically
 use a dictionary for speed.
 
 @examples[#:eval list-eval
@@ -1336,6 +1336,10 @@ is kept.
 The @racket[#:key] argument @racket[extract-key] is used to extract a
 key value from each list element, so two items are considered equal if
 @racket[(same? (extract-key x) (extract-key y))] is true.
+
+Like @racket[check-duplicates], if the @racket[same?] argument is one of
+@racket[equal?], @racket[eqv?], @racket[eq?], and @racket[equal-always?],
+the operation can be specialized to improved performance.
 
 @mz-examples[#:eval list-eval
   (remove-duplicates '(a b b a))
