@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require racket/syntax
+(require racket/list
+         racket/syntax
          "private/unit/exptime/signature.rkt"
          "private/unit/exptime/unit-infer.rkt"
          "private/unit/exptime/util.rkt")
@@ -23,17 +24,14 @@
 (define (signature-members name err-stx)
   (parameterize ((current-syntax-context err-stx))
     (let ([s (lookup-signature name)])
-      (define intro
-        (make-relative-introducer name
-                                  (car (siginfo-names (signature-siginfo s)))))
+      (define intro (make-signature-member-introducer s name))
       (values 
        ;; extends: 
        (and (pair? (cdr (siginfo-names (signature-siginfo s))))
             (intro (cadr (siginfo-names (signature-siginfo s)))))
        ;; vars
-       (map intro
-            (apply list (signature-vars s)))
+       (map intro (signature-vars s))
        ;; defined vars
-       (map intro (apply list (apply append (map car (signature-val-defs s)))))
+       (map intro (append-map car (signature-val-defs s)))
        ;; defined stxs
-       (map intro (apply list (apply append (map car (signature-stx-defs s)))))))))
+       (map intro (append-map car (signature-stx-defs s)))))))

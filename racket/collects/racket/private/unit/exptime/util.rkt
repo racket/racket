@@ -17,15 +17,20 @@
          lookup
          static/extract
          make-relative-introducer
+         add-inferred-name
 
          split-requires
          split-requires*
 
+         attribute-map
+         attributes-map
          (for-syntax empty-id?
-                     dotted-id)
+                     dotted-id
+                     attr-decl)
          ~bind/nested
          with-loc
-         with-loc+name)
+         with-loc+name
+         with-inferred-name)
 
 ;; -----------------------------------------------------------------------------
 ;; error messages
@@ -80,6 +85,14 @@
                     stx
                     stx))))
 
+;; add-inferred-name : syntax? symbol? -> syntax?
+(define (add-inferred-name stx name)
+  ;; Don’t overwrite an existing 'inferred-name property, since that
+  ;; represents a “more local” name.
+  (if (syntax-property stx 'inferred-name)
+      stx
+      (syntax-property stx 'inferred-name name)))
+
 ;; -----------------------------------------------------------------------------
 ;; splitting requires
 
@@ -108,6 +121,31 @@
 ;; -----------------------------------------------------------------------------
 ;; syntax/parse helpers
 
+;; Maps over a the value of a syntax/parse attribute with the given
+;; ellipsis depth. Any `#f` values in the spine are always left
+;; untouched, but if `skip-false?` is `#t`, then `f` is applied to
+;; `#f` values in the leaves (since those may represent legitimate
+;; attribute values rather than placeholders representing the
+;; absence of a value).
+(define (attribute-map f depth val #:skip-false? [skip-false? #t])
+  (let loop ([val val]
+             [depth depth])
+    (if (zero? depth)
+        (if (and skip-false? (not val))
+            #f
+            (f val))
+        (and val (for/list ([val (in-list val)])
+                   (loop val (sub1 depth)))))))
+
+;; Like `(attribute-map .... #:skip-false? #f)`, but n-ary like `map`.
+(define (attributes-map f depth . vals)
+  (let loop ([vals vals]
+             [depth depth])
+    (if (zero? depth)
+        (apply f vals)
+        (and (andmap values vals)
+             (apply map (λ vals (loop vals (sub1 depth))) vals)))))
+
 (begin-for-syntax
   (define (empty-id? id)
     (eq? (syntax-e id) '||))
@@ -118,26 +156,63 @@
     ;; result’s lexical context.
     (if (empty-id? base-id)
         (datum->syntax base-id (syntax-e sub-id) base-id base-id)
-        (format-id base-id "~a.~a" base-id sub-id #:subs? #t))))
+        (format-id base-id "~a.~a" base-id sub-id #:subs? #t)))
+
+  (define-syntax-class attr-decl
+    #:attributes [id depth]
+    #:commit
+    (pattern id:id
+      #:attr depth #'0)
+    (pattern {id:id depth:nat})))
 
 ;; Like `~bind`, but binds all the attributes as nested attributes of
-;; a given base identifier.
+;; a given base attribute. Expects usage of the following form:
+;;
+;;   {~bind/nested [<base-attr-decl> <base-expr>]
+;;                 <tmp-id>
+;;                 ([<sub-attr-decl> <sub-expr>] ...)}
+;;
+;; <base-attr-decl> is bound to the result of <base-expr>. Then, for
+;; each provided <sub-attr-decl>, a nested attribute with the name
+;; `<base-attr-decl.id>.<sub-attr-decl.id>` is bound to the result
+;; of evaluating the corresponding <sub-expr> once per non-#f (leaf)
+;; value of <base-attr-decl> with <tmp-id> bound to the value.
+;;
+;; As a special case, if <base-attr-decl.id> is the empty identifier,
+;; <base-expr> is not bound to any attribute, and the sub-attributes
+;; are bound without any prefix. (This mirrors the behavior of `~var`.)
 (define-syntax ~bind/nested
   (pattern-expander
    (λ (stx)
-     (define-syntax-class attr-decl
-       #:attributes [id depth]
-       #:commit
-       (pattern id:id
-         #:attr depth #'0)
-       (pattern {id:id depth:nat}))
+     (define-syntax-class (nested-clause base-id base-depth base-tmp-id tmp-id)
+       #:attributes [bind-clause]
+       (pattern [nested-attr:attr-decl nested-e:expr]
+         #:attr bind-clause
+         (quasisyntax/loc this-syntax
+           [{#,(dotted-id base-id #'nested-attr.id)
+             #,(+ base-depth (syntax-e #'nested-attr.depth))}
+            #,(quasisyntax/loc #'nested-e
+                (attribute-map #,(quasisyntax/loc #'nested-e
+                                   (λ (#,tmp-id) nested-e))
+                               #,base-depth
+                               #,base-tmp-id))])))
 
      (syntax-parse stx
-       [(_ base-id:id [attr-d:attr-decl attr-e:expr] ...)
-        (define/syntax-parse [attr-id ...]
-          (for/list ([sub-id (in-list (attribute attr-d.id))])
-            (dotted-id #'base-id sub-id)))
-        #'{~bind [{attr-id attr-d.depth} attr-e] ...}]))))
+       [(_ {~optional {~and #:only-nested only-nested?}}
+           [base-attr:attr-decl base-e:expr]
+           tmp-id:id
+           ({~var nested (nested-clause #'base-attr.id
+                                        (syntax-e #'base-attr.depth)
+                                        #'base-tmp
+                                        #'tmp-id)}
+            ...))
+
+        #`{~and {~do (define base-tmp base-e)}
+                {~bind #,@(if (or (attribute only-nested?)
+                                  (empty-id? #'base-attr.id))
+                              '()
+                              (list #'[base-attr base-tmp]))
+                       nested.bind-clause ...}}]))))
 
 (define-template-metafunction with-loc
   (syntax-parser
@@ -147,7 +222,11 @@
 (define-template-metafunction with-loc+name
   (syntax-parser
     [(_ src body)
-     (syntax-property
+     (add-inferred-name
       (datum->syntax #'body (syntax-e #'body) #'src #'body)
-      'inferred-name
       (syntax-local-infer-name #'src))]))
+
+(define-template-metafunction with-inferred-name
+  (syntax-parser
+    [(_ name:id body)
+     (add-inferred-name #'body (syntax-e #'name))]))

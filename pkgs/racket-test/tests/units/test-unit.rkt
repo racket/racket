@@ -257,10 +257,10 @@
  "unit: expected tagged export spec"
  (unit (import) (export 1)))
 (test-syntax-error 
- "unit: unknown signature"
+ "unit: expected identifier bound to a signature"
  (unit (import a) (export)))
 (test-syntax-error 
- "unit: unknown signature"
+ "unit: expected identifier bound to a signature"
  (unit (import) (export a)))
 (test-syntax-error 
  "unit: expected identifier"
@@ -293,10 +293,10 @@
  "unit: definition for imported identifier"
  (unit (import x-sig) (export) (define x 1)))
 (test-syntax-error 
- "unit: cannot set! imported or exported variables"
+ "unit: cannot set! imported variable"
  (unit (import x-sig) (export) (set! x 1)))
 (test-syntax-error 
- "unit: cannot set! imported or exported variables"
+ "unit: cannot set! exported variable"
  (unit (import) (export x-sig) (define x 1) (set! x 1)))
 (test-syntax-error "unit: undefined export"
                    (unit (import) (export x-sig)))
@@ -1537,10 +1537,10 @@
 (invoke-unit/infer (link u v))
 
 (test-syntax-error 
- "define-values/invoke-unit/infer: missing unit"
+ "define-values/invoke-unit/infer: expected more terms"
  (define-values/invoke-unit/infer))
 (test-syntax-error 
- "define-values/invoke-unit/infer: not an identifier"
+ "define-values/invoke-unit/infer: expected export clause or expected unit clause\n  at: 1"
  (define-values/invoke-unit/infer 1))
 (test-syntax-error 
  "define-values/invoke-unit/infer: unknown unit definition"
@@ -1550,7 +1550,7 @@
                    (let-syntax ((x 1))
                      (define-values/invoke-unit/infer x)))
 (test-syntax-error 
- "define-values/invoke-unit/infer: expected syntax matching (define-values/invoke-unit/infer [(export <define-signature-identifier>)] <define-unit-identifier>) or (define-values/invoke-unit/infer  [(export <define-signature-identifier>)] (link <define-unit-identifier> ...))"
+ "define-values/invoke-unit/infer: expected export clause or expected values clause"
  (define-values/invoke-unit/infer x y))
 
 (define-unit u (import x-sig) (export) x)
@@ -1559,7 +1559,7 @@
 (test-syntax-error "define-values/invoke-unit/infer: no unit"
                    (define-values/invoke-unit/infer (link)))
 (test-syntax-error 
- "define-values/invoke-unit/infer: not an identifier"
+ "define-values/invoke-unit/infer: expected identifier"
  (define-values/invoke-unit/infer (link 1 u)))
 (test-syntax-error 
  "define-values/invoke-unit/infer: unknown unit definition"
@@ -1900,18 +1900,26 @@
     (define y x))
 
   (test-syntax-error
-
    "unit/new-import-export: identifier x is not present in new imports"
    (module foo racket
      (define-signature x-sig (x))
      (define-signature y-sig (y))
      (define-unit u (import x-sig) (export y-sig)
        (define y x))
-     (unit/new-import-export (import) (export x-sig)
+     (unit/new-import-export (import) (export)
                              ((y-sig) u x-sig))))
 
   (test-syntax-error
+   "unit/new-import-export: identifier x is not present in old exports"
+   (module foo racket
+     (define-signature x-sig (x))
+     (define-signature y-sig (y))
+     (define-unit u (import) (export y-sig)
+       (define y #f))
+     (unit/new-import-export (import) (export x-sig)
+                             ((y-sig) u))))
 
+  (test-syntax-error
    "unit/new-import-export: identifier z is not present in old exports"
    (module foo racket
      (define-signature x-sig (x))
@@ -2254,3 +2262,132 @@
       (import point-struct^)
       (export point-ops^))
     (test (point 4 6) (points-add (point 1 2) (point 3 4)))))
+
+;; Test that `define-values-for-export` definitions are not generated
+;; by `unit/new-import/export`.
+(let ()
+  (define-signature sig^
+    [value])
+  (define-signature sig*^ extends sig^
+    [(define-values-for-export [value] 42)])
+
+  (define-values/invoke-unit
+    (unit/new-import-export
+     (import) (export sig*^)
+     ([sig^] (unit (import) (export sig^)
+                   (define value 1))))
+    (import)
+    (export sig*^))
+
+  (test 1 value))
+
+;; Test the `values` clause on define-values/invoke-unit.
+(let ()
+  (define-unit u0@ (import) (export) (values))
+  (define-unit u1@ (import) (export) (values 'a))
+  (define-unit u2@ (import) (export) (values 'a 'b))
+
+  (test 'ok (let ()
+              (define-values/invoke-unit u0@ (import) (export) (values))
+              'ok))
+  (test '() (let ()
+              (define-values/invoke-unit u0@ (import) (export) (values . x))
+              x))
+  (test 'a (let ()
+             (define-values/invoke-unit u1@ (import) (export) (values x))
+             x))
+  (test '(a) (let ()
+               (define-values/invoke-unit u1@ (import) (export) (values . x))
+               x))
+  (test '(a b) (let ()
+                 (define-values/invoke-unit u2@ (import) (export) (values x y))
+                 (list x y)))
+  (test '(a b) (let ()
+                 (define-values/invoke-unit u2@ (import) (export) (values . x))
+                 x))
+  (test '(a (b)) (let ()
+                   (define-values/invoke-unit u2@ (import) (export) (values x . y))
+                   (list x y)))
+  (test '(a b ()) (let ()
+                    (define-values/invoke-unit u2@ (import) (export) (values x y . z))
+                    (list x y z)))
+
+  (test 'ok (let ()
+              (define-values/invoke-unit/infer u0@ (values))
+              'ok))
+  (test '() (let ()
+              (define-values/invoke-unit/infer u0@ (values . x))
+              x))
+  (test 'a (let ()
+             (define-values/invoke-unit/infer u1@ (values x))
+             x))
+  (test '(a) (let ()
+               (define-values/invoke-unit/infer u1@ (values . x))
+               x))
+  (test '(a b) (let ()
+                 (define-values/invoke-unit/infer u2@ (values x y))
+                 (list x y)))
+  (test '(a b) (let ()
+                 (define-values/invoke-unit/infer u2@ (values . x))
+                 x))
+  (test '(a (b)) (let ()
+                   (define-values/invoke-unit/infer u2@ (values x . y))
+                   (list x y)))
+  (test '(a b ()) (let ()
+                    (define-values/invoke-unit/infer u2@ (values x y . z))
+                    (list x y z))))
+
+;; Test that `unit/new-import-export` doesn’t cause imports to be evaluated too early.
+(let ()
+  (define-signature a^ [x])
+  (define-signature b1^ [get-x])
+  (define-signature b2^ [get-x])
+
+  (define-unit a@
+    (import)
+    (export a^)
+    (define x 1))
+
+  (define-unit b1@
+    (import a^)
+    (export b1^)
+    (define (get-x)
+      x))
+
+  (define-unit/s b2@
+    (import a^)
+    (export b2^)
+    b1@)
+
+  (test 1 (let ()
+            (define-values/invoke-unit/infer (link b2@ a@))
+            (get-x))))
+
+;; Test that `define-values/invoke-unit/infer` supports `only` in the exports clause.
+(let ()
+  (define-signature a^ [a b])
+  (define-signature b^ [x y])
+
+  (define-unit a@
+    (import)
+    (export a^)
+    (define a 1)
+    (define b 2))
+
+  (define-unit b@
+    (import a^)
+    (export b^)
+    (define x 3)
+    (define y (+ a b x)))
+
+  (let ()
+    (define-values/invoke-unit/infer a@
+      (export (only a^ a)))
+    (test 1 a))
+
+  (let ()
+    (define-values/invoke-unit/infer
+      (link a@ b@)
+      (export (only a^ b) (only b^ y)))
+    (test 2 b)
+    (test 6 y)))

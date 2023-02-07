@@ -155,10 +155,9 @@
                   (flatten (list (attribute elems.var-id)
                                  (attribute elems.val-def-id)
                                  (attribute elems.stx-def-id)
-                                 ; Why not also `elem.post-val-def-id`? I’m not quite
-                                 ; sure, but it breaks `struct` in signature forms if
-                                 ; those identifiers are included in this check.
-                                 ; Something to look into.
+                                 ; Why not also `elem.post-val-def-id`? Because export
+                                 ; definitions don’t conflict with signature elements, see
+                                 ; Note [Generated export definitions] in "exptime/signature.rkt".
                                  )))
                  "duplicate identifier"
      #:with signature-tag-id (generate-temporary #'sig-id)
@@ -182,8 +181,7 @@
                   (list (cons (list (quote-syntax elems.post-val-def-id) ...)
                               (quote-syntax elems.post-val-def-rhs))
                         ...)
-                  (list {~? (quote-syntax elems.ctc) #f} ...)
-                  (quote-syntax sig-id)))))
+                  (list {~? (quote-syntax elems.ctc) #f} ...)))))
          ;; dummy expression for Check Syntax:
          (define-values ()
            (begin
@@ -265,26 +263,23 @@
   (raise-syntax-error #f "internal error" stx))
 
 (define-signature-form (open stx enclosing-intro)
-  (define (build-sig-elems ps cs)
-    (map (λ (p c)
-           (if (syntax-e c)
-               #`(contracted [#,(car p) #,(cdr (syntax-e c))])
-               (car p)))
-         ps
-         cs))
   (syntax-parse stx
     [(_ spec:export-spec)
      (define sig (attribute spec.value))
      (define/syntax-parse [rename-bind [stx-bind ...] [val-bind ...]] ((build-val+macro-defs enclosing-intro) sig))
-     (define/syntax-parse ([post-rhs ...] [ctc ...]) (build-post-val-defs+ctcs sig))
-     (define/syntax-parse [sig-elem ...] (build-sig-elems (signature-vars sig) (attribute ctc)))
-     (define/syntax-parse (post-ids ...) (map car (signature-post-val-defs sig)))
+     (define-values [post-rhss ctcs] (build-post-val-defs+ctcs sig))
+     (define/syntax-parse [post-rhs ...] post-rhss)
+     (define/syntax-parse [sig-elem ...] (for/list ([int-id (in-list (attribute spec.var.int-id))]
+                                                    [ctc (in-list ctcs)])
+                                           (if ctc
+                                               #`(contracted [#,int-id #,ctc])
+                                               int-id)))
      (syntax->list
-      #'(sig-elem ...
+      #'[sig-elem ...
          (define-syntaxes . rename-bind)
          (define-syntaxes . stx-bind) ...
          (define-values . val-bind) ...
-         (define-values-for-export post-ids post-rhs) ...))]))
+         (define-values-for-export [spec.post-def.id ...] post-rhs) ...])]))
 
 (begin-for-syntax
  (define-struct self-name-struct-info (id)

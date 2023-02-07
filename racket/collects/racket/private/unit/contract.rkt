@@ -11,187 +11,194 @@
          (for-meta 2 racket/base)
          racket/contract/base
          racket/contract/combinator
+         racket/contract/region
+         racket/unsafe/undefined
+         "keywords.rkt"
          "runtime.rkt"
+         "unit-core.rkt"
          "util.rkt")
 
 (provide (for-syntax unit/c/core) unit/c)
 
-(define-for-syntax (contract-imports/exports import?)
-  (λ (table-stx sigs tags ctc-table blame-id)
-    (define def-tables (make-hasheq)) ; tag (or #f) =>  bound-identifier-mapping
-    
-    (define (convert-reference var vref ctc sig-ctc rename-bindings)
-      (let ([wrap-with-proj
-             (λ (ctc stx)
-               ;; If contract coersion ends up being a large overhead, we can
-               ;; store the result in a local box, then just check the box to
-               ;; see if we need to coerce.
-               #`(let ([ctc (coerce-contract 'unit/c (letrec-syntax #,rename-bindings #,ctc))])
-                   (((contract-projection ctc)
-                     #,(if import? #`(blame-swap #,blame-id) blame-id))
-                    #,stx)))])
-        (if ctc
-            #`(λ ()
-                #,(if sig-ctc
-                      #`(cons #,(wrap-with-proj 
-                                 ctc 
-                                 (with-syntax ([sig-ctc-stx
-                                                (syntax-property sig-ctc
-                                                                 'inferred-name
-                                                                 var)])
-                                   #`(let ([old-v/c (#,vref)])
-                                       (contract sig-ctc-stx (car old-v/c)
-                                                 (cdr old-v/c) (blame-positive #,blame-id)
-                                                 (quote #,var) (quote-syntax #,var)))))
-                              (blame-negative #,blame-id))
-                      (wrap-with-proj ctc #`(#,vref))))
-            vref)))
-    (for ([sig (in-list sigs)]
-          [tag (in-list tags)])
-      (define def-table (hash-ref! def-tables tag make-bound-id-table))
-      (define v #`(hash-ref #,table-stx #,(siginfo->key-expr (signature-siginfo sig) tag)))
-      (for ([(int/ext-name index) (in-indexed (in-list (signature-vars sig)))])
-        (bound-id-table-set! def-table (car int/ext-name) #`(vector-ref #,v #,index))))
-    (with-syntax ((((eloc ...) ...)
-                   (for/list ([target-sig (in-list sigs)]
-                              [target-tag (in-list tags)])
-                     (define def-table (hash-ref def-tables target-tag))
-                     (let ([rename-bindings (get-member-bindings def-table target-sig #`(blame-positive #,blame-id) #f)])
-                       (for/list ([target-int/ext-name (in-list (signature-vars target-sig))]
-                                  [sig-ctc (in-list (signature-ctcs target-sig))])
-                         (let* ([var (car target-int/ext-name)]
-                                [vref (bound-id-table-ref def-table var)]
-                                [ctc (bound-id-table-ref ctc-table var #f)])
-                           (convert-reference var vref ctc sig-ctc rename-bindings))))))
-                  (((export-keys ...) ...)
-                   (for/list ([sig (in-list sigs)]
-                              [tag (in-list tags)])
-                     (siginfo->key-exprs (signature-siginfo sig) tag))))
-      #'(unit-export ((export-keys ...)
-                      (vector-immutable eloc ...)) ...))))
+(begin-for-syntax
+  (define (build-contracted-defs sig-ids tag-syms binding-idss ctcss
+                                 #:import? import?
+                                 #:blame-expr blame-expr
+                                 #:indy-party-expr indy-party-expr
+                                 #:uncontracted-intro uncontracted-intro
+                                 #:contracted-intro contracted-intro
+                                 #:indy-intro indy-intro)
+    (for/list ([sig-id (in-list sig-ids)]
+               [tag-sym (in-list tag-syms)]
+               [binding-ids (in-list binding-idss)]
+               [ctcs (in-list ctcss)]
+               #:unless (null? binding-ids))
+      (define sig-blame-id (generate-temporary sig-id))
+      #`(begin
+          (define #,sig-blame-id (add-unit/c-signature-context #,blame-expr '#,sig-id '#,tag-sym '#,import?))
+          #,@(for/list ([binding-id (in-list binding-ids)]
+                        [ctc (in-list ctcs)])
+               (cond
+                 [import?
+                  (define val-thunk-id (generate-temporary binding-id))
+                  (define indy-thunk-id (generate-temporary binding-id))
+                  #`(begin
+                      (define-values [#,val-thunk-id #,indy-thunk-id]
+                        (build-unit/c-import-wrappers '#,binding-id
+                                                      (λ () (values #,(uncontracted-intro binding-id)
+                                                                    #,(indy-intro ctc)))
+                                                      #,sig-blame-id
+                                                      #,indy-party-expr))
+                      (define-syntaxes [#,(contracted-intro binding-id)
+                                        #,(indy-intro binding-id)]
+                        (make-unit/c-import-bindings (quote-syntax #,val-thunk-id)
+                                                     (quote-syntax #,indy-thunk-id))))]
+                 [else
+                  #`(define-values [#,(contracted-intro binding-id)
+                                    #,(indy-intro binding-id)]
+                      (wrap-unit/c-export '#,binding-id
+                                          #,(uncontracted-intro binding-id)
+                                          #,(indy-intro ctc)
+                                          #,sig-blame-id
+                                          #,indy-party-expr))])))))
 
-(define-for-syntax contract-imports (contract-imports/exports #t))
-(define-for-syntax contract-exports (contract-imports/exports #f))
-
-(define-for-syntax (unit/c/core name stx)
-  (syntax-parse stx
-    #:context (current-syntax-context)
-    [(:import-clause/c
-      :export-clause/c
-      d:optional-dep-clause
-      b:body-clause/c)
-
-     ;; The input syntax is restricted to `tagged-signature-id`, since
-     ;; `unit/c` doesn’t allow the full grammar of imports and exports.
-     ;; However, we still want to reparse each signature as an
-     ;; import/export spec so that we split the signature’s variables
-     ;; into internal/external pairs (see Note [Parsed signature
-     ;; imports and exports] for details).
-     ;;
-     ;; Even though the internal/external ids will always have the same
-     ;; symbolic names, doing this split is still important because the
-     ;; internal ids are given the local lexical context, and we need
-     ;; to be able to match them up with the provided contract
-     ;; specifications using `bound-identifier=?`.
-     (define/syntax-parse [in:tagged-import-spec ...] #'[i.s ...])
-     (define/syntax-parse [out:tagged-export-spec ...] #'[e.s ...])
-
-     (define apply-body-contract (attribute b.apply-invoke-ctcs))
-     (define make-define-ctcs/blame (attribute b.make-define-ctcs/blame))
-
-     (define contract-table (make-bound-id-table))
+  (define (unit/c/core name stx)
+    (syntax-parse stx
+      #:context (add-inferred-name (current-syntax-context) name)
+      [(:import-clause/c
+        :export-clause/c
+        d:opt-init-depends
+        {~optional b:body-clause/c})
        
-     (define (process-sig sig-stx sig-var-ids xs cs)
-       (let ([dup (check-duplicate-identifier xs)])
-         (when dup
-           (raise-stx-err (format "duplicate identifier found for signature ~a"
-                                  (syntax->datum sig-stx))
-                          dup)))
-       (for ([x (in-list xs)]
-             [c (in-list cs)])
-         (unless (memf (λ (i) (bound-identifier=? x i)) sig-var-ids)
-           (raise-stx-err (format "identifier not member of signature ~a" 
-                                  (syntax-e sig-stx))
-                          x))
-         (bound-id-table-set! contract-table x c)))
+       (define (process-sig sig-stx sig-var-ids xs cs)
+         (let ([dup (check-duplicate-identifier xs)])
+           (when dup
+             (raise-stx-err (format "duplicate identifier found for signature ~a"
+                                    (syntax->datum sig-stx))
+                            dup)))
+         (for ([x (in-list xs)]
+               [c (in-list cs)])
+           (unless (memf (λ (i) (bound-identifier=? x i)) sig-var-ids)
+             (raise-stx-err (format "identifier not member of signature ~a" 
+                                    (syntax-e sig-stx))
+                            x))))
 
-     (check-duplicate-sigs (map cons (attribute i.s.tag-sym) (attribute i.s.info))
-                           (attribute i.s)
-                           (map cons (attribute d.s.tag-sym) (attribute d.s.info))
-                           (attribute d.s))
-     (check-duplicate-subs (map cons (attribute e.s.tag-sym) (attribute e.s.info))
-                           (attribute e.s))
+       (check-duplicate-sigs (map cons (attribute i.s.tag-sym) (attribute i.s.info))
+                             (attribute i.s)
+                             (map cons (attribute d.tag-sym) (attribute d.info))
+                             (attribute d.dep))
+       (check-duplicate-subs (map cons (attribute e.s.tag-sym) (attribute e.s.info))
+                             (attribute e.s))
        
-     (for-each process-sig
-               (attribute i.s)
-               (attribute in.var.int-id)
-               (attribute i.x)
-               (attribute i.c))
-     (for-each process-sig
-               (attribute e.s)
-               (attribute out.var.int-id)
-               (attribute e.x)
-               (attribute e.c))
+       (for-each process-sig
+                 (attribute i.s)
+                 (attribute i.s.var.int-id)
+                 (attribute i.x)
+                 (attribute i.c))
+       (for-each process-sig
+                 (attribute e.s)
+                 (attribute e.s.var.int-id)
+                 (attribute e.x)
+                 (attribute e.c))
 
-     (define/syntax-parse [imports/exports/deps ...]
-       #'[(vector-immutable (cons 'i.s.info.self-id (vector-immutable i.s.key ...)) ...)
-          (vector-immutable (cons 'e.s.info.self-id (vector-immutable e.s.key ...)) ...)
-          (list d.s.self-key ...)])
+       (define/syntax-parse [imports/exports/deps ...]
+         #'[(vector-immutable (cons 'i.s.info.self-id (vector-immutable i.s.key ...)) ...)
+            (vector-immutable (cons 'e.s.info.self-id (vector-immutable e.s.key ...)) ...)
+            (list d.self-key ...)])
 
-     (define/syntax-parse ctcs/blame (generate-temporary 'ctcs/blame))
+       (define uncontracted-intro (make-syntax-introducer #t))
+       (define contracted-intro (make-syntax-introducer #t))
+       (define indy-intro (make-syntax-introducer #t))
+
+       ;; Builds import/export specs that rename the given ids using the
+       ;; given syntax introducer.
+       (define (build-renamed-specs orig-specs idss intro)
+         (for/list ([orig-spec (in-list orig-specs)]
+                    [ids (in-list idss)])
+           (rename-ie-spec orig-spec (for/list ([id (in-list ids)])
+                                       (cons (intro id) id)))))
+
+       (define-values [unit-expr x y z]
+         (build-unit
+          #:contract-region? #f ; contract violations in the body should blame the indy party
+          #:suppress-generated-exports? #t ; see Note [Suppress generated exports on reexport] in "unit-core.rkt"
+          #`[(import #,@(build-renamed-specs (attribute i.s) (attribute i.x) uncontracted-intro))
+             (export #,@(build-renamed-specs (attribute e.s) (attribute e.x) contracted-intro))
+             {~? {~@ . d}}
+
+             #,@(build-contracted-defs
+                 (attribute i.s.sig-id)
+                 (attribute i.s.tag-sym)
+                 (attribute i.x)
+                 (attribute i.c)
+                 #:import? #t
+                 #:blame-expr #'import-blame
+                 #:indy-party-expr #'indy-party
+                 #:uncontracted-intro uncontracted-intro
+                 #:contracted-intro contracted-intro
+                 #:indy-intro indy-intro)
+
+             (define-values/invoke-unit unit-tmp
+               (import #,@(build-renamed-specs (attribute i.s) (attribute i.x) contracted-intro))
+               (export #,@(build-renamed-specs (attribute e.s) (attribute e.x) uncontracted-intro))
+               (values . results))
+
+             #,@(build-contracted-defs
+                 (attribute e.s.sig-id)
+                 (attribute e.s.tag-sym)
+                 (attribute e.x)
+                 (attribute e.c)
+                 #:import? #f
+                 #:blame-expr #'export-blame
+                 #:indy-party-expr #'indy-party
+                 #:uncontracted-intro uncontracted-intro
+                 #:contracted-intro contracted-intro
+                 #:indy-intro indy-intro)
+
+             #,(if (attribute b)
+                   #`(unit/c-check-invoke-values
+                      body-blame
+                      (list #,@(map indy-intro (attribute b.ctc)))
+                      results)
+                   #'(apply values results))]))
        
-     (quasisyntax/loc stx
-       (make-contract
-        #:name
-        (list 'unit/c
-              (cons 'import 
-                    (list (cons 'i.s
-                                (map list (list 'i.x ...) 
-                                     (build-compound-type-name 'i.c ...)))
-                          ...))
-              (cons 'export 
-                    (list (cons 'e.s
-                                (map list (list 'e.x ...)
-                                     (build-compound-type-name 'e.c ...)))
-                          ...))
-              (cons 'init-depend
-                    (list 'd.s ...))
-              #,@(attribute b.name))
-        #:projection
-        (λ (blame)
-          #,@(make-define-ctcs/blame #'ctcs/blame #'blame)
-          (λ (unit-tmp)
-            (unit/c-first-order-check 
-             unit-tmp
-             imports/exports/deps ...
-             blame)
-            (make-unit
-             '#,name
-             imports/exports/deps ...
-             (λ ()
-               (let-values ([(unit-fn export-table) ((unit-go unit-tmp))])
-                 (values (lambda (import-table)
-                           #,(apply-body-contract
-                              #`(unit-fn #,(contract-imports
-                                            #'import-table
-                                            (attribute in.value)
-                                            (attribute in.tag-sym)
-                                            contract-table
-                                            #'blame))
-                              #'blame
-                              #'ctcs/blame))
-                         #,(contract-exports 
-                            #'export-table
-                            (attribute out.value)
-                            (attribute out.tag-sym)
-                            contract-table
-                            #'blame)))))))
-        #:first-order
-        (λ (v)
-          (unit/c-first-order-check 
-           v
-           imports/exports/deps ...
-           #f))))]))
+       (quasisyntax/loc stx
+         (let ([indy-party (current-contract-region)])
+           (make-contract
+            #:name
+            (list 'unit/c
+                  (cons 'import 
+                        (list (cons 'i.s
+                                    (map list (list 'i.x ...) 
+                                         (build-compound-type-name 'i.c ...)))
+                              ...))
+                  (cons 'export 
+                        (list (cons 'e.s
+                                    (map list (list 'e.x ...)
+                                         (build-compound-type-name 'e.c ...)))
+                              ...))
+                  (cons 'init-depend
+                        (list 'd.dep ...))
+                  {~? b.name})
+            #:projection
+            (λ (blame)
+              (define export-blame blame)
+              (define import-blame (blame-swap blame))
+              #,@(if (attribute b)
+                     (list #'(define body-blame (add-unit/c-body-context blame)))
+                     '())
+              (λ (unit-tmp)
+                (unit/c-first-order-check 
+                 unit-tmp
+                 imports/exports/deps ...
+                 blame)
+                #,unit-expr))
+            #:first-order
+            (λ (v)
+              (unit/c-first-order-check 
+               v
+               imports/exports/deps ...
+               #f)))))])))
 
 (define-syntax/err-param (unit/c stx)
   (syntax-case stx ()
@@ -272,3 +279,89 @@
     (check-sig-subset (unit-export-sigs val) expected-exports #f)
     (check-dependencies expected-deps (unit-deps val) expected-imports)
     #t))
+
+(define (add-unit/c-signature-context blame name tag import?)
+  (blame-add-context blame (format "signature ~a ~a~a by"
+                                   name
+                                   (if import? "imported" "exported")
+                                   (if tag (format " with tag ~a" tag) ""))))
+
+(define (add-unit/c-member-context blame name)
+  (blame-add-context blame
+                     (format "the ~a member of" name)
+                     #:important (symbol->string name)))
+
+(define (add-unit/c-body-context blame)
+  (blame-add-context blame "the body of"))
+
+(define (unit/c-check-invoke-values blame ctcs args)
+  (define len (length ctcs))
+  (define args-len (length args))
+  (unless (= len args-len)
+    (raise-blame-error blame
+                       (blame-value blame)
+                       (format "expected ~a values, returned ~a" len args-len)))
+  (apply values 
+         (map 
+          (lambda (ctc arg) (((contract-projection ctc) blame) arg))
+          ctcs args)))
+
+;; build-unit/c-import-wrappers : symbol?
+;;                                (-> (values any/c contract?))
+;;                                blame?
+;;                                any/c
+;;                             -> (values (-> any/c) (-> any/c))
+;;
+;; Returns a pair of thunks that lazily apply the standard and indy
+;; contract projections for an imported value. The laziness is important,
+;; as the imports may not yet be initialized; see Note [Preserve import laziness]
+;; in "runtime.rkt" for the details.
+(define (build-unit/c-import-wrappers member-name get-val+ctc sig-blame indy-party)
+  (define (force!)
+    (define-values [val ctc] (get-val+ctc))
+    (with-contract-continuation-mark sig-blame
+      (define proj (contract-projection (coerce-contract 'unit/c ctc)))
+
+      (define blame (add-unit/c-member-context sig-blame member-name))
+      (define wrapped-val ((proj blame) val))
+      (set-box! thunk-box (λ () wrapped-val))
+
+      (define indy-blame (blame-replace-negative blame indy-party))
+      (define indy-val ((proj indy-blame) val))
+      (set-box! indy-thunk-box (λ () indy-val))))
+
+  (define (make-forcer-box)
+    (define b
+      (box (λ ()
+             ;; If evaluation of the value or contract somehow depends on the
+             ;; contracted value, raise a use-before-initialization error to
+             ;; avoid infinitely looping.
+             (set-box! b (λ () (check-not-unsafe-undefined unsafe-undefined member-name)))
+             (force!)
+             ((unbox b)))))
+    b)
+
+  (define thunk-box (make-forcer-box))
+  (define indy-thunk-box (make-forcer-box))
+
+  (values (λ () ((unbox thunk-box)))
+          (λ () ((unbox indy-thunk-box)))))
+
+(define (wrap-unit/c-export member-name val ctc sig-blame indy-party)
+  (define proj (contract-projection (coerce-contract 'unit/c ctc)))
+  (define blame (add-unit/c-member-context sig-blame member-name))
+  (define indy-blame (blame-replace-negative blame indy-party))
+  (values ((proj blame) val)
+          ((proj indy-blame) val)))
+
+(begin-for-syntax
+  ;; To avoid evaluating imports too early, it’s important that we make
+  ;; the wrapped imported bindings look like a unit import, so other forms
+  ;; know it’s safe to defer evaluation. See Note [Preserve import laziness]
+  ;; in "runtime.rkt" for details.
+  (define (make-unit/c-import-binding thunk-id)
+    (make-import-binding
+     (λ (stx) (quasisyntax/loc stx (#,thunk-id)))))
+  (define (make-unit/c-import-bindings thunk-id indy-thunk-id)
+    (values (make-unit/c-import-binding thunk-id)
+            (make-unit/c-import-binding indy-thunk-id))))

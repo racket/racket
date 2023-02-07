@@ -24,9 +24,9 @@
          ~bind-keys
 
          (struct-out signature)
+         make-signature-member-introducer
          lookup-signature
          ~bind-signature
-         ~bind-signature-ie
          signature-id
          tagged-signature-id
          opt-init-depends)
@@ -67,18 +67,14 @@
 (define-syntax ~bind-siginfo
   (pattern-expander
    (syntax-parser
-     [(_ x:id e:expr)
-      #`{~and
-         {~do (define tmp e)}
-         #,@(if (empty-id? #'x) '()
-                (list #'{~bind [x tmp]}))
-         {~bind/nested
-          x
-          [{id 1} (siginfo-names tmp)]
+     [(_ x:attr-decl e:expr)
+      #'{~bind/nested
+         [x e] tmp
+         ([{id 1} (siginfo-names tmp)]
           [self-id (car (siginfo-names tmp))]
           [{super-id 1} (cdr (siginfo-names tmp))]
           [{ctime-id 1} (siginfo-ctime-ids tmp)]
-          [{rtime-id 1} (siginfo-rtime-ids tmp)]}}])))
+          [{rtime-id 1} (siginfo-rtime-ids tmp)])}])))
 
 ;; siginfo-subtype : siginfo siginfo -> bool
 (define (siginfo-subtype s1 s2)
@@ -108,14 +104,14 @@
 (define-syntax ~bind-keys
   (pattern-expander
    (syntax-parser
-     [(_ x:id tag-e:expr info-e:expr)
-      #`{~and
-         {~do (define keys (siginfo->key-exprs info-e tag-e))}
-         {~bind/nested
-          x
-          [{key 1} keys]
+     [(_ x:attr-decl info-e:expr tag-e:expr)
+      #'{~bind/nested
+         #:only-nested
+         [x (attributes-map siginfo->key-exprs 'x.depth info-e tag-e)]
+         keys
+         ([{key 1} keys]
           [self-key (car keys)]
-          [{super-key 1} (cdr keys)]}}])))
+          [{super-key 1} (cdr keys)])}])))
 
 ;; -----------------------------------------------------------------------------
 ;; signature
@@ -130,12 +126,47 @@
    val-defs      ; (listof (cons/c (listof identifier?) syntax?))
    stx-defs      ; (listof (cons/c (listof identifier?) syntax?))
    post-val-defs ; (listof (cons/c (listof identifier?) syntax?))
-   ctcs          ; (listof (or/c syntax? #f))
-   orig-binder)  ; identifier?
+   ctcs)         ; (listof (or/c syntax? #f))
   #:property prop:procedure
   (lambda (_ stx)
     (parameterize ((current-syntax-context stx))
       (raise-stx-err "illegal use of signature name"))))
+
+(define (make-signature-member-introducer sig ref-stx)
+  (make-relative-introducer ref-stx (car (siginfo-names (signature-siginfo sig)))))
+
+#| Note [Generated export definitions]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The `define-values-for-export` form is used to generate a definition
+in any unit that exports the signature. While the idea is conceptually
+a natural dual to `define-values` in a signature (which synthesizes
+definitions in units that *import* the signature), there are several
+ways in which they work somewhat differently.
+
+For one, identifiers bound by export definitions do not conflict with
+other members of the signature. For example, this is entirely legal:
+
+  (define-signature sig^
+    [some-value
+     (define-values-for-export [some-value] 'something)])
+
+There is no conflict because, of course, an `export` declaration
+introduces *uses* of the signature members, not bindings for them. The
+generated export supplies the value that is exported by the unit.
+
+It is not currently possible for a user to suppress the generation of
+these definitions when a signature is exported (though we sometimes do
+it internally; see Note [Suppress generated definitions on reexport]).
+It is also not possible for a user to rename them directly, but we
+*do* implicitly rename them if a user renames an export with the same
+name. For example, given the above definition of `sig^`, the unit
+
+  (unit (import)
+        (export (rename sig^ [another-value some-value]))
+        another-value)
+
+is accepted without error. Essentially, we treat these “exported member +
+generated definition pairs” as permanently linked. |#
 
 ;; lookup-signature : syntax-object -> signature
 (define (lookup-signature id)
@@ -144,49 +175,25 @@
       (raise-stx-err "not a signature" id))
     s))
 
-(define (get-int-ids defs)
-  (map (λ (def) (map car (car def))) defs))
-(define (get-ext-ids defs)
-  (map (λ (def) (map car (car def))) defs))
-
-;; Helpers for bulk-binding attributes for signature and signature-ie
-;; values; see Note [Parsed signature imports and exports] in
-;; "import-export.rkt" for details about the latter.
-(define-syntaxes [~bind-signature ~bind-signature-ie]
-  (let ()
-    (define (make ie?)
-      (pattern-expander
-       (syntax-parser
-         [(_ x:id e:expr)
-          #:with x-info (dotted-id #'x #'info)
-          #`{~and
-             {~do (define tmp e)}
-             #,@(if (empty-id? #'x) '()
-                    (list #'{~bind [x tmp]}))
-             {~bind/nested
-              x
-              [{post-def.id 2} (map car (signature-post-val-defs tmp))]
-              [{post-def.rhs 1} (map cdr (signature-post-val-defs tmp))]
-              [{ctc 1} (signature-ctcs tmp)]
-              #,@(if ie?
-                     #'([{var.int-id 1} (map car (signature-vars tmp))]
-                        [{var.ext-id 1} (map cdr (signature-vars tmp))]
-                        [{val-def.int-id 2} (get-int-ids (signature-val-defs tmp))]
-                        [{val-def.ext-id 2} (get-ext-ids (signature-val-defs tmp))]
-                        [{val-def.rhs 1} (map cdr (signature-val-defs tmp))]
-                        [{stx-def.int-id 2} (get-int-ids (signature-stx-defs tmp))]
-                        [{stx-def.ext-id 2} (get-ext-ids (signature-stx-defs tmp))]
-                        [{stx-def.rhs 1} (map cdr (signature-stx-defs tmp))])
-
-                     #'([{var-id 1} (signature-vars tmp)]
-                        [{val-def.id 2} (map car (signature-val-defs tmp))]
-                        [{val-def.rhs 1} (map cdr (signature-val-defs tmp))]
-                        [{stx-def.id 2} (map car (signature-stx-defs tmp))]
-                        [{stx-def.rhs 1} (map cdr (signature-stx-defs tmp))]))}
-
-             {~bind-siginfo #,(dotted-id #'x #'info) (signature-siginfo tmp)}}])))
-
-    (values (make #f) (make #t))))
+;; Helpers for bulk-binding attributes for signature values.
+(define-syntax ~bind-signature
+  (pattern-expander
+   (syntax-parser
+     [(_ x:attr-decl e:expr)
+      #`{~and
+         {~do (define tmp e)}
+         {~bind/nested
+          [x tmp] tmp
+          ([{var-id 1} (signature-vars tmp)]
+           [{val-def.id 2} (map car (signature-val-defs tmp))]
+           [{val-def.rhs 1} (map cdr (signature-val-defs tmp))]
+           [{stx-def.id 2} (map car (signature-stx-defs tmp))]
+           [{stx-def.rhs 1} (map cdr (signature-stx-defs tmp))]
+           [{post-def.id 2} (map car (signature-post-val-defs tmp))]
+           [{post-def.rhs 1} (map cdr (signature-post-val-defs tmp))]
+           [{ctc 1} (signature-ctcs tmp)])}
+         {~bind-siginfo {#,(dotted-id #'x.id #'info) x.depth}
+                        (attribute-map signature-siginfo 'x.depth tmp)}}])))
 
 (define-syntax-class signature-id
   #:description #f
@@ -219,11 +226,11 @@
   #:literals [tag]
   (pattern (tag ~! tag-id:id {~and sig-id :signature-id})
     #:attr tag-sym (syntax-e #'tag-id)
-    #:and {~bind-keys || (attribute tag-sym) (attribute info)})
+    #:and {~bind-keys || (attribute info) (attribute tag-sym)})
   (pattern {~and sig-id :signature-id}
     #:attr tag-id #f
     #:attr tag-sym #f
-    #:and {~bind-keys || (attribute tag-sym) (attribute info)}))
+    #:and {~bind-keys || (attribute info) (attribute tag-sym)}))
 
 (define-splicing-syntax-class opt-init-depends
   #:description #f
