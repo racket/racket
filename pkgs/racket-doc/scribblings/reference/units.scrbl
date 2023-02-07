@@ -327,9 +327,9 @@ returned from the unit body are bound to the given @racket[result-id]s,
 in order. If no @racket[rest-results-id] is provided, the body must return
 exactly as many values as there are @racket[result-id]s, but if it is
 provided, the body may return arbitrarily many more, and
-@racket[rest-result-id] is bound to a list containing the extra results.
+@racket[rest-results-id] is bound to a list containing the extra results.
 
-@history[#:changed "8.8.0.2" @elem{Added @racket[maybe-results-clause].}]}
+@history[#:changed "8.8.0.7" @elem{Added @racket[maybe-results-clause].}]}
 
 @; ------------------------------------------------------------------------
 
@@ -562,17 +562,21 @@ information of the signatures for the unit's imports (i.e., the lexical
 information that would normally be derived from the signature reference).
 See @racket[define-signature] for more information.}
 
-@defform[
-#:literals (export link values)
-(define-values/invoke-unit/infer unit-spec
-  maybe-exports
-  maybe-results-clause)
-#:grammar
-([unit-spec unit-id (link link-unit-id ...)]
- [maybe-exports code:blank (export tagged-sig-spec ...)]
- [maybe-results-clause (code:line)
-                       (values result-id ...)
-                       (values result-id ... . rest-results-id)])]{
+@defform*[
+ #:literals (export link values)
+ [(define-values/invoke-unit/infer
+    unit-spec
+    maybe-exports
+    maybe-results-clause)
+  (define-values/invoke-unit/infer
+    (export tagged-sig-spec ...)
+    unit-spec)]
+ #:grammar
+ ([unit-spec unit-id (link link-unit-id ...)]
+  [maybe-exports code:blank (export tagged-sig-spec ...)]
+  [maybe-results-clause (code:line)
+                        (values result-id ...)
+                        (values result-id ... . rest-results-id)])]{
 
 Like @racket[define-values/invoke-unit], but uses static information
 associated with @racket[unit-id] to infer which imports must be
@@ -591,13 +595,15 @@ information.
 If @racket[maybe-results-clause] is provided, the values returned by
 the unit body are bound in the same way as @racket[define-values/invoke-unit].
 
+For backwards compatibility, an @racket[export] clause is allowed to
+appear before @racket[unit-spec] (in which case no @racket[maybe-results-clause]
+may be provided). New programs should provide @racket[unit-spec] first
+(which is consistent with @racket[define-values/invoke-unit]).
+
 @history[
- #:changed "8.8.0.2" @elem{Swapped the order in which the @racket[maybe-exports]
-                           and @racket[unit-spec] clauses are expected to
-                           appear for consistency with @racket[define-values/invoke-unit],
-                           though the old order is still accepted for backwards
-                           compatibility.}
- #:changed "8.8.0.2" @elem{Added @racket[maybe-results-clause].}]}
+ #:changed "8.8.0.7" @elem{Allowed @racket[unit-spec] to appear before
+   @racket[maybe-exports] for consistency with @racket[define-values/invoke-unit]
+   and added @racket[maybe-results-clause].}]}
 
 @; ------------------------------------------------------------------------
 
@@ -797,15 +803,12 @@ If a body contract is specified then the result of invoking the unit value
 is wrapped with the given contract, otherwise the values are returned as-is.
 
 @history[
- #:changed "8.8.0.2" @elem{Changed @racket[sig-spec-block] to allow arbitrary
-                           @racket[tagged-sig-spec]s instead of only allowing
-                           @racket[tagged-sig-id]s.}
- #:changed "8.8.0.2" @elem{Made bindings from @emph{all} signatures visible in
-                           the scope of each @racket[contract] expression
-                           instead of only the bindings from the same signature.
-                           Additionally, contracts on signature bindings are
-                           enforced for uses that appear in the @racket[contract]
-                           expressions themselves.}]}
+ #:changed "8.8.0.7" @elem{Changed @racket[sig-spec-block] to allow arbitrary
+   @racket[tagged-sig-spec]s instead of only allowing @racket[tagged-sig-id]s.
+   Made bindings from @emph{all} signatures visible in the scope of each
+   @racket[contract] expression instead of only the bindings from the same
+   signature. Additionally, contracts on signature bindings are enforced
+   within @racket[contract] expressions.}]}
 
 @defform/subs[#:literals (import export values)
               (define-unit/contract unit-id
@@ -826,12 +829,10 @@ link inference whose imports and exports are contracted with a unit
 contract.  The unit name is used for the positive blame of the contract.
 
 @history[
- #:changed "8.8.0.2" @elem{Made bindings from @emph{all} signatures visible in
-                           the scope of each @racket[contract] expression
-                           instead of only the bindings from the same signature.
-                           Additionally, contracts on signature bindings are
-                           enforced for uses that appear in the @racket[contract]
-                           expressions themselves.}]}
+ #:changed "8.8.0.7" @elem{Made bindings from @emph{all} signatures visible in
+   the scope of each @racket[contract] expression instead of only the bindings
+   from the same signature. Additionally, contracts on signature bindings are
+   enforced within @racket[contract] expressions.}]}
 
 
 @; ------------------------------------------------------------------------
