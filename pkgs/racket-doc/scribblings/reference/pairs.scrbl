@@ -1339,7 +1339,7 @@ key value from each list element, so two items are considered equal if
 
 Like @racket[check-duplicates], if the @racket[same?] argument is one of
 @racket[equal?], @racket[eqv?], @racket[eq?], and @racket[equal-always?],
-the operation can be specialized to improved performance.
+the operation can be specialized to improve performance.
 
 @mz-examples[#:eval list-eval
   (remove-duplicates '(a b b a))
