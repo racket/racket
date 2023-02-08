@@ -119,7 +119,7 @@
                e
                #,(if (< idx prefix-len)
                      idx
-                     #`(- (+ #,idx vec-len) #,pre+suf-len)))))
+                     #`(+ vec-len #,(- idx pre+suf-len))))))
         (map parse (append prefix suffix))))]
     [(vector es ...)
      (ormap ddk? (syntax->list #'(es ...)))
