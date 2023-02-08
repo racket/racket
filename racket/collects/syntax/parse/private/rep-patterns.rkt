@@ -206,6 +206,8 @@
 (define-struct rep:optional (name over-message defaults) #:prefab)
 (define-struct rep:bounds (min max name under-message over-message) #:prefab)
 
+(define repc:plus (make-rep:bounds 1 +inf.0 #f #f #f)) ;; used for ...+
+
 ;; ============================================================
 
 (define (single-pattern? x)
