@@ -1000,7 +1000,7 @@
 (define (parse-pat:plus-dots stx head tail decls)
   (define headp (parse-head-pattern head decls))
   (define tailp (parse-single-pattern tail decls))
-  (define head/rep (create-ehpat headp (make-rep:bounds 1 +inf.0 #f #f #f) head))
+  (define head/rep (create-ehpat headp repc:plus head))
   (pat:dots (list head/rep) tailp))
 
 (define (parse-pat:bind stx decls)
