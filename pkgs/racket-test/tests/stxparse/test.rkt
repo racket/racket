@@ -8,16 +8,16 @@
 
 ;; Main syntax class and pattern tests
 
-;; ========
+;; ============================================================
 
 (define-syntax-class one
   (pattern (a)))
 (define-syntax-class two
   (pattern (a b)))
 
-;; ========
+;; ============================================================
+;; S patterns
 
-;; -- S patterns
 ;; name patterns
 (tok 1 a
      (and (bound (a 0)) (s= a 1)))
@@ -293,7 +293,8 @@
                    "nope"))
       #rx"nope")
 
-;; -- H patterns
+;; ============================================================
+;; H patterns
 
 ;; seq
 (tok (1 2 3) ((~seq 1 2) 3))
@@ -317,7 +318,31 @@
   (pattern (~seq a b)))
 (tok (1 2 3 4) (x:twoseq ...))
 
-;; -- A patterns
+;; ============================================================
+;; EH patterns
+
+(test-case "~optional defaults, scoping"
+  (define (parse-optional stx)
+    (syntax-parse stx
+      [(x:nat (~alt y:id (~optional z:nat #:defaults ([z #'x]))) ...)
+       (syntax->datum #'z)]))
+  (check-equal? (parse-optional #'(123 a b c)) 123)
+  (check-equal? (parse-optional #'(123 a b 99)) 99))
+
+(terx (x 1 2) (a:id (~once n:nat #:too-many (format "too many nats after ~s" (syntax-e #'a))) ...)
+      "too many nats after x")
+
+(terx (x 1 2) (a:id (~once n:nat #:name (format "nat after ~s" (syntax-e #'a))) ...)
+      "too many occurrences of nat after x")
+
+(terx (x) (a:id (~once n:nat #:too-few (format "where is the nat after ~s?" (syntax-e #'a))) ...)
+      "where is the nat after x?")
+
+(terx (x) (a:id (~once n:nat #:name (format "nat after ~s" (syntax-e #'a))) ...)
+      "missing required occurrence of nat after x")
+
+;; ============================================================
+;; A patterns
 
 ;; cut patterns
 (terx* (1 2 3) [(1 ~! 4) (1 _:nat 3)]
@@ -352,7 +377,8 @@
 (terx (1 2 3) (x:nat y:nat (~parse (2 4) #'(x y)))
       "expected the literal 2")
 
-;; == syntax-parse: other feature tests
+;; ============================================================
+;; syntax-parse: other feature tests
 
 (test-case "syntax-parse: #:context w/ syntax"
   (check-exn
@@ -382,9 +408,6 @@
            (syntax-parse #'(0 + 1 * 2)
              #:literals (+ [times *])
              [(a + b * c) (void)]))
-
-
-;; == syntax classes: other feature tests
 
 ;; #:auto-nested-attributes
 
@@ -608,7 +631,8 @@
                          'disappeared-use))
    '(lambda)))
 
-;; == Lib tests
+;; ============================================================
+;; Lib tests
 
 ;; test string, bytes act as stxclasses
 
@@ -646,8 +670,7 @@
    0)
   (void))
 
-
-;; -- test #:declare scoping
+;; test #:declare scoping
 
 (test-case "#:declare magical scoping"
   (syntax-parse #'(1 2)
@@ -663,7 +686,8 @@
      #:declare b (nat> (syntax-e #'a))
      (void)]))
 
-;; ---- Regression tests
+;; ============================================================
+;; Regression tests
 
 (test-case "pvar is syntax"
   ;; from clklein 9/21/2011
