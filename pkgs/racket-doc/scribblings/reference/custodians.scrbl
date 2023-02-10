@@ -144,33 +144,41 @@ immediate allocations can be rejected with an
 @examples[
  (require racket/async-channel)
  (define ch (make-async-channel))
- (parameterize ([current-custodian (make-custodian)])
-   (thread-wait
-    (thread
-     (λ ()
-       (with-handlers ([exn:fail:out-of-memory? (λ (e) (async-channel-put ch e))])
-         (custodian-limit-memory (current-custodian) (* 1024 1024))
-         (make-bytes (* 4 1024 1024))
-         (async-channel-put ch "Not OK")))))
-   (async-channel-get ch))
+ (eval:alts
+  (parameterize ([current-custodian (make-custodian)])
+    (thread-wait
+     (thread
+      (λ ()
+        (with-handlers ([exn:fail:out-of-memory?
+                         (λ (e) (async-channel-put ch e))])
+          (custodian-limit-memory (current-custodian) (* 1024 1024))
+          (make-bytes (* 4 1024 1024))
+          (async-channel-put ch "Not OK")))))
+    (async-channel-get ch))
+   (exn:fail:out-of-memory "out of memory" (current-continuation-marks)))
  (define cust (make-custodian))
- (eval:error
-  (with-handlers ([exn:fail:out-of-memory? (λ (e) (error "Caught OOM exn"))])
-    (call-in-nested-thread
-     (λ ()
-       (custodian-limit-memory cust (* 1024 1024))
-       (make-bytes (* 4 1024 1024))
-       "Not OK")
-     cust)))
+ (eval:alts
+   (with-handlers ([exn:fail:out-of-memory?
+                    (λ (e) (error "Caught OOM exn"))])
+     (call-in-nested-thread
+      (λ ()
+        (custodian-limit-memory cust (* 1024 1024))
+        (make-bytes (* 4 1024 1024))
+        "Not OK")
+      cust))
+   (eval:error
+    (error "Caught OOM exn")))
  ]
 
 @examples[
  #:label "Non-examples:"
- (parameterize ([current-custodian (make-custodian)])
-   (custodian-limit-memory (current-custodian) (* 1024 1024))
-   (code:comment @#,elem{Allocation of @racket[make-bytes] is charged to the current thread's})
-   (code:comment @#,elem{managing custodian, not the new custodian.})
-   (make-bytes (* 4 1024 1024))
+ (eval:alts
+  (parameterize ([current-custodian (make-custodian)])
+    (custodian-limit-memory (current-custodian) (* 1024 1024))
+    (code:comment @#,elem{Allocation of @racket[make-bytes] is charged to the current thread's})
+    (code:comment @#,elem{managing custodian, not the new custodian.})
+    (make-bytes (* 4 1024 1024))
+    "Not OK")
    "Not OK")
  ]
 }

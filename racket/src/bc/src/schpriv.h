@@ -172,12 +172,8 @@ XFORM_NONGCING int scheme_intern_prim_opt_flags(int);
 #define MALLOC_N_STUBBORN(x, n) _MALLOC_N(x, n, scheme_malloc_stubborn)
 
 #ifdef MZ_PRECISE_GC
-# define WEAKIFY(x) scheme_make_weak_box(x)
-# define WEAKIFIED(x) SCHEME_WEAK_BOX_VAL(x)
 # define HT_EXTRACT_WEAK(x) SCHEME_WEAK_BOX_VAL(x)
 #else
-# define WEAKIFY(x) x
-# define WEAKIFIED(x) x
 # define HT_EXTRACT_WEAK(x) (*(char **)(x))
 #endif
 
@@ -911,7 +907,7 @@ void scheme_run_atexit_closers(Scheme_Object *o, Scheme_Close_Custodian_Client *
 
 typedef struct Scheme_Thread_Custodian_Hop {
   Scheme_Object so;
-  Scheme_Thread *p; /* really an indirection with precise gc */
+  Scheme_Object *p; /* weak box containing a Scheme_Thread* */
   Scheme_Custodian_Reference *mref;
   Scheme_Object *extra_mrefs; /* More owning custodians */
   Scheme_Object *dead_box;

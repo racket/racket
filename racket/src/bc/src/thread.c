@@ -468,10 +468,6 @@ SHARED_OK static Scheme_Custodian_Extractor *extractors;
 #define LONGJMP(p) scheme_longjmpup(&p->jmpup_buf)
 #define RESETJMP(p) scheme_reset_jmpup_buf(&p->jmpup_buf)
 
-#ifndef MZ_PRECISE_GC
-# define scheme_thread_hop_type scheme_thread_type
-#endif
-
 SHARED_OK Scheme_Object *initial_cmdline_vec;
 
 #if defined(MZ_USE_PLACES)
@@ -1164,7 +1160,7 @@ static void adjust_custodian_family(void *mgr, void *skip_move)
 	    Scheme_Object *o;
 	    o = xCUSTODIAN_FAM(r->boxes[i]);
 	    if (SAME_TYPE(SCHEME_TYPE(o), scheme_thread_hop_type)) {
-	      o = WEAKIFIED(((Scheme_Thread_Custodian_Hop *)o)->p);
+	      o = SCHEME_WEAK_BOX_VAL(((Scheme_Thread_Custodian_Hop *)o)->p);
 	      if (o)
 		GC_register_thread(o, parent);
 	    } else if (SAME_TYPE(SCHEME_TYPE(o), scheme_place_type)) {
@@ -1498,7 +1494,7 @@ Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_F
 	  /* We've added an indirection and made it weak. See mr_hop note above. */
 	  is_thread = 1;
           the_thread_hop = (Scheme_Thread_Custodian_Hop *)o;
-	  the_thread = (Scheme_Thread *)WEAKIFIED(the_thread_hop->p);
+	  the_thread = (Scheme_Thread *)SCHEME_WEAK_BOX_VAL(the_thread_hop->p);
 	} else {
 	  is_thread = 0;
 	  the_thread = NULL;
@@ -1708,7 +1704,7 @@ int scheme_custodian_is_shut_down(Scheme_Custodian* c)
 
 static Scheme_Object *extract_thread(Scheme_Object *o)
 {
-  return (Scheme_Object *)WEAKIFIED(((Scheme_Thread_Custodian_Hop *)o)->p);
+  return SCHEME_WEAK_BOX_VAL(((Scheme_Thread_Custodian_Hop *)o)->p);
 }
 
 void scheme_init_custodian_extractors()
@@ -2687,12 +2683,12 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
   {
     Scheme_Thread_Custodian_Hop *hop;
     Scheme_Custodian_Reference *mref;
-    hop = MALLOC_ONE_WEAK_RT(Scheme_Thread_Custodian_Hop);
+    hop = MALLOC_ONE_RT(Scheme_Thread_Custodian_Hop);
     process->mr_hop = hop;
     hop->so.type = scheme_thread_hop_type;
     {
-      Scheme_Thread *wp;
-      wp = (Scheme_Thread *)WEAKIFY((Scheme_Object *)process);
+      Scheme_Object *wp;
+      wp = scheme_make_weak_box((Scheme_Object *)process);
       hop->p = wp;
     }
 
@@ -2700,10 +2696,6 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
     process->mr_hop->mref = mref;
     process->mr_hop->extra_mrefs = scheme_null;
     process->mr_hop->dead_box = NULL;
-
-#ifndef MZ_PRECISE_GC
-    scheme_weak_reference((void **)(void *)&hop->p);
-#endif
   }
 
   return process;
@@ -3841,21 +3833,18 @@ Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], voi
   {
     Scheme_Thread_Custodian_Hop *hop;
     Scheme_Custodian_Reference *mref;
-    hop = MALLOC_ONE_WEAK_RT(Scheme_Thread_Custodian_Hop);
+    hop = MALLOC_ONE_RT(Scheme_Thread_Custodian_Hop);
     np->mr_hop = hop;
     hop->so.type = scheme_thread_hop_type;
     {
-      Scheme_Thread *wp;
-      wp = (Scheme_Thread *)WEAKIFY((Scheme_Object *)np);
+      Scheme_Object *wp;
+      wp = scheme_make_weak_box((Scheme_Object *)np);
       hop->p = wp;
     }
     mref = scheme_add_managed(mgr, (Scheme_Object *)hop, NULL, NULL, 0);
     np->mr_hop->mref = mref;
     np->mr_hop->extra_mrefs = scheme_null;
     np->mr_hop->dead_box = NULL;
-#ifndef MZ_PRECISE_GC
-    scheme_weak_reference((void **)(void *)&hop->p);
-#endif
   }
 
   np->gc_prep_chain = gc_prep_thread_chain;
@@ -3901,11 +3890,7 @@ Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], voi
     }
   }
   np->mr_hop->extra_mrefs = scheme_null;
-#ifdef MZ_PRECISE_GC
-  WEAKIFIED(np->mr_hop->p) = NULL;
-#else
-  scheme_unweak_reference((void **)(void *)&np->mr_hop->p);
-#endif
+  SCHEME_WEAK_BOX_VAL(np->mr_hop->p) = NULL;
   scheme_remove_all_finalization(np->mr_hop);
 
   if (np->prev)

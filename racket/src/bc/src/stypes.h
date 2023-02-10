@@ -224,52 +224,52 @@ enum {
   scheme_will_be_lambda_type,           /* 187 */
   scheme_thunk_for_continue_type,       /* 188 */
   scheme_stencil_vector_type,           /* 189 */
+  scheme_thread_hop_type,               /* 190 */
   
 #ifdef MZTAG_REQUIRED                            
-  _scheme_last_normal_type_,            /* 190 */
+  _scheme_last_normal_type_,            /* 191 */
 
   /* The remaining tags exist for GC tracing (in non-conservative
      mode), but they are not needed for run-time tag tests */
                                                  
-  scheme_rt_weak_array,                 /* 191 */
+  scheme_rt_weak_array,                 /* 192 */
                                         
-  scheme_rt_comp_env,                   /* 192 */
-  scheme_rt_constant_binding,           /* 193 */
-  scheme_rt_resolve_info,               /* 194 */
-  scheme_rt_unresolve_info,             /* 195 */
-  scheme_rt_optimize_info,              /* 196 */
-  scheme_rt_cont_mark,                  /* 197 */
-  scheme_rt_saved_stack,                /* 198 */
-  scheme_rt_reply_item,                 /* 199 */
-  scheme_rt_ir_lambda_info,             /* 200 */
-  scheme_rt_overflow,                   /* 201 */
-  scheme_rt_overflow_jmp,               /* 202 */
-  scheme_rt_meta_cont,                  /* 203 */
-  scheme_rt_dyn_wind_cell,              /* 204 */
-  scheme_rt_dyn_wind_info,              /* 205 */
-  scheme_rt_dyn_wind,                   /* 206 */
-  scheme_rt_dup_check,                  /* 207 */
-  scheme_rt_thread_memory,              /* 208 */
-  scheme_rt_input_file,                 /* 209 */
-  scheme_rt_input_fd,                   /* 210 */
-  scheme_rt_oskit_console_input,        /* 211 */
-  scheme_rt_tested_input_file,          /* 212 */
-  scheme_rt_tested_output_file,         /* 213 */
-  scheme_rt_indexed_string,             /* 214 */
-  scheme_rt_output_file,                /* 215 */
-  scheme_rt_pipe,                       /* 216 */
-  scheme_rt_system_child,               /* 217 */
-  scheme_rt_tcp,                        /* 218 */
-  scheme_rt_write_data,                 /* 219 */
-  scheme_rt_tcp_select_info,            /* 220 */
-  scheme_rt_param_data,                 /* 221 */
-  scheme_rt_will,                       /* 222 */
-  scheme_rt_finalization,               /* 223 */
-  scheme_rt_finalizations,              /* 224 */
-  scheme_rt_cpp_object,                 /* 225 */
-  scheme_rt_cpp_array_object,           /* 226 */
-  scheme_rt_stack_object,               /* 227 */
-  scheme_thread_hop_type,               /* 228 */
+  scheme_rt_comp_env,                   /* 193 */
+  scheme_rt_constant_binding,           /* 194 */
+  scheme_rt_resolve_info,               /* 195 */
+  scheme_rt_unresolve_info,             /* 196 */
+  scheme_rt_optimize_info,              /* 197 */
+  scheme_rt_cont_mark,                  /* 198 */
+  scheme_rt_saved_stack,                /* 199 */
+  scheme_rt_reply_item,                 /* 200 */
+  scheme_rt_ir_lambda_info,             /* 201 */
+  scheme_rt_overflow,                   /* 202 */
+  scheme_rt_overflow_jmp,               /* 203 */
+  scheme_rt_meta_cont,                  /* 204 */
+  scheme_rt_dyn_wind_cell,              /* 205 */
+  scheme_rt_dyn_wind_info,              /* 206 */
+  scheme_rt_dyn_wind,                   /* 207 */
+  scheme_rt_dup_check,                  /* 208 */
+  scheme_rt_thread_memory,              /* 209 */
+  scheme_rt_input_file,                 /* 210 */
+  scheme_rt_input_fd,                   /* 211 */
+  scheme_rt_oskit_console_input,        /* 212 */
+  scheme_rt_tested_input_file,          /* 213 */
+  scheme_rt_tested_output_file,         /* 214 */
+  scheme_rt_indexed_string,             /* 215 */
+  scheme_rt_output_file,                /* 216 */
+  scheme_rt_pipe,                       /* 217 */
+  scheme_rt_system_child,               /* 218 */
+  scheme_rt_tcp,                        /* 219 */
+  scheme_rt_write_data,                 /* 220 */
+  scheme_rt_tcp_select_info,            /* 221 */
+  scheme_rt_param_data,                 /* 222 */
+  scheme_rt_will,                       /* 223 */
+  scheme_rt_finalization,               /* 224 */
+  scheme_rt_finalizations,              /* 225 */
+  scheme_rt_cpp_object,                 /* 226 */
+  scheme_rt_cpp_array_object,           /* 227 */
+  scheme_rt_stack_object,               /* 228 */
   scheme_rt_srcloc,                     /* 229 */
   scheme_rt_evt,                        /* 230 */
   scheme_rt_syncing,                    /* 231 */
