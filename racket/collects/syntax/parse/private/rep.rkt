@@ -1599,6 +1599,7 @@
 ;; Arguments and Arities
 
 ;; parse-argu : (Listof Syntax) -> Arguments
+;; Note: do not sort! See comment in kws.rkt.
 (define (parse-argu args #:context [ctx (current-syntax-context)])
   (parameterize ((current-syntax-context ctx))
     (define (loop args rpargs rkws rkwargs)

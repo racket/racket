@@ -12,6 +12,8 @@
          diff/sorted/eq)
 
 ;; An Arguments is (arguments (Listof Expr) (Listof Keyword) (Listof Expr))
+;; Note: keyword args are *not* sorted, because that would change the order
+;; of evaluation of the keyword argument expressions.
 (define-struct arguments (pargs kws kwargs) #:prefab)
 
 (define no-arguments (arguments null null null))
