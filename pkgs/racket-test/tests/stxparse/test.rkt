@@ -391,6 +391,27 @@
 (terx (1 2 3) (x:nat y:nat (~parse (2 4) #'(x y)))
       "expected the literal 2")
 
+;; do scoping
+(test-case "~do scoping"
+  (convert-syntax-error
+   (syntax-parse #'((1 2) 3)
+     [((x:nat (~do (define v (syntax-e #'x))) y:nat)
+       z:nat (~fail #:unless (> (syntax-e #'z) v)))
+      (void)])))
+
+(test-case "~do nested scoping"
+  (convert-syntax-error
+   (check-equal?
+    (syntax-parse #'(m (1 2) 3)
+      [(_ (x:nat
+           (~do (define xv (syntax-e #'x)))
+           y:nat
+           (~do (define xyv (+ xv (syntax-e #'y)))))
+          z:nat)
+       #:do [(define xyzv (+ xyv (syntax-e #'z)))]
+       (list xv xyzv)])
+    (list 1 6))))
+
 ;; ============================================================
 ;; syntax-parse: other feature tests
 
