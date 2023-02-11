@@ -304,7 +304,9 @@ _i)] is the character produced by @racket[(proc _i)].
 @; ----------------------------------------
 @section{String Conversions}
 
-@defproc[(string-upcase [str string?]) string?]{ Returns a string
+@defproc[(string-upcase [str string?]) string?]{
+ @index['("strings" "upper-case")]{@index['("strings" "uppercase")]{Returns}}
+ a string
  whose characters are the upcase conversion of the characters in
  @racket[str]. The conversion uses Unicode's locale-independent
  conversion rules that map code-point sequences to code-point
@@ -317,7 +319,8 @@ _i)] is the character produced by @racket[(proc _i)].
 (string-upcase "Stra\xDFe")
 ]}
 
-@defproc[(string-downcase [string string?]) string?]{ Like
+@defproc[(string-downcase [string string?]) string?]{
+ @index['("strings" "lower-case")]{@index['("strings" "lowercase")]{Like}}
  @racket[string-upcase], but the downcase conversion.
 
 @mz-examples[
