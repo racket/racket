@@ -68,6 +68,8 @@
                                       (string-upcase (or (lookup 'MMM_INSTALLED)
                                                          "BC"))))
 
+  (define wxvariant-def (~a (or (lookup 'WXVARIANT) "wx_xt") "=1"))
+
   (define rktio-dir (at-dir "rktio"))
   (define librktio.a+rktio_config.h (setup-rktio (at-source "../rktio") rktio-dir config))
   (define librktio.a (list-ref librktio.a+rktio_config.h 0))
@@ -1225,7 +1227,7 @@
                (list maincgc1.o maincgc.o grmaincgc.o)
                (list (at-source "main.c") (at-source "main.c") (at-source "gracket/grmain.c"))
                (list #f #f #t)
-               (list '("DLL_3M_SUFFIX=\"1\"") '() '()))
+               (list '("DLL_3M_SUFFIX=\"1\"") '() (list wxvariant-def)))
 
         ;; FFI compiled for CGC
         [:target ,foreigncgc.o (,(at-source "foreign/foreign.c")
@@ -1276,7 +1278,8 @@
                             ,@quiet-deps)
                            ,(lambda (path token)
                               (xform path main.c 'no-precomp token
-                                     (make-directory-defs gracket?)))])
+                                     (build-shell (make-directory-defs gracket?)
+                                                  (~a "-D" wxvariant-def))))])
                (list (at-source "main.c") (at-source "gracket/grmain.c"))
                (list #f #t))
 

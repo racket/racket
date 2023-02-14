@@ -94,6 +94,9 @@ CONFIG_PATH = @CONFIG_PATH@
 # Whether to build GRacket ("gracket" or "no")
 MAKE_GRACKET = @MAKE_GRACKET@
 
+# GUI variant: `wx_xt`, `wx_mac`, or `wx_win`
+WXVARIANT = @WXVARIANT@
+
 # -------------------------------------------
 # Installation configuration
 
