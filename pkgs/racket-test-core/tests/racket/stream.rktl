@@ -344,13 +344,13 @@
   (let ()
     (define-values (xs cpu real gc) (time-apply (λ () e) '()))
     (when (run-unreliable-tests? 'timing)
-      (test #t < real 100))
+      (test #t < real 50))
     (apply values xs)))
 
 (let ()
   (define st
     (for/stream ([i (in-naturals)])
-      (modulo i 2000000)))
+      (modulo i 1000000)))
   (define st* (terminate-quickly (stream-filter zero? st))) ; should be fast
   (terminate-quickly (stream-rest st*)) ; should be fast
   (time (test 0 stream-first (stream-rest st*))) ; should take time
@@ -359,7 +359,7 @@
 
 (let ()
   (define s (stream-cons 0 s))
-  (define t (stream-filter (λ (x) (sleep 2) #t) s))
+  (define t (stream-filter (λ (x) (sleep 0.5) #t) s))
   (test 0 stream-first t)
   (test 0 'stream-filter (terminate-quickly (stream-first t))))
 
