@@ -57,6 +57,7 @@ static char *get_self_path(const char *exec_file)
     } else if (len < 0) {
       /* possibly in a chroot environment where "/proc" is not
          available, so fall back to generic approach: */
+      free(s);
       return generic_get_self_path(exec_file);
     } else
       break;
