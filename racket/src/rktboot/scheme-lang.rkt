@@ -170,11 +170,9 @@
                      [error warningf]
                      [make-bytes make-bytevector]
                      [bytes bytevector]
-                     [bytes-length bytevector-length]
                      [bytes? bytevector?]
                      [bytes-set! bytevector-u8-set!]
                      [bytes-ref bytevector-u8-ref]
-                     [bytes->immutable-bytes bytevector->immutable-bytevector]
                      [bwp? bwp-object?]
                      [number->string r6rs:number->string]
                      [s:printf printf]
@@ -271,10 +269,18 @@
          subset-mode
          weak-pair?
          ephemeron-pair?
+         string->immutable-string
+         vector->immutable-vector
+         bytevector->immutable-bytevector
+         box-immutable
          immutable-string?
          immutable-vector?
          immutable-bytevector?
          immutable-box?
+         (rename-out
+          [string-length/handle-empty-immutable string-length]
+          [vector-length/handle-empty-immutable vector-length]
+          [bytevector-length/handle-empty-immutable bytevector-length])
          require-nongenerative-clause
          generate-inspector-information
          generate-procedure-source-information
@@ -1079,30 +1085,97 @@
 (define (ephemeron-pair? v)
   #f)
 
-;; The Chez Scheme compiler does not itself create
-;; any immutable values, but Racket's `eval` coerces
-;; to immutable. For fasl purposes, claim all as mutable.
-(define any-immutable? #f)
+;; The Chez Scheme reader and macros in the compiler do not introduce
+;; any immutable values, but Racket's `eval` coerces to immutable. For
+;; fasl purposes, we want to claim to constants as mutable (e.g., to
+;; insure that a "" literally in the compiler's implementation is
+;; recorded as the mutable empty string).
+
+;; The compiler might generate a reference to an immutable value, but
+;; then it generates a C-entry reference, so that's ok, too. It isn't
+;; represented by a string literal.
+
+;; The problem case is when an optimization in cp0 or cptypes
+;; introduces an immutable value by using `string->immutable->string`
+;; to get to it. If that string ends up quoted, then we need to
+;; fasled value to be immutabel, not mutable.
+
+;; We can handle a lot of this by keeping a table of all strings that
+;; are supposed to be immutable. The problem is the empty string (or
+;; vector or bytevector): we can't use the immutable "" for as both
+;; immutable and mutable, because they'd be the same pointer on Racket
+;; CS, where there's only each of mutable and immutable "". To handle
+;; that last, cruical corner, we use a too-large mutable value to
+;; represent the empty one, and we have to interpose on the length
+;; function.
+
+(define immutable-values (make-weak-hasheq))
+
+(define the-immutable-empty-string (make-string 1)) ; represented as mutable!
+(define the-immutable-empty-vector (make-vector 1)) ; represented as mutable!
+(define the-immutable-empty-bytevector (make-bytes 1))  ; represented as mutable!
+
+(hash-set! immutable-values the-immutable-empty-string #t)
+(hash-set! immutable-values the-immutable-empty-vector #t)
+(hash-set! immutable-values the-immutable-empty-bytevector #t)
+
+(define (string->immutable-string s)
+  (if (= 0 (string-length s))
+      the-immutable-empty-string
+      (let ([s (string-copy s)])
+        (hash-set! immutable-values s #t)
+        s)))
+
+(define (string-length/handle-empty-immutable s)
+  (if (eq? s the-immutable-empty-string)
+      0
+      (string-length s)))
 
 (define (immutable-string? s)
-  (and any-immutable?
-       (string? s)
-       (immutable? s)))
+  (and (string? s)
+       (hash-ref immutable-values s #f)))
+
+(define (vector->immutable-vector v)
+  (if (= 0 (vector-length v))
+      the-immutable-empty-vector
+      (let ([v (vector-copy v)])
+        (hash-set! immutable-values v #t)
+        v)))
+
+(define (vector-length/handle-empty-immutable v)
+  (if (eq? v the-immutable-empty-vector)
+      0
+      (vector-length v)))
 
 (define (immutable-vector? s)
-  (and any-immutable?
-       (vector? s)
-       (immutable? s)))
+  (and (vector? s)
+       (hash-ref immutable-values s #f)))
+
+(define (bytevector->immutable-bytevector v)
+  (if (= 0 (bytes-length v))
+      the-immutable-empty-bytevector
+      (let ([v (bytes-copy v)])
+        (hash-set! immutable-values v #t)
+        v)))
+
+
+(define (bytevector-length/handle-empty-immutable bv)
+  (if (eq? bv the-immutable-empty-bytevector)
+      0
+      (bytes-length bv)))
 
 (define (immutable-bytevector? s)
-  (and any-immutable?
-       (bytes? s)
-       (immutable? s)))
+  (and (bytes? s)
+       (hash-ref immutable-values s #f)))
+
+(define (box-immutable v)
+  (let ([b (box v)])
+    (hash-set! immutable-values b #t)
+    b))
 
 (define (immutable-box? s)
-  (and any-immutable?
-       (box? s)
-       (immutable? s)))
+  (and (box? s)
+       (hash-ref immutable-values s #f)))
 
 (define (list-sort pred l)
   (sort l pred))
