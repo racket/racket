@@ -1180,10 +1180,11 @@ stream, but plain lists can be used as streams, and functions such as
   that is like the one produced by @racket[(stream-lazy rest-expr)].
 
   The first element of the stream as produced by @racket[first-expr]
-  must be a single value. The @racket[rest-expr] must produce a stream
+  can be multiple values. The @racket[rest-expr] must produce a stream
   when it is evaluated, otherwise the @exnraise[exn:fail:contract?].
 
-  @history[#:changed "8.0.0.12" @elem{Added @racket[#:eager] options.}]}
+  @history[#:changed "8.0.0.12" @elem{Added @racket[#:eager] options.}
+           #:changed "8.8.0.7" @elem{Changed to allow multiple values.}]}
 
 @defform*[[(stream-lazy stream-expr)
            (stream-lazy #:who who-expr stream-expr)]]{
@@ -1223,23 +1224,32 @@ stream, but plain lists can be used as streams, and functions such as
 
  @history[#:added "8.0.0.12"]}
 
-@defform[(stream e ...)]{
+@defform[#:literals (values)
+         (stream elem-expr ...)
+         #:grammar ([elem-expr (values single-expr ...)
+                               single-expr])]{
   A shorthand for nested @racket[stream-cons]es ending with
   @racket[empty-stream]. As a match pattern, @racket[stream]
-  matches a stream with as many elements as @racket[e]s,
-  and each element must match the corresponding @racket[e] pattern.
+  matches a stream with as many elements as @racket[elem-expr]s,
+  and each element must match the corresponding @racket[elem-expr] pattern.
+  The pattern @racket[elem-expr] can be @racket[(values single-expr ...)], which matches against
+  multiple valued elements in the stream.
+
+  @history[#:changed "8.8.0.7" @elem{Changed to allow multiple values.}]
 }
 
-@defform[(stream* e ... tail)]{
-  A shorthand for nested @racket[stream-cons]es, but the @racket[tail]
+@defform[(stream* elem-expr ... tail-expr)]{
+  A shorthand for nested @racket[stream-cons]es, but the @racket[tail-expr]
   must produce a stream when it is forced, and that stream is used as the rest of the stream instead of
   @racket[empty-stream]. Similar to @racket[list*] but for streams.
   As a match pattern, @racket[stream*] is similar to a @racket[stream] pattern,
-  but the @racket[tail] pattern matches the ``rest'' of the stream after the last @racket[e].
+  but the @racket[tail-expr] pattern matches the ``rest'' of the stream after the last @racket[elem-expr].
 
 @history[#:added "6.3"
          #:changed "8.0.0.12" @elem{Changed to delay @racket[rest-expr] even
-                                    if zero @racket[expr]s are provided.}]}
+                                    if zero @racket[expr]s are provided.}
+         #:changed "8.8.0.7" @elem{Changed to allow multiple values.}]
+}
 
 @defproc[(in-stream [s stream?]) sequence?]{
   Returns a sequence that is equivalent to @racket[s].
@@ -1349,8 +1359,7 @@ stream, but plain lists can be used as streams, and functions such as
   Returns a stream whose elements are the elements of @racket[s] for
   which @racket[f] returns a true result.  Although the new stream is
   constructed lazily, if @racket[s] has an infinite number of elements
-  where @racket[f] returns a false result in between two elements
-  where @racket[f] returns a true result, then operations on this
+  where @racket[f] returns a false result, then operations on this
   stream will not terminate during the infinite sub-stream.
 }
 
@@ -1371,16 +1380,16 @@ stream, but plain lists can be used as streams, and functions such as
   allows @racket[for/stream] and @racket[for*/stream] to iterate over infinite
   sequences, unlike their finite counterparts.
 
-  Please note that these forms do not support returning @tech{multiple values}.
-
   @examples[#:eval sequence-evaluator
     (for/stream ([i '(1 2 3)]) (* i i))
     (stream->list (for/stream ([i '(1 2 3)]) (* i i)))
     (stream-ref (for/stream ([i '(1 2 3)]) (displayln i) (* i i)) 1)
     (stream-ref (for/stream ([i (in-naturals)]) (* i i)) 25)
+    (stream-ref (for/stream ([i (in-naturals)]) (values i (add1 i))) 10)
   ]
 
-  @history[#:added "6.3.0.9"]
+  @history[#:added "6.3.0.9"
+           #:changed "8.8.0.7" @elem{Changed to allow multiple values.}]
 }
 
 @defthing[gen:stream any/c]{
