@@ -7319,7 +7319,9 @@
                       (let ([slow (strip-outer slow)])
                         (if (eq? fast slow)
                             ($oops who "cyclic list structure ~s" x)
-                            (f (cdr fast) (cdr slow)))))]
+                            (if (pair? slow)
+                                (f (cdr fast) (cdr slow))
+                                ($oops who "improper list structure ~s" x)))))]
                    [else ($oops who "improper list structure ~s" x)])))]
             [else ($oops who "improper list structure ~s" x)]))))))
 
