@@ -908,7 +908,7 @@
              [else #f])]
           [(nanopass-case (Lsrc Expr) (result-exp e1)
              [(call ,preinfo ,e10 ,e11 ,e12)
-              (guard (and (primref? e10) (memq (primref-name e10) '(eq? eqv))))
+              (guard (and (primref? e10) (memq (primref-name e10) '(eq? eqv?))))
               (if (and (or (and (record-equal? e11 e2 'value) (record-equal? e12 e3 'value))
                            (and (record-equal? e11 e3 'value) (record-equal? e12 e2 'value)))
                        (simple? e2)
