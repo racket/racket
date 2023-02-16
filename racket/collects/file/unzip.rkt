@@ -43,7 +43,7 @@
   [zip-directory-entries (zip-directory? . -> . (listof bytes?))]
   [zip-directory-contains? (zip-directory? (or/c path-string? bytes?) . -> . boolean?)]
   [zip-directory-includes-directory? (zip-directory? (or/c path-string? input-port?) . -> . boolean?)]
-  [unzip-entry (((or/c path-string? input-port?) zip-directory? bytes?)
+  [unzip-entry (((or/c path-string? input-port?) zip-directory? (or/c path-string? bytes?))
                 ((or/c (procedure-arity-includes/c 2) (procedure-arity-includes/c 3))
                  #:preserve-attributes? any/c
                  #:preserve-timestamps? any/c
@@ -443,7 +443,7 @@
               #:preserve-timestamps? [preserve-timestamps? #f]
               #:utc-timestamps? [utc? #f])
     (cond
-     [(zip-directory-lookup entry-name dir)
+     [(zip-directory-lookup (if (bytes? entry-name) entry-name (path->zip-path entry-name)) dir)
       => (lambda (entry)
            (call-with-input
             in
