@@ -100,12 +100,18 @@
 ;; We don't use `equal-hash` because we need impersonators to be able
 ;; to generate the same hash code as the unwrapped value.
 (define (equal-hash-code x)
-  (let-values ([(hc burn) (equal-hash-loop x 0 0 'equal?)])
-    hc))
+  (do-equal-hash x 'equal? #f))
 
 (define (equal-always-hash-code x)
-  (let-values ([(hc burn) (equal-hash-loop x 0 0 'equal-always?)])
-    hc))
+  (do-equal-hash x 'equal-always? #f))
+
+(define/who (equal-hash-code/recur x recur)
+  (check who (procedure-arity-includes/c 1) recur)
+  (do-equal-hash x 'equal? recur))
+
+(define/who (equal-always-hash-code/recur x recur)
+  (check who (procedure-arity-includes/c 1) recur)
+  (do-equal-hash x 'equal-always? recur))
 
 ;; A #t result implies that `equal-hash-code` and equality checking is
 ;; pretty fast
@@ -128,7 +134,18 @@
 
 (define MAX-HASH-BURN 128)
 
-(define (equal-hash-loop x burn hc mode) ; hc should be 0 or already mixed
+(define (do-equal-hash x mode recur)
+  (let-values ([(hc burn) (equal-hash-loop x 0 0 mode recur)])
+    hc))
+
+(define (recur-hash-loop x burn hc mode recur) ; hc should be 0 or already mixed
+  (if recur
+      (let ([burn (fx+ burn 2)])
+        (let ([hc (fx+/wraparound hc (->fx/checked 'equal-hash-code (recur x)))])
+          (values hc burn)))
+      (equal-hash-loop x burn hc mode recur)))
+
+(define (equal-hash-loop x burn hc mode recur) ; hc should be 0 or already mixed
   (cond
     [(fx> burn MAX-HASH-BURN) (values hc burn)]
     [(boolean? x) (values (fx+/wraparound hc (if x #x0ace0120 #x0cafe121)) burn)]
@@ -145,15 +162,15 @@
     [(and (flvector? x) (eq? mode 'equal?))
      (values (fx+/wraparound hc (equal-hash x)) burn)]
     [(and (box? x) (or (eq? mode 'equal?) (immutable-box? x)))
-     (equal-hash-loop (unbox x) (fx+ burn 1) (mix-hash-code (fx+/wraparound hc 1)) mode)]
+     (recur-hash-loop (unbox x) (fx+ burn 1) (mix-hash-code (fx+/wraparound hc 1)) mode recur)]
     [(pair? x)
-     (let-values ([(hc0 burn) (equal-hash-loop (car x) (fx+ burn 2) 0 mode)])
+     (let-values ([(hc0 burn) (recur-hash-loop (car x) (fx+ burn 2) 0 mode recur)])
        (let ([hc (hash-code-combine hc hc0)]
              [r (cdr x)])
          (if (and (pair? r) (list? r))
              ;; If it continues as a list, don't count cdr direction as burn:
-             (equal-hash-loop r (fx- burn 2) hc mode)
-             (equal-hash-loop r burn hc mode))))]
+             (recur-hash-loop r (fx- burn 2) hc mode recur)
+             (recur-hash-loop r burn hc mode recur))))]
     [(and (vector? x) (or (eq? mode 'equal?) (immutable-vector? x)))
      (let ([len (vector-length x)])
        (cond
@@ -163,7 +180,7 @@
             (cond
               [(fx= i len) (values hc burn)]
               [else
-               (let-values ([(hc0 burn) (equal-hash-loop (vector-ref x i) (fx+ burn 2) 0 mode)])
+               (let-values ([(hc0 burn) (recur-hash-loop (vector-ref x i) (fx+ burn 2) 0 mode recur)])
                  (vec-loop (fx+ i 1)
                            burn
                            (fx+/wraparound (mix-hash-code hc) hc0)))]))]))]
@@ -173,7 +190,7 @@
        (let ([hc (fx+/wraparound hc (->fx (hash-hash-code
                                            x
                                            (lambda (x)
-                                             (let-values ([(hc0 burn0) (equal-hash-loop x burn 0 mode)])
+                                             (let-values ([(hc0 burn0) (recur-hash-loop x burn 0 mode recur)])
                                                hc0)))))])
          (values hc burn)))]
     [(and (stencil-vector? x) (eq? mode 'equal?))
@@ -188,9 +205,9 @@
                         burn
                         (fx+/wraparound (mix-hash-code hc) hc0)))])))]
     [(and (mpair? x) (eq? mode 'equal?))
-     (let-values ([(hc0 burn) (equal-hash-loop (mcar x) (fx+ burn 2) 0 mode)])
+     (let-values ([(hc0 burn) (recur-hash-loop (mcar x) (fx+ burn 2) 0 mode recur)])
        (let ([hc (fx+/wraparound hc (fx+/wraparound hc0 5))])
-         (equal-hash-loop (mcdr x) burn (mix-hash-code hc) mode)))]
+         (recur-hash-loop (mcdr x) burn (mix-hash-code hc) mode recur)))]
     [(and (#%$record? x)
           (let ([eq+hash (struct-property-ref prop:equal+hash (#%$record-type-descriptor x) #f)])
             (and eq+hash
@@ -205,7 +222,7 @@
             (let ([hc (fx+/wraparound hc (->fx/checked
                                           'equal-hash-code
                                           (let ([hash (lambda (x)
-                                                        (let-values ([(hc0 burn0) (equal-hash-loop x burn 0 mode)])
+                                                        (let-values ([(hc0 burn0) (recur-hash-loop x burn 0 mode recur)])
                                                           (set! burn burn0)
                                                           hc0))])
                                             (if (equal+hash-supports-mode? eq+hash)
@@ -216,7 +233,7 @@
      ;; If an impersonator wraps a value where `equal?` hashing is
      ;; `eq?` hashing, such as for a procedure, then make sure
      ;; we discard the impersonator wrapper.
-     (equal-hash-loop (impersonator-val x) burn hc mode)]
+     (equal-hash-loop (impersonator-val x) burn hc mode recur)]
     [else (values (fx+/wraparound hc (eq-hash-code x)) burn)]))
 
 (define (equal-secondary-hash-loop x burn hc mode) ; hc should be 0 or already mixed
