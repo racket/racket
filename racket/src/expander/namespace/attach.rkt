@@ -39,6 +39,7 @@
                            "destination phase" (namespace-phase dest-namespace)))
   
   (define todo (make-hasheq)) ; module name -> phase -> namespace-or-#f
+  (define non-instance-done (make-hasheq)) ; module name -> phase -> #t
   
   (define missing '#:missing)
 
@@ -105,8 +106,15 @@
               ;; required modules are declared
               (parameterize ([current-namespace src-namespace])
                 (namespace-module-instantiate! src-namespace mpi phase)))
-            
-            (values #f (and already-m #t))]))
+
+            ;; We're not instantiating this phase, but phase shifts may send us
+            ;; back to a phase where more modules need to be instantiated
+            (define done-phases (hash-ref non-instance-done mod-name #hasheqv()))
+            (define done? (hash-ref done-phases phase #f))
+            (unless done?
+              (hash-set! non-instance-done mod-name (hash-set done-phases phase #t)))
+
+            (values #f (and already-m done?))]))
 
         (hash-update! todo mod-name (lambda (ht) (hash-set ht phase m-ns)) #hasheqv())
 

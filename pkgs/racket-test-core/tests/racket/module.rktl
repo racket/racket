@@ -4109,5 +4109,30 @@ case of module-leve bindings; it doesn't cover local bindings.
       (chaperone-procedure (lambda (v) v) (lambda (v) v)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; regression test aimed at instantiation via shifting up and back down
+
+(let ()
+  (define ns (make-base-namespace))
+  (define ns2 (make-base-namespace))
+
+  (define d
+    (parameterize ([current-namespace ns])
+      (eval '(module zo racket/base
+               (require (for-template racket/base))))
+      (define d
+        (compile '(module d racket/base
+                    (require 'zo
+                             racket/phase+space)
+                    phase+space)))
+      (eval d)
+      (dynamic-require ''d #f)
+      d))
+
+  (parameterize ([current-namespace ns2])
+    (namespace-attach-module ns ''zo)
+    (eval d)
+    (dynamic-require ''d #f)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
