@@ -375,7 +375,7 @@
                   [inline:vector-set! vector-set!])
           vector-copy
           vector-copy!
-          vector-immutable
+          (rename [inline:vector-immutable vector-immutable])
           vector->values
           vector-fill!
           vector->immutable-vector
