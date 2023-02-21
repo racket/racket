@@ -368,7 +368,7 @@ a state produced by @racket[char-grapheme-step] in another
 call to @racket[char-grapheme-step] continues detecting
 grapheme-cluster boundaries in the sequence.
 
-See also @racket[string-grapheme-length] and
+See also @racket[string-grapheme-span] and
 @racket[string-grapheme-count].
 
 @mz-examples[

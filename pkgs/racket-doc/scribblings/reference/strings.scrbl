@@ -479,7 +479,7 @@ See also @racket[char-grapheme-cluster-step].
                                 [end exact-nonnegative-integer? (string-length str)])
          exact-nonnegative-integer?]{
 
-Returns the number of grapheme clusters in @racket[(substring start
+Returns the number of grapheme clusters in @racket[(substring str start
 end)].
 
 The @racket[start] and @racket[end] arguments must be valid indices as
