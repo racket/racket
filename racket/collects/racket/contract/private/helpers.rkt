@@ -13,7 +13,6 @@
 
 (require setup/main-collects
          racket/struct-info
-         (only-in racket/private/list-predicates empty? cons?)
          (for-template racket/base
                        (only-in racket/private/list-predicates
                                 empty? cons?)))

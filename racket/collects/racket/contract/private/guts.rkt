@@ -1,7 +1,6 @@
 #lang racket/base
 
-(require "helpers.rkt"
-         "blame.rkt"
+(require "blame.rkt"
          "prop.rkt"
          "rand.rkt"
          "generate-base.rkt"
