@@ -304,7 +304,7 @@
   (define (maybe-fetch vm)
     (when (eq? vm 'cs)
       (when (andmap (lambda (key) (equal? (lookup key) ""))
-                    '(RACKET PLAIN_RACKET SCHEME SCHEME_DIR))
+                    '(RACKET BOOTFILE_RACKET PLAIN_RACKET SCHEME SCHEME_DIR))
         (pb-manage 'fetch))))
 
   (define (base token vm [options (hash)])
