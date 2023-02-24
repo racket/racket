@@ -4,11 +4,12 @@
 ;; and exports.
 
 (require (for-syntax racket/base
-                     syntax/parse)
+                     syntax/parse/pre
+                     syntax/parse/private/pattern-expander)
          racket/list
          racket/syntax
-         syntax/id-table
-         syntax/parse
+         syntax/private/id-table
+         syntax/parse/pre
          syntax/parse/experimental/specialize
          syntax/transformer
          "signature.rkt"

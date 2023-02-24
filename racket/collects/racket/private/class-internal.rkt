@@ -19,7 +19,7 @@
                      syntax/define
                      syntax/flatten-begin
                      syntax/private/boundmap
-                     syntax/parse
+                     syntax/parse/pre
                      syntax/transformer
                      "classidmap.rkt"
                      "intdef-util.rkt"))

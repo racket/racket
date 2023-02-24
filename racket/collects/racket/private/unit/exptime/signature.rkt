@@ -4,10 +4,11 @@
 ;; at compile time, plus some functions on those types.
 
 (require (for-syntax racket/base
-                     syntax/parse)
+                     syntax/parse/pre
+                     syntax/parse/private/pattern-expander)
          racket/base
          racket/syntax
-         syntax/parse
+         syntax/parse/pre
          "util.rkt"
          (for-template racket/base
                        "../keywords.rkt"))

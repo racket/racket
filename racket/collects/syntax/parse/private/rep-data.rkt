@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/contract/base
-         racket/dict
+         racket/private/dict
          syntax/private/id-table
          racket/syntax
          syntax/parse/private/residual-ct ;; keep abs. path

@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require syntax/parse
+(require syntax/parse/pre
          "exptime/import-export.rkt"
          (for-template "keywords.rkt"
                        racket/base))

@@ -6,13 +6,13 @@
                      racket/list
                      racket/struct-info
                      racket/syntax
-                     syntax/struct
+                     syntax/parse/pre
+                     syntax/private/struct
                      syntax/stx
                      "exptime/import-export.rkt"
                      "exptime/signature.rkt")
          racket/contract/base
          (rename-in racket/private/struct [struct struct~])
-         syntax/parse/define
          "keywords.rkt"
          "util.rkt")
 
@@ -194,30 +194,31 @@
                  (void)))
              (values))))]))
 
-(define-syntax-parser provide-signature-elements
-  #:track-literals
-  [(_ spec:import-spec ...)
-   (define nameses (map signature-ie-int-names (attribute spec.value)))
-   ;; Export only the names that would be visible to uses
-   ;;  with the same lexical context as p. Otherwise, we
-   ;;  can end up with collisions with renamings that are
-   ;;  symbolically the same, such as those introduced by
-   ;;  `open'.
-   (define names
-     (append* (for/list ([sig-stx (in-list (attribute spec))]
-                         [names (in-list nameses)])
-                (filter (lambda (name)
-                          (bound-identifier=?
-                           name
-                           (datum->syntax sig-stx (syntax-e name))))
-                        names))))
+(define-syntax provide-signature-elements
+  (syntax-parser
+    #:track-literals
+    [(_ spec:import-spec ...)
+     (define nameses (map signature-ie-int-names (attribute spec.value)))
+     ;; Export only the names that would be visible to uses
+     ;;  with the same lexical context as p. Otherwise, we
+     ;;  can end up with collisions with renamings that are
+     ;;  symbolically the same, such as those introduced by
+     ;;  `open'.
+     (define names
+       (append* (for/list ([sig-stx (in-list (attribute spec))]
+                           [names (in-list nameses)])
+                  (filter (lambda (name)
+                            (bound-identifier=?
+                             name
+                             (datum->syntax sig-stx (syntax-e name))))
+                          names))))
 
-   (define dup (check-duplicate-identifier names))
-   (when dup
-     (raise-stx-err (format "duplicate binding for ~.s" (syntax-e dup))))
+     (define dup (check-duplicate-identifier names))
+     (when dup
+       (raise-stx-err (format "duplicate binding for ~.s" (syntax-e dup))))
 
-   (quasisyntax/loc this-syntax
-     (provide #,@names))])
+     (quasisyntax/loc this-syntax
+       (provide #,@names))]))
 
 ;; -----------------------------------------------------------------------------
 ;; signature forms

@@ -9,9 +9,8 @@
          "minimatch.rkt"
          syntax/private/id-table
          syntax/stx
-         syntax/keyword
+         syntax/private/keyword
          racket/syntax
-         racket/struct
          "txlift.rkt"
          "rep-attrs.rkt"
          "rep-data.rkt"
@@ -602,7 +601,7 @@
      (and (struct? (syntax-e #'s)) (prefab-struct-key (syntax-e #'s)))
      (let* ([s (syntax-e #'s)]
             [key (prefab-struct-key s)]
-            [contents (struct->list s)])
+            [contents (cdr (vector->list (struct->vector s)))])
        (let ([lp (parse-single-pattern (datum->syntax #f contents #'s) decls)])
          (pat:pstruct key lp)))])))
 

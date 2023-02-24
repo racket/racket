@@ -3,7 +3,10 @@
                      racket/local
                      racket/syntax
                      syntax/stx
-                     syntax/boundmap)
+                     (only-in syntax/private/boundmap
+                              [make-module-identifier-mapping make-free-identifier-mapping]
+                              [module-identifier-mapping-get free-identifier-mapping-get]
+                              [module-identifier-mapping-put! free-identifier-mapping-put!]))
          "generic-methods.rkt"
          (only-in racket/private/arity arity-includes?))
 

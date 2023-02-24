@@ -2,15 +2,14 @@
 
 (require (for-syntax racket/base
                      racket/syntax
-                     syntax/id-table
                      syntax/transformer
+                     syntax/parse/pre
                      "exptime/signature.rkt"
                      "exptime/syntax.rkt")
          racket/contract
          (only-in racket/contract/private/blame make-blame)
          racket/unsafe/undefined
          syntax/location
-         syntax/parse/define
          syntax/srcloc)
 
 (provide (rename-out [make-a-unit make-unit]) unit? unit-import-sigs unit-export-sigs unit-go unit-deps

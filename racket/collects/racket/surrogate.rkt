@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require racket/class
-         (for-syntax racket/base syntax/parse))
+         (for-syntax racket/base syntax/parse/pre))
 
 (provide surrogate)
 

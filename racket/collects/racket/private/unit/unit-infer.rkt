@@ -5,8 +5,9 @@
 (require (for-syntax racket/base
                      racket/list
                      racket/syntax
+                     syntax/parse/pre
                      syntax/context
-                     syntax/id-table
+                     syntax/private/id-table
                      syntax/intdef
                      syntax/kerncase
                      syntax/name
@@ -19,7 +20,6 @@
          racket/contract/base
          racket/contract/region
          syntax/location
-         syntax/parse/define
          "contract.rkt"
          "keywords.rkt"
          "runtime.rkt"
@@ -590,24 +590,25 @@
     (pattern unit:id
       #:attr units #'unit)))
 
-(define-syntax-parser define-values/invoke-unit/infer
-  #:track-literals
-  #:literals [export]
-  ;; We allow the export clause to appear before the unit
-  ;; clause for backward compatibility.
-  [(_ {~describe "export clause" (export ~! e ...)}
-      units:invoke-units-clause)
-   (build-invoke-unit/infer (attribute units.units)
-                            #t
-                            (attribute e)
-                            #f)]
-  [(_ units:invoke-units-clause
-      {~optional {~describe "export clause" (export ~! e ...)}}
-      {~optional results:invoke-results-clause})
-   (build-invoke-unit/infer (attribute units.units)
-                            #t
-                            (attribute e)
-                            (attribute results))])
+(define-syntax define-values/invoke-unit/infer
+  (syntax-parser
+    #:track-literals
+    #:literals [export]
+    ;; We allow the export clause to appear before the unit
+    ;; clause for backward compatibility.
+    [(_ {~describe "export clause" (export ~! e ...)}
+        units:invoke-units-clause)
+     (build-invoke-unit/infer (attribute units.units)
+                              #t
+                              (attribute e)
+                              #f)]
+    [(_ units:invoke-units-clause
+        {~optional {~describe "export clause" (export ~! e ...)}}
+        {~optional results:invoke-results-clause})
+     (build-invoke-unit/infer (attribute units.units)
+                              #t
+                              (attribute e)
+                              (attribute results))]))
 
 (define-syntax/err-param (invoke-unit/infer stx)
   (syntax-case stx ()

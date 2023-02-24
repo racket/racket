@@ -1,7 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base
                      racket/stxparam
-                     syntax/parse)
+                     syntax/parse/pre)
          racket/stxparam
          racket/undefined
          "class-wrapped.rkt"

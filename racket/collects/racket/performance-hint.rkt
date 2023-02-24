@@ -9,7 +9,7 @@
   (#%require "private/performance-hint.rkt")
   (#%provide begin-encourage-inline))
 
-(require (for-syntax syntax/parse syntax/define
+(require (for-syntax syntax/parse/pre syntax/define
                      racket/syntax racket/base)
          racket/stxparam)
 

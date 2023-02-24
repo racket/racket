@@ -2,13 +2,11 @@
 
 (require (for-syntax racket/base
                      racket/syntax
-                     syntax/id-table
                      syntax/name
-                     syntax/parse
+                     syntax/parse/pre
                      "exptime/import-export.rkt"
                      "exptime/signature.rkt"
                      "contract-syntax.rkt")
-         (for-meta 2 racket/base)
          racket/contract/base
          racket/contract/combinator
          racket/contract/region

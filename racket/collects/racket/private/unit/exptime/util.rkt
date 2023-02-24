@@ -2,10 +2,11 @@
 
 (require (for-syntax racket/base
                      racket/syntax
-                     syntax/parse)
+                     syntax/parse/pre
+                     syntax/parse/private/pattern-expander)
          racket/syntax
          syntax/name
-         syntax/parse
+         syntax/parse/pre
          syntax/parse/experimental/template
          syntax/stx)
 

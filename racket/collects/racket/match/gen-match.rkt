@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require "patterns.rkt" "compiler.rkt"
-         syntax/stx syntax/parse racket/syntax
+         syntax/stx syntax/parse/pre racket/syntax
          (for-template racket/base (only-in "runtime.rkt" match:error fail syntax-srclocs)))
 
 (provide go go/one)
