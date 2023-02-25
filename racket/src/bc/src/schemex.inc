@@ -672,10 +672,12 @@
   scheme_extension_table->scheme_hash_key = scheme_hash_key;
 #endif
   scheme_extension_table->scheme_equal_hash_key = scheme_equal_hash_key;
+  scheme_extension_table->scheme_equal_hash_key_recur = scheme_equal_hash_key_recur;
   scheme_extension_table->scheme_equal_hash_key2 = scheme_equal_hash_key2;
   scheme_extension_table->scheme_recur_equal_hash_key = scheme_recur_equal_hash_key;
   scheme_extension_table->scheme_recur_equal_hash_key2 = scheme_recur_equal_hash_key2;
   scheme_extension_table->scheme_equal_always_hash_key = scheme_equal_always_hash_key;
+  scheme_extension_table->scheme_equal_always_hash_key_recur = scheme_equal_always_hash_key_recur;
   scheme_extension_table->scheme_equal_always_hash_key2 = scheme_equal_always_hash_key2;
   scheme_extension_table->scheme_eqv_hash_key = scheme_eqv_hash_key;
   scheme_extension_table->scheme_eqv_hash_key2 = scheme_eqv_hash_key2;
