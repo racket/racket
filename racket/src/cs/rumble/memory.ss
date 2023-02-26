@@ -69,7 +69,7 @@
   (let ([this-counter (if g (bitwise-arithmetic-shift-left 1 (* log-collect-generation-radix g)) gc-counter)]
         [pre-allocated (bytes-allocated)]
         [pre-allocated+overhead (current-memory-bytes)]
-        [pre-time (real-time)] 
+        [pre-time (current-inexact-milliseconds)]
         [pre-cpu-time (cpu-time)])
     (if (> (add1 this-counter) (bitwise-arithmetic-shift-left 1 (* log-collect-generation-radix (sub1 (collect-maximum-generation)))))
         (set! gc-counter 1)
@@ -136,7 +136,7 @@
           (set! request-incremental? #f))
         (let ([post-allocated (bytes-allocated)]
               [post-allocated+overhead (current-memory-bytes)]
-              [post-time (real-time)]
+              [post-time (current-inexact-milliseconds)]
               [post-cpu-time (cpu-time)])
           (when (= gen (collect-maximum-generation))
             ;; Trigger a major GC when memory use is a certain factor of current use.
@@ -165,7 +165,7 @@
           (garbage-collect-notify gen
                                   pre-allocated pre-allocated+overhead pre-time pre-cpu-time
                                   post-allocated post-allocated+overhead post-time post-cpu-time
-                                  (real-time) (cpu-time)))
+                                  (current-inexact-milliseconds) (cpu-time)))
         (when (and (= req-gen (collect-maximum-generation))
                    (currently-in-engine?))
           ;; This `set-timer` doesn't necessarily penalize the right thread,
