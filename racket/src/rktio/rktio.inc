@@ -57,6 +57,7 @@ Sforeign_symbol("rktio_connect_stop", (void *)rktio_connect_stop);
 Sforeign_symbol("rktio_poll_connect_ready", (void *)rktio_poll_connect_ready);
 Sforeign_symbol("rktio_connect_trying", (void *)rktio_connect_trying);
 Sforeign_symbol("rktio_socket_shutdown", (void *)rktio_socket_shutdown);
+Sforeign_symbol("rktio_tcp_nodelay", (void *)rktio_tcp_nodelay);
 Sforeign_symbol("rktio_udp_open", (void *)rktio_udp_open);
 Sforeign_symbol("rktio_udp_disconnect", (void *)rktio_udp_disconnect);
 Sforeign_symbol("rktio_udp_bind", (void *)rktio_udp_bind);

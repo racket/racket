@@ -3052,6 +3052,8 @@
   (begin-unsafe (hash-ref rktio-table 'rktio_connect_trying)))
 (define rktio_socket_shutdown
   (begin-unsafe (hash-ref rktio-table 'rktio_socket_shutdown)))
+(define rktio_tcp_nodelay
+  (begin-unsafe (hash-ref rktio-table 'rktio_tcp_nodelay)))
 (define rktio_udp_open (begin-unsafe (hash-ref rktio-table 'rktio_udp_open)))
 (define rktio_udp_disconnect
   (begin-unsafe (hash-ref rktio-table 'rktio_udp_disconnect)))
@@ -34898,11 +34900,11 @@
                 'subprocess
                 "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                 stderr_0))
-             (let ((lr1405 unsafe-undefined)
+             (let ((lr1406 unsafe-undefined)
                    (group_0 unsafe-undefined)
                    (command_0 unsafe-undefined)
                    (exact/args_0 unsafe-undefined))
-               (set! lr1405
+               (set! lr1406
                  (call-with-values
                   (lambda ()
                     (if (path-string? group/command_0)
@@ -34957,9 +34959,9 @@
                    ((group_1 command_1 exact/args_1)
                     (vector group_1 command_1 exact/args_1))
                    (args (raise-binding-result-arity-error 3 args)))))
-               (set! group_0 (unsafe-vector*-ref lr1405 0))
-               (set! command_0 (unsafe-vector*-ref lr1405 1))
-               (set! exact/args_0 (unsafe-vector*-ref lr1405 2))
+               (set! group_0 (unsafe-vector*-ref lr1406 0))
+               (set! command_0 (unsafe-vector*-ref lr1406 1))
+               (set! exact/args_0 (unsafe-vector*-ref lr1406 2))
                (call-with-values
                 (lambda ()
                   (if (if (pair? exact/args_0)
@@ -35946,46 +35948,55 @@
         (let ((app_3
                (core-port-methods-file-position.1 fd-output-port-vtable.1)))
           (let ((app_4
-                 (core-port-methods-buffer-mode.1 fd-output-port-vtable.1)))
+                 (core-output-port-methods-write-out.1
+                  fd-output-port-vtable.1)))
             (let ((app_5
-                   (core-output-port-methods-write-out.1
+                   (core-output-port-methods-write-out-special.1
                     fd-output-port-vtable.1)))
               (let ((app_6
-                     (core-output-port-methods-write-out-special.1
+                     (core-output-port-methods-get-write-evt.1
                       fd-output-port-vtable.1)))
-                (let ((app_7
-                       (core-output-port-methods-get-write-evt.1
-                        fd-output-port-vtable.1)))
-                  (tcp-output-port-methods7.1
-                   app_0
-                   app_1
-                   app_2
-                   app_3
-                   app_4
-                   app_5
-                   app_6
-                   app_7
-                   (core-output-port-methods-get-write-special-evt.1
-                    fd-output-port-vtable.1)
-                   (|#%name|
-                    on-close
-                    (lambda (this-id_0)
-                      (begin
-                        (if (tcp-output-port-abandon? this-id_0)
-                          (void)
-                          (|#%app|
-                           rktio_socket_shutdown
-                           (unsafe-place-local-ref cell.1)
-                           (fd-output-port-fd this-id_0)
-                           1)))))
-                   (|#%name|
-                    raise-write-error
-                    (lambda (this-id_0 n111_0)
-                      (begin
-                        (raise-network-error
-                         #f
-                         n111_0
-                         "error writing to stream port"))))))))))))))
+                (tcp-output-port-methods7.1
+                 app_0
+                 app_1
+                 app_2
+                 app_3
+                 (|#%name|
+                  buffer-mode
+                  (case-lambda
+                   ((this-id_0) (begin (fd-output-port-buffer-mode this-id_0)))
+                   ((this-id_0 mode87_0)
+                    (begin
+                      (set-fd-output-port-buffer-mode! this-id_0 mode87_0)
+                      (|#%app|
+                       rktio_tcp_nodelay
+                       (unsafe-place-local-ref cell.1)
+                       (fd-output-port-fd this-id_0)
+                       (eq? mode87_0 'block))))))
+                 app_4
+                 app_5
+                 app_6
+                 (core-output-port-methods-get-write-special-evt.1
+                  fd-output-port-vtable.1)
+                 (|#%name|
+                  on-close
+                  (lambda (this-id_0)
+                    (begin
+                      (if (tcp-output-port-abandon? this-id_0)
+                        (void)
+                        (|#%app|
+                         rktio_socket_shutdown
+                         (unsafe-place-local-ref cell.1)
+                         (fd-output-port-fd this-id_0)
+                         1)))))
+                 (|#%name|
+                  raise-write-error
+                  (lambda (this-id_0 n161_0)
+                    (begin
+                      (raise-network-error
+                       #f
+                       n161_0
+                       "error writing to stream port")))))))))))))
 (define make-tcp-output-port.1
   (|#%name|
    make-tcp-output-port
@@ -35996,7 +36007,7 @@
                 (box 1)
                 fd-refcount8_0)))
          (let ((app_0 (direct2.1 #f 0 0)))
-           (let ((temp137_0
+           (let ((temp187_0
                   (create-tcp-output-port
                    tcp-output-port-vtable.1
                    name11_0
@@ -36018,7 +36029,7 @@
                    'block
                    #f
                    #f)))
-             (finish-fd-output-port.1 unsafe-undefined #f temp137_0))))))))
+             (finish-fd-output-port.1 unsafe-undefined #f temp187_0))))))))
 (define open-input-output-tcp.1
   (|#%name|
    open-input-output-tcp
@@ -36554,10 +36565,17 @@
                                                                         (let ((name_0
                                                                                (string->immutable-string
                                                                                 hostname15_0)))
-                                                                          (open-input-output-tcp.1
-                                                                           #t
-                                                                           fd_0
-                                                                           name_0))))))))))))
+                                                                          (begin
+                                                                            (|#%app|
+                                                                             rktio_tcp_nodelay
+                                                                             (unsafe-place-local-ref
+                                                                              cell.1)
+                                                                             fd_0
+                                                                             #t)
+                                                                            (open-input-output-tcp.1
+                                                                             #t
+                                                                             fd_0
+                                                                             name_0)))))))))))))
                                                        (loop_0))))))))))
                                       (call-with-resolved-address.1
                                        enable-break?10_0
@@ -36932,7 +36950,7 @@
                                 fd_0
                                 "accept from listener failed"))
                              (begin0
-                               (open-input-output-accetped-tcp fd_0)
+                               (open-input-output-accepted-tcp fd_0)
                                (unsafe-end-atomic)))))
                        (begin
                          (unsafe-end-atomic)
@@ -36981,7 +36999,7 @@
            (void)
            (raise-argument-error 'tcp-accept-evt "tcp-listener?" listener_0))
          (accept-evt6.1 listener_0))))))
-(define finish_2652
+(define finish_2848
   (make-struct-type-install-properties
    '(tcp-accept-evt)
    1
@@ -37032,7 +37050,7 @@
                     (values
                      (list
                       (call-with-values
-                       (lambda () (open-input-output-accetped-tcp fd_0))
+                       (lambda () (open-input-output-accepted-tcp fd_0))
                        list))
                      #f)))
                 (let ((sched-info_0 (|#%app| poll-ctx-sched-info poll-ctx_0)))
@@ -37064,7 +37082,7 @@
    #f
    #f
    '(1 . 0)))
-(define effect_2608 (finish_2652 struct:accept-evt))
+(define effect_2608 (finish_2848 struct:accept-evt))
 (define accept-evt6.1
   (|#%name|
    accept-evt
@@ -37116,10 +37134,12 @@
        "listener is closed"
        "listener"
        listener_0))))
-(define open-input-output-accetped-tcp
+(define open-input-output-accepted-tcp
   (lambda (fd_0)
-    (let ((temp18_0 "tcp-accepted"))
-      (open-input-output-tcp.1 #t fd_0 temp18_0))))
+    (begin
+      (|#%app| rktio_tcp_nodelay (unsafe-place-local-ref cell.1) fd_0 #t)
+      (let ((temp18_0 "tcp-accepted"))
+        (open-input-output-tcp.1 #t fd_0 temp18_0)))))
 (define string->integer
   (lambda (s_0)
     (call-with-values

@@ -50,6 +50,12 @@
   [raise-write-error
    (lambda (n)
      (raise-network-error #f n "error writing to stream port"))]
+  [buffer-mode
+   (case-lambda
+     [() buffer-mode]
+     [(mode)
+      (set! buffer-mode mode)
+      (rktio_tcp_nodelay rktio fd (eq? mode 'block))])]
   #:property
   [prop:file-stream #f]
   [prop:fd-place-message-opener (lambda (fd name)

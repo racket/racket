@@ -1151,7 +1151,7 @@ TO DO:
   ;; Use xfer-buffer so we have a consistent buffer to use with
   ;;  SSL_write across calls to the port's write function.
   (let ([xfer-buffer (make-bytes BUFFER-SIZE)]
-        [buffer-mode (or (file-stream-buffer-mode (mzssl-o mzssl)) 'bloack)]
+        [buffer-mode (or (file-stream-buffer-mode (mzssl-o mzssl)) 'block)]
         [flush-ch (make-channel)]
         [must-write-len #f])
     ;; This thread mkoves data from the SLL stream to the underlying
@@ -1352,7 +1352,9 @@ TO DO:
      ;; Buffer mode proc:
      (case-lambda
       [() buffer-mode]
-      [(mode) (set! buffer-mode mode)]))))
+      [(mode)
+       (set! buffer-mode mode)
+       (file-stream-buffer-mode (mzssl-o mzssl) mode)]))))
 
 (define (ports->ssl-ports i o 
                           #:context [context #f]

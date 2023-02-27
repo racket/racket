@@ -478,6 +478,10 @@ RKTIO_EXTERN rktio_ok_t rktio_socket_shutdown(rktio_t *rktio, rktio_fd_t *rfd, i
 #define RKTIO_SHUTDOWN_READ   0
 #define RKTIO_SHUTDOWN_WRITE  1
 
+RKTIO_EXTERN rktio_ok_t rktio_tcp_nodelay(rktio_t *rktio, rktio_fd_t *rfd, rktio_bool_t enable);
+/* Changes a connection to enable or disable "TCP_NODELAY" mode,
+   which diabled Nagle's algorithm for avoiding small packets. */
+
 RKTIO_EXTERN rktio_fd_t *rktio_udp_open(rktio_t *rktio, RKTIO_NULLABLE rktio_addrinfo_t *addr, int family);
 /* The `addr` argument can be NULL to create a socket without
    specifying an interface, and `family` is used only if `addr` is not
