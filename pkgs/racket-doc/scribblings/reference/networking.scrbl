@@ -101,7 +101,7 @@ Initially, the returned input port is block-buffered, and the returned
 output port is block-buffered. Change the buffer mode using
 @racket[file-stream-buffer-mode]. When a TCP output port is
 block-buffered, Nagle's algorithm is disabled for the port, which
-corresponds to setting the @as-indexed{@tt{TCP_NODELAY}} socket
+corresponds to setting the @as-index{@tt{TCP_NODELAY}} socket
 option.
 
 Both of the returned ports must be closed to terminate the TCP
