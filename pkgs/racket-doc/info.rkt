@@ -22,7 +22,7 @@
                      "syntax-color-doc"
                      "syntax-color-lib"
                      "scribble-doc"
-                     "future-visualizer"
+                     ["future-visualizer" #:version "1.1"]
                      "distributed-places-doc"
                      "distributed-places-lib"
                      "serialize-cstruct-lib"
