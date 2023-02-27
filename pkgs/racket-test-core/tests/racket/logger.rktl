@@ -369,7 +369,7 @@
 
 ;; --------------------
 
-(let ()
+(unless (eq? 'cgc (system-type 'gc))
   (struct gc-info (mode pre-amount pre-admin-amount code-amount
                         post-amount post-admin-amount
                         start-process-time end-process-time
