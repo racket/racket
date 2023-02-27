@@ -1354,7 +1354,9 @@ TO DO:
       [() buffer-mode]
       [(mode)
        (set! buffer-mode mode)
-       (file-stream-buffer-mode (mzssl-o mzssl) mode)]))))
+       (define o (mzssl-o mzssl))
+       (when (tcp-port? o)
+         (file-stream-buffer-mode o mode))]))))
 
 (define (ports->ssl-ports i o 
                           #:context [context #f]
