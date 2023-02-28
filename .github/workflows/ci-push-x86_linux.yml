@@ -167,7 +167,7 @@ jobs:
         path: /tmp
     - name: Untar
       working-directory: /usr/local
-      run: tar -xvjf /tmp/racketcgc-debian10-nocify-x64_git${{ github.sha}}.tar.bz2
+      run: tar -xvjf /tmp/racketcgc-debian10-nocify-x64_git${{ github.sha }}.tar.bz2
     - name: Configuring Racket CS
       working-directory: ./racket/src
       env:
@@ -192,11 +192,11 @@ jobs:
       run: make -j  $((cpus+1)) install
     - name: Tarballing
       working-directory: /usr/local
-      run: tar -cvjf /tmp/racketcs-debian10-x64_git${{ github.sha}}.tar.bz2 racketcs
+      run: tar -cvjf /tmp/racketcs-debian10-x64-${{ matrix.cc }}_git${{ github.sha }}.tar.bz2 racketcs
     - uses: actions/upload-artifact@v3
       with:
-        name: racketcs-debian10-x64_git${{ github.sha }}
-        path: /tmp/racketcs-debian10-x64_git${{ github.sha }}.tar.bz2
+        name: racketcs-debian10-x64-${{ matrix.cc }}_git${{ github.sha }}
+        path: /tmp/racketcs-debian10-x64-${{ matrix.cc }}_git${{ github.sha }}.tar.bz2
 
   # Tests
   # Unfortunately Actions does not support atm yaml anchors
@@ -365,15 +365,20 @@ jobs:
 
     needs: build-racketcs
 
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc]
+
     steps:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@v3
         with:
-          name: racketcs-debian10-x64_git${{ github.sha }}
+          name: racketcs-debian10-x64-${{ matrix.cc }}_git${{ github.sha }}
           path: /tmp
       - name: Untar
         working-directory: /usr/local
-        run: tar -xvjf /tmp/racketcs-debian10-x64_git${{ github.sha }}.tar.bz2
+        run: tar -xvjf /tmp/racketcs-debian10-x64-${{ matrix.cc }}_git${{ github.sha }}.tar.bz2
       - name: Extend PATH with Racket executable
         run: echo "/usr/local/racketcs/bin" >> $GITHUB_PATH
       - name: Check for Racket
