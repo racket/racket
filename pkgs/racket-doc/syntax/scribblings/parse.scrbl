@@ -32,3 +32,4 @@ messages embedded in the macro's syntax patterns.
 
 @include-section["parse/debug.scrbl"]
 @include-section["parse/experimental.scrbl"]
+@include-section["parse/pre.scrbl"]

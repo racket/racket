@@ -12,6 +12,10 @@
 
 @defmodule[syntax/parse/define]
 
+The @racketmodname[syntax/parse/define] library provides
+@racket[for-syntax] all of @racketmodname[syntax/parse], as well as
+providing some new forms.
+
 @defform[(define-syntax-parse-rule (macro-id . pattern) pattern-directive ...
            template)]{
 
