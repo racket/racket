@@ -321,6 +321,20 @@
 ;; ============================================================
 ;; EH patterns
 
+(test-case "~optional defaults"
+  (define (parse-optional stx)
+    (syntax-parse stx
+      [(_ (~or (~optional (~seq #:x (~optional (x ...)))
+                          #:defaults ([(x 1) null]))
+               y:nat)
+          ...)
+       (attribute x)]))
+  (check-equal? (parse-optional #'(a 1 2 3)) null)
+  (check-equal? (parse-optional #'(a #:x ())) null)
+  ;; This behavior is wrong, but preserve for backwards compatibility. Typed Racket
+  ;; relies on it; see #:no-provide clause in def-rep in typed-racket/rep/rep-utils.rkt.
+  (check-equal? (parse-optional #'(a #:x)) null))
+
 (test-case "~optional defaults, scoping"
   (define (parse-optional stx)
     (syntax-parse stx
