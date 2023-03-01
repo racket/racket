@@ -449,3 +449,80 @@
   (check-exn
    #rx"hash-code-combine-unordered[*]:.*expected: .listof exact-integer[?].*given: 'L"
    (λ () (hash-code-combine-unordered* 1 2 3 'L))))
+
+(test-case "recur"
+  (define (shallow-insides/hash hash/recur v)
+    (define is (mutable-seteq))
+    (hash/recur v (λ (i) (set-add! is i) 0))
+    is)
+
+  (define (shallow-insides/equal equal/recur v1 v2)
+    (define i1s (mutable-seteq))
+    (define i2s (mutable-seteq))
+    (equal/recur v1 v2 (λ (i1 i2) (set-add! i1s i1) (set-add! i2s i2) #true))
+    (values i1s i2s))
+
+  (define (deep-insides/hash hash/recur v)
+    (define is (mutable-seteq))
+    (define (rec i) (set-add! is i) (hash/recur i rec))
+    (hash/recur v rec)
+    is)
+
+  (define (deep-insides/equal equal/recur v1 v2)
+    (define i1s (mutable-seteq))
+    (define i2s (mutable-seteq))
+    (define (rec i1 i2) (set-add! i1s i1) (set-add! i2s i2) (equal/recur i1 i2 rec))
+    (equal/recur v1 v2 rec)
+    (values i1s i2s))
+
+  (define (test-shallow-insides f a1s a2s)
+    (define b1 (apply f a1s))
+    (define b2 (apply f a2s))
+    (for ([equal/recur
+           (in-list (list equal?/recur equal-always?/recur))]
+          [hash/recur
+           (in-list (list equal-hash-code/recur equal-always-hash-code/recur))])
+      (with-check-info (['name 'test-shallow-insides] ['b1 b1] ['b2 b2])
+        (define hi1s (shallow-insides/hash hash/recur b1))
+        (define hi2s (shallow-insides/hash hash/recur b2))
+        (define-values [ei1s ei2s] (shallow-insides/equal equal/recur b1 b2))
+        (check-equal? hi1s ei1s)
+        (check-equal? hi2s ei2s))))
+
+  (define (test-deep-insides f a1s)
+    (define b1 (apply f a1s))
+    (define b2 (apply f a1s))
+    (for ([equal/recur
+           (in-list (list equal?/recur equal-always?/recur))]
+          [hash/recur
+           (in-list (list equal-hash-code/recur equal-always-hash-code/recur))])
+      (with-check-info (['name 'test-deep-insides] ['f f] ['a1s a1s] ['b1 b1])
+        (define hi1s (deep-insides/hash hash/recur b1))
+        (define hi2s (deep-insides/hash hash/recur b2))
+        (define-values [ei1s ei2s] (deep-insides/equal equal/recur b1 b2))
+        (define a1set (apply seteq a1s))
+        (check-equal? (set-intersect a1set hi1s) (set-intersect a1set ei1s))
+        (check-equal? (set-intersect a1set hi2s) (set-intersect a1set ei2s)))))
+
+  (define (test-insides f a1s a2s)
+    (test-shallow-insides f a1s a2s)
+    (test-deep-insides f a1s)
+    (test-deep-insides f a2s))
+
+  (struct ifoo (a b c) #:transparent)
+  (struct mfoo (a b c) #:transparent #:mutable)
+
+  (test-insides box '(1) '(2))
+  (test-insides box-immutable '(1) '(2))
+  (test-insides cons '(1 2) '(3 4))
+  (test-insides mcons '(1 2) '(3 4))
+  (test-insides list* '(1 2 3) '(4 5 6))
+  (test-insides list '(1 2 3) '(4 5 6))
+  (test-insides vector '(1 2 3) '(4 5 6))
+  (test-insides vector-immutable '(1 2 3) '(4 5 6))
+  (test-deep-insides ifoo '(1 2 3))
+  (test-deep-insides mfoo '(1 2 3))
+  (test-deep-insides (λ (a b c) (hash 1 a 2 b 3 c)) '(4 5 6))
+  (test-deep-insides (λ (a b c)
+                       (make-hash (list (cons 1 a) (cons 2 b) (cons 3 c))))
+                     '(4 5 6)))
