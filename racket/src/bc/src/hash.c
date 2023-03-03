@@ -2005,6 +2005,10 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
           }
         }
 
+        MZ_MIX(k);
+        k += weak;
+        MZ_MIX(k);
+
         return k;
       } else {
         return k + PTR_TO_LONG(o);
