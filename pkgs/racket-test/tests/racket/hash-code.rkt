@@ -9,15 +9,47 @@
   ;; [A, B] != [B, A]
   (check-not-equal? (equal-hash-code (hash 0 1))
                     (equal-hash-code (hash 1 0)))
+  (check-not-equal? (equal-hash-code (make-hash '((0 . 1))))
+                    (equal-hash-code (make-hash '((1 . 0)))))
   ;; {[A, B], C} != {[A, C], B}
   ;; {{A: B}, {C: D}} != {{A: D}, {C: B}}
   (check-not-equal? (equal-hash-code (hash (hash 0 2) #true (hash 1 3) #true))
                     (equal-hash-code (hash (hash 0 3) #true (hash 1 2) #true)))
   (check-not-equal? (equal-hash-code (set (hash 0 2) (hash 1 3)))
                     (equal-hash-code (set (hash 0 3) (hash 1 2))))
+  (check-not-equal? (equal-hash-code (make-hash
+                                      (list (cons (make-hash '((0 . 2))) #true)
+                                            (cons (make-hash '((1 . 3))) #true))))
+                    (equal-hash-code (make-hash
+                                      (list (cons (make-hash '((0 . 3))) #true)
+                                            (cons (make-hash '((1 . 2))) #true)))))
+  (check-not-equal? (equal-hash-code (mutable-set (make-hash '((0 . 2)))
+                                                  (make-hash '((1 . 3)))))
+                    (equal-hash-code (mutable-set (make-hash '((0 . 3)))
+                                                  (make-hash '((1 . 2))))))
   ;; [A, [B]] != [B, [A]]
   (check-not-equal? (equal-hash-code (list 1 (list 2)))
                     (equal-hash-code (list 2 (list 1)))))
+
+(test-case "hash-hash-code"
+  ;; {k1: v1, k2: A, k3: B} != {k1: v1, k2: C, k3: D}
+  (check-not-equal? (equal-hash-code (hash 1 4 2 0 3 0))
+                    (equal-hash-code (hash 1 4 2 5 3 6)))
+  (check-not-equal? (equal-hash-code (hash 1 4 2 5 3 6))
+                    (equal-hash-code (hash 1 4 2 6 3 5)))
+
+  (check-not-equal? (equal-hash-code (hash 1 4 2 5 3 6))
+                    (equal-hash-code (hashalw 1 4 2 5 3 6)))
+  (check-not-equal? (equal-hash-code (hashalw 1 4 2 5 3 6))
+                    (equal-hash-code (hasheqv 1 4 2 5 3 6)))
+  (check-not-equal? (equal-hash-code (hasheqv 1 4 2 5 3 6))
+                    (equal-hash-code (hasheq 1 4 2 5 3 6)))
+  (check-not-equal? (equal-hash-code (hash 1 4 2 5 3 6))
+                    (equal-hash-code (make-hash '((1 . 4) (2 . 5)))))
+  (check-not-equal? (equal-hash-code (make-hash '((1 . 4) (2 . 5))))
+                    (equal-hash-code (make-weak-hash '((1 . 4) (2 . 5)))))
+  (check-not-equal? (equal-hash-code (make-weak-hash '((1 . 4) (2 . 5))))
+                    (equal-hash-code (make-ephemeron-hash '((1 . 4) (2 . 5))))))
 
 (test-case "unary hash-code-combine, aka 'mix-hash-code'"
   (check-equal? (hash-code-combine (equal-hash-code 'A))
