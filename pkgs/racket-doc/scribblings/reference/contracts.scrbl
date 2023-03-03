@@ -1664,14 +1664,19 @@ be blamed using the above contract:
 ]}
 
 @defthing[predicate/c contract?]{
-  Use this contract to indicate that some function
-  is a predicate. It is semantically equivalent to
-  @racket[(-> any/c boolean?)].
+
+ Use this contract to indicate that some function is a
+ predicate.
 
   This contract also includes an optimization so that functions returning
   @racket[#t] from @racket[struct-predicate-procedure?] are just returned directly, without
   being wrapped. This contract is used by @racket[provide/contract]'s
   @racket[struct] sub-form so that struct predicates end up not being wrapped.
+
+ This contract is semantically equivalent to
+ @racket[(-> any/c boolean?)] and
+ @racket[(-> any/c boolean?)] also has the same optimization.
+
 }
 
 @defthing[the-unsupplied-arg unsupplied-arg?]{
