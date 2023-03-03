@@ -680,7 +680,7 @@
    [else #f]))
 
 
-;; Use `hash` for recursive hashing
+;; Use `hash` for recursive hashing on values
 (define (hash-hash-code ht hash)
   (let* ([eq-key? (hash-eq? ht)]
          [eqv-key? (and (not eq-key?) (hash-eqv? ht))]
@@ -708,7 +708,7 @@
                               [eq-key? (eq-hash-code key)]
                               [eqv-key? (eqv-hash-code key)]
                               [equal-always-key? (equal-always-hash-code key)]
-                              [else (hash key)])])
+                              [else (equal-hash-code key)])])
                     (loop (hash-code-combine-unordered hc (hash-code-combine hk (hash val)))
                           (hash-iterate-next ht i)))))]))])))
 
