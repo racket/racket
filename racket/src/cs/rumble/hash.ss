@@ -704,13 +704,12 @@
             (let-values ([(key val) (hash-iterate-key+value ht i none2)])
               (if (eq? key none2)
                   (loop hc (hash-iterate-next ht i))
-                  (let ([hc (hash-code-combine-unordered hc
-                                                         (cond
-                                                          [eq-key? (eq-hash-code key)]
-                                                          [eqv-key? (eqv-hash-code key)]
-                                                          [equal-always-key? (equal-always-hash-code key)]
-                                                          [else (hash key)]))])
-                    (loop (hash-code-combine-unordered hc (hash val))
+                  (let ([hk (cond
+                              [eq-key? (eq-hash-code key)]
+                              [eqv-key? (eqv-hash-code key)]
+                              [equal-always-key? (equal-always-hash-code key)]
+                              [else (hash key)])])
+                    (loop (hash-code-combine-unordered hc (hash-code-combine hk (hash val)))
                           (hash-iterate-next ht i)))))]))])))
 
 
