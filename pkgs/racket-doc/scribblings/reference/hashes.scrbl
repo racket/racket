@@ -537,8 +537,8 @@ Removes any existing mapping for @racket[key] in @racket[hash].
          (and/c hash? immutable?)]{
 
 Functionally removes any existing mapping for @racket[key] in
-@racket[hash], returning @racket[hash] (i.e., a value @rhombus[eq?] to
-@rhombus[hash]) if @racket[key] is not present in @racket[hash].
+@racket[hash], returning @racket[hash] (i.e., a result @racket[eq?] to
+@racket[hash]) if @racket[key] is not present in @racket[hash].
 
 @see-also-mutable-key-caveat[]}
 
