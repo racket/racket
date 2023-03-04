@@ -451,6 +451,26 @@
    (λ () (hash-code-combine-unordered* 1 2 3 'L))))
 
 (test-case "recur"
+  (define (rational-hash x)
+    (cond
+      [(rational? x) (equal-hash-code (inexact->exact x))]
+      [else (equal-hash-code/recur x rational-hash)]))
+
+  (check-equal? (rational-hash 0.0) (rational-hash -0.0))
+  (check-not-equal? (rational-hash 1.0) (rational-hash -1.0))
+  (check-equal? (rational-hash (list (list (list 4.0 0.0) 9.0) 6.0))
+                (rational-hash (list (list (list 4 0) 9) 6)))
+
+  (define (rationalw-hash x)
+    (cond
+      [(rational? x) (equal-always-hash-code (inexact->exact x))]
+      [else (equal-always-hash-code/recur x rationalw-hash)]))
+
+  (check-equal? (rationalw-hash 0.0) (rationalw-hash -0.0))
+  (check-not-equal? (rationalw-hash 1.0) (rationalw-hash -1.0))
+  (check-equal? (rationalw-hash (list (list (list 4.0 0.0) 9.0) 6.0))
+                (rationalw-hash (list (list (list 4 0) 9) 6)))
+
   (define (shallow-insides/hash hash/recur v)
     (define is (mutable-seteq))
     (hash/recur v (λ (i) (set-add! is i) 0))

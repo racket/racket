@@ -219,6 +219,23 @@ indexing and comparison operations, especially in the implementation of
  #:changed "6.4.0.12"
  @elem{Strengthened guarantee for @racket[read]able values.}]}
 
+@defproc[(equal-hash-code/recur [v any/c] [recur-proc (-> any/c exact-integer?)])
+         fixnum?]{
+ Like @racket[equal-hash-code], but using @racket[recur-proc] for recursive
+ hashing within @racket[v].
+
+ @examples[
+   (define (rational-hash x)
+     (cond
+       [(rational? x) (equal-hash-code (inexact->exact x))]
+       [else (equal-hash-code/recur x rational-hash)]))
+   (= (rational-hash 0.0) (rational-hash -0.0))
+   (= (rational-hash 1.0) (rational-hash -1.0))
+   (= (rational-hash (list (list (list 4.0 0.0) 9.0) 6.0))
+      (rational-hash (list (list (list 4 0) 9) 6)))
+ ]
+
+ @history[#:added "8.8.0.9"]}
 
 @defproc[(equal-secondary-hash-code [v any/c]) fixnum?]{
 
@@ -235,6 +252,14 @@ indexing and comparison operations, especially in the implementation of
  values within @racket[v] are hashed with @racket[equal-hash-code],
  while mutable values within @racket[v] are hashed with @racket[eq-hash-code].}
 
+
+@defproc[(equal-always-hash-code/recur [v any/c]
+                                       [recur-proc (-> any/c exact-integer?)])
+         fixnum?]{
+ Like @racket[equal-always-hash-code], but using @racket[recur-proc] for
+ recursive hashing within @racket[v].
+
+ @history[#:added "8.8.0.9"]}
 
 @defproc[(equal-always-secondary-hash-code [v any/c]) fixnum?]{
 
