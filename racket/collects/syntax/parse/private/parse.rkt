@@ -137,7 +137,7 @@
                                                 #'(ps-pop-opaque rest-pr))])
                                #'(parse:H x cx rest-x rest-cx rest-pr pattern pr es
                                           (variant-success relsattrs iattrs (rest-x rest-cx result-pr)
-                                                           success cp0 commit?))))])
+                                                           success fh0 commit?))))])
               #'(try alternative ...))]
            [else
             (with-syntax ([matrix
@@ -148,7 +148,7 @@
                                             [commit? commit?])
                                 (pk1 (list pattern)
                                      #'(variant-success relsattrs iattrs ()
-                                                        success cp0 commit?)))))])
+                                                        success fh0 commit?)))))])
               #'(parse:matrix ((x cx pr es)) matrix))]))
    (with-syntax ([formals* formals*]
                  [(def ...) defs]
@@ -363,16 +363,16 @@ Conventions:
 ;; (variant-success relsattrs variant (also:id ...) success bool) : expr[Ans]
 (define-syntax (variant-success stx)
   (syntax-case stx ()
-    [(variant-success relsattrs iattrs (also ...) success cp0 commit?)
-     #`(with-maybe-reset-fail commit? cp0
+    [(variant-success relsattrs iattrs (also ...) success fh0 commit?)
+     #`(with-maybe-reset-fail commit? fh0
          (base-success-expr iattrs relsattrs (also ...) success))]))
 
 ;; (with-maybe-reset-fail bool id expr)
 (define-syntax with-maybe-reset-fail
   (syntax-rules ()
-    [(wmrs #t cp0 k)
-     (with ([fail-handler cp0]) k)]
-    [(wmrs #f cp0 k)
+    [(wmrs #t fh0 k)
+     (with ([fail-handler fh0]) k)]
+    [(wmrs #f fh0 k)
      k]))
 
 ;; (base-success-expr iattrs relsattrs (also:id ...) success) : expr[Ans]
