@@ -158,7 +158,16 @@ residual.rkt.
 (define-syntax (check-literal stx)
   (syntax-case stx ()
     [(check-literal id used-phase-expr ctx)
-     (let* ([ok-phases/ct-rel
+     (let* ([ctx-for-error
+             ;; If context is not stripped, racket complains about
+             ;; being unable to restore bindings for compiled code;
+             ;; and all we want is the srcloc, etc.
+             (syntax-case #'ctx ()
+               [(id . _)
+                (identifier? #'id)
+                (datum->syntax #f (list (strip-context #'id) '....) #'ctx)]
+               [_ (strip-context #'ctx)])]
+            [ok-phases/ct-rel
              ;; id is bound at each of ok-phases/ct-rel
              ;; (phase relative to the compilation of the module in which the
              ;; 'syntax-parse' (or related) form occurs)
@@ -170,10 +179,7 @@ residual.rkt.
                            used-phase-expr
                            (phase-of-enclosing-module)
                            'ok-phases/ct-rel
-                           ;; If context is not stripped, racket complains about
-                           ;; being unable to restore bindings for compiled code;
-                           ;; and all we want is the srcloc, etc.
-                           (quote-syntax #,(strip-context #'ctx)))))]))
+                           (quote-syntax #,ctx-for-error))))]))
 
 ;; ====
 
