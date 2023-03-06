@@ -1892,14 +1892,24 @@ is provided from the module. In
 addition, clients of the module must live up to the contract specified
 by @racket[contract-expr] for each export.
 
-The @racket[contract-out] form treats modules as units of
-blame. The module that defines the provided variable is expected to
-meet the positive (co-variant) positions of the contract. Each module
-that imports the provided variable must obey the negative
-(contra-variant) positions of the contract. Each @racket[contract-expr]
-in a @racket[contract-out] form is effectively moved to the end of the
-enclosing module, so a @racket[contract-expr] can refer to variables
-that are defined later in the same module.
+@margin-note{Technically, the @racket[contract-out] form treats modules as
+units of blame. The module that defines the provided variable is expected to
+meet the positive (co-variant) positions of the contract. Each module that
+imports the provided variable must obey the negative (contra-variant)
+positions of the contract.}
+The contracts of @racket[contract-out] are placed at the boundary of the
+enclosing module. This means that, for example, if the module provides a form
+@racketid[my-form] with @racket[contract-out], the contract is checked only
+when @racketid[my-form] is called from outside of the module, but not when
+called from within the module. When @racketid[my-form] is called from outside of
+the module, its input values are checked against the corresponding parts of the
+contract before actually performing the call to @racketid[my-form], while
+values produced by the call to @racketid[my-form] are checked against the
+remaining parts of the contract before actually returning these values at the
+caller's location. Each @racket[contract-expr] in a @racket[contract-out]
+form is effectively moved to the end of the enclosing module, so a
+@racket[contract-expr] can refer to variables that are defined later in the
+same module.
 
 Only uses of the contracted variable outside the module are
 checked. Inside the module, no contract checking occurs.
@@ -2077,13 +2087,17 @@ For the definition of @racket[free-var-list], see @racket[with-contract].
   (eval:error (furlongs->feet "not a furlong"))
 ]
 
-The @racket[define/contract] form treats the individual definition as
-a contract region. The definition itself is responsible for positive
-(co-variant) positions of the contract, and references to
-@racket[id] outside of the definition must meet the negative
-positions of the contract. Since the contract boundary is
-between the definition and the surrounding context, references to
-@racket[id] inside the @racket[define/contract] form are not checked.
+@margin-note{Technically, the definition itself is responsible for positive
+(co-variant) positions of the contract, and references to @racket[id] outside
+of the definition must meet the negative positions of the contract.}
+The @racket[define/contract] form treats the individual definition as a
+contract region. This means that when @racketid[id] is called either from
+within the module or from outside the module (if provided), the input values
+are checked against the corresponding parts of the contract, while the values
+produced by the call are checked against the remaining parts of the contract.
+However, since the contract boundary is between the definition and the
+surrounding context, references to @racket[id] inside the
+@racket[define/contract] form are not checked.
 
 @examples[#:eval (contract-eval) #:once
   (code:comment "an unsual predicate that prints when called")
