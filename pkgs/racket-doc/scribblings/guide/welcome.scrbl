@@ -40,9 +40,10 @@ Racket's main tools are
 
 Most likely, you'll want to explore the Racket language using
 DrRacket, especially at the beginning. If you prefer, you can also
-work with the command-line @exec{racket} interpreter and your favorite
-text editor; see also @secref["other-editors"]. The rest of this guide
-presents the language mostly independent of your choice of editor.
+work with the command-line @exec{racket} interpreter (see  
+@secref["racket"]) and your favorite text editor (see 
+@secref["other-editors"]). The rest of this guide presents the 
+language mostly independent of your choice of editor.
 
 If you're using DrRacket, you'll need to choose the proper language,
 because DrRacket accommodates many different variants of Racket, as
