@@ -4009,88 +4009,89 @@
                 (let ((app_0 (convert (rx:alts-rx_2265 rx_0))))
                   (rx-alts app_0 (convert (rx:alts-rx_1912 rx_0)) 255))
                 (if (rx:sequence? rx_0)
-                  (if (rx:sequence? rx_0)
-                    (let ((rxs1_0
-                           (reverse$1
-                            (let ((lst_0 (rx:sequence-rxs rx_0)))
-                              (begin
-                                (letrec*
-                                 ((for-loop_0
-                                   (|#%name|
-                                    for-loop
-                                    (lambda (fold-var_0 lst_1)
-                                      (begin
-                                        (if (pair? lst_1)
-                                          (let ((rx_1 (unsafe-car lst_1)))
-                                            (let ((rest_0 (unsafe-cdr lst_1)))
-                                              (let ((fold-var_1
-                                                     (let ((fold-var_1
-                                                            (cons
-                                                             (convert rx_1)
-                                                             fold-var_0)))
-                                                       (values fold-var_1))))
-                                                (for-loop_0
-                                                 fold-var_1
-                                                 rest_0))))
-                                          fold-var_0))))))
-                                 (for-loop_0 null lst_0)))))))
-                      (rx:sequence2.1
-                       rxs1_0
-                       (rx:sequence-needs-backtrack? rx_0)))
-                    (raise-argument-error 'struct-copy "rx:sequence?" rx_0))
+                  (let ((new-rxs_0
+                         (reverse$1
+                          (let ((lst_0 (rx:sequence-rxs rx_0)))
+                            (begin
+                              (letrec*
+                               ((for-loop_0
+                                 (|#%name|
+                                  for-loop
+                                  (lambda (fold-var_0 lst_1)
+                                    (begin
+                                      (if (pair? lst_1)
+                                        (let ((rx_1 (unsafe-car lst_1)))
+                                          (let ((rest_0 (unsafe-cdr lst_1)))
+                                            (let ((fold-var_1
+                                                   (let ((fold-var_1
+                                                          (cons
+                                                           (convert rx_1)
+                                                           fold-var_0)))
+                                                     (values fold-var_1))))
+                                              (for-loop_0 fold-var_1 rest_0))))
+                                        fold-var_0))))))
+                               (for-loop_0 null lst_0)))))))
+                    (if (rx:sequence? rx_0)
+                      (let ((needs-backtrack?2_0
+                             (ormap_2765 needs-backtrack? new-rxs_0)))
+                        (rx:sequence2.1 new-rxs_0 needs-backtrack?2_0))
+                      (raise-argument-error 'struct-copy "rx:sequence?" rx_0)))
                   (if (rx:group? rx_0)
                     (if (rx:group? rx_0)
-                      (let ((rx2_0 (convert (rx:group-rx rx_0))))
-                        (rx:group3.1 rx2_0 (rx:group-number rx_0)))
+                      (let ((rx3_0 (convert (rx:group-rx rx_0))))
+                        (rx:group3.1 rx3_0 (rx:group-number rx_0)))
                       (raise-argument-error 'struct-copy "rx:group?" rx_0))
                     (if (rx:repeat? rx_0)
                       (if (rx:repeat? rx_0)
-                        (let ((rx3_0 (convert (rx:repeat-rx rx_0))))
+                        (let ((rx4_0 (convert (rx:repeat-rx rx_0))))
                           (let ((app_0 (rx:repeat-min rx_0)))
                             (let ((app_1 (rx:repeat-max rx_0)))
                               (rx:repeat4.1
-                               rx3_0
+                               rx4_0
                                app_0
                                app_1
                                (rx:repeat-non-greedy? rx_0)))))
                         (raise-argument-error 'struct-copy "rx:repeat?" rx_0))
                       (if (rx:maybe? rx_0)
                         (if (rx:maybe? rx_0)
-                          (let ((rx4_0 (convert (rx:maybe-rx rx_0))))
-                            (rx:maybe5.1 rx4_0 (rx:maybe-non-greedy? rx_0)))
+                          (let ((rx5_0 (convert (rx:maybe-rx rx_0))))
+                            (rx:maybe5.1 rx5_0 (rx:maybe-non-greedy? rx_0)))
                           (raise-argument-error 'struct-copy "rx:maybe?" rx_0))
                         (if (rx:conditional? rx_0)
-                          (if (rx:conditional? rx_0)
-                            (let ((tst5_0 (convert (rx:conditional-tst rx_0))))
-                              (let ((rx16_0
-                                     (convert (rx:conditional-rx_2162 rx_0))))
-                                (let ((rx27_0
-                                       (convert
-                                        (rx:conditional-rx_2328 rx_0))))
-                                  (let ((rx16_1 rx16_0) (tst5_1 tst5_0))
-                                    (let ((app_0
-                                           (rx:conditional-n-start rx_0)))
-                                      (let ((app_1
-                                             (rx:conditional-num-n rx_0)))
+                          (let ((new-rx1_0
+                                 (convert (rx:conditional-rx_2162 rx_0))))
+                            (let ((new-rx2_0
+                                   (convert (rx:conditional-rx_2328 rx_0))))
+                              (if (rx:conditional? rx_0)
+                                (let ((tst6_0
+                                       (convert (rx:conditional-tst rx_0))))
+                                  (let ((needs-backtrack?9_0
+                                         (let ((or-part_0
+                                                (needs-backtrack? new-rx1_0)))
+                                           (if or-part_0
+                                             or-part_0
+                                             (needs-backtrack? new-rx2_0)))))
+                                    (let ((tst6_1 tst6_0))
+                                      (let ((app_0
+                                             (rx:conditional-n-start rx_0)))
                                         (rx:conditional6.1
-                                         tst5_1
-                                         rx16_1
-                                         rx27_0
+                                         tst6_1
+                                         new-rx1_0
+                                         new-rx2_0
                                          app_0
-                                         app_1
-                                         (rx:conditional-needs-backtrack?
-                                          rx_0))))))))
-                            (raise-argument-error
-                             'struct-copy
-                             "rx:conditional?"
-                             rx_0))
+                                         (rx:conditional-num-n rx_0)
+                                         needs-backtrack?9_0)))))
+                                (raise-argument-error
+                                 'struct-copy
+                                 "rx:conditional?"
+                                 rx_0))))
                           (if (rx:lookahead? rx_0)
                             (if (rx:lookahead? rx_0)
-                              (let ((rx8_0 (convert (rx:lookahead-rx rx_0))))
+                              (let ((rx10_0 (convert (rx:lookahead-rx rx_0))))
                                 (let ((app_0 (rx:lookahead-match? rx_0)))
                                   (let ((app_1 (rx:lookahead-n-start rx_0)))
                                     (rx:lookahead7.1
-                                     rx8_0
+                                     rx10_0
                                      app_0
                                      app_1
                                      (rx:lookahead-num-n rx_0)))))
@@ -4100,7 +4101,7 @@
                                rx_0))
                             (if (rx:lookbehind? rx_0)
                               (if (rx:lookbehind? rx_0)
-                                (let ((rx9_0
+                                (let ((rx11_0
                                        (convert (rx:lookbehind-rx rx_0))))
                                   (let ((app_0 (rx:lookbehind-match? rx_0)))
                                     (let ((app_1 (rx:lookbehind-lb-min rx_0)))
@@ -4109,7 +4110,7 @@
                                         (let ((app_3
                                                (rx:lookbehind-n-start rx_0)))
                                           (rx:lookbehind8.1
-                                           rx9_0
+                                           rx11_0
                                            app_0
                                            app_1
                                            app_2
@@ -4120,19 +4121,20 @@
                                  "rx:lookbehind?"
                                  rx_0))
                               (if (rx:cut? rx_0)
-                                (if (rx:cut? rx_0)
-                                  (let ((rx10_0 (convert (rx:cut-rx rx_0))))
-                                    (let ((app_0 (rx:cut-n-start rx_0)))
-                                      (let ((app_1 (rx:cut-num-n rx_0)))
+                                (let ((new-rx_0 (convert (rx:cut-rx rx_0))))
+                                  (if (rx:cut? rx_0)
+                                    (let ((needs-backtrack?13_0
+                                           (needs-backtrack? rx_0)))
+                                      (let ((app_0 (rx:cut-n-start rx_0)))
                                         (rx:cut9.1
-                                         rx10_0
+                                         new-rx_0
                                          app_0
-                                         app_1
-                                         (rx:cut-needs-backtrack? rx_0)))))
-                                  (raise-argument-error
-                                   'struct-copy
-                                   "rx:cut?"
-                                   rx_0))
+                                         (rx:cut-num-n rx_0)
+                                         needs-backtrack?13_0)))
+                                    (raise-argument-error
+                                     'struct-copy
+                                     "rx:cut?"
+                                     rx_0)))
                                 rx_0))))))))))))))))
 (define range->alts
   (lambda (args_0)

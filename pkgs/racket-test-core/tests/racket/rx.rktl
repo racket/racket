@@ -2110,6 +2110,21 @@
 (test #"" regexp-replace* #"[a-z]" #"abc" #"")
 (test "" regexp-replace* "[a-z]" "abc" "")
 
+;; check that backtrack requirement is updated when text `.` is converted to
+;; an any-UTF-8 pattern
+(test '("theorem abc" #f)
+      regexp-match (pregexp "theorem ((?!theorem).)*abc") "theorem abc {α : Type}")
+(test '("theorem abc" #f)
+      regexp-match (pregexp "theorem ((?!theorem).)*abc") "theorem abc {a : Type}")
+(test '("theorem abc" #f)
+      regexp-match (pregexp "theorem ((?<!theorem).)*abc") "theorem abc {α : Type}")
+(test '("theorem abc" #f)
+      regexp-match (pregexp "theorem ((?<!theorem).)*abc") "theorem abc {a : Type}")
+(test '("theorem abc")
+      regexp-match (pregexp "theorem (?(?<!theorem).|.)*abc") "theorem abc {α : Type}")
+(test '("theorem abc")
+      regexp-match (pregexp "theorem (?(?<!theorem).|.)*abc") "theorem abc {a : Type}")
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (test "aaa" regexp-replace* "(x)" "aaa"

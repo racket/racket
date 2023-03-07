@@ -44,7 +44,7 @@
    [(rx:repeat? rx) #t]
    [(rx:maybe? rx) #t]
    [(rx:conditional? rx) (rx:conditional-needs-backtrack? rx)]
-   [(rx:cut? rx) (rx:cut-needs-backtrack? rx)] ; doesn't actually backtrack, but count varies
+   [(rx:cut? rx) (rx:cut-needs-backtrack? rx)] ; doesn't actually backtrack, but count may vary
    [(rx:unicode-categories? rx) #t]
    [else #f]))
 
