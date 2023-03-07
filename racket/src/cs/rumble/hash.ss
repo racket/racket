@@ -680,30 +680,37 @@
    [else #f]))
 
 
-;; Use `hash` for recursive hashing
+;; Use `hash` for recursive hashing on values
 (define (hash-hash-code ht hash)
-  (cond
-   [(intmap? ht) (intmap-hash-code ht hash)]
-   [else
-    ;; This generic hashing supports impersonators
-    (let loop ([hc 0] [i (hash-iterate-first ht)])
-      (cond
-       [(not i) hc]
-       [else
-        (let* ([eq-key? (hash-eq? ht)]
-               [eqv-key? (and (not eq-key?) (hash-eqv? ht))]
-               [equal-always-key? (and (not eq-key?) (not eqv-key?) (hash-equal-always? ht))])
-          (let-values ([(key val) (hash-iterate-key+value ht i none2)])
-            (if (eq? key none2)
-                (loop hc (hash-iterate-next ht i))
-                (let ([hc (hash-code-combine-unordered hc
-                                                       (cond
-                                                        [eq-key? (eq-hash-code key)]
-                                                        [eqv-key? (eqv-hash-code key)]
-                                                        [equal-always-key? (equal-always-hash-code key)]
-                                                        [else (hash key)]))])
-                  (loop (hash-code-combine-unordered hc (hash val))
-                        (hash-iterate-next ht i))))))]))]))
+  (let* ([eq-key? (hash-eq? ht)]
+         [eqv-key? (and (not eq-key?) (hash-eqv? ht))]
+         [equal-always-key? (and (not eq-key?) (not eqv-key?) (hash-equal-always? ht))])
+    (cond
+      [(intmap? ht) 
+       (hash-code-combine
+        (intmap-hash-code ht hash)
+        (cond [eq-key? 0] [eqv-key? 1] [equal-always-key? 2] [else 3]))]
+      [else
+       ;; This generic hashing supports impersonators
+       (let loop ([hc 0] [i (hash-iterate-first ht)])
+         (cond
+           [(not i)
+            (hash-code-combine
+             (hash-code-combine
+              hc
+              (cond [eq-key? 0] [eqv-key? 1] [equal-always-key? 2] [else 3]))
+             (cond [(intmap? ht) 0] [(hash-weak? ht) 1] [(hash-ephemeron? ht) 2] [else 3]))]
+           [else
+            (let-values ([(key val) (hash-iterate-key+value ht i none2)])
+              (if (eq? key none2)
+                  (loop hc (hash-iterate-next ht i))
+                  (let ([hk (cond
+                              [eq-key? (eq-hash-code key)]
+                              [eqv-key? (eqv-hash-code key)]
+                              [equal-always-key? (equal-always-hash-code key)]
+                              [else (equal-hash-code key)])])
+                    (loop (hash-code-combine-unordered hc (hash-code-combine hk (hash val)))
+                          (hash-iterate-next ht i)))))]))])))
 
 
 ;; Start by getting just a few cells via `hashtable-cells`,

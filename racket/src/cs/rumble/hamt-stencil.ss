@@ -1159,7 +1159,7 @@
                 (cond
                   [(fx< i val-count)
                    (loop (fx1+ i)
-                         (hash-code-combine hc (hash (#%$stencil-vector-ref n offset))))]
+                         (hash-code-combine hc (hash (#%$stencil-vector-ref n (fx+ offset i)))))]
                   [else hc])))]))))
 
     (define (bnode-fold n f nil)
