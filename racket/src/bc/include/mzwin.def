@@ -587,10 +587,12 @@ EXPORTS
  scheme_chaperone_of
  scheme_impersonator_of
  scheme_equal_hash_key
+ scheme_equal_hash_key_recur
  scheme_equal_hash_key2
  scheme_recur_equal_hash_key
  scheme_recur_equal_hash_key2
  scheme_equal_always_hash_key
+ scheme_equal_always_hash_key_recur
  scheme_equal_always_hash_key2
  scheme_eqv_hash_key
  scheme_eqv_hash_key2

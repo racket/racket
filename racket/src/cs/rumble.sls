@@ -285,8 +285,10 @@
           eq-hash-code
           eqv-hash-code
           equal-hash-code
+          equal-hash-code/recur
           equal-secondary-hash-code
           equal-always-hash-code
+          equal-always-hash-code/recur
           equal-always-secondary-hash-code
 
           hash hasheqv hasheq hashalw
