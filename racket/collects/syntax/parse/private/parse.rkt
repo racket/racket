@@ -38,33 +38,33 @@
   (define (constant-desc e)
     (string-expr-value e))
 
- (define (tx:define-*-syntax-class stx splicing?)
-   (syntax-case stx ()
-     [(_ header . rhss)
-      (parameterize ((current-syntax-context stx))
-        (let-values ([(name formals arity)
-                      (let ([p (check-stxclass-header #'header stx)])
-                        (values (car p) (cadr p) (caddr p)))])
-          (let ([the-rhs (parse-rhs #'rhss splicing? #:context stx
-                                    #:default-description (symbol->string (syntax-e name)))])
-            (with-syntax ([name name]
-                          [formals formals]
-                          [desc (cond [(rhs-description the-rhs) => constant-desc] [else #f])]
-                          [parser (generate-temporary (format-symbol "parse-~a" name))]
-                          [arity arity]
-                          [attrs (rhs-attrs the-rhs)]
-                          [commit? (rhs-commit? the-rhs)]
-                          [delimit-cut? (rhs-delimit-cut? the-rhs)]
-                          [the-rhs-expr (datum->expression the-rhs)])
-              #`(begin (define-syntax name
-                         (stxclass 'name 'arity
-                                   'attrs
-                                   (quote-syntax parser)
-                                   '#,splicing?
-                                   (scopts (length 'attrs) 'commit? 'delimit-cut? desc)
-                                   #f))
-                       (define-values (parser)
-                         (parser/rhs name formals attrs the-rhs-expr #,splicing? #,stx)))))))])))
+  (define (tx:define-*-syntax-class stx splicing?)
+    (syntax-case stx ()
+      [(_ header . rhss)
+       (parameterize ((current-syntax-context stx))
+         (let-values ([(name formals arity)
+                       (let ([p (check-stxclass-header #'header stx)])
+                         (values (car p) (cadr p) (caddr p)))])
+           (let ([the-rhs (parse-rhs #'rhss splicing? #:context stx
+                                     #:default-description (symbol->string (syntax-e name)))])
+             (with-syntax ([name name]
+                           [formals formals]
+                           [splicing? splicing?]
+                           [desc (cond [(rhs-description the-rhs) => string-expr-value] [else #f])]
+                           [parser (generate-temporary (format-symbol "parse-~a" name))]
+                           [arity arity]
+                           [attrs (rhs-attrs the-rhs)]
+                           [commit? (rhs-commit? the-rhs)]
+                           [delimit-cut? (rhs-delimit-cut? the-rhs)]
+                           [the-rhs-expr (datum->expression the-rhs)])
+               #`(begin (define-syntax name
+                          (stxclass (quote name) (quote arity) (quote attrs)
+                                    (quote-syntax parser)
+                                    (quote splicing?)
+                                    (scopts (length 'attrs) 'commit? 'delimit-cut? desc)
+                                    #f))
+                        (define-values (parser)
+                          (parser/rhs name formals attrs the-rhs-expr splicing? #,stx)))))))])))
 
 (define-syntax define-syntax-class
   (lambda (stx) (tx:define-*-syntax-class stx #f)))
@@ -75,34 +75,42 @@
   (syntax-case stx (quote)
     [(_ name (quote description) predicate)
      (with-syntax ([parser (generate-temporary (format-symbol "parse-~a" (syntax-e #'name)))]
-                   [no-arity no-arity])
+                   [no-arity no-arity]
+                   [rhs-expr (datum->expression
+                              (make-predicate-rhs #'name #'description #'predicate))])
        #'(begin (define-syntax name
                   (stxclass 'name no-arity '()
                             (quote-syntax parser)
                             #f
                             (scopts 0 #t #t 'description)
                             (quote-syntax predicate)))
-                (define (parser x cx pr es undos fh0 cp0 rl success)
-                  (if (predicate x)
-                      (success fh0 undos)
-                      (let ([es (es-add-thing pr 'description #t rl es)])
-                        (fh0 undos (failure* pr es)))))))]))
+                (define-values (parser)
+                  (parser/rhs name () () rhs-expr #f #f))))]))
+
+(begin-for-syntax
+  ;; make-predicate-rhs : Id Id Id -> RHS
+  (define (make-predicate-rhs name description predicate)
+    (define p (pat:and (list (pat:svar #'s)
+                             (pat:action (action:fail #`(not (#,predicate #'s)) #''#f)
+                                         (pat:any)))))
+    (define variants (list (variant #f null p null)))
+    (rhs null #t #''description variants null #t #t)))
 
 (define-syntax (parser/rhs stx)
   (syntax-case stx ()
     [(parser/rhs name formals relsattrs the-rhs-expr splicing? ctx)
      (with-disappeared-uses
-      (let ()
-        (define the-rhs
-          (parameterize ((current-syntax-context #'ctx))
-            (fixup-rhs (syntax-local-eval
-                        (syntax-local-introduce #'the-rhs-expr))
-                       (syntax-e #'splicing?)
-                       (syntax->datum #'relsattrs))))
-        (rhs->parser #'name #'formals #'relsattrs the-rhs (syntax-e #'splicing?) #'ctx)))]))
+       (let ([splicing? (syntax-e #'splicing?)]
+             [relsattrs (syntax->datum #'relsattrs)])
+         (define the-rhs
+           (parameterize ((current-syntax-context #'ctx))
+             (fixup-rhs (syntax-local-eval
+                         (syntax-local-introduce #'the-rhs-expr))
+                        splicing? relsattrs)))
+         (codegen-rhs #'name #'formals relsattrs the-rhs splicing? #'ctx)))]))
 
 (begin-for-syntax
- (define (rhs->parser name formals relsattrs the-rhs splicing? [ctx #f])
+ (define (codegen-rhs name formals relsattrs the-rhs splicing? [ctx #f])
    (define-values (transparent? description variants defs commit? delimit-cut?)
      (match the-rhs
        [(rhs _ transparent? description variants defs commit? delimit-cut?)
@@ -212,6 +220,14 @@
                  [( expr ) #'expr]
                  [_ (raise-syntax-error #f "bad syntax" stx)])]
               [attrs (pattern-attrs pattern)])
+          (with-syntax ([expr expr]
+                        [(a ...) attrs]
+                        [(#s(attr name _ _) ...) attrs])
+            #`(defattrs/unpack (a ...)
+                (let ([x (datum->syntax #f expr)])
+                  #,(codegen-clauses 'define/syntax-parse #'x #'x defs
+                                     (list pattern) (list #'(list (attribute name) ...)) stx))))
+          #;
           (with-syntax ([(a ...) attrs]
                         [(#s(attr name _ _) ...) attrs]
                         [pattern pattern]
@@ -327,24 +343,6 @@ Conventions:
   - fh, cp, rl : id (var)
 |#
 
-(begin-for-syntax
- (define (rewrite-formals fstx x-id rl-id)
-   (with-syntax ([x x-id]
-                 [rl rl-id])
-     (let loop ([fstx fstx])
-       (syntax-case fstx ()
-         [([kw arg default] . more)
-          (keyword? (syntax-e #'kw))
-          (cons #'(kw arg (with ([this-syntax x] [this-role rl]) default))
-                (loop #'more))]
-         [([arg default] . more)
-          (not (keyword? (syntax-e #'kw)))
-          (cons #'(arg (with ([this-syntax x] [this-role rl]) default))
-                (loop #'more))]
-         [(formal . more)
-          (cons #'formal (loop #'more))]
-         [_ fstx])))))
-
 ;; (with-maybe-delimit-cut bool expr)
 (define-syntax with-maybe-delimit-cut
   (syntax-rules ()
@@ -387,91 +385,97 @@ Conventions:
      ;; if templates? is true, expect one form after kwargs in clause, wrap it with syntax
      ;; otherwise, expect non-empty body sequence (defs and exprs)
      (with-disappeared-uses
-      (with-txlifts
-       (lambda ()
-        (define who
-          (syntax-case #'ctx ()
-            [(m . _) (identifier? #'m) #'m]
-            [_ 'syntax-parse]))
-        (define-values (chunks clauses-stx)
-          (parse-keyword-options #'clauses parse-directive-table
-                                 #:context #'ctx
-                                 #:no-duplicates? #t))
-        (define context
-          (options-select-value chunks '#:context #:default #'x))
-        (define colon-notation?
-          (not (assq '#:disable-colon-notation chunks)))
-        (define track-literals?
-          (or (assq '#:track-literals chunks)
-              (eq? (syntax-e #'body-mode) 'one-template)))
-        (define-values (decls0 defs)
-          (get-decls+defs chunks #:context #'ctx))
-        ;; for-clause : stx -> (values pattern stx (listof stx))
-        (define (for-clause clause)
-          (syntax-case clause ()
-            [[p . rest]
-             (let-values ([(rest pattern defs2)
-                           (parameterize ((stxclass-colon-notation? colon-notation?))
-                             (parse-pattern+sides #'p #'rest
-                                                  #:splicing? #f
-                                                  #:decls decls0
-                                                  #:context #'ctx))])
-               (let ([body-expr
-                      (case (syntax-e #'body-mode)
-                        ((one-template)
-                         (syntax-case rest ()
-                           [(template)
-                            #'(syntax template)]
-                           [_ (raise-syntax-error #f "expected exactly one template" #'ctx)]))
-                        ((body-sequence)
-                         (syntax-case rest ()
-                           [(e0 e ...)
-                            #'(let () e0 e ...)]
-                           [_ (raise-syntax-error #f "expected non-empty clause body"
-                                                  #'ctx clause)]))
-                        (else
-                         (raise-syntax-error #f "internal error: unknown body mode" #'ctx #'body-mode)))])
-                 (values pattern body-expr defs2)))]
-            [_ (raise-syntax-error #f "expected clause" #'ctx clause)]))
-        (define (wrap-track-literals stx)
-          (if track-literals? (quasisyntax/loc stx (track-literals '#,who #,stx)) stx))
-        (unless (stx-list? clauses-stx)
-          (raise-syntax-error #f "expected sequence of clauses" #'ctx))
-        (define-values (patterns body-exprs defs2s)
-          (for/lists (patterns body-exprs defs2s) ([clause (in-list (stx->list clauses-stx))])
-            (for-clause clause)))
-        (define no-fail? (patterns-cannot-fail? patterns))
-        (when no-fail? (log-syntax-parse-debug "cannot fail: ~e" #'ctx))
-        (with-syntax ([(def ...) (apply append (get-txlifts-as-definitions) defs defs2s)])
-          #`(let* ([ctx0 (normalize-context '#,who #,context x)]
-                   [pr (ps-empty x (cadr ctx0))]
-                   [es #,(if no-fail? #'#f #'#t)]
-                   [cx x]
-                   [fh0 (syntax-patterns-fail ctx0)])
-              def ...
-              (parameterize ((current-syntax-context (cadr ctx0))
-                             (current-state '#hasheq())
-                             (current-state-writable? #f))
-                #,(wrap-track-literals
-                 #`(with ([fail-handler fh0]
-                          [cut-prompt fh0]
-                          [undo-stack null])
-                     #,(cond [(pair? patterns)
-                              (with-syntax ([matrix
-                                             (optimize-matrix
-                                              (for/list ([pattern (in-list patterns)]
-                                                         [body-expr (in-list body-exprs)])
-                                                (pk1 (list pattern) body-expr)))])
-                                #'(parse:matrix ((x cx pr es)) matrix))
-                              #|
-                              (with-syntax ([(alternative ...)
-                                             (for/list ([pattern (in-list patterns)]
-                                                        [body-expr (in-list body-exprs)])
-                                               #`(parse:S x cx #,pattern pr es #,body-expr))])
-                                #`(try alternative ...))
-                              |#]
-                             [else
-                              #`(fail (failure* pr es))])))))))))]))
+       (with-txlifts
+         (lambda ()
+           (define who
+             (syntax-case #'ctx ()
+               [(m . _) (identifier? #'m) #'m]
+               [_ 'syntax-parse]))
+           (define-values (chunks clauses-stx)
+             (parse-keyword-options #'clauses parse-directive-table
+                                    #:context #'ctx
+                                    #:no-duplicates? #t))
+           (define context
+             (options-select-value chunks '#:context #:default #'x))
+           (define colon-notation?
+             (not (assq '#:disable-colon-notation chunks)))
+           (define track-literals?
+             (or (assq '#:track-literals chunks)
+                 (eq? (syntax-e #'body-mode) 'one-template)))
+           (define-values (decls0 defs)
+             (get-decls+defs chunks #:context #'ctx))
+           ;; for-clause : stx -> (values pattern stx (listof stx))
+           (define (for-clause clause)
+             (syntax-case clause ()
+               [[p . rest]
+                (let-values ([(rest pattern defs2)
+                              (parameterize ((stxclass-colon-notation? colon-notation?))
+                                (parse-pattern+sides #'p #'rest
+                                                     #:splicing? #f
+                                                     #:decls decls0
+                                                     #:context #'ctx))])
+                  (let ([body-expr
+                         (case (syntax-e #'body-mode)
+                           ((one-template)
+                            (syntax-case rest ()
+                              [(template)
+                               #'(syntax template)]
+                              [_ (raise-syntax-error #f "expected exactly one template" #'ctx)]))
+                           ((body-sequence)
+                            (syntax-case rest ()
+                              [(e0 e ...)
+                               #'(let () e0 e ...)]
+                              [_ (raise-syntax-error #f "expected non-empty clause body"
+                                                     #'ctx clause)]))
+                           (else
+                            (raise-syntax-error #f "internal error: unknown body mode" #'ctx #'body-mode)))])
+                    (values pattern body-expr defs2)))]
+               [_ (raise-syntax-error #f "expected clause" #'ctx clause)]))
+           (unless (stx-list? clauses-stx)
+             (raise-syntax-error #f "expected sequence of clauses" #'ctx))
+           (define-values (patterns body-exprs defs2s)
+             (for/lists (patterns body-exprs defs2s) ([clause (in-list (stx->list clauses-stx))])
+               (for-clause clause)))
+           (define all-defs (apply append (get-txlifts-as-definitions) defs defs2s))
+           (codegen-clauses who context #'x all-defs patterns body-exprs #'ctx track-literals?))))]))
+
+
+(begin-for-syntax
+  ;; codegen-clauses : Symbol Expr[Syntax] Id (Listof Defn) (Listof SinglePattern) (Listof Expr)
+  ;;                -> Expr
+  (define (codegen-clauses who context x all-defs patterns body-exprs ctx track-literals?)
+    (define no-fail? (patterns-cannot-fail? patterns))
+    (when (and no-fail? ctx) (log-syntax-parse-debug "cannot fail: ~e" ctx))
+    (with-syntax ([(who context x) (list who context x)]
+                  [(def ...) all-defs]
+                  [init-es (if no-fail? #'#f #'#t)])
+      #`(let* ([ctx0 (normalize-context 'who context x)]
+               [pr (ps-empty x (cadr ctx0))]
+               [es init-es]
+               [cx x]
+               [fh0 (syntax-patterns-fail ctx0)])
+          def ...
+          (parameterize ((current-syntax-context (cadr ctx0))
+                         (current-state '#hasheq())
+                         (current-state-writable? #f))
+            (with ([fail-handler fh0]
+                   [cut-prompt fh0]
+                   [undo-stack null])
+              #,(cond [(pair? patterns)
+                       (with-syntax ([matrix
+                                      (optimize-matrix
+                                       (for/list ([pattern (in-list patterns)]
+                                                  [body-expr (in-list body-exprs)])
+                                         (pk1 (list pattern) body-expr)))])
+                         #'(parse:matrix ((x cx pr es)) matrix))
+                       #;
+                       (with-syntax ([(alternative ...)
+                                      (for/list ([pattern (in-list patterns)]
+                                                 [body-expr (in-list body-exprs)])
+                                        #`(parse:S x cx #,pattern pr es #,body-expr))])
+                         #`(try alternative ...))]
+                      [else
+                       #`(fail (failure* pr es))])))))))
 
 ;; ----
 
