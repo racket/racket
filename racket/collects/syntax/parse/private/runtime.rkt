@@ -27,7 +27,9 @@
          check-literal
          no-shadow
          curried-stxclass-parser
-         app-argu)
+         app-argu
+
+         (for-syntax rewrite-formals))
 
 #|
 TODO: rename file
@@ -235,3 +237,17 @@ residual.rkt.
      ;; For now, let #%app handle it.
      (with-syntax ([((kw-part ...) ...) #'((kw kwarg) ...)])
        #'(proc kw-part ... ... extra-parg ... parg ...))]))
+
+
+(begin-for-syntax
+  (define (rewrite-formals fstx x-id rl-id)
+    (with-syntax ([x x-id]
+                  [rl rl-id])
+      (let loop ([fstx fstx])
+        (syntax-case fstx ()
+          [([arg default] . more)
+           (cons #'(arg (with ([this-syntax x] [this-role rl]) default))
+                 (loop #'more))]
+          [(formal . more)
+           (cons #'formal (loop #'more))]
+          [_ fstx])))))
