@@ -12,6 +12,7 @@
                      "rep.rkt"
                      "kws.rkt"
                      "opt.rkt"
+                     "const-expr.rkt"
                      "txlift.rkt")
          "keywords.rkt"
          racket/syntax
@@ -33,17 +34,9 @@
          define-eh-alternative-set)
 
 (begin-for-syntax
- ;; constant-desc : Syntax -> String/#f
- (define (constant-desc stx)
-   (syntax-case stx (quote)
-     [(quote datum)
-      (let ([d (syntax-e #'datum)])
-        (and (string? d) d))]
-     [expr
-      (let ([d (syntax-e #'expr)])
-        (and (string? d)
-             (free-identifier=? #'#%datum (datum->syntax #'expr '#%datum))
-             d))]))
+  ;; constant-desc : Expr -> String/#f
+  (define (constant-desc e)
+    (string-expr-value e))
 
  (define (tx:define-*-syntax-class stx splicing?)
    (syntax-case stx ()
