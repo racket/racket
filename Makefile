@@ -90,6 +90,15 @@ PLAIN_RACKET =
 # Chez Scheme boot files
 BOOTFILE_RACKET =
 
+# For CS, `SCHEME` can be set to a Chez Scheme (v9.5.3 and up)
+# executable that runs on the build platform; if set, this will be used
+# to create the Chez Scheme boot files (for both cross and non-cross
+# builds); this is a much more direct path than supplying `RACKET`; it
+# does not need to match the Chez Scheme version as used in the Racket
+# being built; a "reboot" bootstrapping path is able to reconstruct
+# boot files across versions.
+SCHEME =
+
 # For CS, points a cross build at a directory containing a host build;
 # this path can be relative to the cross build directory
 CS_HOST_WORKAREA_PREFIX =
@@ -177,6 +186,7 @@ BUILD_VARS = MAKE=$(MAKE) \
              RACKET="$(RACKET)" \
              PLAIN_RACKET="$(PLAIN_RACKET)" \
              BOOTFILE_RACKET="$(BOOTFILE_RACKET)" \
+             SCHEME="$(SCHEME)" \
              CS_HOST_WORKAREA_PREFIX="$(CS_HOST_WORKAREA_PREFIX)" \
              PB_BRANCH="$(PB_BRANCH)" \
              PB_REPO="$(PB_REPO)" \
