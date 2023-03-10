@@ -133,7 +133,10 @@
        (shell/wait "git checkout -q" branch
                    (hash 'dir pb-dir))]
       [(eq? step 'build)
-       (define scheme (find-executable-path "scheme"))
+       (define scheme (let ([s (lookup 'SCHEME)])
+                        (if (equal? s "")
+                            (find-executable-path "scheme")
+                            s)))
        (cond
          [scheme
           (define reboot (dynamic-require "racket/src/ChezScheme/s/reboot.zuo" 'reboot))
@@ -218,6 +221,7 @@
                                      ;; Propagate `RACKET` and similar if specified
                                      'RACKET (get-provided-racket)
                                      'BOOTFILE_RACKET (lookup 'BOOTFILE_RACKET)
+                                     'SCHEME (lookup 'SCHEME)
                                      'SCHEME_DIR (let ([s (lookup 'CS_HOST_WORKAREA_PREFIX)])
                                                    (if (equal? s "")
                                                        ""
