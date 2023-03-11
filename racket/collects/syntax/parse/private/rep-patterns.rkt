@@ -147,6 +147,12 @@
 ;; + (pat:seq-end)
 
 ;; ------------------------------------------------------------
+;; Stage 6 (Optional): Simplify patterns (see "parse-interp.rkt")
+
+;; SinglePattern ::=
+;; + (pat:simple (Listof IAttr) Simple)
+
+;; ------------------------------------------------------------
 
 (define-struct pat:any () #:prefab)
 (define-struct pat:svar (name) #:prefab)
@@ -173,6 +179,7 @@
 (define-struct pat:integrated (name predicate description role) #:prefab)
 (define-struct pat:fixup (stx bind varname scname argu sep role parser*) #:prefab)
 (define-struct pat:and/fixup (stx patterns) #:prefab)
+(define-struct pat:simple (iattrs simple) #:prefab)
 (define-struct pat:seq-end () #:prefab)
 
 (define-struct action:cut () #:prefab)
@@ -208,6 +215,24 @@
 
 (define repc:plus (make-rep:bounds 1 +inf.0 #f #f #f)) ;; used for ...+
 
+(module simple racket/base
+  ;; S ::=
+  ;; | _                  -- match any, don't bind
+  ;; | var                -- match any, bind
+  ;; | 'id                -- match id, bind
+  ;; | 'expr              -- match expr, bind
+  ;; | 'seq-end
+  ;; | ()                 -- match null
+  ;; | (S . S)            -- match pair
+  ;; | #s(dots S Nat #f)  -- match (S ... . ())
+  ;; | #s(dots S Nat #t)  -- match (S ...+ . ())
+  ;; | #s(datum Datum)
+  ;; | #s(describe S String Bool)
+  (struct sim:dots (simple nattrs plus?) #:prefab)
+  (struct sim:datum (datum) #:prefab)
+  (struct sim:describe (simple desc transp?) #:prefab)
+  (provide (all-defined-out)))
+
 ;; ============================================================
 
 (define (single-pattern? x)
@@ -236,6 +261,7 @@
       (pat:integrated? x)
       (pat:fixup? x)
       (pat:and/fixup? x)
+      (pat:simple? x)
       (pat:seq-end? x)))
 
 (define (action-pattern? x)
@@ -309,6 +335,7 @@
     [(pat:integrated name predicate description role) #t]
     [(pat:fixup stx bind varname scname argu sep role parser*) #t]
     [(pat:and/fixup stx ps) (andmap wf-A/S/H? ps)]
+    [(pat:simple iattrs simple) #t] ;; Doesn't check wf-simple.
     [(pat:seq-end) #f] ;; Should only occur in ListPattern!
     [_ #f]))
 
@@ -418,11 +445,13 @@
 
 ;; pattern-attrs-table : Hasheq[*Pattern => (Listof IAttr)]
 (define pattern-attrs-table (make-weak-hasheq))
+(define pattern-attrs*-table (make-weak-hasheq))
 
 ;; pattern-attrs : *Pattern -> (Listof IAttr)
-(define (pattern-attrs p)
+(define (pattern-attrs p [do-has-attr? #f])
   (define (for-pattern p recur)
-    (hash-ref! pattern-attrs-table p (lambda () (for-pattern* p recur))))
+    (define table (if do-has-attr? pattern-attrs*-table pattern-attrs-table))
+    (hash-ref! table p (lambda () (for-pattern* p recur))))
   (define (for-pattern* p recur)
     (match p
       ;; -- S patterns
@@ -440,9 +469,12 @@
        (if name (list (attr name 0 #t)) null)]
       [(pat:fixup _ bind _ _ _ _ _ _)
        (if bind (list (attr bind 0 #t)) null)]
+      [(pat:simple iattrs _) iattrs]
       ;; -- A patterns
       [(action:bind attr expr)
        (list attr)]
+      [(action:do _)
+       (if do-has-attr? (list #f) null)]
       ;; -- H patterns
       [(hpat:var/p name _ _ nested-attrs _ _)
        (if name (cons (attr name 0 #t) nested-attrs) nested-attrs)]

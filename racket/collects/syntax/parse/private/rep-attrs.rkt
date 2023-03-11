@@ -35,13 +35,13 @@
 
  ;; IAttr operations
  [append-iattrs
-  (-> (listof (listof iattr?))
-      (listof iattr?))]
+  (-> (listof (listof (or/c iattr? #f)))
+      (listof (or/c iattr? #f)))]
  [union-iattrs
   (-> (listof (listof iattr?))
       (listof iattr?))]
  [reorder-iattrs
-  (-> (listof sattr?) (listof iattr?)
+  (-> (listof sattr?) (listof (or/c iattr? #f))
       (listof iattr?))]
 
  ;; SAttr operations
@@ -67,14 +67,14 @@
 
 ;; IAttr operations
 
-;; append-iattrs : (listof (listof IAttr)) -> (listof IAttr)
+;; append-iattrs : (listof (listof IAttr/#f)) -> (listof IAttr/#f)
 ;; Assumes that each sublist is duplicate-free.
 (define (append-iattrs attrss)
   (cond [(null? attrss) null]
         [(null? (cdr attrss)) (car attrss)]
         [else
          (let* ([all (apply append attrss)]
-                [names (map attr-name all)]
+                [names (for/list ([a (in-list all)] #:when a) (attr-name a))]
                 [dup (and (pair? names) (check-duplicate-identifier names))])
            (when dup (wrong-syntax dup "duplicate attribute"))
            all)]))
@@ -150,12 +150,12 @@
              (put (join-attrs attr (fetch-like attr))))
            (sort-sattrs (hash-map ht (lambda (k v) v))))]))
 
-;; reorder-iattrs : (listof SAttr) (listof IAttr) -> (listof IAttr)
+;; reorder-iattrs : (listof SAttr) (listof IAttr/#f) -> (listof IAttr)
 ;; Reorders iattrs (and restricts) based on relsattrs
 ;; If a relsattr is not found, or if depth or contents mismatches, raises error.
 (define (reorder-iattrs relsattrs iattrs)
   (let ([ht (make-hasheq)])
-    (for ([iattr (in-list iattrs)])
+    (for ([iattr (in-list iattrs)] #:when iattr)
       (let ([remap-name (syntax-e (attr-name iattr))])
         (hash-set! ht remap-name iattr)))
     (let loop ([relsattrs relsattrs])
