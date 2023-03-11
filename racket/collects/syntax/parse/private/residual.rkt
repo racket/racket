@@ -701,12 +701,14 @@
 
 (module parse-util racket/base
   (require (for-syntax racket/base)
+           racket/list
            racket/lazy-require
            syntax/stx
            (submod ".." 3d-stx)
            (submod ".." state)
            (submod ".." progress))
-  (provide stx-list-take
+  (provide list->values
+           stx-list-take
            stx-list-drop/cx
            datum->syntax/with-clause
            check-literal*
@@ -718,6 +720,9 @@
            normalize-context
            syntax-patterns-fail
            predicate-ellipsis-parser)
+
+  (define (list->values n vs)
+    (apply values (if n (take vs n) vs)))
 
   ;; stx-list-take : Stx Nat -> Syntax
   (define (stx-list-take stx n)
