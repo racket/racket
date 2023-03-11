@@ -29,7 +29,8 @@
          curried-stxclass-parser
          app-argu
 
-         (for-syntax rewrite-formals))
+         (for-syntax rewrite-formals
+                     make-this-context-syntax-transformer))
 
 #|
 TODO: rename file
@@ -250,4 +251,9 @@ residual.rkt.
                  (loop #'more))]
           [(formal . more)
            (cons #'formal (loop #'more))]
-          [_ fstx])))))
+          [_ fstx]))))
+
+  (define (make-this-context-syntax-transformer pr-var)
+    (with-syntax ([pr pr-var])
+      (syntax-rules ()
+        [(tbs) (ps-context-syntax pr)]))))
