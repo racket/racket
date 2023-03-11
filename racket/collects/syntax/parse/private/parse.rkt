@@ -12,7 +12,7 @@
                      "const-expr.rkt"
                      "txlift.rkt")
          "keywords.rkt"
-         syntax/parse/private/residual ;; keep abs. path
+         "residual.rkt"
          "runtime.rkt")
 
 ;; ----------------------------------------

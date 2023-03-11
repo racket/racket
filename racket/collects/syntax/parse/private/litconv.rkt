@@ -5,8 +5,8 @@
                      "lib.rkt"
                      "kws.rkt"
                      racket/syntax)
-         (submod syntax/parse/private/residual ct) ;; keep abs. path
-         syntax/parse/private/residual)   ;; keep abs. path
+         (submod "residual.rkt" ct)
+         "residual.rkt")
 (begin-for-syntax
  (lazy-require
   [syntax/private/keyword (options-select-value parse-keyword-options)]

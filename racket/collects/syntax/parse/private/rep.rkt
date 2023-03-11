@@ -1,8 +1,8 @@
 #lang racket/base
 (require (for-template racket/base
-                       syntax/parse/private/keywords
-                       syntax/parse/private/residual ;; keep abs. path
-                       syntax/parse/private/runtime)
+                       "keywords.rkt"
+                       "residual.rkt"
+                       "runtime.rkt")
          racket/list
          racket/contract/base
          "minimatch.rkt"
@@ -14,7 +14,7 @@
          "rep-attrs.rkt"
          "rep-data.rkt"
          "rep-patterns.rkt"
-         (submod syntax/parse/private/residual ct) ;; keep abs. path
+         (submod "residual.rkt" ct)
          "kws.rkt")
 
 ;; Error reporting

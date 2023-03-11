@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/stxparam
-         syntax/parse/private/residual ;; keep abs. path
+         "residual.rkt"
          (for-syntax racket/base
                      racket/list
                      syntax/kerncase

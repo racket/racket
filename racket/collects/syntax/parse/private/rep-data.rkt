@@ -2,7 +2,7 @@
 (require racket/contract/base
          syntax/private/id-table
          racket/syntax
-         (submod syntax/parse/private/residual ct) ;; keep abs. path
+         (submod "residual.rkt" ct)
          "minimatch.rkt"
          "kws.rkt")
 ;; from residual.rkt
