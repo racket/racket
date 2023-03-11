@@ -14,9 +14,9 @@
          racket/syntax
          racket/stxparam
          syntax/stx
-         syntax/parse/private/residual ;; keep abs. path
+         "residual.rkt"
          "runtime.rkt"
-         syntax/parse/private/runtime-reflect) ;; keep abs. path
+         "runtime-reflect.rkt")
 
 (provide (for-syntax codegen-rhs
                      codegen-clauses))

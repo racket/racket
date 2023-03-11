@@ -3,7 +3,7 @@
                      syntax/parse
                      racket/lazy-require
                      "../private/kws.rkt")
-         syntax/parse/private/residual) ;; keep abs. path
+         "../private/residual.rkt")
 (provide define-primitive-splicing-syntax-class)
 
 (begin-for-syntax

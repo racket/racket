@@ -1,10 +1,10 @@
 #lang racket/base
 (require racket/list
          racket/syntax
-         syntax/parse/private/residual ;; keep abs. path
+         "residual.rkt"
          "minimatch.rkt"
          (submod "rep-patterns.rkt" simple)
-         syntax/parse/private/runtime-reflect) ;; keep abs. path
+         "runtime-reflect.rkt")
 
 (provide (all-defined-out))
 

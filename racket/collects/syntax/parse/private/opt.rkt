@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/syntax
          racket/pretty
-         (submod syntax/parse/private/residual ct) ;; keep abs. path
+         (submod "residual.rkt" ct)
          "minimatch.rkt"
          "rep-patterns.rkt"
          "kws.rkt")

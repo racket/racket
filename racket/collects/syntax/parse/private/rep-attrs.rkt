@@ -1,5 +1,5 @@
 #lang racket/base
-(require (submod syntax/parse/private/residual ct) ;; keep abs. path
+(require (submod "residual.rkt" ct)
          racket/contract/base
          syntax/private/id-table
          racket/syntax)

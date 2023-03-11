@@ -10,8 +10,8 @@
                      "const-expr.rkt"
                      "kws.rkt")
          racket/stxparam
-         syntax/parse/private/residual ;; keep abs. path
-         syntax/parse/private/residual-interp ;; keep abs. path
+         "residual.rkt"
+         "residual-interp.rkt"
          (except-in "runtime.rkt" fail))
 
 ;; ============================================================
