@@ -79,8 +79,7 @@
                vdef ... ...
                (#%expression
                 (syntax-parameterize ((this-context-syntax
-                                       (syntax-rules ()
-                                         [(tbs) (ps-context-syntax pr)])))
+                                       (make-this-context-syntax-transformer #'pr)))
                   (let ([es (es-add-thing pr description 'transparent? rl
                                           #,(if no-fail? #'#f #'es))]
                         [pr (if 'transparent? pr (ps-add-opaque pr))])
