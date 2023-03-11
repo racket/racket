@@ -134,8 +134,8 @@
 (define ((p-post p) x cx pr es renv)
   (p x cx (ps-add-post pr) es renv))
 
-(define (apply-reordering reordering renv)
-  (match reordering
+(define (apply-reordering reo renv)
+  (match reo
     [(cons n mapping)
      (define vec (make-vector n #f))
      (define renv-base
@@ -145,6 +145,9 @@
          (when idx (vector-set! vec idx v))
          (cdr renv)))
      (append (vector->list vec) renv-base)]))
+
+(define ((reordering reo) renv)
+  (apply-reordering reo renv))
 
 (define (stx-e v) (if (syntax? v) (syntax-e v) v))
 
@@ -700,6 +703,60 @@
         [(sim:describe _ desc _) desc]
         [(sim:datum d) `(datum ,d)]
         [_ #f])))
+
+
+;; ============================================================
+;; Optimizer Support
+
+;; An optimized Matrix of N columns is compiled to
+;;   (Listof[N] (vector Stx Syntax Progress)) ExpectStack REnv -> BT[REnv]
+
+(define ((s-matrix mat) x cx pr es renv)
+  (mat (list (vector x cx pr)) es renv))
+
+(define ((m-or mats) inputs es renv)
+  (let loop ([mats mats])
+    (match mats
+      [(cons mat '())
+       (mat inputs es renv)]
+      [(cons mat mats)
+       (disj (mat inputs es renv)
+             (delay-goal (lambda () (loop mats))))])))
+
+(define ((m-row ps k) inputs es renv)
+  (let loop ([ps ps] [inputs inputs] [renv renv])
+    (match ps
+      [(cons p ps)
+       (match inputs
+         [(cons (vector x cx pr) inputs)
+          (bind (p x cx pr es renv)
+                (lambda (renv) (loop ps inputs renv)))])]
+      ['() (succeed (k renv))])))
+
+(define ((m-and mat) inputs es renv)
+  (mat (cons (car inputs) inputs) es renv))
+
+(define ((m-pair first-descs mat) inputs es renv)
+  (match inputs
+    [(cons (vector x cx pr) inputs)
+     (define d (stx-e x))
+     (cond [(pair? d)
+            (define cx* (if (syntax? x) x cx))
+            (mat (list* (vector (car d) cx* (ps-add-car pr))
+                        (vector (cdr d) cx* (ps-add-cdr pr))
+                        inputs)
+                 es renv)]
+           [(null? d)
+            (fail (for/list ([first-desc (in-list first-descs)])
+                    (let ([es (es-add-proper-pair first-desc es)])
+                      (failure* pr es))))]
+           [else (fail (failure* pr es))])]))
+
+(define ((m-same p mat) inputs es renv)
+  (match inputs
+    [(cons (vector x cx pr) inputs)
+     (bind (p x cx pr es renv)
+           (lambda (renv) (mat inputs es renv)))]))
 
 
 ;; ============================================================

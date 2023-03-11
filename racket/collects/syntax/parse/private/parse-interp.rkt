@@ -1,12 +1,14 @@
 #lang racket/base
 (require (for-syntax racket/base
                      racket/list
+                     racket/pretty
                      "minimatch.rkt"
                      "rep-attrs.rkt"
                      "rep-data.rkt"
                      "rep-patterns.rkt"
                      (submod "rep-patterns.rkt" simple)
                      "rep.rkt"
+                     "opt-interp.rkt"
                      "const-expr.rkt"
                      "kws.rkt")
          racket/stxparam
@@ -44,7 +46,6 @@
 
   ;; compile-*pattern : *Pattern (*Pattern -> Expr[*Matcher]) -> Expr[*Matcher]
   (define (compile-*pattern p compile-p)
-    ;; (local-require racket/pretty)
     (define p* (if SIMPLIFY? (simplify p) p))
     ;; (pretty-print p*)
     (define stx (with-reset-bundle (lambda () (F (compile-p p* null)))))
@@ -214,26 +215,31 @@
   ;; eg (cons N (vector K_1 ... K_M)) means drop M, add N, each K_i in [0..N-1] unique or #f
 
   (define (reorder to-iattrs from-iattrs p head-pattern?)
+    (cond [(make-reordering to-iattrs from-iattrs)
+           => (lambda (reordering)
+                (if head-pattern?
+                    (D #`(h-reorder (quote #,reordering) #,(F p)))
+                    (D #`(s-reorder (quote #,reordering) #,(F p)))))]
+          [else p]))
+
+  (define (make-reordering to-iattrs from-iattrs)
     (define (attr=? a1 a2) (and a1 a2 (bound-identifier=? (attr-name a1) (attr-name a2))))
     (cond [(and (null? to-iattrs) (null? from-iattrs))
-           p]
+           #f]
           [(and (pair? to-iattrs) (pair? from-iattrs)
                 (attr=? (car to-iattrs) (car from-iattrs)))
-           (reorder (cdr to-iattrs) (cdr from-iattrs) p head-pattern?)]
+           (make-reordering (cdr to-iattrs) (cdr from-iattrs))]
           [else
            (define r-to-iattrs (reverse to-iattrs))
            (define r-from-iattrs (reverse from-iattrs))
            (define add-n (length r-to-iattrs))
-           (define reordering
+           (define reassignment
              (for/vector ([from-a (in-list r-from-iattrs)])
                (for/or ([to-idx (in-naturals)]
                         [to-a (in-list r-to-iattrs)]
                         #:when (attr=? from-a to-a))
                  to-idx)))
-           (with-syntax ([reordering (cons add-n reordering)])
-             (if head-pattern?
-                 (D #`(h-reorder (quote reordering) #,(F p)))
-                 (D #`(s-reorder (quote reordering) #,(F p)))))]))
+           (cons add-n reassignment)]))
 
   (define (first-desc-s sp)
     (match sp
@@ -509,6 +515,51 @@
 
 ;; ============================================================
 
+(begin-for-syntax
+
+  (define optimize-matrix0 (make-optimizer first-desc-s))
+
+  (define (compile-pattern-matrix rows)
+    (define expr (F (compile-matrix rows)))
+    (log-syntax-parse-info "compiled matrix:\n~a"
+                           (pretty-format (syntax->datum expr) #:mode 'print))
+    expr)
+
+  (define (compile-row row)
+    (define (compile-s* p aenv)
+      (let ([p (if SIMPLIFY? (simplify p) p)])
+        (compile-s p aenv)))
+    (match row
+      [(row1 aenv ps k)
+       (define ps-exprs
+         (for/fold ([aenv aenv] [acc null] #:result (reverse acc))
+                   ([p (in-list ps)])
+           (values (append (reverse (pattern-attrs* p)) aenv)
+                   (cons (compile-s* p aenv) acc))))
+       (D #`(m-row (list #,@(map F ps-exprs)) #,k))]
+      [(row/and mat)
+       (define mat-expr (compile-matrix mat))
+       (D #`(m-and #,(F mat-expr)))]
+      [(row/pair first-descs mat)
+       (define mat-expr (compile-matrix mat))
+       (D #`(m-pair (quote #,first-descs) #,(F mat-expr)))]
+      [(row/same sp mat)
+       (define sp-expr (compile-s* sp null)) ;; FIXME???
+       (define mat-expr (compile-matrix mat))
+       (D #`(m-same #,(F sp-expr) #,(F mat-expr)))]))
+
+  (define (compile-matrix rows)
+    (define (reset/compile-row row)
+      (with-reset-bundle (lambda () (compile-row row))))
+    (match rows
+      [(list row)
+       (reset/compile-row row)]
+      [rows
+       (define row-exprs (map reset/compile-row rows))
+       (D #`(m-or (list #,@(map F row-exprs))))])))
+
+;; ============================================================
+
 (provide (for-syntax codegen-rhs codegen-clauses))
 
 (begin-for-syntax
@@ -525,15 +576,30 @@
       (and (not splicing?) ;; FIXME: commit? needed?
            (patterns-cannot-fail? patterns)))
     (when (and no-fail? ctx) (log-syntax-parse-debug "(stxclass) cannot fail: ~e" ctx))
-    (define (compile+reorder p)
-      (define cp (if splicing? (compile-hpattern p) (compile-pattern p)))
-      (define p-attrs (pattern-attrs* p))
-      (define exp-attrs (reorder-iattrs relsattrs p-attrs))
-      (F (reorder exp-attrs p-attrs cp splicing?)))
+    (define patterns-p
+      (cond [(and (not splicing?)
+                  (let ([init-rows
+                         (for/list ([p (in-list patterns)])
+                           (define p-attrs (pattern-attrs* p))
+                           (define exp-attrs (reorder-iattrs relsattrs p-attrs))
+                           (define k
+                             (cond [(make-reordering exp-attrs p-attrs)
+                                    => (lambda (reo) #`(reordering (quote #,reo)))]
+                                   [else #'values]))
+                           (row1 null (list p) k))])
+                    (optimize-matrix0 ctx init-rows)))
+             => (lambda (rows) #`(s-matrix #,(compile-pattern-matrix rows)))]
+            [else
+             (define (compile+reorder p)
+               (define cp (if splicing? (compile-hpattern p) (compile-pattern p)))
+               (define p-attrs (pattern-attrs* p))
+               (define exp-attrs (reorder-iattrs relsattrs p-attrs))
+               (F (reorder exp-attrs p-attrs cp splicing?)))
+             (match patterns
+               [(list p) (compile+reorder p)]
+               [ps #`(p-or #,@(map compile+reorder ps))])]))
     (define body-p
-      (let* ([p (match patterns
-                  [(list p) (compile+reorder p)]
-                  [ps #`(p-or #,@(map compile+reorder ps))])]
+      (let* ([p patterns-p]
              [p (cond [delimit-cut? #`(p-delimit #,p)]
                       [else p])]
              [p (cond [commit? #`(p-commit #,p)]
@@ -576,11 +642,16 @@
       (for/list ([p (in-list patterns)] [expr (in-list body-exprs)])
         (define bind-p (action:bind result-attr #`(lambda () #,expr)))
         (pat:and (list p (pat:action bind-p (pat:any))))))
+    (define parser
+      (cond [(let ([rows (for/list ([p (in-list clause-ps)])
+                           (row1 null (list p) #'values))])
+               (optimize-matrix0 ctx rows))
+             => (lambda (rows)
+                  #`(s-matrix #,(compile-pattern-matrix rows)))]
+            [else #`(p-or #,@(map compile-pattern clause-ps))]))
     (with-syntax ([(who context x) (list who context x)]
                   [(def ...) all-defs]
-                  [(parser ...)
-                   (for/list ([clause-p (in-list clause-ps)])
-                     (compile-pattern clause-p))])
+                  [parser parser])
       #`(run-clauses
          (quote who) context x (quote #,no-fail?) (quote #,track-literals?)
-         (let-values () def ... (p-or parser ...))))))
+         (let-values () def ... parser)))))
