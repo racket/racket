@@ -215,6 +215,7 @@
   (define assembly-on? (getenv "PLT_LINKLET_SHOW_ASSEMBLY"))
   (define show-on? (or (eq? #t gensym-mode)
                        pre-jit-on?
+                       lambda-on?
                        post-lambda-on?
                        post-interp-on?
                        jit-demand-on?
