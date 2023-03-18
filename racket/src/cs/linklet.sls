@@ -206,9 +206,10 @@
                            (lambda (e)
                              (let lp ([p (open-string-input-port e)])
                                (define pass (read p))
-                               (if (symbol? pass)
-                                   (cons pass (lp p))
-                                   '())))]
+                               (cond
+                                 [(eq? pass 'all) '(#t)]
+                                 [(symbol? pass) (cons pass (lp p))]
+                                 [else '()])))]
                           [else '()]))
   (define cp0-on? (getenv "PLT_LINKLET_SHOW_CP0"))
   (define assembly-on? (getenv "PLT_LINKLET_SHOW_ASSEMBLY"))
@@ -258,7 +259,10 @@
                                               [compile-procedure-realm realm])
                                  (let* ([print-header (lambda ()
                                                         (printf ";;")
-                                                        (for-each (lambda (p) (printf " ~a" p))
+                                                        (for-each (lambda (p)
+                                                                    (define pass
+                                                                      (if (eq? p #t) 'all p))
+                                                                    (printf " ~a" pass))
                                                                   (if assembly-on?
                                                                       (append passes-on '(assembly))
                                                                       passes-on))

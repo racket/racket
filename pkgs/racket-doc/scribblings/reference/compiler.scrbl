@@ -123,7 +123,8 @@ forms or adjust the way forms are displayed:
    @item{@envvar-indexed{PLT_LINKLET_SHOW_PASSES} --- show the
          intermediate form of a schemified linklet after the specified
          passes (listed space-separated) in Chez Scheme's internal
-         representation}
+         representation; the special name @tt{all} will show the
+         intermediate form after all Chez Scheme passes}
 
    @item{@envvar-indexed{PLT_LINKLET_SHOW_ASSEMBLY} --- show the
          compiled form of a schemified linklet in Chez Scheme's
@@ -136,3 +137,6 @@ set on startup, then Racket prints cumulative timing information about
 compilation and evaluation times on exit. When the
 @envvar-indexed{PLT_EXPANDER_TIMES} environment variable is set,
 information about macro-expansion time is printed on exit.
+
+@history[#:changed "8.8.0.10" @elem{Added special pass name @tt{all}
+                                    to @envvar{PLT_LINKLET_SHOW_PASSES}}]
