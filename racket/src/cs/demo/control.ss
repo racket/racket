@@ -305,7 +305,7 @@
                     (lambda (k)
                       k)
                     (make-continuation-prompt-tag))))))
-             "call-with-composable-continuation: continuation includes no prompt with the given tag")
+             "call-with-composable-continuation: no corresponding prompt in the continuation")
 
 (check-error (call-with-continuation-prompt
               (lambda ()

@@ -253,6 +253,11 @@
               ,(lambda (path token)
                  (compile-file src dest import-deps))])
 
+  (define (demo-target name name.so name-deps name.ss . more-deps)
+    `[:target ,name (,name.so ,@more-deps)
+              ,(lambda (token)
+                 (process/wait scheme name-deps name.so (at-source "demo" name.ss)))])
+
   (define (converter src-target [skip-export? #f])
     (lambda (path token)
       ;; to temporarily use a modified ".scm" instead of syncing
@@ -366,6 +371,19 @@
      [:target strip ()
               ,(lambda (token)
                  (process/wait scheme "--script" "strip.ss" main-deps racket.so))]
+
+     ,(demo-target 'expander-demo expander.so expander-deps "expander.ss" rktio.so)
+     ,(demo-target 'linklet-demo linklet.so linklet-deps "linklet.ss" rktio.so)
+     ,(demo-target 'regexp-demo regexp.so regexp-deps "regexp.ss" rktio.so)
+     ,(demo-target 'io-demo io.so io-deps "io.ss" rktio.so)
+     ,(demo-target 'thread-demo thread.so thread-deps "thread.ss")
+
+     ,(demo-target 'chaperone-demo rumble.so rumble-deps "chaperone.ss")
+     ,(demo-target 'hash-demo rumble.so rumble-deps "hash.ss")
+     ,(demo-target 'struct-demo rumble.so rumble-deps "struct.ss")
+     ,(demo-target 'control-demo rumble.so rumble-deps "control.ss")
+     ,(demo-target 'foreign-demo rumble.so rumble-deps "foreign.ss")
+     ,(demo-target 'will-demo rumble.so rumble-deps "will.ss")
 
      [:db-dir ,(at-dir "compiled")]
 

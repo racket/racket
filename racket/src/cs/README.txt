@@ -83,8 +83,8 @@ For this development mode, either Chez Scheme needs to be installed as
 `scheme`.
 
 Development mode also needs a Racket installation with at least the
-"compiler-lib" package installed. By default, the makefile looks for
-Racket installed as "../../bin/racket"; if this directory is in a
+"compiler-lib" package installed. By default, the build script looks
+for Racket installed as "../../bin/racket"; if this directory is in a
 clone of the Git repository for Racket, you can get "../../bin/racket"
 with
 
@@ -96,14 +96,14 @@ to set the command for `racket`.
 The use of development mode is described in more detail further below.
 
 Development mode currently doesn't work on Windows, because the
-makefile makes too many Unix-ish assumptions.
+build script makes too many Unix-ish assumptions.
 
 Build Mode
 ----------
 
 To build a Racket CS executable, the `configure` script and makefile
-in "c" subdirectory are normally used via `configure` and `make` in
-the parent directory of this one, as described in "../README.txt".
+in the "c" subdirectory are normally used via `configure` and `make`
+in the parent directory of this one, as described in "../README.txt".
 However, you can use them directly with something like
 
    cd [build]
@@ -194,21 +194,22 @@ could be a good idea.
  Development Mode
 ========================================================================
 
-Development mode is driven by the makefile in this directory.
+Development mode is driven by the build script in this directory.
 
 Building
 --------
 
-Running `zuo` will build the Racket CS implementation. Use `make
-expander-demo` to run a demo that loads `racket/base` from source.
+Running `zuo` will build the Racket CS implementation. You can use
+`zuo . expander-demo` to run a demo that loads `racket/base` from
+source.
 
 Use `zuo . setup` (or `zuo . setup-v` for a verbose version) to build
 ".zo" files for collection-based libraries. You can supply additional
 arguments to `zuo . setup` to be passed along to `raco setup`.
 
-   make setup ARGS="-l typed/racket"  # only sets up TR
-   make setup ARGS="--clean -Dd"      # clears ".zo" files
-   make setup ARGS="--fail-fast"      # stop at the first error
+   zuo . setup ARGS="-l typed/racket"  # only sets up TR
+   zuo . setup ARGS="--clean -Dd"      # clears ".zo" files
+   zuo . setup ARGS="--fail-fast"      # stop at the first error
 
 Running
 -------
@@ -283,8 +284,9 @@ Files in this directory:
          that are `include`d by "io.sls" and "librktio.{so,dylib,dll}"
          is the shared library that implements rktio.
 
-         CAUTION: The makefile here doesn't track dependencies for
-         rktio, so use `make rktio` if you change its implementation.
+         CAUTION: The build script here doesn't track all dependencies
+         for rktio, and you may need use `zuo build.zuo rktio-rktl` in
+         the "rktio" directory if you change its implementation.
 
  primitive/*.ss - for "expander.sls", tables of bindings for
          primitive linklet instances; see "From primitives to modules"
@@ -296,7 +298,7 @@ Files in this directory:
 
  demo/*.ss - Chez Scheme scripts to check that a library basically
          works. For example "demo/regexp.ss" runs the regexp matcher
-         on a few examples. To run "demo/*.ss", use `make *-demo`.
+         on a few examples. To run "demo/*.ss", use `zuo . *-demo`.
 
  other *.rkt - Racket scripts like "convert.rkt" or comparisons like
          "demo/regexp.rkt". For example, you can run "demo/regexp.rkt"
