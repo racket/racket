@@ -492,7 +492,18 @@
   (test (stencil-vector 17 'A 'B) values sv))
 (err/rt-test (stencil-vector-ref (stencil-vector-set! 1 'a #f) 1))
 (err/rt-test (stencil-vector-ref (stencil-vector-set! 128 'a #f) 1))
- 
+
+(err/rt-test (let ()
+               (define sv (stencil-vector #b0))
+               (stencil-vector-update sv #b1 #b1 1))
+             exn:fail:contract?
+             #rx"stencil vector: #<stencil 0>")
+(err/rt-test (let ()
+               (define sv (stencil-vector #b1 'a))
+               (stencil-vector-update sv #b0 #b1 1))
+             exn:fail:contract?
+             #rx"stencil vector: #<stencil 1: a>")
+
 ;; ----------------------------------------
 
 (report-errs)
