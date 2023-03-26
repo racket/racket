@@ -1668,7 +1668,7 @@ be blamed using the above contract:
  was necessary as it included an additional optimization that was not
  included in @racket[->]. Now however, @racket[->] performs the same
  optimization, so the contract should no longer be used. The contract
- is still provided for backwards compatibility.
+ is still provided for backward compatibility.
 }
 
 @defthing[the-unsupplied-arg unsupplied-arg?]{
