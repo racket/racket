@@ -1664,13 +1664,11 @@ be blamed using the above contract:
 ]}
 
 @defthing[predicate/c contract?]{
-
- Equivalent to @racket[(-> any/c boolean?)]. This contract includes an optimization so that functions returning
- @racket[#t] from @racket[struct-predicate-procedure?] are just returned directly, without
- being wrapped. This contract is used by @racket[provide/contract]'s
- @racket[struct] sub-form so that struct predicates end up not being wrapped. In previous versions of Racket,
- this contract was necessary for that optimization. Now however, @racket[(-> any/c boolean?)] performs the same
- optimization. This contract is still provided for backwards compatibility.
+ Equivalent to @racket[(-> any/c boolean?)]. Previously, this contract
+ was necessary as it included an additional optimization that was not
+ included in @racket[->]. Now however, @racket[->] performs the same
+ optimization, so the contract should no longer be used. The contract
+ is still provided for backwards compatibility.
 }
 
 @defthing[the-unsupplied-arg unsupplied-arg?]{
