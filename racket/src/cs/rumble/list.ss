@@ -1,17 +1,5 @@
 
-;; Make `list?` an amoritized constant-time operation, which is
-;; possible because `set-cdr!` is not exposed. Make it constant-time
-;; by caching the result for an N-item list at the N/2-tail pair,
-;; where a second request will cache at the N/4-tail pair, etc.
-;; Detect cycles using the same `slow` tortoise that is used for
-;; caching.
-;;
-;; To reduce the overhead of checking the hash table, only
-;; start using it after the first `CHECK-AFTER-LEN` pairs.
-;; Then, check only after `CHECK-SKIP-N` pairs --- and record
-;; a sequence of `CHECK-SKIP-N`+1 results so one will hit when
-;; checking every `CHECK-SKIP-N` pairs.
-
+;; `list?` an amoritized constant-time operation:
 (define (list? v) (list-assuming-immutable? v))
 
 (define (append-n l n l2)
