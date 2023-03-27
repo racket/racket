@@ -58,20 +58,13 @@
        ((apply f vs) sk fh cp us)]))
   (c sk/bind fh cp us))
 
-;; disj : BT[a...] BT[a...] -> BT[a...]
-(define ((disj c1 c2) sk fh cp us)
+;; disj* : BT[a...] (-> BT[a...]) -> BT[a...]
+(define ((disj* c1 cp2) sk fh cp us)
   (define (make-fh/failure fh f) (cons f fh))
   (define (fh/disj us1 f)
     (unwind-to us1 us)
-    (c2 sk (fh-add-failure fh f) cp us))
+    ((cp2) sk (fh-add-failure fh f) cp us))
   (c1 sk fh/disj cp us))
-
-;; disj* : BT[a...] ... -> BT[a...]
-(define (disj* . cs)
-  (let loop ([cs cs])
-    (match cs
-      [(list c) c]
-      [(cons c cs) (disj c (loop cs))])))
 
 ;; delimit : BT[a...] -> BT[a...]
 (define ((delimit c) sk fh cp us)
@@ -103,11 +96,6 @@
   (define undo (get-undo))
   (begin (do-now) (sk fh cp (cons undo us))))
 
-;; delay-goal : (-> BT[a...]) -> BT[a...]
-(define ((delay-goal get-goal) sk fh cp us)
-  ((get-goal) sk fh cp us))
-
-
 ;; ============================================================
 ;; Pattern Runtime Support
 
@@ -119,7 +107,7 @@
   (let loop ([ps ps])
     (match ps
       [(list p) (p x cx pr es renv)]
-      [(cons p ps) (disj (p x cx pr es renv) (loop ps))])))
+      [(cons p ps) (disj* (p x cx pr es renv) (lambda () (loop ps)))])))
 
 (define ((p-action ap p) x cx pr es renv)
   (bind (ap pr es renv)
@@ -315,17 +303,16 @@
 
 (define (s-dots1 headp tailp attrs-n headp-first-desc plus?)
   (define (dots1-loop x cx pr es renv acc)
-    (disj (bind (headp x cx pr es renv)
-                (lambda (renv* x cx pr)
-                  ;; renv* = (append hp-renv renv)
-                  ;; Delay (take renv* attrs-n), transpose discards extra.
-                  (dots1-loop x cx pr es renv (cons renv* acc))))
-          (if (and plus? (null? acc))
-              (fail (failure* pr (es-add-proper-pair headp-first-desc es)))
-              (delay-goal
-               (lambda ()
+    (disj* (bind (headp x cx pr es renv)
+                 (lambda (renv* x cx pr)
+                   ;; renv* = (append hp-renv renv)
+                   ;; Delay (take renv* attrs-n), transpose discards extra.
+                   (dots1-loop x cx pr es renv (cons renv* acc))))
+           (lambda ()
+             (if (and plus? (null? acc))
+                 (fail (failure* pr (es-add-proper-pair headp-first-desc es)))
                  (let ([renv (append (transpose attrs-n (reverse acc)) renv)])
-                   (tailp x cx pr es renv)))))))
+                   (tailp x cx pr es renv))))))
   (lambda (x cx pr es renv)
     (dots1-loop x cx pr es renv null)))
 
@@ -344,13 +331,12 @@
     ;; dots-loop : ... -> BT[REnv]
     (define (dots-loop x cx pr renv reph acc)
       ;; acc : EHMatch = (listof (vector attr-map single? local-renv))
-      (disj (bind (heads-iter-loop 0 iter-ehs x cx pr renv reph acc)
-                  (lambda (x cx pr reph acc) (dots-loop x cx pr renv reph acc)))
-            (delay-goal
+      (disj* (bind (heads-iter-loop 0 iter-ehs x cx pr renv reph acc)
+                   (lambda (x cx pr reph acc) (dots-loop x cx pr renv reph acc)))
              (lambda ()
                (let* ([renv (append (dots-compose-renv attrs-maps acc defaults renv0) renv)])
                  (bind (heads-finish-loop 0 finishs pr renv reph)
-                       (lambda (renv) (tailp x cx pr es renv))))))))
+                       (lambda (renv) (tailp x cx pr es renv)))))))
 
     ;; heads-iter-loop : ... -> BT[x cx pr reph acc]
     (define (heads-iter-loop n iter-ehs x cx pr renv reph acc)
@@ -359,8 +345,8 @@
         [(list iter-eh)
          (iter-eh x cx pr es renv n reph acc)]
         [(cons iter-eh iter-ehs)
-         (disj (iter-eh x cx pr es renv n reph acc)
-               (heads-iter-loop (add1 n) iter-ehs x cx pr renv reph acc))]))
+         (disj* (iter-eh x cx pr es renv n reph acc)
+                (lambda () (heads-iter-loop (add1 n) iter-ehs x cx pr renv reph acc)))]))
 
     ;; heads-finish-loop : ... -> BT[renv]
     (define (heads-finish-loop n finishs pr renv reph)
@@ -704,7 +690,6 @@
         [(sim:datum d) `(datum ,d)]
         [_ #f])))
 
-
 ;; ============================================================
 ;; Optimizer Support
 
@@ -720,8 +705,8 @@
       [(cons mat '())
        (mat inputs es renv)]
       [(cons mat mats)
-       (disj (mat inputs es renv)
-             (delay-goal (lambda () (loop mats))))])))
+       (disj* (mat inputs es renv)
+              (lambda () (loop mats)))])))
 
 (define ((m-row ps k) inputs es renv)
   (let loop ([ps ps] [inputs inputs] [renv renv])
