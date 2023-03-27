@@ -393,7 +393,7 @@ Let's look a few possibilities related to allocation and pointers:
 
  Although the data allocated by @racket[malloc] can move
  around, @racket[p] will always point to it, and no garbage collection
- will happen between the time that the address is extracted form
+ will happen between the time that the address is extracted from
  @racket[p] to pass to @racket[wgetnstr] and the time that
  @racket[wgetnstr] returns.}
 
