@@ -918,8 +918,6 @@ both in binary and as integers.
 @; ------------------------------------------------------------------------
 @subsection{Random Numbers}
 
-@margin-note{When security is a concern, use @racket[crypto-random-bytes] instead of @racket[random].}
-
 @defproc*[([(random [k (integer-in 1 4294967087)]
                     [rand-gen pseudo-random-generator?
                                (current-pseudo-random-generator)])
@@ -948,6 +946,14 @@ generator (which defaults to the current one, as produced by
 internal state for generating numbers. The random number generator
 uses L'Ecuyer's MRG32k3a algorithm @cite["L'Ecuyer02"] that has a
 state space of practically 192 bits.
+
+When security is a concern, use @racket[crypto-random-bytes]
+instead of @racket[random].
+
+The @racketmodname[racket/math #:indirect] library provides @seclink[
+ #:indirect? #t #:doc '(lib "math/scribblings/math.scrbl") "Random_Number_Generation"]{
+  additional functions for random number generation}
+without the limit of @racket[4294967087].
 
 @history[#:changed "6.4"]{Added support for ranges.}}
 
