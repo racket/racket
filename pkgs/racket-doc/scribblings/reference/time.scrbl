@@ -11,8 +11,8 @@ midnight UTC, January 1, 1970.}
 
 @defproc[(current-inexact-milliseconds) real?]{
 
-Returns the current time in milliseconds since midnight UTC, January
-1, 1970. The result may contain fractions of a millisecond.
+Returns the current time in milliseconds since @tech{the epoch}.
+The result may contain fractions of a millisecond.
 
 @examples[(eval:alts
 (current-inexact-milliseconds)
@@ -45,9 +45,9 @@ are not comparable.
                         [local-time? any/c #t])
          date*?]{
 
-Takes @racket[secs-n], a platform-specific time in seconds returned by
-@racket[current-seconds], @racket[file-or-directory-modify-seconds],
-or 1/1000th of @racket[current-inexact-milliseconds], and returns an
+Takes @racket[secs-n], a time in seconds since @tech{the epoch} (like the value of
+@racket[(current-seconds)], @racket[(file-or-directory-modify-seconds)],
+or @racket[(/ (current-inexact-milliseconds) 1000)]), and returns an
 instance of the @racket[date*] structure type. Note that
 @racket[secs-n] can include fractions of a second. If @racket[secs-n]
 is too small or large, the @exnraise[exn:fail].
