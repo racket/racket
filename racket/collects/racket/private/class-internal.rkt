@@ -366,7 +366,7 @@
              [expand
               (lambda (defn-or-expr)
                 (local-expand
-                 defn-or-expr
+                 (syntax-property defn-or-expr 'class-body #true)
                  expand-context
                  stop-forms
                  def-ctx))]
