@@ -388,8 +388,8 @@ calling subclass augmentations of methods (see
 @secref["clmethoddefs"]).}
 
 @history[#:changed "8.8.0.10"
-         @string-append{Added the @racket['class-body] syntax property
-          to class body forms}]
+         @elem{Added the @racket['class-body] syntax property
+          to class body forms.}]
 
 @defform[(class superclass-expr class-clause ...)]{
 
