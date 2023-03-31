@@ -140,7 +140,7 @@ support for running general-purpose networked servers.}
     (stop)
   ]
 
-  @history[#:added "8.8.0.10"]
+  @history[#:added "1.1"]
 }
 
 @defproc[(run-server [host string?]
@@ -172,5 +172,5 @@ support for running general-purpose networked servers.}
   thread until a break is received.  Before returning, it stops the
   spawned server.  The server is run with breaks disabled.
 
-  @history[#:added "8.8.0.10"]
+  @history[#:added "1.1"]
 }
