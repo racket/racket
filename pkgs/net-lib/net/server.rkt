@@ -9,13 +9,13 @@
   [run-server (server-proc/c void?)]))
 
 (define (server-proc/c res/c)
-  (->* (string?
-        (integer-in 0 65535)
+  (->* ((or/c #f string?)
+        listen-port-number?
         (-> input-port? output-port? any))
        (#:reuse? any/c
         #:max-allow-wait exact-nonnegative-integer?
         #:max-concurrent (or/c +inf.0 exact-positive-integer?)
-        #:listen-proc (-> (integer-in 0 65535) exact-nonnegative-integer? any/c string? evt?)
+        #:listen-proc (-> listen-port-number? exact-nonnegative-integer? any/c (or/c #f string?) evt?)
         #:accept-proc (-> any/c (values input-port? output-port?))
         #:close-proc (-> any/c void?)
         #:timeout-evt-proc (-> thread? input-port? output-port? boolean? evt?))

@@ -14,8 +14,8 @@ support for running general-purpose networked servers.}
 
 @(define ev (make-base-eval))
 
-@defproc[(start-server [host string?]
-                       [port (integer-in 0 65535)]
+@defproc[(start-server [host (or/c #f string?)]
+                       [port listen-port-number?]
                        [handle (-> input-port? output-port? any)]
                        [#:reuse? reuse? any/c #t]
                        [#:max-allow-wait max-allow-wait exact-nonnegative-integer? 511]
@@ -23,10 +23,10 @@ support for running general-purpose networked servers.}
                                          (or/c +inf.0 exact-positive-integer?)
                                          +inf.0]
                        [#:listen-proc listen
-                                      (-> (integer-in 0 65535)
+                                      (-> listen-port-number?
                                           exact-nonnegative-integer?
-                                          boolean?
-                                          string?
+                                          any/c
+                                          (or/c #f string?)
                                           (and/c listener? evt?))
                                       tcp-listen]
                        [#:accept-proc accept
@@ -143,8 +143,8 @@ support for running general-purpose networked servers.}
   @history[#:added "1.1"]
 }
 
-@defproc[(run-server [host string?]
-                     [port (integer-in 0 65535)]
+@defproc[(run-server [host (or/c #f string?)]
+                     [port listen-port-number?]
                      [handle (-> input-port? output-port? any)]
                      [#:reuse? reuse? any/c #t]
                      [#:max-allow-wait max-allow-wait exact-nonnegative-integer? 511]
@@ -152,10 +152,10 @@ support for running general-purpose networked servers.}
                                        (or/c +inf.0 exact-positive-integer?)
                                        +inf.0]
                      [#:listen-proc listen
-                                    (-> (integer-in 0 65535)
+                                    (-> listen-port-number?
                                         exact-nonnegative-integer?
-                                        boolean?
-                                        string?
+                                        any/c
+                                        (or/c #f string?)
                                         (and/c listener? evt?))
                                     tcp-listen]
                      [#:accept-proc accept
