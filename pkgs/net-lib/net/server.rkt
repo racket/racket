@@ -91,10 +91,12 @@
     (thread-wait server-thd)))
 
 (define run-server
-  (make-keyword-procedure
-   (lambda (kws kw-args . args)
-     (parameterize-break #f
-       (define stop (keyword-apply start-server kws kw-args args))
-       (with-handlers ([exn:break? void])
-         (sync/enable-break never-evt))
-       (stop)))))
+  (procedure-rename
+   (make-keyword-procedure
+    (lambda (kws kw-args host port handle)
+      (parameterize-break #f
+        (define stop (keyword-apply start-server kws kw-args host port handle null))
+        (with-handlers ([exn:break? void])
+          (sync/enable-break never-evt))
+        (stop))))
+   'run-server))
