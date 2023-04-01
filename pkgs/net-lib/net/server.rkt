@@ -23,7 +23,7 @@
 
 (define (start-server host port handle
                       #:reuse? [reuse? #t]
-                      #:max-allow-wait [max-allow-wait 511]
+                      #:max-allow-wait [max-allow-wait 4]
                       #:max-concurrent [max-concurrent +inf.0]
                       #:listen-proc [listen tcp-listen]
                       #:accept-proc [accept tcp-accept]

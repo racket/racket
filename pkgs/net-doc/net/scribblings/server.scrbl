@@ -18,7 +18,7 @@ support for running general-purpose networked servers.}
                        [port listen-port-number?]
                        [handle (-> input-port? output-port? any)]
                        [#:reuse? reuse? any/c #t]
-                       [#:max-allow-wait max-allow-wait exact-nonnegative-integer? 511]
+                       [#:max-allow-wait max-allow-wait exact-nonnegative-integer? 4]
                        [#:max-concurrent max-concurrent
                                          (or/c +inf.0 exact-positive-integer?)
                                          +inf.0]
@@ -89,7 +89,7 @@ support for running general-purpose networked servers.}
                      [port listen-port-number?]
                      [handle (-> input-port? output-port? any)]
                      [#:reuse? reuse? any/c #t]
-                     [#:max-allow-wait max-allow-wait exact-nonnegative-integer? 511]
+                     [#:max-allow-wait max-allow-wait exact-nonnegative-integer? 4]
                      [#:max-concurrent max-concurrent
                                        (or/c +inf.0 exact-positive-integer?)
                                        +inf.0]
