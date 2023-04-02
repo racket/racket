@@ -92,16 +92,15 @@
 
 (define run-server
   (let-values ([(required-kws optional-kws) (procedure-keywords start-server)])
-    (procedure-rename
-     (procedure-reduce-keyword-arity
-      (make-keyword-procedure
-       (lambda (kws kw-args . args)
-         (parameterize-break #f
-           (define stop (keyword-apply start-server kws kw-args args))
-           (with-handlers ([exn:break? void])
-             (sync/enable-break never-evt))
-           (stop))))
-      (procedure-arity start-server)
-      required-kws
-      optional-kws)
+    (procedure-reduce-keyword-arity-mask
+     (make-keyword-procedure
+      (lambda (kws kw-args . args)
+        (parameterize-break #f
+          (define stop (keyword-apply start-server kws kw-args args))
+          (with-handlers ([exn:break? void])
+            (sync/enable-break never-evt))
+          (stop))))
+     (procedure-arity-mask start-server)
+     required-kws
+     optional-kws
      'run-server)))
