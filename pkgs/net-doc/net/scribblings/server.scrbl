@@ -265,10 +265,10 @@ process and does not rely on any networking machinery:
      "127.0.0.1" 0 echo))
   (code:line)
 
-  (define-values (in out)
-    (make-pipe))
-  (channel-put ch (list in out))
-  (displayln "hello" out)
-  (read-line in)
+  (define-values (client-in server-out) (make-pipe))
+  (define-values (server-in client-out) (make-pipe))
+  (channel-put ch (list server-in server-out))
+  (displayln "hello" client-out)
+  (read-line client-in)
   (stop)
 ]
