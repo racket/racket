@@ -94,6 +94,13 @@
       ((contract (-> c any/c) values 'p 'n) '(1 . 2)))
    '(1 . 2))
 
+  (contract-syntax-error-test
+   'recursive-contract15
+   #'(recursive-contract
+      any/c
+      #:flat
+      #:list-contract? #t))
+
   
   (test/spec-passed/result
    'memoize-applied-blame

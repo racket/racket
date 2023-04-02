@@ -131,9 +131,9 @@
         [(kwd . rest)
          (unless (keyword? (syntax-e #'kwd))
            (raise-syntax-error 'recursive-contract
-                               "expected either #:list-contract? or #:extra-delay"
+                               "expected a recursive-contract-option keyword"
                                stx
-                               (car kwds)))
+                               #'kwd))
          (case (syntax-e #'kwd)
            [(#:list-contract?)
             (when list-contract?
