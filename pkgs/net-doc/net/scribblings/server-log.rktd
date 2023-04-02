@@ -125,11 +125,18 @@
  ((3) 0 () 0 () () (c values c (void)))
  #""
  #"")
-((define-values (in out) (make-pipe))
+((define-values (client-in server-out) (make-pipe))
  ((3) 0 () 0 () () (c values c (void)))
  #""
  #"")
-((channel-put ch (list in out)) ((3) 0 () 0 () () (c values c (void))) #"" #"")
-((displayln "hello" out) ((3) 0 () 0 () () (c values c (void))) #"" #"")
-((read-line in) ((3) 0 () 0 () () (c values c (u . "hello"))) #"" #"")
+((define-values (server-in client-out) (make-pipe))
+ ((3) 0 () 0 () () (c values c (void)))
+ #""
+ #"")
+((channel-put ch (list server-in server-out))
+ ((3) 0 () 0 () () (c values c (void)))
+ #""
+ #"")
+((displayln "hello" client-out) ((3) 0 () 0 () () (c values c (void))) #"" #"")
+((read-line client-in) ((3) 0 () 0 () () (c values c (u . "hello"))) #"" #"")
 ((stop) ((3) 0 () 0 () () (c values c (void))) #"" #"")
