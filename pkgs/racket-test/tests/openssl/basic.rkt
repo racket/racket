@@ -17,7 +17,7 @@
   (test 'ok values (with-handlers ([exn? (lambda (x) 'ok)])
                      e)))
 
-(define (test-ssl limit buffer? close? private-bytes?)
+(define (test-ssl limit buffer? close? #:private-bytes? [private-bytes? #f])
   ;; Test SSL communication using a limited pipe.
   ;; (Using a pipe limited to a small buffer helps make sure
   ;; that race conditions and deadlocks are eliminated in the
@@ -71,16 +71,16 @@
 	  (test v2 read-byte r2)))
     (void)))
 
-(test-ssl 1 #t #t #f)
-(test-ssl 10 #t #t #f)
-(test-ssl 100 #t #t #f)
-(test-ssl 1 #f #t #f)
-(test-ssl 10 #f #t #f)
-(test-ssl 100 #f #t #f)
+(test-ssl 1 #t #t)
+(test-ssl 10 #t #t)
+(test-ssl 100 #t #t)
+(test-ssl 1 #f #t)
+(test-ssl 10 #f #t)
+(test-ssl 100 #f #t)
 
-(test-ssl 100 #t #f #f)
-(test-ssl 100 #f #f #f)
-(test-ssl 100 #f #f #t)
+(test-ssl 100 #t #f)
+(test-ssl 100 #f #f)
+(test-ssl 100 #f #f #:private-bytes? #t)
 
 (newline)
 (when errs?
