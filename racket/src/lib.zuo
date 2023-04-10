@@ -350,7 +350,7 @@
       (ormap (lambda (line)
                (and (match? line)
                     (string=? part (substring line len (+ 1 len)))
-                    (string->integer (car (string-split (substring line (+ len 2)) "\r")))))
+                    (string->integer (string-trim (car (string-split (substring line (+ len 2)) "\r"))))))
              lines))
     (let ([X (get-version "X")]
           [Y (get-version "Y")]
