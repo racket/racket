@@ -124,7 +124,7 @@ TO DO:
   [ssl-load-certificate-chain!
    (c-> (or/c ssl-context? ssl-listener?) path-string? void?)]
   [ssl-load-private-key!
-   (->* ((or/c ssl-context? ssl-listener?) path-string?)
+   (->* ((or/c ssl-context? ssl-listener?) (or/c path-string? bytes?))
         (any/c any/c)
         void?)]
   [ssl-load-verify-root-certificates!
