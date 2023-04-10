@@ -100,7 +100,7 @@ TO DO:
   [ssl-make-client-context
    (->* ()
         (protocol-symbol/c
-         #:private-key (or/c (list/c 'pem path-string?) (list/c 'der path-string?) #f)
+         #:private-key (or/c (list/c 'pem (or/c path-string? bytes?)) (list/c 'der path-string?) #f)
          #:certificate-chain (or/c path-string? #f))
         ssl-client-context?)]
   [ssl-secure-client-context
@@ -108,7 +108,7 @@ TO DO:
   [ssl-make-server-context
    (->* ()
         (protocol-symbol/c
-         #:private-key (or/c (list/c 'pem path-string?) (list/c 'der path-string?) #f)
+         #:private-key (or/c (list/c 'pem (or/c path-string? bytes?)) (list/c 'der path-string?) #f)
          #:certificate-chain (or/c path-string? #f))
         ssl-server-context?)]
   [ssl-server-context-enable-dhe!
