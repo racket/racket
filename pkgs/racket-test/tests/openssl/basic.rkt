@@ -45,8 +45,8 @@
 		(define ctx (ssl-make-server-context))
 		(ssl-load-certificate-chain! ctx pem)
 		(ssl-load-private-key! ctx (if private-bytes?
-            (file->bytes pem)
-            pem))
+			(file->bytes pem)
+			pem))
 		(let-values ([(r w) (ports->ssl-ports
 				     r2 w2
 				     #:context ctx
