@@ -101,6 +101,8 @@
 (define-cpointer-type _SSL_METHOD*)
 (define-cpointer-type _SSL_CTX*)
 (define-cpointer-type _SSL*)
+(define-cpointer-type _RSA*)
+(define-cpointer-type _EVP_PKEY*)
 (define-cpointer-type _X509_NAME*)
 (define-cpointer-type _X509_NAME_ENTRY*)
 (define-cpointer-type _X509*)
@@ -176,6 +178,11 @@
   (SSL_CTX_ctrl ctx SSL_CTRL_MODE m #f))
 (define (SSL_CTX_set_options ctx opts)
   (SSL_CTX_ctrl ctx SSL_CTRL_OPTIONS opts #f))
+
+(define-ssl SSL_CTX_use_RSAPrivateKey (_fun _SSL_CTX* _RSA* -> _int))
+(define-ssl PEM_read_bio_RSAPrivateKey (_fun _BIO* _void _int _void -> _RSA*))
+(define-ssl SSL_CTX_use_PrivateKey (_fun _SSL_CTX* _EVP_PKEY* -> _int))
+(define-ssl PEM_read_bio_PrivateKey (_fun _BIO* _void _int _void -> _EVP_PKEY*))
 
 (define-ssl SSL_CTX_set_verify (_fun _SSL_CTX* _int _pointer -> _void))
 (define-ssl SSL_CTX_use_certificate_chain_file (_fun _SSL_CTX* _path -> _int))

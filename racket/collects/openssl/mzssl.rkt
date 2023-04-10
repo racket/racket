@@ -646,15 +646,35 @@ TO DO:
                     1))))
           ssl-listener pathname))
 
-(define (ssl-load-private-key! ssl-context-or-listener pathname
+(define (ssl-load-private-key! ssl-context-or-listener pathname-or-bytes
                                [rsa? #t] [asn1? #f])
+  (if (bytes? pathname-or-bytes)
+    (let ([bio (BIO_new_mem_buf pathname-or-bytes (bytes-length pathname-or-bytes))]
+          [ctx (get-context/listener 'ssl-load-private-key! ssl-context-or-listener
+                                    #:need-unsealed? #t)])
+        (with-failure
+            (lambda () (BIO_free bio))
+
+            (unless (not asn1?)
+                (error 'ssl-load-private-key "Cannot load ASN.1 keyfile from bytes. Must load from file path."))
+
+            (define success (if rsa?
+                (SSL_CTX_use_RSAPrivateKey
+                    ctx
+                    (PEM_read_bio_RSAPrivateKey bio #f 0 #f))
+                (SSL_CTX_use_PrivateKey
+                    ctx
+                    (PEM_read_bio_PrivateKey bio #f 0 #f))))
+
+            (unless (= 1 success)
+                (error 'ssl-load-private-key "failed to enable DHE"))))
   (ssl-load-...
    'ssl-load-private-key!
    (lambda (ctx path)
      ((if rsa? SSL_CTX_use_RSAPrivateKey_file SSL_CTX_use_PrivateKey_file)
       ctx path
       (if asn1? SSL_FILETYPE_ASN1 SSL_FILETYPE_PEM)))
-   ssl-context-or-listener pathname))
+   ssl-context-or-listener pathname-or-bytes)))
 
 (define (ssl-load-verify-root-certificates! scl src)
   (ssl-load-... 'ssl-load-verify-root-certificates!
