@@ -46,7 +46,7 @@ are not comparable.
          date*?]{
 
 Takes @racket[secs-n], a time in seconds since @tech{the epoch} (like the value of
-@racket[(current-seconds)], @racket[(file-or-directory-modify-seconds)],
+@racket[(current-seconds)], @racket[(file-or-directory-modify-seconds _path)],
 or @racket[(/ (current-inexact-milliseconds) 1000)]), and returns an
 instance of the @racket[date*] structure type. Note that
 @racket[secs-n] can include fractions of a second. If @racket[secs-n]
