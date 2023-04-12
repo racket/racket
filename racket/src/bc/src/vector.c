@@ -31,6 +31,8 @@ READ_ONLY Scheme_Object *scheme_unsafe_struct_star_set_proc;
 
 /* locals */
 static Scheme_Object *vector_p (int argc, Scheme_Object *argv[]);
+static Scheme_Object *immutable_vector_p (int argc, Scheme_Object *argv[]);
+static Scheme_Object *mutable_vector_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_immutable (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_length (int argc, Scheme_Object *argv[]);
@@ -94,6 +96,16 @@ scheme_init_vector (Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_PRODUCES_BOOL);
   scheme_addto_prim_instance("vector?", p, env);
   scheme_vector_p_proc = p;
+
+  p = scheme_make_folding_prim(immutable_vector_p, "immutable-vector?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("immutable-vector?", p, env);
+
+  p = scheme_make_folding_prim(mutable_vector_p, "mutable-vector?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("mutable-vector?", p, env);
 
   REGISTER_SO(scheme_make_vector_proc);
   p = scheme_make_immed_prim(scheme_checked_make_vector, "make-vector", 1, 2);
@@ -517,6 +529,22 @@ static Scheme_Object *
 vector_p (int argc, Scheme_Object *argv[])
 {
   return (SCHEME_CHAPERONE_VECTORP(argv[0]) ? scheme_true : scheme_false);
+}
+
+static Scheme_Object *
+immutable_vector_p (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *obj = argv[0];
+  if SCHEME_NP_CHAPERONEP(obj) obj = SCHEME_CHAPERONE_VAL(obj);
+  return ((SCHEME_VECTORP(obj) && SCHEME_IMMUTABLEP(obj)) ? scheme_true : scheme_false);
+}
+
+static Scheme_Object *
+mutable_vector_p (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *obj = argv[0];
+  if SCHEME_NP_CHAPERONEP(obj) obj = SCHEME_CHAPERONE_VAL(obj);
+  return ((SCHEME_VECTORP(obj) && !SCHEME_IMMUTABLEP(obj)) ? scheme_true : scheme_false);
 }
 
 Scheme_Object *

@@ -226,6 +226,10 @@
                               collection-path collection-file-path
                               symbol->immutable-string
                               keyword->immutable-string
+                              immutable-string? immutable-bytes? immutable-vector?
+                              immutable-hash? immutable-box?
+                              mutable-string? mutable-bytes? mutable-vector?
+                              mutable-hash? mutable-box?
                               syntax-srcloc)
              (all-from "reqprov.rkt")
              (all-from-except "for.rkt"

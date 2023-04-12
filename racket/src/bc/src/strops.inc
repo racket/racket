@@ -144,6 +144,18 @@ X__(string_p) (int argc, Scheme_Object *argv[])
 }
 
 static Scheme_Object *
+X_(immutable, string_p) (int argc, Scheme_Object *argv[])
+{
+  return ((SCHEME_X_STRINGP(argv[0]) && SCHEME_IMMUTABLEP(argv[0])) ? scheme_true : scheme_false);
+}
+
+static Scheme_Object *
+X_(mutable, string_p) (int argc, Scheme_Object *argv[])
+{
+  return ((SCHEME_X_STRINGP(argv[0]) && !SCHEME_IMMUTABLEP(argv[0])) ? scheme_true : scheme_false);
+}
+
+static Scheme_Object *
 X_(make, string) (int argc, Scheme_Object *argv[])
 {
   intptr_t len;

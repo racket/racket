@@ -34,6 +34,8 @@ See also: @racket[immutable?], @racket[symbol->string],
 @defproc[(string? [v any/c]) boolean?]{ Returns @racket[#t] if @racket[v]
  is a string, @racket[#f] otherwise.
 
+See also @racket[immutable-string?] and @racket[mutable-string?].
+
 @mz-examples[(string? "Apple") (string? 'apple)]}
 
 

@@ -54,6 +54,8 @@ Scheme_Object *scheme_system_type_proc;
 static Scheme_Object *make_string (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_p (int argc, Scheme_Object *argv[]);
+static Scheme_Object *immutable_string_p (int argc, Scheme_Object *argv[]);
+static Scheme_Object *mutable_string_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_length (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_eq (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_locale_eq (int argc, Scheme_Object *argv[]);
@@ -101,6 +103,8 @@ static Scheme_Object *make_byte_string (int argc, Scheme_Object *argv[]);
 static Scheme_Object *byte_string (int argc, Scheme_Object *argv[]);
 static Scheme_Object *byte_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *byte_string_p (int argc, Scheme_Object *argv[]);
+static Scheme_Object *immutable_byte_string_p (int argc, Scheme_Object *argv[]);
+static Scheme_Object *mutable_byte_string_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *byte_string_length (int argc, Scheme_Object *argv[]);
 static Scheme_Object *byte_string_eq (int argc, Scheme_Object *argv[]);
 static Scheme_Object *byte_string_lt (int argc, Scheme_Object *argv[]);
@@ -323,6 +327,16 @@ scheme_init_string (Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_PRODUCES_BOOL);
   scheme_addto_prim_instance("string?", p, env);
   scheme_string_p_proc = p;
+
+  p = scheme_make_folding_prim(immutable_string_p, "immutable-string?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("immutable-string?", p, env);
+
+  p = scheme_make_folding_prim(mutable_string_p, "mutable-string?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("mutable-string?", p, env);
 
   scheme_addto_prim_instance("make-string",
 			     scheme_make_immed_prim(make_string,
@@ -626,6 +640,16 @@ scheme_init_string (Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_PRODUCES_BOOL);
   scheme_addto_prim_instance("bytes?", p, env);
   scheme_byte_string_p_proc = p;
+
+  p = scheme_make_folding_prim(immutable_byte_string_p, "immutable-bytes?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("immutable-bytes?", p, env);
+
+  p = scheme_make_folding_prim(mutable_byte_string_p, "mutable-bytes?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("mutable-bytes?", p, env);
 
   scheme_addto_prim_instance("make-bytes",
 			     scheme_make_immed_prim(make_byte_string,

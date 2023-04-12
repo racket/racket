@@ -39,6 +39,11 @@
       (and (impersonator? v)
            (#%mutable-vector? (impersonator-val v)))))
 
+(define (immutable-vector? v)
+  (or (#%immutable-vector? v)
+      (and (impersonator? v)
+           (#%immutable-vector? (impersonator-val v)))))
+
 ;; ----------------------------------------
 
 (define-record vector-chaperone chaperone (ref set))

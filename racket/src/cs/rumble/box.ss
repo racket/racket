@@ -38,6 +38,16 @@
                             "(and/c box? (not impersonator?))")
                         b))
 
+(define (immutable-box? v)
+  (or (#%immutable-box? v)
+      (and (impersonator? v)
+           (#%immutable-box? (impersonator-val v)))))
+
+(define (mutable-box? v)
+  (or (#%mutable-box? v)
+      (and (impersonator? v)
+           (#%mutable-box? (impersonator-val v)))))
+
 (define (set-box! b v)
   (if (#%mutable-box? b)
       (#3%set-box! b v)

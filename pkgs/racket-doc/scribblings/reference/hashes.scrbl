@@ -111,7 +111,9 @@ A literal or printed hash table starts with @litchar{#hash},
 @defproc[(hash? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a @tech{hash table}, @racket[#f]
-otherwise.}
+otherwise.
+
+See also @racket[immutable-hash?] and @racket[mutable-hash?].}
 
 @defproc[(hash-equal? [hash hash?]) boolean?]{
 

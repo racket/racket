@@ -69,7 +69,9 @@ A literal or printed box starts with @litchar{#&}. @see-read-print["box"]{boxes}
 
 @defproc[(box? [v any/c]) boolean?]{
 
-Returns @racket[#t] if @racket[v] is a box, @racket[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is a box, @racket[#f] otherwise.
+
+See also @racket[immutable-box?] and @racket[mutable-box?].}
 
 
 @defproc[(box [v any/c]) box?]{

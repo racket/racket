@@ -24,6 +24,15 @@
 (define (hash? v) (or (authentic-hash? v)
                       (and (impersonator? v)
                            (authentic-hash? (impersonator-val v)))))
+(define (immutable-hash? v) (or (intmap? v)
+                                (and (impersonator? v)
+                                     (intmap? (impersonator-val v)))))
+(define -mutable-hash? ; exported as `mutable-hash?`
+  (|#%name|
+   mutable-hash?
+   (lambda (v) (or (mutable-hash? v)
+                   (and (impersonator? v)
+                        (mutable-hash? (impersonator-val v)))))))
 
 (define/who make-hash
   (case-lambda

@@ -9,6 +9,7 @@
          racket/list
          racket/symbol
          racket/keyword
+         racket/mutability
          (prefix-in k: '#%kernel))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3510,6 +3511,71 @@
   (struct a (x) #:transparent)
   (test #t equal?/recur (a 1) (a 2) (lambda (a b) 'yes))
   (test #f equal?/recur (a 1) (a 1) (lambda (a b) (not (eq? a 1)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test #t immutable-string? "apple")
+(test #f mutable-string? "apple")
+(test #f immutable-string? (string-copy "apple"))
+(test #t mutable-string? (string-copy "apple"))
+(test #f immutable-string? (void))
+(test #f mutable-string? (void))
+
+(test #t immutable-bytes? #"apple")
+(test #f mutable-bytes? #"apple")
+(test #f immutable-bytes? (bytes-copy #"apple"))
+(test #t mutable-bytes? (bytes-copy #"apple"))
+(test #f immutable-bytes? (void))
+(test #f mutable-bytes? (void))
+
+(test #t immutable-vector? #(1 2 3))
+(test #f mutable-vector? #(1 2 3))
+(test #f immutable-vector? (vector 1 2 3))
+(test #t mutable-vector? (vector 1 2 3))
+(test #f immutable-vector? (void))
+(test #f mutable-vector? (void))
+
+(test #t immutable-box? #&1)
+(test #f mutable-box? #&1)
+(test #f immutable-box? (box 1))
+(test #t mutable-box? (box 1))
+(test #f immutable-box? (void))
+(test #f mutable-box? (void))
+
+(test #t immutable-hash? #hash((1 . 2)))
+(test #t immutable-hash? #hasheqv((1 . 2)))
+(test #t immutable-hash? #hasheq((1 . 2)))
+(test #t immutable-hash? #hashalw((1 . 2)))
+(test #f mutable-hash? #hash((1 . 2)))
+(test #f mutable-hash? #hasheqv((1 . 2)))
+(test #f mutable-hash? #hasheq((1 . 2)))
+(test #f mutable-hash? #hashalw((1 . 2)))
+(test #f immutable-hash? (make-hash '((1 . 2))))
+(test #f immutable-hash? (make-hasheqv '((1 . 2))))
+(test #f immutable-hash? (make-hasheq '((1 . 2))))
+(test #f immutable-hash? (make-hashalw '((1 . 2))))
+(test #f immutable-hash? (make-weak-hash '((1 . 2))))
+(test #f immutable-hash? (make-weak-hasheqv '((1 . 2))))
+(test #f immutable-hash? (make-weak-hasheq '((1 . 2))))
+(test #f immutable-hash? (make-weak-hashalw '((1 . 2))))
+(test #f immutable-hash? (make-ephemeron-hash '((1 . 2))))
+(test #f immutable-hash? (make-ephemeron-hasheqv '((1 . 2))))
+(test #f immutable-hash? (make-ephemeron-hasheq '((1 . 2))))
+(test #f immutable-hash? (make-ephemeron-hashalw '((1 . 2))))
+(test #t mutable-hash? (make-hash '((1 . 2))))
+(test #t mutable-hash? (make-hasheqv '((1 . 2))))
+(test #t mutable-hash? (make-hasheq '((1 . 2))))
+(test #t mutable-hash? (make-hashalw '((1 . 2))))
+(test #t mutable-hash? (make-weak-hash '((1 . 2))))
+(test #t mutable-hash? (make-weak-hasheqv '((1 . 2))))
+(test #t mutable-hash? (make-weak-hasheq '((1 . 2))))
+(test #t mutable-hash? (make-weak-hashalw '((1 . 2))))
+(test #t mutable-hash? (make-ephemeron-hash '((1 . 2))))
+(test #t mutable-hash? (make-ephemeron-hasheqv '((1 . 2))))
+(test #t mutable-hash? (make-ephemeron-hasheq '((1 . 2))))
+(test #t mutable-hash? (make-ephemeron-hashalw '((1 . 2))))
+(test #f immutable-hash? (void))
+(test #f mutable-hash? (void))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

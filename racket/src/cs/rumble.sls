@@ -316,6 +316,8 @@
           unsafe-hash-seal!    ; not exported to racket
 
           hash? hash-eq? hash-equal? hash-eqv? hash-equal-always? hash-strong? hash-weak? hash-ephemeron?
+          immutable-hash?
+          (rename [-mutable-hash? mutable-hash?])
           hash-count
           hash-keys-subset?
           eq-hashtable->hash   ; not exported to racket
@@ -335,7 +337,7 @@
           make-bytes make-shared-bytes
           bytes-ref bytes-set!
           bytes->list list->bytes
-          bytes->immutable-bytes
+          bytes->immutable-bytes immutable-bytes? mutable-bytes?
           bytes-copy! bytes-copy bytes-fill!
           bytes=? bytes<? bytes>?
           bytes-append
@@ -344,6 +346,7 @@
           make-string
           string-copy!
           substring
+          immutable-string? mutable-string?
 
           char-blank?
           char-iso-control?
@@ -370,7 +373,7 @@
                   [|#%ormap| ormap])
 
           vector?
-          mutable-vector?
+          immutable-vector? mutable-vector?
           make-vector
           (rename [inline:vector-length vector-length]
                   [inline:vector-ref vector-ref]
@@ -398,6 +401,7 @@
                   [inline:set-box! set-box!])
           unbox* set-box*!
           make-weak-box weak-box? weak-box-value
+          immutable-box? mutable-box?
           impersonate-box
           chaperone-box
           unbox/check-undefined    ; not exported to Racket

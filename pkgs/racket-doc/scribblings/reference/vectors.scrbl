@@ -29,7 +29,9 @@ a number between the @litchar{#} and
 
 @defproc[(vector? [v any/c]) boolean?]{
 
-Returns @racket[#t] if @racket[v] is a vector, @racket[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is a vector, @racket[#f] otherwise.
+
+See also @racket[immutable-vector?] and @racket[mutable-vector?].}
 
 @defproc[(make-vector [size exact-nonnegative-integer?]
                       [v any/c 0]) vector?]{

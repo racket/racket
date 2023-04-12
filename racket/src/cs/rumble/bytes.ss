@@ -14,6 +14,9 @@
 
 (define (bytes? x) (#2%bytevector? x))
 
+(define (mutable-bytes? x) (#%mutable-bytevector? x))
+(define (immutable-bytes? x) (#%immutable-bytevector? x))
+
 (define (bytes-length bstr) (#2%bytevector-length bstr))
 
 (define/who make-bytes

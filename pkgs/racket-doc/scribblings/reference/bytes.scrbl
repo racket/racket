@@ -35,6 +35,8 @@ See also: @racket[immutable?].
 @defproc[(bytes? [v any/c]) boolean?]{ Returns @racket[#t] if @racket[v]
  is a byte string, @racket[#f] otherwise.
 
+See also @racket[immutable-bytes?] and @racket[mutable-bytes?].
+
 @mz-examples[(bytes? #"Apple") (bytes? "Apple")]}
 
 
