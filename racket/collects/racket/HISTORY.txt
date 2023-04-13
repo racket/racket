@@ -1,6 +1,13 @@
-Version 8.9
+Version 8.9, April 2023
 Use Unicode 15.0 for character and string operations
-Block buffering for a TCP output port implies TCP_NODELAY
+Add `racket/hash-code`
+Add `fxrshift/logical`
+Add support for `configure-expand` submodules
+Add support for multiple values to `stream-cons`
+Improve `unit/c` to see more bindings and to enforce contracts
+ within `constract` forms
+Add an optipnal results clause to `define-values/invoke-unit`
+Change TCP output port block buffering to imply TCP_NODELAY
 
 Version 8.8, January 2023
 Add `#:param` option to `->i`
