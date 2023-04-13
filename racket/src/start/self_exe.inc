@@ -315,7 +315,7 @@ static char *lookup_exe_via_path(const char *exec_file) XFORM_SKIP_PROC
     return r;
   } else {
     /* We have to find the executable by searching PATH: */
-    char *path = copy_string(getenv("PATH")), *p, *m;
+    char *path = copy_string(getenv("PATH")), *p, *m, *saved_path = path;
     int more;
 
     if (!path) {
@@ -342,7 +342,7 @@ static char *lookup_exe_via_path(const char *exec_file) XFORM_SKIP_PROC
 	  m = path_append(get_current_directory(), m);
           free(old_m);
         }
-        free(path);
+        if (saved_path) free(saved_path);
 	return m;
       }
       free(m);
@@ -353,7 +353,7 @@ static char *lookup_exe_via_path(const char *exec_file) XFORM_SKIP_PROC
 	break;
     }
 
-    free(path);
+    if (saved_path) free(saved_path);
 
     return copy_string(exec_file);
   }
