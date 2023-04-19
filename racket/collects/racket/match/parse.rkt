@@ -166,17 +166,20 @@
                    [(eq? mode #t) (list (App activate-fun (list (Exact #t))))]
                    [else '()])
 
-                 ;; SECTION 3
+                 ;; SECTION 3: transform user-def to the default value if needed
                  (for/list ([ref-id (in-list ref-ids)]
                             [def-expr (in-list def-exprs)]
                             [v-pat (in-list v-pats)])
                    (with-syntax ([ref-id ref-id]
                                  [def-expr def-expr])
-                     (App #'(λ (ref-id)
-                              (if (user-def? ref-id)
-                                  def-expr
-                                  ref-id))
-                          (list (parse v-pat)))))
+                     (if (and (identifier? #'def-expr)
+                              (free-identifier=? #'undef #'def-expr))
+                         (parse v-pat)
+                         (App #'(λ (ref-id)
+                                  (if (user-def? ref-id)
+                                      def-expr
+                                      ref-id))
+                              (list (parse v-pat))))))
 
                  ;; SECTION 4
                  (cond
