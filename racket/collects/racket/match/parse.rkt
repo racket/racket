@@ -268,13 +268,13 @@
        (parse (syntax/loc stx (hash* kvp ... #:rest rest-pat))))]
     [(hash es ... #:closed)
      (with-syntax ([(kvp ...) (make-kvps stx #'(es ...))])
-       (parse (syntax/loc stx (hash* kvp ... #:closed))))]
+       (do-hash stx #'(kvp ...) #t))]
     [(hash es ... #:open)
      (with-syntax ([(kvp ...) (make-kvps stx #'(es ...))])
-       (parse (syntax/loc stx (hash* kvp ... #:open))))]
+       (do-hash stx #'(kvp ...) #f))]
     [(hash es ...)
      (with-syntax ([(kvp ...) (make-kvps stx #'(es ...))])
-       (parse (syntax/loc stx (hash* kvp ... #:closed))))]
+       (do-hash stx #'(kvp ...) #t))]
 
     ;; Deprecated hash table patterns
     [(hash-table p ... dd)

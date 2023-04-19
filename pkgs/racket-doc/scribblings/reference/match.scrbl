@@ -249,36 +249,21 @@ In more detail, patterns match as follows:
  @item{@racket[(#,(match-kw "hash") _expr _pat ... ... _ht-opt)] ---
        matches against a hash table where @racket[_expr] matches
        a key and @racket[_pat] matches a corresponding value.
-       The key matchings use the key comparator of the matching hash table.
-       Many @racket[_expr]s could evaluate to the same value.
-       The behavior of unmatched key-value entries depend on @racket[_ht-opt].
-
-       When @racket[_ht-opt] is not provided or when it is @racket[#:closed],
-       the matching is closed to extension.
-       I.e., there must not be any unmatched key-value entries.
-
-       When @racket[_ht-opt] is @racket[#:open], the matching is open to extension.
-       I.e., there can be unmatched key-value entries.
-
-       When @racket[_ht-opt] is @racket[#:rest _pat], @racket[_pat] is further
-       matched against the residue hash table.
-       If the matching hash table is immutable, this residue matching is efficient.
-       Otherwise, the matching hash table will be copied, which could be expensive.
-
 
        @examples[
        #:eval match-eval
-       (match #hash(("aa" . 1) ("b" . 2))
-         [(hash "b" b (string-append "a" "a") a) (list b a)])
-       (match #hash(("a" . 1) ("b" . 2))
-         [(hash "b" b) 'matched]
+       (match (hash "aa" 1 "b" 2)
+         [(hash "b" b (string-append "a" "a") a)
+          (list b a)])
+       (match (hash "aa" 1 "b" 2)
+         [(hash "b" _ "c" _) 'matched]
          [_ 'not-matched])
-       (match #hash(("a" . 1) ("b" . 2))
-         [(hash "b" _ #:open) 'matched]
-         [_ 'not-matched])
-       (match #hash(("a" . 1) ("b" . 2))
-         [(hash "b" _ #:rest (hash "a" a)) a]
-         [_ #f])
+       ]
+
+       The key matchings use the key comparator of the matching hash table.
+
+       @examples[
+       #:eval match-eval
        (let ([k (string-append "a" "b")])
          (match (hasheq "ab" 1)
            [(hash k v) 'matched]
@@ -287,29 +272,69 @@ In more detail, patterns match as follows:
          (match (hasheq k 1)
            [(hash k v) 'matched]
            [_ 'not-matched]))
-       (match #hash(("a" . 1) ("b" . 2))
+       ]
+
+       The behavior of unmatched key-value entries depends on @racket[_ht-opt].
+
+       When @racket[_ht-opt] is not provided or when it is @racket[#:closed],
+       all of the keys in the hash table value must be matched.
+       I.e., the matching is closed to extension.
+
+       @examples[
+       #:eval match-eval
+       (match (hash "a" 1 "b" 2)
+         [(hash "b" _) 'matched]
+         [_ 'not-matched])
+       ]
+
+       When @racket[_ht-opt] is @racket[#:open],
+       there can be keys in the hash table value that are not specified in the pattern.
+       I.e., the matching is open to extension.
+
+       @examples[
+       #:eval match-eval
+       (match (hash "a" 1 "b" 2)
+         [(hash "b" _ #:open) 'matched]
+         [_ 'not-matched])
+       ]
+
+       When @racket[_ht-opt] is @racket[#:rest _pat], @racket[_pat] is further
+       matched against the residue hash table.
+       If the matching hash table is immutable, this residue matching is efficient.
+       Otherwise, the matching hash table will be copied, which could be expensive.
+
+       @examples[
+       #:eval match-eval
+       (match (hash "a" 1 "b" 2)
+         [(hash "b" _ #:rest (hash "a" a)) a]
+         [_ #f])
+       ]
+
+       Many key @racket[_expr]s could evaluate to the same value.
+
+       @examples[
+       #:eval match-eval
+       (match (hash "a" 1 "b" 2)
          [(hash "b" _ "b" 2 "a" _) 'matched]
          [_ 'not-matched])
-
-
        ]}
 
  @item{@racket[(#,(match-kw "hash*") [_expr _pat _kv-opt] ... _ht-opt)] ---
        similar to @racketidfont{hash}, but (1) key-value-pattern must be grouped;
        (2) if @racket[_ht-opt] is not specified, it behaves like @racket[#:open];
        (3) if @racket[_kv-opt] is specified, and the key does not exist in
-       the matching hash table, the default value will be matched against the
+       the hash table value, the default value will be matched against the
        value pattern instead.
 
        @examples[
        #:eval match-eval
-       (match #hash(("a" . 1) ("b" . 2))
+       (match (hash "a" 1 "b" 2)
          [(hash* ["b" b] ["a" a]) (list b a)])
-       (match #hash(("a" . 1) ("b" . 2))
+       (match (hash "a" 1 "b" 2)
          [(hash* ["b" b]) 'matched]
          [_ 'not-matched])
-       (match #hash(("a" . 1) ("b" . 2))
-         [(hash* ["c" c #:default 10]) c]
+       (match (hash "a" 1 "b" 2)
+         [(hash* ["a" a #:default 42] ["c" c #:default 100]) (list a c)]
          [_ #f])
        ]}
 
