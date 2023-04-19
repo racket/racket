@@ -110,67 +110,79 @@
   (with-syntax ([(k-id ...) k-ids]
                 [(ref-id ...) ref-ids]
                 [(k-expr ...) k-exprs]
-                [(v-pat ...) v-pats]
-                [(def-expr ...) def-exprs]
                 [(def-id ...) def-ids])
-    (parse
-     (quasisyntax/loc stx
-       (? hash?
-          ;; we use let explicitly to prevent macro expander from nesting too much
-          (app (λ (e)
-                 ;; initially assign k-ids and ref-ids to #f, so that
-                 ;; if section 1 short-circuits, there's no need to
-                 ;; evaluate all k-exprs and hash-refs
-                 (let ([k-id #f] ... [ref-id #f] ...)
-                   (values
-                    ;; SECTION 1: predicate
-                    (or (undef? (begin
-                                  (set! k-id k-expr)
-                                  (set! ref-id (hash-ref e k-id def-id))
+
+    (define activate-fun
+      #'(λ (p) (p)))
+
+    ;; we use let explicitly to prevent macro expander from nesting too much
+    (define main-fun
+      #`(λ (e)
+          ;; initially assign k-ids and ref-ids to #f, so that
+          ;; if section 1 short-circuits, there's no need to
+          ;; evaluate all k-exprs and hash-refs
+          (let ([k-id #f] ... [ref-id #f] ...)
+            (values
+             ;; SECTION 1: predicate
+             (or (undef? (begin
+                           (set! k-id k-expr)
+                           (set! ref-id (hash-ref e k-id def-id))
+                           ref-id))
+                 ...)
+
+             ;; henceforth, we can assume ref-ids are not undef
+
+             ;; SECTION 2: full mode predicate
+             #,@(gen-closed-mode mode k-ids ref-ids)
+
+             ;; SECTION 3: values
+             ref-id ...
+
+             ;; SECTION 4: rest
+             #,@(cond
+                  [(syntax? mode)
+                   (list #`(λ ()
+                             (cond
+                               [(immutable? e)
+                                #,(for/fold ([stx #'e])
+                                            ([k (in-list k-ids)])
+                                    #`(hash-remove-safe #,stx #,k))]
+                               [else
+                                (define e* (hash-copy e))
+                                #,@(for/list ([k (in-list k-ids)])
+                                     #`(hash-remove-safe! e* #,k))
+                                e*])))]
+                  [else '()])))))
+
+    (OrderedAnd
+     (list (Pred #'hash?)
+           (App main-fun
+                (append
+                 ;; SECTION 1
+                 (list (Exact #f))
+
+                 ;; SECTION 2
+                 (cond
+                   [(eq? mode #t) (list (App activate-fun (list (Exact #t))))]
+                   [else '()])
+
+                 ;; SECTION 3
+                 (for/list ([ref-id (in-list ref-ids)]
+                            [def-expr (in-list def-exprs)]
+                            [v-pat (in-list v-pats)])
+                   (with-syntax ([ref-id ref-id]
+                                 [def-expr def-expr])
+                     (App #'(λ (ref-id)
+                              (if (user-def? ref-id)
+                                  def-expr
                                   ref-id))
-                        ...)
+                          (list (parse v-pat)))))
 
-                    ;; henceforth, we can assume ref-ids are not undef
-
-                    ;; SECTION 2: full mode predicate
-                    #,@(gen-closed-mode mode k-ids ref-ids)
-
-                    ;; SECTION 3: values
-                    ref-id ...
-
-                    ;; SECTION 4: rest
-                    #,@(cond
-                         [(syntax? mode)
-                          (list #`(λ ()
-                                    (cond
-                                      [(immutable? e)
-                                       #,(for/fold ([stx #'e])
-                                                   ([k (in-list k-ids)])
-                                           #`(hash-remove-safe #,stx #,k))]
-                                      [else
-                                       (define e* (hash-copy e))
-                                       #,@(for/list ([k (in-list k-ids)])
-                                            #`(hash-remove-safe! e* #,k))
-                                       e*])))]
-                         [else '()]))))
-
-               ;; SECTION 1
-               #f
-               ;; SECTION 2
-               #,@(cond
-                    [(eq? mode #t) (list #'(app (λ (p) (p)) #t))]
-                    [else '()])
-               ;; SECTION 3
-               (app (λ (ref-id)
-                      (if (user-def? ref-id)
-                          def-expr
-                          ref-id))
-                    v-pat) ...
-               ;; SECTION 4
-               #,@(cond
-                    [(syntax? mode)
-                     (list #`(app (λ (p) (p)) #,mode))]
-                    [else '()])))))))
+                 ;; SECTION 4
+                 (cond
+                   [(syntax? mode)
+                    (list (App activate-fun (list (parse mode))))]
+                   [else '()])))))))
 
 (define (make-kvps stx xs)
   (let loop ([xs (syntax->list xs)] [acc '()])
