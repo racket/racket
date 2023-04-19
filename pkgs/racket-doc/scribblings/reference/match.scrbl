@@ -352,8 +352,12 @@ In more detail, patterns match as follows:
          [(hash-table ("b" b) ("a" a)) (list b a)])
        ]}
 
- @item{@racket[(#,(racketidfont "hash-table") (_pat _pat) ...+ _ooo)]
-       --- Generalizes @racketidfont{hash-table} to support a final
+ @item{@racket[(#,(racketidfont "hash-table") (_pat _pat) ...+ _ooo)] ---
+       @bold{This pattern is deprecated because it has a bug.}
+       However, many programs rely on the incorrect behavior,
+       so we still provide this pattern for backward compatibility reasons.
+
+       Generalizes @racketidfont{hash-table} to support a final
        repeating pattern.
 
        @examples[
