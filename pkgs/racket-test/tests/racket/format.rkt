@@ -320,6 +320,12 @@
     "0e+00")
 (tc (~r #:notation 'exponential 0 #:precision '(= 4))
     "0.0000e+00")
+(tc (~r #:notation 'exponential 0 #:precision '(= 4) #:decimal-sep ",")
+    "0,0000e+00")
+(tc (~r 12345678.123456 #:notation 'exponential #:decimal-sep ",")
+    "1,234568e+07")
+(tc (~r 12345678.123456 #:notation 'exponential #:decimal-sep "::")
+    "1::234568e+07")
 
 (tc (~r 123456789.123)
     "123456789.123")

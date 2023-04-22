@@ -332,18 +332,18 @@
                         (if exactly? (make-string significand-precision #\0) "")
                         (exponent-part 0 format-exponent base))]
         [else
-         (%exponential-nz N-abs base upper? format-exponent significand-precision exactly?)]))
+         (%exponential-nz N-abs base upper? format-exponent significand-precision exactly? decimal-sep)]))
 
-(define (%exponential-nz N-abs base upper? format-exponent significand-precision exactly?)
+(define (%exponential-nz N-abs base upper? format-exponent significand-precision exactly? decimal-sep)
   (define-values (N* e-adjust actual-precision)
     (scale N-abs base significand-precision exactly?))
-  ;; hack: from 1234 want "1.234"; convert to "1234", mutate to ".234" after saving "1"
   (let* ([digits (number->string* N* base upper?)]
          [leading-digit (string (string-ref digits 0))]
          [exponent (- significand-precision e-adjust)])
-    (string-set! digits 0 #\.)
     (string-append leading-digit
-                   (if (or exactly? (positive? actual-precision)) digits "")
+                   (if (or exactly? (positive? actual-precision))
+                       (string-append decimal-sep (substring digits 1))
+                       "")
                    (exponent-part exponent format-exponent base))))
 
 (define (exponent-part exponent format-exponent base)
