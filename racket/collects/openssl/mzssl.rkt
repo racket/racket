@@ -659,7 +659,8 @@ TO DO:
             (lambda () (BIO_free bio))
 
             (unless (not asn1?)
-                (error 'ssl-load-private-key "Cannot load ASN.1 keyfile from bytes. Must load from file path."))
+                ; TODO: we can probably use d2i_PrivateKey and d2i_RSAPrivateKey to support this if we want
+                (error 'ssl-load-private-key "Cannot load ASN.1 keyfile from bytes at the moment. Must load from file path."))
 
             (define success (if rsa?
                 (SSL_CTX_use_RSAPrivateKey
