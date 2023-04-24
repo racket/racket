@@ -100,7 +100,7 @@ TO DO:
   [ssl-make-client-context
    (->* ()
         (protocol-symbol/c
-         #:private-key (or/c (list/c 'pem (or/c path-string? bytes?)) (list/c 'der path-string?) #f)
+         #:private-key (or/c (list/c 'pem path-string?) (list/c 'pem-data bytes?) (list/c 'der path-string?) #f)
          #:certificate-chain (or/c path-string? #f))
         ssl-client-context?)]
   [ssl-secure-client-context
@@ -108,7 +108,7 @@ TO DO:
   [ssl-make-server-context
    (->* ()
         (protocol-symbol/c
-         #:private-key (or/c (list/c 'pem (or/c path-string? bytes?)) (list/c 'der path-string?) #f)
+         #:private-key (or/c (list/c 'pem path-string?) (list/c 'pem-data bytes?) (list/c 'der path-string?) #f)
          #:certificate-chain (or/c path-string? #f))
         ssl-server-context?)]
   [ssl-server-context-enable-dhe!
@@ -124,7 +124,7 @@ TO DO:
   [ssl-load-certificate-chain!
    (c-> (or/c ssl-context? ssl-listener?) path-string? void?)]
   [ssl-load-private-key!
-   (->* ((or/c ssl-context? ssl-listener?) (or/c path-string? bytes?))
+   (->* ((or/c ssl-context? ssl-listener?) (or/c path-string? (list/c 'pem-data bytes?)))
         (any/c any/c)
         void?)]
   [ssl-load-verify-root-certificates!
@@ -477,6 +477,8 @@ TO DO:
   (when cert-chain (ssl-load-certificate-chain! mzctx cert-chain))
   (cond [(and (pair? priv-key) (eq? (car priv-key) 'pem))
          (ssl-load-private-key! mzctx (cadr priv-key) #f #f)]
+        [(and (pair? priv-key) (eq? (car priv-key) 'pem-data))
+         (ssl-load-private-key! mzctx priv-key #f #f)]
         [(and (pair? priv-key) (eq? (car priv-key) 'der))
          (ssl-load-private-key! mzctx (cadr priv-key) #f #t)]
         [else (void)])
@@ -648,10 +650,11 @@ TO DO:
 
 (define (ssl-load-private-key! ssl-context-or-listener pathname-or-bytes
                                [rsa? #t] [asn1? #f])
-  (if (bytes? pathname-or-bytes)
-    (let ([bio (BIO_new_mem_buf pathname-or-bytes (bytes-length pathname-or-bytes))]
-          [ctx (get-context/listener 'ssl-load-private-key! ssl-context-or-listener
-                                    #:need-unsealed? #t)])
+  (if (and (pair? pathname-or-bytes) (eq? (car pathname-or-bytes) 'pem-data))
+    (let* ([data (cadr pathname-or-bytes)]
+           [ctx (get-context/listener 'ssl-load-private-key! ssl-context-or-listener
+                                      #:need-unsealed? #t)]
+           [bio (BIO_new_mem_buf data (bytes-length data))])
         (with-failure
             (lambda () (BIO_free bio))
 
@@ -667,7 +670,8 @@ TO DO:
                     (PEM_read_bio_PrivateKey bio #f 0 #f))))
 
             (unless (= 1 success)
-                (error 'ssl-load-private-key "failed to enable DHE"))))
+                (error 'ssl-load-private-key "failed to load private key"))
+            (BIO_free bio)))
   (ssl-load-...
    'ssl-load-private-key!
    (lambda (ctx path)
