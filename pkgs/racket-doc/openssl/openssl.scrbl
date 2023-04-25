@@ -179,6 +179,7 @@ chain to it. If client credentials are required, use
           [protocol ssl-protocol-symbol/c 'auto]
           [#:private-key private-key
                          (or/c (list/c 'pem path-string?)
+                               (list/c 'pem-data bytes?)
                                (list/c 'der path-string?)
                                #f)
                          #f]
@@ -368,6 +369,7 @@ Returns @racket[#t] of @racket[v] is an SSL port produced by
           [protocol ssl-protocol-symbol/c 'auto]
           [#:private-key private-key
                          (or/c (list/c 'pem path-string?)
+                               (list/c 'pem-data bytes?)
                                (list/c 'der path-string?)
                                #f)
                          #f]
@@ -644,12 +646,12 @@ such a test configuration obviously provides no security.
 @defproc[(ssl-load-private-key!
 	  [context-or-listener (or/c ssl-client-context? ssl-server-context?
 				     ssl-listener?)]
-	  [pathname path-string?]
+	  [pathname-or-bytes (or/c path-string? (list/c 'bytes bytes?))]
 	  [rsa? boolean? #t]
 	  [asn1? boolean? #f])
          void?]{
 
-Loads the first private key from @racket[pathname] for the given
+Loads the first private key from @racket[pathname-or-bytes] for the given
 context or listener. The key goes with the certificate that identifies
 the client or server. Like @racket[ssl-load-certificate-chain!], this
 procedure is usually used with server contexts or listeners, seldom
@@ -657,7 +659,9 @@ with client contexts.
 
 If @racket[rsa?] is @racket[#t] (the default), the first RSA key is
 read (i.e., non-RSA keys are skipped). If @racket[asn1?] is
-@racket[#t], the file is parsed as ASN1 format instead of PEM.
+@racket[#t], the file is parsed as ASN1 format instead of PEM. Currently
+@racket[asn1?] parsing is only supported with when
+@racket[pathname-or-bytes] is a @racket[path-string?].
 
 You can use the file @filepath{test.pem} of the @filepath{openssl}
 collection for testing purposes. Since @filepath{test.pem} is public,

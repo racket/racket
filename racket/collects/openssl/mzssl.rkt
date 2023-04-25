@@ -124,7 +124,7 @@ TO DO:
   [ssl-load-certificate-chain!
    (c-> (or/c ssl-context? ssl-listener?) path-string? void?)]
   [ssl-load-private-key!
-   (->* ((or/c ssl-context? ssl-listener?) (or/c path-string? (list/c 'pem-data bytes?)))
+   (->* ((or/c ssl-context? ssl-listener?) (or/c path-string? (list/c 'data bytes?)))
         (any/c any/c)
         void?)]
   [ssl-load-verify-root-certificates!
@@ -478,7 +478,7 @@ TO DO:
   (cond [(and (pair? priv-key) (eq? (car priv-key) 'pem))
          (ssl-load-private-key! mzctx (cadr priv-key) #f #f)]
         [(and (pair? priv-key) (eq? (car priv-key) 'pem-data))
-         (ssl-load-private-key! mzctx priv-key #f #f)]
+         (ssl-load-private-key! mzctx (list 'data (cadr priv-key)) #f #f)]
         [(and (pair? priv-key) (eq? (car priv-key) 'der))
          (ssl-load-private-key! mzctx (cadr priv-key) #f #t)]
         [else (void)])
@@ -650,7 +650,7 @@ TO DO:
 
 (define (ssl-load-private-key! ssl-context-or-listener pathname-or-bytes
                                [rsa? #t] [asn1? #f])
-  (if (and (pair? pathname-or-bytes) (eq? (car pathname-or-bytes) 'pem-data))
+  (if (and (pair? pathname-or-bytes) (eq? (car pathname-or-bytes) 'data))
     (let* ([data (cadr pathname-or-bytes)]
            [ctx (get-context/listener 'ssl-load-private-key! ssl-context-or-listener
                                       #:need-unsealed? #t)]
