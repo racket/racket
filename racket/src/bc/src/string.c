@@ -192,9 +192,6 @@ ROSYM static Scheme_Object *fs_change_symbol, *target_machine_symbol, *cross_sym
 ROSYM static Scheme_Object *racket_symbol, *cgc_symbol, *_3m_symbol, *cs_symbol;
 ROSYM static Scheme_Object *force_symbol, *infer_symbol;
 ROSYM static Scheme_Object *platform_3m_path, *platform_cgc_path, *platform_cs_path;
-READ_ONLY static Scheme_Object *zero_length_char_string;
-READ_ONLY static Scheme_Object *zero_length_char_immutable_string;
-READ_ONLY static Scheme_Object *zero_length_byte_string;
 
 SHARED_OK static char *embedding_banner;
 SHARED_OK static Scheme_Object *vers_str;
