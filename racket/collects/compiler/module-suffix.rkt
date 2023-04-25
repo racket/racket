@@ -28,7 +28,7 @@
                    [(docs) '(doc-module-suffixes)]))
   (define dirs (find-relevant-directories fields key))
   (define rkt-ht (if (memq 'module-suffixes fields)
-                     (hash #"rkt" #t #"ss" #t #"scm" #t)
+                     (hash #"rkt" #t #"ss" #t #"scm" #t #"rhm" #t)
                      (hash)))
   (define init-ht (if (memq 'doc-module-suffixes fields)
                       (hash-set rkt-ht #"scrbl" #t)
