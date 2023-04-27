@@ -602,9 +602,9 @@ extern Scheme_Object *scheme_unsafe_fxrshift_proc;
 extern Scheme_Object *scheme_unsafe_fx_to_fl_proc;
 extern Scheme_Object *scheme_unsafe_pure_proc;
 
-READ_ONLY static Scheme_Object *zero_length_char_string;
-READ_ONLY static Scheme_Object *zero_length_char_immutable_string;
-READ_ONLY static Scheme_Object *zero_length_byte_string;
+extern Scheme_Object *scheme_zero_length_char_string;
+extern Scheme_Object *scheme_zero_length_char_immutable_string;
+extern Scheme_Object *scheme_zero_length_byte_string;
 
 extern Scheme_Object *scheme_string_p_proc;
 extern Scheme_Object *scheme_unsafe_string_length_proc;
