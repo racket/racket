@@ -1043,6 +1043,8 @@
     (test #f immutable? (make-bytes 0))
     (test #t immutable? (unsafe-string->immutable-string! (make-string 0)))
     (test #f immutable? (make-string 0))
+    (test #t immutable? (unsafe-string->immutable-string! (string-append)))
+    (test #f immutable? (string-append))
     (test #t immutable? (unsafe-vector*->immutable-vector! (make-vector 0)))
     (test #f immutable? (make-vector 0))))
 

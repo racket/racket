@@ -1527,6 +1527,10 @@ static Scheme_Object *unsafe_string_immutable_bang (int argc, Scheme_Object *arg
   if (!SCHEME_CHAR_STRINGP(o))
     scheme_wrong_contract("unsafe-string->immutable-string!", "string?", 0, argc, argv);
 
+  if (!SCHEME_CHAR_STRLEN_VAL(o)) {
+    return scheme_zero_length_char_immutable_string;
+  }
+
   SCHEME_SET_IMMUTABLE(o);
 
   return o;

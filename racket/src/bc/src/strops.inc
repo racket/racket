@@ -345,7 +345,7 @@ X__(do_string_append) (const char *who, int argc, Scheme_Object *argv[])
   }
 
   if (!len)
-    return X(zero_length, _string);
+    return X(scheme_zero_length, _string);
 
   naya = X(scheme_alloc, _string)(len, 0);
   chars = SCHEME_X_STR_VAL(naya);
