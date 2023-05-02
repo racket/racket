@@ -7,7 +7,9 @@
                   define-match-expander)
          "define-forms.rkt"
          "struct.rkt"
-         (for-syntax racket/lazy-require
+         (for-template racket/base)
+         (for-syntax racket/base
+                     racket/lazy-require
                      "syntax-local-match-introduce.rkt"
                      (only-in "stxtime.rkt"
                               match-...-nesting
@@ -28,6 +30,7 @@
          exn:misc:match?)
 
 (define-forms parse
+
   match match* match-lambda match-lambda* match-lambda** match-let match-let*
   match-let-values match-let*-values
   match-define match-define-values match-letrec match-letrec-values match/values

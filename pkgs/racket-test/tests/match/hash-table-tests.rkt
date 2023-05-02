@@ -6,7 +6,7 @@
          rackunit
          syntax/parse/define
          racket/stxparam
-         (only-in racket/match/runtime hash-pattern-optimized?)
+         (only-in racket/match/stx-runtime hash-pattern-optimized?)
          (for-syntax racket/base))
 
 (define-syntax-parse-rule (test-suite-hash-table tcase ...)
