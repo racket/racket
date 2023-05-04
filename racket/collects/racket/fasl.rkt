@@ -5,8 +5,8 @@
          racket/fixnum
          racket/flonum
          (for-syntax racket/base)
-         racket/private/truncate-path
-         racket/private/relative-path
+         "private/truncate-path.rkt"
+         "private/relative-path.rkt"
          (rename-in racket/base
                     [write-byte r:write-byte]
                     [write-bytes r:write-bytes]))
