@@ -124,6 +124,13 @@
 
 ;; ----------------------------------------
 
+(define (write-fasl-flonum v o)
+  (write-bytes (if (eqv? v +nan.0)
+                   ;; use a canonical NaN (0 mantissa)
+                   #"\0\0\0\0\0\0\370\177"
+                   (real->floating-point-bytes v 8 #f))
+               o))
+
 (define (s-exp->fasl v
                      [orig-o #f]
                      #:keep-mutable? [keep-mutable? #f]
@@ -239,11 +246,7 @@
               (write-fasl-integer v o)])]
           [(flonum? v)
            (write-byte fasl-flonum-type o)
-           (write-bytes (if (eqv? v +nan.0)
-                            ;; use a canonical NaN (0 mantissa)
-                            #"\0\0\0\0\0\0\370\177"
-                            (real->floating-point-bytes v 8 #f))
-                        o)]
+           (write-fasl-flonum v o)]
           [(single-flonum? v)
            (write-byte fasl-single-flonum-type o)
            (write-bytes (if (eqv? v (real->single-flonum +nan.0))
@@ -351,12 +354,12 @@
            (write-byte fasl-flvector-type o)
            (write-fasl-integer (flvector-length v) o)
            (for ([e (in-flvector v)])
-             (loop e))]
+             (write-fasl-flonum e o))]
           [(fxvector? v)
            (write-byte fasl-fxvector-type o)
            (write-fasl-integer (fxvector-length v) o)
            (for ([e (in-fxvector v)])
-             (loop e))]
+             (write-fasl-integer e o))]
           [(box? v)
            (write-byte (if (treat-immutable? v) fasl-immutable-box-type fasl-box-type) o)
            (loop (unbox v))]
@@ -425,6 +428,9 @@
 ;; For input parsing internally, in place of an input port, use a
 ;; mutable pair containing a byte string and position
 
+(define (read-fasl-flonum i)
+  (floating-point-bytes->real (read-bytes/exactly 8 i) #f))
+
 (define (fasl->s-exp orig-i
                      #:datum-intern? [intern? #t]
                      #:external-lifts [external-lifts '#()]
@@ -476,7 +482,7 @@
      [(fasl-void-type) (void)]
      [(fasl-eof-type) eof]
      [(fasl-integer-type) (intern (read-fasl-integer i))]
-     [(fasl-flonum-type) (floating-point-bytes->real (read-bytes/exactly 8 i) #f)]
+     [(fasl-flonum-type) (read-fasl-flonum i)]
      [(fasl-single-flonum-type) (real->single-flonum (floating-point-bytes->real (read-bytes/exactly 4 i) #f))]
      [(fasl-extflonum-type)
       (define bstr (read-bytes/exactly (read-fasl-integer i) i))
@@ -528,14 +534,12 @@
           vec)]
      [(fasl-flvector-type)
       (define len (read-fasl-integer i))
-      (define vec (for/flvector #:length len ([j (in-range len)])
-                    (loop)))
-      vec]
+      (for/flvector #:length len ([j (in-range len)])
+        (read-fasl-flonum i))]
      [(fasl-fxvector-type)
       (define len (read-fasl-integer i))
-      (define vec (for/fxvector #:length len ([j (in-range len)])
-                    (loop)))
-      vec]
+      (for/fxvector #:length len ([j (in-range len)])
+        (read-fasl-integer i))]
      [(fasl-box-type) (box (loop))]
      [(fasl-immutable-box-type) (box-immutable (loop))]
      [(fasl-prefab-type)
