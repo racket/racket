@@ -104,7 +104,7 @@ fasl
          #:changed "7.3.0.7" @elem{Added support for @tech{correlated objects}.}
          #:changed "7.5.0.3" @elem{Added the @racket[#:handle-fail] argument.}
          #:changed "7.5.0.9" @elem{Added the @racket[#:external-lift?] and @racket[#:external-lifts] arguments.}
-         #:changed "8.9.0.4" @elem{Added support for @racket[fxvector] and @racket[flvector].}]}
+         #:changed "8.9.0.4" @elem{Added support for @tech{fxvectors} and @tech{flvectors}.}]}
 
 @; ----------------------------------------------------------------------
 
