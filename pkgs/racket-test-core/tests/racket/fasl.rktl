@@ -101,7 +101,9 @@
 (test #f eq? #px#"hello" (fasl->s-exp (s-exp->fasl #px#"hello") #:datum-intern? #f))
 
 (test #t equal? (fxvector 1 2 3) (fasl->s-exp (s-exp->fasl (fxvector 1 2 3))))
+(test #t equal? (fxvector) (fasl->s-exp (s-exp->fasl (fxvector))))
 (test #t equal? (flvector 1. 2. 3.) (fasl->s-exp (s-exp->fasl (flvector 1. 2. 3.))))
+(test #t equal? (flvector) (fasl->s-exp (s-exp->fasl (flvector))))
 
 (let* ([r1 #rx"[/\u5C][. ]+ap"]
        [r2 #px"[/\u5C][. ]+ap"]
