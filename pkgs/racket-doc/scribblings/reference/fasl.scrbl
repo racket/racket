@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "mz.rkt" (for-label racket/fasl racket/serialize))
+@(require "mz.rkt" (for-label racket/fasl racket/serialize racket/fixnum racket/flonum))
 
 @(define fasl-eval (make-base-eval))
 @examples[#:hidden #:eval fasl-eval (require racket/fasl)]
@@ -103,7 +103,8 @@ fasl
                                      and @racket[#:datum-intern?] arguments.}
          #:changed "7.3.0.7" @elem{Added support for @tech{correlated objects}.}
          #:changed "7.5.0.3" @elem{Added the @racket[#:handle-fail] argument.}
-         #:changed "7.5.0.9" @elem{Added the @racket[#:external-lift?] and @racket[#:external-lifts] arguments.}]}
+         #:changed "7.5.0.9" @elem{Added the @racket[#:external-lift?] and @racket[#:external-lifts] arguments.}
+         #:changed "8.9.0.4" @elem{Added support for @tech{fxvectors} and @tech{flvectors}.}]}
 
 @; ----------------------------------------------------------------------
 

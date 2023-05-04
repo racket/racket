@@ -8,7 +8,9 @@
                   correlated?
                   correlated-e
                   datum->correlated
-                  correlated-property))
+                  correlated-property)
+         (only-in racket/fixnum fxvector)
+         (only-in racket/flonum flvector))
 
 (define immutables
   ;; If you update this list, then also update `immutable-regression-bstr`:
@@ -96,6 +98,12 @@
 (test #f eq? #px"hello" (fasl->s-exp (s-exp->fasl #px"hello") #:datum-intern? #f))
 (test #f eq? #rx#"hello" (fasl->s-exp (s-exp->fasl #rx#"hello") #:datum-intern? #f))
 (test #f eq? #px#"hello" (fasl->s-exp (s-exp->fasl #px#"hello") #:datum-intern? #f))
+(test #f eq? #px#"hello" (fasl->s-exp (s-exp->fasl #px#"hello") #:datum-intern? #f))
+
+(test #t equal? (fxvector 1 2 3) (fasl->s-exp (s-exp->fasl (fxvector 1 2 3))))
+(test #t equal? (fxvector) (fasl->s-exp (s-exp->fasl (fxvector))))
+(test #t equal? (flvector 1. 2. 3.) (fasl->s-exp (s-exp->fasl (flvector 1. 2. 3.))))
+(test #t equal? (flvector) (fasl->s-exp (s-exp->fasl (flvector))))
 
 (let* ([r1 #rx"[/\u5C][. ]+ap"]
        [r2 #px"[/\u5C][. ]+ap"]
