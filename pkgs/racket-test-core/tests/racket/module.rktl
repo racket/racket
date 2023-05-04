@@ -4134,5 +4134,27 @@ case of module-leve bindings; it doesn't cover local bindings.
     (dynamic-require ''d #f)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; make sure that definitions with interned scopes are accessible
+;; via `module->namespace`, even if no syntax object is in the module
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(module ex racket/base
+           (require (for-syntax racket/base))
+           (define-syntax (def stx)
+             (syntax-case stx ()
+               [(_ id)
+                #`(define #,((make-interned-syntax-introducer 'racket/example) #'id) 5)]))
+           (define-syntax (ref stx)
+             (syntax-case stx ()
+               [(_ id)
+                ((make-interned-syntax-introducer 'racket/example) #'id)]))
+           (provide def ref)))
+  (eval '(module m racket/base
+           (require 'ex)
+           (def x)))
+  (namespace-require ''m)
+  (eval '(ref x) (module->namespace ''m)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
