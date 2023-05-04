@@ -63,6 +63,7 @@
 
          interned-scope-symbols
          interned-scopes
+         syntax-has-interned-scope?
 
          scope-place-init!)
 
@@ -353,6 +354,10 @@
          (let ([new (make)])
            (hash-set! interned-scopes-table sym new)
            new)))))
+
+(define (syntax-has-interned-scope? s)
+  (for/or ([sc (in-set (syntax-scopes s))])
+    (interned-scope? sc)))
 
 (define (new-multi-scope [name #f])
   (intern-shifted-multi-scope 0 (multi-scope (new-scope-id!) name (box (hasheqv)) (box (hasheqv)) (box (hash)))))

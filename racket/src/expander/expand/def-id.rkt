@@ -46,18 +46,21 @@
   (for/list ([id (in-list ids)])
     (define sym (syntax-e id))
     (define defined-sym
-      (if (and (not (defined-as-other? (hash-ref defined-syms-at-phase sym #f) id phase top-level-bind-scope))
-               ;; Only use `sym` directly if there are no
-               ;; extra scopes on the binding form...
-               (no-extra-scopes? id all-scopes-stx top-level-bind-scope phase)
-               ;; ... and if it's interned
-               (symbol-interned? sym))
-          sym
-          (let loop ([pos 1])
-            (define s (string->unreadable-symbol (string-append (symbol->string sym) "." (number->string pos))))
-            (if (defined-as-other? (hash-ref defined-syms-at-phase s #f) id phase top-level-bind-scope)
-                (loop (add1 pos))
-                s))))
+      (cond
+        [(and (not (defined-as-other? (hash-ref defined-syms-at-phase sym #f) id phase top-level-bind-scope))
+              ;; Only use `sym` directly if there are no
+              ;; extra scopes on the binding form...
+              (no-extra-scopes? id all-scopes-stx top-level-bind-scope phase)
+              ;; ... and if it's interned
+              (symbol-interned? sym))
+         sym]
+        [else
+         (check-non-simple-due-to-interned-scope id requires+provides)
+         (let loop ([pos 1])
+           (define s (string->unreadable-symbol (string-append (symbol->string sym) "." (number->string pos))))
+           (if (defined-as-other? (hash-ref defined-syms-at-phase s #f) id phase top-level-bind-scope)
+               (loop (add1 pos))
+               s))]))
     (hash-set! defined-syms-at-phase defined-sym id)
     (define b (make-module-binding self phase defined-sym #:frame-id frame-id
                                    #:nominal-sym sym))
@@ -81,6 +84,15 @@
            (not (bound-identifier=? (remove-scope prev-id top-level-bind-scope)
                                     (remove-scope id top-level-bind-scope)
                                     phase)))))
+
+(define (check-non-simple-due-to-interned-scope id r+p)
+  (when (and r+p
+             (requires+provides-all-bindings-simple? r+p)
+             (syntax-has-interned-scope? id))
+    ;; A more precise check would be that the only extra scopes
+    ;; on the identifier are interned, but the cost of that more
+    ;; precise check is probably not worth it
+    (set-requires+provides-all-bindings-simple?! r+p #f)))
 
 ;; ------------------------------
 
