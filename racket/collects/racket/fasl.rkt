@@ -3,9 +3,10 @@
          racket/linklet
          racket/unsafe/undefined
          racket/fixnum
+         racket/flonum
          (for-syntax racket/base)
-         "private/truncate-path.rkt"
-         "private/relative-path.rkt"
+         racket/private/truncate-path
+         racket/private/relative-path
          (rename-in racket/base
                     [write-byte r:write-byte]
                     [write-bytes r:write-bytes]))
@@ -102,6 +103,9 @@
   (fasl-undefined-type 41)
   (fasl-prefab-type-type 42)
 
+  (fasl-fxvector-type 43)
+  (fasl-flvector-type 44)
+
   ;; Unallocated numbers here are for future extensions
 
   ;; 100 to 255 is used for small integers:
@@ -155,6 +159,8 @@
            (keyword? v)
            (string? v)
            (bytes? v)
+           (fxvector? v)
+           (flvector? v)
            (path? v))
        (hash-update! shared v add1 0)]
       [(pair? v)
@@ -341,6 +347,16 @@
            (write-fasl-integer (vector-length v) o)
            (for ([e (in-vector v)])
              (loop e))]
+          [(flvector? v)
+           (write-byte fasl-flvector-type o)
+           (write-fasl-integer (flvector-length v) o)
+           (for ([e (in-flvector v)])
+             (loop e))]
+          [(fxvector? v)
+           (write-byte fasl-fxvector-type o)
+           (write-fasl-integer (fxvector-length v) o)
+           (for ([e (in-fxvector v)])
+             (loop e))]
           [(box? v)
            (write-byte (if (treat-immutable? v) fasl-immutable-box-type fasl-box-type) o)
            (loop (unbox v))]
@@ -510,6 +526,16 @@
       (if (eqv? type fasl-immutable-vector-type)
           (vector->immutable-vector vec)
           vec)]
+     [(fasl-flvector-type)
+      (define len (read-fasl-integer i))
+      (define vec (for/flvector #:length len ([j (in-range len)])
+                    (loop)))
+      vec]
+     [(fasl-fxvector-type)
+      (define len (read-fasl-integer i))
+      (define vec (for/fxvector #:length len ([j (in-range len)])
+                    (loop)))
+      vec]
      [(fasl-box-type) (box (loop))]
      [(fasl-immutable-box-type) (box-immutable (loop))]
      [(fasl-prefab-type)
