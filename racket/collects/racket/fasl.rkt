@@ -124,13 +124,6 @@
 
 ;; ----------------------------------------
 
-(define (write-fasl-flonum v o)
-  (write-bytes (if (eqv? v +nan.0)
-                   ;; use a canonical NaN (0 mantissa)
-                   #"\0\0\0\0\0\0\370\177"
-                   (real->floating-point-bytes v 8 #f))
-               o))
-
 (define (s-exp->fasl v
                      [orig-o #f]
                      #:keep-mutable? [keep-mutable? #f]
@@ -427,10 +420,6 @@
 
 ;; For input parsing internally, in place of an input port, use a
 ;; mutable pair containing a byte string and position
-
-(define (read-fasl-flonum i)
-  (floating-point-bytes->real (read-bytes/exactly 8 i) #f))
-
 (define (fasl->s-exp orig-i
                      #:datum-intern? [intern? #t]
                      #:external-lifts [external-lifts '#()]
@@ -632,6 +621,13 @@
   (write-fasl-integer (bytes-length v) o)
   (write-bytes v o))
 
+(define (write-fasl-flonum v o)
+  (write-bytes (if (eqv? v +nan.0)
+                   ;; use a canonical NaN (0 mantissa)
+                   #"\0\0\0\0\0\0\370\177"
+                   (real->floating-point-bytes v 8 #f))
+               o))
+
 ;; ----------------------------------------
 
 (define (read-error s . args)
@@ -750,3 +746,6 @@
 (define (read-fasl-bytes i)
   (define len (read-fasl-integer i))
   (read-bytes/exactly len i))
+
+(define (read-fasl-flonum i)
+  (floating-point-bytes->real (read-bytes/exactly 8 i) #f))
