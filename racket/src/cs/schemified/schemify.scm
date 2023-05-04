@@ -5271,6 +5271,15 @@
         (if (too-early-mutated-state? v_0)
           'set!ed-too-early
           (if (eq? v_0 'implicitly-set!ed) v_0 'set!ed))))))
+(define check-fxvector
+  (lambda (v_0)
+    (if (fxvector? v_0)
+      (void)
+      (raise-argument-error 'in-fxvector* "fxvector" v_0))))
+(define not-an-fX.1$1
+  (|#%name|
+   not-an-fX
+   (lambda (who_0 v_0) (begin (raise-argument-error who_0 "fixnum?" v_0)))))
 (define simple?.1
   (|#%name|
    simple?
@@ -40269,6 +40278,15 @@
 (define correlated-column (lambda (s_0) (|#%app| 1/syntax-column s_0)))
 (define correlated-position (lambda (s_0) (|#%app| 1/syntax-position s_0)))
 (define correlated-span (lambda (s_0) (|#%app| 1/syntax-span s_0)))
+(define check-flvector
+  (lambda (v_0)
+    (if (flvector? v_0)
+      (void)
+      (raise-argument-error 'in-flvector* "flvector" v_0))))
+(define not-an-fX.1
+  (|#%name|
+   not-an-fX
+   (lambda (who_0 v_0) (begin (raise-argument-error who_0 "flonum?" v_0)))))
 (define make-path->relative-path-elements.1
   (|#%name|
    make-path->relative-path-elements
@@ -40660,6 +40678,8 @@
 (define fasl-correlated-type 40)
 (define fasl-undefined-type 41)
 (define fasl-prefab-type-type 42)
+(define fasl-fxvector-type 43)
+(define fasl-flvector-type 44)
 (define fasl-small-integer-start 100)
 (define fasl-lowest-small-integer -10)
 (define fasl-highest-small-integer 144)
@@ -40750,7 +40770,17 @@
                                                           (bytes? v_0)))
                                                      (if or-part_3
                                                        or-part_3
-                                                       (path? v_0)))))))))
+                                                       (let ((or-part_4
+                                                              (fxvector? v_0)))
+                                                         (if or-part_4
+                                                           or-part_4
+                                                           (let ((or-part_5
+                                                                  (flvector?
+                                                                   v_0)))
+                                                             (if or-part_5
+                                                               or-part_5
+                                                               (path?
+                                                                v_0)))))))))))))
                                      (begin-unsafe
                                       (do-hash-update
                                        'hash-update!
@@ -41034,15 +41064,8 @@
                                                                    (write-byte
                                                                     9
                                                                     o_1))
-                                                                  (1/write-bytes
-                                                                   (if (eqv?
-                                                                        v_0
-                                                                        +nan.0)
-                                                                     #vu8(0 0 0 0 0 0 248 127)
-                                                                     (real->floating-point-bytes
-                                                                      v_0
-                                                                      8
-                                                                      #f))
+                                                                  (write-fasl-flonum
+                                                                   v_0
                                                                    o_1))
                                                                 (if (single-flonum?
                                                                      v_0)
@@ -41422,280 +41445,388 @@
                                                                                                 2
                                                                                                 args))))
                                                                                             (void))
-                                                                                          (if (box?
+                                                                                          (if (flvector?
                                                                                                v_0)
                                                                                             (begin
-                                                                                              (let ((byte_0
-                                                                                                     (if (treat-immutable?_0
-                                                                                                          v_0)
-                                                                                                       34
-                                                                                                       33)))
+                                                                                              (begin-unsafe
+                                                                                               (write-byte
+                                                                                                44
+                                                                                                o_1))
+                                                                                              (write-fasl-integer
+                                                                                               (flvector-length
+                                                                                                v_0)
+                                                                                               o_1)
+                                                                                              (call-with-values
+                                                                                               (lambda ()
+                                                                                                 (begin
+                                                                                                   (check-flvector
+                                                                                                    v_0)
+                                                                                                   (values
+                                                                                                    v_0
+                                                                                                    (unsafe-flvector-length
+                                                                                                     v_0))))
+                                                                                               (case-lambda
+                                                                                                ((vec_0
+                                                                                                  len_0)
+                                                                                                 (begin
+                                                                                                   #f
+                                                                                                   (letrec*
+                                                                                                    ((for-loop_0
+                                                                                                      (|#%name|
+                                                                                                       for-loop
+                                                                                                       (lambda (pos_0)
+                                                                                                         (begin
+                                                                                                           (if (unsafe-fx<
+                                                                                                                pos_0
+                                                                                                                len_0)
+                                                                                                             (let ((e_0
+                                                                                                                    (unsafe-flvector-ref
+                                                                                                                     vec_0
+                                                                                                                     pos_0)))
+                                                                                                               (begin
+                                                                                                                 (write-fasl-flonum
+                                                                                                                  e_0
+                                                                                                                  o_1)
+                                                                                                                 (for-loop_0
+                                                                                                                  (unsafe-fx+
+                                                                                                                   1
+                                                                                                                   pos_0))))
+                                                                                                             (values)))))))
+                                                                                                    (for-loop_0
+                                                                                                     0))))
+                                                                                                (args
+                                                                                                 (raise-binding-result-arity-error
+                                                                                                  2
+                                                                                                  args))))
+                                                                                              (void))
+                                                                                            (if (fxvector?
+                                                                                                 v_0)
+                                                                                              (begin
                                                                                                 (begin-unsafe
                                                                                                  (write-byte
-                                                                                                  byte_0
-                                                                                                  o_1)))
-                                                                                              (loop_0
-                                                                                               (unbox
-                                                                                                v_0)))
-                                                                                            (let ((c4_0
-                                                                                                   (prefab-struct-key
-                                                                                                    v_0)))
-                                                                                              (if c4_0
-                                                                                                (begin
-                                                                                                  (begin-unsafe
-                                                                                                   (write-byte
-                                                                                                    35
-                                                                                                    o_1))
-                                                                                                  (begin
-                                                                                                    (loop_0
-                                                                                                     c4_0)
-                                                                                                    (let ((vec_0
-                                                                                                           (struct->vector
-                                                                                                            v_0)))
-                                                                                                      (begin
-                                                                                                        (write-fasl-integer
-                                                                                                         (sub1
-                                                                                                          (vector-length
-                                                                                                           vec_0))
-                                                                                                         o_1)
-                                                                                                        (call-with-values
-                                                                                                         (lambda ()
-                                                                                                           (unsafe-normalise-inputs
-                                                                                                            unsafe-vector-length
-                                                                                                            vec_0
-                                                                                                            1
-                                                                                                            #f
-                                                                                                            1))
-                                                                                                         (case-lambda
-                                                                                                          ((v*_0
-                                                                                                            start*_0
-                                                                                                            stop*_0
-                                                                                                            step*_0)
-                                                                                                           (begin
-                                                                                                             #t
-                                                                                                             (letrec*
-                                                                                                              ((for-loop_0
-                                                                                                                (|#%name|
-                                                                                                                 for-loop
-                                                                                                                 (lambda (idx_0)
-                                                                                                                   (begin
-                                                                                                                     (if (unsafe-fx<
-                                                                                                                          idx_0
-                                                                                                                          stop*_0)
-                                                                                                                       (let ((e_0
-                                                                                                                              (unsafe-vector-ref
-                                                                                                                               v*_0
-                                                                                                                               idx_0)))
-                                                                                                                         (begin
-                                                                                                                           (loop_0
-                                                                                                                            e_0)
-                                                                                                                           (for-loop_0
-                                                                                                                            (unsafe-fx+
-                                                                                                                             idx_0
-                                                                                                                             1))))
-                                                                                                                       (values)))))))
-                                                                                                              (for-loop_0
-                                                                                                               start*_0))))
-                                                                                                          (args
-                                                                                                           (raise-binding-result-arity-error
-                                                                                                            4
-                                                                                                            args))))
-                                                                                                        (void)))))
-                                                                                                (if (hash?
-                                                                                                     v_0)
-                                                                                                  (begin
-                                                                                                    (let ((byte_0
-                                                                                                           (if (treat-immutable?_0
-                                                                                                                v_0)
-                                                                                                             37
-                                                                                                             36)))
-                                                                                                      (begin-unsafe
-                                                                                                       (write-byte
-                                                                                                        byte_0
-                                                                                                        o_1)))
-                                                                                                    (let ((byte_0
-                                                                                                           (if (hash-eq?
-                                                                                                                v_0)
-                                                                                                             0
-                                                                                                             (if (hash-eqv?
-                                                                                                                  v_0)
-                                                                                                               2
-                                                                                                               (if (hash-equal-always?
-                                                                                                                    v_0)
-                                                                                                                 3
-                                                                                                                 1)))))
-                                                                                                      (begin-unsafe
-                                                                                                       (write-byte
-                                                                                                        byte_0
-                                                                                                        o_1)))
-                                                                                                    (write-fasl-integer
-                                                                                                     (hash-count
+                                                                                                  43
+                                                                                                  o_1))
+                                                                                                (write-fasl-integer
+                                                                                                 (fxvector-length
+                                                                                                  v_0)
+                                                                                                 o_1)
+                                                                                                (call-with-values
+                                                                                                 (lambda ()
+                                                                                                   (begin
+                                                                                                     (check-fxvector
                                                                                                       v_0)
-                                                                                                     o_1)
-                                                                                                    (hash-for-each
-                                                                                                     v_0
-                                                                                                     (lambda (k_0
-                                                                                                              v_1)
-                                                                                                       (begin
-                                                                                                         (loop_0
-                                                                                                          k_0)
-                                                                                                         (loop_0
-                                                                                                          v_1)))
-                                                                                                     #t))
-                                                                                                  (if (regexp?
-                                                                                                       v_0)
+                                                                                                     (values
+                                                                                                      v_0
+                                                                                                      (unsafe-fxvector-length
+                                                                                                       v_0))))
+                                                                                                 (case-lambda
+                                                                                                  ((vec_0
+                                                                                                    len_0)
+                                                                                                   (begin
+                                                                                                     #f
+                                                                                                     (letrec*
+                                                                                                      ((for-loop_0
+                                                                                                        (|#%name|
+                                                                                                         for-loop
+                                                                                                         (lambda (pos_0)
+                                                                                                           (begin
+                                                                                                             (if (unsafe-fx<
+                                                                                                                  pos_0
+                                                                                                                  len_0)
+                                                                                                               (let ((e_0
+                                                                                                                      (unsafe-fxvector-ref
+                                                                                                                       vec_0
+                                                                                                                       pos_0)))
+                                                                                                                 (begin
+                                                                                                                   (write-fasl-integer
+                                                                                                                    e_0
+                                                                                                                    o_1)
+                                                                                                                   (for-loop_0
+                                                                                                                    (unsafe-fx+
+                                                                                                                     1
+                                                                                                                     pos_0))))
+                                                                                                               (values)))))))
+                                                                                                      (for-loop_0
+                                                                                                       0))))
+                                                                                                  (args
+                                                                                                   (raise-binding-result-arity-error
+                                                                                                    2
+                                                                                                    args))))
+                                                                                                (void))
+                                                                                              (if (box?
+                                                                                                   v_0)
+                                                                                                (begin
+                                                                                                  (let ((byte_0
+                                                                                                         (if (treat-immutable?_0
+                                                                                                              v_0)
+                                                                                                           34
+                                                                                                           33)))
+                                                                                                    (begin-unsafe
+                                                                                                     (write-byte
+                                                                                                      byte_0
+                                                                                                      o_1)))
+                                                                                                  (loop_0
+                                                                                                   (unbox
+                                                                                                    v_0)))
+                                                                                                (let ((c4_0
+                                                                                                       (prefab-struct-key
+                                                                                                        v_0)))
+                                                                                                  (if c4_0
                                                                                                     (begin
-                                                                                                      (let ((byte_0
-                                                                                                             (if (pregexp?
-                                                                                                                  v_0)
-                                                                                                               24
-                                                                                                               25)))
-                                                                                                        (begin-unsafe
-                                                                                                         (write-byte
-                                                                                                          byte_0
-                                                                                                          o_1)))
-                                                                                                      (write-fasl-string
-                                                                                                       (object-name
-                                                                                                        v_0)
-                                                                                                       o_1))
-                                                                                                    (if (byte-regexp?
+                                                                                                      (begin-unsafe
+                                                                                                       (write-byte
+                                                                                                        35
+                                                                                                        o_1))
+                                                                                                      (begin
+                                                                                                        (loop_0
+                                                                                                         c4_0)
+                                                                                                        (let ((vec_0
+                                                                                                               (struct->vector
+                                                                                                                v_0)))
+                                                                                                          (begin
+                                                                                                            (write-fasl-integer
+                                                                                                             (sub1
+                                                                                                              (vector-length
+                                                                                                               vec_0))
+                                                                                                             o_1)
+                                                                                                            (call-with-values
+                                                                                                             (lambda ()
+                                                                                                               (unsafe-normalise-inputs
+                                                                                                                unsafe-vector-length
+                                                                                                                vec_0
+                                                                                                                1
+                                                                                                                #f
+                                                                                                                1))
+                                                                                                             (case-lambda
+                                                                                                              ((v*_0
+                                                                                                                start*_0
+                                                                                                                stop*_0
+                                                                                                                step*_0)
+                                                                                                               (begin
+                                                                                                                 #t
+                                                                                                                 (letrec*
+                                                                                                                  ((for-loop_0
+                                                                                                                    (|#%name|
+                                                                                                                     for-loop
+                                                                                                                     (lambda (idx_0)
+                                                                                                                       (begin
+                                                                                                                         (if (unsafe-fx<
+                                                                                                                              idx_0
+                                                                                                                              stop*_0)
+                                                                                                                           (let ((e_0
+                                                                                                                                  (unsafe-vector-ref
+                                                                                                                                   v*_0
+                                                                                                                                   idx_0)))
+                                                                                                                             (begin
+                                                                                                                               (loop_0
+                                                                                                                                e_0)
+                                                                                                                               (for-loop_0
+                                                                                                                                (unsafe-fx+
+                                                                                                                                 idx_0
+                                                                                                                                 1))))
+                                                                                                                           (values)))))))
+                                                                                                                  (for-loop_0
+                                                                                                                   start*_0))))
+                                                                                                              (args
+                                                                                                               (raise-binding-result-arity-error
+                                                                                                                4
+                                                                                                                args))))
+                                                                                                            (void)))))
+                                                                                                    (if (hash?
                                                                                                          v_0)
                                                                                                       (begin
                                                                                                         (let ((byte_0
-                                                                                                               (if (byte-pregexp?
+                                                                                                               (if (treat-immutable?_0
                                                                                                                     v_0)
-                                                                                                                 26
-                                                                                                                 27)))
+                                                                                                                 37
+                                                                                                                 36)))
                                                                                                           (begin-unsafe
                                                                                                            (write-byte
                                                                                                             byte_0
                                                                                                             o_1)))
-                                                                                                        (write-fasl-bytes
-                                                                                                         (object-name
-                                                                                                          v_0)
-                                                                                                         o_1))
-                                                                                                      (if (begin-unsafe
-                                                                                                           (|#%app|
-                                                                                                            1/syntax?
-                                                                                                            v_0))
-                                                                                                        (begin
+                                                                                                        (let ((byte_0
+                                                                                                               (if (hash-eq?
+                                                                                                                    v_0)
+                                                                                                                 0
+                                                                                                                 (if (hash-eqv?
+                                                                                                                      v_0)
+                                                                                                                   2
+                                                                                                                   (if (hash-equal-always?
+                                                                                                                        v_0)
+                                                                                                                     3
+                                                                                                                     1)))))
                                                                                                           (begin-unsafe
                                                                                                            (write-byte
-                                                                                                            40
-                                                                                                            o_1))
-                                                                                                          (loop_0
-                                                                                                           (begin-unsafe
-                                                                                                            (|#%app|
-                                                                                                             1/syntax-e
-                                                                                                             v_0)))
-                                                                                                          (loop_0
-                                                                                                           (let ((app_0
-                                                                                                                  (begin-unsafe
-                                                                                                                   (|#%app|
-                                                                                                                    1/syntax-source
-                                                                                                                    v_0))))
-                                                                                                             (let ((app_1
-                                                                                                                    (begin-unsafe
-                                                                                                                     (|#%app|
-                                                                                                                      1/syntax-line
-                                                                                                                      v_0))))
-                                                                                                               (let ((app_2
+                                                                                                            byte_0
+                                                                                                            o_1)))
+                                                                                                        (write-fasl-integer
+                                                                                                         (hash-count
+                                                                                                          v_0)
+                                                                                                         o_1)
+                                                                                                        (hash-for-each
+                                                                                                         v_0
+                                                                                                         (lambda (k_0
+                                                                                                                  v_1)
+                                                                                                           (begin
+                                                                                                             (loop_0
+                                                                                                              k_0)
+                                                                                                             (loop_0
+                                                                                                              v_1)))
+                                                                                                         #t))
+                                                                                                      (if (regexp?
+                                                                                                           v_0)
+                                                                                                        (begin
+                                                                                                          (let ((byte_0
+                                                                                                                 (if (pregexp?
+                                                                                                                      v_0)
+                                                                                                                   24
+                                                                                                                   25)))
+                                                                                                            (begin-unsafe
+                                                                                                             (write-byte
+                                                                                                              byte_0
+                                                                                                              o_1)))
+                                                                                                          (write-fasl-string
+                                                                                                           (object-name
+                                                                                                            v_0)
+                                                                                                           o_1))
+                                                                                                        (if (byte-regexp?
+                                                                                                             v_0)
+                                                                                                          (begin
+                                                                                                            (let ((byte_0
+                                                                                                                   (if (byte-pregexp?
+                                                                                                                        v_0)
+                                                                                                                     26
+                                                                                                                     27)))
+                                                                                                              (begin-unsafe
+                                                                                                               (write-byte
+                                                                                                                byte_0
+                                                                                                                o_1)))
+                                                                                                            (write-fasl-bytes
+                                                                                                             (object-name
+                                                                                                              v_0)
+                                                                                                             o_1))
+                                                                                                          (if (begin-unsafe
+                                                                                                               (|#%app|
+                                                                                                                1/syntax?
+                                                                                                                v_0))
+                                                                                                            (begin
+                                                                                                              (begin-unsafe
+                                                                                                               (write-byte
+                                                                                                                40
+                                                                                                                o_1))
+                                                                                                              (loop_0
+                                                                                                               (begin-unsafe
+                                                                                                                (|#%app|
+                                                                                                                 1/syntax-e
+                                                                                                                 v_0)))
+                                                                                                              (loop_0
+                                                                                                               (let ((app_0
                                                                                                                       (begin-unsafe
                                                                                                                        (|#%app|
-                                                                                                                        1/syntax-column
+                                                                                                                        1/syntax-source
                                                                                                                         v_0))))
-                                                                                                                 (let ((app_3
+                                                                                                                 (let ((app_1
                                                                                                                         (begin-unsafe
                                                                                                                          (|#%app|
-                                                                                                                          1/syntax-position
+                                                                                                                          1/syntax-line
                                                                                                                           v_0))))
-                                                                                                                   (unsafe-make-srcloc
-                                                                                                                    app_0
-                                                                                                                    app_1
-                                                                                                                    app_2
-                                                                                                                    app_3
+                                                                                                                   (let ((app_2
+                                                                                                                          (begin-unsafe
+                                                                                                                           (|#%app|
+                                                                                                                            1/syntax-column
+                                                                                                                            v_0))))
+                                                                                                                     (let ((app_3
+                                                                                                                            (begin-unsafe
+                                                                                                                             (|#%app|
+                                                                                                                              1/syntax-position
+                                                                                                                              v_0))))
+                                                                                                                       (unsafe-make-srcloc
+                                                                                                                        app_0
+                                                                                                                        app_1
+                                                                                                                        app_2
+                                                                                                                        app_3
+                                                                                                                        (begin-unsafe
+                                                                                                                         (|#%app|
+                                                                                                                          1/syntax-span
+                                                                                                                          v_0))))))))
+                                                                                                              (loop_0
+                                                                                                               (reverse$1
+                                                                                                                (let ((lst_0
+                                                                                                                       (begin-unsafe
+                                                                                                                        (|#%app|
+                                                                                                                         1/syntax-property-symbol-keys
+                                                                                                                         v_0))))
+                                                                                                                  (begin
+                                                                                                                    (letrec*
+                                                                                                                     ((for-loop_0
+                                                                                                                       (|#%name|
+                                                                                                                        for-loop
+                                                                                                                        (lambda (fold-var_0
+                                                                                                                                 lst_1)
+                                                                                                                          (begin
+                                                                                                                            (if (pair?
+                                                                                                                                 lst_1)
+                                                                                                                              (let ((k_0
+                                                                                                                                     (unsafe-car
+                                                                                                                                      lst_1)))
+                                                                                                                                (let ((rest_0
+                                                                                                                                       (unsafe-cdr
+                                                                                                                                        lst_1)))
+                                                                                                                                  (let ((fold-var_1
+                                                                                                                                         (let ((fold-var_1
+                                                                                                                                                (cons
+                                                                                                                                                 (cons
+                                                                                                                                                  k_0
+                                                                                                                                                  (begin-unsafe
+                                                                                                                                                   (|#%app|
+                                                                                                                                                    1/syntax-property
+                                                                                                                                                    v_0
+                                                                                                                                                    k_0)))
+                                                                                                                                                 fold-var_0)))
+                                                                                                                                           (values
+                                                                                                                                            fold-var_1))))
+                                                                                                                                    (for-loop_0
+                                                                                                                                     fold-var_1
+                                                                                                                                     rest_0))))
+                                                                                                                              fold-var_0))))))
+                                                                                                                     (for-loop_0
+                                                                                                                      null
+                                                                                                                      lst_0)))))))
+                                                                                                            (if (eq?
+                                                                                                                 v_0
+                                                                                                                 unsafe-undefined)
+                                                                                                              (begin-unsafe
+                                                                                                               (write-byte
+                                                                                                                41
+                                                                                                                o_1))
+                                                                                                              (let ((c3_0
+                                                                                                                     (if (struct-type?
+                                                                                                                          v_0)
+                                                                                                                       (prefab-struct-type-key+field-count
+                                                                                                                        v_0)
+                                                                                                                       #f)))
+                                                                                                                (if c3_0
+                                                                                                                  (begin
                                                                                                                     (begin-unsafe
+                                                                                                                     (write-byte
+                                                                                                                      42
+                                                                                                                      o_1))
+                                                                                                                    (loop_0
+                                                                                                                     (car
+                                                                                                                      c3_0))
+                                                                                                                    (loop_0
+                                                                                                                     (cdr
+                                                                                                                      c3_0)))
+                                                                                                                  (if handle-fail6_0
+                                                                                                                    (loop_0
                                                                                                                      (|#%app|
-                                                                                                                      1/syntax-span
-                                                                                                                      v_0))))))))
-                                                                                                          (loop_0
-                                                                                                           (reverse$1
-                                                                                                            (let ((lst_0
-                                                                                                                   (begin-unsafe
-                                                                                                                    (|#%app|
-                                                                                                                     1/syntax-property-symbol-keys
-                                                                                                                     v_0))))
-                                                                                                              (begin
-                                                                                                                (letrec*
-                                                                                                                 ((for-loop_0
-                                                                                                                   (|#%name|
-                                                                                                                    for-loop
-                                                                                                                    (lambda (fold-var_0
-                                                                                                                             lst_1)
-                                                                                                                      (begin
-                                                                                                                        (if (pair?
-                                                                                                                             lst_1)
-                                                                                                                          (let ((k_0
-                                                                                                                                 (unsafe-car
-                                                                                                                                  lst_1)))
-                                                                                                                            (let ((rest_0
-                                                                                                                                   (unsafe-cdr
-                                                                                                                                    lst_1)))
-                                                                                                                              (let ((fold-var_1
-                                                                                                                                     (let ((fold-var_1
-                                                                                                                                            (cons
-                                                                                                                                             (cons
-                                                                                                                                              k_0
-                                                                                                                                              (begin-unsafe
-                                                                                                                                               (|#%app|
-                                                                                                                                                1/syntax-property
-                                                                                                                                                v_0
-                                                                                                                                                k_0)))
-                                                                                                                                             fold-var_0)))
-                                                                                                                                       (values
-                                                                                                                                        fold-var_1))))
-                                                                                                                                (for-loop_0
-                                                                                                                                 fold-var_1
-                                                                                                                                 rest_0))))
-                                                                                                                          fold-var_0))))))
-                                                                                                                 (for-loop_0
-                                                                                                                  null
-                                                                                                                  lst_0)))))))
-                                                                                                        (if (eq?
-                                                                                                             v_0
-                                                                                                             unsafe-undefined)
-                                                                                                          (begin-unsafe
-                                                                                                           (write-byte
-                                                                                                            41
-                                                                                                            o_1))
-                                                                                                          (let ((c3_0
-                                                                                                                 (if (struct-type?
-                                                                                                                      v_0)
-                                                                                                                   (prefab-struct-type-key+field-count
-                                                                                                                    v_0)
-                                                                                                                   #f)))
-                                                                                                            (if c3_0
-                                                                                                              (begin
-                                                                                                                (begin-unsafe
-                                                                                                                 (write-byte
-                                                                                                                  42
-                                                                                                                  o_1))
-                                                                                                                (loop_0
-                                                                                                                 (car
-                                                                                                                  c3_0))
-                                                                                                                (loop_0
-                                                                                                                 (cdr
-                                                                                                                  c3_0)))
-                                                                                                              (if handle-fail6_0
-                                                                                                                (loop_0
-                                                                                                                 (|#%app|
-                                                                                                                  handle-fail6_0
-                                                                                                                  v_0))
-                                                                                                                (raise-arguments-error
-                                                                                                                 's-exp->fasl
-                                                                                                                 "cannot write value"
-                                                                                                                 "value"
-                                                                                                                 v_0))))))))))))))))))))))))))))))))))))))
+                                                                                                                      handle-fail6_0
+                                                                                                                      v_0))
+                                                                                                                    (raise-arguments-error
+                                                                                                                     's-exp->fasl
+                                                                                                                     "cannot write value"
+                                                                                                                     "value"
+                                                                                                                     v_0))))))))))))))))))))))))))))))))))))))))
                                          (loop_0 v14_0))
                                         (get-output-bytes o_1 #t)))))
                                (begin
@@ -41807,7 +41938,7 @@
                                      (let ((index_0
                                             (if (fixnum? type_0)
                                               (if (if (unsafe-fx>= type_0 1)
-                                                    (unsafe-fx< type_0 43)
+                                                    (unsafe-fx< type_0 45)
                                                     #f)
                                                 (let ((tbl_0
                                                        '#(1
@@ -41842,23 +41973,25 @@
                                                           30
                                                           32
                                                           32
-                                                          33
-                                                          34
                                                           35
                                                           36
                                                           37
                                                           38
-                                                          11
                                                           39
                                                           40
-                                                          41)))
+                                                          11
+                                                          41
+                                                          42
+                                                          43
+                                                          34
+                                                          33)))
                                                   (unsafe-vector*-ref
                                                    tbl_0
                                                    (unsafe-fx- type_0 1)))
                                                 0)
                                               0)))
-                                       (if (unsafe-fx< index_0 20)
-                                         (if (unsafe-fx< index_0 9)
+                                       (if (unsafe-fx< index_0 21)
+                                         (if (unsafe-fx< index_0 10)
                                            (if (unsafe-fx< index_0 4)
                                              (if (unsafe-fx< index_0 1)
                                                (if (>= type_0 100)
@@ -41907,20 +42040,18 @@
                                                  (void)
                                                  (if (unsafe-fx< index_0 8)
                                                    eof
-                                                   (intern_0
-                                                    (read-fasl-integer
-                                                     i_0))))))
-                                           (if (unsafe-fx< index_0 14)
-                                             (if (unsafe-fx< index_0 11)
-                                               (if (unsafe-fx< index_0 10)
-                                                 (floating-point-bytes->real
-                                                  (read-bytes/exactly 8 i_0)
-                                                  #f)
+                                                   (if (unsafe-fx< index_0 9)
+                                                     (intern_0
+                                                      (read-fasl-integer i_0))
+                                                     (read-fasl-flonum
+                                                      i_0))))))
+                                           (if (unsafe-fx< index_0 15)
+                                             (if (unsafe-fx< index_0 12)
+                                               (if (unsafe-fx< index_0 11)
                                                  (real->single-flonum
                                                   (floating-point-bytes->real
                                                    (read-bytes/exactly 4 i_0)
-                                                   #f)))
-                                               (if (unsafe-fx< index_0 12)
+                                                   #f))
                                                  (let ((bstr_0
                                                         (read-bytes/exactly
                                                          (read-fasl-integer
@@ -41930,178 +42061,182 @@
                                                     (bytes->string/utf-8
                                                      bstr_0)
                                                     10
-                                                    'read))
-                                                 (if (unsafe-fx< index_0 13)
-                                                   (intern_0
-                                                    (let ((app_0 (loop_0)))
-                                                      (/ app_0 (loop_0))))
+                                                    'read)))
+                                               (if (unsafe-fx< index_0 13)
+                                                 (intern_0
+                                                  (let ((app_0 (loop_0)))
+                                                    (/ app_0 (loop_0))))
+                                                 (if (unsafe-fx< index_0 14)
                                                    (intern_0
                                                     (let ((app_0 (loop_0)))
                                                       (make-rectangular
                                                        app_0
-                                                       (loop_0)))))))
-                                             (if (unsafe-fx< index_0 16)
-                                               (if (unsafe-fx< index_0 15)
-                                                 (intern_0
-                                                  (integer->char
-                                                   (read-fasl-integer i_0)))
+                                                       (loop_0))))
+                                                   (intern_0
+                                                    (integer->char
+                                                     (read-fasl-integer
+                                                      i_0))))))
+                                             (if (unsafe-fx< index_0 17)
+                                               (if (unsafe-fx< index_0 16)
                                                  (string->symbol
-                                                  (read-fasl-string i_0)))
-                                               (if (unsafe-fx< index_0 17)
-                                                 (string->unreadable-symbol
                                                   (read-fasl-string i_0))
-                                                 (if (unsafe-fx< index_0 18)
-                                                   (string->uninterned-symbol
+                                                 (string->unreadable-symbol
+                                                  (read-fasl-string i_0)))
+                                               (if (unsafe-fx< index_0 18)
+                                                 (string->uninterned-symbol
+                                                  (read-fasl-string i_0))
+                                                 (if (unsafe-fx< index_0 19)
+                                                   (string->keyword
                                                     (read-fasl-string i_0))
-                                                   (if (unsafe-fx< index_0 19)
-                                                     (string->keyword
-                                                      (read-fasl-string i_0))
-                                                     (read-fasl-string
-                                                      i_0)))))))
-                                         (if (unsafe-fx< index_0 30)
-                                           (if (unsafe-fx< index_0 24)
-                                             (if (unsafe-fx< index_0 21)
-                                               (intern_0
-                                                (string->immutable-string
-                                                 (read-fasl-string i_0)))
+                                                   (if (unsafe-fx< index_0 20)
+                                                     (read-fasl-string i_0)
+                                                     (intern_0
+                                                      (string->immutable-string
+                                                       (read-fasl-string
+                                                        i_0)))))))))
+                                         (if (unsafe-fx< index_0 32)
+                                           (if (unsafe-fx< index_0 26)
+                                             (if (unsafe-fx< index_0 23)
                                                (if (unsafe-fx< index_0 22)
                                                  (read-fasl-bytes i_0)
-                                                 (if (unsafe-fx< index_0 23)
-                                                   (intern_0
-                                                    (bytes->immutable-bytes
-                                                     (read-fasl-bytes i_0)))
-                                                   (let ((app_0
-                                                          (read-fasl-bytes
-                                                           i_0)))
-                                                     (bytes->path
-                                                      app_0
-                                                      (loop_0))))))
-                                             (if (unsafe-fx< index_0 26)
-                                               (if (unsafe-fx< index_0 25)
-                                                 (let ((wrt-dir_0
-                                                        (let ((or-part_0
-                                                               (current-load-relative-directory)))
-                                                          (if or-part_0
-                                                            or-part_0
-                                                            (current-directory)))))
-                                                   (let ((rel-elems_0
-                                                          (reverse$1
-                                                           (let ((lst_0
-                                                                  (loop_0)))
-                                                             (begin
-                                                               (letrec*
-                                                                ((for-loop_0
-                                                                  (|#%name|
-                                                                   for-loop
-                                                                   (lambda (fold-var_0
-                                                                            lst_1)
-                                                                     (begin
-                                                                       (if (pair?
-                                                                            lst_1)
-                                                                         (let ((p_0
-                                                                                (unsafe-car
-                                                                                 lst_1)))
-                                                                           (let ((rest_0
-                                                                                  (unsafe-cdr
+                                                 (intern_0
+                                                  (bytes->immutable-bytes
+                                                   (read-fasl-bytes i_0))))
+                                               (if (unsafe-fx< index_0 24)
+                                                 (let ((app_0
+                                                        (read-fasl-bytes i_0)))
+                                                   (bytes->path
+                                                    app_0
+                                                    (loop_0)))
+                                                 (if (unsafe-fx< index_0 25)
+                                                   (let ((wrt-dir_0
+                                                          (let ((or-part_0
+                                                                 (current-load-relative-directory)))
+                                                            (if or-part_0
+                                                              or-part_0
+                                                              (current-directory)))))
+                                                     (let ((rel-elems_0
+                                                            (reverse$1
+                                                             (let ((lst_0
+                                                                    (loop_0)))
+                                                               (begin
+                                                                 (letrec*
+                                                                  ((for-loop_0
+                                                                    (|#%name|
+                                                                     for-loop
+                                                                     (lambda (fold-var_0
+                                                                              lst_1)
+                                                                       (begin
+                                                                         (if (pair?
+                                                                              lst_1)
+                                                                           (let ((p_0
+                                                                                  (unsafe-car
                                                                                    lst_1)))
-                                                                             (let ((fold-var_1
-                                                                                    (let ((fold-var_1
-                                                                                           (cons
-                                                                                            (if (bytes?
+                                                                             (let ((rest_0
+                                                                                    (unsafe-cdr
+                                                                                     lst_1)))
+                                                                               (let ((fold-var_1
+                                                                                      (let ((fold-var_1
+                                                                                             (cons
+                                                                                              (if (bytes?
+                                                                                                   p_0)
+                                                                                                (bytes->path-element
                                                                                                  p_0)
-                                                                                              (bytes->path-element
-                                                                                               p_0)
-                                                                                              p_0)
-                                                                                            fold-var_0)))
-                                                                                      (values
-                                                                                       fold-var_1))))
-                                                                               (for-loop_0
-                                                                                fold-var_1
-                                                                                rest_0))))
-                                                                         fold-var_0))))))
-                                                                (for-loop_0
-                                                                 null
-                                                                 lst_0)))))))
-                                                     (if wrt-dir_0
-                                                       (apply
-                                                        build-path
-                                                        wrt-dir_0
-                                                        rel-elems_0)
-                                                       (if (null? rel-elems_0)
-                                                         (build-path 'same)
+                                                                                                p_0)
+                                                                                              fold-var_0)))
+                                                                                        (values
+                                                                                         fold-var_1))))
+                                                                                 (for-loop_0
+                                                                                  fold-var_1
+                                                                                  rest_0))))
+                                                                           fold-var_0))))))
+                                                                  (for-loop_0
+                                                                   null
+                                                                   lst_0)))))))
+                                                       (if wrt-dir_0
                                                          (apply
                                                           build-path
-                                                          rel-elems_0)))))
-                                                 (intern_0
-                                                  (pregexp
-                                                   (read-fasl-string i_0))))
+                                                          wrt-dir_0
+                                                          rel-elems_0)
+                                                         (if (null?
+                                                              rel-elems_0)
+                                                           (build-path 'same)
+                                                           (apply
+                                                            build-path
+                                                            rel-elems_0)))))
+                                                   (intern_0
+                                                    (pregexp
+                                                     (read-fasl-string
+                                                      i_0))))))
+                                             (if (unsafe-fx< index_0 28)
                                                (if (unsafe-fx< index_0 27)
                                                  (intern_0
                                                   (regexp
                                                    (read-fasl-string i_0)))
-                                                 (if (unsafe-fx< index_0 28)
-                                                   (intern_0
-                                                    (byte-pregexp
-                                                     (read-fasl-bytes i_0)))
-                                                   (if (unsafe-fx< index_0 29)
-                                                     (intern_0
-                                                      (byte-regexp
-                                                       (read-fasl-bytes i_0)))
+                                                 (intern_0
+                                                  (byte-pregexp
+                                                   (read-fasl-bytes i_0))))
+                                               (if (unsafe-fx< index_0 29)
+                                                 (intern_0
+                                                  (byte-regexp
+                                                   (read-fasl-bytes i_0)))
+                                                 (if (unsafe-fx< index_0 30)
+                                                   (let ((len_1
+                                                          (read-fasl-integer
+                                                           i_0)))
+                                                     (reverse$1
+                                                      (begin
+                                                        (letrec*
+                                                         ((for-loop_0
+                                                           (|#%name|
+                                                            for-loop
+                                                            (lambda (fold-var_0
+                                                                     pos_0)
+                                                              (begin
+                                                                (if (<
+                                                                     pos_0
+                                                                     len_1)
+                                                                  (let ((fold-var_1
+                                                                         (let ((fold-var_1
+                                                                                (cons
+                                                                                 (loop_0)
+                                                                                 fold-var_0)))
+                                                                           (values
+                                                                            fold-var_1))))
+                                                                    (for-loop_0
+                                                                     fold-var_1
+                                                                     (+
+                                                                      pos_0
+                                                                      1)))
+                                                                  fold-var_0))))))
+                                                         (for-loop_0
+                                                          null
+                                                          0)))))
+                                                   (if (unsafe-fx< index_0 31)
+                                                     (let ((app_0 (loop_0)))
+                                                       (cons app_0 (loop_0)))
                                                      (let ((len_1
                                                             (read-fasl-integer
                                                              i_0)))
-                                                       (reverse$1
-                                                        (begin
-                                                          (letrec*
-                                                           ((for-loop_0
-                                                             (|#%name|
-                                                              for-loop
-                                                              (lambda (fold-var_0
-                                                                       pos_0)
-                                                                (begin
-                                                                  (if (<
-                                                                       pos_0
-                                                                       len_1)
-                                                                    (let ((fold-var_1
-                                                                           (let ((fold-var_1
-                                                                                  (cons
-                                                                                   (loop_0)
-                                                                                   fold-var_0)))
-                                                                             (values
-                                                                              fold-var_1))))
-                                                                      (for-loop_0
-                                                                       fold-var_1
-                                                                       (+
-                                                                        pos_0
-                                                                        1)))
-                                                                    fold-var_0))))))
-                                                           (for-loop_0
-                                                            null
-                                                            0))))))))))
-                                           (if (unsafe-fx< index_0 35)
-                                             (if (unsafe-fx< index_0 32)
-                                               (if (unsafe-fx< index_0 31)
-                                                 (let ((app_0 (loop_0)))
-                                                   (cons app_0 (loop_0)))
-                                                 (let ((len_1
-                                                        (read-fasl-integer
-                                                         i_0)))
-                                                   (letrec*
-                                                    ((ploop_0
-                                                      (|#%name|
-                                                       ploop
-                                                       (lambda (len_2)
-                                                         (begin
-                                                           (if (zero? len_2)
-                                                             (loop_0)
-                                                             (let ((app_0
-                                                                    (loop_0)))
-                                                               (cons
-                                                                app_0
-                                                                (ploop_0
-                                                                 (sub1
-                                                                  len_2))))))))))
-                                                    (ploop_0 len_1))))
+                                                       (letrec*
+                                                        ((ploop_0
+                                                          (|#%name|
+                                                           ploop
+                                                           (lambda (len_2)
+                                                             (begin
+                                                               (if (zero?
+                                                                    len_2)
+                                                                 (loop_0)
+                                                                 (let ((app_0
+                                                                        (loop_0)))
+                                                                   (cons
+                                                                    app_0
+                                                                    (ploop_0
+                                                                     (sub1
+                                                                      len_2))))))))))
+                                                        (ploop_0 len_1))))))))
+                                           (if (unsafe-fx< index_0 37)
+                                             (if (unsafe-fx< index_0 34)
                                                (if (unsafe-fx< index_0 33)
                                                  (let ((len_1
                                                         (read-fasl-integer
@@ -42170,11 +42305,154 @@
                                                        (vector->immutable-vector
                                                         vec_0)
                                                        vec_0)))
-                                                 (if (unsafe-fx< index_0 34)
+                                                 (let ((len_1
+                                                        (read-fasl-integer
+                                                         i_0)))
+                                                   (begin
+                                                     (if (exact-nonnegative-integer?
+                                                          len_1)
+                                                       (void)
+                                                       (raise-argument-error
+                                                        'for/flvector
+                                                        "exact-nonnegative-integer?"
+                                                        len_1))
+                                                     (let ((v_0
+                                                            (make-flvector
+                                                             len_1
+                                                             0.0)))
+                                                       (begin
+                                                         (if (zero? len_1)
+                                                           (void)
+                                                           (begin
+                                                             (letrec*
+                                                              ((for-loop_0
+                                                                (|#%name|
+                                                                 for-loop
+                                                                 (lambda (i_1
+                                                                          pos_0)
+                                                                   (begin
+                                                                     (if (<
+                                                                          pos_0
+                                                                          len_1)
+                                                                       (let ((i_2
+                                                                              (let ((i_2
+                                                                                     (begin
+                                                                                       (let ((elem_0
+                                                                                              (read-fasl-flonum
+                                                                                               i_0)))
+                                                                                         (if (flonum?
+                                                                                              elem_0)
+                                                                                           (unsafe-flvector-set!
+                                                                                            v_0
+                                                                                            i_1
+                                                                                            elem_0)
+                                                                                           (begin-unsafe
+                                                                                            (raise-argument-error
+                                                                                             'for*/vector
+                                                                                             "flonum?"
+                                                                                             elem_0))))
+                                                                                       (unsafe-fx+
+                                                                                        1
+                                                                                        i_1))))
+                                                                                (values
+                                                                                 i_2))))
+                                                                         (if (if (not
+                                                                                  (let ((x_0
+                                                                                         (list
+                                                                                          pos_0)))
+                                                                                    (unsafe-fx=
+                                                                                     i_2
+                                                                                     len_1)))
+                                                                               #t
+                                                                               #f)
+                                                                           (for-loop_0
+                                                                            i_2
+                                                                            (+
+                                                                             pos_0
+                                                                             1))
+                                                                           i_2))
+                                                                       i_1))))))
+                                                              (for-loop_0
+                                                               0
+                                                               0))))
+                                                         v_0)))))
+                                               (if (unsafe-fx< index_0 35)
+                                                 (let ((len_1
+                                                        (read-fasl-integer
+                                                         i_0)))
+                                                   (begin
+                                                     (if (exact-nonnegative-integer?
+                                                          len_1)
+                                                       (void)
+                                                       (raise-argument-error
+                                                        'for/fxvector
+                                                        "exact-nonnegative-integer?"
+                                                        len_1))
+                                                     (let ((v_0
+                                                            (make-fxvector
+                                                             len_1
+                                                             0)))
+                                                       (begin
+                                                         (if (zero? len_1)
+                                                           (void)
+                                                           (begin
+                                                             (letrec*
+                                                              ((for-loop_0
+                                                                (|#%name|
+                                                                 for-loop
+                                                                 (lambda (i_1
+                                                                          pos_0)
+                                                                   (begin
+                                                                     (if (<
+                                                                          pos_0
+                                                                          len_1)
+                                                                       (let ((i_2
+                                                                              (let ((i_2
+                                                                                     (begin
+                                                                                       (let ((elem_0
+                                                                                              (read-fasl-integer
+                                                                                               i_0)))
+                                                                                         (if (fixnum?
+                                                                                              elem_0)
+                                                                                           (unsafe-fxvector-set!
+                                                                                            v_0
+                                                                                            i_1
+                                                                                            elem_0)
+                                                                                           (begin-unsafe
+                                                                                            (raise-argument-error
+                                                                                             'for*/vector
+                                                                                             "fixnum?"
+                                                                                             elem_0))))
+                                                                                       (unsafe-fx+
+                                                                                        1
+                                                                                        i_1))))
+                                                                                (values
+                                                                                 i_2))))
+                                                                         (if (if (not
+                                                                                  (let ((x_0
+                                                                                         (list
+                                                                                          pos_0)))
+                                                                                    (unsafe-fx=
+                                                                                     i_2
+                                                                                     len_1)))
+                                                                               #t
+                                                                               #f)
+                                                                           (for-loop_0
+                                                                            i_2
+                                                                            (+
+                                                                             pos_0
+                                                                             1))
+                                                                           i_2))
+                                                                       i_1))))))
+                                                              (for-loop_0
+                                                               0
+                                                               0))))
+                                                         v_0))))
+                                                 (if (unsafe-fx< index_0 36)
                                                    (box (loop_0))
                                                    (box-immutable (loop_0)))))
-                                             (if (unsafe-fx< index_0 38)
-                                               (if (unsafe-fx< index_0 36)
+                                             (if (unsafe-fx< index_0 40)
+                                               (if (unsafe-fx< index_0 38)
                                                  (let ((key_0 (loop_0)))
                                                    (let ((len_1
                                                           (read-fasl-integer
@@ -42210,7 +42488,7 @@
                                                           (for-loop_0
                                                            null
                                                            0)))))))
-                                                 (if (unsafe-fx< index_0 37)
+                                                 (if (unsafe-fx< index_0 39)
                                                    (let ((ht_0
                                                           (let ((tmp_0
                                                                  (read-byte/no-eof
@@ -42299,7 +42577,7 @@
                                                           (for-loop_0
                                                            ht_0
                                                            0)))))))
-                                               (if (unsafe-fx< index_0 39)
+                                               (if (unsafe-fx< index_0 41)
                                                  (let ((app_0 (loop_0)))
                                                    (let ((app_1 (loop_0)))
                                                      (let ((app_2 (loop_0)))
@@ -42310,7 +42588,7 @@
                                                           app_2
                                                           app_3
                                                           (loop_0))))))
-                                                 (if (unsafe-fx< index_0 40)
+                                                 (if (unsafe-fx< index_0 42)
                                                    (let ((e_0 (loop_0)))
                                                      (let ((s_0 (loop_0)))
                                                        (let ((c_0
@@ -42378,7 +42656,7 @@
                                                               (for-loop_0
                                                                c_0
                                                                lst_0)))))))
-                                                   (if (unsafe-fx< index_0 41)
+                                                   (if (unsafe-fx< index_0 43)
                                                      unsafe-undefined
                                                      (let ((app_0 (loop_0)))
                                                        (prefab-key->struct-type
@@ -42420,6 +42698,13 @@
     (begin
       (write-fasl-integer (unsafe-bytes-length v_0) o_0)
       (1/write-bytes v_0 o_0))))
+(define write-fasl-flonum
+  (lambda (v_0 o_0)
+    (1/write-bytes
+     (if (eqv? v_0 +nan.0)
+       #vu8(0 0 0 0 0 0 248 127)
+       (real->floating-point-bytes v_0 8 #f))
+     o_0)))
 (define read-error
   (lambda (s_0 . args_0)
     (apply
@@ -42599,6 +42884,8 @@
 (define read-fasl-bytes
   (lambda (i_0)
     (let ((len_0 (read-fasl-integer i_0))) (read-bytes/exactly len_0 i_0))))
+(define read-fasl-flonum
+  (lambda (i_0) (floating-point-bytes->real (read-bytes/exactly 8 i_0) #f)))
 (define fasl-literal?
   (lambda (q_0 need-exposed?_0)
     (if (impersonator? q_0)

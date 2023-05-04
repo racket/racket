@@ -444,6 +444,21 @@
   (try 7 #:ok? #f)
   (try (box 7) #:ok? #f))
 
+;; Check that some other values are allowed as quoted in compiled code
+(for-each (lambda (v)
+            (define s (open-output-bytes))
+            (write (compile v) s)
+            (test v
+                  values
+                  (eval (parameterize ([read-accept-compiled #t])
+                          (read (open-input-bytes (get-output-bytes s)))))))
+          (list
+           1
+           "apple"
+           (vector 1 2 3)
+           (fxvector 1 2 3 -100)
+           (flvector 1.0 2.0 3.0 +inf.0 +nan.0)))
+
 ;; ----------------------------------------
 ;; Test print parameters
 
