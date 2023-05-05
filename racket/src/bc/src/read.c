@@ -118,6 +118,10 @@ static Scheme_Object *read_vector(Scheme_Object *port,
 				  int opener, char closer,
 				  ReadParams *params,
                                   int allow_infix);
+static Scheme_Object *read_flvector(Scheme_Object *port,
+                                    ReadParams *params);
+static Scheme_Object *read_fxvector(Scheme_Object *port,
+                                    ReadParams *params);
 static Scheme_Object *read_number_or_symbol(int init_ch, Scheme_Object *port,
                                             int is_float, int is_not_float,
                                             int radix, int radix_set,
@@ -567,8 +571,16 @@ static Scheme_Object *read_inner(Scheme_Object *port, ReadParams *params, int pr
             /* found delimited `#f' */
             return scheme_false;
           } else {
-            GC_CAN_IGNORE const mzchar str[] = { 'f', 'a', 'l', 's', 'e', 0 };
-            return read_delimited_constant(ch, str, scheme_false, port, params);
+            int next_ch;
+            next_ch = scheme_peekc(port);
+            if (next_ch == 'l')
+              return read_flvector(port, params);
+            else if (next_ch == 'x')
+              return read_fxvector(port, params);
+            else {
+              GC_CAN_IGNORE const mzchar str[] = { 'f', 'a', 'l', 's', 'e', 0 };
+              return read_delimited_constant(ch, str, scheme_false, port, params);
+            }
           }
 	case 's':
 	case 'S':
@@ -1727,6 +1739,60 @@ read_vector (Scheme_Object *port,
   }
 
   return vec;
+}
+
+static Scheme_Object *read_flfxvector_as_vector(Scheme_Object *port,
+                                                ReadParams *params,
+                                                const char *prefix)
+{
+  int ch;
+
+  (void)scheme_getc(port); /* must be `l` or `x` */
+
+  ch = scheme_getc(port);
+  if (ch != '(')
+    scheme_read_err(port,
+                    "read: expected `(` after `%s`",
+                    prefix);
+
+  return read_vector(port, ch, ')', params, 0);
+}
+
+
+static Scheme_Object *read_flvector(Scheme_Object *port,
+                                    ReadParams *params)
+{
+  intptr_t i, len;
+  Scheme_Object *vec, *flvec;
+
+  vec = read_flfxvector_as_vector(port, params, "#fl");
+  len = SCHEME_VEC_SIZE(vec);
+  flvec = (Scheme_Object *)scheme_alloc_flvector(len);
+  for (i = 0; i < len; i++) {
+    if (!SCHEME_DBLP(SCHEME_VEC_ELS(vec)[i]))
+      scheme_read_err(port, "read: non-flonum in `#fl`");
+    SCHEME_FLVEC_ELS(flvec)[i] = SCHEME_DBL_VAL(SCHEME_VEC_ELS(vec)[i]);
+  }
+
+  return (Scheme_Object *)flvec;
+}
+
+static Scheme_Object *read_fxvector(Scheme_Object *port,
+                                    ReadParams *params)
+{
+  intptr_t i, len;
+  Scheme_Object *vec, *fxvec;
+
+  vec = read_flfxvector_as_vector(port, params, "#fl");
+  len = SCHEME_VEC_SIZE(vec);
+  fxvec = (Scheme_Object *)scheme_alloc_fxvector(len);
+  for (i = 0; i < len; i++) {
+    if (!SCHEME_INTP(SCHEME_VEC_ELS(vec)[i]))
+      scheme_read_err(port, "read: non-fixnum in `#fx`");
+    SCHEME_FXVEC_ELS(fxvec)[i] = SCHEME_VEC_ELS(vec)[i];
+  }
+
+  return (Scheme_Object *)fxvec;
 }
 
 /*========================================================================*/
