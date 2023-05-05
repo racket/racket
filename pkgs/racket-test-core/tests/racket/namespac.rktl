@@ -168,7 +168,7 @@
 
 ;; ----------------------------------------
 
-(module phaser scheme/base 
+(module phaser racket/base 
   (define x (variable-reference->phase
              (#%variable-reference x)))
   (define y (variable-reference->module-base-phase

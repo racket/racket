@@ -18,25 +18,25 @@
     (test result from-string read str)))
 
 ;; plain version
-(module r0 syntax/module-reader scheme/base)
+(module r0 syntax/module-reader racket/base)
 (test-both '(r0) "#reader '~s (define FoO #:bAr)"
-           '(module anonymous-module scheme/base
+           '(module anonymous-module racket/base
               (#%module-begin (define FoO #:bAr))))
 
 ;; using a simple wrapper to get a case-insensitive reader
-(module r1 syntax/module-reader scheme/base
+(module r1 syntax/module-reader racket/base
   #:wrapper1 (lambda (t) (parameterize ([read-case-sensitive #f]) (t))))
 ;; using the more general wrapper to get a case-insensitive reader
-(module r2 syntax/module-reader scheme/base
+(module r2 syntax/module-reader racket/base
   #:wrapper2 (lambda (in r) (parameterize ([read-case-sensitive #f]) (r in))))
 ;; using explicit case-insensitive read/-syntax versions
-(module r3 syntax/module-reader scheme/base
+(module r3 syntax/module-reader racket/base
   #:read (wrap read) #:read-syntax (wrap read-syntax)
   (define ((wrap reader) . args)
     (parameterize ([read-case-sensitive #f]) (apply reader args))))
 ;;
 (test-both '(r1 r2 r3) "#reader '~s (define FoO #:bAr)"
-           '(module anonymous-module scheme/base
+           '(module anonymous-module racket/base
               (#%module-begin (define foo #:bar))))
 
 ;; add something to the result
@@ -93,11 +93,11 @@
                  (rd in)))
   (require scribble/reader))
 ;;
-(test-both '(r10 r11) "#reader '~s scheme/base (define foo 1)"
-           '(module anonymous-module scheme/base
+(test-both '(r10 r11) "#reader '~s racket/base (define foo 1)"
+           '(module anonymous-module racket/base
               (#%module-begin (define foo 1))))
-(test-both '(r10 r11) "#reader '~s scheme/base @define[foo]{one}"
-           '(module anonymous-module scheme/base
+(test-both '(r10 r11) "#reader '~s racket/base @define[foo]{one}"
+           '(module anonymous-module racket/base
               (#%module-begin (define foo "one"))))
 
 ;; ----------------------------------------

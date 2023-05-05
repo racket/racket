@@ -138,7 +138,7 @@
 
 (require (prefix-in unit: racket/unit))
 
-;; ;; Hide keywords from scheme/unit.rkt:
+;; Hide keywords from racket/unit:
 (define import #f)
 (define export #f)
 (define link #f)

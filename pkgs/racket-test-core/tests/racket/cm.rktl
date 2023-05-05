@@ -94,15 +94,15 @@
                               (map car files))))
                 recomps))))
 
-(try '(("a.rkt" "(module a scheme/base (require \"b.rkt\" \"d.rkt\" \"g.rkt\"))" #t)
-       ("b.rkt" "(module b scheme/base (require scheme/include) (include \"c.sch\"))" #t)
+(try '(("a.rkt" "(module a racket/base (require \"b.rkt\" \"d.rkt\" \"g.rkt\"))" #t)
+       ("b.rkt" "(module b racket/base (require racket/include) (include \"c.sch\"))" #t)
        ("d.rkt" "#reader \"e.rkt\" 10" #t)
        ("c.sch" "5" #f)
        ("e.rkt" "(module e syntax/module-reader \"f.rkt\")" #t)
-       ("f.rkt" "(module f scheme/base (provide (all-from-out scheme/base)))" #t)
-       ("g.rkt" "(module g scheme/base (require (for-syntax scheme/base scheme/include \"i.rkt\")) (define-syntax (f stx) (include \"h.sch\")))" #t)
+       ("f.rkt" "(module f racket/base (provide (all-from-out racket/base)))" #t)
+       ("g.rkt" "(module g racket/base (require (for-syntax racket/base racket/include \"i.rkt\")) (define-syntax (f stx) (include \"h.sch\")))" #t)
        ("h.sch" "(quote-syntax 12)" #f)
-       ("i.rkt" "(module i scheme/base)" #t)
+       ("i.rkt" "(module i racket/base)" #t)
        ("j.rkt" "(module j racket/base (module+ main (require \"b.rkt\")))" #t))
      '([("a.rkt") ("a.rkt") ("a.rkt")]
        [("b.rkt") ("a.rkt" "j.rkt") ("a.rkt" "b.rkt" "j.rkt")]
@@ -146,8 +146,8 @@
                        (cons (file-or-directory-modify-seconds x)
                              "")]
                       [else #f])))])
-  (try '(("a.rkt" "(module a scheme/base (require \"b.rkt\"))" #f)
-         ("b.rkt" "(module b scheme/base)" #f))
+  (try '(("a.rkt" "(module a racket/base (require \"b.rkt\"))" #f)
+         ("b.rkt" "(module b racket/base)" #f))
        '([("b.rkt") ("a.rkt") ("a.rkt")])))
 
 ;; test current-path->mode

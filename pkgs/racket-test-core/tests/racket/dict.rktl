@@ -3,7 +3,7 @@
 
 (Section 'dict)
 
-(require scheme/dict racket/generic)
+(require racket/dict racket/generic)
 
 ;; Currently relying on the `map' an `for-each' to test `dict-iterate-...',
 ;; and custom hashes to test `prop:dict' use.

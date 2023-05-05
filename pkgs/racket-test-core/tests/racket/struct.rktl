@@ -1240,7 +1240,7 @@
 
 ;; ----------------------------------------
 
-(require (for-syntax scheme/struct-info))
+(require (for-syntax racket/struct-info))
 
 (let ()
   (define-struct a (x y))

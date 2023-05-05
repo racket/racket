@@ -834,16 +834,16 @@
 ;; Check 'module-language, `module-compiled-language-info', and `module->language-info'
 
 (let ([mk (lambda (val)
-            (compile (syntax-property #'(module m scheme/base)
+            (compile (syntax-property #'(module m racket/base)
                                       'module-language
                                       val)))])
   (test #f 'info (module-compiled-language-info (mk 10)))
-  (test '#(scheme x "whatever") 'info (module-compiled-language-info (mk '#(scheme x "whatever"))))
+  (test '#(racket x "whatever") 'info (module-compiled-language-info (mk '#(racket x "whatever"))))
   (let ([ns (make-base-namespace)])
     (parameterize ([current-namespace ns])
       (eval mk ns)
-      (eval (mk '#(scheme x "whatever")))
-      (test '#(scheme x "whatever") module->language-info ''m)
+      (eval (mk '#(racket x "whatever")))
+      (test '#(racket x "whatever") module->language-info ''m)
       (let ([path (build-path (collection-path "tests" "racket")
                               "langm.rkt")])
         (parameterize ([read-accept-reader #t]
