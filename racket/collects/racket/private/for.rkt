@@ -1414,17 +1414,18 @@
                                          (lambda ()
                                            (let ([v vals])
                                              (set! prep-val!
-                                                   (lambda ()
-                                                     (if (if post-cont?
-                                                             (apply post-cont? pos vals)
-                                                             #t)
-                                                         (begin
-                                                           (set! pos (pos-next pos))
-                                                           (set! prep-val! init-prep-val!)
-                                                           (prep-val!))
-                                                         (begin
-                                                           (set! more? (lambda () #f))
-                                                           (set! next no-more)))))
+                                                   (let ([saved-vals (and post-cont? vals)])
+                                                     (lambda ()
+                                                       (if (if post-cont?
+                                                               (apply post-cont? pos saved-vals)
+                                                               #t)
+                                                           (begin
+                                                             (set! pos (pos-next pos))
+                                                             (set! prep-val! init-prep-val!)
+                                                             (prep-val!))
+                                                           (begin
+                                                             (set! more? (lambda () #f))
+                                                             (set! next no-more))))))
                                              (set! more? init-more?)
                                              (set! next init-next)
                                              (apply values v))))
@@ -1460,12 +1461,13 @@
                         (lambda vals
                           (if (if pre-cont? (apply pre-cont? vals) #t)
                               (values vals
-                                      (lambda ()
-                                        (if (if post-cont?
-                                                (apply post-cont? pos vals)
-                                                #t)
-                                            (next! (pos-next pos))
-                                            (values #f no-more))))
+                                      (let ([saved-vals (and post-cont? vals)])
+                                        (lambda ()
+                                          (if (if post-cont?
+                                                  (apply post-cont? pos saved-vals)
+                                                  #t)
+                                              (next! (pos-next pos))
+                                              (values #f no-more)))))
                               (values #f no-more))))
                       (values #f no-more)))])
         (next! init))))

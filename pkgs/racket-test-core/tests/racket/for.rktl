@@ -1100,7 +1100,42 @@
   (check for/list values map extra) ; 1 and 2 arguments are special-cased
   (check for/list values for-each)
   (check for/list values ormap)
-  (check for/list values andmap))
+  (check for/list values andmap)
+
+  ;; similar check for `sequence-generate`
+  (let ()
+    (define l (cons (box 1) (cons (box 2) null)))
+    (define wb (make-weak-box (car l)))
+
+    (define-values (more? val) (sequence-generate l))
+    (set! l #f)
+
+    (let loop ()
+      (cond
+        [(more?)
+         (define u (unbox (val)))
+         (collect-garbage)
+         (cons (cons u (weak-box-value wb)) (loop))]
+        [else null])))
+
+  ;; similar check for `sequence-generate*`
+  (let ()
+    (define l (cons (box 1) (cons (box 2) null)))
+    (define wb (make-weak-box (car l)))
+
+    (define-values (vals next) (sequence-generate* l))
+    (set! l #f)
+
+    (let loop ([vals vals] [next next])
+      (cond
+        [vals
+         (define u (unbox (car vals)))
+         (collect-garbage)
+         (cons (cons u (weak-box-value wb))
+               (let ()
+                 (define-values (new-vals new-next) (next))
+                 (loop new-vals new-next)))]
+        [else null]))))
 
 ;; ----------------------------------------
 ;; `for/foldr`

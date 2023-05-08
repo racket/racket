@@ -809,7 +809,8 @@ each element in the sequence.
   sequence where the position must be incremented to avoid keeping a
   value reachable while a loop processes the sequence value, so
   @racket[_early-next-pos] is applied just after
-  @racket[_pos->element].
+  @racket[_pos->element]. The @racket[_continue-after-pos+val?] function
+  needs to be @racket[#f] to avoid retaining values to supply to that function.
 
   Each of the procedures listed above is called only once per
   position.  Among the last three procedures, as soon as one of the
