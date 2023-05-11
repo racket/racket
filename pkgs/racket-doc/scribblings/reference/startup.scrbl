@@ -510,7 +510,7 @@ Extra arguments following the last option are available from the
 
 @guidealso["module-runtime-config"]
 
-A module can have a @racket[configure-runtime] submodule that is
+A module can have a @as-index[@racket[configure-runtime]] submodule that is
 @racket[dynamic-require]d before the module itself when a module is
 the main module of a program. Normally, a @racket[configure-runtime]
 submodule is added to a module by the module's language (i.e., by the
@@ -558,7 +558,7 @@ For information on defining a new @hash-lang[] language, see
 
 @section[#:tag "configure-expand"]{Language Expand Configuration}
 
-A module @racket[_lang] can have a @racket[configure-expand] submodule
+A module @racket[_lang] can have a @as-index[@racket[configure-expand]] submodule
 that is @racket[dynamic-require]d before the expansion of another
 module that is implemented as @racket[(module _name _lang ....)]. The
 submodule is loaded in a @tech{root namespace}, the same as a
