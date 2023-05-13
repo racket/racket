@@ -122,34 +122,49 @@ static void init_procs()
 # define GET_FF_MODDATE(fd) convert_date(&fd.ftLastWriteTime)
 # define GET_FF_NAME(fd) fd.cFileName
 
+# define RKTUS_NO_SET    -1
+# define RKTUS_SET_SECS  -2
+
 # define MKDIR_NO_MODE_FLAG
 
 #define is_drive_letter(c) (((unsigned char)c < 128) && isalpha((unsigned char)c))
 
+/* Whether to try to adjust for DST like CRT's _stat and _utime do: */
+# define USE_STAT_DST_ADJUST 0
+/* Historically, there has been some weirdness with file timestamps on
+   Windows. When daylight saving is in effect, the local time reported
+   for a file is shifted, even if the file's time is during a non-DST
+   period. It's not clear to me that modern Windows still behaves in a
+   strange way, but the C library's `_stat` and `_utime` still try to
+   counteract a DST effect. We can try to imitate the library's effect
+   if we want to interoperate with those functions directly, but it's
+   probably better to just avoid them. */
+
 static time_t convert_date(const FILETIME *ft)
 {
-  LONGLONG l, delta;
+  LONGLONG l, delta = 0;
+# if USE_STAT_DST_ADJUST
   FILETIME ft2;
   SYSTEMTIME st;
   TIME_ZONE_INFORMATION tz;
 
-  /* GetFileAttributes incorrectly shifts for daylight saving. It
-     subtracts an hour to get to UTC when daylight saving is in effect
-     now, even when daylight saving was not in effect when the file
-     was saved.  Counteract the difference. There's a race condition
-     here, because we might cross the daylight-saving boundary between
-     the time that GetFileAttributes runs and GetTimeZoneInformation
-     runs. Cross your fingers... */
+  /* There's a race condition here, because we might cross the
+     daylight-saving boundary between the time that GetFileAttributes
+     runs and GetTimeZoneInformation runs. Cross your fingers... */
+
   FileTimeToLocalFileTime(ft, &ft2);
   FileTimeToSystemTime(&ft2, &st);
   
-  delta = 0;
   if (GetTimeZoneInformation(&tz) == TIME_ZONE_ID_DAYLIGHT) {
-    /* Daylight saving is in effect now, so there may be a bad
-       shift. Check the file's date. */
+    /* Daylight saving is in effect now, so there may be an adjustment
+       to make. Check the file's date. */
     if (!rktio_system_time_is_dst(&st, NULL))
       delta = ((tz.StandardBias - tz.DaylightBias) * 60);
   }
+# endif
+
+  /* The difference between January 1, 1601 and January 1, 1970
+     is 0x019DB1DE_D53E8000 times 100 nanoseconds */
 
   l = ((((LONGLONG)ft->dwHighDateTime << 32) | ft->dwLowDateTime)
        - (((LONGLONG)0x019DB1DE << 32) | 0xD53E8000));
@@ -157,6 +172,31 @@ static time_t convert_date(const FILETIME *ft)
   l += delta;
 
   return (time_t)l;
+}
+
+static void unconvert_date(time_t l, FILETIME *ft)
+{
+  LONGLONG nsec;
+
+  nsec = (LONGLONG)l * 10000000;
+  nsec += (((LONGLONG)0x019DB1DE << 32) | 0xD53E8000);
+  ft->dwHighDateTime = (nsec >> 32);
+  ft->dwLowDateTime = (nsec & 0xFFFFFFFF);
+
+# if USE_STAT_DST_ADJUST
+  {
+    time_t l2;
+    /* check for DST correction */
+    l2 = convert_date(ft);
+    if (l != l2) {
+      /* need correction */
+      nsec = ((LONGLONG)l - (l2 - l)) * 10000000;
+      nsec += (((LONGLONG)0x019DB1DE << 32) | 0xD53E8000);
+      ft->dwHighDateTime = (nsec >> 32);
+      ft->dwLowDateTime = (nsec & 0xFFFFFFFF);
+    }
+  }
+# endif
 }
 
 typedef struct mz_REPARSE_DATA_BUFFER {
@@ -326,7 +366,7 @@ static int UNC_stat(rktio_t *rktio, const char *dirname, int *flags, int *isdir,
     *islink = 0;
   if (isdir)
     *isdir = 0;
-  if (date)
+  if (date && (set_flags != RKTUS_SET_SECS))
     *date = NULL;
 
   len = strlen(dirname);
@@ -379,6 +419,34 @@ static int UNC_stat(rktio_t *rktio, const char *dirname, int *flags, int *isdir,
     /* Treat invalid path as non-existent; `WIDE_PATH_temp` set the error */
     free(copy);
     return 0;
+  }
+
+  if (set_flags == RKTUS_SET_SECS) {
+    HANDLE h;
+    BOOL ok;
+    FILETIME ft;
+
+    h = CreateFileW(wp, FILE_WRITE_ATTRIBUTES,
+		    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
+		    OPEN_EXISTING,
+		    FILE_FLAG_BACKUP_SEMANTICS,
+		    NULL);
+    if (!h) {
+      get_windows_error();
+      free(copy);
+      return 0;
+    }
+
+    unconvert_date(**date, &ft);
+
+    ok = SetFileTime(h, NULL, &ft, &ft);
+    if (!ok)
+      get_windows_error();
+
+    free(copy);
+    CloseHandle(h);
+
+    return ok;
   }
 
   if (!GetFileAttributesExW(wp, GetFileExInfoStandard, &fad)) {
@@ -442,7 +510,7 @@ static int UNC_stat(rktio_t *rktio, const char *dirname, int *flags, int *isdir,
       }
     }
 
-    if (set_flags != -1) {
+    if (set_flags != RKTUS_NO_SET) {
       DWORD attrs = GET_FF_ATTRIBS(fad);
 
       if (!(set_flags & RKTIO_UNC_WRITE))
@@ -500,7 +568,7 @@ int rktio_file_exists(rktio_t *rktio, const char *filename)
 #  ifdef RKTIO_SYSTEM_WINDOWS
   {
     int isdir;
-    return (UNC_stat(rktio, filename, NULL, &isdir, NULL, NULL, NULL, NULL, -1)
+    return (UNC_stat(rktio, filename, NULL, &isdir, NULL, NULL, NULL, NULL, RKTUS_NO_SET)
 	    && !isdir);
   }
 #  else
@@ -524,7 +592,7 @@ int rktio_directory_exists(rktio_t *rktio, const char *dirname)
 #  ifdef RKTIO_SYSTEM_WINDOWS
   int isdir;
 
-  return (UNC_stat(rktio, dirname, NULL, &isdir, NULL, NULL, NULL, NULL, -1)
+  return (UNC_stat(rktio, dirname, NULL, &isdir, NULL, NULL, NULL, NULL, RKTUS_NO_SET)
 	  && isdir);
 #  else
   struct MSC_IZE(stat) buf;
@@ -569,7 +637,7 @@ int rktio_link_exists(rktio_t *rktio, const char *filename)
 #ifdef RKTIO_SYSTEM_WINDOWS
   {
     int islink;
-    if (UNC_stat(rktio, filename, NULL, NULL, &islink, NULL, NULL, NULL, -1)
+    if (UNC_stat(rktio, filename, NULL, NULL, &islink, NULL, NULL, NULL, RKTUS_NO_SET)
 	&& islink)
       return 1;
     else
@@ -599,7 +667,7 @@ int rktio_file_type(rktio_t *rktio, rktio_const_string_t filename)
 #ifdef RKTIO_SYSTEM_WINDOWS
   {
     int islink, isdir;
-    if (UNC_stat(rktio, filename, NULL, &isdir, &islink, NULL, NULL, NULL, -1)) {
+    if (UNC_stat(rktio, filename, NULL, &isdir, &islink, NULL, NULL, NULL, RKTUS_NO_SET)) {
       if (islink) {
         if (isdir)
           return RKTIO_FILE_TYPE_DIRECTORY_LINK;
@@ -1016,7 +1084,7 @@ char *rktio_readlink(rktio_t *rktio, const char *fullfilename)
 {
 #ifdef RKTIO_SYSTEM_WINDOWS
   int is_link;
-  if (UNC_stat(rktio, fullfilename, NULL, NULL, &is_link, NULL, NULL, NULL, -1)
+  if (UNC_stat(rktio, fullfilename, NULL, NULL, &is_link, NULL, NULL, NULL, RKTUS_NO_SET)
       && is_link) {
     return UNC_readlink(rktio, fullfilename);
   } else {
@@ -1195,7 +1263,7 @@ rktio_timestamp_t *rktio_get_file_modify_seconds(rktio_t *rktio, const char *fil
 #ifdef RKTIO_SYSTEM_WINDOWS
   rktio_timestamp_t *secs;
   
-  if (UNC_stat(rktio, file, NULL, NULL, NULL, &secs, NULL, NULL, -1))
+  if (UNC_stat(rktio, file, NULL, NULL, NULL, &secs, NULL, NULL, RKTUS_NO_SET))
     return secs;
   return NULL;
 #else
@@ -1218,6 +1286,10 @@ rktio_timestamp_t *rktio_get_file_modify_seconds(rktio_t *rktio, const char *fil
 
 int rktio_set_file_modify_seconds(rktio_t *rktio, const char *file, rktio_timestamp_t secs)
 {
+#ifdef RKTIO_SYSTEM_WINDOWS
+  rktio_timestamp_t *secs_p  = &secs;
+  return UNC_stat(rktio, file, NULL, NULL, NULL, &secs_p, NULL, NULL, RKTUS_SET_SECS);
+#else
   while (1) {
     struct MSC_IZE(utimbuf) ut;
     const WIDE_PATH_t *wp;
@@ -1233,6 +1305,7 @@ int rktio_set_file_modify_seconds(rktio_t *rktio, const char *file, rktio_timest
 
   get_posix_error();
   return 0;
+#endif
 }
 
 #if defined(RKTIO_SYSTEM_UNIX) && !defined(NO_UNIX_USERS)
@@ -1404,7 +1477,7 @@ int rktio_get_file_or_directory_permissions(rktio_t *rktio, const char *filename
   {
     int flags;
 
-    if (UNC_stat(rktio, filename, &flags, NULL, NULL, NULL, NULL, NULL, -1)) {
+    if (UNC_stat(rktio, filename, &flags, NULL, NULL, NULL, NULL, NULL, RKTUS_NO_SET)) {
       if (all_bits)
         return (flags | (flags << 3) | (flags << 6));
       else
@@ -1465,7 +1538,7 @@ rktio_filesize_t *rktio_file_size(rktio_t *rktio, const char *filename)
 #ifdef RKTIO_SYSTEM_WINDOWS
  {
    rktio_filesize_t sz_v;
-   if (UNC_stat(rktio, filename, NULL, NULL, NULL, NULL, &sz_v, NULL, -1)) {
+   if (UNC_stat(rktio, filename, NULL, NULL, NULL, NULL, &sz_v, NULL, RKTUS_NO_SET)) {
      sz = malloc(sizeof(rktio_filesize_t));
      *sz = sz_v;
      return sz;
@@ -1572,7 +1645,7 @@ rktio_directory_list_t *rktio_directory_list_start(rktio_t *rktio, const char *f
     if ((err_val == ERROR_DIRECTORY) && CreateSymbolicLinkProc) {
       /* check for symbolic link */
       const char *resolved;
-      if (UNC_stat(rktio, filename, NULL, NULL, NULL, NULL, NULL, &resolved, -1)) {
+      if (UNC_stat(rktio, filename, NULL, NULL, NULL, NULL, NULL, &resolved, RKTUS_NO_SET)) {
 	if (resolved) {
 	  filename = (char *)resolved;
 	  goto retry;
