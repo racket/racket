@@ -431,7 +431,7 @@ static int UNC_stat(rktio_t *rktio, const char *dirname, int *flags, int *isdir,
 		    OPEN_EXISTING,
 		    FILE_FLAG_BACKUP_SEMANTICS,
 		    NULL);
-    if (!h) {
+    if (h == INVALID_HANDLE_VALUE) {
       get_windows_error();
       free(copy);
       return 0;
@@ -473,7 +473,7 @@ static int UNC_stat(rktio_t *rktio, const char *dirname, int *flags, int *isdir,
                         FILE_FLAG_BACKUP_SEMANTICS,
                         NULL);
 
-        if (!h) {
+        if (h == INVALID_HANDLE_VALUE) {
           get_windows_error();
           free(copy);
 	  return 0;
