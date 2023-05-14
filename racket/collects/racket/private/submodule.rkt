@@ -28,7 +28,7 @@
                           (cons (append (reverse (syntax->list (syntax-local-introduce #'(e ...))))
                                         (car (unbox stxs-box)))
                                 (cons (syntax-property (syntax-local-introduce stx)
-                                                       'spliced-module-srcloc
+                                                       'origin-form-srcloc
                                                        (syntax-srcloc stx))
                                       (cdr (unbox stxs-box))))))
               (syntax/loc stx (begin)))])]
