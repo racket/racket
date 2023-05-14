@@ -369,7 +369,7 @@ A submodule must not be defined using @racket[module+] @emph{and}
 of @racket[module+] pieces, then it must be made @emph{only} of
 @racket[module+] pieces. }
 
-@history[#:added "8.9.0.1"
+@history[#:changed "8.9.0.1"
          @elem{Added @racket['origin-form-srcloc] syntax property.}]
 
 
