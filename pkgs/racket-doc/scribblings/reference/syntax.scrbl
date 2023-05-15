@@ -354,6 +354,10 @@ enclosing module. If there is only one @racket[module+] for a given
 @racket[(module* id #f form ...)], but still moved to the end of the
 enclosing module.
 
+A @tech{syntax property} on the @racket[module*] form with the key
+@indexed-racket['origin-form-srcloc] records the @racket[srcloc] for
+every contributing @racket[module+] form.
+
 When a module contains multiple submodules declared with
 @racket[module+], then the relative order of the initial
 @racket[module+] declarations for each submodule determines the
@@ -364,6 +368,9 @@ A submodule must not be defined using @racket[module+] @emph{and}
 @racket[module] or @racket[module*]. That is, if a submodule is made
 of @racket[module+] pieces, then it must be made @emph{only} of
 @racket[module+] pieces. }
+
+@history[#:changed "8.9.0.1"
+         @elem{Added @racket['origin-form-srcloc] syntax property.}]
 
 
 @defform[(#%module-begin form ...)]{
