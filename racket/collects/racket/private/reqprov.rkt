@@ -816,13 +816,7 @@
                                        (export-local-id export)
                                        (quasisyntax/loc out
                                          (rename #,(export-local-id export)
-                                                 #,(if (eq? (syntax-e (export-orig-stx export))
-                                                            (export-out-sym export))
-                                                       (export-orig-stx export)
-                                                       (datum->syntax
-                                                        #f
-                                                        (export-out-sym export)
-                                                        (export-orig-stx export))))))]
+                                                 #,(export-out-id export))))]
                                   [mode (export-mode export)])
                               (let ([moded
                                      (let ([spaced (let ([space (phase+space-space mode)])
@@ -927,7 +921,7 @@
                                       (not (free-identifier=? (intro id 'add) (intro id 'remove)))))
                                   (lambda (id) #t)))])
                       (map (lambda (id)
-                             (make-export id (syntax-e id) mode #f stx))
+                             (make-export id id mode #f stx))
                            (filter (lambda (id)
                                      (and (same-ctx-in-phase? id)
                                           (right-space? id)
@@ -993,7 +987,7 @@
                            (map (lambda (id)
                                   (and (free-identifier=?/mode id (datum->syntax mp (syntax-e id))
                                                                mode)
-                                       (make-export id (syntax-e id) mode #f stx)))
+                                       (make-export id id mode #f stx)))
                                 (cdr ids))))
                        idss)))))
             (syntax->list #'(mp ...))))]))))
@@ -1035,7 +1029,7 @@
                                 stx
                                 orig-id))
                              (make-export orig-id
-                                          (syntax-e bind-id)
+                                          bind-id
                                           mode
                                           #f
                                           bind-id))
@@ -1184,7 +1178,7 @@
                                                   (syntax-property
                                                    id
                                                    'disappeared-use)))
-                                                (syntax-e id)
+                                                id
                                                 0
                                                 #f
                                                 id))))
@@ -1231,7 +1225,7 @@
             (map (lambda (e)
                    (make-export
                     (export-local-id e)
-                    (export-out-sym e)
+                    (export-out-id e)
                     (export-mode e)
                     #t
                     (export-orig-stx e)))
@@ -1257,9 +1251,11 @@
               (map (lambda (e)
                      (make-export
                       (export-local-id e)
-                      (string->symbol (format "~a~a"
-                                              (syntax-e #'pfx)
-                                              (export-out-sym e)))
+                      ;; NOTE: IIUC we can't actually import format-id
+                      ;; from racket/syntax here. But we could do the
+                      ;; equivalent for this special case. This is
+                      ;; pseudo-code.
+                      (format-id #'pfx "~a~a" #'pfx (export-out-id e))
                       (export-mode e)
                       (export-protect? e)
                       (export-orig-stx e)))
