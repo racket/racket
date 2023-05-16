@@ -20,7 +20,7 @@
   ;;
   ;; The old "out-sym" field was a symbol, making it awkward to
   ;; preserve srcloc for things like rename-out, or syntax properties
-  ;; like sub-range-bindrs for things like prefix-out (which would
+  ;; like sub-range-binders for things like prefix-out (which would
   ;; "just work" if it could use format-id).
   ;;
   ;; What used to be out-sym is now out-id-or-sym. For backward
