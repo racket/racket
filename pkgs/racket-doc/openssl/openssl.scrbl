@@ -662,7 +662,7 @@ with client contexts.
 If @racket[path-or-data] is a @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{
 path or string}, the private key is loaded from a file at the given
 path. Otherwise, @racket[path-or-data] must be a list of the form
-@racket[(list 'data _data-bytes)], and and the key is parsed from
+@racket[(list 'data _data-bytes)], and the key is parsed from
 @racket[_data-bytes] directly.
 
 If @racket[rsa?] is @racket[#t] (the default), the first RSA key is
