@@ -1245,8 +1245,8 @@
       (make-provide-transformer
        (lambda (stx modes)
          (syntax-case stx ()
-           [(_ pfx out)
-            (check-prefix stx #'pfx)
+           [(_ pfx-id out)
+            (check-prefix stx #'pfx-id)
             (let ([exports (expand-export #'out modes)])
               (map (lambda (e)
                      ;; NOTE: IIUC we can't actually import format-id
@@ -1254,24 +1254,21 @@
                      ;; equivalent for this special case, similar to
                      ;; the hyphentated-id exmaple in the Check Syntax
                      ;; docs for sub-range-binders.
-                     (let* ([pfx-sym (syntax-e #'pfx)]
-                            [sfx-str (symbol->string #'pfx)]
-                            [pfx-len (string-length sfx-str)]
-                            [sfx     (export-out-id e)]
-                            [sfx-sym (export-out-sym e)]
-                            [sfx-str (symbol->string sfx-sym)]
+                     (let* ([pfx-str (symbol->string (syntax->datum #'pfx-id))]
+                            [pfx-len (string-length pfx-str)]
+                            [sfx-id  (export-out-id e)]
+                            [sfx-str (symbol->string (syntax->datum sfx-id))]
                             [sfx-len (string-length sfx-str)]
-                            [new-str (string-append pfx-str sfx-str)]
-                            [new-sym (string->symbol new-str)]
-                            [new-id  (datum->syntax #'pfx new-id #'pfx #'pfx)]
+                            [new-sym (string->symbol (string-append pfx-str sfx-str))]
+                            [new-id  (datum->syntax #'pfx-id new-sym #'pfx-id #'pfx-id)]
                             [srbs    (list
                                       (vector-immutable (syntax-local-introduce new-id)
                                                         0 pfx-len 0.5 0.5
-                                                        (syntax-local-introduce #'pfx)
+                                                        (syntax-local-introduce #'pfx-id)
                                                         0 pfx-len 0.5 0.5)
                                       (vector-immutable (syntax-local-introduce new-id)
                                                         pfx-len sfx-len 0.5 0
-                                                        (syntax-local-introduce sfx)
+                                                        (syntax-local-introduce sfx-id)
                                                         0 sfx-len 0.5 1))])
                        (make-export
                         (export-local-id e)
