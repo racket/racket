@@ -659,10 +659,11 @@ the client or server. Like @racket[ssl-load-certificate-chain!], this
 procedure is usually used with server contexts or listeners, seldom
 with client contexts.
 
-If @racket[path-or-data] is a @tech{path or string}, the private key
-is loaded from a file at the given path. Otherwise, @racket[path-or-data]
-must be a list of the form @racket[(list 'data _data-bytes)], and
-and the key is parsed from @racket[_data-bytes] directly.
+If @racket[path-or-data] is a @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{
+path or string}, the private key is loaded from a file at the given
+path. Otherwise, @racket[path-or-data] must be a list of the form
+@racket[(list 'data _data-bytes)], and and the key is parsed from
+@racket[_data-bytes] directly.
 
 If @racket[rsa?] is @racket[#t] (the default), the first RSA key is
 read (i.e., non-RSA keys are skipped). If @racket[asn1?] is
