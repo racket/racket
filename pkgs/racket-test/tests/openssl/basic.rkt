@@ -44,9 +44,9 @@
       (thread (lambda ()
 		(define ctx (ssl-make-server-context))
 		(ssl-load-certificate-chain! ctx pem)
-		(ssl-load-private-key! ctx (if private-bytes?
-			(list 'pem-data (file->bytes pem))
-			pem))
+                (ssl-load-private-key! ctx (if private-bytes?
+                                               (list 'data (file->bytes pem))
+                                               pem))
 		(let-values ([(r w) (ports->ssl-ports
 				     r2 w2
 				     #:context ctx

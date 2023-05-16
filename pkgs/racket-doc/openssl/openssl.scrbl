@@ -238,6 +238,7 @@ in other kind of servers.
 #:changed "6.3.0.12" @elem{Added @racket['secure].}
 #:changed "7.3.0.10" @elem{Added @racket[#:private-key] and @racket[#:certificate-chain]
 arguments.}
+#:changed "8.9.0.4" @elem{Added the @racket['pem-data] method for @racket[private-key].}
 ]}
 
 @defthing[ssl-protocol-symbol/c contract?
@@ -388,6 +389,7 @@ and @racket[ssl-load-certificate-chain!], respectively.
 #:changed "6.3.0.12" @elem{Added @racket['secure].}
 #:changed "7.3.0.10" @elem{Added @racket[#:private-key] and @racket[#:certificate-chain]
 arguments.}
+#:changed "8.9.0.4" @elem{Added the @racket['pem-data] method for @racket[private-key].}
 ]}
 
 
@@ -646,27 +648,35 @@ such a test configuration obviously provides no security.
 @defproc[(ssl-load-private-key!
 	  [context-or-listener (or/c ssl-client-context? ssl-server-context?
 				     ssl-listener?)]
-	  [pathname-or-bytes (or/c path-string? (list/c 'bytes bytes?))]
+	  [path-or-data (or/c path-string? (list/c 'data bytes?))]
 	  [rsa? boolean? #t]
 	  [asn1? boolean? #f])
          void?]{
 
-Loads the first private key from @racket[pathname-or-bytes] for the given
+Loads the first private key from @racket[path-or-data] for the given
 context or listener. The key goes with the certificate that identifies
 the client or server. Like @racket[ssl-load-certificate-chain!], this
 procedure is usually used with server contexts or listeners, seldom
 with client contexts.
 
+If @racket[path-or-data] is a @tech{path or string}, the private key
+is loaded from a file at the given path. Otherwise, @racket[path-or-data]
+must be a list of the form @racket[(list 'data _data-bytes)], and
+and the key is parsed from @racket[_data-bytes] directly.
+
 If @racket[rsa?] is @racket[#t] (the default), the first RSA key is
 read (i.e., non-RSA keys are skipped). If @racket[asn1?] is
 @racket[#t], the file is parsed as ASN1 format instead of PEM. Currently
-@racket[asn1?] parsing is only supported with when
-@racket[pathname-or-bytes] is a @racket[path-string?].
+@racket[asn1?] parsing is only supported with when @racket[path-or-data]
+is a @racket[path-string?].
 
 You can use the file @filepath{test.pem} of the @filepath{openssl}
 collection for testing purposes. Since @filepath{test.pem} is public,
 such a test configuration obviously provides no security.
-}
+
+@history[#:changed "8.9.0.4" @elem{Added support for specifying key
+           data directly by providing a list of the form
+           @racket[(list 'data _data-bytes)] for @racket[path-or-data].}]}
 
 @defproc[(ssl-load-suggested-certificate-authorities!
 	  [context-or-listener (or/c ssl-client-context? ssl-server-context?

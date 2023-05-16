@@ -648,38 +648,36 @@ TO DO:
                     1))))
           ssl-listener pathname))
 
-(define (ssl-load-private-key! ssl-context-or-listener pathname-or-bytes
+(define (ssl-load-private-key! ssl-context-or-listener path-or-data
                                [rsa? #t] [asn1? #f])
-  (if (and (pair? pathname-or-bytes) (eq? (car pathname-or-bytes) 'data))
-    (let* ([data (cadr pathname-or-bytes)]
-           [ctx (get-context/listener 'ssl-load-private-key! ssl-context-or-listener
-                                      #:need-unsealed? #t)]
-           [bio (BIO_new_mem_buf data (bytes-length data))])
-        (with-failure
-            (lambda () (BIO_free bio))
+  (if (and (pair? path-or-data) (eq? (car path-or-data) 'data))
+      (let* ([data (cadr path-or-data)]
+             [ctx (get-context/listener 'ssl-load-private-key! ssl-context-or-listener
+                                        #:need-unsealed? #t)]
+             [bio (BIO_new_mem_buf data (bytes-length data))])
+        (with-failure (lambda () (BIO_free bio))
+          (when asn1?
+            ; TODO: we can probably use d2i_PrivateKey and d2i_RSAPrivateKey to support this if we want
+            (error 'ssl-load-private-key "Cannot load ASN.1 keyfile from bytes at the moment. Must load from file path."))
 
-            (unless (not asn1?)
-                ; TODO: we can probably use d2i_PrivateKey and d2i_RSAPrivateKey to support this if we want
-                (error 'ssl-load-private-key "Cannot load ASN.1 keyfile from bytes at the moment. Must load from file path."))
+          (define success (if rsa?
+                              (SSL_CTX_use_RSAPrivateKey
+                               ctx
+                               (PEM_read_bio_RSAPrivateKey bio #f 0 #f))
+                              (SSL_CTX_use_PrivateKey
+                               ctx
+                               (PEM_read_bio_PrivateKey bio #f 0 #f))))
 
-            (define success (if rsa?
-                (SSL_CTX_use_RSAPrivateKey
-                    ctx
-                    (PEM_read_bio_RSAPrivateKey bio #f 0 #f))
-                (SSL_CTX_use_PrivateKey
-                    ctx
-                    (PEM_read_bio_PrivateKey bio #f 0 #f))))
-
-            (unless (= 1 success)
-                (error 'ssl-load-private-key "failed to load private key"))
-            (BIO_free bio)))
-  (ssl-load-...
-   'ssl-load-private-key!
-   (lambda (ctx path)
-     ((if rsa? SSL_CTX_use_RSAPrivateKey_file SSL_CTX_use_PrivateKey_file)
-      ctx path
-      (if asn1? SSL_FILETYPE_ASN1 SSL_FILETYPE_PEM)))
-   ssl-context-or-listener pathname-or-bytes)))
+          (unless (= 1 success)
+            (error 'ssl-load-private-key "failed to load private key"))
+          (BIO_free bio)))
+      (ssl-load-...
+       'ssl-load-private-key!
+       (lambda (ctx path)
+         ((if rsa? SSL_CTX_use_RSAPrivateKey_file SSL_CTX_use_PrivateKey_file)
+          ctx path
+          (if asn1? SSL_FILETYPE_ASN1 SSL_FILETYPE_PEM)))
+       ssl-context-or-listener path-or-data)))
 
 (define (ssl-load-verify-root-certificates! scl src)
   (ssl-load-... 'ssl-load-verify-root-certificates!
