@@ -29,15 +29,16 @@
   (require (prefix-in c: "parse-classic.rkt")
            (prefix-in i: "parse-interp.rkt"))
   (begin-for-syntax
-    (provide interp?)
-    (define interp? (make-parameter #t))
+    (provide interp-clauses? interp-rhs?)
+    (define interp-clauses? (make-parameter #t))  ;; for syntax-parse, etc
+    (define interp-rhs? (make-parameter #f))      ;; for define-syntax-class, etc
     (define (codegen-clauses who context x all-defs patterns body-exprs ctx track-literals?)
       (define (call f) (f who context x all-defs patterns body-exprs ctx track-literals?))
-      (cond [(interp?) (call i:codegen-clauses)]
+      (cond [(interp-clauses?) (call i:codegen-clauses)]
             [else (call c:codegen-clauses)]))
     (define (codegen-rhs name formals relsattrs rhs splicing? ctx)
       (define (call f) (f name formals relsattrs rhs splicing? ctx))
-      (cond [(interp?) (call i:codegen-rhs)]
+      (cond [(interp-rhs?) (call i:codegen-rhs)]
             [else (call c:codegen-rhs)]))))
 
 ;; ============================================================
