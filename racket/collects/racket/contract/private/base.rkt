@@ -238,9 +238,7 @@
                            val
                            '(expected: "list?" given: "~e")
                            val))))
-  (define ht (make-hash))
   (λ (blame)
-    (define b+baf (thread-cell-ref blame-accepting-func-cell))
     (define cache-hit (check-cache blame-accepting-func-cell blame))
     (cond
       [cache-hit cache-hit]
