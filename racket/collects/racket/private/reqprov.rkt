@@ -1252,7 +1252,7 @@
                      ;; NOTE: IIUC we can't actually import format-id
                      ;; from racket/syntax here, so we do the
                      ;; equivalent for this special case, similar to
-                     ;; the hyphentated-id exmaple in the Check Syntax
+                     ;; the hyphentated-id example in the Check Syntax
                      ;; docs for sub-range-binders.
                      (let* ([pfx-str (symbol->string (syntax->datum #'pfx-id))]
                             [pfx-len (string-length pfx-str)]
