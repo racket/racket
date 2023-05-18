@@ -238,11 +238,12 @@
                            val
                            '(expected: "list?" given: "~e")
                            val))))
+  (define ht (make-hash))
   (λ (blame)
+    (define b+baf (thread-cell-ref blame-accepting-func-cell))
+    (define cache-hit (check-cache blame-accepting-func-cell blame))
     (cond
-      [(thread-cell-ref blame-accepting-func-cell)
-       =>
-       (λ (blame-accepting-func) (blame-accepting-func blame))]
+      [cache-hit cache-hit]
       [else
        (define r-ctc (force-recursive-contract ctc))
        (define f (get/build-late-neg-projection r-ctc))
@@ -253,10 +254,9 @@
             =>
             (λ (f) (f val neg-party))]
            [else
-            (thread-cell-set! blame-accepting-func-cell
-                              (λ (blame)
-                                (λ (val neg-party)
-                                  ((thread-cell-ref val-neg-party-acceptor) val neg-party))))
+            (update-cache blame-accepting-func-cell blame
+                          (λ (val neg-party)
+                            ((thread-cell-ref val-neg-party-acceptor) val neg-party)))
             (do-list-check val neg-party blame)
             (define f-of-blame 'f-of-blame-not-yet-set)
             (thread-cell-set! val-neg-party-acceptor
@@ -265,6 +265,33 @@
                                 (f-of-blame val neg-party)))
             (set! f-of-blame (f blame))
             (f-of-blame val neg-party)]))])))
+
+(define (check-cache blame-accepting-func-cell blame)
+  (define b+baf (thread-cell-ref blame-accepting-func-cell))
+  (cond
+    [(not b+baf) #f]
+    [(and (eq? (blame-positive blame) (vector-ref b+baf 0))
+          (eq? (blame-negative blame) (vector-ref b+baf 1)))
+     (vector-ref b+baf 2)]
+    [(and (eq? (blame-positive blame) (vector-ref b+baf 1))
+          (eq? (blame-negative blame) (vector-ref b+baf 0)))
+     (vector-ref b+baf 3)]
+    [else #f]))
+
+(define (update-cache blame-accepting-func-cell blame func)
+  (define b+baf (thread-cell-ref blame-accepting-func-cell))
+  (define (evict-and-set)
+    (thread-cell-set! blame-accepting-func-cell
+                      (vector (blame-positive blame)
+                              (blame-negative blame)
+                              func
+                              #f)))
+  (cond
+    [(not b+baf) (evict-and-set)]
+    [(and (eq? (blame-positive blame) (vector-ref b+baf 1))
+          (eq? (blame-negative blame) (vector-ref b+baf 0)))
+     (vector-set! b+baf 3 func)]
+    [else (evict-and-set)]))
 
 (define (recursive-contract-late-neg-projection ctc)
   (λ (blame)
