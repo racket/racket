@@ -1245,34 +1245,38 @@
       (make-provide-transformer
        (lambda (stx modes)
          (syntax-case stx ()
-           [(_ pfx-id out)
-            (check-prefix stx #'pfx-id)
+           [(_ pre-id out)
+            (check-prefix stx #'pre-id)
             (let ([exports (expand-export #'out modes)])
               (map (lambda (e)
-                     ;; NOTE: IIUC we can't actually import format-id
-                     ;; from racket/syntax here, so we do the
-                     ;; equivalent for this special case, similar to
-                     ;; the hyphentated-id example in the Check Syntax
+                     ;; Although we can't import format-id from
+                     ;; racket/syntax here, we do the equivalent for
+                     ;; this special case, similar to the
+                     ;; hyphentated-id example in the Check Syntax
                      ;; docs for sub-range-binders.
-                     (let* ([pfx-str (symbol->string (syntax->datum #'pfx-id))]
-                            [pfx-len (string-length pfx-str)]
-                            [sfx-id  (export-out-id e)]
-                            [sfx-str (symbol->string (syntax->datum sfx-id))]
-                            [sfx-len (string-length sfx-str)]
-                            [new-sym (string->symbol (string-append pfx-str sfx-str))]
-                            [new-id  (datum->syntax #'pfx-id new-sym #'pfx-id #'pfx-id)]
-                            [srbs    (list
+                     (let* ([pre-str (symbol->string (syntax->datum #'pre-id))]
+                            [pre-len (string-length pre-str)]
+                            [out-id  (export-out-id e)]
+                            [out-str (symbol->string (syntax->datum out-id))]
+                            [out-len (string-length out-str)]
+                            [out-srb (syntax-property out-id 'sub-range-binders)]
+                            [new-sym (string->symbol (string-append pre-str out-str))]
+                            [new-id  (datum->syntax #'pre-id new-sym #'pre-id #'pre-id)]
+                            [new-srb (list
                                       (vector-immutable (syntax-local-introduce new-id)
-                                                        0 pfx-len 0.5 0.5
-                                                        (syntax-local-introduce #'pfx-id)
-                                                        0 pfx-len 0.5 0.5)
+                                                        0 pre-len 0.5 0.5
+                                                        (syntax-local-introduce #'pre-id)
+                                                        0 pre-len 0.5 0.5)
                                       (vector-immutable (syntax-local-introduce new-id)
-                                                        pfx-len sfx-len 0.5 0
-                                                        (syntax-local-introduce sfx-id)
-                                                        0 sfx-len 0.5 1))])
+                                                        pre-len out-len 0.5 0
+                                                        (syntax-local-introduce out-id)
+                                                        0 out-len 0.5 1))]
+                            [srb     (if out-srb
+                                         (cons new-srb out-srb)
+                                         new-srb)])
                        (make-export
                         (export-local-id e)
-                        (syntax-property new-id 'sub-range-binders srbs)
+                        (syntax-property new-id 'sub-range-binders srb)
                         (export-mode e)
                         (export-protect? e)
                         (export-orig-stx e))))
