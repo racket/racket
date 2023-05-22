@@ -251,31 +251,36 @@
             stx)]))))))
 
 (define (generate-super-call stx the-finder the-obj rename-temp args)
-  (add-declare-this-escapes
-   stx
-   (class-syntax-protect
-    (datum->syntax 
-     (quote-syntax here)
-     (make-method-apply (find the-finder rename-temp stx) 
-                        (find the-finder the-obj stx) 
-                        args)
-     stx))))
+  (define mtd-id (syntax-case stx () [(_ method . args) #'method]))
+  (syntax-property
+   (add-declare-this-escapes
+    stx
+    (class-syntax-protect
+     (datum->syntax
+      (quote-syntax here)
+      (make-method-apply (find the-finder rename-temp stx)
+                         (find the-finder the-obj stx)
+                         args)
+      stx)))
+   'disappeared-use
+   (syntax-local-introduce mtd-id)))
 
 (define (generate-inner-call stx the-finder the-obj default-expr rename-temp args)
-  (add-declare-this-escapes
-   stx
-   (class-syntax-protect
-    (datum->syntax 
-     (quote-syntax here)
+  (define mtd-id (syntax-case stx () [(_ _default-expr method . args) #'method]))
+  (syntax-property
+   (add-declare-this-escapes
+    stx
+    (class-syntax-protect
      (let ([target (find the-finder the-obj stx)])
-       (datum->syntax 
+       (datum->syntax
         (quote-syntax here)
         `(let ([i (,(find the-finder rename-temp stx) ,target)])
            (if i
                ,(make-method-apply 'i target args)
                ,default-expr))
-        stx))
-     stx))))
+        stx))))
+   'disappeared-use
+   (syntax-local-introduce mtd-id)))
 
 (define (make-init-error-map localized-id)
   (mk-set!-trans
