@@ -15,48 +15,38 @@
              ;; the export struct type:
              export struct:export make-export export?
              export-local-id export-out-id export-out-sym export-orig-stx export-protect? export-mode)
-  
-  ;; export struct:
+
+  ;; Note on history:
   ;;
   ;; The old "out-sym" field was a symbol, making it awkward to
   ;; preserve srcloc for things like rename-out, or syntax properties
-  ;; like sub-range-binders for things like prefix-out (which would
-  ;; "just work" if it could use format-id).
+  ;; like sub-range-binders for things like prefix-out.
   ;;
-  ;; What used to be out-sym is now out-id-or-sym. For backward
-  ;; compatibilty, it may still be initialized with a symbol; the old
-  ;; accessor export-out-sym is now a normal function that always
-  ;; returns a symbol. However the field may also be initialized as an
-  ;; identifier (preferred!) and export-out-id returns that identifier
-  ;; else synthesizes one if the field value is a symbol.
-  (define-struct* export (local-id out-id-or-sym mode protect? orig-stx)
+  ;; Now the field is named "out-id", an identifier. For backward
+  ;; compatibilty, make-export accepts a symbol, and the old accessor
+  ;; export-out-sym is available as a normal function.
+  (define-struct* export (local-id out-id mode protect? orig-stx)
     #:guard (lambda (i out mode protect? stx info)
               (unless (identifier? i)
                 (raise-argument-error 'make-export "identifier?" i))
-              (unless (or (identifier? out) (symbol? out))
-                (raise-argument-error 'make-export "identifier? or symbol?" out))
               (unless (phase+space? mode)
                 (raise-argument-error 'make-export "phase+space?" mode))
               (unless (syntax? stx)
                 (raise-argument-error 'make-export "syntax?" stx))
-              (values i out mode (and protect? #t) stx)))
-    
-  (define-values (export-out-id)
-    (lambda (e)
-      (let ([v (export-out-id-or-sym e)])
-       (if (identifier? v)
-           v
-           (datum->syntax (export-local-id e)
-                          v
-                          (export-local-id e)
-                          (export-local-id e))))))
+              (let ([out-id
+                     (cond [(identifier? out) out]
+                           [(symbol? out)
+                            (if (equal? out (syntax->datum stx))
+                                stx
+                                (datum->syntax #f out stx))]
+                           [else
+                            (raise-argument-error 'make-export
+                                                  "(or/c identifier? symbol?)"
+                                                  out)])])
+                (values i out-id mode (and protect? #t) stx))))
 
-  (define-values (export-out-sym)
-    (lambda (e)
-      (let ([v (export-out-id-or-sym e)])
-       (if (identifier? v)
-           (syntax-e v)
-           v))))
+  (define (export-out-sym e)
+    (syntax-e (export-out-id e)))
 
   (define-values (prop:provide-pre-transformer provide-pre-transformer? provide-pre-transformer-get-proc)
     (make-struct-type-property 'provide-pre-transformer))
