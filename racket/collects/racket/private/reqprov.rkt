@@ -315,6 +315,7 @@
                        [(submod . s)
                         (check-lib-form in)
                         (list (mode-wrap base-mode (xlate-path in)))]
+                       ;; See `prefix-in` function comment.
                        [(prefix-in pfx path)
                         (simple-path? #'path)
                         (list (mode-wrap
@@ -729,7 +730,16 @@
                   (map car new+olds)
                   leftover-imports)
                  sources))))]))))
-  
+
+  ;; In simple cases (require (prefix-in)) expands to a single
+  ;; (#%require [prefix pre mod]) clause. Such simple cases bypass
+  ;; this `prefix-in` transformer. That's fine because the prefix and
+  ;; suffix identifiers are distinct in the prefix clause. Analyzers
+  ;; like drracket/check-syntax already see/use these.
+  ;;
+  ;; Whereas this handles the general cases, including nested
+  ;; prefix-in. These expand to (#%require [rename new old]). Here we
+  ;; do need a sub-range-binders property on `new`.
   (define-syntax prefix-in
     (make-require-transformer
      (lambda (stx)
@@ -746,14 +756,7 @@
             (values
              (map (lambda (import)
                     (let ([id (import-local-id import)])
-                      (make-import (datum->syntax
-                                    id
-                                    (string->symbol
-                                     (format "~a~a" 
-                                             (syntax-e pfx)
-                                             (syntax-e id)))
-                                    id
-                                    id)
+                      (make-import (append-ids id pfx id)
                                    (import-src-sym import)
                                    (import-src-mod-path import)
                                    (import-mode import)
@@ -1249,37 +1252,12 @@
             (check-prefix stx #'pre-id)
             (let ([exports (expand-export #'out modes)])
               (map (lambda (e)
-                     ;; Although we can't import format-id from
-                     ;; racket/syntax here, we do the equivalent for
-                     ;; this special case, similar to the
-                     ;; hyphentated-id example in the Check Syntax
-                     ;; docs for sub-range-binders.
-                     (let* ([pre-str (symbol->string (syntax->datum #'pre-id))]
-                            [pre-len (string-length pre-str)]
-                            [out-id  (export-out-id e)]
-                            [out-str (symbol->string (syntax->datum out-id))]
-                            [out-len (string-length out-str)]
-                            [out-srb (syntax-property out-id 'sub-range-binders)]
-                            [new-sym (string->symbol (string-append pre-str out-str))]
-                            [new-id  (datum->syntax #'pre-id new-sym #'pre-id #'pre-id)]
-                            [new-srb (list
-                                      (vector-immutable (syntax-local-introduce new-id)
-                                                        0 pre-len 0.5 0.5
-                                                        (syntax-local-introduce #'pre-id)
-                                                        0 pre-len 0.5 0.5)
-                                      (vector-immutable (syntax-local-introduce new-id)
-                                                        pre-len out-len 0.5 0
-                                                        (syntax-local-introduce out-id)
-                                                        0 out-len 0.5 1))]
-                            [srb     (if out-srb
-                                         (cons new-srb out-srb)
-                                         new-srb)])
-                       (make-export
-                        (export-local-id e)
-                        (syntax-property new-id 'sub-range-binders srb)
-                        (export-mode e)
-                        (export-protect? e)
-                        (export-orig-stx e))))
+                     (make-export
+                      (export-local-id e)
+                      (append-ids #'pre-id #'pre-id (export-out-id e))
+                      (export-mode e)
+                      (export-protect? e)
+                      (export-orig-stx e)))
                    exports))]))
        (lambda (stx modes)
          (syntax-case stx ()
@@ -1287,7 +1265,6 @@
             (check-prefix stx #'pfx)
             (with-syntax ([out (pre-expand-export #'out modes)])
               (syntax/loc stx (prefix-out pfx out)))])))))
-           
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1365,4 +1342,69 @@
                                (values (make-rename-transformer (quote-syntax lifted)) ...)))))])))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  ;; Although we can't import format-id from racket/syntax here, we
+  ;; implement the equivalent for this special case of appending two
+  ;; identifiers. (Similar to the hyphentated-id example in the Check
+  ;; Syntax docs for sub-range-binders.)
+  ;;
+  ;; When there already exist sub-range-binders on the suffix-id -- as
+  ;; is the case with nested prefix-{in out} -- update them: Replace
+  ;; their "fuller" syntax with new-id, and shift the offset by
+  ;; prefix-len. In other words, the srbs for new-id all share the
+  ;; same "fuller" syntax in the first element of the vector; it's
+  ;; "flat" and does not reflect the nesting. (By contrast if we just
+  ;; cons them together, such that the suffix represents
+  ;; "sub-sub-binders", I think it would confuse consumers like
+  ;; drracket/check-syntax. Anyway it's easier and more reliable for
+  ;; us to "flatten" here.)
+  (define-for-syntax (append-ids lctx prefix-id suffix-id)
+    (let* (;; CAVEAT: Using sub-range-binders for nested prefix-in
+           ;; forms seems to freak out check-syntax. After looking at
+           ;; traversals.rkt, I'm not sure why, except maybe it
+           ;; assumes the positions are relative to something other
+           ;; than the supplied prefix and suffix?? For now I'm using
+           ;; another syntax-property key, but otherwise this is
+           ;; intended to match the docs for sub-range-binders.
+           ;;
+           ;; [If it turns out a new/distinct property is appropriate,
+           ;; then I would simplify its compared to sub-range-binders.
+           ;; Maybe just (vector full-sym full-ofs full-span sub-sym
+           ;; sub-ofs). No syntax object, because no free id table
+           ;; needed; just symbols and syntax positions and spans.
+           ;; "pdb" needs this only to refine the end points of
+           ;; _import_ arrows, never lexical arrows. Symbol and
+           ;; position suffices, combined with identifier-binding
+           ;; values.]
+           [prop-key    'prefix-sub-range-binders]
+           [prefix-str  (symbol->string (syntax->datum prefix-id))]
+           [prefix-len  (string-length prefix-str)]
+           [suffix-str  (symbol->string (syntax->datum suffix-id))]
+           [suffix-len  (string-length suffix-str)]
+           [new-sym     (string->symbol (string-append prefix-str suffix-str))]
+           [new-id      (datum->syntax lctx new-sym prefix-id #f)]
+           [_           (syntax-track-origin new-id prefix-id #'append-ids)]
+           [prefix-vec  (vector (syntax-local-introduce new-id)
+                                0 prefix-len 0.5 0.5
+                                (syntax-local-introduce prefix-id)
+                                0 prefix-len 0.5 0.5)]
+           [suffix-srb  (syntax-property suffix-id prop-key)]
+           [suffix-vecs (cond
+                          [suffix-srb
+                           (unless (list? suffix-srb)
+                             (raise-syntax-error #f "expected list of sub-range-binders at " suffix-id suffix-srb))
+                           (map (lambda (vec)
+                                  (vector-set! vec 0 new-id)
+                                  (vector-set! vec 1 (+ prefix-len (vector-ref vec 1)))
+                                  vec)
+                                suffix-srb)]
+                          [else
+                           (list
+                            (vector (syntax-local-introduce new-id)
+                                    prefix-len suffix-len 0.5 0
+                                    (syntax-local-introduce suffix-id)
+                                    0 suffix-len 0.5 1))])]
+           [srb         (cons prefix-vec suffix-vecs)])
+      (syntax-property new-id prop-key srb)
+      ))
   )
