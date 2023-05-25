@@ -1206,7 +1206,7 @@
     [(key proc) (call-with-immediate-continuation-mark key proc #f)]
     [(key proc default-v)
      (check who (procedure-arity-includes/c 1) proc)
-     (call-with-immediate-continuation-mark/inline key (lambda (arg) (proc arg)) default-v)]))
+     (call-with-immediate-continuation-mark/inline key (lambda (arg) (|#%app| proc arg)) default-v)]))
 
 (define/who continuation-mark-set-first
   (case-lambda

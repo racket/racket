@@ -758,6 +758,8 @@
                     (with-continuation-mark 'x 14
                       (call-with-immediate-continuation-mark 'x (lambda (v) v))))))
 
+(test 'nope call/cc (λ (k) (call-with-immediate-continuation-mark 'key k 'nope)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Check a wcm in tail position of a wcm that is not in tail position,
