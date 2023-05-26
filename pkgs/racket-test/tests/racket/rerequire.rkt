@@ -201,7 +201,9 @@ CODE
 CODE
    path1)
 
-  (check-equal? ((reload)) 2))
+  (check-equal? ((reload)) 2)
+
+  (delete-directory/files dir))
 
 
 (test-case "ordering"
@@ -273,4 +275,27 @@ CODE
 
   (let-values ([(proc-b proc-c) (reload)])
    (check-equal? (proc-b) 2)
-   (check-equal? (proc-c) 2)))
+   (check-equal? (proc-c) 2))
+
+  (delete-directory/files dir))
+
+(test-case "ordering"
+  (define dir (make-temporary-file "rereq-~a" 'directory))
+  (define path (build-path dir "m.rkt"))
+
+  (display-to-file
+   #:exists 'replace
+   #<<CODE
+#lang racket/base
+(module sub racket/base
+  (define v 'dont-try-to-replace-me))
+CODE
+   path)
+
+  (compile-file path)
+  ;; declare submodule before main module:
+  (dynamic-require `(submod ,path sub) #f)
+  ;; loading main module should not get submodule
+  (dynamic-rerequire path)
+
+  (delete-directory/files dir))
