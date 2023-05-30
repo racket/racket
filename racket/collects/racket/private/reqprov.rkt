@@ -756,7 +756,7 @@
             (values
              (map (lambda (import)
                     (let ([id (import-local-id import)])
-                      (make-import (append-ids id pfx id)
+                      (make-import (prefix-identifier id pfx id)
                                    (import-src-sym import)
                                    (import-src-mod-path import)
                                    (import-mode import)
@@ -1254,7 +1254,7 @@
               (map (lambda (e)
                      (make-export
                       (export-local-id e)
-                      (append-ids #'pre-id #'pre-id (export-out-id e))
+                      (prefix-identifier #'pre-id #'pre-id (export-out-id e))
                       (export-mode e)
                       (export-protect? e)
                       (export-orig-stx e)))
@@ -1343,68 +1343,65 @@
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; Although we can't import format-id from racket/syntax here, we
-  ;; implement the equivalent for this special case of appending two
-  ;; identifiers. (Similar to the hyphentated-id example in the Check
-  ;; Syntax docs for sub-range-binders.)
+  ;; Combine prefix and suffix identifiers into a new identifier,
+  ;; which has a syntax property revealing the ingredients.
   ;;
-  ;; When there already exist sub-range-binders on the suffix-id -- as
-  ;; is the case with nested prefix-{in out} -- update them: Replace
-  ;; their "fuller" syntax with new-id, and shift the offset by
-  ;; prefix-len. In other words, the srbs for new-id all share the
-  ;; same "fuller" syntax in the first element of the vector; it's
-  ;; "flat" and does not reflect the nesting. (By contrast if we just
-  ;; cons them together, such that the suffix represents
-  ;; "sub-sub-binders", I think it would confuse consumers like
-  ;; drracket/check-syntax. Anyway it's easier and more reliable for
-  ;; us to "flatten" here.)
-  (define-for-syntax (append-ids lctx prefix-id suffix-id)
-    (let* (;; CAVEAT: Using sub-range-binders for nested prefix-in
-           ;; forms seems to freak out check-syntax. After looking at
-           ;; traversals.rkt, I'm not sure why, except maybe it
-           ;; assumes the positions are relative to something other
-           ;; than the supplied prefix and suffix?? For now I'm using
-           ;; another syntax-property key, but otherwise this is
-           ;; intended to match the docs for sub-range-binders.
-           ;;
-           ;; [If it turns out a new/distinct property is appropriate,
-           ;; then I would simplify its compared to sub-range-binders.
-           ;; Maybe just (vector full-sym full-ofs full-span sub-sym
-           ;; sub-ofs). No syntax object, because no free id table
-           ;; needed; just symbols and syntax positions and spans.
-           ;; "pdb" needs this only to refine the end points of
-           ;; _import_ arrows, never lexical arrows. Symbol and
-           ;; position suffices, combined with identifier-binding
-           ;; values.]
-           [prop-key    'prefix-sub-range-binders]
-           [prefix-str  (symbol->string (syntax->datum prefix-id))]
-           [prefix-len  (string-length prefix-str)]
-           [suffix-str  (symbol->string (syntax->datum suffix-id))]
-           [suffix-len  (string-length suffix-str)]
-           [new-sym     (string->symbol (string-append prefix-str suffix-str))]
-           [new-id      (datum->syntax lctx new-sym prefix-id #f)]
-           [_           (syntax-track-origin new-id prefix-id #'append-ids)]
-           [prefix-vec  (vector (syntax-local-introduce new-id)
-                                0 prefix-len 0.5 0.5
-                                (syntax-local-introduce prefix-id)
-                                0 prefix-len 0.5 0.5)]
-           [suffix-srb  (syntax-property suffix-id prop-key)]
+  ;; When there already exists a property on the suffix-id -- as is
+  ;; the case with nested prefix-{in out} -- we don't just cons them.
+  ;; Instead we "flatten": Replace the old widest identifier with the
+  ;; new id, and shift the old offsets by the new prefix length. As a
+  ;; result there is a flat simple list of one or more prefixes.
+  ;;
+  ;; Note: Although this may sound similar to the sub-range-binders
+  ;; property, that is intended as a directive to drracket
+  ;; check-syntax to draw arrows between identifiers present in the
+  ;; original user program. Which isn't necessarily possible here; the
+  ;; new id might be present only in the fully-expanded `rename`
+  ;; clause and have no references in the original.
+  (define-for-syntax (prefix-identifier lctx prefix-id suffix-id)
+    (for-each (lambda (stx)
+                (unless (identifier? stx)
+                  (raise-syntax-error #f "expected identifier" stx)))
+              (list lctx prefix-id suffix-id))
+    (let* ([prop-key    'import-or-export-prefix-ranges]
+           [prefix-len  (syntax-span prefix-id)]
+           [_           (unless (= prefix-len (string-length (symbol->string (syntax-e prefix-id))))
+                          (error 'prefix-identifier "unexpected condition"))]
+           [new-id      (datum->syntax lctx
+                                       (string->symbol
+                                        (format "~a~a"
+                                                (syntax-e prefix-id)
+                                                (syntax-e suffix-id)))
+                                       ;; What srcloc to use,
+                                       ;; exactly?? The new id has no
+                                       ;; srcloc in original program.
+                                       ;; But pdb currently uses #f
+                                       ;; srcloc to distinguish
+                                       ;; all-from -- probably that
+                                       ;; needs its own solution, as
+                                       ;; long as we "have the hood
+                                       ;; open" on this file, and then
+                                       ;; we could supply #f here.
+                                       lctx
+                                       #f)]
+           [prefix-vec  (vector (syntax-e new-id)
+                                0
+                                prefix-len
+                                (syntax-e prefix-id)
+                                (syntax-position prefix-id))]
            [suffix-vecs (cond
-                          [suffix-srb
-                           (unless (list? suffix-srb)
-                             (raise-syntax-error #f "expected list of sub-range-binders at " suffix-id suffix-srb))
-                           (map (lambda (vec)
-                                  (vector-set! vec 0 new-id)
-                                  (vector-set! vec 1 (+ prefix-len (vector-ref vec 1)))
-                                  vec)
-                                suffix-srb)]
-                          [else
-                           (list
-                            (vector (syntax-local-introduce new-id)
-                                    prefix-len suffix-len 0.5 0
-                                    (syntax-local-introduce suffix-id)
-                                    0 suffix-len 0.5 1))])]
-           [srb         (cons prefix-vec suffix-vecs)])
-      (syntax-property new-id prop-key srb)
-      ))
-  )
+                          [(syntax-property suffix-id prop-key)
+                           => (lambda (vs)
+                                (map (lambda (v)
+                                       (vector-set! v 0 (syntax-e new-id))
+                                       (vector-set! v 1 (+ prefix-len (vector-ref v 1)))
+                                       v)
+                                     vs))]
+                          [else (list
+                                 (vector (syntax-e new-id)
+                                         prefix-len
+                                         (syntax-span suffix-id)
+                                         (syntax-e suffix-id)
+                                         (syntax-position suffix-id)))])]
+           [prop-val    (cons prefix-vec suffix-vecs)])
+      (syntax-property new-id prop-key prop-val))))
