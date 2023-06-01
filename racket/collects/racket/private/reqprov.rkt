@@ -1371,9 +1371,13 @@
                           (format "~a~a"
                                   (syntax-e prefix-id)
                                   (syntax-e suffix-id)))
-                         ;; srcloc: The new, prefixed id has no
-                         ;; position within the original file.
-                         (vector (syntax-source prefix-id) #f #f #f #f)
+                         ;; srcloc: The new id has no position within
+                         ;; the original file. Supplying as much as we
+                         ;; can like say `(vector (syntax-source
+                         ;; prefix-id) #f #f #f #f)` causes a failing
+                         ;; test, suggesting we should just supply #f
+                         ;; here.
+                         #f
                          ;; Unsure if we need to combine props here.
                          #f)]
            [prefix-vec  (vector 0
