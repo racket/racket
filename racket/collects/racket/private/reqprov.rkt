@@ -1343,14 +1343,35 @@
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; Combine prefix and suffix identifiers into a new identifier,
-  ;; which has a syntax property revealing the ingredients.
+  ;; Combine prefix and suffix identifiers into a new identifier.
+  ;;
+  ;; When prefix-id and suffix-id have sufficient srcloc, add a syntax
+  ;; property to reveal them. (It's possible they may have no srcloc,
+  ;; as in the module.rktl tests of prefix-out.)
   ;;
   ;; When there already exists a property on the suffix-id -- as is
   ;; the case with nested prefix-{in out} -- we don't just cons them.
   ;; Instead we "flatten": Replace the old widest identifier with the
   ;; new id, and shift the old offsets by the new prefix length. As a
   ;; result there is a flat simple list of one or more prefixes.
+  ;;
+  ;; The property value is a list of vectors, each of which says that
+  ;; a sub-range of the full identifier orginated from another
+  ;; identifier whose syntax-e and syntax-position is given (the span
+  ;; is the same).
+  ;;
+  ;;   (vector offset ;into the full identifier: non-neg integer
+  ;;           span   ;from offset: pos integer
+  ;;           sub-syntax-e         ;for convenience: symbol
+  ;;           sub-syntax-position) ;pos integer
+  ;;
+  ;; Example: The value for "foobarbang" formed from "foo" at
+  ;; syntax-position 42, "bar" at syntax-position 99, and "bang" at
+  ;; syntax-position 777, would be:
+  ;;
+  ;;   (list (vector 0 3 'foo   42)
+  ;;         (vector 3 3 'bar   99)
+  ;;         (vector 6 4 'bang 777))
   ;;
   ;; Note: Although this may sound similar to the sub-range-binders
   ;; property, that is intended as a directive to drracket
@@ -1363,38 +1384,39 @@
                 (unless (identifier? stx)
                   (raise-syntax-error #f "expected identifier" stx)))
               (list lctx prefix-id suffix-id))
-    (let* ([prop-key    'import-or-export-prefix-ranges]
-           [prefix-len  (syntax-span prefix-id)]
-           [new-id      (datum->syntax
-                         lctx
-                         (string->symbol
-                          (format "~a~a"
-                                  (syntax-e prefix-id)
-                                  (syntax-e suffix-id)))
-                         ;; srcloc: The new id has no position within
-                         ;; the original file. Supplying as much as we
-                         ;; can like say `(vector (syntax-source
-                         ;; prefix-id) #f #f #f #f)` causes a failing
-                         ;; test, suggesting we should just supply #f
-                         ;; here.
-                         #f
-                         ;; Unsure if we need to combine props here.
-                         #f)]
-           [prefix-vec  (vector 0
-                                prefix-len
-                                (syntax-e prefix-id)
-                                (syntax-position prefix-id))]
-           [suffix-vecs (cond
-                          [(syntax-property suffix-id prop-key)
-                           => (lambda (vs)
-                                (map (lambda (v)
-                                       (vector-set! v 0 (+ prefix-len (vector-ref v 0)))
-                                       v)
-                                     vs))]
-                          [else (list
-                                 (vector prefix-len
+    (let* ([new-id (datum->syntax lctx
+                                  (string->symbol
+                                   (format "~a~a"
+                                           (syntax-e prefix-id)
+                                           (syntax-e suffix-id)))
+                                  #f ;not in original file
+                                  ;; REVIEW: Need to combine props here?
+                                  #f)])
+      (cond
+        [(and (syntax-position prefix-id)
+              (syntax-span prefix-id))
+         (let* ([prop-key    'import-or-export-prefix-ranges]
+                [prefix-vec  (vector 0
+                                     (syntax-span prefix-id)
+                                     (syntax-e prefix-id)
+                                     (syntax-position prefix-id))]
+                [suffix-vecs (cond
+                               [(syntax-property suffix-id prop-key)
+                                => (lambda (vs)
+                                     (map (lambda (v)
+                                            (vector-set! v 0
+                                                         (+ (syntax-span prefix-id)
+                                                            (vector-ref v 0)))
+                                            v)
+                                          vs))]
+                               [(and (syntax-position suffix-id)
+                                     (syntax-span suffix-id))
+                                (list
+                                 (vector (syntax-span prefix-id)
                                          (syntax-span suffix-id)
                                          (syntax-e suffix-id)
-                                         (syntax-position suffix-id)))])]
-           [prop-val    (cons prefix-vec suffix-vecs)])
-      (syntax-property new-id prop-key prop-val))))
+                                         (syntax-position suffix-id)))]
+                               [else null])]
+                [prop-val    (cons prefix-vec suffix-vecs)])
+           (syntax-property new-id prop-key prop-val))]
+        [else new-id]))))
