@@ -1365,27 +1365,18 @@
               (list lctx prefix-id suffix-id))
     (let* ([prop-key    'import-or-export-prefix-ranges]
            [prefix-len  (syntax-span prefix-id)]
-           [_           (unless (= prefix-len (string-length (symbol->string (syntax-e prefix-id))))
-                          (error 'prefix-identifier "unexpected condition"))]
-           [new-id      (datum->syntax lctx
-                                       (string->symbol
-                                        (format "~a~a"
-                                                (syntax-e prefix-id)
-                                                (syntax-e suffix-id)))
-                                       ;; What srcloc to use,
-                                       ;; exactly?? The new id has no
-                                       ;; srcloc in original program.
-                                       ;; But pdb currently uses #f
-                                       ;; srcloc to distinguish
-                                       ;; all-from -- probably that
-                                       ;; needs its own solution, as
-                                       ;; long as we "have the hood
-                                       ;; open" on this file, and then
-                                       ;; we could supply #f here.
-                                       lctx
-                                       #f)]
-           [prefix-vec  (vector (syntax-e new-id)
-                                0
+           [new-id      (datum->syntax
+                         lctx
+                         (string->symbol
+                          (format "~a~a"
+                                  (syntax-e prefix-id)
+                                  (syntax-e suffix-id)))
+                         ;; srcloc: The new, prefixed id has no
+                         ;; position within the original file.
+                         (vector (syntax-source prefix-id) #f #f #f #f)
+                         ;; Unsure if we need to combine props here.
+                         #f)]
+           [prefix-vec  (vector 0
                                 prefix-len
                                 (syntax-e prefix-id)
                                 (syntax-position prefix-id))]
@@ -1393,13 +1384,11 @@
                           [(syntax-property suffix-id prop-key)
                            => (lambda (vs)
                                 (map (lambda (v)
-                                       (vector-set! v 0 (syntax-e new-id))
-                                       (vector-set! v 1 (+ prefix-len (vector-ref v 1)))
+                                       (vector-set! v 0 (+ prefix-len (vector-ref v 0)))
                                        v)
                                      vs))]
                           [else (list
-                                 (vector (syntax-e new-id)
-                                         prefix-len
+                                 (vector prefix-len
                                          (syntax-span suffix-id)
                                          (syntax-e suffix-id)
                                          (syntax-position suffix-id)))])]
