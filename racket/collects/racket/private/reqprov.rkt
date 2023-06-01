@@ -1384,14 +1384,14 @@
                 (unless (identifier? stx)
                   (raise-syntax-error #f "expected identifier" stx)))
               (list lctx prefix-id suffix-id))
-    (let* ([new-id (datum->syntax lctx
-                                  (string->symbol
-                                   (format "~a~a"
-                                           (syntax-e prefix-id)
-                                           (syntax-e suffix-id)))
-                                  #f ;not in original file
-                                  ;; REVIEW: Need to combine props here?
-                                  #f)])
+    (let ([new-id (datum->syntax lctx
+                                 (string->symbol
+                                  (format "~a~a"
+                                          (syntax-e prefix-id)
+                                          (syntax-e suffix-id)))
+                                 #f ;not in original file
+                                 ;; REVIEW: Need to combine props here?
+                                 #f)])
       (cond
         [(and (syntax-position prefix-id)
               (syntax-span prefix-id))
