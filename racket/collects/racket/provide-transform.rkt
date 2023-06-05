@@ -20,7 +20,7 @@
   ;;
   ;; The old "out-sym" field was a symbol, making it awkward to
   ;; preserve srcloc for things like rename-out, or syntax properties
-  ;; like sub-range-binders for things like prefix-out.
+  ;; for things like prefix-out.
   ;;
   ;; Now the field is named "out-id", an identifier. For backward
   ;; compatibilty, make-export accepts a symbol, and the old accessor

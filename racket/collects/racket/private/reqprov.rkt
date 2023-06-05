@@ -1356,7 +1356,7 @@
   ;; result there is a flat simple list of one or more prefixes.
   ;;
   ;; The property value is a list of vectors, each of which says that
-  ;; a sub-range of the full identifier orginated from another
+  ;; a sub-range of the full identifier originated from another
   ;; identifier whose syntax-e and syntax-position is given (the span
   ;; is the same).
   ;;
