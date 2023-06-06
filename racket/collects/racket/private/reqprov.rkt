@@ -1353,25 +1353,33 @@
   ;; the case with nested prefix-{in out} -- we don't just cons them.
   ;; Instead we "flatten": Replace the old widest identifier with the
   ;; new id, and shift the old offsets by the new prefix length. As a
-  ;; result there is a flat simple list of one or more prefixes.
+  ;; result there is a flat simple list of one or more prefixes and
+  ;; final suffix part.
   ;;
-  ;; The property value is a list of vectors, each of which says that
-  ;; a sub-range of the full identifier originated from another
-  ;; identifier whose syntax-e and syntax-position is given (the span
-  ;; is the same).
+  ;;   (vector/c
+  ;;    identifier?  ;the full identifier ^1 composed from others...
+  ;;    (listof (vector/c natural?       ;from this *offset* in the full id
+  ;;                      natural?       ;and up to this *span* from the offset
+  ;;                      identifier?))) ;originates from this identifier ^2
   ;;
-  ;;   (vector offset ;into the full identifier: non-neg integer
-  ;;           span   ;from offset: pos integer
-  ;;           sub-syntax-e         ;for convenience: symbol
-  ;;           sub-syntax-position) ;pos integer
+  ;; ^1: The full identifier syntax will have no useful srcloc because
+  ;; it does not appear in the original source.
   ;;
-  ;; Example: The value for "foobarbang" formed from "foo" at
-  ;; syntax-position 42, "bar" at syntax-position 99, and "bang" at
+  ;; ^2: Generally the only meaningful values to take from this sub
+  ;; identifier syntax are syntax-e and syntax-position (syntax-span
+  ;; is the same as the other span value). However note that
+  ;; syntax-position can be #f when the identifier is not original in
+  ;; the source.
+  ;;
+  ;; Example: The value for #'foobarbang formed from #'foo at
+  ;; syntax-position 42, #'bar at syntax-position 99, and #'bang at
   ;; syntax-position 777, would be:
   ;;
-  ;;   (list (vector 0 3 'foo   42)
-  ;;         (vector 3 3 'bar   99)
-  ;;         (vector 6 4 'bang 777))
+  ;;   (vector
+  ;;    #'foobarbang
+  ;;    (list (vector 0 3 #'foo)    ;syntax-position  42
+  ;;          (vector 3 3 #'bar)    ;                 99
+  ;;          (vector 6 4 #'bang))) ;                777
   ;;
   ;; Note: Although this may sound similar to the sub-range-binders
   ;; property, that is intended as a directive to drracket
@@ -1384,46 +1392,50 @@
                 (unless (identifier? stx)
                   (raise-syntax-error #f "expected identifier" stx)))
               (list lctx prefix-id suffix-id))
-    (let ([new-id (datum->syntax lctx
-                                 (string->symbol
-                                  (format "~a~a"
-                                          (syntax-e prefix-id)
-                                          (syntax-e suffix-id)))
-                                 #f ;not in original file
-                                 ;; REVIEW: Need to combine props here?
-                                 #f)])
+    (let ([full-id (datum->syntax lctx
+                                  (string->symbol
+                                   (format "~a~a"
+                                           (syntax-e prefix-id)
+                                           (syntax-e suffix-id)))
+                                  #f ;not in original file
+                                  ;; REVIEW: Need to combine props here?
+                                  #f)])
       (cond
         [(and (syntax-position prefix-id)
               (syntax-span prefix-id))
-         (let* ([prop-key    'import-or-export-prefix-ranges]
-                [prefix-vec  (vector 0
-                                     (syntax-span prefix-id)
-                                     (syntax-e prefix-id)
-                                     (syntax-position prefix-id))]
-                [suffix-vecs (cond
-                               [(syntax-property suffix-id prop-key)
-                                => (lambda (vs)
+         (let* ([prop-key     'import-or-export-prefix-ranges]
+                [prefix-vec   (vector 0
+                                      (syntax-span prefix-id)
+                                      (syntax-local-introduce prefix-id))]
+                [suffix-vecs  (cond
+                                ;; When suffix-id has the prop, discard
+                                ;; its full id. Retain its list of sub
+                                ;; id vectors, just shifting their
+                                ;; offets by the new prefix len.
+                                [(syntax-property suffix-id prop-key)
+                                 =>
+                                 (lambda (old-prop-val)
+                                   (let ([old-prop-vecs (vector-ref old-prop-val 1)])
                                      (map (lambda (v)
                                             (vector-set! v 0
                                                          (+ (syntax-span prefix-id)
                                                             (vector-ref v 0)))
                                             v)
-                                          vs))]
-                               [else
-                                ;; Note that suffix-id might lack
-                                ;; srcloc, e.g. when resulting from
-                                ;; all-from-xxx. In that case we still
-                                ;; include it; it is up to the user of
-                                ;; the prop to handle this as it sees
-                                ;; fit.
-                                (list
-                                 (vector (syntax-span prefix-id)
-                                         (or (syntax-span suffix-id)
-                                             (string-length
-                                              (symbol->string
-                                               (syntax-e suffix-id))))
-                                         (syntax-e suffix-id)
-                                         (syntax-position suffix-id)))])]
-                [prop-val    (cons prefix-vec suffix-vecs)])
-           (syntax-property new-id prop-key prop-val))]
-        [else new-id]))))
+                                          old-prop-vecs)))]
+                                ;; Base case. We include suffix-id even
+                                ;; when it lacks srcloc (as with e.g.
+                                ;; all-from-xxx). The offset/span into
+                                ;; the full id are still useful. Up to
+                                ;; client to check for #f srcloc.
+                                [else
+                                 (list
+                                  (vector (syntax-span prefix-id)
+                                          (string-length
+                                           (symbol->string
+                                            (syntax-e suffix-id)))
+                                          (syntax-local-introduce suffix-id)))])]
+                [new-vecs     (cons prefix-vec suffix-vecs)]
+                [new-prop-val (vector (syntax-local-introduce full-id)
+                                      new-vecs)])
+           (syntax-property full-id prop-key new-prop-val))]
+        [else full-id]))))
