@@ -1409,14 +1409,21 @@
                                                             (vector-ref v 0)))
                                             v)
                                           vs))]
-                               [(and (syntax-position suffix-id)
-                                     (syntax-span suffix-id))
+                               [else
+                                ;; Note that suffix-id might lack
+                                ;; srcloc, e.g. when resulting from
+                                ;; all-from-xxx. In that case we still
+                                ;; include it; it is up to the user of
+                                ;; the prop to handle this as it sees
+                                ;; fit.
                                 (list
                                  (vector (syntax-span prefix-id)
-                                         (syntax-span suffix-id)
+                                         (or (syntax-span suffix-id)
+                                             (string-length
+                                              (symbol->string
+                                               (syntax-e suffix-id))))
                                          (syntax-e suffix-id)
-                                         (syntax-position suffix-id)))]
-                               [else null])]
+                                         (syntax-position suffix-id)))])]
                 [prop-val    (cons prefix-vec suffix-vecs)])
            (syntax-property new-id prop-key prop-val))]
         [else new-id]))))
