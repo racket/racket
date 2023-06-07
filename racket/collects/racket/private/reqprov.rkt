@@ -1345,31 +1345,35 @@
 
   ;; Combine prefix and suffix identifiers into a new identifier.
   ;;
-  ;; When prefix-id and suffix-id have sufficient srcloc, add a syntax
-  ;; property to reveal them. (It's possible they may have no srcloc,
-  ;; as in the module.rktl tests of prefix-out.)
+  ;; When at least the prefix-id has syntax-position and syntax-span
+  ;; add a syntax property to show what ranges of the new identifier
+  ;; correspond to the original pieces.
   ;;
-  ;; When there already exists a property on the suffix-id -- as is
-  ;; the case with nested prefix-{in out} -- we don't just cons them.
-  ;; Instead we "flatten": Replace the old widest identifier with the
-  ;; new id, and shift the old offsets by the new prefix length. As a
-  ;; result there is a flat simple list of one or more prefixes and
-  ;; final suffix part.
+  ;; The value of the property is:
   ;;
   ;;   (vector/c
-  ;;    identifier?  ;the full identifier ^1 composed from others...
-  ;;    (listof (vector/c natural?       ;from this *offset* in the full id
-  ;;                      natural?       ;and up to this *span* from the offset
-  ;;                      identifier?))) ;originates from this identifier ^2
+  ;;    ;; An identifier ^1 composed from two or more other identifiers
+  ;;    identifier?
+  ;;    ;; The ranges and other identifiers are...
+  ;;    (listof
+  ;;     (vector/c natural?       ;from this *offset* in the full id
+  ;;               natural?       ;and up to this *span* from the offset
+  ;;               identifier?))) ;originates from this identifier ^2
   ;;
-  ;; ^1: The full identifier syntax will have no useful srcloc because
-  ;; it does not appear in the original source.
+  ;; ^1: The full identifier syntax has no useful srcloc because it
+  ;; does not appear in the original source.
   ;;
   ;; ^2: Generally the only meaningful values to take from this sub
   ;; identifier syntax are syntax-e and syntax-position (syntax-span
   ;; is the same as the other span value). However note that
   ;; syntax-position can be #f when the identifier is not original in
-  ;; the source.
+  ;; the source. This can occur when suffix-id is from all-from-out.
+  ;;
+  ;; When there already exists a property on the suffix-id -- as is
+  ;; the case with nested prefix-{in out} -- its ranges are retained
+  ;; and the old offsets shifted by the new prefix length. As a result
+  ;; the value is always a flat list of one or more prefixes and a
+  ;; final suffix.
   ;;
   ;; Example: The value for #'foobarbang formed from #'foo at
   ;; syntax-position 42, #'bar at syntax-position 99, and #'bang at
@@ -1387,6 +1391,7 @@
   ;; original user program. Which isn't necessarily possible here; the
   ;; new id might be present only in the fully-expanded `rename`
   ;; clause and have no references in the original.
+  ;;
   (define-for-syntax (prefix-identifier lctx prefix-id suffix-id)
     (for-each (lambda (stx)
                 (unless (identifier? stx)
@@ -1400,6 +1405,8 @@
                                   #f ;not in original file
                                   ;; REVIEW: Need to combine props here?
                                   #f)])
+      ;; To add the prop we need at least prefix-id to have srcloc.
+      ;; (Not the case for e.g. module.rktl tests.)
       (cond
         [(and (syntax-position prefix-id)
               (syntax-span prefix-id))
@@ -1408,25 +1415,23 @@
                                       (syntax-span prefix-id)
                                       (syntax-local-introduce prefix-id))]
                 [suffix-vecs  (cond
-                                ;; When suffix-id has the prop, discard
-                                ;; its full id. Retain its list of sub
-                                ;; id vectors, just shifting their
-                                ;; offets by the new prefix len.
+                                ;; When suffix-id has the prop, retain
+                                ;; its list of range vectors; shift
+                                ;; their offsets by new prefix len.
                                 [(syntax-property suffix-id prop-key)
                                  =>
-                                 (lambda (old-prop-val)
-                                   (let ([old-prop-vecs (vector-ref old-prop-val 1)])
+                                 (lambda (old-val)
+                                   (let ([old-vecs (vector-ref old-val 1)])
                                      (map (lambda (v)
                                             (vector-set! v 0
-                                                         (+ (syntax-span prefix-id)
-                                                            (vector-ref v 0)))
+                                                         (+ (vector-ref v 0)
+                                                            (syntax-span prefix-id)))
                                             v)
-                                          old-prop-vecs)))]
-                                ;; Base case. We include suffix-id even
-                                ;; when it lacks srcloc (as with e.g.
-                                ;; all-from-xxx). The offset/span into
-                                ;; the full id are still useful. Up to
-                                ;; client to check for #f srcloc.
+                                          old-vecs)))]
+                                ;; Base case. We include suffix-id
+                                ;; even when it lacks srcloc, because
+                                ;; the offset/span into the full id
+                                ;; are still useful.
                                 [else
                                  (list
                                   (vector (syntax-span prefix-id)
