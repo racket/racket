@@ -1133,11 +1133,7 @@ as follows.
      (define num-eggs 2))
    (require 'nest)
    chicken:num-eggs
- ]
-
- @history[#:changed "8.9.0.4" @elem{Each export name has a
-          @indexed-racket['sub-range-binders] @tech{syntax
-          property}.}]}
+ ]}
 
  @defsubform[(struct-out id)]{Exports the bindings associated with a
  structure type @racket[id]. Typically, @racket[id] is bound with
