@@ -104,5 +104,12 @@ omit.
 Like @racket[provide-spec], but adding @racket[prefix-id] to the
 beginning of the external name for each exported binding.
 
+A @tech{syntax property} with the key
+@indexed-racket['import-or-export-prefix-ranges] is added to the
+resulting identifier.
+
+@history[#:changed "8.9.0.5"
+         @elem{Added @racket['import-or-export-prefix-ranges] syntax property.}]
+
 }
 
