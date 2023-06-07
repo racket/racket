@@ -739,7 +739,8 @@
   ;;
   ;; Whereas this handles the general cases, including nested
   ;; prefix-in. These expand to (#%require [rename new old]). Here we
-  ;; do need a sub-range-binders property on `new`.
+  ;; do need a syntax property on `new` to review the component
+  ;; identifiers.
   (define-syntax prefix-in
     (make-require-transformer
      (lambda (stx)
