@@ -36593,26 +36593,69 @@
                                                                                        a_0)))
                                                                                  (if (pair?
                                                                                       p_1)
-                                                                                   #t
+                                                                                   (if (let ((a_1
+                                                                                              (car
+                                                                                               p_1)))
+                                                                                         (let ((a_2
+                                                                                                kw2846))
+                                                                                           (begin-unsafe
+                                                                                            (let ((app_0
+                                                                                                   (unwrap
+                                                                                                    a_2)))
+                                                                                              (eq?
+                                                                                               app_0
+                                                                                               (unwrap
+                                                                                                a_1))))))
+                                                                                     #t
+                                                                                     #f)
                                                                                    #f)))
                                                                              #f)
                                                                            #f))
-                                                                     (let ((u_0
-                                                                            (let ((d_0
-                                                                                   (cdr
-                                                                                    (unwrap
-                                                                                     dest_0))))
-                                                                              (let ((a_0
-                                                                                     (car
+                                                                     v_1
+                                                                     (if (let ((p_0
+                                                                                (unwrap
+                                                                                 dest_0)))
+                                                                           (if (pair?
+                                                                                p_0)
+                                                                             (if (let ((a_0
+                                                                                        (car
+                                                                                         p_0)))
+                                                                                   (begin-unsafe
+                                                                                    (let ((app_0
+                                                                                           (unwrap
+                                                                                            'self)))
+                                                                                      (eq?
+                                                                                       app_0
+                                                                                       (unwrap
+                                                                                        a_0)))))
+                                                                               (let ((a_0
+                                                                                      (cdr
+                                                                                       p_0)))
+                                                                                 (let ((p_1
+                                                                                        (unwrap
+                                                                                         a_0)))
+                                                                                   (if (pair?
+                                                                                        p_1)
+                                                                                     #t
+                                                                                     #f)))
+                                                                               #f)
+                                                                             #f))
+                                                                       (let ((u_0
+                                                                              (let ((d_0
+                                                                                     (cdr
                                                                                       (unwrap
-                                                                                       d_0))))
-                                                                                a_0))))
+                                                                                       dest_0))))
+                                                                                (let ((a_0
+                                                                                       (car
+                                                                                        (unwrap
+                                                                                         d_0))))
+                                                                                  a_0))))
+                                                                         (reannotate
+                                                                          v_1
+                                                                          u_0))
                                                                        (reannotate
                                                                         v_1
-                                                                        u_0))
-                                                                     (reannotate
-                                                                      v_1
-                                                                      dest_0))))))
+                                                                        dest_0)))))))
                                                           (let ((new-free_0
                                                                  (if dest_0
                                                                    (hash-set
