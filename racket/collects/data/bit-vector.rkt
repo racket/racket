@@ -23,7 +23,8 @@
   (define-values (q r) (quotient/remainder size bits-in-a-word))
   (define word-size (+ q (if (zero? r) 0 1)))
   (define words (make-bytes word-size (if fill largest-word 0)))  
-  (when (and fill (not (zero? r))) 
+  (when (and fill (not (zero? r)))
+    ;; Unused bits are set to 0
     (bytes-set! words q (- (expt 2 r) 1)))
   (bit-vector words size))
 
@@ -209,34 +210,16 @@
                           #f #f #f))
   #:methods gen:equal+hash
   [(define (equal-proc x y recursive-equal?)
+     ;; The unused bits are all set to 0, so comparison
+     ;; can be deferred to bytes=?
      (let ([vx (bit-vector-words x)]
            [vy (bit-vector-words y)]
-           [nx (bit-vector-size x)]
-           [ny (bit-vector-size y)])
+           [nx (bit-vector-length x)]
+           [ny (bit-vector-length y)])
        (and (= nx ny)
-            (or (zero? nx) ;zero-length bit-vectors are equal
-                (let ([last-index (sub1 (bytes-length vx))])
-                  (and
-                   ;; Check all but last byte.
-                   ;; These use all bits, therefore simple eq?.
-                   (for/and ([index (in-range (sub1 last-index))])
-                     (eq? (bytes-ref vx index)
-                          (bytes-ref vy index)))
-                   ;; Check the used bits of the last byte.
-                   (let ([used-bits (min 8 (remainder nx 256))])
-                     (eq? (bitwise-bit-field (bytes-ref vx last-index)
-                                             0
-                                             used-bits)
-                          (bitwise-bit-field (bytes-ref vy last-index)
-                                             0
-                                             used-bits)))))))))
-   (define (hash-code x hc)
-     (let ([v (bit-vector-words x)]
-           [n (bit-vector-size x)])
-       (bitwise-xor
-        (hc n)
-        (for/fold ([h 1]) ([i (in-range (bytes-length v))])
-          (bitwise-xor h (hc (bytes-ref v i)))))))
+            (bytes=? vx vy))))
+   (define (hash-code self rec)
+     (rec (bit-vector-words self)))
    (define hash-proc  hash-code)
    (define hash2-proc hash-code)]
   #:property prop:sequence in-bit-vector)
