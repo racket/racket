@@ -32,7 +32,7 @@ installed on your system and specific to your user account.
 packages contributed by Racketeers. The
 @link["https://docs.racket-lang.org"]{online Racket documentation}
 includes documentation for packages in that catalog, updated daily.
-For more information about packages, see see @other-manual['(lib
+For more information about packages, see @other-manual['(lib
 "pkg/scribblings/pkg.scrbl")].
 
 @link["https://planet.racket-lang.org/"]{@|PLaneT|} serves packages that

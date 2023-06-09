@@ -1437,7 +1437,7 @@ rest-args contract, and an optional pre-condition. The pre-condition is
 introduced with the @racket[#:pre] keyword followed by the list of names on
 which it depends. If the @racket[#:pre/name] keyword is used, the string
 supplied is used as part of the error message; similarly with @racket[#:post/name].
-If @racket[#:pre/desc] or @racket[#:post/desc] is used, the the result of
+If @racket[#:pre/desc] or @racket[#:post/desc] is used, the result of
 the expression is treated the same way as @racket[->*].
 
 Following the pre-condition is the optional @racket[param-value] non-terminal
@@ -3851,7 +3851,7 @@ A predicate recognizing structures with the @racket[prop:collapsible-contract] p
                                   [ref (or/c #f impersonator?)])]{
  The parent struct of properties that should be attached to chaperones or impersonators
  of values protected with a collapsible contract. The @racket[c-c] field stores the collapsible
- contract that is or will in the future be attached to the the value. The @racket[neg-party] field
+ contract that is or will in the future be attached to the value. The @racket[neg-party] field
  stores the latest missing blame party passed to the contract on the value. The @racket[ref] field
  is mutable and stores a reference to the chaperone or impersonator to which this property is
  attached. This is necessary to determine whether an unknown chaperone has been attached to a value

@@ -35,7 +35,7 @@ previous value of the field and @racket[on-enable-surrogate] for the
 new value of the field. The @racket[get-surrogate] method returns the
 current value of the field.
 
-If @racket[#:use-wrapper-proc] does appear, the the host mixin adds
+If @racket[#:use-wrapper-proc] does appear, the host mixin adds
 and a second private field and its getter and setter
 methods @racket[get-surrogate-wrapper-proc] and @racket[set-surrogate-wrapper-proc].
 The additional field holds a wrapper procedure whose contract
