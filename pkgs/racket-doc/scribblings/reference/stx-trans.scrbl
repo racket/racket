@@ -1674,7 +1674,7 @@ Returns @racket[#t] if @racket[v] has the
 
 
 @defstruct[export ([local-id identifier?]
-                   [out-id identifier??]
+                   [out-id identifier?]
                    [mode phase+space?]
                    [protect? any/c]
                    [orig-stx syntax?])]{
