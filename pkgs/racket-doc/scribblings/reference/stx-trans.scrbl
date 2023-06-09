@@ -1674,7 +1674,7 @@ Returns @racket[#t] if @racket[v] has the
 
 
 @defstruct[export ([local-id identifier?]
-                   [out-sym symbol?]
+                   [out-id identifier?]
                    [mode phase+space?]
                    [protect? any/c]
                    [orig-stx syntax?])]{
@@ -1686,7 +1686,7 @@ A structure representing a single exported identifier:
  @item{@racket[local-id] --- the identifier that is bound within the
        exporting module.}
 
- @item{@racket[out-sym] --- the external name of the binding.}
+ @item{@racket[out-id] --- the external name of the binding.}
 
  @item{@racket[mode] --- the @tech{phase level} and @tech{binding
        space} of the export (which affects how it is imported).}
@@ -1699,8 +1699,15 @@ A structure representing a single exported identifier:
 
 ]
 
-@history[#:changed "8.2.0.3" @elem{Generalized @racket[mode] to phase--space combinations.}]}
+@history[#:changed "8.2.0.3" @elem{Generalized @racket[mode] to phase--space combinations.}]
 
+@history[#:changed "8.9.0.5" @elem{Changed the @racket[out-sym] field
+        to @racket[out-id]. For backward compatibility, the
+        @racket[make-export] constructor also accepts a symbol, and a
+        @racket[export-out-sym] function returns the @racket[syntax-e]
+        value of the @racket[out-id].}]
+
+}
 
 @defproc[(syntax-local-provide-certifier)
          ((syntax?) (or/c #f (syntax? . -> . syntax?))

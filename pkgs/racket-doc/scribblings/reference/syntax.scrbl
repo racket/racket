@@ -608,7 +608,11 @@ bindings of each @racket[require-spec] are visible for expanding later
     (require (prefix-in tcp: racket/tcp))
     tcp:tcp-accept
     tcp:tcp-listen
-  ]}
+  ]
+
+  @history[#:changed "8.9.0.5" @elem{Add a @tech{syntax property} with
+           the key @indexed-racket['import-or-export-prefix-ranges] to
+           the resulting local identifier.}]}
 
  @defsubform[(rename-in require-spec [orig-id bind-id] ...)]{
   Like @racket[require-spec], but replacing the identifier to
@@ -1133,7 +1137,11 @@ as follows.
      (define num-eggs 2))
    (require 'nest)
    chicken:num-eggs
- ]}
+ ]
+
+ @history[#:changed "8.9.0.5" @elem{Add a @tech{syntax property} with
+          the key @indexed-racket['import-or-export-prefix-ranges] to
+          the resulting exported identifier.}]}
 
  @defsubform[(struct-out id)]{Exports the bindings associated with a
  structure type @racket[id]. Typically, @racket[id] is bound with
