@@ -866,7 +866,7 @@ each element in the sequence.
 @subsection{Sequence Conversion}
 
 @defproc[(sequence->stream [seq sequence?]) stream?]{
-  Coverts a sequence to a @tech{stream}, which supports the
+  Converts a sequence to a @tech{stream}, which supports the
   @racket[stream-first] and @racket[stream-rest] operations. Creation
   of the stream eagerly @tech{initiates} the sequence, but the stream
   lazily draws elements from the sequence, caching each element so
