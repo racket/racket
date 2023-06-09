@@ -1709,6 +1709,16 @@ A structure representing a single exported identifier:
 
 }
 
+@defproc[(export-out-sym [ex export?]) symbol?]{
+
+Composes @racket[syntax-e] with @racket[export-out-id].
+
+This function is intended for backward compatibility. Use
+@racket[export-out-id] directly, instead.
+
+@history[#:added "8.9.0.5"]
+}
+
 @defproc[(syntax-local-provide-certifier)
          ((syntax?) (or/c #f (syntax? . -> . syntax?))
           . ->* . syntax?)]{
