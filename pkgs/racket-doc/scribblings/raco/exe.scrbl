@@ -80,7 +80,7 @@ such mapping is created for filesystem paths. By default, a module's
 symbolic name is generated in an unspecified but deterministic
 way where the name starts with @as-index{@litchar{#%embedded:}},
 except that the main module is prefixed with @litchar{#%mzc:}. The
-relative lack of specification for module names can be be a problem
+relative lack of specification for module names can be a problem
 for language constructs that are sensitive to module names, such as
 serialization. To take more control over a module's symbolic name, use
 the @DPFlag{named-lib} or @DPFlag{named-file} argument to specify a

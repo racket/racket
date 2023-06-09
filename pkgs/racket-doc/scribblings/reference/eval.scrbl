@@ -392,7 +392,7 @@ use for the initial parameter value.
 
 @defparam*[current-compiled-file-roots paths (listof (or/c path-string? 'same)) (listof (or/c path? 'same))]{
 
-A list of paths and @racket['same]s that is is used by the default
+A list of paths and @racket['same]s that is used by the default
 @tech{compiled-load handler} (see @racket[current-load/use-compiled]).
 
 The parameter is normally initialized to @racket[(list 'same)], but
