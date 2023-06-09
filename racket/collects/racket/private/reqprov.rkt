@@ -733,13 +733,13 @@
 
   ;; In simple cases (require (prefix-in)) expands to a single
   ;; (#%require [prefix pre mod]) clause. Such simple cases bypass
-  ;; this `prefix-in` transformer. That's fine because the prefix and
-  ;; suffix identifiers are distinct in the prefix clause. Analyzers
-  ;; like drracket/check-syntax already see/use these.
+  ;; this `prefix-in` transformer. That's fine because the prefix
+  ;; identifier is distinct in the prefix clause. Analyzers like
+  ;; drracket/check-syntax already see/use this.
   ;;
   ;; Whereas this handles the general cases, including nested
   ;; prefix-in. These expand to (#%require [rename new old]). Here we
-  ;; do need a syntax property on `new` to review the component
+  ;; do need a syntax property on `new` to recover the component
   ;; identifiers.
   (define-syntax prefix-in
     (make-require-transformer
