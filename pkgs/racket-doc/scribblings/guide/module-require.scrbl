@@ -97,13 +97,6 @@ identifiers from @racket[require-spec] that are not mentioned as an
 This is a shorthand for renaming, where @racket[prefix-id] is added to
 the front of each identifier specified by @racket[require-spec].
 
-A @tech{syntax property} with the key
-@indexed-racket['import-or-export-prefix-ranges] is added to the
-resulting identifier.
-
-@history[#:changed "8.9.0.5"
-         @elem{Added @racket['import-or-export-prefix-ranges] syntax property.}]
-
 }
 
 The @racket[only-in], @racket[except-in], @racket[rename-in], and
