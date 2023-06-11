@@ -875,6 +875,9 @@
       [(digit)
        (define new-state (state-set-first-half state (polar-prefix real-sgn real start)))
        (read-integer 1 c s (fx+ 1 start) end radix new-state)]
+      [(#\.)
+       (define new-state (state-set-first-half state (polar-prefix real-sgn real start)))
+       (read-decimal 1 #f 0 s (fx+ 1 start) end radix (set-exactness new-state 'approx))]
       [else
        (bad-digit c s state)])]))
 
@@ -944,6 +947,7 @@
   (try "#e1/2#e10")
   (try "1/0")
   (try "1@+inf.0")
+  (try "0@.0")
   (try "1/1@+inf.0")
   ;(try "#d1/0+3.0i")
   (when (extflonum-available?)

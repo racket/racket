@@ -320,7 +320,7 @@ letter stands for both itself and its uppercase form.
                                        @BNF-seq[@nunterm{unsigned-integer} @litchar{/} @nunterm{unsigned-integer}])
      (list @nunterm{exact-integer} @BNF-seq[@optional{@nonterm{sign}} @nunterm{unsigned-integer}])
      (list @nunterm{unsigned-integer} @kleeneplus{@nunterm{digit}})
-     (list @nunterm{exact-complex} @BNF-seq[@nunterm{exact-rational} @nonterm{sign} @nunterm{unsigned-rational} @litchar{i}])
+     (list @nunterm{exact-complex} @BNF-seq[@optional{@nunterm{exact-rational}} @nonterm{sign} @optional[@nunterm{unsigned-rational}] @litchar{i}])
      (list @nunterm{inexact} @BNF-alt[@nunterm{inexact-real}
                                       @nunterm{inexact-complex}])
      (list @nunterm{inexact-real} @BNF-seq[@optional{@nonterm{sign}} @nunterm{inexact-normal}]
@@ -333,7 +333,7 @@ letter stands for both itself and its uppercase form.
                                     @BNF-seq[@nunterm{digits#} @litchar{/} @nunterm{digits#}])
      (list @nunterm{inexact-special} @BNF-alt[@litchar{inf.0} @litchar{nan.0} @litchar{inf.f} @litchar{nan.f}])
      (list @nunterm{digits#} @BNF-seq[@kleeneplus{@nunterm{digit}} @kleenestar{@litchar{#}}])
-     (list @nunterm{inexact-complex} @BNF-seq[@optional{@nunterm{inexact-real}} @nonterm{sign} @nunterm{inexact-unsigned} @litchar{i}]
+     (list @nunterm{inexact-complex} @BNF-seq[@optional{@nunterm{inexact-real}} @nonterm{sign} @optional{@nunterm{inexact-unsigned}} @litchar{i}]
                                      @BNF-seq[@nunterm{inexact-real} @litchar["@"] @nunterm{inexact-real}])
 
 

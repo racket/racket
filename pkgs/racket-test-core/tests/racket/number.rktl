@@ -2635,6 +2635,12 @@
 (test #f inexact? (string->number "#e4@5"))
 (test #f inexact? (string->number "#e4.0@5.0"))
 
+(test 0.0+0.0i string->number ".0@.0")
+(test 1.0+0.0i string->number "1@.0")
+(test 0.0 string->number ".0@0")
+(test 0 string->number "0@0")
+(test 0.1+0.0i string->number ".1@.0")
+
 (arity-test string->number 1 5)
 (arity-test number->string 1 2)
 
