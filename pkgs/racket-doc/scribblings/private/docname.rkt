@@ -6,7 +6,7 @@
   (begin
     (provide title-id link-id)
     (define title-id s)
-    (define (link-id #:section [section "top"] [content (list "the" title-id "documentation")])
+    (define (link-id #:section [section "top"] [content (list "the " title-id " documentation")])
       (seclink section #:indirect? #t #:doc `(lib ,mod) content))))
 
 (define-title+link Quick
