@@ -2295,7 +2295,7 @@ If specified, @racket[value-name-expr] indicates a name for the protected value
 to be used in error messages.  If not supplied, or if @racket[value-name-expr]
 produces @racket[#f], no name is printed.  Otherwise, it is also formatted as by
 @racket[display]. More precisely, the @racket[value-name-expr] ends up in the
-@racket[blame-name] field of the blame record, which is used as the first portion
+@racket[blame-value] field of the blame record, which is used as the first portion
 of the error message.
 @examples[#:eval (contract-eval) #:once
           (eval:error (contract integer? #f 'pos 'neg 'timothy #f))
