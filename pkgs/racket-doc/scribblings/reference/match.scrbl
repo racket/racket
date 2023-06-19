@@ -17,9 +17,11 @@ on regular-expression matching on strings, bytes, and streams.
 @note-lib[racket/match #:use-sources (racket/match)]
 
 @defform/subs[(match val-expr clause ...)
-              ([clause [pat body ...+]
-                       [pat (=> id) body ...+]
-                       [pat #:when cond-expr body ...+]])]{
+              ([clause [pat option=> option ... body ...+]]
+               [option=> (code:line)
+                         (=> id)]
+               [option (code:line #:when cond-expr)
+                       (code:line #:do [do-body ...])])]{
 
 Finds the first @racket[pat] that matches the result of
 @racket[val-expr], and evaluates the corresponding @racket[body]s with
@@ -53,9 +55,30 @@ a lower-level mechanism achieving the same ends.
 (m '(2 3 4))
 ]
 
-An optional @racket[(=> id)] between a @racket[pat] and the
-@racket[body]s is bound to a @deftech{failure procedure} of zero
-arguments.  If this procedure is invoked, it escapes back to the
+An optional @racket[#:do [do-body ...]] simply executes @racket[do-body] forms.
+In particular, the forms may introduce definitions that are visible in the remaining
+options and the main clause body.
+Both @racket[#:when] and @racket[#:do] options may appear multiple times
+
+@examples[
+#:eval match-eval
+(define (m x)
+  (match x
+    [(list a b c)
+     #:do [(define sum (+ a b c))]
+     #:when (> sum 6)
+     (format "the sum, which is ~a, is greater than 6" sum)]
+    [(list a b c) 'sum-is-not-greater-than-six]))
+
+(m '(1 2 3))
+(m '(2 3 4))
+]
+
+An optional @racket[(=> id)], which must appear right after @racket[pat],
+is bound to a @deftech{failure procedure} of zero
+arguments.
+@racket[id] is visible in all clause options and the clause body.
+If this procedure is invoked, it escapes back to the
 pattern matching expression, and resumes the matching process as if
 the pattern had failed to match.  The @racket[body]s must not mutate
 the object being matched before calling the failure procedure,
@@ -435,9 +458,7 @@ appear in the original program.
 @section{Additional Matching Forms}
 
 @defform/subs[(match* (val-expr ...+) clause* ...)
-              ([clause* [(pat ...+) body ...+]
-               [(pat ...+) (=> id) body ...+]
-               [(pat ...+) #:when cond-expr body ...+]])]{
+              ([clause* [(pat ...+) option=> option ... body ...+]])]{
 Matches a sequence of values against each clause in order, matching
 only when all patterns in a clause match.  Each clause must have the
 same number of patterns as the number of @racket[val-expr]s.
@@ -476,9 +497,7 @@ many values to expect from @racket[expr].
         [arg-id default-expr]
         (code:line keyword arg-id)
         (code:line keyword [arg-id default-expr])]
-   [match*-clause [(pat ...+) body ...+]
-                  [(pat ...+) (=> id) body ...+]
-                  [(pat ...+) #:when cond-expr body ...+]])
+   [match*-clause [(pat ...+) option=> option ... body ...+]])
 ]{
   Binds @racket[id] to a procedure that is defined by pattern matching
   clauses using @racket[match*]. Each clause takes a sequence of

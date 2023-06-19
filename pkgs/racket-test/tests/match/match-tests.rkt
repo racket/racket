@@ -3,6 +3,62 @@
            (for-syntax racket/base))
   
   (provide match-tests)
+
+  (define option-tests
+    (test-suite "Tests for clause options"
+      (test-case "#:do and #:when"
+        (define (f xs)
+          (match xs
+            [(list a b)
+             #:do [(define sum (+ a b))
+                   (define sum^2 (* sum sum))]
+             #:when (< sum^2 50)
+             #:do [(define sum^2+1 (add1 sum^2))]
+             sum^2+1]
+            [_ 'no-match]))
+
+        (check-equal? (f (list 3 4)) 50)
+        (check-equal? (f (list 4 4)) 'no-match))
+
+      (test-case "=> scope"
+        (define (f xs)
+          (match xs
+            [(list a b)
+             (=> exit)
+             #:do [(when (= a b)
+                     (exit))]
+             a]
+            [_ 'no-match]))
+
+        (check-equal? (f (list 5 5)) 'no-match)
+        (check-equal? (f (list 5 6)) 5))
+
+      (test-case "define/match"
+        (define/match (f xs)
+          [((list a b))
+           #:do [(define sum (+ a b))
+                 (define sum^2 (* sum sum))]
+           #:when (< sum^2 50)
+           #:do [(define sum^2+1 (add1 sum^2))]
+           sum^2+1]
+          [(_) 'no-match])
+
+        (check-equal? (f (list 3 4)) 50)
+        (check-equal? (f (list 4 4)) 'no-match))
+
+      (test-case "match*"
+        (define (f xs)
+          (match* (xs)
+            [((list a b))
+             #:do [(define sum (+ a b))
+                   (define sum^2 (* sum sum))]
+             #:when (< sum^2 50)
+             #:do [(define sum^2+1 (add1 sum^2))]
+             sum^2+1]
+            [(_) 'no-match]))
+
+        (check-equal? (f (list 3 4)) 50)
+        (check-equal? (f (list 4 4)) 'no-match))))
   
   (define match-expander-tests
     (test-suite
@@ -132,8 +188,9 @@
 
   (define match-tests
     (test-suite "Tests for match.rkt"
-                     doc-tests
-                     simple-tests
-                     nonlinear-tests
-                     match-expander-tests))
+      option-tests
+      doc-tests
+      simple-tests
+      nonlinear-tests
+      match-expander-tests))
   )

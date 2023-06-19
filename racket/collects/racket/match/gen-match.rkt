@@ -56,28 +56,41 @@
              (make-Row (for/list ([p (syntax->list pats)]) (parse p))
                        (syntax-property
                         (quasisyntax/loc stx
-                          (let () . #,rhs))
+                          (let () #,rhs))
                         'feature-profile:pattern-matching 'antimark)
                        unm null))
+           ;; NOTE: parse-options must generate code at a tail-position,
+           ;; so that (fail) works correctly.
+           (define (parse-options rhs #:after [after #f])
+             (syntax-parse rhs
+               [()
+                (raise-syntax-error
+                 'match
+                 (string-append
+                  "expected at least one expression for the match clause body"
+                  (if after
+                      (string-append " after " after)
+                      ""))
+                 clause)]
+               [(#:when e rest ...)
+                #`(if e
+                      #,(parse-options #'(rest ...) #:after "#:when option")
+                      (fail))]
+               [(#:do [do-body ...] rest ...)
+                #`(let ()
+                    do-body ...
+                    #,(parse-options #'(rest ...) #:after "#:do option"))]
+               [(rest ...) #'(let () rest ...)]))
            (syntax-parse rhs
-             [()
-              (raise-syntax-error 
-               'match
-               "expected at least one expression on the right-hand side"
-               clause)]
-             [(#:when e)
-              (raise-syntax-error 
-               'match
-               "expected at least one expression on the right-hand side after #:when clause"
-               clause)]
-             [(#:when e rest ...) (mk #f #'((if e (let () rest ...) (fail))))]
-             [(((~datum =>) unm:id) . rhs) (mk #'unm #'rhs)]
-             [(((~datum =>) unm) . rhs)
-              (raise-syntax-error 'match
-                                  "expected an identifier after `=>`"
-                                  #'unm)]
-             [_ (mk #f rhs)])))
-       (define/with-syntax body 
+             [(((~datum =>) unm) rest ...)
+              (unless (identifier? #'unm)
+                (raise-syntax-error 'match
+                                    "expected an identifier after `=>`"
+                                    #'unm))
+              (mk #'unm (parse-options #'(rest ...) #:after "=> option"))]
+             [(rest ...)
+              (mk #f (parse-options #'(rest ...)))])))
+       (define/with-syntax body
          (compile* (syntax->list #'(xs ...)) parsed-clauses #'outer-fail))
        (define/with-syntax (exprs* ...)
          (for/list ([e (in-list (syntax->list #'(exprs ...)))])
