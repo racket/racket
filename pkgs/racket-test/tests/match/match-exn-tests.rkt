@@ -72,7 +72,27 @@
                    (lambda () (convert-syntax-error (match 1 [])))))
       (test-case "match*"
         (check-exn #rx"match\\*: expected more terms starting with any term"
-                   (lambda () (convert-syntax-error (match* 1 [])))))))
+                   (lambda () (convert-syntax-error (match* 1 [])))))
+
+      (test-case "ill-formed =>"
+        (check-exn #rx"expected an identifier"
+                   (lambda () (convert-syntax-error (match 1 [1 (=> 1) 2]))))
+        (check-exn #rx"after => option"
+                   (lambda () (convert-syntax-error (match 1 [1 (=> x)])))))
+
+      (test-case "ill-formed #:when"
+        (check-exn #rx"cond-expr"
+                   (lambda () (convert-syntax-error (match 1 [1 #:when]))))
+        (check-exn #rx"after #:when option"
+                   (lambda () (convert-syntax-error (match 1 [1 #:when #t])))))
+
+      (test-case "ill-formed #:do"
+        (check-exn #rx"sequence of do-bodys"
+                   (lambda () (convert-syntax-error (match 1 [1 #:do]))))
+        (check-exn #rx"sequence of do-bodys"
+                   (lambda () (convert-syntax-error (match 1 [1 #:do #t 1]))))
+        (check-exn #rx"after #:do option"
+                   (lambda () (convert-syntax-error (match 1 [1 #:do []])))))))
 
   (define match-exn-tests
     (test-suite "Tests for exceptions raised by match.rkt"
