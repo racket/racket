@@ -72,15 +72,23 @@
                       (string-append " after " after)
                       ""))
                  clause)]
+
                [(#:when e rest ...)
                 #`(if e
                       #,(parse-options #'(rest ...) #:after "#:when option")
                       (fail))]
+               [(#:when . _)
+                (raise-syntax-error 'match "expected a cond-expr after #:when" clause)]
+
                [(#:do [do-body ...] rest ...)
                 #`(let ()
                     do-body ...
                     #,(parse-options #'(rest ...) #:after "#:do option"))]
+               [(#:do . _)
+                (raise-syntax-error 'match "expected a sequence of do-bodys after #:do" clause)]
+
                [(rest ...) #'(let () rest ...)]))
+
            (syntax-parse rhs
              [(((~datum =>) unm) rest ...)
               (unless (identifier? #'unm)
