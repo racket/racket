@@ -250,15 +250,13 @@
             (let (,_) ; next
               (case ,_
                 [(1) (syntax-parameterize (,_)
-                       (let ()
-                         (if #f
-                             (let () 'a)
-                             (fail))))]
+                       (if #f
+                           (let () 'a)
+                           (fail)))]
                 [(2) (syntax-parameterize (,_)
-                       (let ()
-                         (if #t
-                             (let () 'c)
-                             (fail))))]
+                       (if #t
+                           (let () 'c)
+                           (fail)))]
                 [(3) ,_]
                 [else ,_])))))
       (check-equal? (test 1) 'b)
@@ -288,8 +286,3 @@
       (check-false x)
       (check-equal? (test 2) 'b)
       (check-true x))))
-
-(module+ test
-  (require rackunit/text-ui)
-
-  (run-tests case-tests))
