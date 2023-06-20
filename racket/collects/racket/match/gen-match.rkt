@@ -55,8 +55,7 @@
            (define (mk unm rhs)
              (make-Row (for/list ([p (syntax->list pats)]) (parse p))
                        (syntax-property
-                        (quasisyntax/loc stx
-                          (let () #,rhs))
+                        (datum->syntax rhs (syntax-e rhs) stx rhs)
                         'feature-profile:pattern-matching 'antimark)
                        unm null))
            ;; NOTE: parse-options must generate code at a tail-position,
