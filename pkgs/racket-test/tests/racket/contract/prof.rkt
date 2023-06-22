@@ -212,6 +212,13 @@
        1 2)))
 
   (test/spec-passed
+   'contract-marks21b
+   '(let ()
+      ((contract (unconstrained-domain-> pos-blame?)
+                 (λ (x y) x) 'pos 'neg)
+       1 2)))
+
+  (test/spec-passed
    'contract-marks22
    '(let ()
       ((contract (case-> (-> neg-blame? any/c))

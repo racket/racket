@@ -19,7 +19,10 @@
           (λ (val blame+neg-party rngs-list blame-party-info neg-party p-app-x ...)
             (define res-checker
               (case-lambda
-                [(res-x ...) (values/drop (p-app-x res-x neg-party) ...)]
+                [(res-x ...)
+                 (with-contract-continuation-mark
+                     blame+neg-party
+                   (values/drop (p-app-x res-x neg-party) ...))]
                 [results
                  (bad-number-of-results (car blame+neg-party)
                                         val
@@ -28,25 +31,21 @@
                                         #:missing-party neg-party)]))
             (make-keyword-procedure
              (λ (kwds kwd-vals . args)
-               (with-contract-continuation-mark
-                blame+neg-party
                 #,(check-tail-contract
                    #'rngs-list
                    #'blame-party-info
                    #'neg-party
                    (list #'res-checker)
                    (λ (s) #`(apply values #,@s kwd-vals args))
-                   #'blame+neg-party)))
+                   #'blame+neg-party))
              (λ args
-               (with-contract-continuation-mark
-                blame+neg-party
                 #,(check-tail-contract
                    #'rngs-list
                    #'blame-party-info
                    #'neg-party
                    (list #'res-checker)
                    (λ (s) #`(apply values #,@s args))
-                   #'blame+neg-party)))))))]))
+                   #'blame+neg-party))))))]))
 
 (define (build-unconstrained-domain-> range-maybe-contracts wrapper-proc)
   (define range-contracts (coerce-contracts 'unconstrained-domain-> range-maybe-contracts))
