@@ -558,7 +558,7 @@
     (apply-continuation c proc)]
    [else
     (check who (procedure-arity-includes/c 0) proc)
-    (apply-continuation c (lambda () (proc)))]))
+    (apply-continuation c (lambda () (|#%app| proc)))]))
 
 ;; `args` is either a list or a procedure for which `#%procedure?` is true
 (define (apply-continuation c args)

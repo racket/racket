@@ -2590,3 +2590,13 @@
          (list
           (list 'y (call-in-continuation k (lambda ()
                                              (continuation-mark-set-first #f 'here))))))))
+
+;; regression tests to make sure that non-primitive procedures work for
+;; call-in-continuation`
+(let ()
+  (struct p (f)
+    #:property prop:procedure 0)
+  (let/cc k (call-in-continuation k (p void)))
+  (let/cc k (call-in-continuation k (chaperone-procedure
+                                     (λ () 42)
+                                     (λ () (λ (res) res))))))
