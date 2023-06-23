@@ -4,6 +4,36 @@
 	   check-collects-path
 	   set-collects-path)
 
+  (module set-executable-tag racket/base
+    (provide max-dir-len
+             set-executable-tag)
+    (define max-dir-len 1024) ; also ok for DLL path: 2 * sizeof(wchar_t)
+    (define (set-executable-tag who tag desc file ignore-non-executable? given bs)
+      (unless ((bytes-length bs) . <= . max-dir-len)
+        (raise-arguments-error who (string-append desc " too long")
+                               "given" given))
+      (define-values (i o)
+        (open-input-output-file file #:exists 'update))
+      (dynamic-wind
+       void
+       (lambda ()
+         (cond
+           [(regexp-match-positions tag i)
+            => (lambda (m)
+                 (file-position o (cdar m))
+                 (write-bytes bs o)
+                 (for ([n (in-range (+ max-dir-len 2 (- (bytes-length bs))))])
+                   (write-byte 0 o)))]
+           [else
+            (unless ignore-non-executable?
+              (raise-arguments-error
+               who (string-append "could not find " desc " path label in executable")
+               "file" file))]))
+       (lambda ()
+         (close-input-port i)
+         (close-output-port o)))))
+  (require 'set-executable-tag)
+
   (define (collects-path->bytes collects-path)
     (and collects-path
 	 (cond
@@ -30,27 +60,15 @@
 		       (andmap path-string? collects-path)))
 	(raise-type-error who "path, string, list of paths and strings, or #f" 
 			  collects-path))
-      (unless ((bytes-length collects-path-bytes) . <= . 1024)
+      (unless ((bytes-length collects-path-bytes) . <= . max-dir-len)
 	(error who "collects path list is too long"))))
-
-  (define (find-cmdline rx)
-    (let ([m (regexp-match-positions rx (current-input-port))])
-      (if m
-	  (caar m)
-	  (error 
-	   'create-embedding-executable
-	   "can't find collection-path position in executable"))))
 
   (define (set-collects-path dest-exe collects-path-bytes)
     (when collects-path-bytes
-      (let ([libpos (let ([tag #"coLLECTs dIRECTORy:"])
-		      (+ (with-input-from-file dest-exe 
-			   (lambda () (find-cmdline tag)))
-			 (bytes-length tag)))])
-	(with-output-to-file dest-exe
-	  (lambda ()
-	    (let ([out (current-output-port)])
-	      (file-position out libpos)
-	      (write-bytes collects-path-bytes out)
-	      (write-bytes #"\0\0" out)))
-	  #:exists 'update)))))
+      (set-executable-tag 'create-embedding-executable
+                          #rx#"coLLECTs dIRECTORy:"
+                          "collection"
+                          dest-exe
+                          #f
+                          collects-path-bytes
+                          collects-path-bytes))))
