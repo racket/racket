@@ -1,4 +1,4 @@
-This directory constraint source programs and fragments for wrapper
+This directory contains source programs and fragments for wrapper
 executables used to start/embed Racket. The programs and fragments are
 used both for the Racket CS and BC implementations.
 
@@ -18,6 +18,18 @@ The paths are embedded in the executable immediately after a special
 entire list of paths must end with an additional NUL terminator, and
 the overall list must be less than 1024 bytes long.
 
+Under Windows, executables also embed a path to DLLs. For more
+information, see "..\worksp\README.txt".
+
+Paths to all other installation directories are found through a
+"config.rktd" file in a "configuration directory". Most paths that are
+specified in "config.rktd" have default values that are relative to
+the main collection directory. The paths of the configuration
+directory and main collection directory thus work together to
+determine a Racket configuration. A configuration directory may be
+embedded in an executable using the "coNFIg dIRECTORy:" tag similarly
+to "coLLECTs dIRECTORy:".
+
 As an alternative to editing an executable directly, the
 `create-embedding-executable` procedure from `compiler/embed` can be
 used to change the embedded path. For example, the following program
@@ -27,12 +39,8 @@ path in the clone to "/tmp/collects":
  (require compiler/embed)
  (create-embedding-executable "/tmp/mz" #:collects-path "/tmp/collects")
 
-Similarly, `raco exe` mode accepts a `--collects` flag to set the
-collection path in the generated executable.
+Similarly, `raco exe` mode accepts flags like `--collects-path` and
+`--config-path` to set these paths in the generated executable.
 
-Under Windows, executables also embed a path to DLLs. For more
-information, see "..\worksp\README.txt".
-
-Paths to all other installation directories are found through the
-"config.rkt" library of the "config" collection. Search the
-documentation for "config search paths" for more information.
+See the "Installation Configuration and Search Paths" section in the
+`raco` documentation for more details.

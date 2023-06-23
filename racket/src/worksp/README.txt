@@ -176,7 +176,7 @@ explicit DLL load, so that the DLLs must appear in the normal DLL
 search path.
 
 See also "..\start\README.txt" for information on the embedded
-"collects" path in executables.
+"collects" and "config" paths in executables.
 
 
 ========================================================================
