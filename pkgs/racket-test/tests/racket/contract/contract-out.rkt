@@ -1364,21 +1364,34 @@
    "provide/contract73-a")
 
   (test/spec-passed
-   'provide/contract70
+   'provide/contract74
    ;; https://github.com/racket/racket/issues/2572
    '(let ()
-      (eval '(module provide/contract70-a racket/base
+      (eval '(module provide/contract74-a racket/base
                (require racket/contract/base)
                (struct stream (x [y #:mutable]))
                (provide (contract-out (struct stream ([x any/c] [y any/c]))))))
 
-      (eval '(module provide/contract70-b racket/base
-               (require 'provide/contract70-a racket/contract/base)
+      (eval '(module provide/contract74-b racket/base
+               (require 'provide/contract74-a racket/contract/base)
                (provide (contract-out (struct stream ([x any/c] [y any/c]))))))
 
-      (eval '(module provide/contract70-c racket/base
-               (require 'provide/contract70-b racket/contract/base)
+      (eval '(module provide/contract74-c racket/base
+               (require 'provide/contract74-b racket/contract/base)
                (void stream stream? stream-x stream-y set-stream-y!)))))
+
+  (test/spec-passed/result
+   'provide/contract75
+   '(let ()
+      (eval '(module provide/contract75 racket/base
+               (require racket/contract/base)
+               (provide
+                (contract-out
+                 [f (->* () #:rest (listof integer?) #:pre #t any)]))
+               (define (f . args) args)))
+      (eval '(require 'provide/contract75))
+      (eval '(f 1 12)))
+   '(1 12))
 
   (test/spec-passed/result
    'provide/contract-struct-out
