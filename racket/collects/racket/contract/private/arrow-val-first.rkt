@@ -502,9 +502,9 @@ plus1 arg list construction: build-plus-one-arity-function/real
         (define number-of-rngs (and rngs (with-syntax ([rngs rngs]) (length (syntax->list #'rngs)))))
         #`(λ (f)
             (λ (blame regb ... optb ... kb ... okb ...
+                      #,@(if rest (list #'restb) '())
                       #,@(if pre (list pre) '())
                       #,@(if pre/desc (list pre/desc) '())
-                      #,@(if rest (list #'restb) '())
                       rb ...
                       #,@(if post (list post) '())
                       #,@(if post/desc (list post/desc) '()))
