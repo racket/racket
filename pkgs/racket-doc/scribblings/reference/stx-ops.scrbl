@@ -77,19 +77,23 @@ column is unknown. See also @secref["linecol"].
 @defproc[(syntax-position [stx syntax?])
          (or/c exact-positive-integer? #f)]{
 
-Returns the character position (positive exact integer)
+Returns the position (positive exact integer)
 of the @tech{source location} for the start
 of the @tech{syntax object} in its source, or @racket[#f] if the source
-position is unknown. See also @secref["linecol"].}
+position is unknown. The position is intended to be a character position,
+but reading from a port without line counting enabled will produce
+a position as a byte offset. See also @secref["linecol"].}
 
 
 @defproc[(syntax-span [stx syntax?])
          (or/c exact-nonnegative-integer? #f)]{
 
-Returns the span (non-negative exact integer) in characters
+Returns the span (non-negative exact integer)
 of the @tech{source location} for
 @tech{syntax object} in its source, or @racket[#f] if the span is
-unknown.}
+unknown. The span is intended to count in characters,
+but reading from a port without line counting enabled will produce
+a span in bytes. See also @secref["linecol"]. }
 
 
 @defproc[(syntax-original? [stx syntax?]) boolean?]{

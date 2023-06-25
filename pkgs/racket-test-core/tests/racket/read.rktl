@@ -1659,5 +1659,15 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; make sure span is in bytes when port does not count lines
+(let ()
+  (define s (open-input-string "\u3BB"))
+  (test 2 syntax-span (read-syntax 'x s)))
+(let ()
+  (define s (open-input-string "↑"))
+  (test 3 syntax-span (read-syntax 'x s)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; readtable has `report-errs`:
 (load-relative "readtable.rktl")

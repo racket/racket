@@ -26,7 +26,11 @@ it should generally be a path for the source file.
 
 See @secref["reader"] for information on the default reader in
 @racket[read-syntax] mode and @secref["parse-reader"] for
-the protocol of @racket[read-syntax].}
+the protocol of @racket[read-syntax].
+
+Typically, line counting should be enabled for @racket[in] so that
+source locations in syntax objects are in characters, instead of
+bytes. See also @secref["linecol"].}
 
 @guidealso["stx-obj"]
 
