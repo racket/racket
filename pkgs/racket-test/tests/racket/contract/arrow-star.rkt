@@ -712,6 +712,29 @@
                  'pos 'neg)
      2)))
   
+  (test/neg-blame
+   '->*-pre/post-20
+   '((contract (->* () #:rest list? #:pre #f integer?)
+               (λ args 1)
+               'pos
+               'neg)))
+
+  (test/neg-blame
+   '->*-pre/post-21
+   '((contract (->* () #:rest (list/c integer?) #:pre #t integer?)
+               (λ args 1)
+               'pos
+               'neg)
+     ""))
+
+  (test/spec-passed
+   '->*-pre/post-22
+   '((contract (->* () #:rest (list/c integer?) #:pre #t integer?)
+               (λ args 1)
+               'pos
+               'neg)
+     2))
+
   (test/spec-passed
    '->*-opt-optional1
    '((contract (->* () integer?) (lambda () 1) 'pos 'neg)))
