@@ -230,8 +230,8 @@
                            (if (string? dir)
                                (string->path dir)
                                dir))))
-    (fix-one #rx#"coLLECTs dIRECTORy:" (dir: 'collects))
-    (fix-one #rx#"coNFIg dIRECTORy:" (dir: 'config)))
+    (fix-one #rx#"coLLECTs dIRECTORy:" "collects" (dir: 'collects))
+    (fix-one #rx#"coNFIg dIRECTORy:" "config" (dir: 'config)))
   (define (fix-script file)
     (let* ([size (file-size file)]
            [buf (with-input-from-file file (lambda () (read-bytes size)))]
