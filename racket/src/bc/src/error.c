@@ -2745,9 +2745,10 @@ void scheme_raise_out_of_memory(const char *where, const char *msg, ...)
   
   scheme_raise_realm_exn(MZEXN_FAIL_OUT_OF_MEMORY,
                          name_len, scheme_primitive_realm, scheme_primitive_realm,
-                         "%s%sout of memory %t",
+                         "%s%sout of memory%s%t",
                          where ? where : "",
                          where ? ": " : "",
+                         (slen > 0) ? " " : "",
                          s, slen);
 }
 

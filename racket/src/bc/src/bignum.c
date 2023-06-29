@@ -858,30 +858,66 @@ static Scheme_Object *do_power(const Scheme_Object *a, uintptr_t b)
 
 Scheme_Object *do_big_power(const Scheme_Object *a, const Scheme_Object *b)
 {
-  /* This is really a fancy way of sleeping, because it's only used
-     when b is a bignum, which means that we have no chance of actually
-     reaching the result. But just in case... */
-  Scheme_Object *result, *v[2];
+  if (0) {
+    /* This is only used when b is a bignum, which means that we have
+       no chance of actually reaching the result. */
+    Scheme_Object *result, *v[2];
 
-  result = scheme_make_integer(1);
-  v[1] = scheme_make_integer(-1);
+    result = scheme_make_integer(1);
+    v[1] = scheme_make_integer(-1);
 
-  while (!scheme_is_zero(b)) {
-    if (SCHEME_TRUEP(scheme_odd_p(1, (Scheme_Object **)&b)))
-      result = scheme_bin_mult(a, result);
-    a = scheme_bin_mult(a, a);
+    while (!scheme_is_zero(b)) {
+      if (SCHEME_TRUEP(scheme_odd_p(1, (Scheme_Object **)&b)))
+        result = scheme_bin_mult(a, result);
+      a = scheme_bin_mult(a, a);
 
-    v[0] = (Scheme_Object *)b;
-    b = scheme_bitwise_shift(2, v);
+      v[0] = (Scheme_Object *)b;
+      b = scheme_bitwise_shift(2, v);
+    }
+
+    return result;
   }
 
-  return result;
+  scheme_raise_out_of_memory("expt", NULL);
+ 
+  return NULL;
 }
 
 
 Scheme_Object *scheme_generic_integer_power(const Scheme_Object *a, const Scheme_Object *b)
 {
   uintptr_t exponent;
+
+  /* assume that b > 0, but a might be 0, -1, or 1, and it might be
+     be a small value like that encoded as a bignum */
+
+  {
+    intptr_t v = 2;
+    if (SCHEME_INTP(a))
+      v = SCHEME_INT_VAL(a);
+    else if (SCHEME_BIGNUMP(a)) {
+      if (SCHEME_BIGLEN(a) == 0)
+        v = 0;
+      else if (SCHEME_BIGLEN(a) == 1) {
+        if (SCHEME_BIGDIG(a)[0] == 1) {
+          if (SCHEME_BIGPOS(a))
+            v = 1;
+          else
+            v = -1;
+        }
+      }
+    }
+    if ((v == 1) || (v == 0))
+      return scheme_make_integer(v);
+    else if (v == -1) {
+      if (SCHEME_INTP(b)) {
+        if (SCHEME_INT_VAL(b) & 0x1)
+          return scheme_make_integer(-1);
+      } else if (SCHEME_BIGDIG(b)[0] & 0x1)
+        return scheme_make_integer(-1);
+      return scheme_make_integer(1);
+    }
+  } 
 
   if (scheme_current_thread->constant_folding) {
     /* if we're trying to fold a constant, limit the work that we're willing to do at compile time */

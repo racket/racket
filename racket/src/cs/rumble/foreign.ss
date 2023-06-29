@@ -352,8 +352,8 @@
 (define-syntax-rule (checker who ?) (lambda (for-whom x) (if (? x) x (bad-ctype-value for-whom who x))))
 (define-syntax integer-checker
   (syntax-rules (signed unsigned)
-    [(_ who signed n int?) (checker who (lambda (x) (and (int? x) (<= (- (expt 2 (- n 1))) x  (- (expt 2 (- n 1)) 1)))))]
-    [(_ who unsigned n int?) (checker who (lambda (x) (and (int? x) (<= 0 x  (- (expt 2 n) 1)))))]))
+    [(_ who signed n int?) (checker who (lambda (x) (and (int? x) (<= (- (#%expt 2 (- n 1))) x  (- (#%expt 2 (- n 1)) 1)))))]
+    [(_ who unsigned n int?) (checker who (lambda (x) (and (int? x) (<= 0 x  (- (#%expt 2 n) 1)))))]))
 
 (define-ctype _bool 'boolean 'bool)
 (define-ctype _double 'double 'double (checker who flonum?))

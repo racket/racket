@@ -428,6 +428,7 @@
           real->double-flonum
           real->single-flonum
           arithmetic-shift
+          expt
           bitwise-ior
           bitwise-xor
           bitwise-and

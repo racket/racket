@@ -230,7 +230,7 @@
       ;; Watch out for radiply growing memory use that isn't captured
       ;; fast enough by regularly scheduled event checking because it's
       ;; allocated in large chunks
-      (when (>= (bytes-allocated) trigger-major-gc-allocated)
+      (when (>= (bytes-allocated 0) trigger-major-gc-allocated)
         (set-timer 1)))))
 
 (define (set-incremental-collection-enabled! on?)

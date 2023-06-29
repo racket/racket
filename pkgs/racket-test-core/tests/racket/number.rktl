@@ -3,7 +3,7 @@
 
 (Section 'numbers)
 
-(require racket/extflonum racket/random racket/list)
+(require racket/fixnum racket/extflonum racket/random racket/list)
 
 (define has-single-flonum? (single-flonum-available?))
 (define has-exact-zero-inexact-complex? (not (eq? 'chez-scheme (system-type 'vm))))
@@ -642,6 +642,18 @@
 (test  5.540619075645279e+34 expt   1.000000000000001 (expt 2 56))
 (test  5.540619075645279e+34 expt  -1.000000000000001 (expt 2 56))
 (test -5.5406190756452855e+34 expt -1.000000000000001 (add1 (expt 2 56)))
+
+(err/rt-test (eval '(expt 2 (expt 2 80))) exn:fail:out-of-memory?)
+(err/rt-test (eval '(expt 1+1i (expt 2 80))) exn:fail:out-of-memory?)
+(err/rt-test (eval '(expt 1/2 (expt 2 80))) exn:fail:out-of-memory?)
+(test 1 expt 1 (expt 2 80))
+(test 1 expt -1 (expt 2 80))
+(test -1 expt -1 (add1 (expt 2 80)))
+(test 1 expt -1 (sub1 (most-positive-fixnum)))
+(test -1 expt -1 (most-positive-fixnum))
+(test 0 expt 0 (expt 2 80))
+(test 0 expt 0 (add1 (expt 2 80)))
+(test 0.0 expt 0.5 (expt 2 80))
 
 (let ()
   (define nrs (list -inf.0 -2.0 -1.0 -0.5 -0.0 0.0 0.5 1.0 2.0 +inf.0))

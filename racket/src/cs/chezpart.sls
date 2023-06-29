@@ -52,6 +52,7 @@
                            bitwise-not
                            fllog flatan
                            fxquotient
+                           expt
                            make-flvector flvector-copy
                            vector->pseudo-random-generator
                            vector->pseudo-random-generator!)
