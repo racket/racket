@@ -192,15 +192,12 @@
                  ;; `rx-to-encode'
                  (write-json-string (symbol->immutable-string k))
                  (write-bytes #":" o)
-                 (if (hash? v)
-                     (begin
-                       (format/write-indented-newline)
-                       (format/write-indent-bytes))
-                     (format/write-whitespace))
+                 (format/write-whitespace)
                  (write-jsval v (add1 layer)))))
            (write-bytes #"{" o)
-           (hash-for-each x write-hash-kv #t)
-           (format/write-indented-newline)
+           (unless (hash-empty? x)
+             (hash-for-each x write-hash-kv #t)
+             (format/write-indented-newline))
            (write-bytes #"}" o)]
           [else (raise-type-error who "legal JSON value" x)]))
   (void))
