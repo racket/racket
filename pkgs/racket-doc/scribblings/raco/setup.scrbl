@@ -593,6 +593,9 @@ Optional @filepath{info.rkt} fields trigger additional actions by
            category is the default and used for unrecognized category
            symbols.}
 
+     @item{@racket['drracket-plugin] : Documentation for DrRacket 
+           Plugins.}
+
      @item{@racket['legacy] : Documentation for deprecated libraries,
            languages, and tools.}
 
