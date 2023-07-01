@@ -42,6 +42,7 @@
     (tool-library    "Tool Libraries")
     (foreign         "Low-Level APIs")
     (interop         "Interoperability")
+    (drracket-plugin "DrRacket Plugins")
     (library         "Miscellaneous Libraries")
     (experimental    "Experimental Languages and Libraries")
     (legacy          "Legacy Languages and Libraries")
