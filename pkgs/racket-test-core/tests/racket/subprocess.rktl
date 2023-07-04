@@ -345,6 +345,7 @@
 ;; empty strings and nul checks ------------------------------------------------------
 
 (err/rt-test (subprocess #f #f #f ""))
+(err/rt-test (subprocess #f #f #f 42) exn:fail:contract? #rx"42")
 (err/rt-test (process* ""))
 (err/rt-test (system* ""))
 
