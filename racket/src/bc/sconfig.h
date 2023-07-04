@@ -356,7 +356,7 @@
 #   define FREEBSD_CONTROL_387
 #  endif
 # elif defined(__amd64__)
-#  define SCHEME_ARCH "amd64"
+#  define SCHEME_ARCH "x86_64"
 #  define REGISTER_POOR_MACHINE
 #  define MZ_USE_JIT_X86_64
 #  define MZ_TRY_EXTFLONUMS
