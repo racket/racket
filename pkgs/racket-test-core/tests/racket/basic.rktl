@@ -2485,6 +2485,7 @@
   (define an-ax (make-ax 1 2))
 
   (define (check-hash-tables weak-kind reorder?)
+    (struct wrap (f) #:property prop:procedure 0)
     (let ([h1 (case weak-kind
                 [(weak) (make-weak-hasheq)]
                 [(ephemeron) (make-ephemeron-hasheq)]
@@ -2512,6 +2513,9 @@
       (hash-update! h1 l cdr)
       (test 'nope hash-ref h1 (list 1 2 3) (lambda () 'nope))
       (test '(((1 2 3) . ok)) hash-map h1 (lambda (k v) (cons k v)))
+      (test '(((1 2 3) . ok)) hash-map h1 (lambda (k v) (cons k v)) #t)
+      (test '(((1 2 3) . ok)) hash-map h1 (wrap (lambda (k v) (cons k v))))
+      (test '(((1 2 3) . ok)) hash-map h1 (wrap (lambda (k v) (cons k v))) #t)
       (hash-remove! h1 l)
       (test 'nope hash-ref h1 l (lambda () 'nope))
       (err/rt-test (hash-update! h1 l add1))
@@ -2636,6 +2640,9 @@
       (let ([c 0])
         (hash-for-each h1 (lambda (k v) (set! c (add1 c))))
         (test 15 'count c))
+      (hash-for-each h1 void #t)
+      (hash-for-each h1 (wrap void))
+      (hash-for-each h1 (wrap void) #t)
       ;; return the hash table:
       h1))
 

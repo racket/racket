@@ -470,7 +470,7 @@
     (check who (procedure-arity-includes/c 2) proc)
     (cond
      [try-order?
-      (for-each (lambda (p) (proc (car p) (cdr p)))
+      (for-each (lambda (p) (|#%app| proc (car p) (cdr p)))
                 (try-sort-keys (hash-map ht cons)))]
      [(intmap? ht) (intmap-for-each ht proc)]
      [(mutable-hash? ht)
@@ -492,7 +492,7 @@
     (check who (procedure-arity-includes/c 2) proc)
     (cond
      [try-order?
-      (map (lambda (p) (proc (car p) (cdr p)))
+      (map (lambda (p) (|#%app| proc (car p) (cdr p)))
            (try-sort-keys (hash-map ht cons)))]
      [(intmap? ht) (intmap-map ht proc)]
      [(mutable-hash? ht)
