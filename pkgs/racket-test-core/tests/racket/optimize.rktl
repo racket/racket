@@ -7271,6 +7271,39 @@
   (unless (a? val)
     (+ "unreachable 2")))
 
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; regression test for schemify inliner
+
+(let ()
+  (define (comp f g)
+    (lambda (x)
+      (f (g x))))
+
+  (define (double f)
+    (comp f f))
+
+  (define quad (double double))
+
+  (define f (quad add1))
+
+  (f 0))
+
+(let ()
+  (define (comp f g)
+    (case-lambda
+      [(x) (f (g x))]
+      [(x y) #f]))
+
+  (define (double f)
+    (comp f f))
+
+  (define quad (double double))
+
+  (define f (quad add1))
+
+  (f 0))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
