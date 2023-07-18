@@ -184,11 +184,13 @@
    v
    (match v
      [`(lambda ,args . ,bodys)
-      `(lambda ,args . ,(clone-body bodys env mutated))]
+      (define-values (new-args new-env) (clone-args args env mutated))
+      `(lambda ,new-args . ,(clone-body bodys new-env mutated))]
      [`(case-lambda [,argss . ,bodyss] ...)
       `(case-lambda ,@(for/list ([args (in-list argss)]
                                  [bodys (in-list bodyss)])
-                        `[,args . ,(clone-body bodys env mutated)]))]
+                        (define-values (new-args new-env) (clone-args args env mutated))
+                        `[,new-args . ,(clone-body bodys new-env mutated)]))]
      [`(quote ,_) v]
      [`(let-values . ,_) (clone-let v env mutated)]
      [`(letrec-values . ,_) (clone-let v env mutated)]

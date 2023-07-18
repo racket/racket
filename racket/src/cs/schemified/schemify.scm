@@ -12947,7 +12947,15 @@
                     (let ((args_1 args_0)) (values args_1 bodys_0)))))))
           (case-lambda
            ((args_0 bodys_0)
-            (list* 'lambda args_0 (clone-body bodys_0 env_0 mutated_0)))
+            (call-with-values
+             (lambda () (clone-args args_0 env_0 mutated_0))
+             (case-lambda
+              ((new-args_0 new-env_0)
+               (list*
+                'lambda
+                new-args_0
+                (clone-body bodys_0 new-env_0 mutated_0)))
+              (args (raise-binding-result-arity-error 2 args)))))
            (args (raise-binding-result-arity-error 2 args))))
          (if (if (eq? 'case-lambda hd_0)
                (let ((a_0 (cdr (unwrap v_0))))
@@ -13076,12 +13084,24 @@
                                     (let ((fold-var_1
                                            (let ((fold-var_1
                                                   (cons
-                                                   (list*
-                                                    args_0
-                                                    (clone-body
-                                                     bodys_0
-                                                     env_0
-                                                     mutated_0))
+                                                   (call-with-values
+                                                    (lambda ()
+                                                      (clone-args
+                                                       args_0
+                                                       env_0
+                                                       mutated_0))
+                                                    (case-lambda
+                                                     ((new-args_0 new-env_0)
+                                                      (list*
+                                                       new-args_0
+                                                       (clone-body
+                                                        bodys_0
+                                                        new-env_0
+                                                        mutated_0)))
+                                                     (args
+                                                      (raise-binding-result-arity-error
+                                                       2
+                                                       args))))
                                                    fold-var_0)))
                                              (values fold-var_1))))
                                       (for-loop_0
