@@ -1,5 +1,6 @@
 Version 8.10
 Improve Check Syntax binding arrows from define-local-member-name
+Add 'drracket-plugin documentation category symbol
 
 Version 8.9, April 2023
 Use Unicode 15.0 for character and string operations
