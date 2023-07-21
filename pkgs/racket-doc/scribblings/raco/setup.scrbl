@@ -611,7 +611,7 @@ Optional @filepath{info.rkt} fields trigger additional actions by
 
    ]
 
-   If the the @racket[_category] list is not given, or if the category symbol is unrecognized,
+   If the @racket[_category] list is not given, or if the category symbol is unrecognized,
    the documentation is added to the Miscellaneous Libraries (@racket['library]) category.
 
    If the category list has a second element, it must be a real number
