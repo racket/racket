@@ -651,7 +651,7 @@ Optional @filepath{info.rkt} fields trigger additional actions by
 
    @history[#:changed "6.4" @elem{Allow a category to be a string
                                  instead of a symbol.}
-            #:changed "8.9.x.x" @elem{Add 'drracket-plugin category 
+            #:changed "8.9.0.6" @elem{Add 'drracket-plugin category 
                                       symbol.}]}
 
  @item{@as-index{@racketidfont{release-note-files}} : @racket[(listof (cons/c string? (cons/c string? list?)))] ---
