@@ -668,7 +668,10 @@
                       (dots-loop (cdr d) (if (syntax? x) x cx) (ps-add-cdr pr)
                                  (cons local-renv acc))))]
             [(null? d)
-             (runit (append (transpose nattrs (reverse acc)) renv))]
+             (cond [(and plus? (null? acc))
+                    (let ([es (es-add-proper-pair (first-desc-simple simple) es)])
+                      (rfail (failure* pr es)))]
+                   [else (runit (append (transpose nattrs (reverse acc)) renv))])]
             [else (rfail (failure* pr es))]))
     (dots-loop x cx pr null))
 
