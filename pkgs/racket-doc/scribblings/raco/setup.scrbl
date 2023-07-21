@@ -589,9 +589,7 @@ Optional @filepath{info.rkt} fields trigger additional actions by
 
      @item{All string categories as ordered by @racket[string<=?].}
      
-     @item{@racket['library] : Documentation for libraries; this
-           category is the default and used for unrecognized category
-           symbols.}
+     @item{@racket['library] : Documentation for miscellaneous libraries.}
 
      @item{@racket['drracket-plugin] : Documentation for DrRacket 
            Plugins.}
@@ -612,8 +610,9 @@ Optional @filepath{info.rkt} fields trigger additional actions by
            searching.}
 
    ]
-   Libraries using category symbols not listed are added to the 
-   Miscellaneous Libraries category on the documentation index page.
+
+   If the the @racket[_category] list is not given, or if the category symbol is unrecognized,
+   the documentation is added to the Miscellaneous Libraries (@racket['library]) category.
 
    If the category list has a second element, it must be a real number
    that designates the manual's sorting position with the category;
@@ -651,8 +650,8 @@ Optional @filepath{info.rkt} fields trigger additional actions by
 
    @history[#:changed "6.4" @elem{Allow a category to be a string
                                  instead of a symbol.}
-            #:changed "8.9.0.6" @elem{Add 'drracket-plugin category 
-                                      symbol.}]}
+            #:changed "8.9.0.6" @elem{Add the @racket['drracket-plugin]
+                                      category symbol.}]}
 
  @item{@as-index{@racketidfont{release-note-files}} : @racket[(listof (cons/c string? (cons/c string? list?)))] ---
    A list of release-notes text files to link from the main documentation pages.
