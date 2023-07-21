@@ -612,6 +612,8 @@ Optional @filepath{info.rkt} fields trigger additional actions by
            searching.}
 
    ]
+   Libraries using category symbols not listed are added to the 
+   Miscellaneous Libraries category on the documentation index page.
 
    If the category list has a second element, it must be a real number
    that designates the manual's sorting position with the category;
@@ -648,7 +650,9 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    @filepath{synced.rktd} file to represent the installation.
 
    @history[#:changed "6.4" @elem{Allow a category to be a string
-                                 instead of a symbol.}]}
+                                 instead of a symbol.}
+            #:changed "8.9.0.6" @elem{Add 'drracket-plugin category 
+                                      symbol.}]}
 
  @item{@as-index{@racketidfont{release-note-files}} : @racket[(listof (cons/c string? (cons/c string? list?)))] ---
    A list of release-notes text files to link from the main documentation pages.
