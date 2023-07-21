@@ -612,6 +612,8 @@ Optional @filepath{info.rkt} fields trigger additional actions by
            searching.}
 
    ]
+   Libraries using category symbols not listed are added to the 
+   Miscellaneous Libraries category on the documentation index page.
 
    If the category list has a second element, it must be a real number
    that designates the manual's sorting position with the category;
