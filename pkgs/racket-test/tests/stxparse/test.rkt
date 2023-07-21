@@ -1159,3 +1159,12 @@
    (syntax-parse #'(#:a a . a)
      #:context 'me
      [fmls:formals #'(fmls fmls.params)])))
+
+;; from camoy, issue #4700 (7/2023)
+(test-case "simple ...+ (interp)"
+  (check-exn
+   #rx"hello: expected more terms starting with thing"
+   (lambda ()
+     (syntax-parse #'(hello)
+       [(_ (~describe "thing" e) ...+)
+        'ok]))))
