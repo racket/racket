@@ -650,7 +650,9 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    @filepath{synced.rktd} file to represent the installation.
 
    @history[#:changed "6.4" @elem{Allow a category to be a string
-                                 instead of a symbol.}]}
+                                 instead of a symbol.}
+            #:changed "8.9.x.x" @elem{Add 'drracket-plugin category 
+                                      symbol.}]}
 
  @item{@as-index{@racketidfont{release-note-files}} : @racket[(listof (cons/c string? (cons/c string? list?)))] ---
    A list of release-notes text files to link from the main documentation pages.
