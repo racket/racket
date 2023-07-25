@@ -787,13 +787,16 @@ instead of @racket[syntax-protect].
 ]}
 
 @defform[(:do-in ([(outer-id ...) outer-expr] ...)
-                 outer-check
+                 outer-defn-or-expr
                  ([loop-id loop-expr] ...)
                  pos-guard
                  ([(inner-id ...) inner-expr] ...)
+                 maybe-inner-defn-or-expr
                  pre-guard
                  post-guard
-                 (loop-arg ...))]{
+                 (loop-arg ...))
+         #:grammar
+         ([maybe-inner-defn/expr (code:line) (code:line inner-defn-or-expr)])]{
 
 A form that can only be used as a @racket[_seq-expr] in a
 @racket[_for-clause] of @racket[for] (or one of its variants).
@@ -803,10 +806,11 @@ spliced into the iteration essentially as follows:
 
 @racketblock[
 (let-values ([(outer-id ...) outer-expr] ...)
-  outer-check
+  outer-defn-or-expr
   (let loop ([loop-id loop-expr] ...)
     (if pos-guard
         (let-values ([(inner-id ...) inner-expr] ...)
+          inner-defn-or-expr
           (if pre-guard
               (let _body-bindings
                    (if post-guard
@@ -819,7 +823,8 @@ spliced into the iteration essentially as follows:
 where @racket[_body-bindings] and @racket[_done-expr] are from the
 context of the @racket[:do-in] use. The identifiers bound by the
 @racket[for] clause are typically part of the @racket[([(inner-id ...)
-inner-expr] ...)] section.
+inner-expr] ...)] section. When @racket[inner-defn-or-expr] is not
+provided @racket[(begin)] is used in its place.
 
 Beware that @racket[_body-bindings] and @racket[_done-expr] can
 contain arbitrary expressions, potentially including @racket[set!] on
@@ -832,7 +837,10 @@ arguments to support iterations in parallel with the @racket[:do-in]
 form, and the other pieces are similarly accompanied by pieces from
 parallel iterations.
 
-For an example of @racket[:do-in], see @racket[define-sequence-syntax].}
+For an example of @racket[:do-in], see @racket[define-sequence-syntax].
+
+@history[#:changed "8.10.0.3" @elem{Added support for non-empty
+                                    @racket[maybe-inner-defn-or-expr].}]}
 
 @defproc[(for-clause-syntax-protect [stx syntax?]) syntax?]{
 

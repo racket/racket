@@ -3,18 +3,8 @@
 
 (Section 'for)
 
-(require "for-util.rkt")
-
-;; These are copied from
-;; https://github.com/racket/r6rs/blob/master/r6rs-lib/rnrs/arithmetic/fixnums-6.rkt
-(define CS? (eq? 'chez-scheme (system-type 'vm)))
-(define 64-bit? (fixnum? (expt 2 33)))
-(define (least-fixnum) (if CS?
-                           (if 64-bit? (- (expt 2 60)) -536870912)
-                           (if 64-bit? (- (expt 2 62)) -1073741824)))
-(define (greatest-fixnum) (if CS?
-                              (if 64-bit? (- (expt 2 60) 1) +536870911)
-                              (if 64-bit? (- (expt 2 62) 1) +1073741823)))
+(require "for-util.rkt"
+         racket/fixnum)
 
 (define (five) 5)
 
@@ -37,14 +27,14 @@
 (test-sequence [(3.0 4.0 5.0 6.0)] (in-inclusive-range 3.0 6.0))
 (test-sequence [(3.0 3.5 4.0 4.5 5.0 5.5 6.0)] (in-inclusive-range 3.0 6.0 0.5))
 (test-sequence [(#e3.0 #e3.1 #e3.2 #e3.3)] (in-inclusive-range #e3.0 #e3.3 #e0.1))
-(test-sequence [(,(least-fixnum)
-                 ,(+ (least-fixnum) 1))]
-               (in-inclusive-range (least-fixnum)
-                                   (+ (least-fixnum) 1)))
-(test-sequence [(,(- (greatest-fixnum) 1)
-                 ,(greatest-fixnum))]
-               (in-inclusive-range (- (greatest-fixnum) 1)
-                                   (greatest-fixnum)))
+(test-sequence [(,(most-negative-fixnum)
+                 ,(+ (most-negative-fixnum) 1))]
+               (in-inclusive-range (most-negative-fixnum)
+                                   (+ (most-negative-fixnum) 1)))
+(test-sequence [(,(- (most-positive-fixnum) 1)
+                 ,(most-positive-fixnum))]
+               (in-inclusive-range (- (most-positive-fixnum) 1)
+                                   (most-positive-fixnum)))
 (err/rt-test (for/list ([x (in-range)]) x))
 (err/rt-test (in-range))
 (err/rt-test (for/list ([x (in-inclusive-range 1)]) x))
@@ -1371,6 +1361,86 @@
 (test '(0 1 2 3 4 5 6 7)
       'final-if-7
       (for/list ([i (in-range 10)] #:splice (final-if-7 i)) i))
+
+;; ----------------------------------------
+;; defining sequence syntax
+
+(define (every-third/proc l)
+  (unless (list? l) (error "oops"))
+  (make-do-sequence
+   (lambda ()
+     (values car
+             (lambda (l)
+               (and (pair? l)
+                    (pair? (cdr l))
+                    (pair? (cddr l))
+                    (cdddr l)))
+             values
+             l
+             pair?
+             (lambda (v) #t)
+             #f))))
+
+(define-sequence-syntax every-third
+  (lambda () #'every-third/proc)
+  (lambda (stx)
+    (syntax-case stx ()
+      [[(id) (_ expr)]
+       #`[(id) (:do-in
+                ;; outer-ids
+                ([(l) expr])
+                ;; outer-expr-or-defn
+                (begin
+                  (define (check-list l)
+                    (unless (list? l)
+                      (error "oops")))
+                  (check-list l))
+                ;; loop vars
+                ([l l])
+                ;; pos guard
+                (pair? l)
+                ;; inner vars
+                ([(id) (car l)]
+                 [(next-l) (and (pair? l)
+                                (pair? (cdr l))
+                                (pair? (cddr l))
+                                (cdddr l))])
+                ;; inner-end-or-defn
+                #,@(if (eq? (syntax-e #'expr) 'hack-skip)
+                       null
+                       (list
+                        #'(begin
+                            (define (bad-check)
+                              (when (eq? id 'bad)
+                                (error "that's bad")))
+                            (bad-check))))
+                ;; pre-guard
+                #t
+                ;; post-guard
+                #t
+                ;; loop args
+                (next-l))]])))
+
+(define-syntax-rule (check a b c) c)
+
+(test '(1 4 7) 'every-third (for/list ([i (every-third '(1 2 3 4 5 6 7 8))])
+                              i))
+
+(test '(1 4 7) 'every-third (let ([hack-skip '(1 2 3 4 5 6 7 8)])
+                              (for/list ([i (every-third hack-skip)])
+                                i)))
+
+(err/rt-test (for/list ([i (every-third '(1 2 3 bad 5 6 7 8))])
+               i)
+             "that's bad")
+
+(test '(1 bad 7) 'every-third (let ([hack-skip '(1 2 3 bad 5 6 7 8)])
+                                (for/list ([i (every-third hack-skip)])
+                                  i)))
+
+(test '(1 4 7) 'every-third (let ([seq (every-third '(1 2 3 4 5 6 7 8))])
+                              (for/list ([i seq])
+                                i)))
 
 ;; ----------------------------------------
 ;; Make sure explicitly quoted datum doesn't need to have a `#%datum` binding

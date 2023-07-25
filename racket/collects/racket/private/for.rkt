@@ -219,9 +219,28 @@
                ([loop-id loop-expr] ...)
                pos-guard
                ([(inner-id ...) inner-rhs] ...)
+               inner-check
                pre-guard
                post-guard
-               (loop-arg ...)) #'body]
+               (loop-arg ...))
+              #'body]
+             [(([(outer-id ...) outer-rhs] ...)
+               outer-check
+               ([loop-id loop-expr] ...)
+               pos-guard
+               ([(inner-id ...) inner-rhs] ...)
+               pre-guard
+               post-guard
+               (loop-arg ...))
+              #'(([(outer-id ...) outer-rhs] ...)
+                 outer-check
+                 ([loop-id loop-expr] ...)
+                 pos-guard
+                 ([(inner-id ...) inner-rhs] ...)
+                 (begin)
+                 pre-guard
+                 post-guard
+                 (loop-arg ...))]
              [else (raise-syntax-error #f "bad :do-in clause" orig-stx clause)])]
           [[(id) (values rhs)]
            (expand-clause orig-stx #'[(id) rhs])]
@@ -234,6 +253,7 @@
                             (loop-binding ...)
                             pos-guard
                             (inner-binding ...)
+                            inner-check
                             pre-guard
                             post-guard
                             (loop-arg ...)) ...)
@@ -242,10 +262,11 @@
                                (syntax->list #'(id ...))
                                (syntax->list #'(rhs ...)))])
              #`((outer-binding ... ...)
-                (and outer-check ...)
+                (begin outer-check ...)
                 (loop-binding ... ...)
                 (and pos-guard ...)
                 (inner-binding ... ...)
+                (begin inner-check ...)
                 (and pre-guard ...)
                 (and post-guard ...)
                 (loop-arg ... ...)))]
@@ -255,6 +276,7 @@
                            (loop-binding ...)
                            pos-guard
                            (inner-binding ...)
+                           inner-check
                            pre-guard
                            post-guard
                            (loop-arg ...))
@@ -264,6 +286,7 @@
                 (loop-binding ...)
                 pos-guard
                 (inner-binding ...)
+                inner-check
                 (and pre-guard (not (pred id ...)))
                 post-guard
                 (loop-arg ...)))]
@@ -273,6 +296,7 @@
                            (loop-binding ...)
                            pos-guard
                            (inner-binding ...)
+                           inner-check
                            pre-guard
                            post-guard
                            (loop-arg ...))
@@ -282,6 +306,7 @@
                 (loop-binding ...)
                 pos-guard
                 (inner-binding ...)
+                inner-check
                 pre-guard
                 (and post-guard (not (pred id ...)))
                 (loop-arg ...)))]
@@ -325,6 +350,7 @@
                         [(pos) #,(syntax-property
                                   (syntax/loc #'rhs (if pos-pre-inc (pos-pre-inc pos) pos))
                                   'feature-profile:generic-sequence #t)])
+                       (void)
                        #,(syntax-property
                           (syntax/loc #'rhs (if val-cont? (val-cont? id ...) #t))
                           'feature-profile:generic-sequence #t)
@@ -1558,6 +1584,7 @@
                         [loop-binding ...]
                         pos-guard
                         [inner-binding ...]
+                        inner-check
                         pre-guard
                         post-guard
                         [loop-arg ...]) ...)
@@ -1570,6 +1597,7 @@
                                  loop-binding ... ...)
                     (if (and pos-guard ...)
                         (let-values (inner-binding ... ...)
+                          inner-check ...
                           (if (and pre-guard ...)
                               #,(if (syntax-e #'inner-recur)
                                     ;; The general non-nested-loop approach:
