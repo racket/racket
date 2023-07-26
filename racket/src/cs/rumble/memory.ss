@@ -231,7 +231,8 @@
       ;; fast enough by regularly scheduled event checking because it's
       ;; allocated in large chunks
       (when (>= (bytes-allocated 0) trigger-major-gc-allocated)
-        (set-timer 1)))))
+        (when (eqv? (place-thread-category) PLACE-MAIN-THREAD)
+          (set-timer 1))))))
 
 (define (set-incremental-collection-enabled! on?)
   (set! disable-incremental? (not on?)))
