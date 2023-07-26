@@ -545,7 +545,9 @@
                           #:ctx mb-ctx
                           #:def-ctx-scopes mb-def-ctx-scopes
                           #:phase phase
-                          #:s s))
+                          #:s s
+                          #:paramz paramz
+                          #:exit-paramz exit-paramz))
    (log-expand ctx 'next)
 
    ;; Expand the body
@@ -631,7 +633,9 @@
                              #:ctx ctx
                              #:def-ctx-scopes def-ctx-scopes
                              #:phase phase
-                             #:s s)
+                             #:s s
+                             #:paramz paramz
+                             #:exit-paramz exit-paramz)
   (define (make-mb-ctx)
     (struct*-copy expand-context ctx
                   [context 'module-begin]
@@ -654,8 +658,12 @@
         (define partly-expanded-body
           (performance-region
            ['expand 'module-begin]
-           (expand named-body-s
-                   (make-mb-ctx))))
+           (call-with-configure-parameterization
+            paramz
+            exit-paramz
+            (lambda ()
+              (expand named-body-s
+                      (make-mb-ctx))))))
         (cond
          [(eq? '#%module-begin (core-form-sym partly-expanded-body phase))
           ;; Yes, it expanded to `#%module-begin`
