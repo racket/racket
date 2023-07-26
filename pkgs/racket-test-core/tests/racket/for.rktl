@@ -1459,5 +1459,28 @@
       eval-syntax #`(for/list ([(k v) (quote #,(datum->syntax #f #hash((1 . 0))))]) k))
 
 ;; ----------------------------------------
+;; regression test for a missing "outer edge" scope
+
+(let ()
+  (define-sequence-syntax in-digits
+    (lambda () #'values)
+    (lambda (stx)
+      (syntax-case stx ()
+        [[(d) (_ nat)]
+         #'[(d)
+            (:do-in
+             ([(n) nat])
+             values
+             ([i n])
+             (not (zero? i))
+             ([(j d) (quotient/remainder i 10)])
+             #t
+             #t
+             [(- i 1)])]] ; <- regression would make this `i` ambigious
+        [_ #f])))
+
+  (for ([i (in-digits 12)]) i))
+
+;; ----------------------------------------
 
 (report-errs)

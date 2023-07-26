@@ -1775,7 +1775,15 @@
                                  orig-stx
                                  stx)])))
 
-      (define ((make for*? right?) stx)
+      (define ((make for*? right?) stx-in)
+        ;; Add a fresh scope that acts the "outer edge" scope of `let`, so
+        ;; that as we expand clause transformers, we don't end up with
+        ;; ambiguities between things that started out in the form and that
+        ;; were introduced by expansion. This is necessary due to the way
+        ;; `for` performs its own expansion of clauses.
+        (define stx (internal-definition-context-add-scopes
+                     (syntax-local-make-definition-context)
+                     stx-in))
         (syntax-case stx ()
           [(_ orig-stx bindings+options . rest)
            (let ()
