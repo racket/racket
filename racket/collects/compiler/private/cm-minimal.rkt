@@ -591,7 +591,13 @@
                                (trace-printf "different dependency deps for ~a: ~a ~a"
                                              zo-name
                                              imports-sha1
-                                             (deps-imports-sha1 deps)))))
+                                             (deps-imports-sha1 deps))))
+                    (explain (or (file-exists? zo-name)
+                                 ;; See note above about how we cannot depend in general on
+                                 ;; whether the target ".zo" file exists, but that applies
+                                 ;; only when a SHA-1 to assume is recorded
+                                 (deps-assume-compiled-sha1 deps))
+                             (trace-printf "dep file exists without bytecode: ~a" zo-name)))
                ;; We need to recompile the file from machine-independent bytecode,
                ;; or maybe just update the file's modification date
                (trace-printf "hash-equivalent: ~a" zo-name)
