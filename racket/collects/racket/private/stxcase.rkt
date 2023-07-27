@@ -257,8 +257,13 @@
                                           (not lit-comp-is-mod?)
                                           s-exp?)]
                                    [cant-fail? (if lit-comp-is-mod?
-                                                   (equal? mtch '(lambda (e) e))
+                                                   (or (equal? mtch '(lambda (e) e))
+                                                       (equal? mtch '(lambda (e) null)))
                                                    (equal? mtch '(lambda (e free-identifier=?) e)))]
+                                   [list-if (lambda (if-form tst thn els)
+                                              (if cant-fail?
+                                                  thn
+                                                  (list if-form tst thn els)))]
                                    ;; Avoid generating gigantic matching expressions.
                                    ;; If it's too big, interpret at run time, instead
                                    [interp? (and (not cant-fail?)
@@ -301,11 +306,9 @@
                                                                 null
                                                                 (list lit-comp))))))
                                           ;; If match succeeded...
-                                          (list 
+                                          (list-if
                                            (quote-syntax if)
-                                           (if cant-fail?
-                                               #t
-                                               rslt)
+                                           rslt
                                            ;; Extract each name binding into a temp variable:
                                            (list
                                             (quote-syntax let) 
