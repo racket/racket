@@ -595,8 +595,11 @@
                     (explain (or (file-exists? zo-name)
                                  ;; See note above about how we cannot depend in general on
                                  ;; whether the target ".zo" file exists, but that applies
-                                 ;; only when a SHA-1 to assume is recorded
-                                 (deps-assume-compiled-sha1 deps))
+                                 ;; only when a SHA-1 to assume is recorded or is expected
+                                 ;; to be recorded
+                                 (or (deps-assume-compiled-sha1 deps)
+                                     (and (not (deps-machine deps))
+                                          (cross-multi-compile? roots))))
                              (trace-printf "dep file exists without bytecode: ~a" zo-name)))
                ;; We need to recompile the file from machine-independent bytecode,
                ;; or maybe just update the file's modification date
