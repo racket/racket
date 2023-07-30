@@ -4,6 +4,73 @@
   
   (provide match-tests)
 
+  (define regexp-tests
+    (test-suite "Tests for regexp and pregexp"
+      (test-case "regexp"
+        ;; string
+        (check-false
+         (match "banana"
+           [(regexp "(na){2}") #t]
+           [_ #f]))
+        ;; #rx
+        (check-false
+         (match "banana"
+           [(regexp #rx"(na){2}") #t]
+           [_ #f]))
+        ;; #px
+        (check-true
+         (match "banana"
+           [(regexp #px"(na){2}") #t]
+           [_ #f])))
+
+      (test-case "regexp side-effect"
+        (define cnt 0)
+
+        (check-true
+         (match "banana"
+           [(regexp (begin (set! cnt (add1 cnt)) "nan")) #t]
+           [_ #f]))
+        (check-equal? cnt 1)
+
+        (check-false
+         (match "banana"
+           [(regexp (begin (set! cnt (add1 cnt)) "inf")) #t]
+           [_ #f]))
+        (check-equal? cnt 2))
+
+      (test-case "pregexp"
+        ;; string
+        (check-true
+         (match "banana"
+           [(pregexp "(na){2}") #t]
+           [_ #f]))
+        ;; #rx
+        (check-exn exn:fail:contract?
+                   (λ ()
+                     (match "banana"
+                       [(pregexp #rx"(na){2}") #t]
+                       [_ #f])))
+        ;; #px
+        (check-true
+         (match "banana"
+           [(pregexp #px"(na){2}") #t]
+           [_ #f])))
+
+      (test-case "pregexp side-effect"
+        (define cnt 0)
+
+        (check-true
+         (match "banana"
+           [(pregexp (begin (set! cnt (add1 cnt)) "nan")) #t]
+           [_ #f]))
+        (check-equal? cnt 1)
+
+        (check-false
+         (match "banana"
+           [(pregexp (begin (set! cnt (add1 cnt)) "inf")) #t]
+           [_ #f]))
+        (check-equal? cnt 2))))
+
   (define option-tests
     (test-suite "Tests for clause options"
       (test-case "#:do and #:when"
@@ -188,6 +255,7 @@
 
   (define match-tests
     (test-suite "Tests for match.rkt"
+      regexp-tests
       option-tests
       doc-tests
       simple-tests

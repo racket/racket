@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require "patterns.rkt" "compiler.rkt"
+         (only-in "stxtime.rkt" current-form-name)
          syntax/stx syntax/parse/pre racket/syntax
          (for-template racket/base (only-in "runtime.rkt" match:error fail syntax-srclocs)))
 
@@ -53,7 +54,8 @@
              (raise-syntax-error 
               'match (format "wrong number of match clauses, expected ~a and got ~a" len lp) pats))
            (define (mk unm rhs)
-             (make-Row (for/list ([p (syntax->list pats)]) (parse p))
+             (make-Row (parameterize ([current-form-name (syntax-e #'form-name)])
+                         (for/list ([p (syntax->list pats)]) (parse p)))
                        (syntax-property
                         (datum->syntax rhs (syntax-e rhs) stx rhs)
                         'feature-profile:pattern-matching 'antimark)

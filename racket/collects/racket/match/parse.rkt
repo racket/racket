@@ -6,7 +6,8 @@
          "patterns.rkt"
          "parse-helper.rkt"
          "parse-quasi.rkt"
-         (for-template (only-in "runtime.rkt" matchable? mlist? mlist->list)
+         (only-in "stxtime.rkt" current-form-name)
+         (for-template (only-in "runtime.rkt" matchable? pregexp-matcher mlist? mlist->list)
                        (only-in racket/unsafe/ops unsafe-vector-ref)
                        racket/base))
 
@@ -91,15 +92,11 @@
      (trans-match #'matchable? #'(lambda (e) (regexp-match r e)) (parse #'p))]
     [(pregexp r)
      (trans-match #'matchable?
-                  (rearm
-                   #'(lambda (e)
-                       (regexp-match (if (pregexp? r) r (pregexp r)) e)))
+                  #`(pregexp-matcher r '#,(current-form-name))
                   (Pred #'values))]
     [(pregexp r p)
      (trans-match #'matchable?
-                  (rearm 
-                   #'(lambda (e)
-                       (regexp-match (if (pregexp? r) r (pregexp r)) e)))
+                  #`(pregexp-matcher r '#,(current-form-name))
                   (rearm+parse #'p))]
     [(box e) (Box (parse #'e))]
     [(vector es ...)

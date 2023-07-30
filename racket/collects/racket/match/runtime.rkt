@@ -8,6 +8,7 @@
          match:error
          fail
          matchable?
+         pregexp-matcher
          match-prompt-tag
          mlist? mlist->list
          syntax-srclocs)
@@ -37,6 +38,14 @@
 ;; can we pass this value to regexp-match?
 (define (matchable? e)
   (or (string? e) (bytes? e)))
+
+(define ((pregexp-matcher rx who) e)
+  (regexp-match
+   (cond
+     [(pregexp? rx) rx]
+     [(string? rx) (pregexp rx)]
+     [else (raise-argument-error who "(or/c pregexp? string?)" rx)])
+   e))
 
 ;; duplicated because we can't depend on `compatibility` here
 (define (mlist? l)
