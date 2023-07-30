@@ -599,7 +599,7 @@
                                  ;; to be recorded
                                  (or (deps-assume-compiled-sha1 deps)
                                      (and (not (deps-machine deps))
-                                          (cross-multi-compile? roots))))
+                                          (current-compile-target-machine))))
                              (trace-printf "dep file exists without bytecode: ~a" zo-name)))
                ;; We need to recompile the file from machine-independent bytecode,
                ;; or maybe just update the file's modification date
