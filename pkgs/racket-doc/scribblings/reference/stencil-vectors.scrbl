@@ -13,7 +13,7 @@
                                   (with-syntax ([str str]
                                                 [e (read (open-input-string str))])
                                     #'(eval:alts #,(code str) e)))])
-         #'@mz-examples[form ...])]))
+         (syntax-local-introduce #'@mz-examples[form ...]))]))
 
 @title[#:tag "stencil vectors"]{Stencil Vectors}
 
