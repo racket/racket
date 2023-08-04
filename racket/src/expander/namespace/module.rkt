@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../common/phase.rkt"
+         "../common/phase+space.rkt"
          "../common/small-hash.rkt"
          "../common/performance.rkt"
          "../syntax/bulk-binding.rkt"
@@ -658,13 +659,17 @@
 
 (define (module-compute-access! m)
   (define access
-    (for/hasheqv ([(phase at-phase) (in-hash (module-provides m))])
-      (values phase
-              (for/hash ([(sym binding/p) (in-hash at-phase)])
-                (values (module-binding-sym (provided-as-binding binding/p))
-                        (if (provided-as-protected? binding/p)
-                            'protected
-                            'provided))))))
+    (for/fold ([access #hasheqv()]) ([(phase+space at-phase+space) (in-hash (module-provides m))])
+      (define phase (phase+space-phase phase+space))
+      (define phase-access
+        (for/fold ([phase-access (hash-ref access phase #hasheq())])
+                  ([(sym binding/p) (in-hash at-phase+space)])
+          (hash-set phase-access
+                    (module-binding-sym (provided-as-binding binding/p))
+                    (if (provided-as-protected? binding/p)
+                        'protected
+                        'provided))))
+      (hash-set access phase phase-access)))
   (set-module-access! m access)
   access)
 

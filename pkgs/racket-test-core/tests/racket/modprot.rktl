@@ -570,5 +570,31 @@
                               (provide (all-from-out 'provides-a-protected-binding-to-reexport))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; check code-inspector protection and spaces
+
+(module exports-grain-at-non-default-space racket/base
+  (require (for-syntax racket/base))
+  (provide (for-space racket/test/food
+                      grain)
+           eat-food)
+  (define-syntax (define-food stx)
+    (syntax-case stx ()
+      [(_ id)
+       #`(define-syntax #,((make-interned-syntax-introducer 'racket/test/food) #'id) 'for-bread)]))
+  (define-food grain)
+  (define-syntax (eat-food stx)
+    (syntax-case stx ()
+      [(_ id)
+       #`(quote #,(syntax-local-value ((make-interned-syntax-introducer 'racket/test/food) #'id)))])))
+
+(parameterize ([current-code-inspector (make-inspector (current-code-inspector))])
+  (eval '(module imports-grain-at-non-default-space racket/base
+           (require 'exports-grain-at-non-default-space)
+           (provide ate)
+           (define ate (eat-food grain)))))
+
+(test 'for-bread dynamic-require ''imports-grain-at-non-default-space 'ate)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
 (report-errs)
