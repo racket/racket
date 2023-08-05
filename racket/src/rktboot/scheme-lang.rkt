@@ -317,6 +317,9 @@
          native-transcoder
          port-file-compressed!
          file-buffer-size
+         buffer-mode?
+         $eol-style?
+         $error-handling-mode?
          $source-file-descriptor
          transcoded-port
          current-transcoder
@@ -1302,6 +1305,15 @@
 
 (define (port-file-compressed! p)
   (void))
+
+(define (buffer-mode? mode)
+  (and (memq mode '(none line block)) #t))
+
+(define ($eol-style? s)
+  (and (memq s '(lf cr crlf nel crnel ls none)) #t))
+
+(define ($error-handling-mode? mode)
+  (and (memq mode '(ignore raise replace)) #t))
 
 (define (file-buffer-size)
   4096)
