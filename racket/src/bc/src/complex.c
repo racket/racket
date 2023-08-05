@@ -227,14 +227,7 @@ Scheme_Object *scheme_complex_divide(const Scheme_Object *_n, const Scheme_Objec
     return scheme_make_complex(r, i);
   }
 
-  if (b == zero) {
-    /* As in Chez Scheme: a / c+di => c(a/(cc+dd)) + (-d(a/cc+dd))i */
-    cm = scheme_bin_div(a, scheme_bin_plus(scheme_bin_mult(c, c), scheme_bin_mult(d, d)));
-    return scheme_make_complex(scheme_bin_mult(c, cm),
-                               scheme_bin_minus(zero, scheme_bin_mult(d, cm)));
-  }
-
-  if (!SCHEME_FLOATP(a) && !SCHEME_FLOATP(b) && !SCHEME_FLOATP(c) && !SCHEME_FLOATP(d))
+  if ((b != zero) && !SCHEME_FLOATP(a) && !SCHEME_FLOATP(b) && !SCHEME_FLOATP(c) && !SCHEME_FLOATP(d))
     return simple_complex_divide(a, b, c, d, 0);
 
   aa[0] = c;
@@ -242,45 +235,29 @@ Scheme_Object *scheme_complex_divide(const Scheme_Object *_n, const Scheme_Objec
   aa[0] = d;
   dm = scheme_abs(1, aa);
 
-  if (scheme_bin_lt(cm, dm)) {
-    cm = a;
-    a = b;
-    b = cm;
-    cm = c;
-    c = d;
-    d = cm;
-    swap = 1;
-  } else
-    swap = 0;
+  /* As in Chez Scheme, which is based on
+       "Algorithm 116: Complex Division" by Robert L. Smith,
+       Communications of the ACM, Volume 5, Issue 8, Aug. 1962 */
 
-  r = scheme_bin_div(c, d);
-
-  if (!SCHEME_FLOATP(r) && (SCHEME_FLOATP(a) || SCHEME_FLOATP(b))) {
-    aa[0] = r;
-    r = scheme_exact_to_inexact(1, aa);
+  aa[0] = c;
+  cm = scheme_abs(1, aa);
+  aa[0] = d;
+  dm = scheme_abs(1, aa);
+  if (scheme_bin_gt_eq(cm, dm)) {
+    r = scheme_bin_div(d, c);
+    dm = scheme_bin_plus(c, scheme_bin_mult(r, d));
+    return scheme_make_complex(scheme_bin_div(scheme_bin_plus(a, scheme_bin_mult(b, r)),
+                                              dm),
+                               scheme_bin_div(scheme_bin_minus(b, scheme_bin_mult(a, r)),
+                                              dm));
+  } else {
+    r = scheme_bin_div(c, d);
+    dm = scheme_bin_plus(d, scheme_bin_mult(r, c));
+    return scheme_make_complex(scheme_bin_div(scheme_bin_plus(scheme_bin_mult(a, r), b),
+                                              dm),
+                               scheme_bin_div(scheme_bin_minus(scheme_bin_mult(b, r), a),
+                                              dm));
   }
-
-  /* If r goes to infinity, try computing a different way to avoid overflow: */
-  if (SCHEME_FLOATP(r)) {
-    double v = SCHEME_FLOAT_VAL(r);
-    if (MZ_IS_POS_INFINITY(v) || MZ_IS_NEG_INFINITY(v)) {
-      /* This calculuation does not work as well for complex numbers with
-         large parts, such as `(/ 1e+300+1e+300i 4e+300+4e+300i)`, but it
-         works better for small parts, as in `(/ 0.0+0.0i 1+1e-320i)`. */
-      return simple_complex_divide(a, b, c, d, swap);
-    }
-  }
-
-  den = scheme_bin_plus(d, scheme_bin_mult(c, r));
-
-  if (swap)
-    i = scheme_bin_div(scheme_bin_minus(a, scheme_bin_mult(b, r)), den);
-  else
-    i = scheme_bin_div(scheme_bin_minus(scheme_bin_mult(b, r), a), den);
-
-  r = scheme_bin_div(scheme_bin_plus(b, scheme_bin_mult(a, r)), den);
-
-  return scheme_make_complex(r, i);
 }
 
 Scheme_Object *scheme_complex_power(const Scheme_Object *base, const Scheme_Object *exponent)
@@ -430,13 +407,12 @@ Scheme_Object *scheme_complex_atan(const Scheme_Object *c)
 
   if ((x > THETA) || (y > THETA)) {
     /*  RP(1/z) +/- (pi/2)i */
-    if (x > ay)
+    if (x >= ay)
       r = 1/(x + ((y/x) * y));
-    else if (x < ay) {
-      r = y/x;
+    else {
+      r = x/y;
       r = r/((x * r)+ y);
-    } else
-      r = 1/(x+ay);
+    }
 
     i = (IS_NEG(y) ? HALF_PI : (-HALF_PI));
   } else if (x == 1.0) {
