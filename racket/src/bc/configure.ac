@@ -1493,3 +1493,5 @@ AC_OUTPUT($makefiles)
 # cd rktio; eval "${abssrcdir}/../rktio/configure ${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
 
 cp ${srcdir}/buildmain.zuo main.zuo
+
+show_path_results

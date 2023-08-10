@@ -522,7 +522,7 @@
   (define (fixup p p-new)
     (unless (framework? p)
       (printf "Fixing ~s\n" p-new)
-      ;; newer tools do not need this step, and it confuses `install_name_tool`
+      ;; newer tools do not need this step, and it confuses newer `install_name_tool`
       #;
       (when aarch64?
 	(system (format "codesign --remove-signature ~a" p-new)))

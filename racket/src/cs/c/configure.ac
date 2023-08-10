@@ -930,3 +930,5 @@ makefiles="Makefile"
 AC_OUTPUT($makefiles)
 
 cp ${srcdir}/buildmain.zuo main.zuo
+
+show_path_results
