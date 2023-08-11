@@ -221,7 +221,7 @@ changing @racket[0] to grab the continuation before returning 0:
 (+ 1 (+ 1 (+ 1 (save-it!))))
 ]
 
-The @tech{continuation} saved in @racket[save-k] encapsulates the
+The @tech{continuation} saved in @racket[saved-k] encapsulates the
 program context @racket[(+ 1 (+ 1 (+ 1 _?)))], where @racket[_?]
 represents a place to plug in a result value---because that was the
 expression context when @racket[save-it!] was called. The
