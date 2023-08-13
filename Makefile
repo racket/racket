@@ -142,7 +142,7 @@ PKG_UPDATE_OPTIONS =
 PLT_SETUP_OPTIONS =
 
 # Catalog for package sources:
-SRC_CATALOG = https://pkgs.racket-lang.org
+SRC_CATALOG = "https://download.racket-lang.org/releases/8.10/catalog/"
 
 # Built-in catalog for package sources (not meant to be configured):
 DEFAULT_SRC_CATALOG = https://pkgs.racket-lang.org
