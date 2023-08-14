@@ -2,7 +2,8 @@
 @(require "mz.rkt"
           racket/class
           (for-syntax racket/base racket/serialize racket/trait)
-          (for-label racket/serialize))
+          (for-label racket/serialize
+                     racket/trait))
 
 @(begin
 
