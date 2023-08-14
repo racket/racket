@@ -932,7 +932,7 @@ within a @racket[module] form (see @racket[syntax-transforming-module-expression
 then the @exnraise[exn:fail:contract].}
 
 
-@defproc[(syntax-local-lift-require [raw-require-spec any/c] [stx syntax?] [new-scope? #t])
+@defproc[(syntax-local-lift-require [raw-require-spec any/c] [stx syntax?] [new-scope? any/c #t])
          syntax?]{
 
 Lifts a @racket[#%require] form corresponding to
