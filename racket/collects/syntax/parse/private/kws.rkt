@@ -73,7 +73,7 @@
     (cond [(pair? optkws)
            (format " plus optional keyword argument~a ~a"
                    (s-if-plural optkws)
-                   (join-sep (map kw->string minkws) "," "and"))]
+                   (join-sep (map kw->string optkws) "," "and"))]
           [else ""]))
   (string-append pos-part kws-part optkws-part))
 
