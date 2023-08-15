@@ -66,7 +66,7 @@ is not a symbol.
 
 @section[#:tag "read-string"]{Reading Strings}
 
-A string starts @litchar{#"} or @litchar{"} and ends with a matching
+A string starts with @litchar{#"} or @litchar{"} and ends with a matching
 @litchar{"}. Any character is allowed in a string, except for a
 newline or return character. The following escapes are supported with
 the usual meaning: @litchar{\"}, @litchar{\\}, @litchar{\n},
