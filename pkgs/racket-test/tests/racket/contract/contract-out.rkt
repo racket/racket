@@ -1996,4 +1996,39 @@
                #`'#,(struct-field-info-list (syntax-local-value #'foo))))
       (eval '(extract-field-names)))
    (list 'x))
+
+  (test/spec-passed/result
+   'provide/contract-upe-struct-transformer
+   '(begin
+      (eval '(module provide/contract-upe-struct-transformer-def racket/base
+               (require racket/contract/base)
+               (provide (contract-out
+                         #:unprotected-submodule no-contract
+                         (struct s ([x integer?]))))
+               (struct s (x) #:constructor-name make-s)))
+      (eval '(module provide/contract-upe-struct-transformer-ans racket/base
+               (require racket/match
+                        (submod 'provide/contract-upe-struct-transformer-def no-contract))
+               (provide answer)
+               (define answer (match (make-s 1) [(s x) x]))))
+      (dynamic-require ''provide/contract-upe-struct-transformer-ans 'answer))
+   1)
+
+  (test/spec-passed/result
+   'provide/contract-upe-struct-type-descriptor
+   '(begin
+      (eval '(module provide/contract-upe-struct-type-descriptor-def racket/base
+               (require racket/contract/base)
+               (provide (contract-out
+                         #:unprotected-submodule no-contract
+                         (struct s ([x integer?]))))
+               (struct s (x))))
+      (eval '(module provide/contract-upe-struct-type-descriptor-ans racket/base
+               (require racket/match
+                        (submod 'provide/contract-upe-struct-type-descriptor-def no-contract))
+               (provide answer)
+               (struct t s (y))
+               (define answer (match (t 1 2) [(t x y) (list x y)]))))
+      (dynamic-require ''provide/contract-upe-struct-type-descriptor-ans 'answer))
+   (list 1 2))
   )

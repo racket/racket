@@ -1931,7 +1931,9 @@ If @racket[#:unprotected-submodule] appears, the identifier
 that follows it is used as the name of a submodule that
 @racket[contract-out] generates. The submodule exports all
 of the names in the @racket[contract-out], but without
-contracts.
+contracts. In particular, the original structure-type name is exported
+for each @racket[struct] form, which means @racket[#:omit-constructor]
+only omits the extra constructor, if any.
 
 The implementation of @racket[contract-out] uses
 @racket[syntax-property] to attach properties to the code it generates
