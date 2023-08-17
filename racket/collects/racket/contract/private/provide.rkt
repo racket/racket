@@ -283,6 +283,15 @@
 
 (define-for-syntax current-unprotected-submodule-name (make-parameter #f))
 
+;; make-unprotected-submodule-code
+;; : (-> (-> syntax?) (listof syntax?))
+;; Calls `thunk` if `current-unprotected-submodule-name` is non-#f,
+;; incorporating the resulting syntax object into a singleton list of
+;; `module+` form; otherwise returns empty list.
+(define-for-syntax (make-unprotected-submodule-code thunk)
+  (define upe-submod (current-unprotected-submodule-name))
+  (if upe-submod (list #`(module+ #,upe-submod #,(thunk))) null))
+
 ;; tl-code-for-one-id/new-name : syntax syntax syntax (union syntax #f) -> (values syntax syntax)
 ;; given the syntax for an identifier and a contract,
 ;; builds a begin expression for the entire contract and provide
@@ -291,7 +300,7 @@
                                                 stx id reflect-id ctrct/no-prop user-rename-id
                                                 pos-module-source
                                                 mangle-for-maker?
-                                                provide?)
+                                                upe-id)
   (define ex-id (or reflect-id id))
   (define id-rename-without-source (id-for-one-id user-rename-id reflect-id id mangle-for-maker?))
   (define id-rename (datum->syntax id-rename-without-source
@@ -317,21 +326,22 @@
                     (quasisyntax/loc stx
                       (begin #,(internal-function-to-be-figured-out #'ctrct
                                                                     id
-                                                                    (or reflect-id id)
-                                                                    (or user-rename-id 
-                                                                        id)
+                                                                    ex-id
+                                                                    #'external-name
                                                                     id-rename
                                                                     (stx->srcloc-expr srcloc-id)
                                                                     'provide/contract
                                                                     pos-module-source
                                                                     #f)
-                             #,@(let ([upe (current-unprotected-submodule-name)])
-                                  (if upe
-                                      (list #`(module+ #,upe
-                                                (provide (rename-out [#,id external-name]))))
-                                      (list)))
-                             #,@(if provide?
-                                    (list #`(provide (rename-out [#,id-rename external-name])))
+                             ;; `upe-id` is punned as an indicator of whether the `provide`s will be
+                             ;; generated as well as the uncontracted identifier to be exported.  This
+                             ;; is fine because we always need to generate both `provide`s anyway.
+                             #,@(if upe-id
+                                    (append
+                                     (make-unprotected-submodule-code
+                                      (lambda ()
+                                        #`(provide (rename-out [#,upe-id external-name]))))
+                                     (list #`(provide (rename-out [#,id-rename external-name]))))
                                     null)))
                     'provide/contract-original-contract
                     (vector #'external-name #'ctrct))])
@@ -953,7 +963,8 @@
                                                            predicate-id)
                                constructor-id
                                #t
-                               (not type-is-only-constructor?)))]
+                               (and (not type-is-only-constructor?)
+                                    constructor-id)))]
 
                          [(field-contract-id-definitions ...)
                           (filter values
@@ -1031,6 +1042,9 @@
                                         #`('#,true-field-names)
                                         #'()))
                                   #`(begin
+                                      #,@(make-unprotected-submodule-code
+                                          (lambda ()
+                                            #'(provide struct-name)))
                                       (provide (rename-out [id-rename struct-name]))
                                       (define-syntax id-rename
                                         (#,mk
@@ -1078,6 +1092,9 @@
                                               struct:struct-name
                                               '(#,@field-names)
                                               field-contract-ids ...))
+                       #,@(make-unprotected-submodule-code
+                           (lambda ()
+                             #'(provide struct:struct-name)))
                        (provide (rename-out [-struct:struct-name struct:struct-name]))))))))))
 
        ;; andmap/count : (X Y int -> Z) (listof X) (listof Y) -> (listof Z)
@@ -1210,12 +1227,12 @@
 
        (define (code-for-one-id/new-name stx id reflect-id ctrct/no-prop user-rename-id
                                          [mangle-for-maker? #f]
-                                         [provide? #t]) 
+                                         [upe-id id])
          (tl-code-for-one-id/new-name id-for-one-id
                                       stx id reflect-id ctrct/no-prop user-rename-id
                                       pos-module-source-id
                                       mangle-for-maker?
-                                      provide?))
+                                      upe-id))
 
        (define-values (p/c-clauses unprotected-submodule-name)
          (syntax-case (syntax (p/c-ele ...)) ()
