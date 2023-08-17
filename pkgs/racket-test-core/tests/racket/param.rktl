@@ -79,6 +79,13 @@
                        (struct s (x)
                          #:property prop:procedure 0)
                        (s (lambda (x) x)))))
+(define test-param6 (let ()
+                      (struct s (x)
+                         #:property prop:procedure 0)
+                      (make-derived-parameter
+                       test-param5
+                       (s (lambda (x) x))
+                       (s (lambda (x) x)))))
 
 (test 'one test-param1)
 (test 'two test-param2) 
@@ -136,6 +143,10 @@
 (test 'five test-param5)
 (test (void) test-param5 5)
 (test 5 test-param5)
+
+(test 5 test-param6)
+(test (void) test-param6 6)
+(test 6 test-param6)
 
 (let ([cd (make-derived-parameter current-directory values values)])
   (test (current-directory) cd)
