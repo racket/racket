@@ -117,8 +117,8 @@
   (check who (procedure-arity-includes/c 1) wrap)
   (make-arity-wrapper-procedure
    (case-lambda
-    [(v) (p (guard v))]
-    [() (wrap (p))])
+    [(v) (p (|#%app| guard v))]
+    [() (|#%app| wrap (p))])
    3
    (make-derived-parameter-data
     guard
