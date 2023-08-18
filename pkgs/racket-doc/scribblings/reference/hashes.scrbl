@@ -813,12 +813,12 @@ the result is @racket[bad-index-v] if provided, otherwise the
 @deftogether[(
 @defproc[(hash-iterate-value [ht hash?]
                              [pos exact-nonnegative-integer?])
-         any]
+         any/c]
 @defproc[#:link-target? #f
          (hash-iterate-value [ht hash?]
                              [pos exact-nonnegative-integer?]
                              [bad-index-v any/c])
-         any]
+         any/c]
 )]{
 
 Returns the value for the element in @racket[ht] at index
@@ -835,12 +835,12 @@ the result is @racket[bad-index-v] if provided, otherwise the
 @deftogether[(
 @defproc[(hash-iterate-pair [ht hash?]
                             [pos exact-nonnegative-integer?])
-         (cons any/c any/c)]
+         (cons/c any/c any/c)]
 @defproc[#:link-target? #f
          (hash-iterate-pair [ht hash?]
                             [pos exact-nonnegative-integer?]
                             [bad-index-v any/c])
-         (cons any/c any/c)]
+         (cons/c any/c any/c)]
 )]{
 
 Returns a pair containing the key and value for the element 
