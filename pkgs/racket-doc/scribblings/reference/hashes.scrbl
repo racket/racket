@@ -115,50 +115,50 @@ otherwise.
 
 See also @racket[immutable-hash?] and @racket[mutable-hash?].}
 
-@defproc[(hash-equal? [hash hash?]) boolean?]{
+@defproc[(hash-equal? [ht hash?]) boolean?]{
 
-Returns @racket[#t] if @racket[hash] compares keys with @racket[equal?],
+Returns @racket[#t] if @racket[ht] compares keys with @racket[equal?],
 @racket[#f] if it compares with @racket[eq?], @racket[eqv?], or
 @racket[equal-always?].}
 
-@defproc[(hash-equal-always? [hash hash?]) boolean?]{
+@defproc[(hash-equal-always? [ht hash?]) boolean?]{
 
-Returns @racket[#t] if @racket[hash] compares keys with
+Returns @racket[#t] if @racket[ht] compares keys with
 @racket[equal-always?], @racket[#f] if it compares with @racket[eq?],
 @racket[eqv?], or @racket[equal?].
 
 @history[#:added "8.5.0.3"]}
 
-@defproc[(hash-eqv? [hash hash?]) boolean?]{
+@defproc[(hash-eqv? [ht hash?]) boolean?]{
 
-Returns @racket[#t] if @racket[hash] compares keys with @racket[eqv?],
+Returns @racket[#t] if @racket[ht] compares keys with @racket[eqv?],
 @racket[#f] if it compares with @racket[equal?],
 @racket[equal-always?], or @racket[eq?].}
 
-@defproc[(hash-eq? [hash hash?]) boolean?]{
+@defproc[(hash-eq? [ht hash?]) boolean?]{
 
-Returns @racket[#t] if @racket[hash] compares keys with @racket[eq?],
+Returns @racket[#t] if @racket[ht] compares keys with @racket[eq?],
 @racket[#f] if it compares with @racket[equal?],
 @racket[equal-always?], or @racket[eqv?].}
 
 
-@defproc[(hash-strong? [hash hash?]) boolean?]{
+@defproc[(hash-strong? [ht hash?]) boolean?]{
 
-Returns @racket[#t] if @racket[hash] retains its keys strongly,
+Returns @racket[#t] if @racket[ht] retains its keys strongly,
 @racket[#f] if it retains keys weakly or like @tech{ephemerons}.
 
 @history[#:added "8.0.0.10"]}
 
 
-@defproc[(hash-weak? [hash hash?]) boolean?]{
+@defproc[(hash-weak? [ht hash?]) boolean?]{
 
-Returns @racket[#t] if @racket[hash] retains its keys weakly,
+Returns @racket[#t] if @racket[ht] retains its keys weakly,
 @racket[#f] if it retains keys strongly or like @tech{ephemerons}.}
 
 
-@defproc[(hash-ephemeron? [hash hash?]) boolean?]{
+@defproc[(hash-ephemeron? [ht hash?]) boolean?]{
 
-Returns @racket[#t] if @racket[hash] retains its keys like
+Returns @racket[#t] if @racket[ht] retains its keys like
 @tech{ephemerons}, @racket[#f] if it retains keys strongly or merely
 weakly.
 
@@ -287,61 +287,61 @@ the key--value mapping in association-list form like
 @history[#:changed "8.5.0.3" @elem{Added @racket[make-immutable-hashalw].}]}
 
 
-@defproc[(hash-set! [hash (and/c hash? (not/c immutable?))]
+@defproc[(hash-set! [ht (and/c hash? (not/c immutable?))]
                     [key any/c]
                     [v any/c]) void?]{
 
-Maps @racket[key] to @racket[v] in @racket[hash], overwriting
+Maps @racket[key] to @racket[v] in @racket[ht], overwriting
 any existing mapping for @racket[key].
 
 @see-also-caveats[]}
 
-@defproc[(hash-set*! [hash (and/c hash? (not/c immutable?))]
+@defproc[(hash-set*! [ht (and/c hash? (not/c immutable?))]
                      [key any/c]
                      [v any/c]
                      ...
                      ...) void?]{
 
-Maps each @racket[key] to each @racket[v] in @racket[hash], overwriting
+Maps each @racket[key] to each @racket[v] in @racket[ht], overwriting
 any existing mapping for each @racket[key]. Mappings are added from the left, so
 later mappings overwrite earlier mappings.
 
 @see-also-caveats[]}
 
 
-@defproc[(hash-set [hash (and/c hash? immutable?)]
+@defproc[(hash-set [ht (and/c hash? immutable?)]
                    [key any/c]
                    [v any/c])
           (and/c hash? immutable?)]{
 
-Functionally extends @racket[hash] by mapping @racket[key] to
+Functionally extends @racket[ht] by mapping @racket[key] to
 @racket[v], overwriting any existing mapping for @racket[key], and
 returning the extended hash table.
 
 @see-also-mutable-key-caveat[]}
 
-@defproc[(hash-set* [hash (and/c hash? immutable?)]
+@defproc[(hash-set* [ht (and/c hash? immutable?)]
                     [key any/c]
                     [v any/c]
                     ...
                     ...)
           (and/c hash? immutable?)]{
 
-Functionally extends @racket[hash] by mapping each @racket[key] to
+Functionally extends @racket[ht] by mapping each @racket[key] to
 @racket[v], overwriting any existing mapping for each @racket[key], and
 returning the extended hash table. Mappings are added from the left, so
 later mappings overwrite earlier mappings.
 
 @see-also-mutable-key-caveat[]}
 
-@defproc[(hash-ref [hash hash?]
+@defproc[(hash-ref [ht hash?]
                    [key any/c]
                    [failure-result failure-result/c
                                    (lambda ()
                                      (raise (make-exn:fail:contract ....)))])
          any]{
 
-Returns the value for @racket[key] in @racket[hash]. If no value
+Returns the value for @racket[key] in @racket[ht]. If no value
 is found for @racket[key], then @racket[failure-result] determines the
 result: 
 
@@ -365,21 +365,21 @@ result:
 
 @see-also-caveats[]}
 
-@defproc[(hash-ref-key [hash hash?]
+@defproc[(hash-ref-key [ht hash?]
                        [key any/c]
                        [failure-result failure-result/c
                                        (lambda ()
                                          (raise (make-exn:fail:contract ....)))])
          any]{
 
-Returns the key held by @racket[hash] that is equivalent to @racket[key]
-according to @racket[hash]'s key-comparison function. If no key is found,
+Returns the key held by @racket[ht] that is equivalent to @racket[key]
+according to @racket[ht]'s key-comparison function. If no key is found,
 then @racket[failure-result] is used as in @racket[hash-ref] to determine
 the result.
 
-If @racket[hash] is not an @tech{impersonator}, then the returned key,
+If @racket[ht] is not an @tech{impersonator}, then the returned key,
 assuming it is found, will be @racket[eq?]-equivalent to the one
-actually retained by @racket[hash]:
+actually retained by @racket[ht]:
 
 @examples[
 #:eval the-eval
@@ -428,7 +428,7 @@ used to update it:
 (eq? (hash-ref-key table2 "hello") key-copy)
 ]
 
-If @racket[hash] is an @tech{impersonator}, then the returned key
+If @racket[ht] is an @tech{impersonator}, then the returned key
 will be determined as described in the documentation to
 @racket[impersonate-hash].
 
@@ -436,27 +436,27 @@ will be determined as described in the documentation to
 
 @history[#:added "7.4.0.3"]}
 
-@defproc[(hash-ref! [hash hash?] [key any/c] [to-set failure-result/c])
+@defproc[(hash-ref! [ht hash?] [key any/c] [to-set failure-result/c])
          any]{
 
-Returns the value for @racket[key] in @racket[hash].  If no value is
+Returns the value for @racket[key] in @racket[ht].  If no value is
 found for @racket[key], then @racket[to-set] determines the result as
 in @racket[hash-ref] (i.e., it is either a thunk that computes a value
-or a plain value), and this result is stored in @racket[hash] for the
+or a plain value), and this result is stored in @racket[ht] for the
 @racket[key].  (Note that if @racket[to-set] is a thunk, it is not
 invoked in tail position.)
 
 @see-also-caveats[]}
 
 
-@defproc[(hash-has-key? [hash hash?] [key any/c])
+@defproc[(hash-has-key? [ht hash?] [key any/c])
          boolean?]{
 
-Returns @racket[#t] if @racket[hash] contains a value for the given
+Returns @racket[#t] if @racket[ht] contains a value for the given
 @racket[key], @racket[#f] otherwise.}
 
 
-@defproc[(hash-update! [hash (and/c hash? (not/c immutable?))]
+@defproc[(hash-update! [ht (and/c hash? (not/c immutable?))]
                        [key any/c]
                        [updater (any/c . -> . any/c)]
                        [failure-result failure-result/c
@@ -464,9 +464,9 @@ Returns @racket[#t] if @racket[hash] contains a value for the given
                           (raise (make-exn:fail:contract ....)))])
          void?]{
 
- Updates the value mapped by @racket[key] in @racket[hash] by applying @racket[updater] to the value.
+ Updates the value mapped by @racket[key] in @racket[ht] by applying @racket[updater] to the value.
  The value returned by @racket[updater] becomes the new mapping for @racket[key], overwriting the
- original value in @racket[hash].
+ original value in @racket[ht].
 
  @(examples
    #:eval the-eval
@@ -492,7 +492,7 @@ Returns @racket[#t] if @racket[hash] contains a value for the given
  @see-also-caveats[]}
 
 
-@defproc[(hash-update [hash (and/c hash? immutable?)]
+@defproc[(hash-update [ht (and/c hash? immutable?)]
                       [key any/c]
                       [updater (any/c . -> . any/c)]
                       [failure-result failure-result/c
@@ -500,7 +500,7 @@ Returns @racket[#t] if @racket[hash] contains a value for the given
                          (raise (make-exn:fail:contract ....)))])
          (and/c hash? immutable?)]{
 
- Functionally updates the value mapped by @racket[key] in @racket[hash] by applying @racket[updater]
+ Functionally updates the value mapped by @racket[key] in @racket[ht] by applying @racket[updater]
  to the value and returning a new hash table. The value returned by @racket[updater] becomes the new
  mapping for @racket[key] in the returned hash table.
 
@@ -525,60 +525,60 @@ Returns @racket[#t] if @racket[hash] contains a value for the given
  @see-also-mutable-key-caveat[]}
 
 
-@defproc[(hash-remove! [hash (and/c hash? (not/c immutable?))]
+@defproc[(hash-remove! [ht (and/c hash? (not/c immutable?))]
                        [key any/c])
          void?]{
 
-Removes any existing mapping for @racket[key] in @racket[hash].
+Removes any existing mapping for @racket[key] in @racket[ht].
 
 @see-also-caveats[]}
 
 
-@defproc[(hash-remove [hash (and/c hash? immutable?)]
+@defproc[(hash-remove [ht (and/c hash? immutable?)]
                       [key any/c])
          (and/c hash? immutable?)]{
 
 Functionally removes any existing mapping for @racket[key] in
-@racket[hash], returning @racket[hash] (i.e., a result @racket[eq?] to
-@racket[hash]) if @racket[key] is not present in @racket[hash].
+@racket[ht], returning @racket[ht] (i.e., a result @racket[eq?] to
+@racket[ht]) if @racket[key] is not present in @racket[ht].
 
 @see-also-mutable-key-caveat[]}
 
 
-@defproc[(hash-clear! [hash (and/c hash? (not/c immutable?))])
+@defproc[(hash-clear! [ht (and/c hash? (not/c immutable?))])
          void?]{
 
-Removes all mappings from @racket[hash].
+Removes all mappings from @racket[ht].
 
-If @racket[hash] is not an @tech{impersonator}, then all mappings are
-removed in constant time. If @racket[hash] is an @tech{impersonator},
+If @racket[ht] is not an @tech{impersonator}, then all mappings are
+removed in constant time. If @racket[ht] is an @tech{impersonator},
 then each key is removed one-by-one using @racket[hash-remove!].
 
 @see-also-caveats[]}
 
 
-@defproc[(hash-clear [hash (and/c hash? immutable?)])
+@defproc[(hash-clear [ht (and/c hash? immutable?)])
          (and/c hash? immutable?)]{
 
-Functionally removes all mappings from @racket[hash].
+Functionally removes all mappings from @racket[ht].
 
-If @racket[hash] is not a @tech{chaperone}, then clearing is
+If @racket[ht] is not a @tech{chaperone}, then clearing is
 equivalent to creating a new @tech{hash table}, and the operation is
-performed in constant time.  If @racket[hash] is a @tech{chaperone},
+performed in constant time.  If @racket[ht] is a @tech{chaperone},
 then each key is removed one-by-one using @racket[hash-remove].}
 
 
 @defproc[(hash-copy-clear
-          [hash hash?]
+          [ht hash?]
           [#:kind kind (or/c #f 'immutable 'mutable 'weak 'ephemeron) #f])
          hash?]{
 
 Produces an empty @tech{hash table} with the same key-comparison
-procedure as @racket[hash], with either the given @racket[kind]
-or the same kind as the given @racket[hash].
+procedure as @racket[ht], with either the given @racket[kind]
+or the same kind as the given @racket[ht].
 
 If @racket[kind] is not supplied or @racket[#f], produces a hash
-table of the same kind and mutability as the given @racket[hash].
+table of the same kind and mutability as the given @racket[ht].
 If @racket[kind] is @racket['immutable], @racket['mutable],
 @racket['weak], or @racket['ephemeron], produces a table that's
 immutable, mutable with strongly-held keys, mutable with
@@ -589,13 +589,13 @@ respectively.
 
 
 
-@defproc[(hash-map [hash hash?]
+@defproc[(hash-map [ht hash?]
                    [proc (any/c any/c . -> . any/c)]
                    [try-order? any/c #f])
          (listof any/c)]{
 
 Applies the procedure @racket[proc] to each element in
-@racket[hash] in an unspecified order, accumulating the results
+@racket[ht] in an unspecified order, accumulating the results
 into a list. The procedure @racket[proc] is called each time with a
 key and its value, and the procedure's individual results appear in
 order in the result list.
@@ -635,19 +635,19 @@ with the following order (earlier bullets before later):
          #:changed "7.1.0.7" @elem{Added guarantees for @racket[try-order?].}]}
 
 @defproc[(hash-map/copy
-          [hash hash?]
+          [ht hash?]
           [proc (any/c any/c . -> . (values any/c any/c))]
           [#:kind kind (or/c #f 'immutable 'mutable 'weak 'ephemeron) #f])
          hash?]{
 
 Applies the procedure @racket[proc] to each element in
-@racket[hash] in an unspecified order, accumulating the results
+@racket[ht] in an unspecified order, accumulating the results
 into a new hash with the same key-comparison procedure as
-@racket[hash], with either the given @racket[kind] or the same
-kind as the given @racket[hash].
+@racket[ht], with either the given @racket[kind] or the same
+kind as the given @racket[ht].
 
 If @racket[kind] is not supplied or @racket[#f], produces a hash
-table of the same kind and mutability as the given @racket[hash].
+table of the same kind and mutability as the given @racket[ht].
 If @racket[kind] is @racket['immutable], @racket['mutable],
 @racket['weak], or @racket['ephemeron], produces a table that's
 immutable, mutable with strongly-held keys, mutable with
@@ -668,100 +668,100 @@ frozen-capital
 
 @history[#:added "8.5.0.2"]}
 
-@defproc[(hash-keys [hash hash?] [try-order? any/c #f])
+@defproc[(hash-keys [ht hash?] [try-order? any/c #f])
          (listof any/c)]{
-Returns a list of the keys of @racket[hash] in an unspecified order.
+Returns a list of the keys of @racket[ht] in an unspecified order.
 
 If @racket[try-order?] is true, then the order of keys is normalized under
 certain circumstances.  See @racket[hash-map] for further explanations on
-@racket[try-order?] and on information about modifying @racket[hash] during
+@racket[try-order?] and on information about modifying @racket[ht] during
 @racket[hash-keys]. @see-also-concurrency-caveat[]
 
 @history[#:changed "8.3.0.11" @elem{Added the @racket[_try-order?] argument.}]}
 
-@defproc[(hash-values [hash hash?] [try-order? any/c #f])
+@defproc[(hash-values [ht hash?] [try-order? any/c #f])
          (listof any/c)]{
-Returns a list of the values of @racket[hash] in an unspecified order.
+Returns a list of the values of @racket[ht] in an unspecified order.
 
 If @racket[try-order?] is true, then the order of values is normalized under
 certain circumstances, based on the ordering of the associated keys.
 See @racket[hash-map] for further explanations on @racket[try-order?] and on
-information about modifying @racket[hash] during
+information about modifying @racket[ht] during
 @racket[hash-values]. @see-also-concurrency-caveat[]
 
 @history[#:changed "8.3.0.11" @elem{Added the @racket[_try-order?] argument.}]}
 
-@defproc[(hash->list [hash hash?] [try-order? any/c #f])
+@defproc[(hash->list [ht hash?] [try-order? any/c #f])
          (listof (cons/c any/c any/c))]{
-Returns a list of the key--value pairs of @racket[hash] in an unspecified order.
+Returns a list of the key--value pairs of @racket[ht] in an unspecified order.
 
 If @racket[try-order?] is true, then the order of keys and values is normalized
 under certain circumstances. See @racket[hash-map] for further explanations on
-@racket[try-order?] and on information about modifying @racket[hash] during
+@racket[try-order?] and on information about modifying @racket[ht] during
 @racket[hash->list]. @see-also-concurrency-caveat[]
 
 @history[#:changed "8.3.0.11" @elem{Added the @racket[_try-order?] argument.}]}
 
-@defproc[(hash-keys-subset? [hash1 hash?] [hash2 hash?])
+@defproc[(hash-keys-subset? [ht1 hash?] [ht2 hash?])
          boolean?]{
-Returns @racket[#t] if the keys of @racket[hash1] are a subset of or
-the same as the keys of @racket[hash2]. The hash tables must both use
+Returns @racket[#t] if the keys of @racket[ht1] are a subset of or
+the same as the keys of @racket[ht2]. The hash tables must both use
 the same key-comparison function (@racket[equal?],
 @racket[equal-always?], @racket[eqv?], or @racket[eq?]), otherwise the
 @exnraise[exn:fail:contract].
 
 Using @racket[hash-keys-subset?] on immutable hash tables can be much
-faster than iterating through the keys of @racket[hash1] to make sure
-that each is in @racket[hash2].
+faster than iterating through the keys of @racket[ht1] to make sure
+that each is in @racket[ht2].
 
 @history[#:added "6.5.0.8"]}
 
-@defproc[(hash-for-each [hash hash?]
+@defproc[(hash-for-each [ht hash?]
                         [proc (any/c any/c . -> . any)]
                         [try-order? any/c #f])
          void?]{
 
-Applies @racket[proc] to each element in @racket[hash] (for the
+Applies @racket[proc] to each element in @racket[ht] (for the
 side-effects of @racket[proc]) in an unspecified order. The procedure
 @racket[proc] is called each time with a key and its value.
 
 See @racket[hash-map] for information about @racket[try-order?] and
-about modifying @racket[hash] within @racket[proc].
+about modifying @racket[ht] within @racket[proc].
 @see-also-concurrency-caveat[]
 
 @history[#:changed "6.3" @elem{Added the @racket[try-order?] argument.}
          #:changed "7.1.0.7" @elem{Added guarantees for @racket[try-order?].}]}
 
 
-@defproc[(hash-count [hash hash?])
+@defproc[(hash-count [ht hash?])
          exact-nonnegative-integer?]{
 
-Returns the number of keys mapped by @racket[hash].
+Returns the number of keys mapped by @racket[ht].
 
 For the @tech{CS} implementation of Racket, the result is always
 computed in constant time and atomically. For the @tech{BC} implementation
 of Racket, the result is computed in constant time and atomically only if
-@racket[hash] does not retain keys weakly or like an @tech{ephemeron},
+@racket[ht] does not retain keys weakly or like an @tech{ephemeron},
 otherwise, a traversal is required to count the keys.}
 
 
-@defproc[(hash-empty? [hash hash?]) boolean?]{
+@defproc[(hash-empty? [ht hash?]) boolean?]{
 
-Equivalent to @racket[(zero? (hash-count hash))].}
+Equivalent to @racket[(zero? (hash-count ht))].}
 
 
-@defproc[(hash-iterate-first [hash hash?])
+@defproc[(hash-iterate-first [ht hash?])
          (or/c #f exact-nonnegative-integer?)]{
 
-Returns @racket[#f] if @racket[hash] contains no elements, otherwise
+Returns @racket[#f] if @racket[ht] contains no elements, otherwise
 it returns an integer that is an index to the first element in the hash
 table; ``first'' refers to an unspecified ordering of the table
 elements, and the index values are not necessarily consecutive
 integers.
 
-For a mutable @racket[hash], this index is guaranteed to refer to the
+For a mutable @racket[ht], this index is guaranteed to refer to the
 first item only as long as no items are added to or removed from
-@racket[hash]. More generally, an index is guaranteed to be a
+@racket[ht]. More generally, an index is guaranteed to be a
 @deftech{valid hash index} for a given hash table only as long it
 comes from @racket[hash-iterate-first] or @racket[hash-iterate-next],
 and only as long as the hash table is not modified. In the case of a
@@ -771,16 +771,16 @@ the hash table can be implicitly modified by the garbage collector
 reachable.}
 
 
-@defproc[(hash-iterate-next [hash hash?]
+@defproc[(hash-iterate-next [ht hash?]
                             [pos exact-nonnegative-integer?])
          (or/c #f exact-nonnegative-integer?)]{
 
 Returns either an integer that is an index to the element in
-@racket[hash] after the element indexed by @racket[pos] (which is not
+@racket[ht] after the element indexed by @racket[pos] (which is not
 necessarily one more than @racket[pos]) or @racket[#f] if @racket[pos]
-refers to the last element in @racket[hash].
+refers to the last element in @racket[ht].
 
-If @racket[pos] is not a @tech{valid hash index} of @racket[hash],
+If @racket[pos] is not a @tech{valid hash index} of @racket[ht],
 then the result may be @racket[#f] or it may be the next later index
 that remains valid. The latter result is guaranteed if a hash table
 has been modified only by the removal of keys.
@@ -790,20 +790,20 @@ has been modified only by the removal of keys.
 
 
 @deftogether[(
-@defproc[(hash-iterate-key [hash hash?]
+@defproc[(hash-iterate-key [ht hash?]
                            [pos exact-nonnegative-integer?])
          any/c]
 @defproc[#:link-target? #f
-         (hash-iterate-key [hash hash?]
+         (hash-iterate-key [ht hash?]
                            [pos exact-nonnegative-integer?]
                            [bad-index-v any/c])
          any/c]
 )]{
          
-Returns the key for the element in @racket[hash] at index
+Returns the key for the element in @racket[ht] at index
 @racket[pos].
 
-If @racket[pos] is not a @tech{valid hash index} for @racket[hash],
+If @racket[pos] is not a @tech{valid hash index} for @racket[ht],
 the result is @racket[bad-index-v] if provided, otherwise the
 @exnraise[exn:fail:contract].
 
@@ -811,20 +811,20 @@ the result is @racket[bad-index-v] if provided, otherwise the
 
 
 @deftogether[(
-@defproc[(hash-iterate-value [hash hash?]
+@defproc[(hash-iterate-value [ht hash?]
                              [pos exact-nonnegative-integer?])
          any]
 @defproc[#:link-target? #f
-         (hash-iterate-value [hash hash?]
+         (hash-iterate-value [ht hash?]
                              [pos exact-nonnegative-integer?]
                              [bad-index-v any/c])
          any]
 )]{
 
-Returns the value for the element in @racket[hash] at index
+Returns the value for the element in @racket[ht] at index
 @racket[pos].
 
-If @racket[pos] is not a @tech{valid hash index} for @racket[hash],
+If @racket[pos] is not a @tech{valid hash index} for @racket[ht],
 the result is @racket[bad-index-v] if provided, otherwise the
 @exnraise[exn:fail:contract].
 
@@ -833,20 +833,20 @@ the result is @racket[bad-index-v] if provided, otherwise the
 
 
 @deftogether[(
-@defproc[(hash-iterate-pair [hash hash?]
+@defproc[(hash-iterate-pair [ht hash?]
                             [pos exact-nonnegative-integer?])
          (cons any/c any/c)]
 @defproc[#:link-target? #f
-         (hash-iterate-pair [hash hash?]
+         (hash-iterate-pair [ht hash?]
                             [pos exact-nonnegative-integer?]
                             [bad-index-v any/c])
          (cons any/c any/c)]
 )]{
 
 Returns a pair containing the key and value for the element 
-in @racket[hash] at index @racket[pos].
+in @racket[ht] at index @racket[pos].
 
-If @racket[pos] is not a @tech{valid hash index} for @racket[hash],
+If @racket[pos] is not a @tech{valid hash index} for @racket[ht],
 the result is @racket[(cons bad-index-v bad-index-v)] if
 @racket[bad-index-v] is provided, otherwise the
 @exnraise[exn:fail:contract].
@@ -856,20 +856,20 @@ the result is @racket[(cons bad-index-v bad-index-v)] if
 
 
 @deftogether[(
-@defproc[(hash-iterate-key+value [hash hash?]
+@defproc[(hash-iterate-key+value [ht hash?]
                                  [pos exact-nonnegative-integer?])
          (values any/c any/c)]
 @defproc[#:link-target? #f
-         (hash-iterate-key+value [hash hash?]
+         (hash-iterate-key+value [ht hash?]
                                  [pos exact-nonnegative-integer?]
                                  [bad-index-v any/c])
          (values any/c any/c)]
 )]{
 
-Returns the key and value for the element in @racket[hash] at index
+Returns the key and value for the element in @racket[ht] at index
 @racket[pos].
 
-If @racket[pos] is not a @tech{valid hash index} for @racket[hash],
+If @racket[pos] is not a @tech{valid hash index} for @racket[ht],
 the result is @racket[(values bad-index-v bad-index-v)] if
 @racket[bad-index-v] is provided, otherwise the
 @exnraise[exn:fail:contract].
@@ -878,11 +878,11 @@ the result is @racket[(values bad-index-v bad-index-v)] if
          #:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}]}
 
 
-@defproc[(hash-copy [hash hash?]) 
+@defproc[(hash-copy [ht hash?])
          (and/c hash? (not/c immutable?))]{
 
 Returns a mutable hash table with the same mappings, same
-key-comparison mode, and same key-holding strength as @racket[hash].}
+key-comparison mode, and same key-holding strength as @racket[ht].}
 
 @;------------------------------------------------------------------------
 @section{Additional Hash Table Functions}
@@ -894,8 +894,8 @@ key-comparison mode, and same key-holding strength as @racket[hash].}
 @(define the-eval (make-base-eval))
 @(the-eval '(require racket/hash))
 
-@defproc[(hash-union [h0 (and/c hash? immutable?)]
-                     [h hash?] ...
+@defproc[(hash-union [ht0 (and/c hash? immutable?)]
+                     [ht hash?] ...
                      [#:combine combine
                                 (-> any/c any/c any/c)
                                 (lambda _ (error 'hash-union ....))]
@@ -904,8 +904,8 @@ key-comparison mode, and same key-holding strength as @racket[hash].}
                                     (lambda (k a b) (combine a b))])
          (and/c hash? immutable?)]{
 
-Computes the union of @racket[h0] with each hash table @racket[h] by functional
-update, adding each element of each @racket[h] to @racket[h0] in turn.  For each
+Computes the union of @racket[ht0] with each hash table @racket[ht] by functional
+update, adding each element of each @racket[ht] to @racket[ht0] in turn.  For each
 key @racket[k] and value @racket[v], if a mapping from @racket[k] to some value
 @racket[v0] already exists, it is replaced with a mapping from @racket[k] to
 @racket[(combine/key k v0 v)].
@@ -922,8 +922,8 @@ key @racket[k] and value @racket[v], if a mapping from @racket[k] to some value
 
 }
 
-@defproc[(hash-union! [h0 (and/c hash? (not/c immutable?))]
-                      [h hash?] ...
+@defproc[(hash-union! [ht0 (and/c hash? (not/c immutable?))]
+                      [ht hash?] ...
                       [#:combine combine
                                  (-> any/c any/c any/c)
                                  (lambda _ (error 'hash-union ....))]
@@ -932,8 +932,8 @@ key @racket[k] and value @racket[v], if a mapping from @racket[k] to some value
                                      (lambda (k a b) (combine a b))])
          void?]{
 
-Computes the union of @racket[h0] with each hash table @racket[h] by mutable
-update, adding each element of each @racket[h] to @racket[h0] in turn.  For each
+Computes the union of @racket[ht0] with each hash table @racket[ht] by mutable
+update, adding each element of each @racket[ht] to @racket[ht0] in turn.  For each
 key @racket[k] and value @racket[v], if a mapping from @racket[k] to some value
 @racket[v0] already exists, it is replaced with a mapping from @racket[k] to
 @racket[(combine/key k v0 v)].
@@ -952,8 +952,8 @@ h
 
 }
 
-@defproc[(hash-intersect [h0 (and/c hash? immutable?)]
-			 [h hash?] ...
+@defproc[(hash-intersect [ht0 (and/c hash? immutable?)]
+			             [ht hash?] ...
                          [#:combine combine
                                     (-> any/c any/c any/c)
                                     (lambda _ (error 'hash-intersect ...))]
@@ -962,14 +962,14 @@ h
                                      	(lambda (k a b) (combine a b))])
 	 (and/c hash? immutable?)]{
 
-Constructs the hash table which is the intersection of @racket[h0]
-with every hash table @racket[h].  In the resulting hash table, a key
+Constructs the hash table which is the intersection of @racket[ht0]
+with every hash table @racket[ht].  In the resulting hash table, a key
 @racket[k] is mapped to a combination of the values to which
 @racket[k] is mapped in each of the hash tables.  The final values are
 computed by stepwise combination of the values appearing in each of
 the hash tables by applying @racket[(combine/key k v vi)] or
 @racket[(combine v vi)], where @racket[vi] is the value to which
-@racket[k] is mapped in the i-th hash table @racket[h], and
+@racket[k] is mapped in the i-th hash table @racket[ht], and
 @racket[v] is the accumulation of the values from the previous steps.
 The comparison predicate of the first argument (@racket[eq?],
 @racket[eqv?], @racket[equal-always?], @racket[equal?]) determines the
