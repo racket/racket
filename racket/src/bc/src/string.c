@@ -3393,6 +3393,13 @@ static Scheme_Object *mz_recase(const char *who, int to_up, mzchar *us, intptr_t
 
   reset_locale();
 
+  if (!locale_on) {
+    int len = ulen;
+    int mode = (to_up ? 1 : 0);
+    us = scheme_string_recase(us, 0, len, mode, 0, &len);
+    return scheme_make_sized_char_string(us, len, 0);
+  }
+
   if (current_locale_name
       && !*current_locale_name
       && (rktio_convert_properties(scheme_rktio) & RKTIO_CONVERT_RECASE_UTF16)) {

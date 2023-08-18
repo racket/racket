@@ -31791,85 +31791,100 @@
           (loop_0 0)))))))
 (define recase/no-nul
   (lambda (s_0 up?_0)
-    (if (if (equal? (1/current-locale) "")
-          (not
-           (fx=
-            0
-            (fxand
-             (|#%app| rktio_convert_properties (unsafe-place-local-ref cell.1))
-             4)))
-          #f)
-      (let ((s-16_0 (utf-16-encode s_0)))
-        (begin
-          (unsafe-start-atomic)
-          (let ((r_0
+    (let ((locale_0 (1/current-locale)))
+      (if (not locale_0)
+        (if up?_0 (string-upcase s_0) (string-downcase s_0))
+        (if (if (equal? locale_0 "")
+              (not
+               (fx=
+                0
+                (fxand
                  (|#%app|
-                  rktio_recase_utf16
-                  (unsafe-place-local-ref cell.1)
-                  up?_0
-                  s-16_0
-                  (unsafe-fxrshift (unsafe-bytes-length s-16_0) 1)
-                  #f)))
-            (let ((sr_0 (|#%app| rktio_to_shorts r_0)))
-              (begin
-                (|#%app| rktio_free r_0)
-                (unsafe-end-atomic)
-                (utf-16-decode sr_0))))))
-      (let ((c_0 #f))
-        (let ((in-bstr_0 (string->bytes/ucs-4 s_0 0 (string-length s_0))))
-          (let ((enc_0 (1/locale-string-encoding)))
-            (dynamic-wind
-             (lambda () (set! c_0 (bytes-open-converter/cached-to enc_0)))
-             (lambda ()
-               (letrec*
-                ((loop_0
-                  (|#%name|
-                   loop
-                   (lambda (pos_0)
-                     (begin
-                       (if (fx= pos_0 (unsafe-bytes-length in-bstr_0))
-                         (if (eqv? pos_0 0) "" '(""))
-                         (call-with-values
-                          (lambda () (1/bytes-convert c_0 in-bstr_0 pos_0))
-                          (case-lambda
-                           ((bstr_0 in-used_0 status_0)
-                            (begin
-                              (unsafe-start-atomic)
-                              (begin
-                                (sync-locale!)
-                                (let ((sr_0 (locale-recase.1 up?_0 bstr_0)))
+                  rktio_convert_properties
+                  (unsafe-place-local-ref cell.1))
+                 4)))
+              #f)
+          (let ((s-16_0 (utf-16-encode s_0)))
+            (begin
+              (unsafe-start-atomic)
+              (let ((r_0
+                     (|#%app|
+                      rktio_recase_utf16
+                      (unsafe-place-local-ref cell.1)
+                      up?_0
+                      s-16_0
+                      (unsafe-fxrshift (unsafe-bytes-length s-16_0) 1)
+                      #f)))
+                (let ((sr_0 (|#%app| rktio_to_shorts r_0)))
+                  (begin
+                    (|#%app| rktio_free r_0)
+                    (unsafe-end-atomic)
+                    (utf-16-decode sr_0))))))
+          (let ((c_0 #f))
+            (let ((in-bstr_0 (string->bytes/ucs-4 s_0 0 (string-length s_0))))
+              (let ((enc_0 (1/locale-string-encoding)))
+                (dynamic-wind
+                 (lambda () (set! c_0 (bytes-open-converter/cached-to enc_0)))
+                 (lambda ()
+                   (letrec*
+                    ((loop_0
+                      (|#%name|
+                       loop
+                       (lambda (pos_0)
+                         (begin
+                           (if (fx= pos_0 (unsafe-bytes-length in-bstr_0))
+                             (if (eqv? pos_0 0) "" '(""))
+                             (call-with-values
+                              (lambda () (1/bytes-convert c_0 in-bstr_0 pos_0))
+                              (case-lambda
+                               ((bstr_0 in-used_0 status_0)
+                                (begin
+                                  (unsafe-start-atomic)
                                   (begin
-                                    (unsafe-end-atomic)
-                                    (let ((ls_0 (1/bytes->string/locale sr_0)))
-                                      (if (eq? status_0 'complete)
-                                        (if (eqv? pos_0 0) ls_0 (list ls_0))
-                                        (let ((r_0
-                                               (loop_0
-                                                (fx+ pos_0 in-used_0 4))))
-                                          (let ((err-s_0
-                                                 (string
-                                                  (string-ref
-                                                   s_0
-                                                   (unsafe-fxrshift
-                                                    (+ pos_0 in-used_0)
-                                                    2)))))
+                                    (sync-locale!)
+                                    (let ((sr_0
+                                           (locale-recase.1 up?_0 bstr_0)))
+                                      (begin
+                                        (unsafe-end-atomic)
+                                        (let ((ls_0
+                                               (1/bytes->string/locale sr_0)))
+                                          (if (eq? status_0 'complete)
                                             (if (eqv? pos_0 0)
-                                              (apply
-                                               string-append
-                                               ls_0
-                                               err-s_0
-                                               r_0)
-                                              (list*
-                                               ls_0
-                                               err-s_0
-                                               r_0)))))))))))
-                           (args
-                            (raise-binding-result-arity-error 3 args))))))))))
-                (loop_0 0)))
-             (lambda ()
-               (let ((c_1 c_0))
-                 (begin-unsafe
-                  (cache-save! c_1 enc_0 cache-to set-cache-to!)))))))))))
+                                              ls_0
+                                              (list ls_0))
+                                            (let ((r_0
+                                                   (loop_0
+                                                    (fx+ pos_0 in-used_0 4))))
+                                              (let ((err-s_0
+                                                     (string
+                                                      (string-ref
+                                                       s_0
+                                                       (unsafe-fxrshift
+                                                        (+ pos_0 in-used_0)
+                                                        2)))))
+                                                (if (eqv? pos_0 0)
+                                                  (apply
+                                                   string-append
+                                                   ls_0
+                                                   err-s_0
+                                                   r_0)
+                                                  (list*
+                                                   ls_0
+                                                   err-s_0
+                                                   r_0)))))))))))
+                               (args
+                                (raise-binding-result-arity-error
+                                 3
+                                 args))))))))))
+                    (loop_0 0)))
+                 (lambda ()
+                   (let ((c_1 c_0))
+                     (begin-unsafe
+                      (cache-save!
+                       c_1
+                       enc_0
+                       cache-to
+                       set-cache-to!)))))))))))))
 (define locale-recase.1
   (|#%name|
    locale-recase

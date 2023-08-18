@@ -46,8 +46,12 @@
            (cons new-s (cons (string #\nul) r)))])))
 
 (define (recase/no-nul s up?)
+  (define locale (current-locale))
   (cond
-    [(and (equal? (current-locale) "")
+    [(not locale) (if up?
+                      (string-upcase s)
+                      (string-downcase s))]
+    [(and (equal? locale "")
           (not (fx= 0 (fxand (rktio_convert_properties rktio) RKTIO_CONVERT_RECASE_UTF16))))
      ;; The OS provides a UTF-16-based function, so use that
      (define s-16 (utf-16-encode s))
